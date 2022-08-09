@@ -678,11 +678,9 @@ void createBoltSubmodule(py::module_& module) {
           "line.\n")
       .def("predict_single", &TabularClassifier::predictSingle,
            py::arg("col_to_values_map"),
-           "Given a mapping from column names to values, predict the output "
-           "class of that row. \n"
+           "Given a list of input values, predict the class. \n"
            "Arguments:\n"
-           " * col_to_values_map: Dict from int to string representing an "
-           "input sample.\n")
+           " * col_to_values_map: List of strings representing input values.\n")
       .def("save", &TabularClassifier::save, py::arg("filename"),
            "Saves the classifier to a file. The file path must not require any "
            "folders to be created\n"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
-#include "AutoClassifierUtils.h"
+#include "AutoClassifierBase.h"
 #include <bolt/src/graph/Graph.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
@@ -16,9 +16,9 @@ class TabularClassifier {
  public:
   TabularClassifier(const std::string& model_size, uint32_t n_classes)
       : _input_dim(100000), _n_classes(n_classes), _metadata(nullptr) {
-    _model = AutoClassifierUtils::createNetwork(/* input_dim = */ _input_dim,
-                                                /* n_classes = */ _n_classes,
-                                                model_size);
+    _classifier = std::make_unique<AutoClassifierBase>(
+        /* input_dim = */ _input_dim,
+        /* n_classes = */ _n_classes, model_size);
   }
 
   void train(const std::string& filename,
@@ -35,8 +35,8 @@ class TabularClassifier {
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
 
-    AutoClassifierUtils::train(
-        _model, filename,
+    _classifier->train(
+        filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
         /* epochs = */ epochs,
@@ -53,47 +53,46 @@ class TabularClassifier {
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
 
-    AutoClassifierUtils::predict(
-        _model, filename,
+    _classifier->predict(
+        filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
         output_filename, _metadata->getClassIdToNames());
   }
 
-  std::string predictSingle(
-      std::unordered_map<uint32_t, std::string>& col_to_values_map) {
+  std::string predictSingle(std::vector<std::string>& values) {
     std::vector<uint32_t> unigram_hashes;
-    for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
-      if (col_to_values_map.count(col)) {
-        switch (_metadata->getColType(col)) {
-          case dataset::TabularDataType::Numeric: {
-            std::exception_ptr err;
-            uint32_t unigram = _metadata->getNumericHashValue(
-                col, col_to_values_map[col], err);
-            if (err) {
-              std::rethrow_exception(err);
-            }
-            unigram_hashes.push_back(unigram);
-            break;
+    uint32_t col = 0;
+    for (const std::string& value : values) {
+      switch (_metadata->getColType(col)) {
+        case dataset::TabularDataType::Numeric: {
+          std::exception_ptr err;
+          uint32_t unigram = _metadata->getNumericHashValue(col, value, err);
+          if (err) {
+            std::rethrow_exception(err);
           }
-          case dataset::TabularDataType::Categorical: {
-            uint32_t unigram =
-                _metadata->getStringHashValue(col_to_values_map[col], col);
-            unigram_hashes.push_back(unigram);
-            break;
-          }
-          case dataset::TabularDataType::Label: {
-            break;
-          }
+          unigram_hashes.push_back(unigram);
+          break;
+        }
+        case dataset::TabularDataType::Categorical: {
+          uint32_t unigram = _metadata->getStringHashValue(value, col);
+          unigram_hashes.push_back(unigram);
+          break;
+        }
+        case dataset::TabularDataType::Label: {
+          // single inference won't specify the column so we skip it
+          col++;
+          break;
         }
       }
+      col++;
     }
     BoltVector input = dataset::TextEncodingUtils::computePairgramsFromUnigrams(
         unigram_hashes, _input_dim);
 
     BoltVector output =
-        _model->predictSingle({input}, {},
-                              /* use_sparse_inference = */ true);
+        _classifier->predictSingle({input}, {},
+                                   /* use_sparse_inference = */ true);
 
     return _metadata->getClassIdToNames()[output.getIdWithHighestActivation()];
   }
@@ -122,19 +121,20 @@ class TabularClassifier {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
-    std::shared_ptr<dataset::TabularMetadataProcessor> batch_processor =
-        std::make_shared<dataset::TabularMetadataProcessor>(column_datatypes,
-                                                            _n_classes);
+    std::shared_ptr<dataset::TabularMetadataProcessor>
+        metadata_batch_processor =
+            std::make_shared<dataset::TabularMetadataProcessor>(
+                column_datatypes, _n_classes);
 
     // TabularMetadataProcessor inherets ComputeBatchProcessor so this doesn't
     // produce any vectors, we are just using it to iterate over the dataset.
     auto compute_dataset =
         std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
-            data_loader, batch_processor);
+            data_loader, metadata_batch_processor);
     while (compute_dataset->nextBatchTuple()) {
     }
 
-    return batch_processor->getMetadata();
+    return metadata_batch_processor->getMetadata();
   }
 
   std::shared_ptr<dataset::GenericBatchProcessor> makeTabularBatchProcessor() {
@@ -148,7 +148,7 @@ class TabularClassifier {
 
     return std::make_shared<dataset::GenericBatchProcessor>(
         /* input_blocks = */ input_blocks,
-        /* target_blocks = */ target_blocks);
+        /* target_blocks = */ target_blocks, /* has_header = */ true);
   }
 
   // Private constructor for cereal
@@ -158,13 +158,13 @@ class TabularClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_input_dim, _n_classes, _metadata, _model);
+    archive(_input_dim, _n_classes, _metadata, _classifier);
   }
 
   uint32_t _input_dim;
   uint32_t _n_classes;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
-  std::shared_ptr<BoltGraph> _model;
+  std::unique_ptr<AutoClassifierBase> _classifier;
 };
 
 }  // namespace thirdai::bolt
