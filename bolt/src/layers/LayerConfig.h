@@ -44,6 +44,7 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   float _sparsity;
   ActivationFunction _activation_fn;
   SamplingConfigPtr _sampling_config;
+  float _adam_compression_factor;
 
  public:
   // Public constructor - it should only be called by cereal
@@ -60,11 +61,13 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
 
   FullyConnectedLayerConfig(uint64_t dim, float sparsity,
                             const std::string& activation,
-                            SamplingConfigPtr sampling_config)
+                            SamplingConfigPtr sampling_config,
+                            float adam_compression_factor = 1.0)
       : _dim(dim),
         _sparsity(sparsity),
         _activation_fn(getActivationFunction(activation)),
-        _sampling_config(std::move(sampling_config)) {
+        _sampling_config(std::move(sampling_config)),
+        _adam_compression_factor(adam_compression_factor) {
     if (_sparsity <= 0.0 || _sparsity > 1.0) {
       throw std::invalid_argument(
           "Layer sparsity must be in the range (0.0, 1.0].");
@@ -85,6 +88,8 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   const SamplingConfigPtr& getSamplingConfig() const {
     return _sampling_config;
   }
+
+  float compression_factor() const { return _adam_compression_factor; }
 
  private:
   static uint32_t clip(uint32_t input, uint32_t low, uint32_t high) {

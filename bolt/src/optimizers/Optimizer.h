@@ -166,10 +166,13 @@ class CompressedAdam : public Optimizer {
   uint64_t _prev_dim;
 };
 
-inline std::unique_ptr<Optimizer> make_optimizer(uint64_t dim,
-                                                 uint64_t& prev_dim) {
-  return std::make_unique<Adam>(dim, prev_dim);
-  // return std::make_unique<CompressedAdam>(dim, prev_dim);
+inline std::unique_ptr<Optimizer> make_optimizer(
+    uint64_t dim, uint64_t& prev_dim, float compression_factor = 1.0) {
+  if (compression_factor == 1.0) {
+    return std::make_unique<Adam>(dim, prev_dim);
+  } else {
+    return std::make_unique<CompressedAdam>(dim, prev_dim);
+  }
 }
 
 }  // namespace thirdai::optim
