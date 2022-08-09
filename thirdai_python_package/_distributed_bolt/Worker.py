@@ -203,9 +203,12 @@ class Worker:
         
         for workers in range(num_workers):
             for layers in range(len(self.layers)-1):
+                
                 self.w_threshold[layers]+=threshold[workers][0][layers]/num_workers
                 self.b_threshold[layers]+=threshold[workers][1][layers]/num_workers
-        
+
+                self.w_threshold[layers]+=max(threshold[workers][0][layers],0.000001)/num_workers
+                self.b_threshold[layers]+=max(threshold[workers][1][layers],0.000001)/num_workers
         # print(f"weight threshold {self.w_threshold} \n bias threshold {self.b_threshold}")
 
     def getUnbiasedDragonGradients(self, compression_density):
