@@ -121,7 +121,7 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
 
     end = time.time()
 
-    inference_time = test_bolt_single_inference()
+    inference_time = test_bolt_single_inference(tc, bolt_test_file)
 
     log_message(
         f"BOLT Accuracy: {best_test_accuracy}, Total Training Time: {end - start}, Single Inference Time: {inference_time}\n",
@@ -201,7 +201,7 @@ def main():
     args = parser.parse_args()
 
     datasets = [
-        # "CensusIncome",
+        "CensusIncome",
         "ChurnModeling",
         "EyeMovements",
         "PokerHandInduction",
@@ -228,7 +228,7 @@ def main():
             out_file,
         )
 
-        train_bolt(dtypes, ytrain, yvalid, ytest, xtest, data_dir, out_file)
+        train_bolt(dtypes, ytrain, yvalid, ytest, data_dir, out_file)
         train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
         train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
 
