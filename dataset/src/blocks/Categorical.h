@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BlockInterface.h"
+#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <memory>
@@ -63,23 +64,40 @@ class CategoricalBlock : public Block {
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec) final {
-    _encoding->encodeCategory(input_row.at(_col), vec, /* offset = */ 0);
-    std::string id(input_row[_col]);
-    if (_graph != nullptr && _graph->count(id) > 0) {
-      auto& neighbors = _graph->at(id);
-      for (size_t i = 0; i < std::min(_max_n_neighbors, neighbors.size());
-           i++) {
-        std::string_view neighbor_view(neighbors[i].data(),
-                                       neighbors[i].size());
+    auto cats = splitMultiLabel(input_row.at(_col));
+    for (auto& cat : cats) {  
+      _encoding->encodeCategory(cat, vec, /* offset = */ 0);
+      std::string id(cat);
+      if (_graph != nullptr && _graph->count(id) > 0) {
+        auto& neighbors = _graph->at(id);
+        for (size_t i = 0; i < std::min(_max_n_neighbors, neighbors.size());
+            i++) {
+          std::string_view neighbor_view(neighbors[i].data(),
+                                        neighbors[i].size());
 
-        if (auto err = _encoding->encodeCategory(
-                neighbor_view, vec,
-                /* offset = */ _encoding->featureDim())) {
-          return err;
+          if (auto err = _encoding->encodeCategory(
+                  neighbor_view, vec,
+                  /* offset = */ _encoding->featureDim())) {
+            return err;
+          }
         }
       }
     }
     return nullptr;
+  }
+
+  static std::vector<std::string_view> splitMultiLabel(std::string_view column) {
+    std::vector<std::string_view> parsed;
+    char delimiter = ' ';
+    size_t start = 0;
+    size_t end = 0;
+    while (end != std::string::npos) {
+      end = column.find(delimiter, start);
+      size_t len = end == std::string::npos ? column.size() - start : end - start;
+      parsed.push_back(column.substr(start, len));
+      start = end + 1;
+    }
+    return parsed;
   }
 
  private:
