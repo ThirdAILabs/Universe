@@ -51,13 +51,15 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   FullyConnectedLayerConfig() {}
 
   FullyConnectedLayerConfig(uint64_t dim, const std::string& activation)
-      : FullyConnectedLayerConfig(dim, /* sparsity= */ 1.0, activation) {}
+      : FullyConnectedLayerConfig(dim, /* sparsity= */ 1.0, activation,
+                                  /*adam_compression_factor=*/1.0) {}
 
   FullyConnectedLayerConfig(uint64_t dim, float sparsity,
-                            const std::string& activation)
+                            const std::string& activation,
+                            float adam_compression_factor = 1.0)
       : FullyConnectedLayerConfig(dim, sparsity, activation,
-                                  DWTASamplingConfig::autotune(dim, sparsity)) {
-  }
+                                  DWTASamplingConfig::autotune(dim, sparsity),
+                                  adam_compression_factor) {}
 
   FullyConnectedLayerConfig(uint64_t dim, float sparsity,
                             const std::string& activation,

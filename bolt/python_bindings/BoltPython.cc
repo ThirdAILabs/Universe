@@ -142,8 +142,9 @@ void createBoltSubmodule(py::module_& module) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config: SamplingConfig - Sampling configuration.")
 #endif
-      .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
+      .def(py::init<uint64_t, float, std::string, float>(), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation_function"),
+           py::arg("adam_compression_factor"),
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"

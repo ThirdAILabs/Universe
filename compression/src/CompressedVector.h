@@ -14,7 +14,7 @@ namespace thirdai::bolt {
 template <class ELEMENT_TYPE>
 class CompressedVector {
  public:
-  virtual ELEMENT_TYPE operator[](uint64_t index);
+  virtual ELEMENT_TYPE operator[](uint64_t index) = 0;
 
   // non-const accessor.
   virtual ELEMENT_TYPE get(uint64_t i) const = 0;
