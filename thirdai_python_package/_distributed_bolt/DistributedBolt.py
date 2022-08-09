@@ -38,9 +38,8 @@ class DistributedBolt:
         except Exception:
             self.logging.error("Could not load the toml file! " + 'Config File Location:' + config_filename)
 
-
         if len(config["dataset"]["train_data"]) != no_of_workers:            
-            raise ValueError(f"Received {len(config["dataset"]["train_data"])} training datasets. Expected {worker_nodes} datasets, one for each node.")
+            raise ValueError("Received ", str(len(config["dataset"]["train_data"])) ," training datasets. Expected ", no_of_workers," datasets, one for each node.")
 
         self.no_of_workers = no_of_workers
 
@@ -87,13 +86,13 @@ class DistributedBolt:
         self.num_of_batches = min(
             ray.get(
                 [
-                    self.workers[i].num_of_batches.remote()
-                    for i in range(self.no_of_workers)
+                    worker.num_of_batches.remote()
+                    for worker in self.workers
                 ]
             )
         )
 
-        for worker in self.worker:
+        for i in range(len(self.workers)):
             ray.get(self.workers[i].add_head_worker.remote(self.head_worker))
             ray.get(
                 self.workers[i].add_friend.remote(
@@ -106,9 +105,9 @@ class DistributedBolt:
         self.communication_time = 0
 
     def get_num_cpus(self):
-    """
-        Returns the number of CPUs present on the machine
-    """
+        """
+            Returns the number of CPUs present on the machine
+        """
         try:
             import multiprocessing
 
