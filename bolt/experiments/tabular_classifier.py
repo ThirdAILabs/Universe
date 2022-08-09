@@ -29,8 +29,6 @@ def accuracy(predictions, ytest):
     for pred, truth in zip(predictions, list(ytest)):
         if pred == truth:
             val += 1
-    print(val)
-    print(len(predictions))
     return val / len(predictions)
 
 
@@ -73,7 +71,6 @@ def test_bolt_single_inference(model, bolt_test_file):
     with open(bolt_test_file, "r") as file:
         header = file.readline()
         first_line = file.readline()
-        print(first_line)
         # dont read the label as part of the sample
         sample = first_line.split(",")[:-1]
 
@@ -152,11 +149,10 @@ def train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
     end_training = time.time()
 
     single_xtest = xtest[0:1]
-    print(single_xtest.columns)
     start_inference = time.time()
     model.predict(single_xtest)
     end_inference = time.time()
-    inference_time = (end_inference - start_inference)
+    inference_time = end_inference - start_inference
 
     log_message(
         f"XGBoost Accuracy: {accuracy(model.predict(xtest), ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
@@ -182,7 +178,7 @@ def train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
     start_inference = time.time()
     model.predict(single_xtest)
     end_inference = time.time()
-    inference_time = (end_inference - start_inference)
+    inference_time = end_inference - start_inference
 
     log_message(
         f"TabNet Accuracy: {accuracy(model.predict(xtest), ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
@@ -230,7 +226,7 @@ def main():
             out_file,
         )
 
-        # train_bolt(dtypes, ytrain, yvalid, ytest, data_dir, out_file)
+        train_bolt(dtypes, ytrain, yvalid, ytest, data_dir, out_file)
         train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
         train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
 
