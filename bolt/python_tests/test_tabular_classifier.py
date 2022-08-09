@@ -107,11 +107,7 @@ def create_single_test_samples():
         for line in lines[1:]:
             # ignore the label column
             values = line.split(",")[:-1]
-
-            single_sample = {}
-            for col in range(len(values)):
-                single_sample[COLUMN_NAMES[col]] = values[col]
-            samples.append(single_sample)
+            samples.append(values)
 
     return samples
 

@@ -60,11 +60,10 @@ class TabularClassifier {
         output_filename, _metadata->getClassIdToNames());
   }
 
-  std::string predictSingle(
-      std::unordered_map<std::string, std::string>& col_to_values_map) {
+  std::string predictSingle(std::vector<std::string>& values) {
     std::vector<uint32_t> unigram_hashes;
-    for (auto [col_name, value] : col_to_values_map) {
-      uint32_t col = _metadata->getColFromName(col_name);
+    uint32_t col = 0;
+    for (const std::string& value : values) {
       switch (_metadata->getColType(col)) {
         case dataset::TabularDataType::Numeric: {
           std::exception_ptr err;
@@ -81,9 +80,12 @@ class TabularClassifier {
           break;
         }
         case dataset::TabularDataType::Label: {
+          // single inference won't specify the column so we skip it
+          col++;
           break;
         }
       }
+      col++;
     }
     BoltVector input = dataset::TextEncodingUtils::computePairgramsFromUnigrams(
         unigram_hashes, _input_dim);
