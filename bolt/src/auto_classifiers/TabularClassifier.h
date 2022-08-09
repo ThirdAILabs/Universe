@@ -61,6 +61,8 @@ class TabularClassifier {
   }
 
   std::string predictSingle(std::vector<std::string>& values) {
+    // TODO(david) this repeats code in the batch processor but to reuse the
+    // same code we'd need to refactor the data pipeline quite a bit
     std::vector<uint32_t> unigram_hashes;
     uint32_t col = 0;
     for (const std::string& value : values) {
