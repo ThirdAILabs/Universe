@@ -3,9 +3,11 @@ import pytest
 import numpy as np
 
 from ..utils import (
+    assert_activation_difference_and_gradients_in_same_order,
     gen_numpy_training_data,
     gen_random_weights_simple_network,
     gen_random_bias_simple_network,
+    get_perturbed_dataset,
 )
 
 pytestmark = [pytest.mark.unit]
@@ -27,8 +29,10 @@ def build_dag_network():
 
 
 def set_network_weights_and_biases(model):
-    w1, w2 = gen_random_weights_simple_network(17, 5, 3)
-    b1, b2 = gen_random_bias_simple_network(5, 3)
+    w1, w2 = gen_random_weights_simple_network(
+        seed=17, input_output_layer_dim=5, hidden_layer_dim=3
+    )
+    b1, b2 = gen_random_bias_simple_network(output_layer_dim=5, hidden_layer_dim=3)
     hidden_layer = model.get_layer("fc_1")
     output_layer = model.get_layer("fc_2")
     hidden_layer.weights.set(w1)
@@ -64,29 +68,16 @@ def test_bolt_dag_single_input_gradients():
     )
     _, act = model.predict(input_data, None, predict_config=predict_config)
     """
-    For every vector in input,we modify the vector at every position(by adding EPS), and we check the above assertion.
+    For every vector in input,we modify the vector at every position(by adding EPS), and we check assertion discussed at start of the function.
     """
     for input_num in range(len(numpy_inputs)):
-        perturbed_vectors = []
-        for i in range(len(numpy_inputs[input_num])):
-            """
-            We are making a copy because in python assign operation makes two variables to point
-            to same address space, and we only want to modify one and keep the other same.
-            """
-            vec = np.array(numpy_inputs[input_num])
-            vec[i] = vec[i] + 0.001
-            perturbed_vectors.append(vec)
-        perturbed_vectors = np.array(perturbed_vectors)
-        perturbed_dataset = dataset.from_numpy(perturbed_vectors, batch_size=5)
+        perturbed_dataset = get_perturbed_dataset(numpy_inputs[input_num])
         _, perturbed_activations = model.predict(
             perturbed_dataset, None, predict_config=predict_config
         )
-        act_difference_at_required_label = [
-            perturbed_act[numpy_labels[input_num]]
-            - act[input_num][numpy_labels[input_num]]
-            for perturbed_act in perturbed_activations
-        ]
-        assert np.array_equal(
-            np.argsort(act_difference_at_required_label),
-            np.argsort(gradients[input_num]),
+        assert_activation_difference_and_gradients_in_same_order(
+            perturbed_activations,
+            numpy_labels[input_num],
+            gradients[input_num],
+            act[input_num],
         )

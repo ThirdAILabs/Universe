@@ -304,6 +304,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Arguments:\n"
            " * input_data: The input is same type as we give for train_data of "
            "train method."
+           " * input_tokens: The input is BoltTokenDataset, which we can get "
+           "from dataset.tokens_from_numpy which takes in numpy vectors."
            " * explain_prediction: Boolean, if set to True, gives gradients "
            "correspond "
            "to "

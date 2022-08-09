@@ -2,9 +2,11 @@ from thirdai import bolt, dataset
 import numpy as np
 import pytest
 from .utils import (
+    assert_activation_difference_and_gradients_in_same_order,
     gen_numpy_training_data,
     gen_random_weights_simple_network,
     gen_random_bias_simple_network,
+    get_perturbed_dataset,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -26,8 +28,10 @@ def build_network():
 
 
 def set_network_weights_and_biases(network):
-    w1, w2 = gen_random_weights_simple_network(17, 4, 3)
-    b1, b2 = gen_random_bias_simple_network(4, 3)
+    w1, w2 = gen_random_weights_simple_network(
+        seed=17, input_output_layer_dim=4, hidden_layer_dim=3
+    )
+    b1, b2 = gen_random_bias_simple_network(output_layer_dim=4, hidden_layer_dim=3)
     network.set_weights(0, w1)
     network.set_biases(0, b1)
     network.set_weights(1, w2)
@@ -62,26 +66,13 @@ def test_input_gradients():
     For every vector in input,we modify the vector at every position(by adding EPS), and we check the above assertion.
     """
     for input_num in range(len(numpy_inputs)):
-        modified_numpy_vectors = []
-        for i in range(len(numpy_inputs[input_num])):
-            """
-            We are making a copy because in python assign operation makes two variables to point
-            to same address space, and we only want to modify one and keep the other same.
-            """
-            vec = np.array(numpy_inputs[input_num])
-            vec[i] = vec[i] + 0.001
-            modified_numpy_vectors.append(vec)
-        modified_numpy_vectors = np.array(modified_numpy_vectors)
-        modified_vectors = dataset.from_numpy(modified_numpy_vectors, batch_size=4)
-        _, vecs_act = network.predict(modified_vectors, None)
-        act_difference_at_required_label = [
-            np.array(vec_act[labels[input_num]])
-            - np.array(act[input_num][labels[input_num]])
-            for vec_act in vecs_act
-        ]
-        assert np.array_equal(
-            np.argsort(act_difference_at_required_label),
-            np.argsort(gradients[input_num]),
+        perturbed_dataset = get_perturbed_dataset(numpy_inputs[input_num])
+        _, perturbed_activations = network.predict(perturbed_dataset, None)
+        assert_activation_difference_and_gradients_in_same_order(
+            perturbed_activations,
+            labels[input_num],
+            gradients[input_num],
+            act[input_num],
         )
 
 

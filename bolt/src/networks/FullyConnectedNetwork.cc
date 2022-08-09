@@ -112,7 +112,7 @@ FullyConnectedNetwork::getInputGradients(
   if (!best_index && getInferenceOutputDim(true) < 2) {
     throw std::invalid_argument(
         "The sparse output dimension should be atleast 2 to call "
-        "getSecondBestId.");
+        "getSecondHighestActivationId.");
   }
   // Because of how the datasets are read we know that all batches will not
   // have a batch size larger than this so we can just set the batch size
@@ -154,9 +154,9 @@ FullyConnectedNetwork::getInputGradients(
         forward(vec_id, input_dataset->at(batch_id), output[vec_id],
                 /*labels = */ nullptr);
         if (best_index) {
-          required_index = output[vec_id].getIdWithHighestActivation();
+          required_index = output[vec_id].getHighestActivationId();
         } else {
-          required_index = output[vec_id].getSecondBestId();
+          required_index = output[vec_id].getSecondHighestActivationId();
         }
         batch_label = BoltVector::makeSparseVector(
             std::vector<uint32_t>{required_index}, std::vector<float>{1.0});

@@ -60,7 +60,7 @@ struct BoltVector {
     }
   }
 
-  uint32_t getIdWithHighestActivation() const {
+  uint32_t getHighestActivationId() const {
     float max_act = activations[0];
     uint32_t id = 0;
     for (uint32_t i = 1; i < len; i++) {
@@ -75,14 +75,14 @@ struct BoltVector {
     return active_neurons[id];
   }
 
-  uint32_t getSecondBestId() const {
+  uint32_t getSecondHighestActivationId() const {
     float largest_activation = std::numeric_limits<float>::min(),
           second_largest_activation = std::numeric_limits<float>::min();
     uint32_t max_id = 0, second_max_id = 0;
     if (len < 2) {
       throw std::invalid_argument(
-          "The sparse output dimension should be atleast 2 to call "
-          "getSecondBestId.");
+          "The sparse output dimension should be at least 2 to call "
+          "getSecondHighestActivationId.");
     }
     for (uint32_t i = 0; i < len; i++) {
       if (activations[i] > largest_activation) {

@@ -186,10 +186,10 @@ BoltVector BoltGraph::getLabelVectorExplainPrediction(uint32_t vec_id,
   uint32_t required_index;
   forward(vec_id, nullptr);
   if (explain_prediction) {
-    required_index =
-        _output->getOutputVector(vec_id).getIdWithHighestActivation();
+    required_index = _output->getOutputVector(vec_id).getHighestActivationId();
   } else {
-    required_index = _output->getOutputVector(vec_id).getSecondBestId();
+    required_index =
+        _output->getOutputVector(vec_id).getSecondHighestActivationId();
   }
   return BoltVector::makeSparseVector({required_index}, {1.0});
 }
@@ -594,7 +594,7 @@ void BoltGraph::verifyCanGetInputGradients(
   if (!best_index && num_output_nonzeros < 2) {
     throw std::invalid_argument(
         "The sparse output dimension should be atleast 2 to call "
-        "getSecondBestId.");
+        "getSecondHighestActivationId.");
   }
   verifyInputForGraph(input_gradients_context);
 }
