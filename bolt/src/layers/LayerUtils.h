@@ -41,6 +41,9 @@ inline float getThresholdForTopK(const std::vector<float>& values,
                                  uint32_t sketch_size,
                                  uint32_t max_samples_for_random_sampling) {
   uint32_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
+  if(num_samples<20){
+    num_samples=static_cast<uint32_t>(std::min(20,static_cast<int>(values.size())));
+  }
   uint32_t topK =
       static_cast<uint32_t>(1.0 * num_samples * sketch_size / values.size());
   
