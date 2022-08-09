@@ -48,7 +48,6 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    enableRandomDropout();
     initSparseDatastructures(config.getSamplingConfig(), rd);
   }
 }
@@ -354,8 +353,6 @@ void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
   }
 }
 
-void FullyConnectedLayer::enableRandomDropout() { _random_dropouts = true; }
-
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                                               BoltVector& output,
@@ -371,8 +368,9 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     assert(labels->active_neurons[i] < _dim);
     active_set.insert(labels->active_neurons[i]);
   }
-  std::vector<uint32_t> hashes(_hasher->numTables());
-  if (_random_dropouts) {
+  std::vector<uint32_t> hashes;
+  if (!_random_dropouts) {
+    hashes.assign(_hasher->numTables(), 0);
     if constexpr (PREV_DENSE) {
       _hasher->hashSingleDense(input.activations, input.len, hashes.data());
     } else {
@@ -758,7 +756,8 @@ void FullyConnectedLayer::removeOptimizer() {
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
                                             bool detailed) const {
   summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
-  summary << activationFunctionToStr(_act_func);
+  summary << activationFunctionToStr(_act_func)
+          << ", random_dropout=" << _random_dropouts;
 
   if (detailed && _sparsity < 1.0) {
     summary << " (hash_function=" << _hasher->getName() << ", ";
