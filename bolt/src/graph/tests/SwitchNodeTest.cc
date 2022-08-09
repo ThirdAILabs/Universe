@@ -1,10 +1,10 @@
+#include "TestDatasetGenerators.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/Switch.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
-#include <bolt/src/networks/tests/BoltNetworkTestUtils.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 #include <random>
@@ -12,12 +12,16 @@
 namespace thirdai::bolt::tests {
 
 static constexpr uint32_t n_classes = 100;
+static constexpr uint32_t n_batches = 100;
+static constexpr uint32_t batch_size = 100;
 static constexpr uint32_t n_switch_layers = 10;
 static constexpr uint32_t seed = 9824;
 
 auto generateSwitchDataset() {
   auto [vector_data, labels] =
-      genDataset(n_classes, /* noisy_dataset= */ false);
+      TestDatasetGenerators::generateSimpleVectorDataset(
+          /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+          /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   std::vector<dataset::BoltTokenBatch> token_batches;
 

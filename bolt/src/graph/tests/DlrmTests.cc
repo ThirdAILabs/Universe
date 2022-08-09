@@ -1,3 +1,4 @@
+#include "TestDatasetGenerators.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
@@ -33,48 +34,9 @@ namespace thirdai::bolt::tests {
  * fourth. The purpose of this is to check that the model is able to learn from
  * both sets of features.
  */
-constexpr uint32_t n_classes = 100;
-constexpr uint32_t n_batches = 100;
-constexpr uint32_t batch_size = 100;
-
-static std::tuple<dataset::BoltDatasetPtr, dataset::BoltTokenDatasetPtr,
-                  dataset::BoltDatasetPtr>
-generateDlrmDataset(bool dense_features_are_noise,
-                    bool categorical_features_are_noise, uint32_t seed) {
-  std::mt19937 gen(seed);
-  std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
-  std::normal_distribution<float> data_dist(
-      0, dense_features_are_noise ? 1.0 : 0.1);
-
-  std::vector<BoltBatch> data_batches;
-  std::vector<dataset::BoltTokenBatch> token_batches;
-  std::vector<BoltBatch> label_batches;
-  for (uint32_t batch_id = 0; batch_id < n_batches; batch_id++) {
-    std::vector<BoltVector> labels;
-    std::vector<BoltVector> dense_features;
-    std::vector<std::vector<uint32_t>> categorical_features;
-    for (uint32_t vec_id = 0; vec_id < batch_size; vec_id++) {
-      uint32_t label = label_dist(gen);
-      BoltVector v(n_classes, true, false);
-      std::generate(v.activations, v.activations + n_classes,
-                    [&]() { return data_dist(gen); });
-      if (!dense_features_are_noise) {
-        v.activations[label] += 1.0;
-      }
-      dense_features.push_back(std::move(v));
-      categorical_features.push_back(
-          {categorical_features_are_noise ? label_dist(gen) : label});
-      labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
-    }
-    data_batches.emplace_back(std::move(dense_features));
-    token_batches.emplace_back(std::move(categorical_features));
-    label_batches.emplace_back(std::move(labels));
-  }
-
-  return {std::make_shared<dataset::BoltDataset>(std::move(data_batches)),
-          std::make_shared<dataset::BoltTokenDataset>(std::move(token_batches)),
-          std::make_shared<dataset::BoltDataset>(std::move(label_batches))};
-}
+static constexpr uint32_t n_classes = 100;
+static constexpr uint32_t n_batches = 100;
+static constexpr uint32_t batch_size = 100;
 
 BoltGraph getModel() {
   auto input = std::make_shared<Input>(/* dim= */ n_classes);
@@ -109,8 +71,10 @@ float runDlrmTest(bool dense_features_are_noise,
   auto model = getModel();
 
   auto [train_data, train_tokens, train_labels] =
-      generateDlrmDataset(dense_features_are_noise,
-                          categorical_features_are_noise, /* seed= */ 4597);
+      TestDatasetGenerators::generateDlrmDataset(
+          /* n_classes=*/n_classes, /* n_batches= */ n_batches,
+          /* batch_size= */ batch_size, dense_features_are_noise,
+          categorical_features_are_noise, /* seed= */ 4597);
 
   auto train_cfg =
       TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ 2);
@@ -118,8 +82,10 @@ float runDlrmTest(bool dense_features_are_noise,
   model.train({train_data}, {train_tokens}, train_labels, train_cfg);
 
   auto [test_data, test_tokens, test_labels] =
-      generateDlrmDataset(dense_features_are_noise,
-                          categorical_features_are_noise, /* seed= */ 2631);
+      TestDatasetGenerators::generateDlrmDataset(
+          /* n_classes=*/n_classes, /* n_batches= */ n_batches,
+          /* batch_size= */ batch_size, dense_features_are_noise,
+          categorical_features_are_noise, /* seed= */ 2631);
 
   auto predict_cfg =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});

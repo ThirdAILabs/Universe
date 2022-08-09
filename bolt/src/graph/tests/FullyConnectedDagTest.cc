@@ -1,10 +1,10 @@
+#include "TestDatasetGenerators.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <bolt/src/networks/tests/BoltNetworkTestUtils.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <optional>
@@ -14,7 +14,9 @@
 
 namespace thirdai::bolt::tests {
 
-uint32_t n_classes = 100;
+static constexpr uint32_t n_classes = 100;
+static constexpr uint32_t n_batches = 100;
+static constexpr uint32_t batch_size = 100;
 
 static BoltGraph getSingleLayerModel() {
   auto input_layer = std::make_shared<Input>(n_classes);
@@ -49,8 +51,9 @@ static PredictConfig getPredictConfig() {
 TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
               getTrainConfig(/* epochs= */ 5));
@@ -65,8 +68,9 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
 TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ true);
 
   model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
               getTrainConfig(/* epochs= */ 5));
@@ -85,8 +89,9 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
 TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
   BoltGraph model = getSingleLayerModel();
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
               getTrainConfig(/* epochs= */ 5));
@@ -152,8 +157,9 @@ static void testSimpleDatasetMultiLayerModel(
     uint32_t epochs) {
   BoltGraph model = getMultiLayerModel(hidden_layer_act, output_layer_act);
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   auto train_metrics =
       model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
@@ -184,8 +190,9 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetMultiLayerNetworkSigmoid) {
 TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
   BoltGraph model = getMultiLayerModel("relu", "softmax");
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ true);
 
   model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
               getTrainConfig(/* epochs= */ 2));
