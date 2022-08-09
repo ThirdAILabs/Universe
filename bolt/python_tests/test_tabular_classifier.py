@@ -38,25 +38,18 @@ def setup_module():
         os.system(
             f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.data --output {TRAIN_FILE}"
         )
-        with open(TRAIN_FILE, "r") as file:
-            data = file.readlines()
-        with open(TRAIN_FILE, "w") as file:
-            # write column names as the header
-            file.write(",".join(COLUMN_NAMES) + "\n")
-            file.writelines([line for line in data])
 
     if not os.path.exists(TEST_FILE):
         os.system(
             f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.test --output {TEST_FILE}"
         )
-        with open(TEST_FILE, "r") as fin:
-            data = fin.read().splitlines(True)
-        with open(TEST_FILE, "w") as fout:
-            # write column names as the header
-            fout.write(",".join(COLUMN_NAMES) + "\n")
+        # reformat the test file
+        with open(TEST_FILE, "r") as file:
+            data = file.read().splitlines(True)
+        with open(TEST_FILE, "w") as file:
             # for some reason each of the labels end with a "." in the test set
             # loop through data[1:] since the first line is bogus
-            fout.writelines([line.replace(".", "") for line in data[1:]])
+            file.writelines([line.replace(".", "") for line in data[1:]])
 
 
 def teardown_module():
