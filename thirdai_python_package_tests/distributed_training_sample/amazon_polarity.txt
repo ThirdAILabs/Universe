@@ -1,0 +1,32 @@
+job = "Amazon670k Product Recommendation Distributed Training"
+
+[dataset]
+train_data = ["/share/shubh/data/amazon_polarity/svm_train_split_aa","/share/shubh/data/amazon_polarity/svm_train_split_ab"]
+test_data = "/share/shubh/data/amazon_polarity/test_amazon_polarity.txt"
+format = "svm"
+input_dim = 100000
+max_test_batches = 20
+
+[params]
+loss_fn = "CategoricalCrossEntropyLoss"
+train_metrics = []
+test_metrics = ["categorical_accuracy"]
+learning_rate = 0.0001
+epochs = 10
+batch_size = 100000
+rehash = 6400
+rebuild = 128000
+
+[[layers]]
+dim = 1000
+activation = 'ReLU'
+sparsity = 0.005
+use_default_sampling = true
+# hashes_per_table = 5
+# num_tables = 128
+# reservoir_size = 128
+# range_pow = 15
+
+[[layers]]
+dim = 2
+activation = 'Softmax'
