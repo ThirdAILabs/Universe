@@ -324,7 +324,7 @@ class PrecisionAt : public Metric {
     return metric;
   }
 
-  static constexpr const char* name = "hit_ratio_";
+  static constexpr const char* name = "hit_ratio_at_";
 
   std::string getName() final { 
     std::stringstream name_ss;
@@ -333,11 +333,11 @@ class PrecisionAt : public Metric {
   }
 
   static inline bool isPrecisionAtK(const std::string& metric_name) {
-    return metric_name.substr(0, 10) == name;
+    return metric_name.substr(0, 13) == name;
   }
 
   static inline uint32_t getK(const std::string& metric_name) {
-    auto k = metric_name.substr(10);
+    auto k = metric_name.substr(13);
     char* end_ptr;
     return std::strtol(k.data(), &end_ptr, 10);
   }
