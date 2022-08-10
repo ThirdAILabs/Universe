@@ -10,6 +10,8 @@ from typing import Tuple, Any, Optional, Dict, List
 
 
 class DistributedBolt:
+    """Implements all the user level Distributed Bolt APIs to the users.
+    """    
 
     def __init__(
         self,
@@ -17,7 +19,7 @@ class DistributedBolt:
         config_filename: str,
         num_cpus_per_node: Optional[int] = -1,
     ):
-        """Implements all the user level Distributed Bolt APIs to the users.
+        """Initializes the DistributeBolt class.
 
         Args:
             no_of_workers (int): Number of workers to start training on.
@@ -122,15 +124,13 @@ class DistributedBolt:
             return 1
 
     def train(self, circular: Optional[bool] = True) -> None:
-        """
-        Trains the network using the communication type choosen.
-
+        """Trains the network using the communication type choosen.
 
         Args:
-            circular: True, if circular communication is required.
-                    False, if linear communication is required.
-        """
-
+            circular (Optional[bool], optional): True, if circular communication is required.
+                    False, if linear communication is required.. Defaults to True.
+        """        
+              
         if circular:
             self.logging.info("Circular communication pattern is choosen")
             ray.get(
@@ -261,9 +261,11 @@ class DistributedBolt:
                     )
 
     def predict(self):
-        """
-        Calls network.predict() on one of worker on head node and returns the predictions.
-        """
+        """Calls network.predict() on one of worker on head node and returns the predictions.
+
+        Returns:
+            InferenceMetricData: Tuples of metrics and activations 
+        """ 
 
         assert len(self.workers) > 0, "No workers are initialized now."
         return ray.get(self.workers[0].predict.remote())

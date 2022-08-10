@@ -7,45 +7,53 @@ from .Worker import Worker
 
 @ray.remote(max_restarts=2)
 class PrimaryWorker(Worker):
-    """
-    This is a ray remote class(Actor). Read about them here.
-    (https://docs.ray.io/en/latest/ray-core/actors.html)
+    """This is a ray remote class(Actor). Read about them here.
+        (https://docs.ray.io/en/latest/ray-core/actors.html)
 
-    PrimaryWorker is a ray actor which inherits all the function from
-    Worker class. Apart from acting as a Worker, it also extends the worker
-    class to implement functions to control the training. It controls
-    training on each of the node(which batch number to train) and communication
-    between the worker nodes.
+        PrimaryWorker is a ray actor which inherits all the function from
+        Worker class. Apart from acting as a Worker, it also extends the worker
+        class to implement functions to control the training. It controls
+        training on each of the node(which batch number to train) and communication
+        between the worker nodes.
 
-
-    Arguments:
-        layers: List of layer dimensions.
-        config: configuration file
-        workers: number of workers in training
-    """
-
+    Args:
+        Worker(Worker Class): Inherits Worker Class
+    """    
     def __init__(
         self,
-        layers: List,
-        config,
-        no_of_workers,
+        layers: List[int],
+        config: Dict,
+        no_of_workers: int,
     ):
+        """Initializes the Primary Worker Class
+
+        Args:
+            layers (List[int]): List of layer dimensions.
+            config (Dict):  configuration file dictionary
+            no_of_workers (int): number of workers in training
+        """        
         self.layers = layers
         super().__init__(self.layers, config, no_of_workers, 0)
 
-    def add_workers(self, workers: List):
+    def add_workers(self, workers):
+        """Adds the list of workers to the Primary Worker
+
+        Args:
+            workers: Worker List
+        """        
         self.workers = workers
 
     def subwork_circular_communication(self, batch_no: int):
-        """
-        This function first call the workers to compute the gradients on their network
+        """This function first call the workers to compute the gradients on their network
         and then implements Baidu's All Ring All Reduce algorithm for communication.
         Read more about that here:
         https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
 
+        Args:
+            batch_no (int): batch number for the particular worker with worker id (id).
 
-        Arguments:
-            batch_no: batch number for the particular worker with worker id (id).
+        Returns:
+            _type_: _description_
         """
         communication_time = 0
         averaging_gradients_time = 0
@@ -136,15 +144,16 @@ class PrimaryWorker(Worker):
         return gradient_computation_time, communication_time, averaging_gradients_time
 
     def subwork_linear_communication(self, batch_no: int):
-        """
-        This function implements the linear way of communicating between the node.
+        """This function implements the linear way of communicating between the node.
         In this way of communication, each of the worker calculates their gradients,
         send their gradients to the supervisor and the supervisor sums the gradients,
         averages it and and send the gradients back to the workers.
 
+        Args:
+            batch_no (int): batch number for the particular worker with worker id (id).
 
-        Arguments:
-            batch_no: batch number for the particular worker with worker id (id).
+        Returns:
+            _type_: _description_
         """
         start_gradient_computation = time.time()
         ray.get(
@@ -197,40 +206,43 @@ class PrimaryWorker(Worker):
             summing_and_averaging_gradients_time,
         )
 
-    def gradients_avg(self):
-        """
-        This function is called by the workers to get the gradients back from PrimaryWorker.
+    def gradients_avg(self):        
+        """This function is called by the workers to get the gradients back from PrimaryWorker.
         Calling this function returns the averaged gradients which is already calculated
         by the PrimaryWorker.
-        """
+
+        Returns:
+            __type__: returns tuple of weight gradient average and bias gradient average
+        """ 
         return self.w_gradients_avg, self.b_gradients_avg
 
-    def subwork_update_parameters(self, learning_rate: float):
-        """
-
-        This function calls every worker to update their parameters(weight and biases) with the
+    def subwork_update_parameters(self, learning_rate: float) -> bool:
+        """This function calls every worker to update their parameters(weight and biases) with the
         updated gradients(which they receive from the PrimaryWorker)
 
-        Arguments:
-            learning_rate: learning_rate for the training
-        """
+        Args:
+            learning_rate (float): learning_rate for the training
+
+        Returns:
+            bool: Returns True on Completion
+        """ 
         ray.get(
             [worker.update_parameters.remote(learning_rate) for worker in self.workers]
         )
         return True
 
     def check_weights(self):
-        """
-        This is a debug function to see whether the parameters are set accurately or not.
+        """This is a debug function to see whether the parameters are set accurately or not.
         """
         weights_0, biases_0 = ray.get(self.workers[0].return_params.remote())
         weights_1, biases_1 = ray.get(self.workers[1].return_params.remote())
 
     def weights_biases(self):
-        """
+        """This function is called by all the workers(other than worker with id = 0), here
+            all the workers get the same initialized weights and bias as that of worker with id 0
 
-        This function is called by all the workers(other than worker with id = 0), here
-        all the workers get the same initialized weights and bias as that of worker with id 0
+        Returns:
+            __type__: return a list of weight and bias
         """
 
         print("Updating weights & bias parameters across nodes")

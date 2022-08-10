@@ -7,8 +7,7 @@ from .Worker import Worker
 
 @ray.remote(max_restarts=2)
 class ReplicaWorker(Worker):
-    """
-    This is a ray remote class(Actor). Read about them here.
+    """This is a ray remote class(Actor). Read about them here.
     (https://docs.ray.io/en/latest/ray-core/actors.html)
 
     ReplicaWorker is a ray actor which inherits all the function
@@ -16,13 +15,17 @@ class ReplicaWorker(Worker):
     worker and will be reproduced on all the node for parallel
     computations.
 
-
     Args:
-        layers: List of layer dimensions.
-        config: Configuration file for the training
-        no_of_workers: Total number of workers
-        id: Id for this worker
+        Worker (Worker): Inherits the worker Class
     """
 
-    def __init__(self, layers: List, config, no_of_workers, id):
+    def __init__(self, layers: List[int], config: Dict, no_of_workers: int, id: int):
+        """Calls the constructor for Worker
+
+        Args:
+            layers (List[int]): List of layer dimensions.
+            config (Dict):  configuration file dictionary
+            no_of_workers (int): number of workers in training
+            id (int): id of this particular replica worker 
+        """        
         super().__init__(layers, config, no_of_workers, id)
