@@ -45,9 +45,9 @@ class SequentialClassifier {
 
     if (_network == nullptr) {
       // TODO: Autotune because this is hardcoded.
-      uint32_t hidden_layer_size = 500;
-      float hidden_layer_sparsity = 0.2;
-      float output_layer_sparsity = 0.05;
+      uint32_t hidden_layer_size = 1000;
+      float hidden_layer_sparsity = 0.1;
+      float output_layer_sparsity = 0.005;
 
       SequentialConfigList configs = {
         std::make_shared<FullyConnectedLayerConfig>(
