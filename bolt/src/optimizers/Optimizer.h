@@ -83,13 +83,14 @@ class Adam : public Optimizer {
 
 class CompressedAdam : public Optimizer {
  public:
-  CompressedAdam(uint64_t dim, uint64_t prev_dim)
-      : _w_momentum(dim * prev_dim, 0),
-        _w_velocity(dim * prev_dim, 0),
-        _b_momentum(dim, 0),
-        _b_velocity(dim, 0),
+  CompressedAdam(uint64_t dim, uint64_t prev_dim, float compression_factor)
+      : _w_momentum(compression_factor * dim * prev_dim, 0),
+        _w_velocity(compression_factor * dim * prev_dim, 0),
+        _b_momentum(compression_factor * dim, 0),
+        _b_velocity(compression_factor * dim, 0),
         _dim(dim),
-        _prev_dim(prev_dim) {
+        _prev_dim(prev_dim),
+        _compression_factor(compression_factor) {
     reset();
   };
 
@@ -164,6 +165,7 @@ class CompressedAdam : public Optimizer {
 
   uint64_t _dim;
   uint64_t _prev_dim;
+  float _compression_factor;
 };
 
 inline std::unique_ptr<Optimizer> make_optimizer(
@@ -171,7 +173,7 @@ inline std::unique_ptr<Optimizer> make_optimizer(
   if (compression_factor == 1.0) {
     return std::make_unique<Adam>(dim, prev_dim);
   } else {
-    return std::make_unique<CompressedAdam>(dim, prev_dim);
+    return std::make_unique<CompressedAdam>(dim, prev_dim, compression_factor);
   }
 }
 
