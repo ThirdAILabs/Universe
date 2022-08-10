@@ -32,12 +32,13 @@ class TabularClassifier {
     }
     _metadata = processTabularMetadata(filename, column_datatypes);
 
-    _batch_processor = makeTabularBatchProcessor();
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
 
     _classifier->train(
         filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
-            _batch_processor),
+            batch_processor),
         /* epochs = */ epochs,
         /* learning_rate = */ learning_rate);
   }
@@ -49,10 +50,13 @@ class TabularClassifier {
           "Cannot call predict(..) without calling train(..) first.");
     }
 
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
+
     _classifier->predict(
         filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
-            _batch_processor),
+            batch_processor),
         output_filename, _metadata->getClassIdToNames());
   }
 
@@ -77,8 +81,11 @@ class TabularClassifier {
     encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
                             /* value = */ " ");
 
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
+
     BoltVector input;
-    if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
+    if (auto err = batch_processor->makeInputVector(encodable_values, input)) {
       std::rethrow_exception(err);
     }
 
@@ -150,13 +157,12 @@ class TabularClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_input_dim, _n_classes, _batch_processor, _metadata, _classifier);
+    archive(_input_dim, _n_classes, _metadata, _classifier);
   }
 
   uint32_t _input_dim;
   uint32_t _n_classes;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
-  std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
   std::unique_ptr<AutoClassifierBase> _classifier;
 };
 
