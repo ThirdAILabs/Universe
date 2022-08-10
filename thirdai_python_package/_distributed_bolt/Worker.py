@@ -369,6 +369,6 @@ class Worker:
     def predict(self):
         """
         This function calls the predict function(predictSingleNode) to return the
-        prediction from the network manges by this single worker.
+        prediction from the network managed by this single worker.
         """
         return self.model.predict()

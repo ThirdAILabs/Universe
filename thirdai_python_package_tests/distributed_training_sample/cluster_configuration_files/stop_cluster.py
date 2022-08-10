@@ -18,6 +18,7 @@ def stop_cluster(config_yaml_file) -> None:
     """
 
     os.system("ray down " + config_yaml_file)
+    os.system("rm -rf /tmp/ray")
 
 
 if __name__ == "__main__":
