@@ -10,18 +10,6 @@ from typing import Tuple, Any, Optional, Dict, List
 
 
 class DistributedBolt:
-    """
-    Implements all the user level Distributed Bolt APIs to the users.
-
-
-    Arguments:
-        worker_nodes: Number of workers to start training on.
-            This number should be less than equal to the number of nodes(including the head node) training
-            is started.
-        config_filename: The name of the config file which is going to be used for training.
-        num_cpus_per_node: Number of CPUs to be used on a node. Default Value = number of cpus on current
-            node.
-    """
 
     def __init__(
         self,
@@ -29,6 +17,21 @@ class DistributedBolt:
         config_filename: str,
         num_cpus_per_node: Optional[int] = -1,
     ):
+        """Implements all the user level Distributed Bolt APIs to the users.
+
+        Args:
+            no_of_workers (int): Number of workers to start training on.
+            This number should be less than equal to the number of nodes(including the head node) training
+            is started.
+            config_filename (str): The name of the config file which is going to be used for training.
+            num_cpus_per_node (Optional[int], optional): Number of CPUs to be used on a node. Default Value = number of cpus on current
+            node. Defaults to -1.
+
+        Raises:
+            ValueError: Number of Dataset not equal to number of nodes
+            Exception: Ray Cluster not started.
+        """        
+    
 
         self.logging = init_logging("DistributedBolt.log")
         self.logging.info("Training has started!")
@@ -105,8 +108,10 @@ class DistributedBolt:
         self.communication_time = 0
 
     def get_num_cpus(self):
-        """
-            Returns the number of CPUs present on the machine
+        """Returns the number of CPUs present on the machine
+
+        Returns:
+            _type_: None
         """
         try:
             import multiprocessing
