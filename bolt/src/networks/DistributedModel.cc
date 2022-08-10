@@ -36,6 +36,7 @@ uint32_t DistributedModel::initTrainSingleNode(
     std::cout << "Distributed Network initialization done on this Node"
               << std::endl;
   }
+  std::cout<<"number of batches returned from c++ side: "<<train_data->numBatches();
   return train_data->numBatches();
 }
 

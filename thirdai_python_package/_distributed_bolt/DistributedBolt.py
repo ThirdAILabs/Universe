@@ -60,6 +60,9 @@ class DistributedBolt:
         
         self.num_of_batches = min(ray.get([self.workers[i].num_of_batches.remote() for i in range(self.no_of_workers)]))
         
+        list_of_batches=[ray.get([self.workers[i].num_of_batches.remote() for i in range(self.no_of_workers)])]
+        print(list_of_batches)
+
         for i in range(len(self.workers)):
             x = ray.get(self.workers[i].addSupervisor.remote(self.supervisor))
             y = ray.get(self.workers[i].addFriend.remote(self.workers[(i-1)%(len(self.workers))]))
