@@ -20,6 +20,9 @@ uint32_t DistributedModel::prepareNodeForDistributedTraining(
     std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
     const dataset::BoltDatasetPtr& train_labels, uint32_t rehash,
     uint32_t rebuild, bool verbose) {
+  
+  std::cout<<"init network"<<std::endl;
+
   _train_data = train_data;
   _train_labels = train_labels;
   uint32_t batch_size = _train_data->at(0).getBatchSize();
@@ -35,6 +38,7 @@ uint32_t DistributedModel::prepareNodeForDistributedTraining(
     std::cout << "Distributed Network initialization done on this Node"
               << std::endl;
   }
+  std::cout<<"number of batches returned from c++ side: "<<train_data->numBatches()<<std::endl;
   return train_data->numBatches();
 }
 
