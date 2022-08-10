@@ -1,12 +1,10 @@
 
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/NodeUtils.h>
-#include <bolt/src/graph/tests/MockNode.h>
+#include <bolt/src/graph/VectorNorm.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <algorithm>
 #include <memory>
-#include <random>
 
 namespace thirdai::bolt::tests {
 
@@ -26,42 +24,42 @@ std::vector<BoltVector> getDenseVectors() {
 TEST(NodeUtilsTest, ComputeL1Norm) {
   auto vectors = getDenseVectors();
 
-  ASSERT_NEAR(NodeProperties::norm(vectors[0], "l-1"), 0.3,
+  ASSERT_NEAR(VectorNorm::norm(vectors[0], "l-1"), 0.3,
               /* abs_error= */ DELTA);
-  ASSERT_NEAR(NodeProperties::norm(vectors[1], "l-1"), 5.5,
+  ASSERT_NEAR(VectorNorm::norm(vectors[1], "l-1"), 5.5,
               /* abs_error= */ DELTA);
-  ASSERT_NEAR(NodeProperties::norm(vectors[2], "l-1"), 7.0,
+  ASSERT_NEAR(VectorNorm::norm(vectors[2], "l-1"), 7.0,
               /* abs_error= */ DELTA);
 }
 
 TEST(NodeUtilsTest, ComputeL2Norm) {
   auto vectors = getDenseVectors();
 
-  ASSERT_NEAR(NodeProperties::norm(vectors[0], "euclidean"),
-              0.22360680566348107, /* abs_error= */ DELTA);
-  ASSERT_NEAR(NodeProperties::norm(vectors[1], "euclidean"), 3.640054944640259,
+  ASSERT_NEAR(VectorNorm::norm(vectors[0], "euclidean"), 0.22360680566348107,
               /* abs_error= */ DELTA);
-  ASSERT_NEAR(NodeProperties::norm(vectors[2], "euclidean"), 5.0,
+  ASSERT_NEAR(VectorNorm::norm(vectors[1], "euclidean"), 3.640054944640259,
+              /* abs_error= */ DELTA);
+  ASSERT_NEAR(VectorNorm::norm(vectors[2], "euclidean"), 5.0,
               /* abs_error= */ DELTA);
 }
 
 TEST(NodeUtilsTest, ComputeLInfinityNorm) {
   auto vectors = getDenseVectors();
 
-  ASSERT_NEAR(NodeProperties::norm(vectors[0], "l-infinity"), 0.2,
+  ASSERT_NEAR(VectorNorm::norm(vectors[0], "l-infinity"), 0.2,
               /* abs_error= */ DELTA);
-  ASSERT_NEAR(NodeProperties::norm(vectors[1], "l-infinity"), 3.0,
+  ASSERT_NEAR(VectorNorm::norm(vectors[1], "l-infinity"), 3.0,
               /* abs_error= */ DELTA);
-  ASSERT_NEAR(NodeProperties::norm(vectors[2], "l-infinity"), 4.0,
+  ASSERT_NEAR(VectorNorm::norm(vectors[2], "l-infinity"), 4.0,
               /* abs_error= */ DELTA);
 }
 
 TEST(NodeUtilsTest, ComputeNormDifference) {
   auto dense_vectors = getDenseVectors();
 
-  auto l1_norm_value = NodeProperties::norm<true, true>(
-      dense_vectors[0], dense_vectors[2], "l-1");
-  auto l2_norm_value = NodeProperties::norm<true, true>(
+  auto l1_norm_value =
+      VectorNorm::norm<true, true>(dense_vectors[0], dense_vectors[2], "l-1");
+  auto l2_norm_value = VectorNorm::norm<true, true>(
       dense_vectors[0], dense_vectors[2], "euclidean");
 
   ASSERT_NEAR(l1_norm_value, 6.700, /* abs_error= */ DELTA);

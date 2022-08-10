@@ -46,7 +46,7 @@ static LPNorm getNorm(const std::string& norm_order) {
                               "l-1, euclidean norm and l-infinity.");
 }
 
-class NodeProperties {
+class VectorNorm {
  public:
   static double norm(const BoltVector& bolt_vector,
                      const std::string& norm_order) {
@@ -66,7 +66,7 @@ class NodeProperties {
                      const std::string& norm_order) {
     if (first_vector.len != second_vector.len) {
       throw std::invalid_argument(
-          "Invalid arguments for the call to NodeProperties::norm. BoltVectors "
+          "Invalid arguments for the call to VectorNorm::norm. BoltVectors "
           "have different lengths. The first vector has length " +
           std::to_string(first_vector.len) +
           " while the second vector has length " +
@@ -74,7 +74,7 @@ class NodeProperties {
     }
     if (!(FIRST_DENSE && SECOND_DENSE)) {
       throw std::invalid_argument(
-          "Invalid arguments for the call to NodeProperties::norm. Computing "
+          "Invalid arguments for the call to VectorNorm::norm. Computing "
           "the norm of the difference between two non-dense"
           " vectors is currently not supported.");
     }
@@ -93,7 +93,7 @@ class NodeProperties {
   }
 
  private:
-  NodeProperties() {}
+  VectorNorm() {}
 
   static double computeNorm(const float* activations, uint32_t len,
                             LPNorm norm) {
@@ -102,8 +102,6 @@ class NodeProperties {
       case LPNorm::L1: {
         for (uint32_t activation_index = 0; activation_index < len;
              activation_index++) {
-          std::cout << "activation= " << activations[activation_index]
-                    << std::endl;
           accumulator += fabs(activations[activation_index]);
         }
         return accumulator;
