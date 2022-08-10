@@ -1,6 +1,6 @@
 
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/VectorNorm.h>
+#include <bolt/src/utils/VectorNorm.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <algorithm>
