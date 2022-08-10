@@ -43,7 +43,7 @@ static LPNorm getNorm(const std::string& norm_order) {
   }
   throw std::invalid_argument("" + norm_order +
                               " is not a valid Norm. Valid LP norms include "
-                              "L-1 norm, Euclidean norm and L-infinity norm.");
+                              "l-1, euclidean norm and l-infinity.");
 }
 
 class NodeProperties {
