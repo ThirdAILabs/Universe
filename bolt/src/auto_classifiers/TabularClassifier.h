@@ -59,10 +59,11 @@ class TabularClassifier {
   std::string predictSingle(std::vector<std::string>& original_values) {
     std::vector<std::string_view> encodable_values;
     for (uint32_t col = 0; col < original_values.size(); col++) {
-      // if (col == _metadata->getLabelCol()) {
-      //   //
-      //   encodable_values.push_back(" ");
-      // }
+      if (col == _metadata->getLabelCol()) {
+        // the batch processor fails if the number of columns mismatches
+        // we add some bogus here in the label's column for that reason
+        encodable_values.push_back(" ");
+      }
       encodable_values.push_back(std::string_view(original_values[col]));
     }
 
