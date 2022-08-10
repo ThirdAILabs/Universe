@@ -82,6 +82,11 @@ class BoltGraph {
                     const dataset::BoltTokenDatasetPtr& input_tokens,
                     bool explain_prediction,
                     const std::vector<uint32_t>& neurons_to_explain);
+
+  std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
+  getInputGradientSingle(std::vector<BoltVector>&& input_data,
+                         bool explain_prediction, uint32_t neuron_to_explain);
+
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            std::vector<std::vector<uint32_t>>&& test_tokens,
                            bool use_sparse_inference);
@@ -159,6 +164,10 @@ class BoltGraph {
                                   uint32_t required_labels_size,
                                   uint32_t input_data_len, bool best_index,
                                   uint32_t num_output_nonzeros);
+
+  void verifyCanGetInputGradientSingle(
+      const DatasetContextBase& single_input_gradients_context, bool best_index,
+      uint32_t num_output_nonzeros);
 
   void verifyCanPredict(const DatasetContextBase& predict_context,
                         bool has_labels, bool returning_activations,

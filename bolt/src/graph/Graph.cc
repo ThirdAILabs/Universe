@@ -208,6 +208,52 @@ BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
   return label_vector;
 }
 
+std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
+BoltGraph::getInputGradientSingle(std::vector<BoltVector>&& input_data,
+                                  bool explain_prediction,
+                                  uint32_t neuron_to_explain) {
+  SingleUnitDatasetContext single_input_gradients_context(std::move(input_data),
+                                                          {});
+
+  verifyCanGetInputGradientSingle(single_input_gradients_context,
+                                  explain_prediction,
+                                  _output->numNonzerosInOutput());
+
+  prepareToProcessBatches(1, /* use_sparsity=*/true);
+
+  try {
+    single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs,
+                                             _token_inputs);
+    std::vector<float> vec_grad(_inputs[0]->getOutputVector(0).len, 0.0);
+    _inputs[0]->getOutputVector(0).gradients = vec_grad.data();
+    std::vector<uint32_t> input_dataset_indices;
+    BoltVector label_vector;
+    if (neuron_to_explain == -1) {
+      label_vector = getLabelVectorExplainPrediction(0, explain_prediction);
+    } else {
+      label_vector = getLabelVectorNeuronsToExplain(neuron_to_explain, 0);
+    }
+    if (!_inputs[0]->getOutputVector(0).isDense()) {
+      input_dataset_indices.assign(
+          _inputs[0]->getOutputVector(0).active_neurons,
+          _inputs[0]->getOutputVector(0).active_neurons +
+              _inputs[0]->getOutputVector(0).len);
+    }
+    _loss->lossGradients(_output->getOutputVector(0), label_vector, 1);
+    backpropagate(0);
+    _inputs[0]->getOutputVector(0).gradients = nullptr;
+    cleanupAfterBatchProcessing();
+
+    if (input_dataset_indices.empty()) {
+      return std::make_pair(std::nullopt, vec_grad);
+    }
+    return std::make_pair(input_dataset_indices, vec_grad);
+  } catch (const std::exception& e) {
+    cleanupAfterBatchProcessing();
+    throw;
+  }
+}
+
 // TODO (YASH) : ( Extend this getInputGradients for multiple inputs.)
 std::pair<std::optional<std::vector<std::vector<uint32_t>>>,
           std::vector<std::vector<float>>>
@@ -575,6 +621,21 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
   }
 
   verifyInputForGraph(train_context);
+}
+
+void BoltGraph::verifyCanGetInputGradientSingle(
+    const DatasetContextBase& single_input_gradients_context, bool best_index,
+    uint32_t num_output_nonzeros) {
+  if (!graphCompiled()) {
+    throw std::logic_error(
+        "Graph must be compiled before getting input gradients");
+  }
+  if (!best_index && num_output_nonzeros < 2) {
+    throw std::invalid_argument(
+        "The sparse output dimension should be atleast 2 to call "
+        "getSecondHighestActivationId.");
+  }
+  verifyInputForGraph(single_input_gradients_context);
 }
 
 void BoltGraph::verifyCanGetInputGradients(
