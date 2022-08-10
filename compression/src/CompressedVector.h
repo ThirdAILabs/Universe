@@ -59,17 +59,17 @@ class BiasedSketch final : public CompressedVector<ELEMENT_TYPE> {
                uint64_t block_size = kDefaultBlockSize,
                uint32_t seed = kDefaultSeed);
 
-  ELEMENT_TYPE operator[](uint64_t index) { return get(index); }
+  ELEMENT_TYPE operator[](uint64_t index) final { return get(index); }
 
   // non-const accessor.
-  ELEMENT_TYPE get(uint64_t i) const;
+  ELEMENT_TYPE get(uint64_t i) const final;
 
   // Set a value at an index.
-  void set(uint64_t i, ELEMENT_TYPE value);
+  void set(uint64_t i, ELEMENT_TYPE value) final;
 
-  void assign(uint64_t size, ELEMENT_TYPE value);
+  void assign(uint64_t size, ELEMENT_TYPE value) final;
 
-  void clear();
+  void clear() final;
 
  private:
   std::vector<ELEMENT_TYPE> _physical_vector;  // Underlying vector which stores
@@ -105,25 +105,17 @@ class UnbiasedSketch final : public CompressedVector<ELEMENT_TYPE> {
                  uint64_t block_size = kDefaultBlockSize,
                  uint32_t seed = kDefaultSeed);
 
-  // Add a non-compressed vector to this UnbiasedSketch.
-  UnbiasedSketch operator+(const std::vector<ELEMENT_TYPE>& input) const;
-  UnbiasedSketch& operator+=(const std::vector<ELEMENT_TYPE>& input);
-
-  // Add two compressed vectors.
-  UnbiasedSketch operator+(const UnbiasedSketch& input) const;
-  UnbiasedSketch& operator+=(const UnbiasedSketch& input);
-
-  ELEMENT_TYPE operator[](uint64_t index) { return get(index); }
+  ELEMENT_TYPE operator[](uint64_t index) final { return get(index); }
 
   // non-const accessor.
-  ELEMENT_TYPE get(uint64_t i) const;
+  ELEMENT_TYPE get(uint64_t i) const final;
 
   // Set a value at an index.
-  void set(uint64_t i, ELEMENT_TYPE value);
+  void set(uint64_t i, ELEMENT_TYPE value) final;
 
-  void assign(uint64_t size, ELEMENT_TYPE value);
+  void assign(uint64_t size, ELEMENT_TYPE value) final;
 
-  void clear();
+  void clear() final;
 
  private:
   std::vector<ELEMENT_TYPE> _physical_vector;  // Underlying vector which stores
