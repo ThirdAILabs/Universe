@@ -57,8 +57,16 @@ class TabularClassifier {
   }
 
   std::string predictSingle(std::vector<std::string>& values) {
+    if (values.size() != _metadata->numColumns() - 1) {
+      throw std::invalid_argument(
+          "Passed in an input of size " + std::to_string(values.size()) +
+          " but needed a vector of size " + _metadata->numColumns() - 1 +
+          ". predict_single expects a vector of values in the same format as "
+          "the original csv but without the label present.")
+    }
+
     std::vector<std::string_view> encodable_values;
-    for (uint32_t col = 0; col < original_values.size(); col++) {
+    for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
       if (col == _metadata->getLabelCol()) {
         // the batch processor fails if the number of columns mismatches
         // we add some bogus here in the label's column for that reason
