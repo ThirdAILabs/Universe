@@ -1,6 +1,6 @@
 from typing import Dict, List
 from thirdai._thirdai import bolt, dataset
-from .utils import create_fully_connected_layer_configs, load_dataset
+from .utils import Utils
 
 
 class Model:
@@ -25,14 +25,14 @@ class Model:
         self.layers = layers
 
         # getting training and testing data
-        data = load_dataset(config, total_nodes, id)
+        data = Utils.load_dataset(config, total_nodes, id)
         if data is None:
             raise ValueError("Unable to load a dataset. Please check the config")
 
         self.train_data, self.train_label, self.test_data, self.test_label = data
 
         # initializing Distributed Network
-        self.bolt_layers = create_fully_connected_layer_configs(config["layers"])
+        self.bolt_layers = Utils.create_fully_connected_layer_configs(config["layers"])
         self.input_dim = config["dataset"]["input_dim"]
         self.network = bolt.DistributedNetwork(
             layers=self.bolt_layers, input_dim=self.input_dim

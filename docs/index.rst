@@ -13,7 +13,7 @@ To get access to our package, refer to `thirdai.com
 contain complete documentation for each of the submodules within thirdai.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    thirdaisearch
    thirdaibolt
