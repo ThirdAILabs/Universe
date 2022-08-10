@@ -49,7 +49,7 @@ def create_fully_connected_layer_configs(
     """
     Returns Bolt's Fully Connected Network
 
-    Arguments: 
+    Arguments:
         configs: Configuration file for training
     """
     layers = []

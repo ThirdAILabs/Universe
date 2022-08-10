@@ -1,22 +1,27 @@
+from typing import Dict, List
 from thirdai._thirdai import bolt, dataset
 from .utils import create_fully_connected_layer_configs, load_dataset
 
 
 class Model:
-    """
-    This class implements the APIs to create, train and predict on a network
+    """This class implements the APIs to create, train and predict on a network
     which workers are running. Currently, It only supports FullyConnectedNetwork.
-    However, It could easily be extended to other models too.
-
-
-    Arguments:
-        config: Configuration File for the network
-        total_nodes: Total number of workers
-        layers: array containing dimensions for each layer
-        id: Model Id.
+    However, It could easily be extended to other models too. The functions
+    defined here run on each of the node while distributing.
     """
 
-    def __init__(self, config, total_nodes, layers, id):
+    def __init__(self, config: Dict, total_nodes: int, layers: List[int], id: int):
+        """Initailizes Model
+
+        Args:
+            config (Dict): Configuration File for the network
+            total_nodes (int): Total number of workers
+            layers (List[int]): array containing dimensions for each layer
+            id (int): Model Id
+
+        Raises:
+            ValueError: Loading Dataset
+        """
         self.layers = layers
 
         # getting training and testing data
@@ -54,20 +59,23 @@ class Model:
             verbose=False,
         )
 
-    def calculate_gradients(self, batch_no):
-        """
-        This function trains the network and calculate gradients for the
-        network of the model for the batch id, batch_no
+        self.test_metrics = config["params"]["test_metrics"]
 
+    def calculate_gradients(self, batch_no: int):
+        """This function trains the network and calculate gradients for the
+            network of the model for the batch id, batch_no
 
-        Arguments:
-            batch_no: batch number of data to train the model
+        Args:
+            batch_no (int): This function trains the network and calculate gradients for the
+                network of the model for the batch id, batch_no
         """
         self.network.calculateGradientSingleNode(batch_no, self.loss)
 
     def get_calculated_gradients(self):
-        """
-        This function returns the gradients from the network.
+        """Returns the calculated gradients.
+
+        Returns:
+            _type_: tuple of weight and bias gradients.
         """
         w_gradients = []
         b_gradients = []
@@ -79,22 +87,22 @@ class Model:
         return (w_gradients, b_gradients)
 
     def set_gradients(self, w_gradients, b_gradients):
-        """
-        This function set the gradient in the current network with the updated
-        gradients provided.
+        """This function set the gradient in the current network with the updated
+            gradients provided.
 
-
-        Arguments:
-            w_gradients: weight gradients to update the network with
-            b_gradients: bias gradients to update the network with
+        Args:
+            w_gradients __type__: weight gradients to update the network with
+            b_gradients __type__: bias gradients to update the network with
         """
         for layer in range(len(w_gradients)):
             self.network.set_weights_gradients(layer, w_gradients[layer])
             self.network.set_biases_gradients(layer, b_gradients[layer])
 
     def get_parameters(self):
-        """
-        This function returns the weight and bias parameters from the network
+        """This function returns the weight and bias parameters from the network
+
+        Returns:
+            __type__: returns a tuple of weight and bias parameters
         """
         weights = []
         biases = []
@@ -106,12 +114,10 @@ class Model:
         return weights, biases
 
     def set_parameters(self, weights, biases):
-        """
-        This function set the weight and bias parameter in the current network with
-        the updated weights provided.
+        """This function set the weight and bias parameter in the current network with
+            the updated weights provided.
 
-
-        Arguments:
+        Args:
             weights: weights parameter to update the network with
             biases: bias parameter to update the gradient with
         """
@@ -119,33 +125,34 @@ class Model:
             self.network.set_weights(layer, weights[layer])
             self.network.set_biases(layer, biases[layer])
 
-    def update_parameters(self, learning_rate):
-        """
-        This function update the network parameters using the gradients stored and
-        learning rate provided.
+    def update_parameters(self, learning_rate: float):
+        """This function update the network parameters using the gradients stored and
+            learning rate provided.
 
-
-        Argument:
-            learning_rate: Learning Rate for the network
+        Args:
+            learning_rate (float): Learning Rate for the network
         """
         self.network.updateParametersSingleNode(learning_rate)
 
-    def num_of_batches(self):
-        """
-        return the number of training batches present for this particular network
-        """
+    def num_of_batches(self) -> int:
+        """return the number of training batches present for this particular network
 
+        Returns:
+            int: number of batches
+        """
         return self.num_of_training_batches
 
     def predict(self):
-        """
-        return the prediction for this particular network
+        """return the prediction for this particular network
+
+        Returns:
+            InferenceMetricData: tuple of matric and activations
         """
         acc = self.network.predictSingleNode(
             self.test_data,
             self.test_label,
             False,
-            ["categorical_accuracy"],
+            self.test_metrics,
             verbose=False,
         )
         return acc

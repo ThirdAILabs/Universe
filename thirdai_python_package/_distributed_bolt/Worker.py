@@ -5,23 +5,24 @@ from .Model import Model
 
 
 class Worker:
-    """
-    This is a ray remote class(Actor). Read about them here.
+    """This is a ray remote class(Actor). Read about them here.
     (https://docs.ray.io/en/latest/ray-core/actors.html)
 
     Worker is a ray actor which implements all the lower level
     functionalities between the Distributed Bolt APIs and
     Bolt native code.
 
-
-    Args:
-        layers: List of layer dimensions
-        config: configuration file for setting up the network
-        total_nodes: total number of nodes
-        id: id of this particular worker
     """
 
-    def __init__(self, layers: List, config, total_nodes: int, id: int):
+    def __init__(self, layers: List, config: Dict, total_nodes: int, id: int):
+        """Initializes the model to run
+
+        Args:
+            layers (List): List of layer dimensions
+            config (Dict): configuration file for setting up the network
+            total_nodes (int): total number of nodes
+            id (int): id of this particular worker
+        """
 
         # Setting up Model
         self.model = Model(config, total_nodes, layers, id)
@@ -32,32 +33,26 @@ class Worker:
         self.id = id
 
     def add_head_worker(self, head_worker):
-        """
-        This function assigns each of the worker their head_worker
+        """This function assigns each of the worker their head_worker
 
-
-        Arguments:
-            head_worker = storing the head worker for this worker  
+        Args:
+            head_worker (_type_): storing the head worker for this worker
         """
         self.head_worker = head_worker
 
     def add_friend(self, friend):
-        """
-        This function is only needed for circular way of communication.
+        """This function is only needed for circular way of communication.
         This function assigns each of the worker their friend to which
         they will be communicating their gradients. Look at this link:
         https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/
 
-
-        Arguments:
-            friend: storing the friend for this worker
+        Args:
+            friend (_type_): storing the friend for this worker
         """
         self.friend = friend
 
     def calculate_gradients_circular(self, batch_no: int):
-        """
-
-        This function is called only when the mode of
+        """This function is called only when the mode of
         communication is circular.
 
 
@@ -72,9 +67,11 @@ class Worker:
         size of block of gradients which are communicated between a worker
         and its friend.
 
-
         Args:
-            batch_no: training batch to calculate gradients on.
+            batch_no (int): training batch to calculate gradients on.
+
+        Returns:
+            _type_: _description_
         """
         start_calculate_grdient_time = time.time()
         self.model.calculate_gradients(batch_no)
@@ -96,8 +93,7 @@ class Worker:
         return calculate_gradient_time, receive_gradients_time
 
     def calculate_gradients_linear(self, batch_no: int):
-        """
-        This function is called only when the mode of communication is
+        """This function is called only when the mode of communication is
         linear.
 
         This functions calls the API 'calculateGradientSingleNode',
@@ -107,67 +103,75 @@ class Worker:
         training batch with batch no. batch_no and with loss function
         specified in the config.
 
-
         Args:
-            batch_no: training batch to calculate gradients on.
+            batch_no (int): training batch to calculate gradients on.
+
+        Returns:
+            _type_: _description_
         """
         self.model.calculate_gradients(batch_no)
         return True
 
     def get_calculated_gradients(self):
-        """
-        This function is called only when the mode of communication
+        """This function is called only when the mode of communication
         is Linear.
 
         This function is called by the head_worker to compute the
         averages of the calculated gradients. This functions
         calls 'get_weights_gradient' and 'get_biases_gradients' functions
         inside bolt to take the gradients and return them to head_worker.
+
+        Returns:
+            _type_: _description_
         """
         return self.model.get_calculated_gradients()
 
     def return_params(self):
-        """
-
-        This function will only be called for worker having its id 0.
+        """This function will only be called for worker having its id 0.
         The head_worker will call this function to get the initial random
         weights from worker with id 0 and then send those weights to all
         the workers.
+
+        Returns:
+            _type_: _description_
         """
         return self.model.get_parameters()
 
-    def receive_params(self):
-        """
-
-        This function is called by head_worker to all the workers whose id
+    def receive_params(self) -> bool:
+        """This function is called by head_worker to all the workers whose id
         is not equal to 0. This function gets the initialized random weight
         ans biases from worker with id = 0. and sets the weight on all
         the other workers.
+
+        Returns:
+            bool: returns True, after functions complete
         """
         weights, biases = ray.get(self.head_worker.weights_biases.remote())
         self.model.set_parameters(weights, biases)
         return True
 
-    def receive_gradients_circular_communication(self):
-        """
-
-        This function is called only when the communication pattern choosen
+    def receive_gradients_circular_communication(self) -> bool:
+        """This function is called only when the communication pattern choosen
         is circular.
 
         This function is called by the head_worker to make set the updated
         gradients to the network.
+
+        Returns:
+            bool: returns True, after functions complete
         """
         self.model.set_gradients(self.w_gradients, self.b_gradients)
         return True
 
-    def receive_gradients_linear_communication(self):
-        """
-
-        This function is called only when the communication pattern choosen
+    def receive_gradients_linear_communication(self) -> bool:
+        """This function is called only when the communication pattern choosen
         is linear.
 
         This function is called by the head_worker to first, get the updated gradients
         from the head_worker and then set those updated gradients to the network.
+
+        Returns:
+            bool: returns True, after functions complete
         """
 
         self.w_gradients, self.b_gradients = ray.get(
@@ -177,21 +181,19 @@ class Worker:
         return True
 
     def calculate_partitions(
-        self,
-        partition_length: int,
-        partition_id: int,
-        total_length: int,
+        self, partition_length: int, partition_id: int, total_length: int
     ):
-        """
-        This function returns the partitions for the work to work on,
-        during the circular communication. 
+        """This function returns the partitions for the work to work on,
+        during the circular communication.
 
-
-        Arguments:
-            partition_length: length of partition to return
-            partition_id: the partition id, which needed to be worked on
-            total_length: length of the array to be transferred using 
+        Args:
+            partition_length (int): length of partition to return
+            partition_id (int): the partition id, which needed to be worked on
+            total_length (int): length of the array to be transferred using
                 circular communication
+
+        Returns:
+            Tuple[int,int]: Left Index and Right Index for a tuple
         """
         l_idx = partition_length * partition_id
         r_idx = partition_length * (partition_id + 1)
@@ -205,9 +207,7 @@ class Worker:
         reduce: Optional[bool] = True,
         avg_gradients: Optional[bool] = False,
     ):
-        """
-
-        This function contains the main code for the circular ring communication
+        """This function contains the main code for the circular ring communication
         pattern.
 
         The function first calculates the partition index range on which it will
@@ -218,14 +218,14 @@ class Worker:
         their friend nodes, and those friend node communicate with their friends
         and the communication there by happens in a circle.
 
-
         Args:
-            update_id: This id is use to calculate the partition to work on.
-            reduce: This bool determines whether we need to reduce or gather
-                True: redue, Flase: Gather
-            avg_gradients: This bool determines whether we will average the
-                gradients, or not. True: do averaging(i.e., divide by total_nodes),
-                False: Do nothing
+            update_id (int): This id is use to calculate the partition to work on.
+            reduce (Optional[bool], optional): This bool determines whether we need
+            to reduce or gather, True: reduce, False: Gather. Defaults to True.
+            avg_gradients (Optional[bool], optional): _description_. Defaults to False.
+
+        Returns:
+            _type_: _description_
         """
         python_computation_time = 0
         communication_time = 0
@@ -299,15 +299,16 @@ class Worker:
         return python_computation_time, communication_time
 
     def receive_array_partitions(self, update_id: int):
-        """
-        This function will only be get called for circular ring communication
+        """This function will only be get called for circular ring communication
         pattern.
 
         This function returns the array partition to the worker it is called by.
 
-
         Args:
-            update_id: This id is use to calculate the partition to work on.
+            update_id (int): This id is use to calculate the partition to work on.
+
+        Returns:
+            _type_: _description_
         """
         t1 = time.time()
         python_computation_time = 0
@@ -348,27 +349,35 @@ class Worker:
         python_computation_time += time.time() - t1
         return w_gradient_subarray, b_gradient_subarray, python_computation_time
 
-    def update_parameters(self, learning_rate: float):
-        """
-        This function calls updateParameter function inside bolt, which
+    def update_parameters(self, learning_rate: float) -> bool:
+        """This function calls updateParameter function inside bolt, which
         inherently updates the entire network.
 
-
         Args:
-            learning_rate: the learning rate for updating the parameters
+            learning_rate (float): the learning rate for updating the parameters
+
+        Returns:
+            bool: Returns true if function completes successfully
         """
         self.model.update_parameters(learning_rate)
         return True
 
-    def num_of_batches(self):
+    def num_of_batches(self) -> int:
+        """This function returns the total number of batches the workers have.
+
+        Returns:
+            int: number of batches for training on this node
+        """
         """
         This function returns the total number of batches the workers have.
         """
         return self.model.num_of_batches()
 
     def predict(self):
-        """
-        This function calls the predict function(predictSingleNode) to return the
-        prediction from the network managed by this single worker.
+        """This function calls the predict function(predictSingleNode) to return the
+        prediction from the network manges by this single worker.
+
+        Returns:
+            InferenceMetricData: Tuples for activations and metrics
         """
         return self.model.predict()
