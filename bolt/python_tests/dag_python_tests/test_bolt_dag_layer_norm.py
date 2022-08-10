@@ -60,4 +60,5 @@ def test_normalize_layer_activations():
         test_data=train_data, test_labels=train_labels, predict_config=predict_config
     )
 
+    print("categorical_acc = {}\n".format(metrics[0]["categorical_accuracy"]))
     assert metrics[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD

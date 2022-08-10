@@ -128,18 +128,17 @@ class LayerNormNode final : public Node,
   // For activation x, the normalization is given by
   // f(x) = [(x - mu)/(sigma + epsilon)] * gamma + beta
   // For a layer with n activations, the partial derivative is expressed by
-  // gamma * (n-1) * [(n*sigma^2) - [(x-mu)^2]] / (n^2* sigma^3)
+  // ((n-1)/n)(gamma/sigma^2) * [[n*sigma - (x-mu)] / n]
   float normDerivative(float activation, float mean, float variance,
                        uint32_t vec_length) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
 
-    float centered_activation = (activation - mean) * (activation - mean);
-    auto denominator = (vec_length * vec_length) * variance * sqrt(variance);
+    float centered_activation = activation - mean;
+    auto denominator = vec_length * vec_length * variance;
 
-    auto gradient =
-        ((vec_length - 1) * (variance * vec_length - centered_activation)) /
-        (denominator + _config->epsilon());
-    gradient *= _config->gamma();
+    auto gradient = (vec_length - 1) * _config->gamma() *
+                    (vec_length * sqrt(variance) - centered_activation);
+    gradient /= (denominator + _config->epsilon());
 
     return gradient;
   }
@@ -154,13 +153,24 @@ class LayerNormNode final : public Node,
 
     for (uint32_t neuron_index = 0; neuron_index < input_vector.len;
          neuron_index++) {
-      auto output_vector_activation = output_vector.activations[neuron_index];
-      float grad =
-          normDerivative(output_vector_activation, mean, variance, len);
+      // auto output_vector_activation =
+      // output_vector.activations[neuron_index];
+      float grad = normDerivative(output_vector.activations[neuron_index], mean,
+                                  variance, len);
 
       assert(!std::isnan(grad));
-      output_vector.gradients[neuron_index] = grad;
-      input_vector.gradients[neuron_index] += grad;
+      // if (neuron_index == 0 && vec_index == 0) {
+      // std::cout << "gradient = " << output_vector.gradients[neuron_index]
+      //             << std::endl;
+      // }
+
+      output_vector.gradients[neuron_index] *= grad;
+      //std::cout << "computed grad = " << grad << std::endl;
+      if (output_vector.gradients[neuron_index] == 0) {
+        continue;
+      }
+      input_vector.gradients[neuron_index] = grad;
+          //output_vector.gradients[neuron_index];
     }
   }
 
