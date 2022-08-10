@@ -25,9 +25,12 @@
 
 namespace thirdai::bolt {
 
+class DistributedTrainingContext;
 using GraphCallback = std::function<void()>;
 
 class BoltGraph {
+  friend class DistributedTrainingContext;
+
  public:
   /*
     The graph is constructed with a list of input layers, the order of these
@@ -76,6 +79,10 @@ class BoltGraph {
       const dataset::BoltDatasetPtr& test_labels,
       const PredictConfig& predict_config);
 
+  BoltVector predictSingle(std::vector<BoltVector>&& test_data,
+                           std::vector<std::vector<uint32_t>>&& test_tokens,
+                           bool use_sparse_inference);
+
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
     nodes.insert(nodes.end(), _inputs.begin(), _inputs.end());
@@ -110,11 +117,16 @@ class BoltGraph {
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
 
-  void processTrainingBatch(const BoltBatch& batch_labels, float learning_rate,
+  void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
 
   void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
+
+  void processOutputCallback(
+      const std::optional<std::function<void(const BoltVector&)>>&
+          output_callback,
+      uint32_t batch_size);
 
   // Computes the forward pass through the graph.
   void forward(uint32_t vec_index, const BoltVector* labels);
@@ -128,22 +140,30 @@ class BoltGraph {
 
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
+  void updateParametersAndSampling(float learning_rate,
+                                   uint32_t rebuild_hash_tables_batch,
+                                   uint32_t reconstruct_hash_functions_batch);
+
   void traverseGraph();
 
   std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
 
   void verifyCanTrain(const DatasetContext& train_context);
 
-  void verifyCanPredict(const DatasetContext& predict_context, bool has_labels,
-                        bool returning_activations,
+  void verifyCanPredict(const DatasetContextBase& predict_context,
+                        bool has_labels, bool returning_activations,
                         uint32_t num_metrics_tracked);
 
-  void verifyInputForGraph(const DatasetContext& context);
+  void verifyInputForGraph(const DatasetContextBase& context);
 
   void verifyGraphProperties();
 
   void updateSampling(uint32_t rebuild_hash_tables_batch,
                       uint32_t reconstruct_hash_functions_batch);
+
+  // This function make sure that the parameter updates are dense
+  // in distributed setting even when the training is sparse
+  void enableDistributedTraining();
 
   constexpr bool checkBatchInterval(uint32_t num_batches) const {
     return (_batch_cnt % num_batches) == (num_batches - 1);

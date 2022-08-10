@@ -1,3 +1,4 @@
+#include "AutoClassifierTestUtils.h"
 #include <bolt/src/auto_classifiers/TabularClassifier.h>
 #include <gtest/gtest.h>
 
@@ -7,17 +8,7 @@ const std::string TEMP_FILENAME = "tempTabularFile.csv";
 
 class TabularClassifierTestFixture : public testing::Test {
  public:
-  void SetUp() override {}
-
   void TearDown() override { std::remove(TEMP_FILENAME.c_str()); }
-
-  void static setTempFileContents(std::vector<std::string>& lines) {
-    std::ofstream file = dataset::SafeFileIO::ofstream(TEMP_FILENAME);
-    for (const auto& line : lines) {
-      file << line << "\n";
-    }
-    file.close();
-  }
 };
 
 /**
@@ -25,13 +16,16 @@ class TabularClassifierTestFixture : public testing::Test {
  */
 TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 1);
+      std::make_shared<TabularClassifier>("small", /* n_classes = */ 1);
 
-  std::vector<std::string> contents = {"value1,label1", "value3,label2"};
-  setTempFileContents(contents);
+  std::vector<std::string> contents = {"colname1,colname2", "value1,label1",
+                                       "value3,label2"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, contents);
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      tab_model->predict(TEMP_FILENAME, std::nullopt), std::invalid_argument);
+      tab_model->predict(/* filename = */ TEMP_FILENAME,
+                         /* output_filename = */ std::nullopt),
+      std::invalid_argument);
 }
 
 /**
@@ -40,12 +34,14 @@ TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
  */
 TEST_F(TabularClassifierTestFixture, TestProvidedColumnsMatchCsvColumns) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 1);
-  std::vector<std::string> contents = {"value1,label1", "value3,label2"};
-  setTempFileContents(contents);
+      std::make_shared<TabularClassifier>("small", /* n_classes = */ 1);
+  std::vector<std::string> contents = {"colname1,colname2", "value1,label1",
+                                       "value3,label2"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, contents);
   std::vector<std::string> column_datatypes = {"label"};
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 1,
+                       /* learning_rate = */ 0.01),
       std::invalid_argument);
 }
 
@@ -55,16 +51,21 @@ TEST_F(TabularClassifierTestFixture, TestProvidedColumnsMatchCsvColumns) {
  */
 TEST_F(TabularClassifierTestFixture, TestTrainVSTestColumns) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 2);
-  std::vector<std::string> train_contents = {"value1,label1", "value3,label2"};
-  setTempFileContents(train_contents);
+      std::make_shared<TabularClassifier>("small", /* n_classes = */ 2);
+  std::vector<std::string> train_contents = {"colname1,colname2",
+                                             "value1,label1", "value3,label2"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, train_contents);
   std::vector<std::string> column_datatypes = {"categorical", "label"};
-  tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01);
+  tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 1,
+                   /* learning_rate = */ 0.01);
 
-  std::vector<std::string> test_contents2 = {"value1", "value3,label2"};
-  setTempFileContents(test_contents2);
+  std::vector<std::string> test_contents = {"colname1,colname2", "value1",
+                                            "value3,label2"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, test_contents);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      tab_model->predict(TEMP_FILENAME, std::nullopt), std::invalid_argument);
+      tab_model->predict(/* filename = */ TEMP_FILENAME,
+                         /* output_filename = */ std::nullopt),
+      std::invalid_argument);
 }
 
 /**
@@ -73,12 +74,14 @@ TEST_F(TabularClassifierTestFixture, TestTrainVSTestColumns) {
  */
 TEST_F(TabularClassifierTestFixture, TestIncorrectNumericColumn) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 1);
-  std::vector<std::string> contents = {"value1,label1", "value3,label2"};
-  setTempFileContents(contents);
+      std::make_shared<TabularClassifier>("small", /* n_classes = */ 1);
+  std::vector<std::string> contents = {"colname1,colname2", "value1,label1",
+                                       "value3,label2"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, contents);
   std::vector<std::string> column_datatypes = {"numeric", "label"};
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 1,
+                       /* learning_rate = */ 0.01),
       std::invalid_argument);
 }
 
@@ -88,18 +91,21 @@ TEST_F(TabularClassifierTestFixture, TestIncorrectNumericColumn) {
  */
 TEST_F(TabularClassifierTestFixture, TestEmptyColumns) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 2);
-  std::vector<std::string> contents = {"value1,2,value3, label1",
+      std::make_shared<TabularClassifier>("small", /* n_classes = */ 2);
+  std::vector<std::string> contents = {"colname1,colname2,colname3,colname4",
+                                       "value1,2,value3, label1",
                                        "value1,,,label2"};
-  setTempFileContents(contents);
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, contents);
   std::vector<std::string> column_datatypes = {"categorical", "numeric",
                                                "categorical", "label"};
 
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
-      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01));
+      tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 1,
+                       /* learning_rate = */ 0.01));
 
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
-      tab_model->predict(TEMP_FILENAME, std::nullopt));
+      tab_model->predict(/* filename = */ TEMP_FILENAME,
+                         /* output_filename = */ std::nullopt));
 }
 
 /**
@@ -108,16 +114,21 @@ TEST_F(TabularClassifierTestFixture, TestEmptyColumns) {
  */
 TEST_F(TabularClassifierTestFixture, TestFailureOnNewTestLabel) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 2);
-  std::vector<std::string> train_contents = {"value1,label1", "value2,label2"};
-  setTempFileContents(train_contents);
+      std::make_shared<TabularClassifier>("small", /* n_classes = */ 2);
+  std::vector<std::string> train_contents = {"colname1,colname2",
+                                             "value1,label1", "value2,label2"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, train_contents);
   std::vector<std::string> column_datatypes = {"categorical", "label"};
-  tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01);
+  tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 1,
+                   /* learning_rate = */ 0.01);
 
-  std::vector<std::string> test_contents1 = {"value1,label1", "value2,label99"};
-  setTempFileContents(test_contents1);
+  std::vector<std::string> test_contents = {"colname1,colname2",
+                                            "value1,label1", "value2,label99"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, test_contents);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      tab_model->predict(TEMP_FILENAME, std::nullopt), std::invalid_argument);
+      tab_model->predict(/* filename = */ TEMP_FILENAME,
+                         /* output_filename = */ std::nullopt),
+      std::invalid_argument);
 }
 
 /**
@@ -126,12 +137,14 @@ TEST_F(TabularClassifierTestFixture, TestFailureOnNewTestLabel) {
  */
 TEST_F(TabularClassifierTestFixture, TestTooManyLabels) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 1);
-  std::vector<std::string> train_contents = {"value1,label1", "value2,label2"};
-  setTempFileContents(train_contents);
+      std::make_shared<TabularClassifier>("small", /* n_classes = */ 1);
+  std::vector<std::string> train_contents = {"colname1,colname2",
+                                             "value1,label1", "value2,label2"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, train_contents);
   std::vector<std::string> column_datatypes = {"categorical", "label"};
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 1,
+                       /* learning_rate = */ 0.01),
       std::invalid_argument);
 }
 
@@ -141,12 +154,14 @@ TEST_F(TabularClassifierTestFixture, TestTooManyLabels) {
  */
 TEST_F(TabularClassifierTestFixture, TestNoLabelDatatype) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 1);
-  std::vector<std::string> train_contents = {"value1,label1", "value2,label2"};
-  setTempFileContents(train_contents);
+      std::make_shared<TabularClassifier>("small", /* n_classes = */ 1);
+  std::vector<std::string> train_contents = {"colname1,colname2",
+                                             "value1,label1", "value2,label2"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, train_contents);
   std::vector<std::string> column_datatypes = {"categorical", "numeric"};
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 1,
+                       /* learning_rate = */ 0.01),
       std::invalid_argument);
 }
 
@@ -156,13 +171,59 @@ TEST_F(TabularClassifierTestFixture, TestNoLabelDatatype) {
  */
 TEST_F(TabularClassifierTestFixture, TestFailureOnTwoLabelColumns) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 1);
-  std::vector<std::string> train_contents = {"value1,label1", "value2,label2"};
-  setTempFileContents(train_contents);
+      std::make_shared<TabularClassifier>("small", /* n_classes = */ 1);
+  std::vector<std::string> train_contents = {"colname1,colname2",
+                                             "value1,label1", "value2,label2"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, train_contents);
   std::vector<std::string> column_datatypes = {"label", "label"};
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 1,
+                       /* learning_rate = */ 0.01),
       std::invalid_argument);
+}
+
+TEST_F(TabularClassifierTestFixture, TestLoadSave) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 4);
+
+  std::vector<std::string> train_contents = {
+      "colname1,colname2,colname3", "value1,value1,label1",
+      "value2,value2,label2", "value3,value3,label3", "value4,value4,label4"};
+  std::vector<std::string> labels = {"label1", "label2", "label3", "label4"};
+  AutoClassifierTestUtils::setTempFileContents(TEMP_FILENAME, train_contents);
+
+  std::vector<std::string> column_datatypes = {"categorical", "categorical",
+                                               "label"};
+
+  tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 3,
+                   /* learning_rate = */ 0.01);
+
+  std::string PREDICTION_FILENAME = "predictions.csv";
+  tab_model->predict(
+      /* filename = */ TEMP_FILENAME,
+      /* output_filename = */ PREDICTION_FILENAME);
+
+  float before_load_save_accuracy =
+      AutoClassifierTestUtils::computePredictFileAccuracy(PREDICTION_FILENAME,
+                                                          labels);
+
+  std::string SAVE_LOCATION = "tabularSaveLocation";
+  tab_model->save(SAVE_LOCATION);
+  auto new_model = TabularClassifier::load(SAVE_LOCATION);
+
+  ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+      new_model->predict(
+          /* filename = */ TEMP_FILENAME,
+          /* output_filename = */ PREDICTION_FILENAME));
+
+  float after_load_save_accuracy =
+      AutoClassifierTestUtils::computePredictFileAccuracy(PREDICTION_FILENAME,
+                                                          labels);
+
+  ASSERT_EQ(before_load_save_accuracy, after_load_save_accuracy);
+
+  std::remove(PREDICTION_FILENAME.c_str());
+  std::remove(SAVE_LOCATION.c_str());
 }
 
 }  // namespace thirdai::bolt

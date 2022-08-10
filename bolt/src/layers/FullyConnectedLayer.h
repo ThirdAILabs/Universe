@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "BoltVector.h"
@@ -46,6 +47,8 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) final;
+
+  void enableDistributedTraining() { _is_distributed = true; };
 
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool use_sparsity) const final {
@@ -211,8 +214,13 @@ class FullyConnectedLayer final : public SequentialLayer {
   void forwardImpl(const BoltVector& input, BoltVector& output,
                    const BoltVector* labels);
 
+  void eigenDenseDenseForward(const BoltVector& input, BoltVector& output);
+
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);
+
+  template <bool FIRST_LAYER>
+  void eigenDenseDenseBackpropagate(BoltVector& input, BoltVector& output);
 
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
@@ -221,13 +229,6 @@ class FullyConnectedLayer final : public SequentialLayer {
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
 
-  /**
-   * Not serializing _shallow_save because it is only used to decide to how to
-   * save the model. If _shallow_save or _is_shallow is true, archive
-   * _is_shallow as true. If both are false, archive _is_shallow as false. While
-   * dearchiving, we only need to know whether or not the layer is shallow,
-   * hence, _shallow_save not archived.
-   */
   template <class Archive>
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
@@ -235,11 +236,6 @@ class FullyConnectedLayer final : public SequentialLayer {
             _prev_is_active, _is_active);
   }
 
-  /**
-   * Load first whether the layer is shallow
-   * Does not load the optimizer state if is_shallow
-   * Loads the optimizer state if !is_shallow
-   */
   template <class Archive>
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
