@@ -60,6 +60,45 @@ class TabularClassifier {
         output_filename, _metadata->getClassIdToNames());
   }
 
+  std::string predictSingle(std::vector<std::string>& values) {
+    // TODO(david) this repeats code in the batch processor but to reuse the
+    // same code we'd need to refactor the data pipeline quite a bit
+    std::vector<uint32_t> unigram_hashes;
+    uint32_t col = 0;
+    for (const std::string& value : values) {
+      switch (_metadata->getColType(col)) {
+        case dataset::TabularDataType::Numeric: {
+          std::exception_ptr err;
+          uint32_t unigram = _metadata->getNumericHashValue(col, value, err);
+          if (err) {
+            std::rethrow_exception(err);
+          }
+          unigram_hashes.push_back(unigram);
+          break;
+        }
+        case dataset::TabularDataType::Categorical: {
+          uint32_t unigram = _metadata->getStringHashValue(value, col);
+          unigram_hashes.push_back(unigram);
+          break;
+        }
+        case dataset::TabularDataType::Label: {
+          // single inference won't specify the label so we skip it
+          col++;
+          break;
+        }
+      }
+      col++;
+    }
+    BoltVector input = dataset::TextEncodingUtils::computePairgramsFromUnigrams(
+        unigram_hashes, _input_dim);
+
+    BoltVector output =
+        _classifier->predictSingle({input}, {},
+                                   /* use_sparse_inference = */ true);
+
+    return _metadata->getClassIdToNames()[output.getIdWithHighestActivation()];
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
