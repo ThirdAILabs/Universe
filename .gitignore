@@ -43,3 +43,7 @@ wheelhouse
 # Data files
 *.svm
 *.csv
+
+#log files 
+*.log
+thirdai_python_package_tests/distributed_training_sample/*.log
