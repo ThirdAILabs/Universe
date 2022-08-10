@@ -18,6 +18,10 @@ def stop_cluster(config_yaml_file) -> None:
     """
 
     os.system("ray down " + config_yaml_file)
+
+    # users need to clear their /tmp folder from ray once they are
+    # done with using ray cluster, in order to free up the cluster
+    # lock for other users to use
     os.system("rm -rf /tmp/ray")
 
 

@@ -73,11 +73,8 @@ class Worker:
         Returns:
             _type_: _description_
         """
-        start_calculate_grdient_time = time.time()
         self.model.calculate_gradients(batch_no)
-        calculate_gradient_time = time.time() - start_calculate_grdient_time
 
-        start_receive_gradients_time = time.time()
         self.w_partitions = []
         self.b_partitions = []
 
@@ -88,9 +85,6 @@ class Worker:
 
         for y in self.b_gradients:
             self.b_partitions.append(int(len(y) / self.total_nodes))
-
-        receive_gradients_time = time.time() - start_receive_gradients_time
-        return calculate_gradient_time, receive_gradients_time
 
     def calculate_gradients_linear(self, batch_no: int):
         """This function is called only when the mode of communication is
@@ -137,7 +131,7 @@ class Worker:
         """
         return self.model.get_parameters()
 
-    def receive_params(self) -> bool:
+    def synchronize_parameters(self) -> bool:
         """This function is called by head_worker to all the workers whose id
         is not equal to 0. This function gets the initialized random weight
         ans biases from worker with id = 0. and sets the weight on all
@@ -146,7 +140,7 @@ class Worker:
         Returns:
             bool: returns True, after functions complete
         """
-        weights, biases = ray.get(self.head_worker.weights_biases.remote())
+        weights, biases = ray.get(self.head_worker.get_weights_biases.remote())
         self.model.set_parameters(weights, biases)
         return True
 
@@ -227,23 +221,14 @@ class Worker:
         Returns:
             _type_: _description_
         """
-        python_computation_time = 0
-        communication_time = 0
 
         partition_id = (update_id + self.id - 1) % self.total_nodes
 
-        t2 = time.time()
         get_ray_object = self.friend.receive_array_partitions.remote(update_id)
         (
             self.friend_weight_gradient_list,
             self.friend_bias_gradient_list,
-            python_computation_time_receive_array,
         ) = ray.get(get_ray_object)
-        communication_time += time.time() - t2 - python_computation_time_receive_array
-
-        python_computation_time += python_computation_time_receive_array
-
-        t2 = time.time()
         for i in range(len(self.friend_weight_gradient_list)):
 
             # Getting the indices of the partition to work on
@@ -295,9 +280,6 @@ class Worker:
                     l_bias_idx:r_bias_idx
                 ] = self.friend_bias_gradient_list[i]
 
-        python_computation_time += time.time() - t2
-        return python_computation_time, communication_time
-
     def receive_array_partitions(self, update_id: int):
         """This function will only be get called for circular ring communication
         pattern.
@@ -310,8 +292,6 @@ class Worker:
         Returns:
             _type_: _description_
         """
-        t1 = time.time()
-        python_computation_time = 0
         partition_id = (update_id + self.id) % self.total_nodes
 
         w_gradient_subarray = []
@@ -346,8 +326,7 @@ class Worker:
             w_gradient_subarray.append(self.w_gradients[i][l_weight_idx:r_weight_idx])
             b_gradient_subarray.append(self.b_gradients[i][l_bias_idx:r_bias_idx])
 
-        python_computation_time += time.time() - t1
-        return w_gradient_subarray, b_gradient_subarray, python_computation_time
+        return w_gradient_subarray, b_gradient_subarray
 
     def update_parameters(self, learning_rate: float) -> bool:
         """This function calls updateParameter function inside bolt, which

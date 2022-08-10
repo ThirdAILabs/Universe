@@ -56,20 +56,6 @@ class PrimaryWorker(Worker):
         Returns:
             _type_: _description_
         """
-        communication_time = 0
-        averaging_gradients_time = 0
-        gradient_computation_time = 0
-
-        # Here we are asking every worker to calculate their gradients and return
-        # once they all calculate their gradients
-        blocking_run = ray.get(
-            [
-                worker.calculate_gradients_circular.remote(batch_no)
-                for worker in self.workers
-            ]
-        )
-        gradient_computation_time += max(i for i, j in blocking_run)
-        communication_time += max(j for i, j in blocking_run)
 
         # The following code implements the two loops for Baidu's All-Reduce and All-Gather.
         # In the first run, each of the worker passes their partition to next worker
@@ -102,16 +88,10 @@ class PrimaryWorker(Worker):
                         for worker in self.workers
                     ]
                 )
-
-                averaging_gradients_time += max(i for i, j in blocking_run)
-                communication_time += max(j for i, j in blocking_run)
             else:
                 blocking_run = ray.get(
                     [worker.process_ring.remote(update_id) for worker in self.workers]
                 )
-
-                averaging_gradients_time += max(i for i, j in blocking_run)
-                communication_time += max(j for i, j in blocking_run)
             update_id -= 1
 
         # In the Second run, each of the worker passes their partition to next worker
@@ -141,11 +121,7 @@ class PrimaryWorker(Worker):
                     for worker in self.workers
                 ]
             )
-            averaging_gradients_time += max(i for i, j in blocking_run)
-            communication_time += max(j for i, j in blocking_run)
             update_id -= 1
-
-        return gradient_computation_time, communication_time, averaging_gradients_time
 
     def subwork_linear_communication(self, batch_no: int):
         """This function implements the linear way of communicating between the node.
@@ -159,21 +135,9 @@ class PrimaryWorker(Worker):
         Returns:
             _type_: _description_
         """
-        start_gradient_computation = time.time()
-        ray.get(
-            [
-                worker.calculate_gradients_linear.remote(batch_no)
-                for worker in self.workers
-            ]
-        )
-        gradient_computation_time = time.time() - start_gradient_computation
-        start_getting_gradients = time.time()
         gradients_list = ray.get(
             [worker.get_calculated_gradients.remote() for worker in self.workers]
         )
-        getting_gradient_time = time.time() - start_getting_gradients
-
-        summing_and_averaging_gradients_start_time = time.time()
 
         # Here we are initializing the w_average_gradients for storing the sum
         self.w_gradients_avg = np.array(
@@ -197,15 +161,6 @@ class PrimaryWorker(Worker):
         # averaging the gradients
         self.w_gradients_avg = np.divide(self.w_gradients_avg, len(self.workers))
         self.b_gradients_avg = np.divide(self.b_gradients_avg, len(self.workers))
-
-        summing_and_averaging_gradients_time = (
-            time.time() - summing_and_averaging_gradients_start_time
-        )
-        return (
-            gradient_computation_time,
-            getting_gradient_time,
-            summing_and_averaging_gradients_time,
-        )
 
     def gradients_avg(self):
         """This function is called by the workers to get the gradients back from PrimaryWorker.
@@ -237,7 +192,7 @@ class PrimaryWorker(Worker):
         weights_0, biases_0 = ray.get(self.workers[0].return_params.remote())
         weights_1, biases_1 = ray.get(self.workers[1].return_params.remote())
 
-    def weights_biases(self):
+    def get_weights_biases(self):
         """This function is called by all the workers(other than worker with id = 0), here
             all the workers get the same initialized weights and bias as that of worker with id 0
 

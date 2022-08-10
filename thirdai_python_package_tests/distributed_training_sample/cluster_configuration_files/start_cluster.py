@@ -36,7 +36,7 @@ def start_cluster(config_yaml_file) -> None:
             raise ValueError(
                 textwrap.dedent(
                     """
-                min_workers >= 0
+                min_workers should be >= 0.
             """
                 )
             )
