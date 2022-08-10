@@ -73,8 +73,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void buildHashTables() final;
 
-  void enableRandomDropout();
-
   void reBuildHashFunction() final;
 
   uint32_t getDim() const final { return _dim; }
