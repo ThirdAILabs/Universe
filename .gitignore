@@ -40,6 +40,9 @@ wheelhouse
 # Shared libraries
 *.so
 
+#log files 
+*.log
+
 # Data files
 *.svm
 *.csv

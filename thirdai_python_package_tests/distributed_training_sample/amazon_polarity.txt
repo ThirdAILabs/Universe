@@ -13,7 +13,7 @@ train_metrics = []
 test_metrics = ["categorical_accuracy"]
 learning_rate = 0.0001
 epochs = 10
-batch_size = 100000
+batch_size = 100002
 rehash = 6400
 rebuild = 128000
 

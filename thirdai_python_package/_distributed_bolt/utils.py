@@ -26,7 +26,11 @@ def load_dataset(
     train_filename = config["dataset"]["train_data"][id]
     test_filename = config["dataset"]["test_data"]
     batch_size = int(config["params"]["batch_size"]/total_nodes)
+
+    print(f"parameters for dataset in the utils file: train_filename:{train_filename} batch_size: {batch_size}")
+
     if config["dataset"]["format"].lower() == "svm":
+        print("loading svm dataset")
         train_x, train_y = dataset.load_bolt_svm_dataset(train_filename, batch_size)
         test_x, test_y = dataset.load_bolt_svm_dataset(test_filename, batch_size)
         return train_x, train_y, test_x, test_y
