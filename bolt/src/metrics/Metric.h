@@ -287,7 +287,7 @@ class RootMeanSquaredError final : public Metric {
 
 class PrecisionAt : public Metric {
  public:
-  explicit PrecisionAt(uint32_t k): _k(k), _correct(0), _count(0) {}
+  explicit PrecisionAt(uint32_t k): _k(k), _hits(0), _correct(0), _sample_count(0), _retrieved_count(0), _label_count(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     auto top_k = output.isDense() 
