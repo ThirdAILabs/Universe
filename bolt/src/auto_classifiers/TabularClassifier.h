@@ -66,7 +66,7 @@ class TabularClassifier {
     }
 
     std::vector<std::string_view> encodable_values;
-    for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
+    for (uint32_t col = 0; col < values.size(); col++) {
       if (col == _metadata->getLabelCol()) {
         // the batch processor fails if the number of columns mismatches
         // we add some bogus here in the label's column for that reason
