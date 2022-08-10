@@ -81,7 +81,13 @@ template <class ELEMENT_TYPE>
 void BiasedSketch<ELEMENT_TYPE>::set(uint64_t i, ELEMENT_TYPE value) {
   uint64_t idx = findIndexInPhysicalVector(i);
   ELEMENT_TYPE& current_value = _physical_vector[idx];
-  current_value += value;
+
+  // @jerin-thirdai was supposed to use the following (aggregate without sign).
+  // Replacing the value only appears to work, the other generates a lot of
+  // NaNs.
+  //
+  // current_value += value;
+  current_value = value;
 }
 
 template <class ELEMENT_TYPE>
