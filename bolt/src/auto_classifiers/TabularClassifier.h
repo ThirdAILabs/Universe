@@ -32,13 +32,12 @@ class TabularClassifier {
     }
     _metadata = processTabularMetadata(filename, column_datatypes);
 
-    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
-        makeTabularBatchProcessor();
+    _batch_processor = makeTabularBatchProcessor();
 
     _classifier->train(
         filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
-            batch_processor),
+            _batch_processor),
         /* epochs = */ epochs,
         /* learning_rate = */ learning_rate);
   }
@@ -50,47 +49,27 @@ class TabularClassifier {
           "Cannot call predict(..) without calling train(..) first.");
     }
 
-    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
-        makeTabularBatchProcessor();
-
     _classifier->predict(
         filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
-            batch_processor),
+            _batch_processor),
         output_filename, _metadata->getClassIdToNames());
   }
 
-  std::string predictSingle(std::vector<std::string>& values) {
-    // TODO(david) this repeats code in the batch processor but to reuse the
-    // same code we'd need to refactor the data pipeline quite a bit
-    std::vector<uint32_t> unigram_hashes;
-    uint32_t col = 0;
-    for (const std::string& value : values) {
-      switch (_metadata->getColType(col)) {
-        case dataset::TabularDataType::Numeric: {
-          std::exception_ptr err;
-          uint32_t unigram = _metadata->getNumericHashValue(col, value, err);
-          if (err) {
-            std::rethrow_exception(err);
-          }
-          unigram_hashes.push_back(unigram);
-          break;
-        }
-        case dataset::TabularDataType::Categorical: {
-          uint32_t unigram = _metadata->getStringHashValue(value, col);
-          unigram_hashes.push_back(unigram);
-          break;
-        }
-        case dataset::TabularDataType::Label: {
-          // single inference won't specify the label so we skip it
-          col++;
-          break;
-        }
-      }
-      col++;
+  std::string predictSingle(std::vector<std::string>& original_values) {
+    std::vector<std::string_view> encodable_values;
+    for (uint32_t col = 0; col < original_values.size(); col++) {
+      // if (col == _metadata->getLabelCol()) {
+      //   //
+      //   encodable_values.push_back(" ");
+      // }
+      encodable_values.push_back(std::string_view(original_values[col]));
     }
-    BoltVector input = dataset::TextEncodingUtils::computePairgramsFromUnigrams(
-        unigram_hashes, _input_dim);
+
+    BoltVector input;
+    if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
+      std::rethrow_exception(err);
+    }
 
     BoltVector output =
         _classifier->predictSingle({input}, {},
@@ -160,12 +139,13 @@ class TabularClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_input_dim, _n_classes, _metadata, _classifier);
+    archive(_input_dim, _n_classes, _batch_processor, _metadata, _classifier);
   }
 
   uint32_t _input_dim;
   uint32_t _n_classes;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
+  std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
   std::unique_ptr<AutoClassifierBase> _classifier;
 };
 
