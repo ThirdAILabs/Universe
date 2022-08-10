@@ -60,22 +60,23 @@ class TabularClassifier {
     if (values.size() != _metadata->numColumns() - 1) {
       throw std::invalid_argument(
           "Passed in an input of size " + std::to_string(values.size()) +
-          " but needed a vector of size " + _metadata->numColumns() - 1 +
+          " but needed a vector of size " +
+          std::to_string(_metadata->numColumns() - 1) +
           ". predict_single expects a vector of values in the same format as "
-          "the original csv but without the label present.")
+          "the original csv but without the label present.");
     }
 
     std::vector<std::string_view> encodable_values;
-    for (uint32_t col = 0; col < values.size(); col++) {
-      if (col == _metadata->getLabelCol()) {
-        // the batch processor fails if the number of columns mismatches
-        // we add some bogus here in the label's column for that reason
-        encodable_values.push_back(" ");
-      }
+    for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
       encodable_values.push_back(std::string_view(values[col]));
     }
 
-    BoltVector input;
+    // the batch processor fails if the number of columns mismatches with the
+    // original format. we add some bogus here in the label's column for that
+    // reason
+    encodable_values.insert(_metadata->getLabelCol(), /* value = */ " ")
+
+        BoltVector input;
     if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
       std::rethrow_exception(err);
     }
