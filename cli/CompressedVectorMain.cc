@@ -103,6 +103,10 @@ int main(int argc, char** argv) {
   } catch (const CLI::ParseError& e) {
     exit(app.exit(e));
   }
-  thirdai::bolt::cli::runReconstructionAnalysis(options);
+  try {
+    thirdai::bolt::cli::runReconstructionAnalysis(options);
+  } catch (...) {
+    std::cerr << "CatchAll failed from bolt - shut up, clang!" << std::endl;
+  }
   return 0;
 }
