@@ -9,9 +9,9 @@ target_link_libraries(
   gmock_main
 )
 
-add_executable(node_utils_test NodeUtilsTest.cc)
+add_executable(vector_norm_test VectorNormTest.cc)
 target_link_libraries(
-  node_utils_test
+  vector_norm_test
   PRIVATE
   bolt_graph_lib
   gtest_main
@@ -91,7 +91,7 @@ gtest_discover_tests(graph_traversal_test)
 gtest_discover_tests(graph_reject_inputs_test)
 gtest_discover_tests(state_machine_test)
 gtest_discover_tests(embedding_node_test)
-gtest_discover_tests(node_utils_test)
+gtest_discover_tests(vector_norm_test)
 gtest_discover_tests(save_load_test)
 gtest_discover_tests(switch_node_test)
 gtest_discover_tests(dag_dlrm_test)
