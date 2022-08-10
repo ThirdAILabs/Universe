@@ -157,8 +157,53 @@ class Worker:
             self.w_sparse_grad, self.b_sparse_grad = self.getUnbiasedDragonGradients(
                 compression_density=compression_density
             )
+        
+        if compression=="topk":
+            self.w_sparse_grad, self.b_sparse_grad = self.getTopkGradients(
+                compression_density=compression_density
+            )
 
         return True
+
+    def getTopkGradients(self,compression_density):
+        w_sparse_grad=[]
+        b_sparse_grad=[]
+
+        for layer in range(len(self.layers)-1):
+            x = self.network.get_weights_gradients(layer)
+            y = self.network.get_biases_gradients(layer)
+            x=np.ravel(x)
+            y=np.ravel(y)
+
+            m_x=int(compression_density*x.shape[0])
+            m_y=int(compression_density*y.shape[0])
+            thresh_x=0
+            thresh_y=0
+
+            num_samples=1
+            for i in range(num_samples):
+
+                sampled_x=np.random.choice(x.shape[0],min(x.shape[0],10000))
+                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],10000))
+
+                thresh_x+=self.approximate_topk(np.abs(x[sampled_x]),compression_density)/num_samples
+                thresh_y+=self.approximate_topk(np.abs(y[sampled_y]),compression_density)/num_samples
+
+        
+            idx=np.where((x>thresh_x) | (x<-1*thresh_x))[0].astype(np.uint32)
+            idy=np.where((y>thresh_y) | (y<-1*thresh_y))[0].astype(np.uint32)
+
+            indices_x=idx[np.random.choice(idx.shape[0],min(idx.shape[0],m_x))]
+            indices_y=idy[np.random.choice(idy.shape[0],min(idy.shape[0],m_y))]
+
+            vals_x=x[indices_x]
+            vals_y=y[indices_y]
+
+            w_sparse_grad.append((indices_x,vals_x))
+            b_sparse_grad.append((indices_y,vals_y))
+        
+        return (w_sparse_grad,b_sparse_grad)
+    
 
     def approximate_topk(self, weights, top_frac):
         n = int(top_frac * weights.shape[0])
@@ -229,7 +274,7 @@ class Worker:
 
             y = self.network.get_unbiased_indexed_sketch_for_gradients(
                 layer_index=layer,
-                compression_density=compression_density,
+                compression_density=1,
                 sketch_biases=True,
                 seed_for_hashing=seed,
                 pregenerate_distribution=self.pregenerate,
@@ -259,7 +304,7 @@ class Worker:
             )
             y = self.network.get_indexed_sketch_for_gradients(
                 layer_index=layer,
-                compression_density=compression_density,
+                compression_density=1,
                 sketch_biases=True,
                 seed_for_hashing=seed,
             )
@@ -282,6 +327,8 @@ class Worker:
             if compression == "DRAGON":
                 return self.w_sparse_grad, self.b_sparse_grad
             if compression == "UNBIASED_DRAGON":
+                return self.w_sparse_grad, self.b_sparse_grad
+            if compression =="topk":
                 return self.w_sparse_grad, self.b_sparse_grad
 
         w_gradients = []
@@ -425,6 +472,10 @@ class Worker:
 
         if compression == "UNBIASED_DRAGON":
             self.receiveUnbiasedDragonGradients()
+            return True
+        
+        if compression== "topk":
+            self.receiveDragonGradients()
             return True
 
         w_gradients_updated, b_gradients_updated = ray.get(

@@ -129,14 +129,14 @@ class Supervisor:
             summing_and_averaging_gradients_time,
         )
     
-    def dragon_compression(self, batch_no, compression_density=0.10):
+    def dragon_compression(self, batch_no, compression_density=0.10, compression_type="DRAGON"):
 
         start_gradient_computation = time.time()
         calculateGradients = ray.get(
             [
                 self.workers[id].calculateGradientsLinear.remote(
                     batch_no,
-                    compression="DRAGON",
+                    compression=compression_type,
                     compression_density=compression_density,
                 )
                 for id in range(len(self.workers))
@@ -146,7 +146,7 @@ class Supervisor:
         start_getting_gradients = time.time()
         gradients_list = ray.get(
             [
-                self.workers[id].getCalculatedGradients.remote(compression="DRAGON")
+                self.workers[id].getCalculatedGradients.remote(compression=compression_type)
                 for id in range(len(self.workers))
             ]
         )
@@ -185,6 +185,8 @@ class Supervisor:
                 return self.dragon_compression(batch_no, compression_density)
             if compression == "UNBIASED_DRAGON":
                 return self.unbiased_dragon_compression(batch_no,compression_density)
+            if compression == "topk":
+                return self.dragon_compression(batch_no, compression_density, compression_type="topk")
         
 
         start_gradient_computation = time.time()

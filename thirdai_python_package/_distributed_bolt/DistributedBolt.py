@@ -19,9 +19,9 @@ class DistributedBolt:
         config_filename: The name of the config file which is going to be used for training.
     """
 
-    def __init__(self, worker_nodes: int, config_filename: str, pregenerate: bool):
+    def __init__(self, worker_nodes: int, config_filename: str, pregenerate: bool, logfile: str):
 
-        self.logging = initLogging("logfile_shubh.log")
+        self.logging = initLogging(f"{logfile}")
         self.logging.info("Training has started!")
 
         self.no_of_workers = worker_nodes
@@ -75,6 +75,9 @@ class DistributedBolt:
                 ]
             )
         )
+
+        list_of_batches=[ray.get([self.workers[i].num_of_batches.remote() for i in range(self.no_of_workers)])]
+        print(list_of_batches)
 
         for i in range(len(self.workers)):
             x = ray.get(self.workers[i].addSupervisor.remote(self.supervisor))
