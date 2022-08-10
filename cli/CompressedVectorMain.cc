@@ -84,11 +84,12 @@ void runReconstructionAnalysis(const Options& options) {
 
 }  // namespace thirdai::bolt::cli
 
-int main(int argc, char** argv) {
-  CLI::App app{"Command line driver app, without Python"};
+int main(int argc, char* argv[]) {
+  try {
+    CLI::App app{"Command line driver app, without Python"};
 
-  thirdai::bolt::cli::Options options;
-  // clang-format off
+    thirdai::bolt::cli::Options options;
+    // clang-format off
   app.add_option("-N,--uncompressed-size", options.uncompressed_size, "Uncompressed size");
   app.add_option("-m,--compressed-size", options.compressed_size, "compressed size");
   app.add_option("-d,--step-size", options.step_size, "");
@@ -96,14 +97,14 @@ int main(int argc, char** argv) {
   app.add_option("--std", options.stddev, "");
   app.add_option("-b,--block-size", options.block_size, "");
   app.add_flag("--use-sign-bit", options.use_sign_bit, "");
-  // clang-format on
+    // clang-format on
 
-  try {
-    app.parse(argc, argv);
-  } catch (const CLI::ParseError& e) {
-    exit(app.exit(e));
-  }
-  try {
+    try {
+      app.parse(argc, argv);
+    } catch (const CLI::ParseError& e) {
+      exit(app.exit(e));
+    }
+
     thirdai::bolt::cli::runReconstructionAnalysis(options);
   } catch (...) {
     std::cerr << "CatchAll failed from bolt - shut up, clang!" << std::endl;
