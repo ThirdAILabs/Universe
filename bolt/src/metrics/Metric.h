@@ -296,20 +296,31 @@ class PrecisionAt : public Metric {
     auto correct = labels.isDense()
         ? countCorrectInTopK</* DENSE= */ true>(std::move(top_k), labels)
         : countCorrectInTopK</* DENSE= */ false>(std::move(top_k), labels);
+    
     _correct.fetch_add(correct);
-    _count.fetch_add(1);
+    if (correct > 0) {
+      _hits.fetch_add(1);
+    }
+    _sample_count.fetch_add(1);
+    _retrieved_count.fetch_add(_k);
+    _label_count.fetch_add(labels.len);
   }
 
   double getMetricAndReset(bool verbose) final {
-    std::cout << _correct << " correct" << std::endl;
-    std::cout << _count << " total" << std::endl;
-    double metric = static_cast<double>(_correct) / _count;
+    std::cout << "Precision at " << _k << ": " << static_cast<double>(_correct) / _retrieved_count << std::endl;
+    std::cout << "Recall at " << _k << ": " << static_cast<double>(_correct) / _label_count << std::endl;
+    std::cout << "Hit Ratio at " << _k << ": " << static_cast<double>(_hits) / _sample_count << std::endl;
+    
+    double metric = static_cast<double>(_hits) / _sample_count;
     if (verbose) {
       std::cout << "Hit ratio at " << _k << ": " << std::setprecision(3) << metric
                 << std::endl;
     }
     _correct = 0;
-    _count = 0;
+    _hits = 0;
+    _sample_count = 0;
+    _retrieved_count = 0;
+    _label_count = 0;
     return metric;
   }
 
@@ -372,8 +383,11 @@ class PrecisionAt : public Metric {
   }
 
   uint32_t _k;
+  std::atomic_uint64_t _hits;
   std::atomic_uint64_t _correct;
-  std::atomic_uint64_t _count;
+  std::atomic_uint64_t _sample_count;
+  std::atomic_uint64_t _retrieved_count;
+  std::atomic_uint64_t _label_count;
 };
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
