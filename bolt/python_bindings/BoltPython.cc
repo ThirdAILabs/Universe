@@ -144,7 +144,7 @@ void createBoltSubmodule(py::module_& module) {
 #endif
       .def(py::init<uint64_t, float, std::string, float>(), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation_function"),
-           py::arg("adam_compression_factor"),
+           py::arg("adam_compression_factor") = 1.0,
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
