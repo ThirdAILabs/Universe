@@ -67,16 +67,17 @@ class TabularClassifier {
     }
 
     std::vector<std::string_view> encodable_values;
-    for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
+    for (uint32_t col = 0; col < values.size(); col++) {
       encodable_values.push_back(std::string_view(values[col]));
     }
 
     // the batch processor fails if the number of columns mismatches with the
-    // original format. we add some bogus here in the label's column for that
-    // reason
-    encodable_values.insert(_metadata->getLabelCol(), /* value = */ " ")
+    // original format. since we are only creating an input vector here the
+    // label is not relevant, thus we add some bogus here in the label's column
+    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
+                            /* value = */ " ");
 
-        BoltVector input;
+    BoltVector input;
     if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
       std::rethrow_exception(err);
     }
