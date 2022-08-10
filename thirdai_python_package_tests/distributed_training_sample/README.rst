@@ -25,7 +25,7 @@ Automatic Cluster Initialization:
         - Fill in the cluster configuration YAML file(cluster_configuration.yaml in cluster_configuration_files): 
         - Edit all the required field in the cluster_configuration.yaml
         - head_ip: Add the IP for head node 
-        - workers_ip: Add the IP for the workers node in the list
+        - workers_ip: Add the IP for all the worker nodes
         - ssh_private_key: Uncomment if ssh passwordless loging is not there on the nodes
                 main_workers, max_workers: By default make them min_workers == max_workers == len(worker_ips)
 
@@ -51,7 +51,8 @@ Validating Cluster:
 
 Starting Training:
 -------------------
-        Importing the library
+        Importing the library:
+        
         >>> from thirdai.distributed_bolt import DistributedBolt
 
 
