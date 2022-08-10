@@ -31,7 +31,6 @@ class DateBlock : public Block {
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec) final {
-    
     struct tm time;
     auto exception = TimeUtils::timeStringToTimeObject(input_row[_col], time);
     if (exception) {
@@ -59,16 +58,16 @@ class DateBlock : public Block {
   static constexpr uint32_t dayOfWeek(uint32_t epoch_time) {
     return (epoch_time / TimeUtils::SECONDS_IN_DAY) % 7;
   }
-  
+
   static constexpr uint32_t weekOfMonth(struct tm& time) {
-    return (time.tm_mday - 1) / 7; // tm_mday starts at 1.
+    return (time.tm_mday - 1) / 7;  // tm_mday starts at 1.
   }
 
   static constexpr uint32_t weekOfYear(struct tm& time) {
     uint32_t weeks_to_current_month = time.tm_mon * 4;
     return weeks_to_current_month + weekOfMonth(time);
   }
-  
+
   uint32_t _col;
 };
 
