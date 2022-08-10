@@ -56,7 +56,7 @@ class TabularClassifier {
         output_filename, _metadata->getClassIdToNames());
   }
 
-  std::string predictSingle(std::vector<std::string>& original_values) {
+  std::string predictSingle(std::vector<std::string>& values) {
     std::vector<std::string_view> encodable_values;
     for (uint32_t col = 0; col < original_values.size(); col++) {
       if (col == _metadata->getLabelCol()) {
@@ -64,7 +64,7 @@ class TabularClassifier {
         // we add some bogus here in the label's column for that reason
         encodable_values.push_back(" ");
       }
-      encodable_values.push_back(std::string_view(original_values[col]));
+      encodable_values.push_back(std::string_view(values[col]));
     }
 
     BoltVector input;
