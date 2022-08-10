@@ -128,7 +128,7 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<uint64_t, float, std::string,
                     thirdai::bolt::SamplingConfigPtr, float>(),
            py::arg("dim"), py::arg("sparsity"), py::arg("activation_function"),
-           py::arg("sampling_config"), py::arg("adam_compression_factor"),
+           py::arg("sampling_config"), py::arg("adam_compression_factor") = 1.0,
            "Constructs the FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int - The dimension of the layer.\n"
