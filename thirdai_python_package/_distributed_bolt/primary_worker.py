@@ -18,7 +18,8 @@ class PrimaryWorker(Worker):
 
     Args:
         Worker(Worker Class): Inherits Worker Class
-    """    
+    """
+
     def __init__(
         self,
         layers: List[int],
@@ -31,7 +32,7 @@ class PrimaryWorker(Worker):
             layers (List[int]): List of layer dimensions.
             config (Dict):  configuration file dictionary
             no_of_workers (int): number of workers in training
-        """        
+        """
         self.layers = layers
         super().__init__(self.layers, config, no_of_workers, 0)
 
@@ -40,7 +41,7 @@ class PrimaryWorker(Worker):
 
         Args:
             workers: Worker List
-        """        
+        """
         self.workers = workers
 
     def subwork_circular_communication(self, batch_no: int):
@@ -135,7 +136,10 @@ class PrimaryWorker(Worker):
         update_id = 1
         for node in range(self.total_nodes - 1):
             blocking_run = ray.get(
-                [worker.process_ring.remote(update_id, reduce=False) for worker in self.workers]
+                [
+                    worker.process_ring.remote(update_id, reduce=False)
+                    for worker in self.workers
+                ]
             )
             averaging_gradients_time += max(i for i, j in blocking_run)
             communication_time += max(j for i, j in blocking_run)
@@ -165,10 +169,7 @@ class PrimaryWorker(Worker):
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
         gradients_list = ray.get(
-            [
-                worker.get_calculated_gradients.remote()
-                for worker in self.workers
-            ]
+            [worker.get_calculated_gradients.remote() for worker in self.workers]
         )
         getting_gradient_time = time.time() - start_getting_gradients
 
@@ -206,14 +207,14 @@ class PrimaryWorker(Worker):
             summing_and_averaging_gradients_time,
         )
 
-    def gradients_avg(self):        
+    def gradients_avg(self):
         """This function is called by the workers to get the gradients back from PrimaryWorker.
         Calling this function returns the averaged gradients which is already calculated
         by the PrimaryWorker.
 
         Returns:
             __type__: returns tuple of weight gradient average and bias gradient average
-        """ 
+        """
         return self.w_gradients_avg, self.b_gradients_avg
 
     def subwork_update_parameters(self, learning_rate: float) -> bool:
@@ -225,15 +226,14 @@ class PrimaryWorker(Worker):
 
         Returns:
             bool: Returns True on Completion
-        """ 
+        """
         ray.get(
             [worker.update_parameters.remote(learning_rate) for worker in self.workers]
         )
         return True
 
     def check_weights(self):
-        """This is a debug function to see whether the parameters are set accurately or not.
-        """
+        """This is a debug function to see whether the parameters are set accurately or not."""
         weights_0, biases_0 = ray.get(self.workers[0].return_params.remote())
         weights_1, biases_1 = ray.get(self.workers[1].return_params.remote())
 

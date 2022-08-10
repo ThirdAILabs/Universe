@@ -5,10 +5,11 @@ from .utils import create_fully_connected_layer_configs, load_dataset
 
 class Model:
     """This class implements the APIs to create, train and predict on a network
-        which workers are running. Currently, It only supports FullyConnectedNetwork.
-        However, It could easily be extended to other models too. The functions
-        defined here run on each of the node while distributing.
-    """    
+    which workers are running. Currently, It only supports FullyConnectedNetwork.
+    However, It could easily be extended to other models too. The functions
+    defined here run on each of the node while distributing.
+    """
+
     def __init__(self, config: Dict, total_nodes: int, layers: List[int], id: int):
         """Initailizes Model
 
@@ -20,7 +21,7 @@ class Model:
 
         Raises:
             ValueError: Loading Dataset
-        """                
+        """
         self.layers = layers
 
         # getting training and testing data
@@ -75,7 +76,7 @@ class Model:
 
         Returns:
             _type_: tuple of weight and bias gradients.
-        """        
+        """
         w_gradients = []
         b_gradients = []
         for layer in range(len(self.layers) - 1):
@@ -119,7 +120,7 @@ class Model:
         Args:
             weights: weights parameter to update the network with
             biases: bias parameter to update the gradient with
-        """ 
+        """
         for layer in range(len(weights)):
             self.network.set_weights(layer, weights[layer])
             self.network.set_biases(layer, biases[layer])

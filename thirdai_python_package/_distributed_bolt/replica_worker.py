@@ -26,6 +26,6 @@ class ReplicaWorker(Worker):
             layers (List[int]): List of layer dimensions.
             config (Dict):  configuration file dictionary
             no_of_workers (int): number of workers in training
-            id (int): id of this particular replica worker 
-        """        
+            id (int): id of this particular replica worker
+        """
         super().__init__(layers, config, no_of_workers, id)

@@ -10,8 +10,7 @@ from typing import Tuple, Any, Optional, Dict, List
 
 
 class DistributedBolt:
-    """Implements all the user level Distributed Bolt APIs to the users.
-    """    
+    """Implements all the user level Distributed Bolt APIs to the users."""
 
     def __init__(
         self,
@@ -32,8 +31,7 @@ class DistributedBolt:
         Raises:
             ValueError: Number of Dataset not equal to number of nodes
             Exception: Ray Cluster not started.
-        """        
-    
+        """
 
         self.logging = init_logging("DistributedBolt.log")
         self.logging.info("Training has started!")
@@ -41,14 +39,24 @@ class DistributedBolt:
         try:
             config = toml.load(config_filename)
         except Exception:
-            self.logging.error("Could not load the toml file! " + 'Config File Location:' + config_filename)
+            self.logging.error(
+                "Could not load the toml file! "
+                + "Config File Location:"
+                + config_filename
+            )
 
-        if len(config["dataset"]["train_data"]) != no_of_workers:            
-            raise ValueError("Received ", str(len(config["dataset"]["train_data"])) ," training datasets. Expected ", no_of_workers," datasets, one for each node.")
+        if len(config["dataset"]["train_data"]) != no_of_workers:
+            raise ValueError(
+                "Received ",
+                str(len(config["dataset"]["train_data"])),
+                " training datasets. Expected ",
+                no_of_workers,
+                " datasets, one for each node.",
+            )
 
         self.no_of_workers = no_of_workers
 
-        self.logging.info('Setting OMP_NUM_THREADS to ' + str(self.get_num_cpus()))
+        self.logging.info("Setting OMP_NUM_THREADS to " + str(self.get_num_cpus()))
         runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(self.get_num_cpus())}}
 
         ray.init(address="auto", runtime_env=runtime_env)
@@ -89,12 +97,7 @@ class DistributedBolt:
         self.head_worker.add_workers.remote(self.workers)
 
         self.num_of_batches = min(
-            ray.get(
-                [
-                    worker.num_of_batches.remote()
-                    for worker in self.workers
-                ]
-            )
+            ray.get([worker.num_of_batches.remote() for worker in self.workers])
         )
 
         for i in range(len(self.workers)):
@@ -129,16 +132,11 @@ class DistributedBolt:
         Args:
             circular (Optional[bool], optional): True, if circular communication is required.
                     False, if linear communication is required.. Defaults to True.
-        """        
-              
+        """
+
         if circular:
             self.logging.info("Circular communication pattern is choosen")
-            ray.get(
-                [
-                    worker.receive_params.remote()
-                    for worker in self.workers
-                ]
-            )
+            ray.get([worker.receive_params.remote() for worker in self.workers])
             for epoch in range(self.epochs):
 
                 for batch_no in range(int(self.num_of_batches)):
@@ -198,10 +196,7 @@ class DistributedBolt:
             self.logging.info("Linear communication pattern is choosen")
 
             updateWeightsAndBiases = ray.get(
-                [
-                    worker.receive_params.remote()
-                    for worker in self.workers
-                ]
+                [worker.receive_params.remote() for worker in self.workers]
             )
 
             for epoch in range(self.epochs):
@@ -264,8 +259,8 @@ class DistributedBolt:
         """Calls network.predict() on one of worker on head node and returns the predictions.
 
         Returns:
-            InferenceMetricData: Tuples of metrics and activations 
-        """ 
+            InferenceMetricData: Tuples of metrics and activations
+        """
 
         assert len(self.workers) > 0, "No workers are initialized now."
         return ray.get(self.workers[0].predict.remote())

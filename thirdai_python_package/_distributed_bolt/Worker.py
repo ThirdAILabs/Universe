@@ -22,7 +22,7 @@ class Worker:
             config (Dict): configuration file for setting up the network
             total_nodes (int): total number of nodes
             id (int): id of this particular worker
-        """        
+        """
 
         # Setting up Model
         self.model = Model(config, total_nodes, layers, id)
@@ -180,19 +180,21 @@ class Worker:
         self.model.set_gradients(self.w_gradients, self.b_gradients)
         return True
 
-    def calculate_partitions(self, partition_length: int, partition_id: int, total_length: int):
+    def calculate_partitions(
+        self, partition_length: int, partition_id: int, total_length: int
+    ):
         """This function returns the partitions for the work to work on,
         during the circular communication.
 
         Args:
             partition_length (int): length of partition to return
             partition_id (int): the partition id, which needed to be worked on
-            total_length (int): length of the array to be transferred using 
+            total_length (int): length of the array to be transferred using
                 circular communication
 
         Returns:
             Tuple[int,int]: Left Index and Right Index for a tuple
-        """ 
+        """
         l_idx = partition_length * partition_id
         r_idx = partition_length * (partition_id + 1)
         if total_length - r_idx < partition_length:
@@ -218,7 +220,7 @@ class Worker:
 
         Args:
             update_id (int): This id is use to calculate the partition to work on.
-            reduce (Optional[bool], optional): This bool determines whether we need 
+            reduce (Optional[bool], optional): This bool determines whether we need
             to reduce or gather, True: reduce, False: Gather. Defaults to True.
             avg_gradients (Optional[bool], optional): _description_. Defaults to False.
 
@@ -365,7 +367,7 @@ class Worker:
 
         Returns:
             int: number of batches for training on this node
-        """        
+        """
         """
         This function returns the total number of batches the workers have.
         """
