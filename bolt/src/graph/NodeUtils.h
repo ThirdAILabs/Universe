@@ -55,16 +55,32 @@ class NodeProperties {
                        /* len= */ bolt_vector.len, /* norm= */ norm);
   }
 
+  // We still need to determine the best way to compute the norm of the
+  // difference of two vectors when one or both are sparse. One problem
+  // that arises is that both vectors can have the same length but a different
+  // number of active neurons when one(or both) of them is sparse. For now
+  // we expect both vectors to be dense.
+  template <bool FIRST_DENSE, bool SECOND_DENSE>
   static double norm(const BoltVector& first_vector,
                      const BoltVector& second_vector,
                      const std::string& norm_order) {
     if (first_vector.len != second_vector.len) {
       throw std::invalid_argument(
           "Invalid arguments for the call to NodeProperties::norm. BoltVectors "
-          "have different lengths. ");
+          "have different lengths. The first vector has length " +
+          std::to_string(first_vector.len) +
+          " while the second vector has length " +
+          std::to_string(second_vector.len) + ".");
     }
+    if (!(FIRST_DENSE && SECOND_DENSE)) {
+      throw std::invalid_argument(
+          "Invalid arguments for the call to NodeProperties::norm. Computing "
+          "the norm of the difference between two non-dense"
+          " vectors is currently not supported.");
+    }
+
     LPNorm norm = getNorm(norm_order);
-    std::vector<float> vec_difference = {0};
+    std::vector<float> vec_difference = {};
 
     for (uint32_t activation_index = 0; activation_index < first_vector.len;
          activation_index++) {
@@ -81,25 +97,28 @@ class NodeProperties {
 
   static double computeNorm(const float* activations, uint32_t len,
                             LPNorm norm) {
+    double accumulator = 0.0;
     switch (norm) {
       case LPNorm::L1: {
-        double accumulator = 0.0;
         for (uint32_t activation_index = 0; activation_index < len;
              activation_index++) {
+          std::cout << "activation= " << activations[activation_index]
+                    << std::endl;
           accumulator += fabs(activations[activation_index]);
         }
         return accumulator;
       }
       case LPNorm::Euclidean: {
-        double accumulator = 0.0;
         for (uint32_t activation_index = 0; activation_index < len;
              activation_index++) {
-          accumulator += pow(activations[activation_index], 2.0);
+          accumulator +=
+              activations[activation_index] * activations[activation_index];
         }
         return sqrt(accumulator);
       }
       case LPNorm::LInfinity: {
-        double accumulator = static_cast<double>(abs(*activations));
+        assert(activations != nullptr);
+        accumulator = static_cast<double>(abs(*activations));
         for (uint32_t activation_index = 0; activation_index < len;
              activation_index++) {
           accumulator = std::max<double>(
@@ -111,8 +130,8 @@ class NodeProperties {
     }
     throw std::invalid_argument(
         "" + LPNormToStr(norm) +
-        " is not a valid LP Norm. Valid norms include L-1 "
-        "norm, Euclidean norm and L-infinity norm.");
+        " is not a valid LP Norm. Valid norms include l-1, "
+        "euclidean and l-infinity.");
   }
 };
 
