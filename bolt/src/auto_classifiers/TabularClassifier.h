@@ -73,9 +73,11 @@ class TabularClassifier {
     std::vector<std::string_view> encodable_values(values.begin(),
                                                    values.end());
 
-    // the batch processor fails if the number of columns mismatches with the
-    // original format. since we are only creating an input vector here the
-    // label is not relevant, thus we add some bogus here in the label's column
+    /*
+      the batch processor fails if the number of columns mismatches with the
+      original format. since we are only creating an input vector here the
+      label is not relevant, thus we add some bogus here in the label's column
+    */
     encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
                             /* value = */ " ");
 
