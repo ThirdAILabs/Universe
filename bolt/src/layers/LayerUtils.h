@@ -41,19 +41,21 @@ inline float getThresholdForTopK(const std::vector<float>& values,
                                  uint32_t sketch_size,
                                  uint32_t max_samples_for_random_sampling) {
   uint32_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
-  if(num_samples<20){
-    num_samples=static_cast<uint32_t>(std::min(20,static_cast<int>(values.size())));
+  if (num_samples < 20) {
+    num_samples =
+        static_cast<uint32_t>(std::min(20, static_cast<int>(values.size())));
   }
   uint32_t topK =
       static_cast<uint32_t>(1.0 * num_samples * sketch_size / values.size());
-  
-  // std::cout<<"value of num_samples: "<<num_samples<<" value of topK: "<<topK<<std::endl;
+
+  // std::cout<<"value of num_samples: "<<num_samples<<" value of topK:
+  // "<<topK<<std::endl;
 
   std::vector<float> sampled_gradients(num_samples, 0);
 
   // srand(time(0));
   std::mt19937 gen(time(0));
-  std::uniform_int_distribution<> distrib(0, values.size()-1);
+  std::uniform_int_distribution<> distrib(0, values.size() - 1);
 
   for (uint32_t i = 0; i < num_samples; i++) {
     sampled_gradients[i] = std::abs(values[distrib(gen)]);
@@ -138,11 +140,11 @@ inline void getUnbiasedSketch(const std::vector<float>& full_gradient,
   int current_index_reps = 1000;
   int current_index = 0;
 
-#pragma omp parallel for default(none) \
-  shared(full_gradient, indices, sketch_size, seed_for_hashing, \
-  pregenerate_distribution, threshold, loop_size, random_numbers,\
-  range_pregenerated_numbers, index) \
-  firstprivate(reset_index_after, current_index_reps, current_index)
+#pragma omp parallel for default(none)                                     \
+    shared(full_gradient, indices, sketch_size, seed_for_hashing,          \
+           pregenerate_distribution, threshold, loop_size, random_numbers, \
+           range_pregenerated_numbers, index)                              \
+        firstprivate(reset_index_after, current_index_reps, current_index)
 
   for (int i = 0; i < loop_size; i++) {
     if (std::abs(full_gradient[i]) > threshold) {

@@ -70,7 +70,7 @@ class Supervisor:
             )
             update_id -= 1
         return True
-    
+
     def unbiased_dragon_compression(self, batch_no, compression_density=0.10):
 
         start_gradient_computation = time.time()
@@ -88,7 +88,7 @@ class Supervisor:
         )
 
         # print("getting the thresholds")
-        threshold=ray.get(
+        threshold = ray.get(
             [
                 self.workers[id].getUnbiasedThresholdDragon.remote()
                 for id in range(len(self.workers))
@@ -109,7 +109,9 @@ class Supervisor:
         start_getting_gradients = time.time()
         gradients_list = ray.get(
             [
-                self.workers[id].getCalculatedGradients.remote(compression="UNBIASED_DRAGON")
+                self.workers[id].getCalculatedGradients.remote(
+                    compression="UNBIASED_DRAGON"
+                )
                 for id in range(len(self.workers))
             ]
         )
@@ -128,8 +130,10 @@ class Supervisor:
             getting_gradient_time,
             summing_and_averaging_gradients_time,
         )
-    
-    def dragon_compression(self, batch_no, compression_density=0.10, compression_type="DRAGON"):
+
+    def dragon_compression(
+        self, batch_no, compression_density=0.10, compression_type="DRAGON"
+    ):
 
         start_gradient_computation = time.time()
         calculateGradients = ray.get(
@@ -146,7 +150,9 @@ class Supervisor:
         start_getting_gradients = time.time()
         gradients_list = ray.get(
             [
-                self.workers[id].getCalculatedGradients.remote(compression=compression_type)
+                self.workers[id].getCalculatedGradients.remote(
+                    compression=compression_type
+                )
                 for id in range(len(self.workers))
             ]
         )
@@ -184,10 +190,11 @@ class Supervisor:
             if compression == "DRAGON":
                 return self.dragon_compression(batch_no, compression_density)
             if compression == "UNBIASED_DRAGON":
-                return self.unbiased_dragon_compression(batch_no,compression_density)
+                return self.unbiased_dragon_compression(batch_no, compression_density)
             if compression == "topk":
-                return self.dragon_compression(batch_no, compression_density, compression_type="topk")
-        
+                return self.dragon_compression(
+                    batch_no, compression_density, compression_type="topk"
+                )
 
         start_gradient_computation = time.time()
         calculateGradients = ray.get(

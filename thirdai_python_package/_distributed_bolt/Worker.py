@@ -27,7 +27,7 @@ class Worker:
     def __init__(self, layers: List, config, pregenerate, total_nodes: int, id: int):
         print("Worker Started")
         self.layers = layers
-        self.pregenerate=pregenerate
+        self.pregenerate = pregenerate
         self.bolt_layers = create_fully_connected_layer_configs(config["layers"])
         self.input_dim = config["dataset"]["input_dim"]
         self.network = bolt.DistributedNetwork(
@@ -157,53 +157,57 @@ class Worker:
             self.w_sparse_grad, self.b_sparse_grad = self.getUnbiasedDragonGradients(
                 compression_density=compression_density
             )
-        
-        if compression=="topk":
+
+        if compression == "topk":
             self.w_sparse_grad, self.b_sparse_grad = self.getTopkGradients(
                 compression_density=compression_density
             )
 
         return True
 
-    def getTopkGradients(self,compression_density):
-        w_sparse_grad=[]
-        b_sparse_grad=[]
+    def getTopkGradients(self, compression_density):
+        w_sparse_grad = []
+        b_sparse_grad = []
 
-        for layer in range(len(self.layers)-1):
+        for layer in range(len(self.layers) - 1):
             x = self.network.get_weights_gradients(layer)
             y = self.network.get_biases_gradients(layer)
-            x=np.ravel(x)
-            y=np.ravel(y)
+            x = np.ravel(x)
+            y = np.ravel(y)
 
-            m_x=int(compression_density*x.shape[0])
-            m_y=int(compression_density*y.shape[0])
-            thresh_x=0
-            thresh_y=0
+            m_x = int(compression_density * x.shape[0])
+            m_y = int(compression_density * y.shape[0])
+            thresh_x = 0
+            thresh_y = 0
 
-            num_samples=1
+            num_samples = 1
             for i in range(num_samples):
 
-                sampled_x=np.random.choice(x.shape[0],min(x.shape[0],10000))
-                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],10000))
+                sampled_x = np.random.choice(x.shape[0], min(x.shape[0], 10000))
+                sampled_y = np.random.choice(y.shape[0], min(y.shape[0], 10000))
 
-                thresh_x+=self.approximate_topk(np.abs(x[sampled_x]),compression_density)/num_samples
-                thresh_y+=self.approximate_topk(np.abs(y[sampled_y]),compression_density)/num_samples
+                thresh_x += (
+                    self.approximate_topk(np.abs(x[sampled_x]), compression_density)
+                    / num_samples
+                )
+                thresh_y += (
+                    self.approximate_topk(np.abs(y[sampled_y]), compression_density)
+                    / num_samples
+                )
 
-        
-            idx=np.where((x>thresh_x) | (x<-1*thresh_x))[0].astype(np.uint32)
-            idy=np.where((y>thresh_y) | (y<-1*thresh_y))[0].astype(np.uint32)
+            idx = np.where((x > thresh_x) | (x < -1 * thresh_x))[0].astype(np.uint32)
+            idy = np.where((y > thresh_y) | (y < -1 * thresh_y))[0].astype(np.uint32)
 
-            indices_x=idx[np.random.choice(idx.shape[0],min(idx.shape[0],m_x))]
-            indices_y=idy[np.random.choice(idy.shape[0],min(idy.shape[0],m_y))]
+            indices_x = idx[np.random.choice(idx.shape[0], min(idx.shape[0], m_x))]
+            indices_y = idy[np.random.choice(idy.shape[0], min(idy.shape[0], m_y))]
 
-            vals_x=x[indices_x]
-            vals_y=y[indices_y]
+            vals_x = x[indices_x]
+            vals_y = y[indices_y]
 
-            w_sparse_grad.append((indices_x,vals_x))
-            b_sparse_grad.append((indices_y,vals_y))
-        
-        return (w_sparse_grad,b_sparse_grad)
-    
+            w_sparse_grad.append((indices_x, vals_x))
+            b_sparse_grad.append((indices_y, vals_y))
+
+        return (w_sparse_grad, b_sparse_grad)
 
     def approximate_topk(self, weights, top_frac):
         n = int(top_frac * weights.shape[0])
@@ -215,18 +219,18 @@ class Worker:
         b_threshold = []
 
         for layers in range(len(self.layers) - 1):
-            
-            wt=self.network.get_unbiased_threshold_for_gradients(
+
+            wt = self.network.get_unbiased_threshold_for_gradients(
                 layers, compression_density=compression_density, sketch_biases=False
             )
-            
-            bt=self.network.get_unbiased_threshold_for_gradients(
+
+            bt = self.network.get_unbiased_threshold_for_gradients(
                 layers, compression_density=compression_density, sketch_biases=True
             )
             # print(f"weight threshold for layer {layers} is {wt} and bias threshold is {bt} with the compression density {compression_density}")
             w_threshold.append(wt)
             b_threshold.append(bt)
-        
+
         # print(f"compression density is {compression_density}")
         # print(f"the thresholds are {w_threshold} {b_threshold}")
         self.w_threshold = w_threshold
@@ -235,25 +239,29 @@ class Worker:
         return (self.w_threshold, self.b_threshold)
 
     def getUnbiasedThresholdDragon(self):
-        return (self.w_threshold,self.b_threshold)
-    
+        return (self.w_threshold, self.b_threshold)
+
     def setUnbiasedThresholdDragon(self, threshold):
-        
+
         # print(threshold)
 
-        self.w_threshold=[0]*(len(self.layers)-1)
-        self.b_threshold=[0]*(len(self.layers)-1)
+        self.w_threshold = [0] * (len(self.layers) - 1)
+        self.b_threshold = [0] * (len(self.layers) - 1)
 
-        num_workers=len(threshold)
-        
+        num_workers = len(threshold)
+
         for workers in range(num_workers):
-            for layers in range(len(self.layers)-1):
-                
-                self.w_threshold[layers]+=threshold[workers][0][layers]/num_workers
-                self.b_threshold[layers]+=threshold[workers][1][layers]/num_workers
+            for layers in range(len(self.layers) - 1):
 
-                self.w_threshold[layers]+=max(threshold[workers][0][layers],0.000001)/num_workers
-                self.b_threshold[layers]+=max(threshold[workers][1][layers],0.000001)/num_workers
+                self.w_threshold[layers] += threshold[workers][0][layers] / num_workers
+                self.b_threshold[layers] += threshold[workers][1][layers] / num_workers
+
+                self.w_threshold[layers] += (
+                    max(threshold[workers][0][layers], 0.000001) / num_workers
+                )
+                self.b_threshold[layers] += (
+                    max(threshold[workers][1][layers], 0.000001) / num_workers
+                )
         # print(f"weight threshold {self.w_threshold} \n bias threshold {self.b_threshold}")
 
     def getUnbiasedDragonGradients(self, compression_density):
@@ -328,7 +336,7 @@ class Worker:
                 return self.w_sparse_grad, self.b_sparse_grad
             if compression == "UNBIASED_DRAGON":
                 return self.w_sparse_grad, self.b_sparse_grad
-            if compression =="topk":
+            if compression == "topk":
                 return self.w_sparse_grad, self.b_sparse_grad
 
         w_gradients = []
@@ -403,10 +411,16 @@ class Worker:
             )
 
             self.network.set_unbiased_gradients_from_indices_values(
-                layer_index=layer, indices=w_values, set_biases=False, threshold=self.w_threshold[layer]
+                layer_index=layer,
+                indices=w_values,
+                set_biases=False,
+                threshold=self.w_threshold[layer],
             )
             self.network.set_unbiased_gradients_from_indices_values(
-                layer_index=layer, indices=b_values, set_biases=True, threshold=self.b_threshold[layer]
+                layer_index=layer,
+                indices=b_values,
+                set_biases=True,
+                threshold=self.b_threshold[layer],
             )
         return True
 
@@ -473,8 +487,8 @@ class Worker:
         if compression == "UNBIASED_DRAGON":
             self.receiveUnbiasedDragonGradients()
             return True
-        
-        if compression== "topk":
+
+        if compression == "topk":
             self.receiveDragonGradients()
             return True
 

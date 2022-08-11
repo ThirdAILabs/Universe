@@ -477,22 +477,24 @@ class DistributedPyNetwork final : public DistributedModel {
     uint32_t* indices_raw_data = const_cast<uint32_t*>(cpp_indices.data());
     float* values_raw_data = const_cast<float*>(cpp_values.data());
 
-    bool debug_mode=false;
+    bool debug_mode = false;
     if (set_biases) {
-      if (debug_mode){
-        std::cout<<"checking indices in debug mode"<<std::endl;
-      checkIndexOutOfRange(indices_raw_data,
-                           DistributedModel::getDim(layer_index), size);}
+      if (debug_mode) {
+        std::cout << "checking indices in debug mode" << std::endl;
+        checkIndexOutOfRange(indices_raw_data,
+                             DistributedModel::getDim(layer_index), size);
+      }
       DistributedModel::setBiasGradientsFromIndicesValues(
           layer_index, indices_raw_data, values_raw_data, size);
     } else {
-      if(debug_mode){
-      checkIndexOutOfRange(
-          indices_raw_data,
-          DistributedModel::getDim(layer_index) *
-              ((layer_index > 0) ? DistributedModel::getDim(layer_index - 1)
-                                 : DistributedModel::getInputDim()),
-          size);}
+      if (debug_mode) {
+        checkIndexOutOfRange(
+            indices_raw_data,
+            DistributedModel::getDim(layer_index) *
+                ((layer_index > 0) ? DistributedModel::getDim(layer_index - 1)
+                                   : DistributedModel::getInputDim()),
+            size);
+      }
       DistributedModel::setWeightGradientsFromIndicesValues(
           layer_index, indices_raw_data, values_raw_data, size);
     }

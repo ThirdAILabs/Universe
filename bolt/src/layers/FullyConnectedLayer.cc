@@ -1,7 +1,7 @@
 #include "FullyConnectedLayer.h"
-#include <hashing/src/MurmurHash.h>
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <hashing/src/MurmurHash.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
 #include <algorithm>
