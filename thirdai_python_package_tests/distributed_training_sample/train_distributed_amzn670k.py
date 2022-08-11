@@ -1,12 +1,12 @@
 from thirdai.distributed_bolt import DistributedBolt
 
 import argparse
-import sys
-
+import ray
 
 def train_model(
     model, compression_scheme, logfile, scheduler=False, compression_density=1
 ):
+    print(f"Running the model {model}")
     if model == "yelp":
         config_filename = "./yelp_polarity.txt"
     elif model == "amazon":
@@ -18,11 +18,12 @@ def train_model(
     else:
         raise Exception("Invalid model name provided")
 
-    print("training the following model" + config_filename.split(".")[1][1:])
+    print("Training the following model " + config_filename.split(".")[1][1:])
 
     if logfile is None:
         logfile = f"logfile_experiments_{config_filename.split('.')[1][1:]}.log"
 
+    print("The logfile is:"+logfile)
     head = DistributedBolt(
         2,
         config_filename,
@@ -42,6 +43,7 @@ def train_model(
             compression_density=compression_density,
             scheduler=scheduler,
         )
+        
 
 
 def main():
@@ -92,5 +94,5 @@ def main():
     )
 
 
-if __name__ == main():
+if __name__ == "__main__":
     main()
