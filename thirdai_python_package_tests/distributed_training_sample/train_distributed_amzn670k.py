@@ -1,38 +1,96 @@
 from thirdai.distributed_bolt import DistributedBolt
 
+import argparse
 import sys
 
-if sys.argv[1] == "yelp":
-    config_filename = "./yelp_polarity.txt"
-elif sys.argv[1] == "amazon":
-    config_filename = "./amzn670k_distributed.txt"
-elif sys.argv[1] == "mnist":
-    config_filename = "./mnist.txt"
-else:
-    config_filename = "./amazon_polarity.txt"
 
-print(config_filename.split(".")[1][1:])
+def train_model(
+    model, compression_scheme, logfile, scheduler=False, compression_density=1
+):
+    if model == "yelp":
+        config_filename = "./yelp_polarity.txt"
+    elif model == "amazon":
+        config_filename = "./amzn670k_distributed.txt"
+    elif model == "mnist":
+        config_filename = "./mnist.txt"
+    elif model == "amazon_polarity":
+        config_filename = "./amazon_polarity.txt"
+    else:
+        raise Exception("Invalid model name provided")
 
-# pregenerating random numbers for UNBIASED_DRAGON
+    print("training the following model" + config_filename.split(".")[1][1:])
 
-head = DistributedBolt(
-    2,
-    config_filename,
-    pregenerate=True,
-    logfile=f"logfile_experiments_{config_filename.split('.')[1][1:]}.log",
-)
+    if logfile is None:
+        logfile = f"logfile_experiments_{config_filename.split('.')[1][1:]}.log"
 
-if sys.argv[2] == "None":
-    head.train(
-        circular=False,
-        compression=None,
+    head = DistributedBolt(
+        2,
+        config_filename,
+        pregenerate=True,
+        logfile=logfile,
     )
-else:
-    head.train(
-        circular=False,
-        compression=sys.argv[2],
-        compression_density=0.05,
-        scheduler=False,
+
+    if compression_scheme == "None":
+        head.train(
+            circular=False,
+            compression=None,
+        )
+    else:
+        head.train(
+            circular=False,
+            compression=compression_scheme,
+            compression_density=compression_density,
+            scheduler=scheduler,
+        )
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "-m",
+        "--model",
+        default="amazon_polarity",
+        type=int,
+        help="The model file should be in the same directory as this file",
     )
-acc, _ = head.predict()
-print(acc["categorical_accuracy"])
+    parser.add_argument(
+        "-c",
+        "--compression_scheme",
+        default="None",
+        type=str,
+        help="Specify the compression scheme",
+    )
+    parser.add_argument(
+        "-d",
+        "--compression_density",
+        default=0.1,
+        type=float,
+        help="Specify the compression density. Not properly tested. Can give segfaults at very low density",
+    )
+    parser.add_argument(
+        "-l", "--logfile_name", default=None, type=str, help="logfile name"
+    )
+    parser.add_argument(
+        "-s", "--scheduler", default=False, type=bool, help="Make this false generally"
+    )
+
+    args = vars(parser.parse_args())
+
+    model = args["model"]
+    compression_scheme = args["compression_scheme"]
+    compression_density = args["compression_density"]
+    logfile = args["logfile_name"]
+    scheduler = args["scheduler"]
+
+    train_model(
+        model=model,
+        compression_scheme=compression_scheme,
+        compression_density=compression_density,
+        logfile=logfile,
+        scheduler=scheduler,
+    )
+
+
+if __name__ == main():
+    main()
