@@ -162,9 +162,7 @@ class Worker:
         if self.id is 0:
             weights, biases = self.primary_worker.get_weights_biases()
         else:
-            weights, biases = ray.get(
-                self.primary_worker.get_weights_biases.remote()
-            )
+            weights, biases = ray.get(self.primary_worker.get_weights_biases.remote())
         self.model.set_parameters(weights, biases)
         return True
 

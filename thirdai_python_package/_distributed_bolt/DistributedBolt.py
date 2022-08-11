@@ -211,9 +211,7 @@ class DistributedBolt:
                         self.learning_rate
                     )
                 )
-                self.bolt_computation_time += (
-                    time.time() - start_update_parameter_time
-                )
+                self.bolt_computation_time += time.time() - start_update_parameter_time
 
                 self.logging.info(
                     "Epoch No: "
