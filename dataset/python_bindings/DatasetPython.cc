@@ -9,6 +9,7 @@
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
@@ -178,6 +179,15 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &CategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
+
+  py::class_<DateBlock, Block, std::shared_ptr<DateBlock>>(
+      block_submodule, "Date",
+      "Encodes a date column given in YYYY-MM-DD format.")
+      .def(py::init<uint32_t>(), py::arg("col"))
+      .def("feature_dim", &DateBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &DateBlock::isDense,
+           "Returns false since this is a sparse encoding.");
 
   py::class_<DenseArrayBlock, Block, std::shared_ptr<DenseArrayBlock>>(
       block_submodule, "DenseArray",

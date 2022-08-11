@@ -678,7 +678,8 @@ void createBoltSubmodule(py::module_& module) {
           "line.\n")
       .def("predict_single", &TabularClassifier::predictSingle,
            py::arg("input_row"),
-           "Given a list of input values, predict the class. \n"
+           "Given a list of input values excluding the label column, predict "
+           "the class.\n"
            "Arguments:\n"
            " * input_row: List of strings representing input values.\n")
       .def("save", &TabularClassifier::save, py::arg("filename"),
