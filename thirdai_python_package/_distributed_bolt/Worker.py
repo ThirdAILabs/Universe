@@ -4,6 +4,26 @@ from typing import Tuple, Any, Optional, Dict, List
 from .Model import Model
 
 
+def calculate_partitions(partition_length: int, partition_id: int, total_length: int):
+    """This function returns the partitions for the work to work on,
+    during the circular communication.
+
+    Args:
+        partition_length (int): length of partition to return
+        partition_id (int): the partition id, which needed to be worked on
+        total_length (int): length of the array to be transferred using
+            circular communication
+
+    Returns:
+        Tuple[int,int]: Left Index and Right Index for a tuple
+    """
+    l_idx = partition_length * partition_id
+    r_idx = partition_length * (partition_id + 1)
+    if total_length - r_idx < partition_length:
+        r_idx = total_length
+    return l_idx, r_idx
+
+
 class Worker:
     """This is a ray remote class(Actor). Read about them here.
     (https://docs.ray.io/en/latest/ray-core/actors.html)
@@ -14,7 +34,9 @@ class Worker:
 
     """
 
-    def __init__(self, layers: List, config: Dict, total_nodes: int, id: int):
+    def __init__(
+        self, layer_dims: List, config: Dict, total_nodes: int, id: int, primary_worker
+    ):
         """Initializes the model to run
 
         Args:
@@ -25,20 +47,17 @@ class Worker:
         """
 
         # Setting up Model
-        self.model = Model(config, total_nodes, layers, id)
+        self.model = Model(config, total_nodes, layer_dims, id)
 
         # Set up variables
-        self.layers = layers
         self.total_nodes = total_nodes
         self.id = id
+        self.primary_worker = primary_worker
 
-    def add_head_worker(self, head_worker):
-        """This function assigns each of the worker their head_worker
-
-        Args:
-            head_worker (_type_): storing the head worker for this worker
-        """
-        self.head_worker = head_worker
+        # class variable for circular function
+        self.friend = None  # this variable is set up in add_friend
+        self.w_partitions = []
+        self.b_partitions = []
 
     def add_friend(self, friend):
         """This function is only needed for circular way of communication.
@@ -110,10 +129,10 @@ class Worker:
         """This function is called only when the mode of communication
         is Linear.
 
-        This function is called by the head_worker to compute the
+        This function is called by the primary_worker to compute the
         averages of the calculated gradients. This functions
         calls 'get_weights_gradient' and 'get_biases_gradients' functions
-        inside bolt to take the gradients and return them to head_worker.
+        inside bolt to take the gradients and return them to primary_worker.
 
         Returns:
             _type_: _description_
@@ -122,7 +141,7 @@ class Worker:
 
     def return_params(self):
         """This function will only be called for worker having its id 0.
-        The head_worker will call this function to get the initial random
+        The primary_worker will call this function to get the initial random
         weights from worker with id 0 and then send those weights to all
         the workers.
 
@@ -132,7 +151,7 @@ class Worker:
         return self.model.get_parameters()
 
     def synchronize_parameters(self) -> bool:
-        """This function is called by head_worker to all the workers whose id
+        """This function is called by primary_workerker to all the workers whose id
         is not equal to 0. This function gets the initialized random weight
         ans biases from worker with id = 0. and sets the weight on all
         the other workers.
@@ -140,7 +159,9 @@ class Worker:
         Returns:
             bool: returns True, after functions complete
         """
-        weights, biases = ray.get(self.head_worker.get_weights_biases.remote())
+        weights, biases = ray.get(
+            self.primary_workerkerkerker.get_weights_biases.remote()
+        )
         self.model.set_parameters(weights, biases)
         return True
 
@@ -148,7 +169,7 @@ class Worker:
         """This function is called only when the communication pattern choosen
         is circular.
 
-        This function is called by the head_worker to make set the updated
+        This function is called by the primary_workerkerkerker to make set the updated
         gradients to the network.
 
         Returns:
@@ -161,39 +182,18 @@ class Worker:
         """This function is called only when the communication pattern choosen
         is linear.
 
-        This function is called by the head_worker to first, get the updated gradients
-        from the head_worker and then set those updated gradients to the network.
+        This function is called by the primary_workerkerkerker to first, get the updated gradients
+        from the primary_workerker and then set those updated gradients to the network.
 
         Returns:
             bool: returns True, after functions complete
         """
 
         self.w_gradients, self.b_gradients = ray.get(
-            self.head_worker.gradients_avg.remote()
+            self.primary_worker.gradients_avg.remote()
         )
         self.model.set_gradients(self.w_gradients, self.b_gradients)
         return True
-
-    def calculate_partitions(
-        self, partition_length: int, partition_id: int, total_length: int
-    ):
-        """This function returns the partitions for the work to work on,
-        during the circular communication.
-
-        Args:
-            partition_length (int): length of partition to return
-            partition_id (int): the partition id, which needed to be worked on
-            total_length (int): length of the array to be transferred using
-                circular communication
-
-        Returns:
-            Tuple[int,int]: Left Index and Right Index for a tuple
-        """
-        l_idx = partition_length * partition_id
-        r_idx = partition_length * (partition_id + 1)
-        if total_length - r_idx < partition_length:
-            r_idx = total_length
-        return l_idx, r_idx
 
     def process_ring(
         self,
@@ -232,12 +232,12 @@ class Worker:
         for i in range(len(self.friend_weight_gradient_list)):
 
             # Getting the indices of the partition to work on
-            l_weight_idx, r_weight_idx = self.calculate_partitions(
+            l_weight_idx, r_weight_idx = calculate_partitions(
                 partition_length=self.w_partitions[i],
                 partition_id=partition_id,
                 total_length=len(self.w_gradients[i]),
             )
-            l_bias_idx, r_bias_idx = self.calculate_partitions(
+            l_bias_idx, r_bias_idx = calculate_partitions(
                 partition_length=self.b_partitions[i],
                 partition_id=partition_id,
                 total_length=len(self.b_gradients[i]),
@@ -299,12 +299,12 @@ class Worker:
         for i in range(len(self.w_partitions)):
 
             # Getting the indices of the partition to work on
-            l_weight_idx, r_weight_idx = self.calculate_partitions(
+            l_weight_idx, r_weight_idx = calculate_partitions(
                 partition_length=self.w_partitions[i],
                 partition_id=partition_id,
                 total_length=len(self.w_gradients[i]),
             )
-            l_bias_idx, r_bias_idx = self.calculate_partitions(
+            l_bias_idx, r_bias_idx = calculate_partitions(
                 partition_length=self.b_partitions[i],
                 partition_id=partition_id,
                 total_length=len(self.b_gradients[i]),

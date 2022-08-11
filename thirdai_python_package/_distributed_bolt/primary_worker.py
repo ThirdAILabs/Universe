@@ -22,7 +22,7 @@ class PrimaryWorker(Worker):
 
     def __init__(
         self,
-        layers: List[int],
+        layer_dims: List[int],
         config: Dict,
         no_of_workers: int,
     ):
@@ -33,8 +33,12 @@ class PrimaryWorker(Worker):
             config (Dict):  configuration file dictionary
             no_of_workers (int): number of workers in training
         """
-        self.layers = layers
-        super().__init__(self.layers, config, no_of_workers, 0)
+        self.layer_dims = layer_dims
+
+        # set up in add workers
+        self.workers = None
+
+        super().__init__(self.layer_dims, config, no_of_workers, 0, self)
 
     def add_workers(self, workers):
         """Adds the list of workers to the Primary Worker
@@ -142,14 +146,14 @@ class PrimaryWorker(Worker):
         # Here we are initializing the w_average_gradients for storing the sum
         self.w_gradients_avg = np.array(
             [
-                np.zeros((self.layers[layer_no + 1], self.layers[layer_no]))
-                for layer_no in range(len(self.layers) - 1)
+                np.zeros((self.layer_dims[layer_no + 1], self.layer_dims[layer_no]))
+                for layer_no in range(len(self.layer_dims) - 1)
             ]
         )
         self.b_gradients_avg = np.array(
             [
-                np.zeros((self.layers[layer_no + 1]))
-                for layer_no in range(len(self.layers) - 1)
+                np.zeros((self.layer_dims[layer_no + 1]))
+                for layer_no in range(len(self.layer_dims) - 1)
             ]
         )
 
