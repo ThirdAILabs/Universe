@@ -50,10 +50,13 @@ Starting Training:
 
 
         Importing the library:
+        
         >>> from thirdai.distributed_bolt import DistributedBolt
+        
         The current APIs supported:
+        
         >>> head = DistributedBolt(num_of_workers=num_of_workers, config_filename=config_filename) 
-        >>> head.train(circular=True, num_cpus_per_node=k(set number of cpus here manually)) 
+        >>> head.train(circular=True, num_cpus_per_node=num_cpu_you_want_per_node) #circular implies using all reduce
         >>> print(head.predict()) #returns predict on the model trained
 
         Look at train_distributed_amzn670k.py for sample code.
