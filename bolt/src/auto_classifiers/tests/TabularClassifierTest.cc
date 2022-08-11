@@ -226,4 +226,24 @@ TEST_F(TabularClassifierTestFixture, TestLoadSave) {
   std::remove(SAVE_LOCATION.c_str());
 }
 
+TEST_F(TabularClassifierTestFixture, TestPredictSingle) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 2);
+
+  std::vector<std::string> train_contents = {
+      "colname1,colname2,colname3", "value1,value1,label1",
+      "value2,value2,label2", "value1,value1,label1", "value2,value2,label2"};
+  const std::string TRAIN_FILENAME = "tempTrainFile.csv";
+  AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
+
+  std::vector<std::string> column_datatypes = {"categorical", "categorical",
+                                               "label"};
+
+  tab_model->train(TRAIN_FILENAME, column_datatypes, /* epochs = */ 3,
+                   /* learning_rate = */ 0.01);
+
+  std::vector<std::string> sample = {"value1", "value1"};
+  ASSERT_EQ(tab_model->predictSingle(sample), "label1");
+}
+
 }  // namespace thirdai::bolt
