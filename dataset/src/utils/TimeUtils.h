@@ -79,7 +79,8 @@ class TimeObject {
   }
 
   inline bool isLeapYear() const {
-    return (yearsSince1900() & 3) == 0;  // "& 3" is the same as "% 4" but faster.
+    // "& 3" is the same as "% 4" but faster.
+    return (yearsSince1900() & 3) == 0;
   }
 
   inline bool pastFebruary() const {
