@@ -6,6 +6,6 @@ if __name__ == "__main__":
     head = DistributedBolt(
         no_of_workers=2, config_filename=config_filename, num_cpus_per_node=20
     )
-    head.train(circular=True)
+    head.train(circular=False)
     acc, _ = head.predict()
     print(acc["categorical_accuracy"])
