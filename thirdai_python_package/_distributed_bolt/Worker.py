@@ -151,7 +151,7 @@ class Worker:
         return self.model.get_parameters()
 
     def synchronize_parameters(self) -> bool:
-        """This function is called by primary_workerker to all the workers whose id
+        """This function is called by primary_worker to all the workers whose id
         is not equal to 0. This function gets the initialized random weight
         ans biases from worker with id = 0. and sets the weight on all
         the other workers.
@@ -159,9 +159,12 @@ class Worker:
         Returns:
             bool: returns True, after functions complete
         """
-        weights, biases = ray.get(
-            self.primary_workerkerkerker.get_weights_biases.remote()
-        )
+        if self.id is 0:
+            weights, biases = self.primary_worker.get_weights_biases()
+        else:
+            weights, biases = ray.get(
+                self.primary_worker.get_weights_biases.remote()
+            )
         self.model.set_parameters(weights, biases)
         return True
 
@@ -169,7 +172,7 @@ class Worker:
         """This function is called only when the communication pattern choosen
         is circular.
 
-        This function is called by the primary_workerkerkerker to make set the updated
+        This function is called by the primary_worker to make set the updated
         gradients to the network.
 
         Returns:
@@ -182,16 +185,18 @@ class Worker:
         """This function is called only when the communication pattern choosen
         is linear.
 
-        This function is called by the primary_workerkerkerker to first, get the updated gradients
-        from the primary_workerker and then set those updated gradients to the network.
+        This function is called by the primary_worker to first, get the updated gradients
+        from the primary_worker and then set those updated gradients to the network.
 
         Returns:
             bool: returns True, after functions complete
         """
-
-        self.w_gradients, self.b_gradients = ray.get(
-            self.primary_worker.gradients_avg.remote()
-        )
+        if self.id is 0:
+            self.w_gradients, self.b_gradients = self.primary_worker.gradients_avg()
+        else:
+            self.w_gradients, self.b_gradients = ray.get(
+                self.primary_worker.gradients_avg.remote()
+            )
         self.model.set_gradients(self.w_gradients, self.b_gradients)
         return True
 

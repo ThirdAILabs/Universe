@@ -57,15 +57,15 @@ class DistributedBolt:
         self.no_of_workers = no_of_workers
 
         # check for whether OMP_NUM_THREADS already set by user
-        num_omp_threads = get_num_cpus()
-        if "OMP_NUM_THREADS" in os.environ:
-            num_omp_threads = os.environ["OMP_NUM_THREADS"]
-            self.logging.warning(
-                "Reading OMP_NUM_THREADS from environment to be " + num_omp_threads
-            )
-            self.logging.warning(
-                "To use default OMP_NUM_THREADS, try running the program in new shell, or update the OMP_NUM_THREADS in the current environment"
-            )
+        num_omp_threads = str(get_num_cpus())
+        # if "OMP_NUM_THREADS" in os.environ:
+        #     num_omp_threads = os.environ["OMP_NUM_THREADS"]
+        #     self.logging.warning(
+        #         "Reading OMP_NUM_THREADS from environment to be " + num_omp_threads
+        #     )
+        #     self.logging.warning(
+        #         "To use default OMP_NUM_THREADS, try running the program in new shell, or update the OMP_NUM_THREADS in the current environment"
+        #     )
 
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
         runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
@@ -111,7 +111,7 @@ class DistributedBolt:
         ]
 
         self.workers = [self.primary_worker]
-        self.workers.extend(self.replica_worker)
+        self.workers.extend(self.replica_workers)
 
         self.primary_worker.add_workers.remote(self.workers)
 
@@ -135,12 +135,15 @@ class DistributedBolt:
 
         # initial configuration for circular communcation
         if circular:
+            self.logging.info("Circular communication pattern is choosen")
             for i in range(len(self.workers)):
                 ray.get(
                     self.workers[i].add_friend.remote(
                         self.workers[(i - 1) % (len(self.workers))]
                     )
                 )
+        else:
+            self.logging.info("Linear communication pattern is choosen")
 
         for epoch in range(self.epochs):
 
@@ -149,7 +152,6 @@ class DistributedBolt:
                 # once they all calculate their gradients
                 start_calculating_gradients_time = time.time()
                 if circular:
-                    self.logging.info("Circular communication pattern is choosen")
                     ray.get(
                         [
                             worker.calculate_gradients_circular.remote(batch_no)
@@ -157,7 +159,6 @@ class DistributedBolt:
                         ]
                     )
                 else:
-                    self.logging.info("Linear communication pattern is choosen")
                     ray.get(
                         [
                             worker.calculate_gradients_linear.remote(batch_no)
@@ -177,7 +178,7 @@ class DistributedBolt:
                     )
                 else:
                     ray.get(
-                        self.primary_workerker.subwork_linear_communication.remote(
+                        self.primary_worker.subwork_linear_communication.remote(
                             batch_no
                         )
                     )
@@ -210,7 +211,7 @@ class DistributedBolt:
                         self.learning_rate
                     )
                 )
-                self.averaging_and_communication_time += (
+                self.bolt_computation_time += (
                     time.time() - start_update_parameter_time
                 )
 
