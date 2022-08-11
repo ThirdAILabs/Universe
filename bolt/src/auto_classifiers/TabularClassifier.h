@@ -70,10 +70,8 @@ class TabularClassifier {
           "the original csv but without the label present.");
     }
 
-    std::vector<std::string_view> encodable_values;
-    for (uint32_t col = 0; col < values.size(); col++) {
-      encodable_values.push_back(std::string_view(values[col]));
-    }
+    std::vector<std::string_view> encodable_values(values.begin(),
+                                                   values.end());
 
     // the batch processor fails if the number of columns mismatches with the
     // original format. since we are only creating an input vector here the
