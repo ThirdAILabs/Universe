@@ -111,6 +111,10 @@ MetricData BoltGraph::train(
 
       perEpochCallback();
 
+      if (epoch == 0) {
+        save("TESTFILENAME");
+      }
+
       auto train_end = std::chrono::high_resolution_clock::now();
       int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
                                train_end - train_start)
@@ -135,6 +139,8 @@ MetricData BoltGraph::train(
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
+
+  *this = *load("TESTFILENAME");
 
   return metric_data;
 }

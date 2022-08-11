@@ -148,9 +148,6 @@ class PyNetwork final : public FullyConnectedNetwork {
                                          active_neurons);
   }
 
-  /**
-   * To save without optimizer, shallow=true
-   */
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
