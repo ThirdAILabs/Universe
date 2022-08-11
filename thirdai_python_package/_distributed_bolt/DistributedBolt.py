@@ -305,7 +305,7 @@ class DistributedBolt:
                 for i in range(len(self.workers)):
                     acc, _ = ray.get(self.workers[i].predict.remote())
                     if i == 0:
-                        accuracy_list.append(acc)
+                        accuracy_list.append(acc["categorical_accuracy"])
                     self.logging.info(
                         "Accuracy on workers %d: %lf", i, acc["categorical_accuracy"]
                     )

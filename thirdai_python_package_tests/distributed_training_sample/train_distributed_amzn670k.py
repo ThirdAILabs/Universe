@@ -51,7 +51,7 @@ def main():
         "-m",
         "--model",
         default="amazon_polarity",
-        type=int,
+        type=str,
         help="The model file should be in the same directory as this file",
     )
     parser.add_argument(
