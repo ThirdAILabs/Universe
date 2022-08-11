@@ -309,7 +309,7 @@ class PrecisionAt : public Metric {
   double getMetricAndReset(bool verbose) final {
     std::cout << "Precision at " << _k << ": " << static_cast<double>(_correct) / _retrieved_count << std::endl;
     std::cout << "Recall at " << _k << ": " << static_cast<double>(_correct) / _label_count << std::endl;
-    std::cout << "Hit Ratio at " << _k << ": " << static_cast<double>(_hits) / _sample_count << std::endl;
+    std::cout << "Categorical accuracy at " << _k << ": " << static_cast<double>(_hits) / _sample_count << std::endl;
     
     double metric = static_cast<double>(_hits) / _sample_count;
     if (verbose) {
