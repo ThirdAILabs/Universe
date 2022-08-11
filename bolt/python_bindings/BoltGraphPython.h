@@ -21,7 +21,6 @@ py::tuple dagPredictPythonWrapper(BoltGraph& model,
 
 py::tuple dagGetInputGradientsWrapper(
     BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
-    const dataset::BoltTokenDatasetPtr& input_tokens,
     bool explain_prediction = true,
     const std::vector<uint32_t>& neurons_to_explain = std::vector<uint32_t>());
 using ParameterArray =

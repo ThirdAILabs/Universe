@@ -30,7 +30,7 @@ def build_dag_network():
 
 def set_network_weights_and_biases(model):
     w1, w2 = gen_random_weights_simple_network(
-        seed=17, input_output_layer_dim=5, hidden_layer_dim=3
+        input_output_layer_dim=5, hidden_layer_dim=3
     )
     b1, b2 = gen_random_bias_simple_network(output_layer_dim=5, hidden_layer_dim=3)
     hidden_layer = model.get_layer("fc_1")
@@ -41,7 +41,7 @@ def set_network_weights_and_biases(model):
     output_layer.biases.set(b2)
 
 
-def test_bolt_dag_single_input_gradients():
+def test_bolt_dag_single_input_node_gradients():
     """
     For a given input and a fixed label on output, the INCREASE in activation of that label,
     when we add a small EPS to the input at each index seperately, should be in the

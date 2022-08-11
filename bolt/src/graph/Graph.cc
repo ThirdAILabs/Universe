@@ -210,7 +210,7 @@ BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
 
 std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
 BoltGraph::getInputGradientSingle(std::vector<BoltVector>&& input_data,
-                                  bool explain_prediction,
+                                  bool explain_prediction, bool neuron_given,
                                   uint32_t neuron_to_explain) {
   SingleUnitDatasetContext single_input_gradients_context(std::move(input_data),
                                                           {});
@@ -228,7 +228,7 @@ BoltGraph::getInputGradientSingle(std::vector<BoltVector>&& input_data,
     _inputs[0]->getOutputVector(0).gradients = vec_grad.data();
     std::vector<uint32_t> input_dataset_indices;
     BoltVector label_vector;
-    if (neuron_to_explain == -1) {
+    if (!neuron_given) {
       label_vector = getLabelVectorExplainPrediction(0, explain_prediction);
     } else {
       label_vector = getLabelVectorNeuronsToExplain(neuron_to_explain, 0);
@@ -258,20 +258,9 @@ BoltGraph::getInputGradientSingle(std::vector<BoltVector>&& input_data,
 std::pair<std::optional<std::vector<std::vector<uint32_t>>>,
           std::vector<std::vector<float>>>
 BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
-                             const dataset::BoltTokenDatasetPtr& input_tokens,
                              bool explain_prediction,
                              const std::vector<uint32_t>& neurons_to_explain) {
-  // when we are passing nullptr , datasetcontext is taking {nullptr} as one
-  // token_input. so have to do this conversion, this will be changed when we
-  // extend this for multiple inputs.
-  std::vector<dataset::BoltTokenDatasetPtr> input_tokens_vec;
-  if (input_tokens) {
-    input_tokens_vec = {input_tokens};
-  } else {
-    input_tokens_vec = {};
-  }
-  DatasetContext input_gradients_context({input_data}, input_tokens_vec,
-                                         nullptr);
+  DatasetContext input_gradients_context({input_data}, {}, nullptr);
 
   // Because of how the datasets are read we know that all batches will not
   // have a batch size larger than this so we can just set the batch size
@@ -279,9 +268,9 @@ BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
 
   prepareToProcessBatches(input_gradients_context.batchSize(),
                           /* use_sparsity=*/true);
-  uint32_t input_data_len = input_data->len();
+
   verifyCanGetInputGradients(input_gradients_context, neurons_to_explain.size(),
-                             input_data_len, explain_prediction,
+                             input_data->len(), explain_prediction,
                              _output->numNonzerosInOutput());
 
   std::vector<std::vector<float>> input_dataset_grad;

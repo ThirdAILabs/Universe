@@ -7,9 +7,10 @@ from .utils import (
     gen_random_weights_simple_network,
     gen_random_bias_simple_network,
     get_perturbed_dataset,
+    train_network,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+np.random.seed(17)
 
 
 def build_network():
@@ -29,7 +30,7 @@ def build_network():
 
 def set_network_weights_and_biases(network):
     w1, w2 = gen_random_weights_simple_network(
-        seed=17, input_output_layer_dim=4, hidden_layer_dim=3
+        input_output_layer_dim=4, hidden_layer_dim=3
     )
     b1, b2 = gen_random_bias_simple_network(output_layer_dim=4, hidden_layer_dim=3)
     network.set_weights(0, w1)
@@ -54,12 +55,16 @@ def test_input_gradients():
     should also be in same order, when we add small EPS at each position seperately.
     """
     network = initialize_network()
-    numpy_inputs, labels = gen_numpy_training_data(4, convert_to_bolt_dataset=False)
+    numpy_inputs, numpy_labels = gen_numpy_training_data(
+        4, convert_to_bolt_dataset=False
+    )
     inputs = dataset.from_numpy(numpy_inputs, batch_size=256)
+    labels = dataset.from_numpy(numpy_labels, batch_size=256)
+    train_network(network, inputs, labels, epochs=5)
     gradients = network.get_input_gradients(
         inputs,
         bolt.CategoricalCrossEntropyLoss(),
-        required_labels=labels,
+        required_labels=numpy_labels,
     )
     _, act = network.predict(inputs, None)
     """
@@ -70,7 +75,7 @@ def test_input_gradients():
         _, perturbed_activations = network.predict(perturbed_dataset, None)
         assert_activation_difference_and_gradients_in_same_order(
             perturbed_activations,
-            labels[input_num],
+            numpy_labels[input_num],
             gradients[input_num],
             act[input_num],
         )

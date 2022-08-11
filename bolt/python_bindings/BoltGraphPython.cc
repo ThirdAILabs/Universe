@@ -287,16 +287,13 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              bool explain_prediction = true,
              const std::vector<uint32_t>& neurons_to_explain =
                  std::vector<uint32_t>()) {
-            return dagGetInputGradientsWrapper(model, input_data,
-                                               /* input_tokens = */ nullptr,
-                                               explain_prediction,
-                                               neurons_to_explain);
+            return dagGetInputGradientsWrapper(
+                model, input_data, explain_prediction, neurons_to_explain);
           },
           py::arg("input_data"), py::arg("explain_prediction") = true,
           py::arg("neurons_to_explain") = std::vector<uint32_t>())
       .def("get_input_gradients", &dagGetInputGradientsWrapper,
-           py::arg("input_data"), py::arg("input_tokens"),
-           py::arg("explain_prediction") = true,
+           py::arg("input_data"), py::arg("explain_prediction") = true,
            py::arg("neurons_to_explain") = std::vector<uint32_t>(),
            "Get the values of input gradients when back propagate "
            "labels with the highest activation or second highest "
@@ -304,8 +301,6 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Arguments:\n"
            " * input_data: The input is same type as we give for train_data of "
            "train method."
-           " * input_tokens: The input is BoltTokenDataset, which we can get "
-           "from dataset.tokens_from_numpy which takes in numpy vectors."
            " * explain_prediction: Boolean, if set to True, gives gradients "
            "correspond "
            "to "
@@ -440,10 +435,9 @@ py::tuple dagPredictPythonWrapper(BoltGraph& model,
 
 py::tuple dagGetInputGradientsWrapper(
     BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
-    const dataset::BoltTokenDatasetPtr& input_tokens, bool explain_prediction,
-    const std::vector<uint32_t>& neurons_to_explain) {
-  auto gradients = model.getInputGradients(
-      input_data, input_tokens, explain_prediction, neurons_to_explain);
+    bool explain_prediction, const std::vector<uint32_t>& neurons_to_explain) {
+  auto gradients = model.getInputGradients(input_data, explain_prediction,
+                                           neurons_to_explain);
 
   if (gradients.first == std::nullopt) {
     return py::cast(gradients.second);
