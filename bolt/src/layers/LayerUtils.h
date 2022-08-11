@@ -51,9 +51,12 @@ inline float getThresholdForTopK(const std::vector<float>& values,
 
   std::vector<float> sampled_gradients(num_samples, 0);
 
-  srand(time(0));
+  // srand(time(0));
+  std::mt19937 gen(time(0));
+  std::uniform_int_distribution<> distrib(0, values.size()-1);
+
   for (uint32_t i = 0; i < num_samples; i++) {
-    sampled_gradients[i] = std::abs(values[rand() % values.size()]);
+    sampled_gradients[i] = std::abs(values[distrib(gen)]);
   }
 
   // threshold is an estimate for the kth largest element in the gradients

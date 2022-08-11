@@ -11,7 +11,9 @@ elif sys.argv[2]=="mnist":
 else:
     config_filename="./amazon_polarity.txt"
 
-head = DistributedBolt(2, config_filename, pregenerate=True, logfile=f"logfile_shubh_{sys.argv[2]}.log")
+print(config_filename.split(".")[1][1:])
+
+head = DistributedBolt(2, config_filename, pregenerate=True, logfile=f"logfile_shubh_{config_filename.split('.')[1][1:]}.log")
 
 if sys.argv[1]=="None":
     head.train(
