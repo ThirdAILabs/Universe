@@ -155,7 +155,12 @@ class DistributedBolt:
             )
 
             accuracy_list = [0, 0]
-
+            acc, _ = ray.get(self.workers[0].predict.remote())
+            self.logging.info(
+                "Accuracy on workers %d: %lf",
+                0,
+                acc["categorical_accuracy"],
+            )
             for epoch in range(self.epochs):
                 for batch_no in range(self.num_of_batches):
                     if batch_no % 5 == 0:
@@ -295,7 +300,7 @@ class DistributedBolt:
                         + ", Communication Time: "
                         + str(self.communication_time)
                     )
-                    if batch_no % 10 == 0:
+                    if (batch_no+1) % 5 == 0:
                         acc, _ = ray.get(self.workers[0].predict.remote())
                         self.logging.info(
                             "Accuracy on workers %d: %lf",
