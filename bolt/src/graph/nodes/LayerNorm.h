@@ -108,13 +108,16 @@ class LayerNormNode final : public Node,
     const BoltVector& input_vector =
         _node_to_normalize->getOutputVector(vec_index);
 
+    auto output = getOutputVectorImpl(vec_index);
+    std::fill_n(output.gradients, output.len, 0);
+
     auto [mean, variance] = computeNormalizationMoments(input_vector);
 
     for (uint32_t neuron_index = 0; neuron_index < input_vector.len;
          neuron_index++) {
       float activation = input_vector.activations[neuron_index];
 
-      auto z_score = (activation - mean) / sqrt(variance + _config->epsilon());
+      auto z_score = (activation - mean) / sqrt(variance) + _config->epsilon();
 
       // apply a linear transformation to the z_score using gamma and beta
       // regularizers
@@ -128,17 +131,18 @@ class LayerNormNode final : public Node,
   // For activation x, the normalization is given by
   // f(x) = [(x - mu)/(sigma + epsilon)] * gamma + beta
   // For a layer with n activations, the partial derivative is expressed by
-  // ((n-1)/n)(gamma/sigma^2) * [[n*sigma - (x-mu)] / n]
   float normDerivative(float activation, float mean, float variance,
                        uint32_t vec_length) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
 
-    float centered_activation = activation - mean;
-    auto denominator = vec_length * vec_length * variance;
+    float centered_activation = (activation - mean) * (activation - mean);
+    float std_deviation = sqrt(variance);
+    auto denominator = vec_length * variance * std_deviation;
 
-    auto gradient = (vec_length - 1) * _config->gamma() *
-                    (vec_length * sqrt(variance) - centered_activation);
-    gradient /= (denominator + _config->epsilon());
+    auto gradient = vec_length * std_deviation * (std_deviation + _config->epsilon()) - centered_activation;
+    gradient /= denominator;
+    gradient *= _config->gamma() * (vec_length - 1) * vec_length;
+
 
     return gradient;
   }
@@ -159,18 +163,12 @@ class LayerNormNode final : public Node,
                                   variance, len);
 
       assert(!std::isnan(grad));
-      // if (neuron_index == 0 && vec_index == 0) {
-      // std::cout << "gradient = " << output_vector.gradients[neuron_index]
-      //             << std::endl;
-      // }
-
       output_vector.gradients[neuron_index] *= grad;
-      //std::cout << "computed grad = " << grad << std::endl;
       if (output_vector.gradients[neuron_index] == 0) {
         continue;
       }
-      input_vector.gradients[neuron_index] = grad;
-          //output_vector.gradients[neuron_index];
+      input_vector.gradients[neuron_index] =
+          output_vector.gradients[neuron_index];
     }
   }
 
