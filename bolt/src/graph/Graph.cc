@@ -274,6 +274,7 @@ BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
                              _output->numNonzerosInOutput());
 
   std::vector<std::vector<float>> input_dataset_grad;
+
   std::vector<std::vector<uint32_t>> input_dataset_indices;
   try {
     for (uint64_t batch_idx = 0;
