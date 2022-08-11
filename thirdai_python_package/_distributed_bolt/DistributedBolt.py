@@ -60,12 +60,12 @@ class DistributedBolt:
         self.logging.info("Config Done")
 
         self.workers = [
-            Worker.options(max_concurrency=4).remote(
+            Worker.options(max_concurrency=100).remote(
                 self.layers, config, pregenerate, self.no_of_workers, id
             )
             for id in range(self.no_of_workers)
         ]
-        self.supervisor = Supervisor.remote(self.layers, self.workers)
+        self.supervisor = Supervisor.options(max_concurrency=100).remote(self.layers, self.workers)
 
         self.num_of_batches = min(
             ray.get(
