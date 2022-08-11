@@ -67,6 +67,19 @@ def to_numpy(xdata, ydata):
     return xdata, ydata
 
 
+def test_bolt_single_inference(model, bolt_test_file):
+    with open(bolt_test_file, "r") as file:
+        header = file.readline()
+        first_line = file.readline()
+        # dont read the label as part of the sample
+        sample = first_line.split(",")[:-1]
+
+    start_inference = time.time()
+    model.predict_single(sample)
+    end_inference = time.time()
+    return end_inference - start_inference
+
+
 def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
     bolt_train_file = dataset_base_filename + "/Train.csv"
     bolt_valid_file = dataset_base_filename + "/Valid.csv"
@@ -89,7 +102,7 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
         tc.train(bolt_train_file, dtypes, epochs=1, learning_rate=0.01)
         tc.predict(bolt_valid_file, prediction_file)
         val_accuracy = compute_accuracy_with_file(
-            [str(x) for x in yvalid], prediction_file
+            [str(x) for x in yvalid[1:]], prediction_file
         )
         if val_accuracy < last_accuracy:
             num_bad_epochs -= 1
@@ -97,7 +110,7 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
             max_val_acc = val_accuracy
             tc.predict(bolt_test_file, prediction_file)
             best_test_accuracy = compute_accuracy_with_file(
-                [str(x) for x in ytest], prediction_file
+                [str(x) for x in ytest[1:]], prediction_file
             )
 
         last_accuracy = val_accuracy
@@ -107,10 +120,7 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
 
     end = time.time()
 
-    start_inference = time.time()
-    tc.predict(bolt_test_file)
-    end_inference = time.time()
-    inference_time = (end_inference - start_inference) / len(ytest)
+    inference_time = test_bolt_single_inference(tc, bolt_test_file)
 
     log_message(
         f"BOLT Accuracy: {best_test_accuracy}, Total Training Time: {end - start}, Single Inference Time: {inference_time}\n",
@@ -138,13 +148,14 @@ def train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
 
     end_training = time.time()
 
+    single_xtest = xtest[0:1]
     start_inference = time.time()
-    predictions = model.predict(xtest)
+    model.predict(single_xtest)
     end_inference = time.time()
-    inference_time = (end_inference - start_inference) / len(predictions)
+    inference_time = end_inference - start_inference
 
     log_message(
-        f"XGBoost Accuracy: {accuracy(predictions, ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
+        f"XGBoost Accuracy: {accuracy(model.predict(xtest), ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
         out_file,
     )
 
@@ -163,13 +174,14 @@ def train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
 
     end_training = time.time()
 
+    single_xtest = xtest[0:1]
     start_inference = time.time()
-    predictions = model.predict(xtest)
+    model.predict(single_xtest)
     end_inference = time.time()
-    inference_time = (end_inference - start_inference) / len(predictions)
+    inference_time = end_inference - start_inference
 
     log_message(
-        f"TabNet Accuracy: {accuracy(predictions, ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
+        f"TabNet Accuracy: {accuracy(model.predict(xtest), ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
         out_file,
     )
 
@@ -187,8 +199,8 @@ def main():
     args = parser.parse_args()
 
     datasets = [
-        "CensusIncome",
         "ChurnModeling",
+        "CensusIncome",
         "EyeMovements",
         "PokerHandInduction",
     ]
