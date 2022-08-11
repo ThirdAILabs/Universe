@@ -13,9 +13,11 @@ To get access to our package, refer to `thirdai.com
 contain complete documentation for each of the submodules within thirdai.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    thirdaisearch
    thirdaibolt
    thirdaidistributed
+   distributed_tutorial
+   
 
