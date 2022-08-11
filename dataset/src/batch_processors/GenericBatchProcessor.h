@@ -6,7 +6,6 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
-#include <atomic>
 #include <sstream>
 #include <stdexcept>
 

@@ -1,5 +1,9 @@
 #include "FullyConnectedLayer.h"
 #include <hashing/src/MurmurHash.h>
+#include <wrappers/src/EigenDenseWrapper.h>
+#include <bolt/src/layers/LayerUtils.h>
+#include <Eigen/src/Core/Map.h>
+#include <Eigen/src/Core/util/Constants.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -52,8 +56,7 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
   if (output.isDense()) {
     if (input.isDense()) {
-      // TODO(Nicholas): Re-implement this case with dense matrix library
-      forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/true>(input, output, labels);
+      eigenDenseDenseForward(input, output);
     } else {
       forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output, labels);
     }
@@ -174,10 +177,61 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   }
 }
 
+static void eigenSoftmax(Eigen::Map<Eigen::VectorXf>& outputs) {
+  float max_act = outputs.maxCoeff();
+  outputs = (outputs.array() - max_act).exp();
+  float sum = outputs.sum() + EPS;
+  outputs.array() /= sum;
+}
+
+void FullyConnectedLayer::eigenDenseDenseForward(const BoltVector& input,
+                                                 BoltVector& output) {
+  _prev_is_dense = true;
+  _this_is_dense = true;
+  std::fill_n(output.gradients, output.len, 0);
+
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weights(_weights.data(), _dim, _prev_dim);
+  Eigen::Map<Eigen::VectorXf> eigen_biases(_biases.data(), _dim);
+
+  Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
+  Eigen::Map<Eigen::VectorXf> eigen_output(output.activations, output.len);
+
+  eigen_output.noalias() = eigen_weights * eigen_input;
+
+  eigen_biases.array().addTo(eigen_output);
+
+  switch (_act_func) {
+    case ActivationFunction::ReLU:
+      eigen_output = eigen_output.array().max(0.0);
+      break;
+    case ActivationFunction::Softmax:
+      eigenSoftmax(eigen_output);
+      break;
+    case ActivationFunction::Linear:
+      break;
+    case ActivationFunction::Sigmoid:
+      eigen_output = 1 + (-eigen_output.array()).exp();
+      eigen_output = eigen_output.array().rsqrt();
+      break;
+    case ActivationFunction::Tanh:
+      eigen_output = eigen_output.array().tanh();
+      break;
+  }
+}
+
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
+      // This eigen dense dense optimized version seems to give speedup in
+      // certain cases but not all, so it is here as an experimental feature
+      // that can be enabled when desired.
+#if THIRDAI_USE_EIGEN_FOR_BACKPROPAGATE
+      eigenDenseDenseBackpropagate<false>(input, output);
+#else
       backpropagateImpl<false, true, true>(input, output);
+#endif
     } else {
       backpropagateImpl<false, true, false>(input, output);
     }
@@ -194,8 +248,15 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
+      // This eigen dense dense optimized version seems to give speedup in
+      // certain cases but not all, so it is here as an experimental feature
+      // that can be enabled when desired.
+#if THIRDAI_USE_EIGEN_FOR_BACKPROP
+      eigenDenseDenseBackpropagate<true>(input, output);
+#else
       backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true, /*PREV_DENSE=*/true>(
           input, output);
+#endif
     } else {
       backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
                         /*PREV_DENSE=*/false>(input, output);
@@ -227,6 +288,14 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
     output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
+
+    if (output.gradients[n] == 0.0) {
+      // Neurons with gradients of 0 will not propagate gradients to weights or
+      // the previous layer. We will also likely have a number of 0 gradients
+      // with ReLU.
+      continue;
+    }
+
     assert(!std::isnan(output.gradients[n]));
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
@@ -248,6 +317,39 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
       }
     }
     _b_gradient[act_neuron] += output.gradients[n];
+  }
+}
+
+template <bool FIRST_LAYER>
+void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
+                                                       BoltVector& output) {
+  for (uint32_t n = 0; n < output.len; n++) {
+    output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
+  }
+
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weights(_weights.data(), _dim, _prev_dim);
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weight_grad(_w_gradient.data(), _dim, _prev_dim);
+
+  Eigen::Map<Eigen::VectorXf> eigen_bias_grad(_b_gradient.data(), _dim);
+
+  Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
+  Eigen::Map<Eigen::VectorXf> eigen_output_grad(output.gradients, output.len);
+
+  eigen_weight_grad += eigen_output_grad * eigen_input.transpose();
+  eigen_output_grad.array().addTo(eigen_bias_grad);
+
+  if constexpr (!FIRST_LAYER) {
+    Eigen::Map<
+        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+        eigen_weights(_weights.data(), _dim, _prev_dim);
+
+    Eigen::Map<Eigen::VectorXf> eigen_input_grad(input.gradients, input.len);
+
+    eigen_input_grad.noalias() = eigen_output_grad.transpose() * eigen_weights;
   }
 }
 
