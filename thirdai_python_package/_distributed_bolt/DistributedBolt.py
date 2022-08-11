@@ -153,6 +153,9 @@ class DistributedBolt:
                     for id in range(len(self.workers) - 1)
                 ]
             )
+
+            accuracy_list = [0, 0]
+
             for epoch in range(self.epochs):
                 for batch_no in range(self.num_of_batches):
                     if batch_no % 5 == 0:
@@ -292,11 +295,29 @@ class DistributedBolt:
                         + ", Communication Time: "
                         + str(self.communication_time)
                     )
+                    if batch_no % 10 == 0:
+                        acc, _ = ray.get(self.workers[0].predict.remote())
+                        self.logging.info(
+                            "Accuracy on workers %d: %lf",
+                            0,
+                            acc["categorical_accuracy"],
+                        )
                 for i in range(len(self.workers)):
                     acc, _ = ray.get(self.workers[i].predict.remote())
+                    if i == 0:
+                        accuracy_list.append(acc)
                     self.logging.info(
                         "Accuracy on workers %d: %lf", i, acc["categorical_accuracy"]
                     )
+
+                if (
+                    accuracy_list[-1] - accuracy_list[-2] < 0.0005
+                    and accuracy_list[-2] - accuracy_list[-3] < 0.0005
+                ):
+                    self.logging.info(
+                        f"Model has been trained till convergence in total {epoch}"
+                    )
+                    break
 
     def predict(self):
         """
