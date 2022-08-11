@@ -20,11 +20,6 @@ def main():
             compression_density=1,
         )
 
-        # if ray.is_initialized():
-        #     print("shutting down the ray process")
-        #     ray.shutdown()
-        # assert ray.is_initialized()==False
-
         for schemes in compression_schemes:
             for density in compression_density:
                 train_model(
@@ -34,10 +29,6 @@ def main():
                     logfile=f"benchmarking_{model}.log",
                     scheduler=False,
                 )
-                # if ray.is_initialized():
-                #     print("shutting down the ray process")
-                #     ray.shutdown()
-                # assert ray.is_initialized()==False
 
 if __name__ == "__main__":
     main()
