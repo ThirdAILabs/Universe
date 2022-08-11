@@ -1,3 +1,4 @@
+from cgi import test
 from thirdai import bolt
 from ..utils import gen_numpy_training_data
 import pytest
@@ -9,9 +10,7 @@ N_CLASSES = 10
 
 def create_simple_dag_model():
     input_layer = bolt.graph.Input(dim=N_CLASSES)
-    hidden_layer = bolt.graph.FullyConnected(
-        dim=1000, sparsity=0.15, activation="relu"
-    )(input_layer)
+    hidden_layer = bolt.graph.FullyConnected(dim=1000, activation="relu")(input_layer)
     output_layer = bolt.graph.FullyConnected(dim=N_CLASSES, activation="softmax")(
         hidden_layer
     )
@@ -25,7 +24,9 @@ def create_simple_dag_model():
 def train_overfitted_model(train_data, train_labels):
     model = create_simple_dag_model()
 
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+    train_config = bolt.graph.TrainConfig.make(
+        learning_rate=0.001, epochs=20
+    ).with_metrics(["categorical_accuracy"])
 
     model.train(train_data, train_labels, train_config)
 
@@ -35,10 +36,12 @@ def train_overfitted_model(train_data, train_labels):
 def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
     model = create_simple_dag_model()
 
-    train_config = bolt.graph.TrainConfig.make(
-        learning_rate=0.001, epochs=10
-    ).with_early_stop_validation(
-        valid_data=valid_data, valid_labels=valid_labels, patience=3
+    train_config = (
+        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=20)
+        .with_metrics(["categorical_accuracy"])
+        .with_early_stop_validation(
+            valid_data=valid_data, valid_labels=valid_labels, patience=3
+        )
     )
 
     model.train(train_data, train_labels, train_config)
@@ -48,7 +51,7 @@ def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
 
 def test_early_stop_validation():
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=10000
+        n_classes=N_CLASSES, n_samples=100, noise_std=0.3
     )
     valid_data, valid_labels = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000
@@ -62,8 +65,10 @@ def test_early_stop_validation():
         train_data, train_labels, valid_data, valid_labels
     )
 
-    predict_config = bolt.graph.PredictConfig.make().with_metrics(
-        ["categorical_accuracy"]
+    predict_config = (
+        bolt.graph.PredictConfig.make()
+        .with_metrics(["categorical_accuracy"])
+        .enable_sparse_inference()
     )
 
     overfitted_accuracy = overfitted_model.predict(
@@ -73,4 +78,5 @@ def test_early_stop_validation():
         test_data, test_labels, predict_config
     )[0]["categorical_accuracy"]
 
+    print(early_stop_accuracy, overfitted_accuracy)
     assert early_stop_accuracy >= overfitted_accuracy

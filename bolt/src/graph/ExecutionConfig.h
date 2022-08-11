@@ -28,10 +28,14 @@ class TrainConfig {
     return *this;
   }
 
-  TrainConfig silence() {
+  TrainConfig& silence() {
     _verbose = false;
     return *this;
   }
+
+  // TrainConfig& withEarlyStopValidation() {
+
+  // }
 
   TrainConfig& withRebuildHashTables(uint32_t rebuild) {
     _rebuild_hash_tables = rebuild;
