@@ -35,7 +35,7 @@ class DistributedBolt:
             "env_vars": {"OMP_NUM_THREADS": "100"},
         }
 
-        if ray.is_initialized():
+        if not ray.is_initialized():
             ray.init(address="auto", runtime_env=runtime_env)
 
         if not ray.is_initialized():
