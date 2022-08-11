@@ -316,8 +316,8 @@ class DistributedBolt:
                     )
 
                 if (
-                    accuracy_list[-1] - accuracy_list[-2] < 0.0005
-                    and accuracy_list[-2] - accuracy_list[-3] < 0.0005
+                    accuracy_list[-1] - accuracy_list[-2] < 0.001
+                    and accuracy_list[-2] - accuracy_list[-3] < 0.001
                 ):
                     self.logging.info(
                         f"Model has been trained till convergence in total {epoch}"
