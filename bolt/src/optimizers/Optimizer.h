@@ -81,6 +81,10 @@ class Adam : public Optimizer {
   uint64_t _prev_dim;
 };
 
+// This is an attempt at a looser implementation of
+// http://proceedings.mlr.press/v97/spring19a/spring19a.pdf.
+// Compressing Gradient Optimizers via Count-Sketches
+// Ryan Spring Anastasios Kyrillidis, Vijai Mohan, Anshumali Shrivastava.
 class CompressedAdam : public Optimizer {
  public:
   CompressedAdam(uint64_t dim, uint64_t prev_dim, float compression_factor)
