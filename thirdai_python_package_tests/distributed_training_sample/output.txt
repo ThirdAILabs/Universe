@@ -1,0 +1,4 @@
+inside benchmarking script with model amazon_polarity
+Running the model amazon_polarity
+Training the following model amazon_polarity
+The logfile is:benchmarking_amazon_polarity.log

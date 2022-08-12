@@ -43,6 +43,7 @@ def train_model(
             compression_density=compression_density,
             scheduler=scheduler,
         )
+    ray.shutdown()
         
 
 
