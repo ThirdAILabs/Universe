@@ -317,6 +317,17 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "corresponding indices for sparse inputs."
            " and (1) list of lists of gradients "
            "corresponds to the input vectors.")
+      .def(
+          "get_input_gradients_single",
+          [](BoltGraph& model, std::vector<BoltVector>&& input_data,
+             bool explain_prediction, bool label_given,
+             uint32_t neuron_to_explain) {
+            return dagGetInputGradientSingleWrapper(
+                model, std::move(input_data), explain_prediction, label_given,
+                neuron_to_explain);
+          },
+          py::arg("input_data"), py::arg("explain_prediction") = true,
+          py::arg("label_given") = false, py::arg("neuron_to_explain") = 0)
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(
@@ -482,6 +493,21 @@ py::tuple dagGetInputGradientsWrapper(
     bool explain_prediction, const std::vector<uint32_t>& neurons_to_explain) {
   auto gradients = model.getInputGradients(input_data, explain_prediction,
                                            neurons_to_explain);
+
+  if (gradients.first == std::nullopt) {
+    return py::cast(gradients.second);
+  }
+  return py::cast(gradients);
+}
+
+py::tuple dagGetInputGradientSingleWrapper(BoltGraph& model,
+                                           std::vector<BoltVector>&& input_data,
+                                           bool explain_prediction,
+                                           bool label_given,
+                                           uint32_t neuron_to_explain) {
+  auto gradients =
+      model.getInputGradientSingle(std::move(input_data), explain_prediction,
+                                   label_given, neuron_to_explain);
 
   if (gradients.first == std::nullopt) {
     return py::cast(gradients.second);

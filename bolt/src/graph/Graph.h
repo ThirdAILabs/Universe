@@ -87,7 +87,7 @@ class BoltGraph {
 
   std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
   getInputGradientSingle(std::vector<BoltVector>&& input_data,
-                         bool explain_prediction, bool neuron_given,
+                         bool explain_prediction, bool label_given,
                          uint32_t neuron_to_explain = 0);
 
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,

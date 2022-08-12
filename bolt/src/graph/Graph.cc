@@ -214,16 +214,16 @@ BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
 
 std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
 BoltGraph::getInputGradientSingle(std::vector<BoltVector>&& input_data,
-                                  bool explain_prediction, bool neuron_given,
+                                  bool explain_prediction, bool label_given,
                                   uint32_t neuron_to_explain) {
   SingleUnitDatasetContext single_input_gradients_context(std::move(input_data),
                                                           {});
 
+  prepareToProcessBatches(1, /* use_sparsity=*/true);
+
   verifyCanGetInputGradientSingle(single_input_gradients_context,
                                   explain_prediction,
                                   _output->numNonzerosInOutput());
-
-  prepareToProcessBatches(1, /* use_sparsity=*/true);
 
   try {
     single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs,
@@ -232,7 +232,7 @@ BoltGraph::getInputGradientSingle(std::vector<BoltVector>&& input_data,
     _inputs[0]->getOutputVector(0).gradients = vec_grad.data();
     std::vector<uint32_t> input_dataset_indices;
     BoltVector label_vector;
-    if (!neuron_given) {
+    if (!label_given) {
       label_vector = getLabelVectorExplainPrediction(0, explain_prediction);
     } else {
       label_vector = getLabelVectorNeuronsToExplain(neuron_to_explain, 0);
