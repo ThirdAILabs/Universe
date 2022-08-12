@@ -2,7 +2,7 @@ import numpy as np
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from .Worker import Worker
+from .worker import Worker
 
 
 @ray.remote(max_restarts=2)

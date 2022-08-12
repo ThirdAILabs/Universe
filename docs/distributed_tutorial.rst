@@ -16,7 +16,7 @@ Installations
 - Have the Distributed bolt module built on those node 
 - Run the command: pip install -r requirements.txt
 - Check if ray path is included in system path by printing (run 'echo $PATH' on terminal)
-- Ray's default path is /ome/$USER/.local/bin
+- Ray's default path is /home/$USER/.local/bin
 - If not included, run the command: export PATH=$PATH:/home/$USER/.local/bin
                 
 Automatic Cluster Initialization

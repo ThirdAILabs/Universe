@@ -1,1 +1,1 @@
-from .DistributedBolt import *
+from .distributed_bolt import *

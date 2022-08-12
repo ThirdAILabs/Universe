@@ -5,14 +5,7 @@ import logging
 
 def load_dataset(
     config: Dict[str, Any], total_nodes, training_partition_data_id
-) -> Optional[
-    Tuple[
-        dataset.BoltDataset,  # train_x
-        dataset.BoltDataset,  # train_y
-        dataset.BoltDataset,  # test_x
-        dataset.BoltDataset,  # test_y
-    ]
-]:
+):
     """
     Returns datasets as boltdatasets
 

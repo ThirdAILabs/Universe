@@ -2,7 +2,9 @@ import numpy as np
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from .Worker import Worker
+from .worker import Worker
+
+
 
 
 @ray.remote(max_restarts=2)
@@ -127,6 +129,7 @@ class PrimaryWorker(Worker):
             )
             update_id -= 1
 
+
     def subwork_linear_communication(self, batch_no: int):
         """This function implements the linear way of communicating between the node.
         In this way of communication, each of the worker calculates their gradients,
@@ -206,5 +209,5 @@ class PrimaryWorker(Worker):
 
         print("Updating weights & bias parameters across nodes")
 
-        self.weights_biases = ray.get(self.workers[0].return_params.remote())
+        self.weights_biases = self.return_params()
         return self.weights_biases
