@@ -64,7 +64,7 @@ void assertStringsEqual(std::vector<std::string>& strings_1, std::vector<std::st
 // TODO(Geordie): Compare with registerNewString() since it's basically the all-in-critical-section version of the lookup method.
 
 TEST(StreamingStringLookupTests, DoesNotBreak) {
-  for (uint32_t trial = 0; trial < 10; trial++) {
+  for (uint32_t trial = 0; trial < 500; trial++) {
     auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
     StreamingStringLookup lookup(/* n_unique = */ 1000);
     auto uids = getUidsInParallel(lookup, strings);
