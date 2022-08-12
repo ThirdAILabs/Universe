@@ -50,9 +50,24 @@ class TabularMetadata {
     }
   }
 
+  void setColumnNames(
+      std::unordered_map<uint32_t, std::string> col_to_col_name) {
+    _col_to_col_name = col_to_col_name;
+    for (auto [col, col_name] : _col_to_col_name) {
+      _col_name_to_col[col_name] = col;
+    }
+  }
+
   uint32_t numColumns() const { return _column_dtypes.size(); }
 
   TabularDataType getColType(uint32_t col) const { return _column_dtypes[col]; }
+
+  uint32_t getColFromName(const std::string& col_name) {
+    if (!_col_name_to_col.count(col_name)) {
+      throw std::invalid_argument("Recieved invalid column name: " + col_name);
+    }
+    return _col_name_to_col[col_name];
+  }
 
   uint32_t numClasses() const { return _class_id_to_class.size(); }
 
@@ -139,9 +154,10 @@ class TabularMetadata {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_num_non_empty_bins, _label_col_index, _column_dtypes,
-            _col_to_max_val, _col_to_min_val, _class_to_class_id,
-            _class_id_to_class);
+    archive(_num_non_empty_bins, _label_col_index, _max_salt_len,
+            _column_dtypes, _col_to_max_val, _col_to_min_val,
+            _class_to_class_id, _class_id_to_class, _col_to_col_name,
+            _col_name_to_col);
   }
 
   // one additional bin is reserved for empty values
@@ -153,6 +169,8 @@ class TabularMetadata {
   std::unordered_map<uint32_t, double> _col_to_min_val;
   std::unordered_map<std::string, uint32_t> _class_to_class_id;
   std::vector<std::string> _class_id_to_class;
+  std::unordered_map<uint32_t, std::string> _col_to_col_name;
+  std::unordered_map<std::string, uint32_t> _col_name_to_col;
 };
 
 class TabularMetadataProcessor : public ComputeBatchProcessor {
@@ -201,19 +219,23 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
                                                   col_to_min_val, max_salt_len);
   }
 
-  bool expectsHeader() const final { return false; }
+  bool expectsHeader() const final { return true; }
 
-  void processHeader(const std::string& header) final { (void)header; }
+  void processHeader(const std::string& header) final {
+    std::vector<std::string_view> column_names =
+        ProcessorUtils::parseCsvRow(header, _delimiter);
+    verifyNumColumns(column_names);
+    std::unordered_map<uint32_t, std::string> col_to_col_name;
+    for (uint32_t col = 0; col < column_names.size(); col++) {
+      col_to_col_name[col] = column_names[col];
+    }
+    _metadata->setColumnNames(col_to_col_name);
+  }
 
   void processRow(const std::string& row) final {
     std::vector<std::string_view> values =
         ProcessorUtils::parseCsvRow(row, _delimiter);
-    if (values.size() != _metadata->numColumns()) {
-      throw std::invalid_argument("Csv format error. Expected " +
-                                  std::to_string(_metadata->numColumns()) +
-                                  " columns but received " +
-                                  std::to_string(values.size()) + " columns.");
-    }
+    verifyNumColumns(values);
     for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
       std::string str_value(values[col]);
       switch (_metadata->getColType(col)) {
@@ -260,6 +282,15 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
             " classes but found an additional class: '" + str_value + ".'");
       }
       _metadata->addClass(str_value);
+    }
+  }
+
+  void verifyNumColumns(const std::vector<std::string_view>& values) {
+    if (values.size() != _metadata->numColumns()) {
+      throw std::invalid_argument("Csv format error. Expected " +
+                                  std::to_string(_metadata->numColumns()) +
+                                  " columns but received " +
+                                  std::to_string(values.size()) + " columns.");
     }
   }
 

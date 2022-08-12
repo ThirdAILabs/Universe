@@ -1,10 +1,11 @@
+#include "TestDatasetGenerators.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/metrics/MetricAggregator.h>
-#include <bolt/src/networks/tests/BoltNetworkTestUtils.h>
 #include <gtest/gtest.h>
 #include <cstdio>
 #include <memory>
@@ -12,6 +13,8 @@
 namespace thirdai::bolt::tests {
 
 static constexpr uint32_t n_classes = 100;
+static constexpr uint32_t n_batches = 100;
+static constexpr uint32_t batch_size = 100;
 
 class ModelWithLayers {
  public:
@@ -69,8 +72,9 @@ class ModelWithLayers {
 };
 
 TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
-  auto [data, labels] =
-      genDataset(/* n_classes =*/n_classes, /* noisy_dataset= */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   ModelWithLayers model;
 
@@ -98,8 +102,9 @@ TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
 }
 
 TEST(SaveLoadDAGTest, SaveFullyConnectedParameters) {
-  auto [data, labels] =
-      genDataset(/* n_classes =*/n_classes, /* noisy_dataset= */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   ModelWithLayers model;
 
@@ -131,6 +136,63 @@ TEST(SaveLoadDAGTest, SaveFullyConnectedParameters) {
   ASSERT_FALSE(std::remove(hidden_1_loc.c_str()));
   ASSERT_FALSE(std::remove(hidden_2_loc.c_str()));
   ASSERT_FALSE(std::remove(output_loc.c_str()));
+}
+
+TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
+  auto [data, labels] = TestDatasetGenerators::generateSimpleTokenDataset(
+      /* n_batches= */ n_batches, /* batch_size= */ batch_size,
+      /* seed= */ 29042);
+
+  auto token_input = std::make_shared<TokenInput>();
+
+  auto embedding_layer = std::make_shared<EmbeddingNode>(
+      /* num_embedding_lookups= */ 4, /* lookup_size= */ 8,
+      /* log_embedding_block_size= */ 14);
+  embedding_layer->addInput(token_input);
+
+  auto fully_connected_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ 2,
+      /* activation= */ "softmax");
+  fully_connected_layer->addPredecessor(embedding_layer);
+
+  BoltGraph model(/* inputs= */ {}, /* token_inputs= */ {token_input},
+                  /* output= */ fully_connected_layer);
+  model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
+
+  TrainConfig train_config =
+      TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ 10)
+          .silence();
+
+  PredictConfig predict_config = PredictConfig::makeConfig()
+                                     .withMetrics({"categorical_accuracy"})
+                                     .silence();
+
+  model.train(
+      /* train_data= */ {}, /* train_tokens= */ {data}, labels, train_config);
+
+  auto test_metrics = model.predict(
+      /* test_data= */ {}, /* test_tokens= */ {data}, labels, predict_config);
+
+  ASSERT_GT(test_metrics.first["categorical_accuracy"], 0.9);
+
+  std::string save_filename = "./tmp_saved_embedding_model";
+  model.save(save_filename);
+
+  auto loaded_model = BoltGraph::load(save_filename);
+
+  auto new_test_metrics = loaded_model->predict(
+      /* test_data= */ {}, /* test_tokens= */ {data}, labels, predict_config);
+
+  ASSERT_EQ(new_test_metrics.first["categorical_accuracy"],
+            test_metrics.first["categorical_accuracy"]);
+
+  model.train(
+      /* train_data= */ {}, /* train_tokens= */ {data}, labels, train_config);
+
+  auto new_trained_test_metrics = loaded_model->predict(
+      /* test_data= */ {}, /* test_tokens= */ {data}, labels, predict_config);
+
+  ASSERT_GT(new_trained_test_metrics.first["categorical_accuracy"], 0.9);
 }
 
 }  // namespace thirdai::bolt::tests

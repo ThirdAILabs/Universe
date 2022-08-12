@@ -18,6 +18,15 @@ target_link_libraries(
   gmock_main
 )
 
+add_executable(vector_norm_test VectorNormTest.cc)
+target_link_libraries(
+  vector_norm_test
+  PRIVATE
+  bolt_graph_lib
+  gtest_main
+  gmock_main
+)
+
 add_executable(fully_connected_dag_test FullyConnectedDagTest.cc)
 target_link_libraries(
   fully_connected_dag_test
@@ -92,6 +101,7 @@ gtest_discover_tests(graph_traversal_test)
 gtest_discover_tests(graph_reject_inputs_test)
 gtest_discover_tests(state_machine_test)
 gtest_discover_tests(embedding_node_test)
+gtest_discover_tests(vector_norm_test)
 gtest_discover_tests(save_load_test)
 gtest_discover_tests(switch_node_test)
 gtest_discover_tests(dag_dlrm_test)

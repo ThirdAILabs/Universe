@@ -6,7 +6,6 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
-#include <atomic>
 #include <sstream>
 #include <stdexcept>
 
@@ -81,13 +80,11 @@ class GenericBatchProcessor
             std::make_exception_ptr(std::invalid_argument(error_ss.str()));
         continue;
       }
-      if (auto err = makeVector(columns, batch_inputs[i], _input_blocks,
-                                _input_blocks_dense)) {
+      if (auto err = makeInputVector(columns, batch_inputs[i])) {
 #pragma omp critical
         block_err = err;
       }
-      if (auto err = makeVector(columns, batch_labels[i], _label_blocks,
-                                _label_blocks_dense)) {
+      if (auto err = makeLabelVector(columns, batch_labels[i])) {
 #pragma omp critical
         block_err = err;
       }
@@ -112,6 +109,16 @@ class GenericBatchProcessor
   uint32_t getInputDim() const { return sumBlockDims(_input_blocks); }
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
+
+  std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
+                                     bolt::BoltVector& vector) {
+    return makeVector(sample, vector, _input_blocks, _input_blocks_dense);
+  }
+
+  std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
+                                     bolt::BoltVector& vector) {
+    return makeVector(sample, vector, _label_blocks, _label_blocks_dense);
+  }
 
  private:
   /**
