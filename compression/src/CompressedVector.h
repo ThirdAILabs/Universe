@@ -9,12 +9,17 @@
 
 namespace thirdai::bolt {
 
-static constexpr uint64_t kDefaultBlockSize = 1;
+static constexpr uint64_t kDefaultBlockSize = 32;
 static constexpr uint64_t kDefaultSeed = 42;
 
 namespace fast {
+
+// Checks whether value is power of two, using bit magic.
 inline bool isPowerOfTwo(uint64_t value) { return value & (value - 1); }
-inline uint64_t modulo(uint64_t x, uint32_t y) { return x & (y - 1); }
+
+// Fast way to do x mod y, where y is a power of two.
+inline uint64_t moduloPowerOfTwo(uint64_t x, uint32_t y) { return x & (y - 1); }
+
 }  // namespace fast
 
 class BlockHashUtil {
@@ -25,6 +30,8 @@ class BlockHashUtil {
   BlockHashUtil(uint32_t seed, uint64_t container_size, uint64_t block_size)
       : _seed(seed), _container_size(container_size), _block_size(block_size) {
     assert(fast::isPowerOfTwo(block_size));
+
+    // The code will potentially fail if not a power of two.
     assert(fast::isPowerOfTwo(container_size));
   }
 
@@ -37,14 +44,15 @@ class BlockHashUtil {
     return hash_value;
   }
 
-  uint64_t projectedIndex(uint64_t i) const {
+  inline uint64_t projectedIndex(uint64_t i) const {
     // The following involves the mod operation and is slow.
     // We will have to do bit arithmetic somewhere.
     // TODO(jerin): Come back here and make more efficient.
-    uint64_t offset = fast::modulo(i, _block_size);
+    uint64_t offset = fast::moduloPowerOfTwo(i, _block_size);
     uint64_t i_begin = i - offset;
 
-    uint64_t block_begin = fast::modulo(hash(i_begin), _container_size);
+    uint64_t block_begin =
+        fast::moduloPowerOfTwo(hash(i_begin), _container_size);
     uint64_t index = block_begin + offset;
     return index;
   }
@@ -127,6 +135,8 @@ class BiasedSketch final : public CompressedVector<ELEMENT_TYPE> {
   BlockHashUtil _util;
 };
 
+// From experiments, this sketch works only if the compressed values are
+// centered around 0.
 template <class ELEMENT_TYPE>
 class UnbiasedSketch final : public CompressedVector<ELEMENT_TYPE> {
  public:
