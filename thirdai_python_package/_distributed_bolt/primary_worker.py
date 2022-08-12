@@ -5,8 +5,6 @@ from typing import Tuple, Any, Optional, Dict, List
 from .worker import Worker
 
 
-
-
 @ray.remote(max_restarts=2)
 class PrimaryWorker(Worker):
     """This is a ray remote class(Actor). Read about them here.
@@ -128,7 +126,6 @@ class PrimaryWorker(Worker):
                 ]
             )
             update_id -= 1
-
 
     def subwork_linear_communication(self, batch_no: int):
         """This function implements the linear way of communicating between the node.
