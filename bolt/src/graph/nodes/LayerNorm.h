@@ -94,9 +94,6 @@ class LayerNormNode final : public Node,
     float mean = 0, variance = 0;
 
     for (uint32_t neuron_index = 0; neuron_index < len; neuron_index++) {
-      // if (bolt_vector.active_neurons == nullptr) {
-      //   std::cout << "activation = " << bolt_vector.activations[neuron_index] << std::endl;
-      // }
       mean += bolt_vector.activations[neuron_index];
     }
     mean /= len;

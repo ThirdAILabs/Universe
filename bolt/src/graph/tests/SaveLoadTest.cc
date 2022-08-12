@@ -24,7 +24,7 @@ class ModelWithLayers {
     normalized_hidden1 = std::make_shared<LayerNormNode>();
     normalized_hidden1->addPredecessor(hidden1);
 
-    hidden2 = std::make_shared<FullyConnectedNode>(2000, 0.1, "relu");
+    hidden2 = std::make_shared<FullyConnectedNode>(2000, "relu");
     hidden2->addPredecessor(input);
 
     normalized_hidden2 = std::make_shared<LayerNormNode>();
@@ -63,7 +63,6 @@ class ModelWithLayers {
   std::shared_ptr<LayerNormNode> normalized_hidden1;
   std::shared_ptr<LayerNormNode> normalized_hidden2;
   std::shared_ptr<ConcatenateNode> concat;
-  std::shared_ptr<LayerNormNode> normalized_concat;
   std::shared_ptr<FullyConnectedNode> output;
 
   std::unique_ptr<BoltGraph> model;
