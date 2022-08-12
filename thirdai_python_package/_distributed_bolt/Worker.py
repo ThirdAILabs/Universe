@@ -7,7 +7,7 @@ from typing import Tuple, Any, Optional, Dict, List
 import time
 
 
-@ray.remote(num_cpus=40, max_restarts=1)
+@ray.remote(num_cpus=20, max_restarts=1)
 class Worker:
     """
     This is a ray remote class(Actor). Read about them here.

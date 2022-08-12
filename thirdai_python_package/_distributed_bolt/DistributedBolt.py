@@ -30,8 +30,6 @@ class DistributedBolt:
 
         current_working_directory = os.getcwd()
         runtime_env = {
-            "working_dir": current_working_directory,
-            "pip": ["toml", "typing", "typing_extensions", "psutil"],
             "env_vars": {"OMP_NUM_THREADS": "100"},
         }
 
