@@ -40,7 +40,8 @@ class TimeGenerator {
   uint32_t _days = 0;
 };
 
-std::vector<uint32_t> makeShuffledUserIdSequence(size_t n_users, size_t n_items) {
+std::vector<uint32_t> makeShuffledUserIdSequence(size_t n_users,
+                                                 size_t n_items) {
   std::vector<uint32_t> user_seq(n_users * n_items);
   for (uint32_t i = 0; i < user_seq.size(); i++) {
     user_seq[i] = i / n_items;
@@ -121,19 +122,23 @@ void assertItemHistoryNotEmpty(bolt::BoltBatch& batch) {
   ASSERT_GT(total_entries, 0);
 };
 
-bolt::BoltBatch processSamples(std::vector<std::string>& samples, std::vector<uint32_t>& user_id_seq, std::vector<uint32_t>& item_id_seq, uint32_t track_last_n) {
+bolt::BoltBatch processSamples(std::vector<std::string>& samples,
+                               std::vector<uint32_t>& user_id_seq,
+                               std::vector<uint32_t>& item_id_seq,
+                               uint32_t track_last_n) {
   auto user_id_map = makeIdMap(user_id_seq);
   auto item_id_map = makeIdMap(item_id_seq);
-  auto records = UserItemHistoryBlock::makeEmptyRecord(user_id_map->size(), track_last_n);
+  auto records =
+      UserItemHistoryBlock::makeEmptyRecord(user_id_map->size(), track_last_n);
 
   auto user_item_history_block = std::make_shared<UserItemHistoryBlock>(
-          /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2,
-          track_last_n, user_id_map, item_id_map, records);
+      /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2,
+      track_last_n, user_id_map, item_id_map, records);
 
   GenericBatchProcessor processor(
       /* input_blocks = */ {user_item_history_block},
       /* label_blocks = */ {});
-  
+
   auto [batch, _] = processor.createBatch(samples);
   return std::move(batch);
 }
@@ -156,7 +161,7 @@ void assertItemHistoryNotStagnant(bolt::BoltBatch& batch,
         last_user_item_history[user_id] != current_history) {
       user_history_changes[user_id] = true;
     }
-    
+
     last_user_item_history[user_id] = current_history;
   }
 
@@ -169,7 +174,7 @@ TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
   uint32_t n_users = 120;
   uint32_t n_items = 300;
   uint32_t track_last_n = 10;
-  
+
   auto user_id_seq = makeShuffledUserIdSequence(n_users, n_items);
   auto item_id_seq = makeItemIdSequence(user_id_seq, n_users, n_items);
   auto samples = makeSamples(user_id_seq, item_id_seq);
