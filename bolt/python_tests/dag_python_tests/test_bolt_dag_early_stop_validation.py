@@ -40,7 +40,7 @@ def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
         bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=20)
         .with_metrics(["categorical_accuracy"])
         .with_early_stop_validation(
-            valid_data=valid_data, valid_labels=valid_labels, patience=3
+            valid_data=valid_data, valid_labels=valid_labels, patience=3, use_sparse_inference=True
         )
     )
 
@@ -74,6 +74,7 @@ def test_early_stop_validation():
     overfitted_accuracy = overfitted_model.predict(
         test_data, test_labels, predict_config
     )[0]["categorical_accuracy"]
+    
     early_stop_accuracy = early_stop_model.predict(
         test_data, test_labels, predict_config
     )[0]["categorical_accuracy"]

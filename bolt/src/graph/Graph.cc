@@ -111,6 +111,15 @@ MetricData BoltGraph::train(
 
       perEpochCallback();
 
+      if (train_config.usingEarlyStopValidation()) {
+        cleanupAfterBatchProcessing();
+        if (shouldEarlyStop(train_config.getEarlyStopValidationMetadata())) {
+          break;
+        }
+        prepareToProcessBatches(train_context.batchSize(),
+                                /* use_sparsity=*/true);
+      }
+
       auto train_end = std::chrono::high_resolution_clock::now();
       int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
                                train_end - train_start)
@@ -125,10 +134,6 @@ MetricData BoltGraph::train(
       }
       _epoch_count++;
       metrics.logAndReset();
-
-      if (epoch == 0) {
-        save("TESTFILENAME");
-      }
     }
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
@@ -140,7 +145,10 @@ MetricData BoltGraph::train(
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
 
-  // *this = *load("TESTFILENAME");
+  if (train_config.usingEarlyStopValidation()) {
+    *this = *load(
+        TrainConfig::EarlyStopValidationMetadata::BEST_MODEL_SAVE_LOCATION);
+  }
 
   return metric_data;
 }
@@ -320,6 +328,31 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
       metrics.processSample(output, labels);
     }
   }
+}
+
+bool BoltGraph::shouldEarlyStop(
+    std::optional<TrainConfig::EarlyStopValidationMetadata> metadata) {
+  auto predict_config =
+      PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
+  if (metadata->use_sparse_inference) {
+    predict_config.enableSparseInference();
+  }
+
+  double accuracy = predict(metadata->valid_data, metadata->valid_tokens,
+                            metadata->valid_labels, predict_config)
+                        .first["categorical_accuracy"];
+
+  if (accuracy < metadata->last_validation_accuracy) {
+    if (--metadata->patience) {
+      return true;
+    }
+  } else if (accuracy > metadata->best_validation_accuracy) {
+    metadata->best_validation_accuracy = accuracy;
+    save(TrainConfig::EarlyStopValidationMetadata::BEST_MODEL_SAVE_LOCATION);
+  }
+  metadata->last_validation_accuracy = accuracy;
+
+  return false;
 }
 
 void BoltGraph::processOutputCallback(

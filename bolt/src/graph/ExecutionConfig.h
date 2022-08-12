@@ -33,10 +33,6 @@ class TrainConfig {
     return *this;
   }
 
-  // TrainConfig& withEarlyStopValidation() {
-
-  // }
-
   TrainConfig& withRebuildHashTables(uint32_t rebuild) {
     _rebuild_hash_tables = rebuild;
     return *this;
@@ -56,6 +52,50 @@ class TrainConfig {
   }
 
   constexpr bool verbose() const { return _verbose; }
+
+  struct EarlyStopValidationMetadata {
+    inline static const std::string BEST_MODEL_SAVE_LOCATION =
+        "bestModelSaveLocation";
+
+    EarlyStopValidationMetadata(
+        const std::vector<dataset::BoltDatasetPtr>&& valid_data,
+        const std::vector<dataset::BoltTokenDatasetPtr>&& valid_tokens,
+        const dataset::BoltDatasetPtr&& valid_labels, uint32_t patience,
+        bool use_sparse_inference)
+        : valid_data(valid_data),
+          valid_tokens(valid_tokens),
+          valid_labels(valid_labels),
+          patience(patience),
+          use_sparse_inference(use_sparse_inference),
+          best_validation_accuracy(0),
+          last_validation_accuracy(0) {}
+
+    std::vector<dataset::BoltDatasetPtr> valid_data;
+    std::vector<dataset::BoltTokenDatasetPtr> valid_tokens;
+    dataset::BoltDatasetPtr valid_labels;
+    uint32_t patience;
+    bool use_sparse_inference;
+
+    double best_validation_accuracy;
+    double last_validation_accuracy;
+  };
+
+  TrainConfig& withEarlyStopValidation(
+      const std::vector<dataset::BoltDatasetPtr>& valid_data,
+      const std::vector<dataset::BoltTokenDatasetPtr>& valid_tokens,
+      const dataset::BoltDatasetPtr& valid_labels, uint32_t patience = 3,
+      bool use_sparse_inference = false) {
+    _early_stop_metadata = EarlyStopValidationMetadata(
+        std::move(valid_data), std::move(valid_tokens), std::move(valid_labels),
+        patience, use_sparse_inference);
+    return *this;
+  }
+
+  auto getEarlyStopValidationMetadata() const { return _early_stop_metadata; }
+
+  constexpr bool usingEarlyStopValidation() const {
+    return _early_stop_metadata.has_value();
+  }
 
   uint32_t getRebuildHashTablesBatchInterval(uint32_t batch_size,
                                              uint32_t data_len) const {
@@ -98,7 +138,8 @@ class TrainConfig {
         _verbose(true),
         _batch_size({}),
         _rebuild_hash_tables(std::nullopt),
-        _reconstruct_hash_functions(std::nullopt) {}
+        _reconstruct_hash_functions(std::nullopt),
+        _early_stop_metadata(std::nullopt) {}
 
   uint32_t _epochs;
   float _learning_rate;
@@ -108,6 +149,8 @@ class TrainConfig {
 
   std::optional<uint32_t> _rebuild_hash_tables;
   std::optional<uint32_t> _reconstruct_hash_functions;
+
+  std::optional<EarlyStopValidationMetadata> _early_stop_metadata;
 };
 
 class PredictConfig {
