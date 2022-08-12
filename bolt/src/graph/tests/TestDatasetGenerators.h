@@ -2,6 +2,7 @@
 
 #include <dataset/src/Datasets.h>
 #include <algorithm>
+#include <numeric>
 #include <random>
 
 namespace thirdai::bolt::tests {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <ctime>
 #include <exception>
 #include <iomanip>
@@ -8,11 +9,29 @@
 #include <string_view>
 
 namespace thirdai::dataset {
-class TimeUtils {
+
+class TimeObject {
  public:
   // We use 64-bit int for timestamps
   static constexpr int64_t SECONDS_IN_DAY = static_cast<int64_t>(60 * 60 * 24);
   static constexpr int64_t SECONDS_IN_HOUR = static_cast<int64_t>(60 * 60);
+
+  TimeObject() : _time_object() {}
+
+  explicit TimeObject(const std::string_view& time_string) : _time_object() {
+    std::stringstream time_ss;
+    time_ss << time_string;
+
+    if (time_ss >> std::get_time(&_time_object, "%Y-%m-%d")) {
+      return;
+    }
+
+    std::stringstream error_ss;
+    error_ss << "[Time] Failed to parse the string '" << time_string
+             << "'. Expected a timestamp string in the 'YYYY-MM-DD' format.";
+
+    throw std::invalid_argument(error_ss.str());
+  }
 
   /**
    * Theres an STL function that does this (std::mktime)
@@ -24,60 +43,54 @@ class TimeUtils {
    * Adapted from
    * https://gmbabar.wordpress.com/2010/12/01/mktime-slow-use-custom-function/
    */
-  static int64_t timeToEpoch(const struct tm& time) {
-    int64_t days_since_1970 = daysFrom1970ToYear(time) + dayOfYear(time);
+  int64_t secondsSinceEpoch() const {
+    int64_t days_since_1970 = daysFrom1970ToYear() + dayOfYear();
     return days_since_1970 * SECONDS_IN_DAY;
   }
 
-  // This is a convenience function.
-  static std::exception_ptr timeStringToTimeObject(std::string_view time_string,
-                                                   std::tm& time_object) {
-    std::stringstream time_ss;
-    time_ss << time_string;
+  inline int month() const { return _time_object.tm_mon; }
 
-    if (time_ss >> std::get_time(&time_object, "%Y-%m-%d")) {
-      return nullptr;
-    }
+  inline int dayOfMonthZeroIndexed() const { return _time_object.tm_mday - 1; }
 
-    std::stringstream error_ss;
-    error_ss
-        << "[TimeUtils::timeStringToTimeObject] Failed to parse the string '"
-        << time_string
-        << "'. Expected a timestamp string in the 'YYYY-MM-DD' format.";
+  int dayOfYear() const {
+    const int days_before_month[] = {0,   31,  59,  90,  120, 151,
+                                     181, 212, 243, 273, 304, 334};
+    int day_of_year = days_before_month[_time_object.tm_mon];
 
-    return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
-  }
-
- private:
-  static constexpr int daysFrom1970ToYear(const struct tm& time) {
-    int years_since_1970 = time.tm_year - 70;  // tm->tm_year is from 1900.
-    int leaps_since_1970_to_year = (years_since_1970 + 1) / 4;
-    return years_since_1970 * 365 + leaps_since_1970_to_year;
-  }
-
-  static constexpr int dayOfYear(const struct tm& time) {
-    const int mon_days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    int day_of_year = 0;
-
-    for (int i = 0; i < time.tm_mon; i++) {
-      day_of_year += mon_days[i];
-    }
-    if (isLeapYear(time) && pastFebruary(time)) {
+    if (isLeapYear() && pastFebruary()) {
       day_of_year++;
     }
-    day_of_year += time.tm_mday - 1;  // Day of month is 1-indexed.
+
+    day_of_year += dayOfMonthZeroIndexed();
 
     return day_of_year;
   }
 
-  static constexpr bool isLeapYear(const struct tm& time) {
-    return (time.tm_year & 3) == 0;  // 1) tm_year is years since 1900.
-                                     // 2) "& 3" is the same as "% 4".
+ private:
+  int daysFrom1970ToYear() const {
+    int years_since_1970 = yearsSince1900() - 70;
+    return years_since_1970 * 365 +
+           leapsBetweenJan1970AndYear(years_since_1970);
   }
 
-  static constexpr bool pastFebruary(const struct tm& time) {
-    return time.tm_mon >= 2;  // Months are 0-indexed.
+  static int leapsBetweenJan1970AndYear(int years_since_1970) {
+    return std::floor(static_cast<float>(years_since_1970 + 1) /
+                      4);  // Just trust me on this :)
   }
+
+  inline bool isLeapYear() const {
+    // "& 3" is the same as "% 4" but faster.
+    return (yearsSince1900() & 3) == 0;
+  }
+
+  inline bool pastFebruary() const {
+    int february_0_indexed = 1;
+    return _time_object.tm_mon > february_0_indexed;
+  }
+
+  inline int yearsSince1900() const { return _time_object.tm_year; }
+
+  struct tm _time_object;
 };
 
 }  // namespace thirdai::dataset
