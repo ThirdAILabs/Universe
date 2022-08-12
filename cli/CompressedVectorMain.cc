@@ -66,8 +66,7 @@ void runReconstructionAnalysis(const Options& options) {
   };
 
   // Vary compressed_size from a lower limit all the way to uncompressed_size
-  uint64_t upper_bound =
-      options.uncompressed_size * std::log(options.uncompressed_size);
+  uint64_t upper_bound = options.uncompressed_size;
   for (uint64_t compressed_size = options.compressed_size;
        compressed_size <= upper_bound; compressed_size += options.step_size) {
     std::unique_ptr<CompressedVector<ElementType>> compressed_vector =
