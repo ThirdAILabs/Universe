@@ -68,6 +68,17 @@ target_link_libraries(
 )
 
 add_executable(
+  user_item_history_block_tests
+  UserItemHistoryBlockTests.cc
+)
+
+target_link_libraries(
+  user_item_history_block_tests
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
   block_batch_processor_test
   BlockBatchProcessorTests.cc
 )
@@ -143,6 +154,7 @@ gtest_discover_tests(segmented_feature_vectors_test)
 gtest_discover_tests(categorical_block_test)
 gtest_discover_tests(date_block_test)
 gtest_discover_tests(text_block_test)
+gtest_discover_tests(user_item_history_block_tests)
 gtest_discover_tests(block_batch_processor_test)
 gtest_discover_tests(generic_batch_processor_test)
 gtest_discover_tests(categorical_multi_label_test)
