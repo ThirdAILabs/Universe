@@ -175,7 +175,6 @@ class LayerNormNode final : public Node,
 
     for (uint32_t neuron_index = 0; neuron_index < input_vector.len;
          neuron_index++) {
-
       float grad = normDerivative(input_vector.activations[neuron_index], mean,
                                   variance, len);
 
