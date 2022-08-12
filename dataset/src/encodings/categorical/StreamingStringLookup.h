@@ -10,6 +10,7 @@
 namespace thirdai::dataset {
 
 class StreamingStringLookup {
+  friend class StreamingStringLookupTests;
  public:
   explicit StreamingStringLookup(uint32_t n_unique)
       : _uid_to_string(n_unique), _expected_n_unique(n_unique) {
@@ -64,7 +65,7 @@ class StreamingStringLookup {
     {
       // We need to double check because another thread
       // may have registered this string before we got here.
-      if (_string_to_uid.count(string) > 0) {
+      if (_string_to_uid.count(string)) {
         // No need to check that the string registration is 
         // signed since this is in a critical section.
         uid = _string_to_uid.at(string);
@@ -75,9 +76,6 @@ class StreamingStringLookup {
         if (uid < _expected_n_unique) {
           _string_to_uid[string] = uid;
           _uid_to_string[uid] = string;
-          // auto dependency_signature = updateMapsAndGetDepSignature(uid, string);
-          // signRegistrationComplete(string, dependency_signature);
-          // explanation << "Mapped " << string << " to " << uid << ". Added new.";
         } else {
           rejectRegistration();
         }
@@ -86,27 +84,6 @@ class StreamingStringLookup {
     
     return uid;
   }
-
-  inline uint32_t updateMapsAndGetDepSignature(uint32_t uid, std::string& string) {
-    _string_to_uid[string] = uid;
-    _uid_to_string[uid] = string;
-    // The size of _string_to_uid is a value that is
-    // dependent on this operation's execution.
-    return _string_to_uid.size();
-  }
-
-  inline void signRegistrationComplete(std::string& string, uint32_t dependency_signature) {
-    /*
-      Dependency signature enforces that this operation is
-      executed after the operation that produces the signature.
-      (prevent unwanted instruction reordering by compiler)
-    */
-    _registration_signatures[string] = dependency_signature;
-  }
-
-  inline bool completelyRegistered(std::string& string) const {
-    return _registration_signatures.count(string) > 0;
-  } 
 
   inline void rejectRegistration() const {
     std::cerr << "[StreamingStringLookup] WARNING: expected " << _expected_n_unique
