@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <sstream>
@@ -16,7 +17,7 @@ class StreamingStringLookup {
     _registration_signatures.reserve(n_unique);
   }
 
-  uint32_t lookup(std::string& string) {
+  std::pair<uint32_t, std::string> lookup(std::string& string) {
     if (completelyRegistered(string)) {
       /* 
         It is safe to call unordered_map::at() here since
@@ -31,7 +32,13 @@ class StreamingStringLookup {
 
         TODO: May need to explain about C++ reference cannot be invalidated.
       */
-      return _string_to_uid.at(string);
+      
+      auto uid = _string_to_uid.at(string);
+      if (_uid_to_string[uid] == string) {
+        std::stringstream explanation;
+        explanation << "Mapped " << string << " to " << uid << ". Supposedly completely registered.";
+        return {uid, explanation.str()};
+      }
     }
     
     return registerNewString(string);
@@ -46,10 +53,17 @@ class StreamingStringLookup {
     return _uid_to_string[uid];
   }
 
+  void writeToFile(std::ofstream& out) {
+    for (uint32_t uid = 0; uid < _expected_n_unique; uid++) {
+      out << uid << " : " << _uid_to_string[uid] << std::endl;
+    }
+  }
+
  private:
 
-  uint32_t registerNewString(std::string& string) {
+  std::pair<uint32_t, std::string> registerNewString(std::string& string) {
     uint32_t uid = _expected_n_unique;
+    std::stringstream explanation;
 #pragma omp critical(streaming_string_lookup)
     {
       // We need to double check because another thread
@@ -58,19 +72,22 @@ class StreamingStringLookup {
         // No need to check that the string registration is 
         // signed since this is in a critical section.
         uid = _string_to_uid.at(string);
+        explanation << "Mapped " << string << " to " << uid << ". In critical section but supposedly seen before.";
+
       } else {
         uid = _string_to_uid.size();
 
         if (uid < _expected_n_unique) {
           auto dependency_signature = updateMapsAndGetDepSignature(uid, string);
           signRegistrationComplete(string, dependency_signature);
+          explanation << "Mapped " << string << " to " << uid << ". Added new.";
         } else {
           rejectRegistration();
         }
       }
     }
     
-    return uid;
+    return {uid, explanation.str()};
   }
 
   inline uint32_t updateMapsAndGetDepSignature(uint32_t uid, std::string& string) {
@@ -91,7 +108,7 @@ class StreamingStringLookup {
   }
 
   inline bool completelyRegistered(std::string& string) const {
-    return _registration_signatures.count(string) > 0;
+    return _registration_signatures.count(string) > 0 ;
   } 
 
   inline void rejectRegistration() const {
