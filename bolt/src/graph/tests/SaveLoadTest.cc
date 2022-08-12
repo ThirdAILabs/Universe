@@ -21,7 +21,7 @@ class ModelWithLayers {
   ModelWithLayers() {
     input = std::make_shared<Input>(n_classes);
 
-    hidden1 = std::make_shared<FullyConnectedNode>(2000, 0.1, "relu");
+    hidden1 = std::make_shared<FullyConnectedNode>(2000, "relu");
     hidden1->addPredecessor(input);
 
     normalized_hidden1 = std::make_shared<LayerNormNode>();
