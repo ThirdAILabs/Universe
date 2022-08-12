@@ -57,6 +57,17 @@ target_link_libraries(
 )
 
 add_executable(
+  streaming_string_lookup_tests
+  StreamingStringLookupTests.cc
+)
+
+target_link_libraries(
+  streaming_string_lookup_tests
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
   block_batch_processor_test
   BlockBatchProcessorTests.cc
 )
