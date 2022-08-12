@@ -12,13 +12,6 @@
 
 namespace thirdai::dataset {
 
-class StreamingStringLookupTests {
- public:
-  static uint32_t criticalLookup(StreamingStringLookup& lookup, std::string& string) {
-    return lookup.registerNewString(string);
-  }
-};
-
 static std::vector<std::string> generateRandomStrings(size_t n_unique, size_t repetitions, size_t len) {
   static const char alphanum[] =
       "0123456789"
@@ -44,20 +37,38 @@ static std::vector<std::string> generateRandomStrings(size_t n_unique, size_t re
   return strings;
 }
 
-std::vector<uint32_t> getUidsInParallel(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
+std::vector<uint32_t> parallelGetUidsDefaultLookup(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
+  std::vector<uint32_t> uids(strings.size());
+  std::cout << "Inside parallel" << std::endl;
+#pragma omp parallel for default(none) shared(strings, uids, lookup)
+  for (uint32_t idx = 0; idx < strings.size(); idx++) {
+    uids[idx] = lookup.lookup(strings[idx]);
+  }
+  std::cout << "Outside parallel" << std::endl;
+  return uids;
+}
+
+std::vector<uint32_t> parallelGetUidsCriticalLookup(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
   std::vector<uint32_t> uids(strings.size());
 #pragma omp parallel for default(none) shared(strings, uids, lookup)
+  for (uint32_t idx = 0; idx < strings.size(); idx++) {
+    uids[idx] = lookup.criticalLookup(strings[idx]);
+  }
+  return uids;
+}
+
+std::vector<uint32_t> sequentialGetUidsDefaultLookup(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
+  std::vector<uint32_t> uids(strings.size());
   for (uint32_t idx = 0; idx < strings.size(); idx++) {
     uids[idx] = lookup.lookup(strings[idx]);
   }
   return uids;
 }
 
-std::vector<uint32_t> getUidsInCriticalSectionOnly(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
+std::vector<uint32_t> sequentialGetUidsCriticalLookup(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
   std::vector<uint32_t> uids(strings.size());
-#pragma omp parallel for default(none) shared(strings, uids, lookup)
   for (uint32_t idx = 0; idx < strings.size(); idx++) {
-    uids[idx] = StreamingStringLookupTests::criticalLookup(lookup, strings[idx]);
+    uids[idx] = lookup.criticalLookup(strings[idx]);
   }
   return uids;
 }
@@ -79,42 +90,67 @@ void assertStringsEqual(std::vector<std::string>& strings_1, std::vector<std::st
   }
 }
 
-// TODO(Geordie): Compare with registerNewString() since it's basically the all-in-critical-section version of the lookup method.
+template<typename LAMBDA_T>
+auto time(LAMBDA_T lambda) {
+  auto start = std::chrono::high_resolution_clock::now();
+  lambda();
+  auto end = std::chrono::high_resolution_clock::now();
+  return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+}
 
 TEST(StreamingStringLookupTests, DoesNotBreak) {
-  for (uint32_t trial = 0; trial < 100; trial++) {
+  for (uint32_t trial = 0; trial < 10000; trial++) {
+    std::cout << "Trial " << trial << std::endl;
     auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-    StreamingStringLookup lookup(/* n_unique = */ 1200);
-    auto uids = getUidsInParallel(lookup, strings);
+    StreamingStringLookup lookup(/* n_unique = */ 1000);
+    auto uids = parallelGetUidsDefaultLookup(lookup, strings);
     auto reverted_strings = backToStrings(lookup, uids);
     assertStringsEqual(strings, reverted_strings);
   }
 }
 
-TEST(StreamingStringLookupTests, LowOverheadWhenSingleThread) {}
+TEST(StreamingStringLookupTests, LowOverheadWhenSingleThread) {
+  auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
+  
+  auto optimized_duration = time([&]() {
+    for (uint32_t trial = 0; trial < 10; trial++) {
+      StreamingStringLookup lookup(/* n_unique = */ 1000);
+      auto uids = sequentialGetUidsDefaultLookup(lookup, strings);
+    }
+  });
+  
+  auto critical_duration = time([&]() {
+    for (uint32_t trial = 0; trial < 10; trial++) {
+      StreamingStringLookup lookup(/* n_unique = */ 1000);
+      auto uids = sequentialGetUidsCriticalLookup(lookup, strings);
+    }
+  });
+  
+  ASSERT_LE(optimized_duration, 1.2 * critical_duration);
+
+  std::cout << "Optimized " << optimized_duration << "ms vs Critical " << critical_duration <<  "ms." << std::endl; 
+}
 
 TEST(StreamingStringLookupTests, MuchFasterWhenMultiThread) {
-  auto parallel_start = std::chrono::high_resolution_clock::now();
-  for (uint32_t trial = 0; trial < 10; trial++) {
-    auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-    StreamingStringLookup lookup(/* n_unique = */ 1200);
-    auto uids = getUidsInParallel(lookup, strings);
-  }
-  auto parallel_end = std::chrono::high_resolution_clock::now();
-  auto parallel_duration = std::chrono::duration_cast<std::chrono::milliseconds>(parallel_end - parallel_start).count();
+  auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
+  
+  auto optimized_duration = time([&]() {
+    for (uint32_t trial = 0; trial < 10; trial++) {
+      StreamingStringLookup lookup(/* n_unique = */ 1000);
+      auto uids = parallelGetUidsDefaultLookup(lookup, strings);  
+    }
+  });
+  
+  auto critical_duration = time([&]() {
+    for (uint32_t trial = 0; trial < 10; trial++) {
+      StreamingStringLookup lookup(/* n_unique = */ 1000);
+      auto uids = parallelGetUidsCriticalLookup(lookup, strings);
+    }
+  });
+  
+  ASSERT_LE(optimized_duration, critical_duration / 2);
 
-  auto critical_start = std::chrono::high_resolution_clock::now();
-  for (uint32_t trial = 0; trial < 10; trial++) {
-    auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-    StreamingStringLookup lookup(/* n_unique = */ 1200);
-    auto uids = getUidsInCriticalSectionOnly(lookup, strings);
-  }
-  auto critical_end = std::chrono::high_resolution_clock::now();
-  auto critical_duration = std::chrono::duration_cast<std::chrono::milliseconds>(critical_end - critical_start).count();
-
-  ASSERT_LE(parallel_duration, critical_duration);
-
-  std::cout << "Parallel " << parallel_duration << "ms Critical " << critical_duration <<  "ms." << std::endl; 
+  std::cout << "Optimized " << optimized_duration << "ms vs Critical " << critical_duration <<  "ms." << std::endl; 
 }
 
 } // namespace thirdai::dataset
