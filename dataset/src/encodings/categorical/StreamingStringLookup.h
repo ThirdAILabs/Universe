@@ -18,7 +18,8 @@ class StreamingStringLookup {
   }
 
   std::pair<uint32_t, std::string> lookup(std::string& string) {
-    if (completelyRegistered(string)) {
+    // if (completelyRegistered(string)) {
+    if (_string_to_uid.count(string) > 0) {
       /* 
         It is safe to call unordered_map::at() here since
         1) we reserved enough buckets for n_unique elements

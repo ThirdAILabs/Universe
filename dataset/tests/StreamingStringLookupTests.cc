@@ -97,7 +97,7 @@ void assertStringsEqual(std::vector<std::string>& strings_1, std::vector<std::st
       lookup.writeToFile(out);
       out.close();
     }
-    // ASSERT_EQ(strings_1[idx], strings_2[idx]);
+    ASSERT_EQ(strings_1[idx], strings_2[idx]);
   }
 }
 
