@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
@@ -21,6 +25,8 @@ namespace thirdai::bolt {
   are linearly transformed according to the parameters specified by beta and
   gamma.
  */
+
+constexpr float OFFSET = 0.00000001;
 
 class LayerNormNode final : public Node,
                             public std::enable_shared_from_this<LayerNormNode> {
@@ -71,9 +77,11 @@ class LayerNormNode final : public Node,
     bool is_dense = _node_to_normalize->numNonzerosInOutput() ==
                     _node_to_normalize->outputDim();
 
-    BoltBatch batch =
-        BoltBatch(/* dim=*/outputDim(), /* batch_size= */ batch_size,
-                  /* is_dense= */ is_dense);
+    auto dim = is_dense ? _node_to_normalize->outputDim()
+                        : _node_to_normalize->numNonzerosInOutput();
+
+    BoltBatch batch = BoltBatch(/* dim=*/dim, /* batch_size= */ batch_size,
+                                /* is_dense= */ is_dense);
 
     _layer_norm_state = LayerNormState(batch);
   }
@@ -86,6 +94,9 @@ class LayerNormNode final : public Node,
     float mean = 0, variance = 0;
 
     for (uint32_t neuron_index = 0; neuron_index < len; neuron_index++) {
+      // if (bolt_vector.active_neurons == nullptr) {
+      //   std::cout << "activation = " << bolt_vector.activations[neuron_index] << std::endl;
+      // }
       mean += bolt_vector.activations[neuron_index];
     }
     mean /= len;
@@ -109,15 +120,18 @@ class LayerNormNode final : public Node,
         _node_to_normalize->getOutputVector(vec_index);
 
     auto output = getOutputVectorImpl(vec_index);
-    std::fill_n(output.gradients, output.len, 0);
 
     auto [mean, variance] = computeNormalizationMoments(input_vector);
+
+    assert(!std::isnan(mean));
+    assert(!std::isnan(variance));
 
     for (uint32_t neuron_index = 0; neuron_index < input_vector.len;
          neuron_index++) {
       float activation = input_vector.activations[neuron_index];
 
-      auto z_score = (activation - mean) / sqrt(variance) + _config->epsilon();
+      auto z_score =
+          (activation - mean) / (sqrt(variance) + _config->epsilon());
 
       // apply a linear transformation to the z_score using gamma and beta
       // regularizers
@@ -137,12 +151,18 @@ class LayerNormNode final : public Node,
 
     float centered_activation = (activation - mean) * (activation - mean);
     float std_deviation = sqrt(variance);
-    auto denominator = vec_length * variance * std_deviation;
+    auto denominator = (vec_length * vec_length) * std_deviation *
+                       (std_deviation + _config->epsilon()) *
+                       (std_deviation + _config->epsilon());
 
-    auto gradient = vec_length * std_deviation * (std_deviation + _config->epsilon()) - centered_activation;
+    // additive term to avoid division by zero
+    denominator += OFFSET;
+
+    auto gradient =
+        vec_length * std_deviation * (std_deviation + _config->epsilon()) -
+        centered_activation;
     gradient /= denominator;
-    gradient *= _config->gamma() * (vec_length - 1) * vec_length;
-
+    gradient *= _config->gamma() * (vec_length - 1);
 
     return gradient;
   }
@@ -157,18 +177,17 @@ class LayerNormNode final : public Node,
 
     for (uint32_t neuron_index = 0; neuron_index < input_vector.len;
          neuron_index++) {
-      // auto output_vector_activation =
-      // output_vector.activations[neuron_index];
-      float grad = normDerivative(output_vector.activations[neuron_index], mean,
+      assert(!std::isnan(output_vector.gradients[neuron_index]));
+
+      float grad = normDerivative(input_vector.activations[neuron_index], mean,
                                   variance, len);
 
       assert(!std::isnan(grad));
-      output_vector.gradients[neuron_index] *= grad;
-      if (output_vector.gradients[neuron_index] == 0) {
-        continue;
-      }
+
+      assert(!std::isnan(output_vector.gradients[neuron_index]));
+
       input_vector.gradients[neuron_index] =
-          output_vector.gradients[neuron_index];
+          output_vector.gradients[neuron_index] * grad;
     }
   }
 
@@ -245,10 +264,12 @@ class LayerNormNode final : public Node,
   std::shared_ptr<NormalizationLayerConfig> _config;
 
   // This private field is std::nullopt until after the node enters the
-  // prepared for batch normalization state
+  // prepared for batch processing state
   std::optional<LayerNormState> _layer_norm_state;
   NodePtr _node_to_normalize;
   bool _compiled;
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::LayerNormNode)

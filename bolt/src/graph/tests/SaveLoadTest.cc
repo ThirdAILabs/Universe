@@ -21,17 +21,20 @@ class ModelWithLayers {
     hidden1 = std::make_shared<FullyConnectedNode>(2000, 0.1, "relu");
     hidden1->addPredecessor(input);
 
+    normalized_hidden1 = std::make_shared<LayerNormNode>();
+    normalized_hidden1->addPredecessor(hidden1);
+
     hidden2 = std::make_shared<FullyConnectedNode>(2000, 0.1, "relu");
     hidden2->addPredecessor(input);
 
-    concat = std::make_shared<ConcatenateNode>();
-    concat->setConcatenatedNodes({hidden1, hidden2});
+    normalized_hidden2 = std::make_shared<LayerNormNode>();
+    normalized_hidden2->addPredecessor(hidden2);
 
-    normalized_concat = std::make_shared<LayerNormNode>();
-    normalized_concat->addPredecessor(concat);
+    concat = std::make_shared<ConcatenateNode>();
+    concat->setConcatenatedNodes({normalized_hidden1, normalized_hidden2});
 
     output = std::make_shared<FullyConnectedNode>(n_classes, "softmax");
-    output->addPredecessor(normalized_concat);
+    output->addPredecessor(concat);
 
     model = std::make_unique<BoltGraph>(std::vector<InputPtr>{input}, output);
 
@@ -57,8 +60,10 @@ class ModelWithLayers {
   InputPtr input;
   std::shared_ptr<FullyConnectedNode> hidden1;
   std::shared_ptr<FullyConnectedNode> hidden2;
-  std::shared_ptr<LayerNormNode> normalized_concat;
+  std::shared_ptr<LayerNormNode> normalized_hidden1;
+  std::shared_ptr<LayerNormNode> normalized_hidden2;
   std::shared_ptr<ConcatenateNode> concat;
+  std::shared_ptr<LayerNormNode> normalized_concat;
   std::shared_ptr<FullyConnectedNode> output;
 
   std::unique_ptr<BoltGraph> model;
@@ -74,26 +79,23 @@ TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
 
   auto test_metrics1 = model.predict(data, labels);
 
-  std::cout << "categorical_accuracy = "
-            << test_metrics1["categorical_accuracy"] << std::endl;
   ASSERT_GE(test_metrics1["categorical_accuracy"], 0.95);
 
-  // std::string save_loc = "./saved_dag_model";
-  // model.model->save(save_loc);
+  std::string save_loc = "./saved_dag_model";
+  model.model->save(save_loc);
 
-  // auto new_model = BoltGraph::load(save_loc);
+  auto new_model = BoltGraph::load(save_loc);
 
-  // auto predict_config =
-  //     PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
-  // auto test_metrics2 = new_model->predict({data}, {}, labels,
-  // predict_config);
+  auto predict_config =
+      PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
+  auto test_metrics2 = new_model->predict({data}, {}, labels, predict_config);
 
-  // ASSERT_GE(test_metrics2.first["categorical_accuracy"], 0.9);
+  ASSERT_GE(test_metrics2.first["categorical_accuracy"], 0.9);
 
-  // ASSERT_EQ(test_metrics1["categorical_accuracy"],
-  //           test_metrics2.first["categorical_accuracy"]);
+  ASSERT_EQ(test_metrics1["categorical_accuracy"],
+            test_metrics2.first["categorical_accuracy"]);
 
-  // ASSERT_FALSE(std::remove(save_loc.c_str()));
+  ASSERT_FALSE(std::remove(save_loc.c_str()));
 }
 
 TEST(SaveLoadDAGTest, SaveFullyConnectedParameters) {

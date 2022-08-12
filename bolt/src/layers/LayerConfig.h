@@ -234,6 +234,12 @@ class NormalizationLayerConfig {
   float _beta_regularizer;
   float _gamma_regularizer;
   float _verbose;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_center, _scale, _beta_regularizer, _gamma_regularizer, _epsilon);
+  }
 };
 
 }  // namespace thirdai::bolt
