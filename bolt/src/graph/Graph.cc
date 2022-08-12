@@ -507,9 +507,7 @@ void BoltGraph::verifyInputForGraph(const DatasetContextBase& context) {
 void BoltGraph::verifyGraphProperties() {
   GraphPropertyChecks::verifyOutputIsNotInputLayer(_output);
 
-  GraphPropertyChecks::verifyOutputIsNotConcatLayer(_output);
-
-  GraphPropertyChecks::verifyOutputIsNotNormalizationLayer(_output);
+  GraphPropertyChecks::verifyOutputIsFullyConnectedLayer(_output);
 
   GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
                                                                       _loss);

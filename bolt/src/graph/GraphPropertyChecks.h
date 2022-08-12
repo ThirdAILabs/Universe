@@ -18,14 +18,11 @@ class GraphPropertyChecks {
     }
   }
 
-  static void verifyOutputIsNotConcatLayer(const NodePtr& output) {
+  static void verifyOutputIsFullyConnectedLayer(const NodePtr& output) {
     if (dynamic_cast<ConcatenateNode*>(output.get())) {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be a Concatenate node.");
     }
-  }
-
-  static void verifyOutputIsNotNormalizationLayer(const NodePtr& output) {
     if (dynamic_cast<LayerNormNode*>(output.get())) {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be a normalization node");
