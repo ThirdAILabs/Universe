@@ -107,7 +107,7 @@ TEST(StreamingStringLookupTests, DoesNotBreak) {
   for (uint32_t trial = 0; trial < 100; trial++) {
     std::cout << "new trial" << std::endl;
     auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-    StreamingStringLookup lookup(/* n_unique = */ 1000);
+    StreamingStringLookup lookup(/* n_unique = */ 1200);
     auto [uids, explanations] = getUidsInParallel(lookup, strings);
     auto reverted_strings = backToStrings(lookup, uids);
     assertStringsEqual(strings, reverted_strings, uids, lookup, explanations);
