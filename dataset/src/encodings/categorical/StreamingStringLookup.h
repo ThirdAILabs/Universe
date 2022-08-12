@@ -1,3 +1,5 @@
+#pragma once
+
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -18,13 +20,6 @@ class StreamingStringLookup {
   }
 
   uint32_t lookup(std::string& string) {
-    if (auto uid = tryExistingStringConcurrentLookup(string)) {
-      return uid.value();
-    }
-    return criticalLookup(string);
-  }
-
-  uint32_t criticalLookup(std::string& string) {
     uint32_t uid;
 #pragma omp critical(streaming_string_lookup)
     {
@@ -62,33 +57,11 @@ class StreamingStringLookup {
     return _uid_to_string[uid];
   }
 
+  uint32_t vocabSize() const {
+    return _expected_n_unique;
+  }
+
  private:
-
-  inline bool candidateUidIsValid(uint32_t candidate_uid, std::string& string) {
-    return candidate_uid < _uid_to_string.size() && _uid_to_string[candidate_uid] == string;
-  }
-
-  std::optional<uint32_t> tryExistingStringConcurrentLookup(std::string& string) {
-    /* 
-      It is safe to call unordered_map::count() and
-      unordered_map::at() since the C++ standard guarantees
-      that both iterators and references are not invalidated
-      unless rehashing occurs. Rehashing only occurs when
-      there are too many elements for the number of buckets
-      in the container. We prevent this condition from
-      happening by reserving enough buckets for n_unique
-      elements and rejecting new strings past that threshold.
-    */
-    if (_string_to_uid.count(string)) {
-      auto candidate_uid = _string_to_uid.at(string);
-      // Double check candidate UID validity since the map
-      // entry might not be completely initialized yet.
-      if (candidateUidIsValid(candidate_uid, string)) {
-        return candidate_uid;
-      }
-    }
-    return std::nullopt;
-  }
 
   inline uint32_t outOfVocab() const { 
     std::cerr << "[StreamingStringLookup] WARNING: expected " << _expected_n_unique

@@ -1,3 +1,7 @@
+#include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/encodings/categorical/StreamingStringCategoricalEncoding.h>
 #include <dataset/src/encodings/categorical/StreamingStringLookup.h>
 #include <gtest/gtest.h>
 #include <sys/types.h>
@@ -37,38 +41,19 @@ static std::vector<std::string> generateRandomStrings(size_t n_unique, size_t re
   return strings;
 }
 
-std::vector<uint32_t> parallelGetUidsDefaultLookup(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
-  std::vector<uint32_t> uids(strings.size());
-  std::cout << "Inside parallel" << std::endl;
-#pragma omp parallel for default(none) shared(strings, uids, lookup)
-  for (uint32_t idx = 0; idx < strings.size(); idx++) {
-    uids[idx] = lookup.lookup(strings[idx]);
-  }
-  std::cout << "Outside parallel" << std::endl;
-  return uids;
-}
-
-std::vector<uint32_t> parallelGetUidsCriticalLookup(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
+std::vector<uint32_t> getUidsParallel(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
   std::vector<uint32_t> uids(strings.size());
 #pragma omp parallel for default(none) shared(strings, uids, lookup)
-  for (uint32_t idx = 0; idx < strings.size(); idx++) {
-    uids[idx] = lookup.criticalLookup(strings[idx]);
-  }
-  return uids;
-}
-
-std::vector<uint32_t> sequentialGetUidsDefaultLookup(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
-  std::vector<uint32_t> uids(strings.size());
   for (uint32_t idx = 0; idx < strings.size(); idx++) {
     uids[idx] = lookup.lookup(strings[idx]);
   }
   return uids;
 }
 
-std::vector<uint32_t> sequentialGetUidsCriticalLookup(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
+std::vector<uint32_t> getUidsSequential(StreamingStringLookup& lookup, std::vector<std::string>& strings) {
   std::vector<uint32_t> uids(strings.size());
   for (uint32_t idx = 0; idx < strings.size(); idx++) {
-    uids[idx] = lookup.criticalLookup(strings[idx]);
+    uids[idx] = lookup.lookup(strings[idx]);
   }
   return uids;
 }
@@ -90,67 +75,36 @@ void assertStringsEqual(std::vector<std::string>& strings_1, std::vector<std::st
   }
 }
 
-template<typename LAMBDA_T>
-auto time(LAMBDA_T lambda) {
-  auto start = std::chrono::high_resolution_clock::now();
-  lambda();
-  auto end = std::chrono::high_resolution_clock::now();
-  return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-}
-
-TEST(StreamingStringLookupTests, DoesNotBreak) {
-  for (uint32_t trial = 0; trial < 10000; trial++) {
-    std::cout << "Trial " << trial << std::endl;
-    auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-    StreamingStringLookup lookup(/* n_unique = */ 1000);
-    auto uids = parallelGetUidsDefaultLookup(lookup, strings);
-    auto reverted_strings = backToStrings(lookup, uids);
-    assertStringsEqual(strings, reverted_strings);
+std::vector<uint32_t> getUidsFromBatch(bolt::BoltBatch& batch) {
+  std::vector<uint32_t> uids;
+  for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+    uids.push_back(batch[i].active_neurons[0]);
   }
+  return uids;
 }
 
-TEST(StreamingStringLookupTests, LowOverheadWhenSingleThread) {
+TEST(StreamingStringLookupTests, CorrectStandalone) {
   auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-  
-  auto optimized_duration = time([&]() {
-    for (uint32_t trial = 0; trial < 10; trial++) {
-      StreamingStringLookup lookup(/* n_unique = */ 1000);
-      auto uids = sequentialGetUidsDefaultLookup(lookup, strings);
-    }
-  });
-  
-  auto critical_duration = time([&]() {
-    for (uint32_t trial = 0; trial < 10; trial++) {
-      StreamingStringLookup lookup(/* n_unique = */ 1000);
-      auto uids = sequentialGetUidsCriticalLookup(lookup, strings);
-    }
-  });
-  
-  ASSERT_LE(optimized_duration, 1.2 * critical_duration);
-
-  std::cout << "Optimized " << optimized_duration << "ms vs Critical " << critical_duration <<  "ms." << std::endl; 
+  StreamingStringLookup lookup(/* n_unique = */ 1000);
+  auto uids = getUidsParallel(lookup, strings);
+  auto reverted_strings = backToStrings(lookup, uids);
+  assertStringsEqual(strings, reverted_strings);
 }
 
-TEST(StreamingStringLookupTests, MuchFasterWhenMultiThread) {
+TEST(StreamingStringLookupTests, InBlock) {
   auto strings = generateRandomStrings(/* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-  
-  auto optimized_duration = time([&]() {
-    for (uint32_t trial = 0; trial < 10; trial++) {
-      StreamingStringLookup lookup(/* n_unique = */ 1000);
-      auto uids = parallelGetUidsDefaultLookup(lookup, strings);  
-    }
-  });
-  
-  auto critical_duration = time([&]() {
-    for (uint32_t trial = 0; trial < 10; trial++) {
-      StreamingStringLookup lookup(/* n_unique = */ 1000);
-      auto uids = parallelGetUidsCriticalLookup(lookup, strings);
-    }
-  });
-  
-  ASSERT_LE(optimized_duration, critical_duration / 2);
+  auto lookup = std::make_shared<StreamingStringLookup>(/* n_unique = */ 1000);
+  auto lookup_encoding = std::make_shared<StreamingStringCategoricalEncoding>(lookup);
+  auto lookup_block = std::make_shared<CategoricalBlock>(/* col = */ 0, /* encoding = */ lookup_encoding);
 
-  std::cout << "Optimized " << optimized_duration << "ms vs Critical " << critical_duration <<  "ms." << std::endl; 
+  GenericBatchProcessor processor(/* input_blocks = */ {lookup_block}, /* label_blocks = */ {});
+  auto [batch, _] = processor.createBatch(strings);
+
+  auto uids = getUidsFromBatch(batch);
+  auto reverted_strings = backToStrings(*lookup, uids);
+  assertStringsEqual(strings, reverted_strings);
 }
+
+
 
 } // namespace thirdai::dataset
