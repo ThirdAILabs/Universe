@@ -1,40 +1,20 @@
 
-#include "MockNode.h"
+#include "TestDatasetGenerators.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/layers/LayerConfig.h>
-#include <bolt/src/networks/tests/BoltNetworkTestUtils.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <iostream>
 
 namespace thirdai::bolt::tests {
 
-static uint32_t n_classes = 100;
-static uint32_t batch_size = 32;
-
-using NodeGraphTuple = std::tuple<std::shared_ptr<LayerNormNode>, BoltGraph>;
-
-static NodeGraphTuple buildSingleNormNodeModel() {
-  auto input = std::make_shared<Input>(/* expected_input_dim */ n_classes);
-  auto hidden_layer = std::make_shared<FullyConnectedNode>(2000, 1.0, "ReLU");
-  hidden_layer->addPredecessor(input);
-
-  NormalizationLayerConfig layer_norm_config =
-      NormalizationLayerConfig::makeConfig();
-  auto normalization_layer = std::make_shared<LayerNormNode>(layer_norm_config);
-  normalization_layer->addPredecessor(hidden_layer);
-
-  auto output = std::make_shared<FullyConnectedNode>(
-      /* expected_dim */ n_classes, "Softmax");
-  output->addPredecessor(normalization_layer);
-
-  BoltGraph model({input}, output);
-  model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
-
-  return std::make_tuple(normalization_layer, model);
-}
+static constexpr uint32_t n_classes = 100;
+static constexpr uint32_t batch_size = 32;
+static constexpr uint32_t n_batches = 100;
+static constexpr uint32_t epochs = 5;
+static constexpr float accuracy_threshold = 0.95;
 
 NormalizationLayerConfig getLayerNormConfig() {
   return NormalizationLayerConfig::makeConfig()
@@ -42,99 +22,48 @@ NormalizationLayerConfig getLayerNormConfig() {
       .setScalingFactor(/* scaling_factor= */ 1.0);
 }
 
-NodePtr getInputVector(uint32_t length) {
-  std::vector<float> values(length);
-  std::vector<uint32_t> active_neurons(length);
+static BoltGraph buildSingleNormNodeModel() {
+  auto input = std::make_shared<Input>(/* expected_input_dim */ n_classes);
+  auto hidden_layer = std::make_shared<FullyConnectedNode>(2000, "relu");
+  hidden_layer->addPredecessor(input);
 
-  std::random_device rd;
-  std::default_random_engine generator(rd());
-  std::uniform_real_distribution<float> distribution(1.0, 10.0);
+  NormalizationLayerConfig layer_norm_config = getLayerNormConfig();
 
-  for (uint32_t index = 0; index < length; index++) {
-    active_neurons.push_back(index);
-    float random_activation = distribution(generator);
-    values.push_back(random_activation);
-  }
+  auto hidden_norm_layer = std::make_shared<LayerNormNode>(layer_norm_config);
+  hidden_norm_layer->addPredecessor(hidden_layer);
 
-  auto output = BoltVector::makeDenseVectorWithGradients(values);
+  auto output = std::make_shared<FullyConnectedNode>(
+      /* expected_dim */ n_classes, "softmax");
+  output->addPredecessor(hidden_norm_layer);
 
-  return std::make_shared<MockNodeWithOutput>(output, length);
-}
+  BoltGraph model({input}, output);
+  model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
 
-void testLayerNormNodeForwardAndBackwardPass2(bool sparse) {
-  NodePtr input_node = getInputVector(/* length= */ 10);
-  std::shared_ptr<LayerNormNode> layer_norm_node =
-      std::make_shared<LayerNormNode>(getLayerNormConfig());
-
-  layer_norm_node->addPredecessor(input_node);
-  LayerNameManager name_manager;
-
-  ASSERT_EQ(input_node->outputDim(), layer_norm_node->outputDim());
-
-  layer_norm_node->compile(name_manager);
-
-  layer_norm_node->prepareForBatchProcessing(/* batch_size= */ 1,
-                                             /* use_sparsity= */ sparse);
-  layer_norm_node->forward(/* vec_index= */ 0, /* labels= */ nullptr);
-
-  auto input_vector = input_node->getOutputVector(/* vec_index= */ 0);
-  auto output_vector = layer_norm_node->getOutputVector(/* vec_index= */ 0);
-
-  layer_norm_node->backpropagate(/* vec_index= */ 0);
-
-  for (uint32_t neuron_index = 0; neuron_index < output_vector.len;
-       neuron_index++) {
-    auto input_activation = input_vector.activations[neuron_index];
-    auto output_activation = output_vector.activations[neuron_index];
-    ASSERT_NE(input_activation, output_activation);
-
-    // The gradients will not be zero after the forward and backward pass
-    // ASSERT_NE(output_vector.gradients[neuron_index], 0.0);
-  }
+  return model;
 }
 
 void testLayerNormNodeForwardAndBackwardPass() {
-  auto [layer_norm_node, model] = buildSingleNormNodeModel();
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
-  TrainConfig train_config =
-      TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ 5)
-          .withMetrics({"mean_squared_error"})
-          .withBatchSize(batch_size)
-          .silence();
+  BoltGraph model = buildSingleNormNodeModel();
 
-  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
-              train_config);
+  auto train_config = TrainConfig::makeConfig(/* learning_rate= */ 0.001,
+                                              /* epochs= */ epochs);
 
-  auto pred_node = model.getNodeByName("layer_norm_1")->getPredecessors()[0];
-  ASSERT_EQ(pred_node->outputDim(),
-            model.getNodeByName("layer_norm_1")->outputDim());
+  model.train({data}, {}, labels, train_config);
 
-  // BoltVector& output_vector =
-  //     layer_norm_node->getOutputVector(/* vec_index= */ 2);
+  auto predict_config =
+      PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-  // BoltVector& input_vector = model.getNodeByName("fc_1")->getOutputVector(/*
-  // vec_index= */ 1);
+  auto test_metrics = model.predict({data}, {}, labels, predict_config).first;
 
-  // for (uint32_t i = 0; i < input_vector.len; i++) {
-  //   std::cout << " input_grad = " << input_vector.gradients[i] << std::endl;
-  // }
-
-  // for (uint32_t i = 0; i < output_vector.len; i++) {
-  //   std::cout << " output_grad = " << output_vector.gradients[i] <<
-  //   std::endl;
-  // }
-
-  // for (uint32_t neuron_index = 0; neuron_index < output_vector.len;
-  //      neuron_index++) {
-  //   ASSERT_NE(output_vector.gradients[neuron_index], 0.0);
-  // }
-  ASSERT_EQ(1, 1);
+  ASSERT_GE(test_metrics["categorical_accuracy"], accuracy_threshold);
 }
 
-TEST(LayerNormNodeTest, LayerNormalizationTest) {
-  testLayerNormNodeForwardAndBackwardPass2(/* sparse= */ false);
+TEST(LayerNormNodeTest, HiddenLayerNormalizationTest) {
+  testLayerNormNodeForwardAndBackwardPass();
 }
 
 }  // namespace thirdai::bolt::tests

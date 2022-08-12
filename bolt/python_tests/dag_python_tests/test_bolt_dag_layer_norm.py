@@ -14,7 +14,6 @@ def get_simple_model(num_classes, sparsity=1.0):
         dim=num_classes, activation="relu", sparsity=sparsity
     )(input_layer)
 
-    # By default normalization applies scaling and centering
     layer_norm_config = (
         bolt.graph.LayerNormConfig.make()
         .center(beta_regularizer=0.0025)
@@ -60,5 +59,4 @@ def test_normalize_layer_activations():
         test_data=train_data, test_labels=train_labels, predict_config=predict_config
     )
 
-    print("categorical_acc = {}\n".format(metrics[0]["categorical_accuracy"]))
     assert metrics[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD

@@ -182,14 +182,10 @@ class NormalizationLayerConfig {
  public:
   explicit NormalizationLayerConfig(float beta_regularizer = 0.0,
                                     float gamma_regularizer = 1.0,
-                                    bool center = true, bool scale = true,
                                     float epsilon = 0.00001)
-      : _center(center),
-        _scale(scale),
-        _epsilon(epsilon),
+      : _epsilon(epsilon),
         _beta_regularizer(beta_regularizer),
-        _gamma_regularizer(gamma_regularizer),
-        _verbose(true) {}
+        _gamma_regularizer(gamma_regularizer) {}
 
   static NormalizationLayerConfig makeConfig() {
     return NormalizationLayerConfig();
@@ -205,50 +201,34 @@ class NormalizationLayerConfig {
     return *this;
   }
 
-  NormalizationLayerConfig& silence() {
-    _verbose = false;
-    return *this;
-  }
-
   NormalizationLayerConfig& uncentered() {
-    _center = false;
+    _beta_regularizer = std::nullopt;
     return *this;
   }
 
   NormalizationLayerConfig& unscaled() {
-    _scale = false;
+    _gamma_regularizer = std::nullopt;
     return *this;
   }
 
-  constexpr bool center() const { return _center; }
-  constexpr bool scale() const { return _scale; }
-  constexpr float beta() const { return _beta_regularizer; }
-  constexpr float gamma() const { return _gamma_regularizer; }
+  constexpr std::optional<float> beta() const { return _beta_regularizer; }
+  constexpr std::optional<float> gamma() const { return _gamma_regularizer; }
   constexpr float epsilon() const { return _epsilon; }
 
  private:
-  // specifies if beta_regularizer will be added to z_score
-  bool _center;
-  // specifies if gamma_regularizer will be multiplied by the z_score
-  bool _scale;
   // small threshold added to avoid division by zero
   float _epsilon;
 
-  // If scale or center are enabled, the node will scale the normalized outputs
-  // by broadcasting them with a trainable variable _gamma_regularizer, and
-  // center the outputs by broadcasting with a trainable variable
-  // _beta_regularizer. _gamma regularizer defaults to 1 and _beta_regularizer
-  // defaults to 0 so that centering and scaling have not effect before training
-  // begins.
-
-  float _beta_regularizer;
-  float _gamma_regularizer;
-  float _verbose;
+  // If beta_regularizer and gamma_regularizer are set, then the z-score
+  // will be scaled (multiplied) by a factor of _gamma_regularizer and
+  // shifted (centered) by a factor of _beta_regularizer
+  std::optional<float> _beta_regularizer;
+  std::optional<float> _gamma_regularizer;
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_center, _scale, _beta_regularizer, _gamma_regularizer, _epsilon);
+    archive(_beta_regularizer, _gamma_regularizer, _epsilon);
   }
 };
 

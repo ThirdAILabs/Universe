@@ -108,9 +108,6 @@ class LayerNormNode final : public Node,
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
-    // Assumes that layer normalization is not applied to the last layer
-    assert(labels == nullptr);
-
     (void)labels;
 
     const BoltVector& input_vector =
@@ -127,13 +124,14 @@ class LayerNormNode final : public Node,
          neuron_index++) {
       float activation = input_vector.activations[neuron_index];
 
+      // The epsilon factor is to guard against division by zero.
       auto z_score =
           (activation - mean) / (sqrt(variance) + _config->epsilon());
 
       // apply a linear transformation to the z_score using gamma and beta
       // regularizers
-      z_score += (_config->center()) ? _config->beta() : 0;
-      z_score *= (_config->scale()) ? _config->gamma() : 1;
+      z_score += (_config->beta().has_value()) ? _config->beta().value() : 0;
+      z_score *= (_config->gamma().has_value()) ? _config->gamma().value() : 1;
       _layer_norm_state->outputs[vec_index].activations[neuron_index] = z_score;
     }
   }
@@ -141,7 +139,10 @@ class LayerNormNode final : public Node,
   // Computes the derivative of the normalization function
   // For activation x, the normalization is given by
   // f(x) = [(x - mu)/(sigma + epsilon)] * gamma + beta
-  // For a layer with n activations, the partial derivative is expressed by
+  // For a layer with n activations, the expression for the partial derivative
+  // can be found here
+  // https://www.notion.so/Bolt-DAG-API-Proposal-8d2d72d13df94f64b7829f80ab080def#0d4ec531c9f64e83a460bd56dfe04320
+
   float normDerivative(float activation, float mean, float variance,
                        uint32_t vec_length) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
@@ -159,7 +160,7 @@ class LayerNormNode final : public Node,
         vec_length * std_deviation * (std_deviation + _config->epsilon()) -
         centered_activation;
     gradient /= denominator;
-    gradient *= _config->gamma() * (vec_length - 1);
+    gradient *= _config->gamma().value() * (vec_length - 1);
 
     return gradient;
   }
@@ -216,11 +217,9 @@ class LayerNormNode final : public Node,
     summary << _node_to_normalize->name() << " -> " << name()
             << " (LayerNorm) ";
     if (detailed) {
-      summary << "(center=" << _config->center()
-              << ", scale=" << _config->scale();
       summary << ", epsilon=" << _config->epsilon()
-              << ", beta_regularizer=" << _config->beta();
-      summary << ", gamma_regularizer=" << _config->gamma();
+              << ", beta_regularizer=" << _config->beta().value();
+      summary << ", gamma_regularizer=" << _config->gamma().value();
       summary << ")";
     }
     summary << "\n";
