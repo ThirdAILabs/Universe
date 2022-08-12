@@ -12,7 +12,6 @@
 namespace thirdai::dataset {
 
 class StreamingStringLookup {
-
  public:
   explicit StreamingStringLookup(uint32_t n_unique)
       : _uid_to_string(n_unique), _expected_n_unique(n_unique) {
@@ -27,9 +26,9 @@ class StreamingStringLookup {
       // may have registered this string before we got here.
       if (_string_to_uid.count(string)) {
         /*
-          No need to check uid validity since this is in a critical 
-          section; the map entry initialization happens in the same 
-          critical section so it must be completed by the time we 
+          No need to check uid validity since this is in a critical
+          section; the map entry initialization happens in the same
+          critical section so it must be completed by the time we
           get here.
         */
         uid = _string_to_uid.at(string);
@@ -41,10 +40,9 @@ class StreamingStringLookup {
           _string_to_uid[string] = uid;
           _uid_to_string[uid] = string;
         }
-
       }
     }
-    
+
     return uid;
   }
 
@@ -57,18 +55,16 @@ class StreamingStringLookup {
     return _uid_to_string[uid];
   }
 
-  uint32_t vocabSize() const {
-    return _expected_n_unique;
-  }
+  uint32_t vocabSize() const { return _expected_n_unique; }
 
  private:
-
-  inline uint32_t outOfVocab() const { 
-    std::cerr << "[StreamingStringLookup] WARNING: expected " << _expected_n_unique
+  inline uint32_t outOfVocab() const {
+    std::cerr << "[StreamingStringLookup] WARNING: expected "
+              << _expected_n_unique
               << " classes but found more. Clubbing extraneous classes to the "
                  "same ID."
               << std::endl;
-    return _expected_n_unique; 
+    return _expected_n_unique;
   }
 
   std::unordered_map<std::string, uint32_t> _string_to_uid;

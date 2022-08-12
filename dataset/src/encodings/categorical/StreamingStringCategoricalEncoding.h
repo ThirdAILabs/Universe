@@ -10,7 +10,7 @@
 namespace thirdai::dataset {
 
 /**
- * Maps string values to sparse ids while continuously building 
+ * Maps string values to sparse ids while continuously building
  * an encoding map in a streaming fashion.
  */
 class StreamingStringCategoricalEncoding final : public CategoricalEncoding {
