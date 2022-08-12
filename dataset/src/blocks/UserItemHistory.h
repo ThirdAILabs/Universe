@@ -1,3 +1,5 @@
+#pragma omp
+
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <algorithm>
