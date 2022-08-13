@@ -23,6 +23,13 @@ class GraphPropertyChecks {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be a Concatenate node.");
     }
+
+    // For clarity, the output can be normalized. There is nothing in the
+    // implementation that prohibits a normalization layer from being the
+    // output layer. But for best practices, oftentimes it doesn't make
+    // sense to normalize the outputs (for instance if the outputs are the
+    // results of applying the softmax activation, which yields values in
+    // [0, 1] interval).
     if (dynamic_cast<LayerNormNode*>(output.get())) {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be a normalization node");
