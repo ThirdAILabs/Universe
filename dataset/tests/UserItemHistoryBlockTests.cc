@@ -120,7 +120,7 @@ void assertItemHistoryNotEmpty(bolt::BoltBatch& batch) {
     total_entries += batch[idx].len;
   }
   ASSERT_GT(total_entries, 0);
-};
+}
 
 bolt::BoltBatch processSamples(std::vector<std::string>& samples,
                                std::vector<uint32_t>& user_id_seq,
