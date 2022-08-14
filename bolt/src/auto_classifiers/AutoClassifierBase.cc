@@ -22,7 +22,8 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
-  _model = buildModel(input_dim, hidden_layer_size, hidden_layer_sparsity, n_classes, /* output_layer_sparsity = */ 1.0);
+  _model = buildModel(input_dim, hidden_layer_size, hidden_layer_sparsity,
+                      n_classes, /* output_layer_sparsity = */ 1.0);
 }
 
 void AutoClassifierBase::train(
@@ -164,7 +165,11 @@ float AutoClassifierBase::getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
-BoltGraphPtr buildModel(uint32_t input_dim, uint32_t hidden_layer_size, float hidden_layer_sparsity, uint32_t output_layer_size, float output_layer_sparsity) {
+BoltGraphPtr AutoClassifierBase::buildModel(uint32_t input_dim,
+                                            uint32_t hidden_layer_size,
+                                            float hidden_layer_sparsity,
+                                            uint32_t output_layer_size,
+                                            float output_layer_sparsity) {
   auto input_layer = std::make_shared<Input>(input_dim);
 
   auto hidden_layer = std::make_shared<FullyConnectedNode>(
@@ -180,10 +185,10 @@ BoltGraphPtr buildModel(uint32_t input_dim, uint32_t hidden_layer_size, float hi
   output_layer->addPredecessor(hidden_layer);
 
   auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
-                                       output_layer);
+                                           output_layer);
 
   model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
-  
+
   return model;
 }
 

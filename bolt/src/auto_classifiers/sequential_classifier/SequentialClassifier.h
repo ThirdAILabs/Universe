@@ -9,20 +9,18 @@
 #include <utility>
 namespace thirdai::bolt {
 
-class SequentialClassifier {
-  using CategoricalTuple = std::pair<std::string, uint32_t>;
-  using SequentialTuple = std::tuple<std::string, uint32_t, uint32_t>;
+using CategoricalTuple = std::pair<std::string, uint32_t>;
+using SequentialTuple = std::tuple<std::string, uint32_t, uint32_t>;
 
+class SequentialClassifier {
  public:
   SequentialClassifier(
-      std::string model_size, 
-      const CategoricalTuple& user,
+      std::string model_size, const CategoricalTuple& user,
       const CategoricalTuple& target, const std::string& timestamp,
       const std::vector<std::string>& static_text = {},
       const std::vector<CategoricalTuple>& static_categorical = {},
       const std::vector<SequentialTuple>& sequential = {})
       : _model_size(std::move(model_size)) {
-
     _schema.user = {user.first, user.second};
     _schema.target = {target.first, target.second};
     for (const auto& text : static_text) {
@@ -40,33 +38,36 @@ class SequentialClassifier {
     }
   }
 
-  void train(const std::string& filename, uint32_t epochs, float learning_rate) {
+  void train(const std::string& filename, uint32_t epochs,
+             float learning_rate) {
     auto pipeline = Sequential::Pipeline::buildForFile(
         _schema, _state, filename, /* delimiter = */ ',',
         /* for_training = */ true);
-    
+
     if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
       throw std::invalid_argument("Cannot load dataset in memory.");
     }
     auto [train_data, train_labels] = pipeline.loadInMemory();
 
     if (!_model) {
-      _model = buildModel(pipeline.getInputDim(), pipeline.getLabelDim());
+      _model = buildModel(pipeline.getInputDim(), pipeline.getLabelDim(),
+                          _model_size);
     }
 
     TrainConfig train_config =
-      TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
-                              /* epochs= */ epochs)
-          .withMetrics({"categorical_accuracy"});
+        TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
+                                /* epochs= */ epochs)
+            .withMetrics({"categorical_accuracy"});
 
     _model->train({train_data}, {}, train_labels, train_config);
   }
 
-  void predict(const std::string& filename, const std::optional<std::string>& output_filename) {
+  void predict(const std::string& filename,
+               const std::optional<std::string>& output_filename) {
     auto pipeline = Sequential::Pipeline::buildForFile(
         _schema, _state, filename, /* delimiter = */ ',',
         /* for_training = */ false);
-    
+
     if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
       throw std::invalid_argument("Cannot load dataset in memory.");
     }
@@ -87,10 +88,14 @@ class SequentialClassifier {
     };
 
     PredictConfig config = PredictConfig::makeConfig()
-                             .withMetrics({"categorical_accuracy"})
-                             .withOutputCallback(print_predictions_callback)
-                             .silence();
-    
+                               .withMetrics({"categorical_accuracy"})
+                               .withOutputCallback(print_predictions_callback)
+                               .silence();
+
+    if (!_model) {
+      throw std::runtime_error("Called predict() before training.");
+    }
+
     _model->predict({test_data}, {}, test_labels, config);
 
     if (output_file) {
@@ -99,20 +104,23 @@ class SequentialClassifier {
   }
 
  private:
-  static BoltGraphPtr buildModel(uint32_t input_dim, uint32_t n_classes) {
-    uint32_t hidden_layer_size = AutoClassifierBase::getHiddenLayerSize(_model_size, n_classes, input_dim);
+  static BoltGraphPtr buildModel(uint32_t input_dim, uint32_t n_classes,
+                                 const std::string& model_size) {
+    uint32_t hidden_layer_size = AutoClassifierBase::getHiddenLayerSize(
+        model_size, n_classes, input_dim);
 
     float output_layer_sparsity = getLayerSparsity(n_classes);
 
     float hidden_layer_sparsity;
     if (output_layer_sparsity < 1.0) {
-      hidden_layer_sparsity = 1.0; // avoid sparse-sparse layers
+      hidden_layer_sparsity = 1.0;  // avoid sparse-sparse layers
     } else {
       hidden_layer_sparsity = getLayerSparsity(hidden_layer_size);
     }
 
-    return AutoClassifierBase::buildModel(input_dim, hidden_layer_size, hidden_layer_sparsity, n_classes, output_layer_sparsity);
-
+    return AutoClassifierBase::buildModel(input_dim, hidden_layer_size,
+                                          hidden_layer_sparsity, n_classes,
+                                          output_layer_sparsity);
   }
 
   static float getLayerSparsity(uint32_t layer_size) {
@@ -121,12 +129,13 @@ class SequentialClassifier {
     }
     if (layer_size < 1000) {
       return 0.2;
-    } if (layer_size < 2000) {
+    }
+    if (layer_size < 2000) {
       return 0.1;
-    } 
+    }
     if (layer_size < 5000) {
       return 0.05;
-    } 
+    }
     if (layer_size < 10000) {
       return 0.02;
     }

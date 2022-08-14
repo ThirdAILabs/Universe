@@ -41,7 +41,10 @@ class AutoClassifierBase {
 
   static bool canLoadDatasetInMemory(const std::string& filename);
 
-  static BoltGraphPtr buildModel(uint32_t input_dim, uint32_t hidden_layer_size, float hidden_layer_sparsity, uint32_t output_layer_size, float output_layer_sparsity);
+  static BoltGraphPtr buildModel(uint32_t input_dim, uint32_t hidden_layer_size,
+                                 float hidden_layer_sparsity,
+                                 uint32_t output_layer_size,
+                                 float output_layer_sparsity);
 
  private:
   static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
@@ -56,7 +59,6 @@ class AutoClassifierBase {
   static uint64_t getMemoryBudget(const std::string& model_size);
 
   static std::optional<uint64_t> getSystemRam();
-
 
   // Private constructor for cereal
   AutoClassifierBase() {}
