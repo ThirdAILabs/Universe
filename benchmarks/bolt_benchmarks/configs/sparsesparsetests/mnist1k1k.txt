@@ -1,6 +1,6 @@
-experiment_identifier = "Mnist"
+experiment_identifier = "mnist sparse sparse"
 dataset_identifier = "mnist"
-model_identifier = "mnist_sparse_hidden"
+model_identifier = "1k1k"
 
 
 train_metrics = []
