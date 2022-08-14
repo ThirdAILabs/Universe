@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <cstdint>
+#include <memory>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -16,6 +17,8 @@ class Block;
 class SegmentedFeatureVectorTest;
 class CategoricalBlockTest;
 class TextBlockTest;
+
+using BlockPtr = std::shared_ptr<Block>;
 
 /**
  * Segmented feature vector abstract class.

@@ -11,6 +11,10 @@
 
 namespace thirdai::dataset {
 
+class StreamingStringLookup;
+
+using StreamingStringLookupPtr = std::shared_ptr<StreamingStringLookup>;
+
 class StreamingStringLookup {
  public:
   explicit StreamingStringLookup(uint32_t n_unique)

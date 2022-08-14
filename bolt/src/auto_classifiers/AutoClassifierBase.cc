@@ -22,23 +22,7 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
-  auto input_layer = std::make_shared<Input>(input_dim);
-
-  auto hidden_layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
-      /* activation= */ "relu");
-
-  hidden_layer->addPredecessor(input_layer);
-
-  auto output_layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ n_classes, /* activation= */ "softmax");
-
-  output_layer->addPredecessor(hidden_layer);
-
-  _model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
-                                       output_layer);
-
-  _model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
+  _model = buildModel(input_dim, hidden_layer_size, hidden_layer_sparsity, n_classes, /* output_layer_sparsity = */ 1.0);
 }
 
 void AutoClassifierBase::train(
@@ -178,6 +162,29 @@ float AutoClassifierBase::getHiddenLayerSparsity(uint64_t layer_size) {
     return 0.01;
   }
   return 0.005;
+}
+
+BoltGraphPtr buildModel(uint32_t input_dim, uint32_t hidden_layer_size, float hidden_layer_sparsity, uint32_t output_layer_size, float output_layer_sparsity) {
+  auto input_layer = std::make_shared<Input>(input_dim);
+
+  auto hidden_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
+      /* activation= */ "relu");
+
+  hidden_layer->addPredecessor(input_layer);
+
+  auto output_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ output_layer_size, /* sparsity= */ output_layer_sparsity,
+      /* activation= */ "softmax");
+
+  output_layer->addPredecessor(hidden_layer);
+
+  auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
+                                       output_layer);
+
+  model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
+  
+  return model;
 }
 
 constexpr uint64_t ONE_GB = 1 << 30;

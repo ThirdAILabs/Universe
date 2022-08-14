@@ -39,6 +39,7 @@ class UserItemBuffer {
 };
 
 using UserItemHistoryRecords = std::vector<UserItemBuffer>;
+using UserItemHistoryRecordsPtr = std::shared_ptr<UserItemHistoryRecords>;
 
 /**
  * Tracks up to the last N items associated with each user.
