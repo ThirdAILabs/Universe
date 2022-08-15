@@ -5,6 +5,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
+#include <bolt/src/auto_classifiers/WayfairClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -22,6 +23,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <alloca.h>
 #include <csignal>
 #include <exception>
 #include <iostream>
@@ -434,6 +436,30 @@ class SentimentClassifier {
  private:
   std::unique_ptr<PyNetwork> _model;
   BoltVector _output;
+};
+
+class PyWayfairClassifier : public WayfairClassifier {
+ public:
+  explicit PyWayfairClassifier(uint32_t n_classes) : WayfairClassifier(n_classes) {}
+
+  py::array_t<float, py::array::c_style | py::array::forcecast> 
+  predictSingle(const std::vector<uint32_t>& tokens) {
+    auto output = WayfairClassifier::predictSingle(tokens);
+
+    uint32_t num_samples = 1;
+    float* activations;
+    allocateActivations(num_samples, _n_classes, /* active_neurons= */ nullptr, &activations, /* output_sparse= */ false);
+    py::object activation_handle =
+      py::capsule(activations,
+                        [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    py::array_t<float, py::array::c_style | py::array::forcecast>
+      activations_array({num_samples, _n_classes},
+                        {_n_classes * sizeof(float), sizeof(float)},
+                        activations, activation_handle);
+    return activations_array;
+  }
+
 };
 
 }  // namespace thirdai::bolt::python

@@ -18,6 +18,16 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(bolt_wayfair_classifier_test WayfairClassifierTest.cc)
+target_link_libraries(
+  bolt_wayfair_classifier_test
+  PRIVATE
+  auto_classifier_lib
+  bolt_network_lib
+  gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(bolt_tabular_classifier_test)
 gtest_discover_tests(bolt_text_classifier_test)
+gtest_discover_tests(bolt_wayfair_classifier_test)

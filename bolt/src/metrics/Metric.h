@@ -278,15 +278,9 @@ class FMeasure final : public Metric {
     double recall = static_cast<double>(_tp) / (_tp + _fn);
     double f_measure = (2 * prec * recall) / (prec + recall);
     if (verbose) {
-      std::cout << "Ben's Precision: " << prec << std::endl;
-      std::cout << "Ben's Recall: " << recall << std::endl;
-      std::cout << "Ben's F-Measure: " << f_measure << std::endl;
-
-      float avg_prec = _prec_sum.load() / _num_samples;
-      float avg_recall = _rec_sum.load() / _num_samples;
-      std::cout << "Tharun's Precision: " << avg_prec  << std::endl;
-      std::cout << "Tharun's Recall: " << avg_recall << std::endl;
-      std::cout << "Tharun's F-Measure: " << (2 * avg_prec * avg_recall) / (avg_prec + avg_recall) << std::endl;
+      std::cout << "Precision: " << prec << std::endl;
+      std::cout << "Recall: " << recall << std::endl;
+      std::cout << "F-Measure: " << f_measure << std::endl;
     }
     _tp = 0;
     _fp = 0;

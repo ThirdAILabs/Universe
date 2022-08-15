@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
 
 namespace thirdai::bolt {
 
@@ -29,23 +30,31 @@ class WayfairClassifier {
       /* input_dim= */ _processor->getInputDim(),
       /* hidden_layer_configs= */ hidden_layer_config,
       /* output_layer_size= */ n_classes,
-      /* output_layer_sparsity= */ 0.1
+      /* output_layer_sparsity= */ n_classes >= 500 ? 0.1 : 1
     );
   }
 
   void train(const std::string& filename,
              uint32_t epochs,
-             float learning_rate) {
+             float learning_rate,
+             float fmeasure_threshold) {
+    std::stringstream metric_ss;
+    metric_ss << "f_measure(" << fmeasure_threshold << ")";
+    std::vector<std::string> metrics = {metric_ss.str()};
+
     _classifier->train(
         filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _processor),
-        /* epochs = */ epochs,
-        /* learning_rate = */ learning_rate);
+        epochs, learning_rate, metrics);
   }
 
   void predict(const std::string& filename,
+               float fmeasure_threshold,
                const std::optional<std::string>& output_filename) {
+    std::stringstream metric_ss;
+    metric_ss << "f_measure(" << fmeasure_threshold << ")";
+    std::vector<std::string> metrics = {metric_ss.str()};
     
     // All class names are strings of the IDs themselves since the 
     // labels are integers.
@@ -59,10 +68,11 @@ class WayfairClassifier {
     _classifier->predict(
         filename,
         _processor,
-        output_filename, class_id_to_name);
+        output_filename, class_id_to_name, metrics);
   }
 
-  uint32_t predictSingle(const std::vector<uint32_t>& tokens) {
+  BoltVector predictSingle(const std::vector<uint32_t>& tokens, float threshold = 0.9) {
+
     std::string sentence = tokensToSentence(tokens);
     // The following step must be separate from the above 
     // because we need to keep the sentence in scope and alive.
@@ -73,9 +83,15 @@ class WayfairClassifier {
 
     BoltVector output =
         _classifier->predictSingle({input_vector}, {},
-                                   /* use_sparse_inference = */ true);
+                                   /* use_sparse_inference = */ false);
+    
+    assert(output.isDense());
+    auto max_id = output.getIdWithHighestActivation();
+    if (output.activations[max_id] < threshold) {
+      output.activations[max_id] = threshold;
+    }
 
-    return output.getIdWithHighestActivation();
+    return output;
   }
 
   void save(const std::string& filename) {
@@ -98,7 +114,7 @@ class WayfairClassifier {
 
  private:
   void buildBatchProcessors(uint32_t n_classes) {
-    auto multi_label_encoding = std::make_shared<dataset::CategoricalMultiLabel>(/* max_label= */ n_classes - 1, /* delimiter= */ ',');
+    auto multi_label_encoding = std::make_shared<dataset::CategoricalMultiLabel>(/* n_classes= */ n_classes, /* delimiter= */ ',');
     auto label_block = std::make_shared<dataset::CategoricalBlock>(/* col= */ 0, /* encoding= */ multi_label_encoding);
     std::vector<std::shared_ptr<dataset::Block>> label_blocks = {label_block};
 
@@ -108,21 +124,21 @@ class WayfairClassifier {
     
     _processor = std::make_shared<dataset::GenericBatchProcessor>(
       input_blocks, label_blocks,
-      /* has_header= */ false, /* delimiter= */ ' '
+      /* has_header= */ false, /* delimiter= */ '\t'
     );
 
     _single_inference_processor = std::make_shared<dataset::GenericBatchProcessor>(
-      input_blocks, /* label_blocks= */ std::vector<std::shared_ptr<dataset::Block>>(),
-      /* has_header= */ false, /* delimiter= */ ' '
+      input_blocks, /* label_blocks= */ std::vector<std::shared_ptr<dataset::Block>>(), // no label block for single inference
+      /* has_header= */ false, /* delimiter= */ '\t'
     );
   }
 
   static std::string tokensToSentence(const std::vector<uint32_t>& tokens) {
     std::stringstream sentence_ss;
-    char delim = '';
+    std::string delim = "";
     for (auto token : tokens) {
       sentence_ss << delim << token;
-      delim = ' ';
+      delim = " ";
     }
     return sentence_ss.str();
   }
@@ -142,7 +158,8 @@ class WayfairClassifier {
   void serialize(Archive& archive) {
     archive(_n_classes, _classifier);
   }
-
+ 
+ protected:
   uint32_t _n_classes;
   std::shared_ptr<dataset::GenericBatchProcessor> _processor;
   std::shared_ptr<dataset::GenericBatchProcessor> _single_inference_processor;

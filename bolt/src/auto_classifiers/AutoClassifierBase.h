@@ -25,14 +25,16 @@ class AutoClassifierBase {
       const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
-      uint32_t epochs, float learning_rate);
+      uint32_t epochs, float learning_rate,
+      const std::vector<std::string>& metrics = {"categorical_accuracy"});
 
   void predict(
       const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
       const std::optional<std::string>& output_filename,
-      const std::vector<std::string>& class_id_to_class_name);
+      const std::vector<std::string>& class_id_to_class_name,
+      const std::vector<std::string>& metrics = {"categorical_accuracy"});
 
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            std::vector<std::vector<uint32_t>>&& test_tokens,

@@ -2,6 +2,7 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <memory>
+#include <tuple>
 
 #if defined __linux
 #include <sys/sysinfo.h>
@@ -37,7 +38,8 @@ void AutoClassifierBase::train(
     const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
-    uint32_t epochs, float learning_rate) {
+    uint32_t epochs, float learning_rate,
+    const std::vector<std::string>& metrics) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
   // The case has yet to come up where loading the dataset in
@@ -54,7 +56,10 @@ void AutoClassifierBase::train(
   TrainConfig first_epoch_config =
       TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
                               /* epochs= */ 1)
-          .withMetrics({"categorical_accuracy"});
+          .withMetrics(metrics);
+  
+  std::cout << train_data->at(0)[0] << std::endl;
+  std::cout << train_labels->at(0)[0] << std::endl;
 
   // TODO(david) verify freezing hash tables is good for autoclassifier
   // training. The only way we can really test this is when we have a validation
@@ -66,7 +71,7 @@ void AutoClassifierBase::train(
       TrainConfig::makeConfig(/* learning_rate= */
                               learning_rate,
                               /* epochs= */ epochs - 1)
-          .withMetrics({"categorical_accuracy"});
+          .withMetrics(metrics);
 
   _model->train({train_data}, {}, train_labels, remaining_epochs_config);
 }
@@ -76,7 +81,8 @@ void AutoClassifierBase::predict(
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
     const std::optional<std::string>& output_filename,
-    const std::vector<std::string>& class_id_to_class_name) {
+    const std::vector<std::string>& class_id_to_class_name,
+    const std::vector<std::string>& metrics) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
   // see comment above in train(..) about loading in memory
@@ -100,7 +106,7 @@ void AutoClassifierBase::predict(
 
   PredictConfig config = PredictConfig::makeConfig()
                              .enableSparseInference()
-                             .withMetrics({"categorical_accuracy"})
+                             .withMetrics(metrics)
                              .withOutputCallback(print_predictions_callback)
                              .silence();
 
