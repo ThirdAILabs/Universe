@@ -87,7 +87,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   uint32_t len_out = nonzerosInOutput<DENSE>();
   std::fill_n(output.gradients, len_out, 0);
 
-  markActiveNeuronsForUpdate<DENSE, PREV_DENSE>(input, output);
+  markActiveNeuronsForUpdate<DENSE, PREV_DENSE>(input, output, len_out);
 
   for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
@@ -149,7 +149,8 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
-                                                     const BoltVector& output) {
+                                                     const BoltVector& output,
+                                                     uint32_t len_out) {
   _prev_is_dense = PREV_DENSE;
   _this_is_dense = DENSE;
 

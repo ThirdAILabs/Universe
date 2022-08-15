@@ -216,7 +216,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   template <bool DENSE, bool PREV_DENSE>
   void markActiveNeuronsForUpdate(const BoltVector& input,
-                                  const BoltVector& output);
+                                  const BoltVector& output, uint32_t len_out);
 
   void eigenDenseDenseForward(const BoltVector& input, BoltVector& output);
 
