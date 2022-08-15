@@ -83,6 +83,8 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   uint32_t len_out = nonzerosInOutput<DENSE>();
   std::fill_n(output.gradients, len_out, 0);
 
+  // TODO(david) this is not needed for inference, we can optionally remove
+  // this with some refactoring if we want slightly faster inference
   markActiveNeuronsForUpdate<DENSE, PREV_DENSE>(input, output, len_out);
 
   for (uint64_t n = 0; n < len_out; n++) {
