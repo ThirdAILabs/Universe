@@ -26,6 +26,7 @@ class AutoClassifierBase {
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
       uint32_t epochs, float learning_rate,
+      bool prepare_for_sparse_inference = true,
       const std::vector<std::string>& metrics = {"categorical_accuracy"});
 
   void predict(
@@ -34,6 +35,7 @@ class AutoClassifierBase {
           batch_processor,
       const std::optional<std::string>& output_filename,
       const std::vector<std::string>& class_id_to_class_name,
+      bool use_sparse_inference = true,
       const std::vector<std::string>& metrics = {"categorical_accuracy"});
 
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,

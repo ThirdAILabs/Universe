@@ -39,6 +39,7 @@ void AutoClassifierBase::train(
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
     uint32_t epochs, float learning_rate,
+    bool prepare_for_sparse_inference,
     const std::vector<std::string>& metrics) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
@@ -55,22 +56,25 @@ void AutoClassifierBase::train(
 
   TrainConfig first_epoch_config =
       TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
-                              /* epochs= */ 1)
+                              /* epochs= */ prepare_for_sparse_inference ? 1 : epochs)
           .withMetrics(metrics);
+  
+  _model->train({train_data}, {}, train_labels, first_epoch_config);
   
   // TODO(david) verify freezing hash tables is good for autoclassifier
   // training. The only way we can really test this is when we have a validation
   // based early stop callback already implemented.
-  _model->train({train_data}, {}, train_labels, first_epoch_config);
-  _model->freezeHashTables(/* insert_labels_if_not_found */ true);
+  if (prepare_for_sparse_inference) {
+    _model->freezeHashTables(/* insert_labels_if_not_found */ true);
 
-  TrainConfig remaining_epochs_config =
-      TrainConfig::makeConfig(/* learning_rate= */
-                              learning_rate,
-                              /* epochs= */ epochs - 1)
-          .withMetrics(metrics);
+    TrainConfig remaining_epochs_config =
+        TrainConfig::makeConfig(/* learning_rate= */
+                                learning_rate,
+                                /* epochs= */ epochs - 1)
+            .withMetrics(metrics);
 
-  _model->train({train_data}, {}, train_labels, remaining_epochs_config);
+    _model->train({train_data}, {}, train_labels, remaining_epochs_config);
+  }
 }
 
 void AutoClassifierBase::predict(
@@ -79,6 +83,7 @@ void AutoClassifierBase::predict(
         batch_processor,
     const std::optional<std::string>& output_filename,
     const std::vector<std::string>& class_id_to_class_name,
+    bool use_sparse_inference,
     const std::vector<std::string>& metrics) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
@@ -102,10 +107,12 @@ void AutoClassifierBase::predict(
   };
 
   PredictConfig config = PredictConfig::makeConfig()
-                             .enableSparseInference()
                              .withMetrics(metrics)
                              .withOutputCallback(print_predictions_callback)
                              .silence();
+  if (use_sparse_inference) {
+    config = config.enableSparseInference();
+  }
 
   _model->predict({test_data}, {}, test_labels, config);
 

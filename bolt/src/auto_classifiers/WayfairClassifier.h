@@ -51,7 +51,7 @@ class WayfairClassifier {
         filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _processor),
-        epochs, learning_rate, metrics);
+        epochs, learning_rate, /* prepare_for_sparse_inference= */ false, metrics);
   }
 
   void predict(const std::string& filename,
@@ -76,7 +76,7 @@ class WayfairClassifier {
     _classifier->predict(
         filename,
         _processor,
-        output_filename, class_id_to_name, metrics);
+        output_filename, class_id_to_name, /* use_sparse_inference= */ false, metrics);
   }
 
   BoltVector predictSingle(const std::vector<uint32_t>& tokens, float threshold = 0.9) {
