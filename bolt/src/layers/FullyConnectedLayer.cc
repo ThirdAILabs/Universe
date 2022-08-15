@@ -158,7 +158,7 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
   if constexpr (!DENSE && !PREV_DENSE) {
     for (uint64_t prev_index = 0; prev_index < len_out; prev_index++) {
       uint64_t prev_act_neuron = output.active_neurons[prev_index];
-      for (uint64_t cur_index = 0; cur_index < len_out; cur_index++) {
+      for (uint64_t cur_index = 0; cur_index < input.len; cur_index++) {
         uint64_t act_neuron = input.active_neurons[cur_index];
         _active_pairs[act_neuron * _prev_dim + prev_act_neuron] = true;
       }
