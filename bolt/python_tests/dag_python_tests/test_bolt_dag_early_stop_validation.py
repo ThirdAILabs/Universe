@@ -36,11 +36,17 @@ def train_overfitted_model(train_data, train_labels):
 def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
     model = create_simple_dag_model()
 
+    predict_config = (
+        bolt.graph.PredictConfig.make()
+        .with_metrics(["categorical_accuracy"])
+        .enable_sparse_inference()
+    )
+
     train_config = (
         bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=20)
         .with_metrics(["categorical_accuracy"])
         .with_early_stop_validation(
-            valid_data=valid_data, valid_labels=valid_labels, patience=3, use_sparse_inference=True
+            valid_data=valid_data, valid_labels=valid_labels, patience=3, predict_config=predict_config
         )
     )
 

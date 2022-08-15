@@ -61,12 +61,12 @@ class TrainConfig {
         const std::vector<dataset::BoltDatasetPtr>&& valid_data,
         const std::vector<dataset::BoltTokenDatasetPtr>&& valid_tokens,
         const dataset::BoltDatasetPtr&& valid_labels, uint32_t patience,
-        bool use_sparse_inference)
+        const PredictConfig& predict_config)
         : valid_data(valid_data),
           valid_tokens(valid_tokens),
           valid_labels(valid_labels),
           patience(patience),
-          use_sparse_inference(use_sparse_inference),
+          predict_config(predict_config),
           best_validation_accuracy(0),
           last_validation_accuracy(0) {}
 
@@ -74,7 +74,7 @@ class TrainConfig {
     std::vector<dataset::BoltTokenDatasetPtr> valid_tokens;
     dataset::BoltDatasetPtr valid_labels;
     uint32_t patience;
-    bool use_sparse_inference;
+    PredictConfig predict_config;
 
     double best_validation_accuracy;
     double last_validation_accuracy;
@@ -84,10 +84,18 @@ class TrainConfig {
       const std::vector<dataset::BoltDatasetPtr>& valid_data,
       const std::vector<dataset::BoltTokenDatasetPtr>& valid_tokens,
       const dataset::BoltDatasetPtr& valid_labels, uint32_t patience = 3,
-      bool use_sparse_inference = false) {
+      const PredictConfig& predict_config) {
+    uint32_t num_metrics = predict_config.getNumMetricsTracked();
+    if (num_metrics != 1) {
+      throw std::invalid_argument(
+          "Validation-based early stopping only supports the use of one "
+          "metric, passed in " +
+          std::to_string(num_metrics) + " metrics.");
+    }
+
     _early_stop_metadata = EarlyStopValidationMetadata(
         std::move(valid_data), std::move(valid_tokens), std::move(valid_labels),
-        patience, use_sparse_inference);
+        patience, predict_config);
     return *this;
   }
 
@@ -188,6 +196,10 @@ class PredictConfig {
   MetricAggregator getMetricAggregator() const {
     return MetricAggregator(_metric_names, _verbose);
   }
+
+  uint32_t getNumMetricsTracked() const { return _metric_names.size(); }
+
+  std::vector<std::string> getMetricNames() const { return _metric_names; }
 
   constexpr bool verbose() const { return _verbose; }
 

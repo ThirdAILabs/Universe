@@ -148,6 +148,9 @@ MetricData BoltGraph::train(
   if (train_config.usingEarlyStopValidation()) {
     *this = *load(
         TrainConfig::EarlyStopValidationMetadata::BEST_MODEL_SAVE_LOCATION);
+    std::remove(
+        TrainConfig::EarlyStopValidationMetadata::BEST_MODEL_SAVE_LOCATION
+            .c_str());
   }
 
   return metric_data;
@@ -332,14 +335,11 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
 
 bool BoltGraph::shouldEarlyStop(
     std::optional<TrainConfig::EarlyStopValidationMetadata> metadata) {
-  auto predict_config =
-      PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
-  if (metadata->use_sparse_inference) {
-    predict_config.enableSparseInference();
-  }
+  // we can access element 0 since we previously asserted having one metric
+  std::string metric_name = metadata->predict_config.getMetricNames()[0];
 
   double accuracy = predict(metadata->valid_data, metadata->valid_tokens,
-                            metadata->valid_labels, predict_config)
+                            metadata->valid_labels, metadata->predict_config)
                         .first["categorical_accuracy"];
 
   if (accuracy < metadata->last_validation_accuracy) {
