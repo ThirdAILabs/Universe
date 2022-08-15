@@ -28,16 +28,7 @@ FullyConnectedLayer::FullyConnectedLayer(
 
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
-      _w_gradient(config.getDim() * prev_dim, 0),
-      _w_momentum(config.getDim() * prev_dim, 0),
-      _w_velocity(config.getDim() * prev_dim, 0),
       _biases(config.getDim()),
-      _b_gradient(config.getDim(), 0),
-      _b_momentum(config.getDim(), 0),
-      _b_velocity(config.getDim(), 0),
-      _prev_is_active(_prev_dim, false),
-      _is_active(config.getDim(), false),
-      _active_pairs(config.getDim() * prev_dim, false),
       _is_distributed(is_distributed),
       _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
@@ -50,6 +41,10 @@ FullyConnectedLayer::FullyConnectedLayer(
   if (_sparsity < 1.0) {
     initSparseDatastructures(config.getSamplingConfig(), rd);
   }
+
+  initOptimizer();
+
+  initActiveNeuronsTrackers();
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
@@ -156,10 +151,10 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
   _this_is_dense = DENSE;
 
   if constexpr (!DENSE && !PREV_DENSE) {
-    for (uint64_t prev_index = 0; prev_index < len_out; prev_index++) {
-      uint64_t prev_act_neuron = output.active_neurons[prev_index];
-      for (uint64_t cur_index = 0; cur_index < input.len; cur_index++) {
-        uint64_t act_neuron = input.active_neurons[cur_index];
+    for (uint64_t prev_index = 0; prev_index < input.len; prev_index++) {
+      uint64_t prev_act_neuron = input.active_neurons[prev_index];
+      for (uint64_t cur_index = 0; cur_index < len_out; cur_index++) {
+        uint64_t act_neuron = output.active_neurons[cur_index];
         _active_pairs[act_neuron * _prev_dim + prev_act_neuron] = true;
       }
     }
