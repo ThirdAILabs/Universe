@@ -1,10 +1,11 @@
 #pragma once
-
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/MetricHelpers.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <atomic>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -22,7 +23,7 @@ class Metric {
                              const BoltVector& labels) = 0;
 
   // Returns the value of the metric and resets it. For instance this would be
-  // called ad the end of each epoch.
+  // called at the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
 
   // Returns the name of the metric.
@@ -52,7 +53,7 @@ class CategoricalAccuracy final : public Metric {
     if (!max_act_index) {
       throw std::runtime_error(
           "Unable to find a output activation larger than the minimum "
-          "representable float. This is likely do to a Nan or incorrect "
+          "representable float. This is likely due to a Nan or incorrect "
           "activation function in the final layer.");
     }
 
@@ -61,7 +62,7 @@ class CategoricalAccuracy final : public Metric {
                                      : output.active_neurons[*max_act_index];
 
     if (labels.isDense()) {
-      // If labels are dense we check if the predection has a non-zero label.
+      // If labels are dense we check if the prediction has a non-zero label.
       if (labels.activations[pred] > 0) {
         _correct++;
       }
@@ -234,6 +235,79 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
  private:
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
+};
+
+/**
+ * The F-Measure is an error that takes into account both precision and recall. It is defined as the harmonic mean of precision and recall. The returned metric is in absolute terms; 1.0 is 100%.
+ */
+class FMeasure final : public Metric {
+ public:
+  explicit FMeasure(float threshold = 0.8) : _threshold(threshold), _tp(0), _fp(0), _fn(0), _prec_sum(0), _rec_sum(0), _num_samples(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    auto predictions = output.getThresholdedNeurons(/* activation_threshold = */ _threshold, /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
+    
+    uint32_t local_tp = 0;
+
+    for (uint32_t pred : predictions) {
+      if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
+        _tp++;
+        local_tp++;
+      } else {
+        _fp++;
+      }
+    }
+
+    for (uint32_t i = 0; i < labels.len; i++) {
+      uint32_t label_idx = labels.isDense() ? i : labels.active_neurons[i];
+      if (labels.findActiveNeuronNoTemplate(label_idx).activation > 0) {
+        if (std::find(predictions.begin(), predictions.end(), label_idx) == predictions.end()) {
+          _fn++;
+        }
+      }
+    }
+
+    MetricUtilities::incrementAtomicFloat(_prec_sum, local_tp / static_cast<float>(predictions.size()));
+    MetricUtilities::incrementAtomicFloat(_rec_sum, local_tp / static_cast<float>(labels.len));
+    _num_samples++;
+
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double prec = static_cast<double>(_tp) / (_tp + _fp);
+    double recall = static_cast<double>(_tp) / (_tp + _fn);
+    double f_measure = (2 * prec * recall) / (prec + recall);
+    if (verbose) {
+      std::cout << "Ben's Precision: " << prec << std::endl;
+      std::cout << "Ben's Recall: " << recall << std::endl;
+      std::cout << "Ben's F-Measure: " << f_measure << std::endl;
+
+      float avg_prec = _prec_sum.load() / _num_samples;
+      float avg_recall = _rec_sum.load() / _num_samples;
+      std::cout << "Tharun's Precision: " << avg_prec  << std::endl;
+      std::cout << "Tharun's Recall: " << avg_recall << std::endl;
+      std::cout << "Tharun's F-Measure: " << (2 * avg_prec * avg_recall) / (avg_prec + avg_recall) << std::endl;
+    }
+    _tp = 0;
+    _fp = 0;
+    _fn = 0;
+    return f_measure;
+  }
+
+  static constexpr const char* name = "f_measure";
+
+  std::string getName() final { return name; }
+
+ private:
+  float _threshold;
+  std::atomic<uint32_t> _tp;
+  std::atomic<uint32_t> _fp;
+  std::atomic<uint32_t> _fn;
+
+  std::atomic<float> _prec_sum;
+  std::atomic<float> _rec_sum;
+  std::atomic<uint32_t> _num_samples;
+
 };
 
 }  // namespace thirdai::bolt
