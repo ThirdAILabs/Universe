@@ -47,7 +47,8 @@ std::vector<uint32_t> getUids(StreamingStringLookup& lookup,
                               std::vector<std::string>& strings,
                               bool parallel) {
   std::vector<uint32_t> uids(strings.size());
-#pragma omp parallel for default(none) shared(strings, uids, lookup) if(parallel)
+#pragma omp parallel for default(none) \
+    shared(strings, uids, lookup) if (parallel)
   for (uint32_t idx = 0; idx < strings.size(); idx++) {
     uids[idx] = lookup.lookup(strings[idx]);
   }
@@ -94,16 +95,16 @@ TEST(StreamingStringLookupTests, CorrectStandalone) {
 TEST(StreamingStringLookupTests, DoesNotBreakWhenMoreStringsThanExpected) {
   /*
     We expect that any string after the first n_unique strings
-    is treated as out-of-vocab. Thus, the last 10 strings to be 
+    is treated as out-of-vocab. Thus, the last 10 strings to be
     processed cannot be converted back to their original form.
-    To easily identify which strings to exclude from the equality 
-    assertion at the end, each unique string only appears once 
+    To easily identify which strings to exclude from the equality
+    assertion at the end, each unique string only appears once
     and we process the strings sequentially.
   */
   auto strings = generateRandomStrings(
       /* n_unique = */ 1010, /* repetitions = */ 1, /* len = */ 10);
   StreamingStringLookup lookup(/* n_unique = */ 1000);
-  
+
   auto uids = getUids(lookup, strings, /* parallel = */ false);
   auto reverted_strings = backToStrings(lookup, uids);
   assertStringsEqual(strings, reverted_strings, /* exclude_last_n = */ 10);

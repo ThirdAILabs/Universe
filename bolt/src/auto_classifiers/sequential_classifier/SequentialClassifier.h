@@ -109,7 +109,7 @@ class SequentialClassifier {
   static BoltGraphPtr buildModel(uint32_t input_dim, uint32_t n_classes,
                                  const std::string& model_size) {
     uint32_t hidden_layer_size = AutoClassifierBase::getHiddenLayerSize(
-                                     model_size, n_classes, input_dim);
+        model_size, n_classes, input_dim);
 
     float output_layer_sparsity = getLayerSparsity(n_classes);
 

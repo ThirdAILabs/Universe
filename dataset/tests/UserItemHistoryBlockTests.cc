@@ -47,7 +47,7 @@ std::vector<uint32_t> makeShuffledUserIdSequence(size_t n_users,
   for (uint32_t i = 0; i < user_seq.size(); i++) {
     user_seq[i] = i / n_items;
   }
-  
+
   auto rng = std::default_random_engine{};
   std::shuffle(user_seq.begin(), user_seq.end(), rng);
   return user_seq;
@@ -73,8 +73,7 @@ std::vector<uint32_t> makeItemIdSequence(
 }
 
 std::vector<std::string> makeSamples(std::vector<uint32_t>& user_id_sequence,
-                                     std::vector<uint32_t>& item_id_sequence)
-                                     {
+                                     std::vector<uint32_t>& item_id_sequence) {
   TimeGenerator time_generator;
 
   std::vector<std::string> samples(user_id_sequence.size());
@@ -111,14 +110,13 @@ void assertItemHistoryNotEmpty(std::vector<std::vector<uint32_t>>& batch) {
   ASSERT_GT(total_entries, 0);
 }
 
-std::vector<std::vector<uint32_t>> processSamples(std::vector<std::string>& samples,
-                               uint32_t n_users,
-                               uint32_t n_items_per_user,
-                               uint32_t track_last_n) {
+std::vector<std::vector<uint32_t>> processSamples(
+    std::vector<std::string>& samples, uint32_t n_users,
+    uint32_t n_items_per_user, uint32_t track_last_n) {
   auto user_id_lookup = std::make_shared<StreamingStringLookup>(n_users);
-  auto item_id_lookup = std::make_shared<StreamingStringLookup>(n_users * n_items_per_user);
-  auto records =
-      UserItemHistoryBlock::makeEmptyRecord(n_users, track_last_n);
+  auto item_id_lookup =
+      std::make_shared<StreamingStringLookup>(n_users * n_items_per_user);
+  auto records = UserItemHistoryBlock::makeEmptyRecord(n_users, track_last_n);
 
   auto user_item_history_block = std::make_shared<UserItemHistoryBlock>(
       /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2,
@@ -180,8 +178,8 @@ TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
   auto item_id_seq = makeItemIdSequence(user_id_seq, n_users, n_items_per_user);
   auto samples = makeSamples(user_id_seq, item_id_seq);
 
-  auto batch = processSamples(samples, n_users, n_items_per_user, track_last_n); 
-  assertItemHistoryValid(batch, user_id_seq, item_id_seq, n_items_per_user); 
+  auto batch = processSamples(samples, n_users, n_items_per_user, track_last_n);
+  assertItemHistoryValid(batch, user_id_seq, item_id_seq, n_items_per_user);
   assertItemHistoryNotStagnant(batch, user_id_seq, n_users);
   assertItemHistoryNotEmpty(batch);
 }
