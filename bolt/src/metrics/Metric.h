@@ -4,12 +4,18 @@
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <algorithm>
 #include <atomic>
+#include <cstdlib>
+#include <functional>
 #include <iomanip>
 #include <limits>
 #include <memory>
+#include <queue>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -235,5 +241,159 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
 };
+
+/**
+ * Root mean squared error (RMSE) is a standard regression metric.
+ * RMSE = sqrt(sum((actual - prediction)^2))
+ */
+class RootMeanSquaredError final : public Metric {
+ public:
+  RootMeanSquaredError() : _sum_of_squared_errors(0.0), _count(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    float squared_errors = 0.0;
+    MetricUtilities::visitActiveNeurons(output, labels,
+                                        [&](float label_val, float output_val) {
+                                          float error = label_val - output_val;
+                                          squared_errors += error * error;
+                                        });
+
+    // Add to respective atomic accumulators
+    MetricUtilities::incrementAtomicFloat(_sum_of_squared_errors,
+                                          squared_errors);
+
+    _count.fetch_add(1);
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double rmse = std::sqrt(_sum_of_squared_errors / _count);
+    if (verbose) {
+      std::cout << "Root Mean Squared Error: " << std::setprecision(3) << rmse
+                << std::endl;
+    }
+    _sum_of_squared_errors = 0.0;
+    _count = 0;
+    return rmse;
+  }
+
+  static constexpr const char* name = "root_mean_squared_error";
+
+  std::string getName() final { return name; }
+
+ private:
+  std::atomic<float> _sum_of_squared_errors;
+  std::atomic<uint64_t> _count;
+};
+
+class RecallAt : public Metric {
+ public:
+  explicit RecallAt(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    auto top_k = output.isDense() ? topK</* DENSE= */ true>(output, _k)
+                                  : topK</* DENSE= */ false>(output, _k);
+
+    auto matches =
+        labels.isDense()
+            ? countMatchesInTopK</* DENSE= */ true>(std::move(top_k), labels)
+            : countMatchesInTopK</* DENSE= */ false>(std::move(top_k), labels);
+
+    _matches.fetch_add(matches);
+
+    _label_count.fetch_add(countLabels(labels));
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double metric = static_cast<double>(_matches) / _label_count;
+    if (verbose) {
+      std::cout << "Recall@" << _k << ": " << std::setprecision(3) << metric
+                << std::endl;
+    }
+    _matches = 0;
+    _label_count = 0;
+    return metric;
+  }
+
+  static constexpr const char* name = "recall@";
+
+  std::string getName() final {
+    std::stringstream name_ss;
+    name_ss << name << _k;
+    return name_ss.str();
+  }
+
+  static inline bool isRecallAtK(const std::string& metric_name) {
+    return metric_name.substr(0, 7) == name;
+  }
+
+  static inline uint32_t getK(const std::string& metric_name) {
+    auto k = metric_name.substr(7);
+    char* end_ptr;
+    return std::strtol(k.data(), &end_ptr, 10);
+  }
+
+ private:
+  using val_idx_pair_t = std::pair<float, uint32_t>;
+  using top_k_t =
+      std::priority_queue<val_idx_pair_t, std::vector<val_idx_pair_t>,
+                          std::greater<val_idx_pair_t>>;
+
+  template <bool DENSE>
+  static inline top_k_t topK(const BoltVector& output, uint32_t k) {
+    top_k_t top_k;
+    for (uint32_t pos = 0; pos < std::min(k, output.len); pos++) {
+      top_k.push(std::move(valueIndexPair<DENSE>(output, pos)));
+    }
+    for (uint32_t pos = k; pos < output.len; pos++) {
+      auto val_idx_pair = valueIndexPair<DENSE>(output, pos);
+      if (val_idx_pair > top_k.top()) {
+        top_k.pop();
+        top_k.push(std::move(val_idx_pair));
+      }
+    }
+    return top_k;
+  }
+
+  template <bool DENSE>
+  static inline uint32_t countMatchesInTopK(top_k_t&& top_k,
+                                            const BoltVector& labels) {
+    uint32_t correct = 0;
+    for (uint32_t i = 0; i < top_k.size(); i++) {
+      if (labels
+              .findActiveNeuron<DENSE>(/* active_neuron= */ top_k.top().second)
+              .activation > 0) {
+        correct++;
+      }
+      top_k.pop();
+    }
+    return correct;
+  }
+
+  static uint32_t countLabels(const BoltVector& labels) {
+    uint32_t correct_labels = 0;
+    for (uint32_t i = 0; i < labels.len; i++) {
+      if (labels.activations[i] > 0) {
+        correct_labels++;
+      }
+    }
+    return correct_labels;
+  }
+
+  template <bool DENSE>
+  static inline val_idx_pair_t valueIndexPair(const BoltVector& output,
+                                              uint32_t pos) {
+    if (DENSE) {
+      return {output.activations[pos], pos};
+    }
+    return {output.activations[pos], output.active_neurons[pos]};
+  }
+
+  uint32_t _k;
+  std::atomic_uint64_t _matches;
+  std::atomic_uint64_t _label_count;
+};
+
+using MetricData = std::unordered_map<std::string, std::vector<double>>;
+using InferenceMetricData = std::unordered_map<std::string, double>;
 
 }  // namespace thirdai::bolt
