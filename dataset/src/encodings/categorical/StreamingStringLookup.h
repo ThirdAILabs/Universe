@@ -55,8 +55,8 @@ class StreamingStringLookup {
     return _uid_to_string[uid];
   }
 
-  uint32_t vocabSize() const { 
-    return _expected_n_unique + 1; // + 1 for out-of-vocab.
+  uint32_t vocabSize() const {
+    return _expected_n_unique + 1;  // + 1 for out-of-vocab.
   }
 
  private:
