@@ -44,15 +44,15 @@ class SequentialClassifier {
         _schema, _state, filename, /* delimiter = */ ',',
         /* for_training = */ true);
 
-    if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
-      throw std::invalid_argument("Cannot load dataset in memory.");
-    }
-    auto [train_data, train_labels] = pipeline.loadInMemory();
-
     if (!_model) {
       _model = buildModel(pipeline.getInputDim(), pipeline.getLabelDim(),
                           _model_size);
     }
+
+    if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
+      throw std::invalid_argument("Cannot load dataset in memory.");
+    }
+    auto [train_data, train_labels] = pipeline.loadInMemory();
 
     TrainConfig train_config =
         TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
@@ -67,11 +67,6 @@ class SequentialClassifier {
     auto pipeline = Sequential::Pipeline::buildForFile(
         _schema, _state, filename, /* delimiter = */ ',',
         /* for_training = */ false);
-
-    if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
-      throw std::invalid_argument("Cannot load dataset in memory.");
-    }
-    auto [test_data, test_labels] = pipeline.loadInMemory();
 
     std::optional<std::ofstream> output_file;
     if (output_filename) {
@@ -89,12 +84,16 @@ class SequentialClassifier {
 
     PredictConfig config = PredictConfig::makeConfig()
                                .withMetrics({"categorical_accuracy"})
-                               .withOutputCallback(print_predictions_callback)
-                               .silence();
+                               .withOutputCallback(print_predictions_callback);
 
     if (!_model) {
       throw std::runtime_error("Called predict() before training.");
     }
+
+    if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
+      throw std::invalid_argument("Cannot load dataset in memory.");
+    }
+    auto [test_data, test_labels] = pipeline.loadInMemory();
 
     _model->predict({test_data}, {}, test_labels, config);
 
@@ -107,7 +106,7 @@ class SequentialClassifier {
   static BoltGraphPtr buildModel(uint32_t input_dim, uint32_t n_classes,
                                  const std::string& model_size) {
     uint32_t hidden_layer_size = AutoClassifierBase::getHiddenLayerSize(
-        model_size, n_classes, input_dim);
+        model_size, n_classes, input_dim) / 4;
 
     float output_layer_sparsity = getLayerSparsity(n_classes);
 

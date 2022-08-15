@@ -1,8 +1,8 @@
 from thirdai import bolt
 
-train_file = "/share/benito/movielens1m/train.csv"
-test_file = "/share/benito/movielens1m/test.csv"
-predict_file = "/share/benito/movielens1m/movielens1m_pred.csv"
+train_file = "/Users/benitogeordie/Desktop/thirdai_datasets/movielens1m/train.csv"
+test_file = "/Users/benitogeordie/Desktop/thirdai_datasets/movielens1m/test.csv"
+predict_file = "/Users/benitogeordie/Desktop/thirdai_datasets/movielens1m/predictions.csv"
 
 user_tup = ("userId", 6040)
 movie_tup = ("movieId",3706)
@@ -10,7 +10,7 @@ movie_tup = ("movieId",3706)
 
 def seq_with_temporal_feats():
     return bolt.SequentialClassifier(
-        model_size="4Gb",
+        model_size="small",
         user=user_tup,
         timestamp="timestamp",
         target=movie_tup,

@@ -100,10 +100,8 @@ class Sequential::Pipeline {
     auto input_blocks = buildInputBlocks(schema, state, col_nums);
 
     std::vector<dataset::BlockPtr> label_blocks;
-    if (for_training) {
-      label_blocks.push_back(
-          makeCategoricalBlock(schema.target, state.lookups, col_nums));
-    }
+    label_blocks.push_back(
+        makeCategoricalBlock(schema.target, state.lookups, col_nums));
 
     return {file_reader,
             input_blocks,
@@ -118,7 +116,6 @@ class Sequential::Pipeline {
   static std::vector<dataset::BlockPtr> buildInputBlocks(
       const Schema& schema, State& state, const ColumnNumberMap& col_nums) {
     std::vector<dataset::BlockPtr> input_blocks;
-
     input_blocks.push_back(
         makeCategoricalBlock(schema.user, state.lookups, col_nums));
 
@@ -143,7 +140,7 @@ class Sequential::Pipeline {
   static dataset::BlockPtr makeCategoricalBlock(
       const Schema::Categorical& categorical, State::StringLookups& lookups,
       const ColumnNumberMap& col_nums) {
-    auto& string_lookup = lookups.at(categorical.col_name);
+    auto& string_lookup = lookups[categorical.col_name];
     if (!string_lookup) {
       string_lookup = std::make_shared<dataset::StreamingStringLookup>(
           categorical.vocab_size);
@@ -157,19 +154,22 @@ class Sequential::Pipeline {
   static dataset::BlockPtr makeSequentialBlock(
       const Schema::Sequential& sequential, State::StringLookups& lookups,
       State::UserItemHistories& histories, const ColumnNumberMap& col_nums) {
-    auto& user_lookup = lookups.at(sequential.user.col_name);
+    auto& user_lookup = lookups[sequential.user.col_name];
     if (!user_lookup) {
       user_lookup = std::make_shared<dataset::StreamingStringLookup>(
           sequential.user.vocab_size);
     }
 
-    auto& item_lookup = lookups.at(sequential.item.col_name);
+    auto& item_lookup = lookups[sequential.item.col_name];
     if (!item_lookup) {
       item_lookup = std::make_shared<dataset::StreamingStringLookup>(
           sequential.item.vocab_size);
     }
 
-    auto& user_item_history = histories.at(sequential.item.col_name);
+    std::stringstream history_name_ss;
+    history_name_ss << sequential.item.col_name << sequential.track_last_n;
+    auto& user_item_history = histories[history_name_ss.str()];
+    // auto& user_item_history = histories[sequential.item.col_name];
     if (!user_item_history) {
       user_item_history = dataset::UserItemHistoryBlock::makeEmptyRecord(
           sequential.user.vocab_size, sequential.track_last_n);

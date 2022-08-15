@@ -64,8 +64,7 @@ class GenericBatchProcessor
     std::exception_ptr num_columns_error;
     std::exception_ptr block_err;
 
-#pragma omp parallel for default(none) \
-    shared(rows, batch_inputs, batch_labels, num_columns_error, block_err)
+// #pragma omp parallel for default(none) \ shared(rows, batch_inputs, batch_labels, num_columns_error, block_err)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
