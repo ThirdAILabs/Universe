@@ -121,6 +121,8 @@ class WayfairClassifier {
     auto pairgram_encoding = std::make_shared<dataset::PairGram>(/* dim= */ 100000);
     auto input_block = std::make_shared<dataset::TextBlock>(/* col= */ 1, /* encoding= */ pairgram_encoding);
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {input_block};
+    auto single_inference_input_block = std::make_shared<dataset::TextBlock>(/* col= */ 0, /* encoding= */ pairgram_encoding); // No label column during single inference
+    std::vector<std::shared_ptr<dataset::Block>> single_inference_input_blocks = {single_inference_input_block};
     
     _processor = std::make_shared<dataset::GenericBatchProcessor>(
       input_blocks, label_blocks,
@@ -128,7 +130,7 @@ class WayfairClassifier {
     );
 
     _single_inference_processor = std::make_shared<dataset::GenericBatchProcessor>(
-      input_blocks, /* label_blocks= */ std::vector<std::shared_ptr<dataset::Block>>(), // no label block for single inference
+      single_inference_input_blocks, /* label_blocks= */ std::vector<std::shared_ptr<dataset::Block>>(), // no label block for single inference
       /* has_header= */ false, /* delimiter= */ '\t'
     );
   }

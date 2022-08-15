@@ -58,9 +58,6 @@ void AutoClassifierBase::train(
                               /* epochs= */ 1)
           .withMetrics(metrics);
   
-  std::cout << train_data->at(0)[0] << std::endl;
-  std::cout << train_labels->at(0)[0] << std::endl;
-
   // TODO(david) verify freezing hash tables is good for autoclassifier
   // training. The only way we can really test this is when we have a validation
   // based early stop callback already implemented.

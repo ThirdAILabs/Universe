@@ -71,20 +71,24 @@ TEST(WayfairClassifierTest, TestLoadSave) {
   std::remove(SAVE_LOCATION.c_str());
 }
 
-// TEST(WayfairClassifierTest, TestPredictSingle) {
-//   std::shared_ptr<bolt::TextClassifier> text_model =
-//       std::make_shared<TextClassifier>("small", 2);
+TEST(WayfairClassifierTest, TestPredictSingle) {
+  std::shared_ptr<bolt::WayfairClassifier> model =
+      std::make_shared<WayfairClassifier>(/* n_classes= */ 3);
 
-//   std::vector<std::string> train_contents = {
-//       "text, category", "value1 value1,label1", "value2 value2,label2",
-//       "value1 value1,label1", "value2 value2,label2"};
-//   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
-//   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
+  std::vector<std::string> train_contents = {
+      "0,1\t1 1", "2\t2 2",
+      "0,1\t1 1", "2\t2 2"};
+  const std::string TRAIN_FILENAME = "tempTrainFile.csv";
+  AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
 
-//   text_model->train(TRAIN_FILENAME, /* epochs = */ 3,
-//                     /* learning_rate = */ 0.01);
+  model->train(TRAIN_FILENAME, /* epochs = */ 3,
+                    /* learning_rate = */ 0.01,
+                    /* fmeasure_threshold= */ 0.9);
 
-//   ASSERT_EQ(text_model->predictSingle("value1 value1"), "label1");
-// }
+  auto output = model->predictSingle({1, 1});
+  std::cout << output << std::endl;
+  ASSERT_GT(output.activations[0], output.activations[2]);
+  ASSERT_GT(output.activations[1], output.activations[2]);
+}
 
 }  // namespace thirdai::bolt::tests
