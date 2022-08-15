@@ -1,5 +1,7 @@
 #include "AutoClassifierBase.h"
+#include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
+#include <memory>
 
 #if defined __linux
 #include <sys/sysinfo.h>
@@ -22,23 +24,13 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
-  auto input_layer = std::make_shared<Input>(input_dim);
+  std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{hidden_layer_size, hidden_layer_sparsity}};
 
-  auto hidden_layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
-      /* activation= */ "relu");
+  _model = buildModel(input_dim, hidden_layer_config, n_classes, /* output_layer_sparsity = */ 1.0);
+}
 
-  hidden_layer->addPredecessor(input_layer);
-
-  auto output_layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ n_classes, /* activation= */ "softmax");
-
-  output_layer->addPredecessor(hidden_layer);
-
-  _model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
-                                       output_layer);
-
-  _model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
+AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, std::vector<std::pair<uint32_t, float>> hidden_layer_configs, uint32_t output_layer_size, float output_layer_sparsity) {
+  _model = buildModel(input_dim, hidden_layer_configs, output_layer_size, output_layer_sparsity);
 }
 
 void AutoClassifierBase::train(
@@ -180,13 +172,45 @@ float AutoClassifierBase::getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
+BoltGraphPtr AutoClassifierBase::buildModel(uint32_t input_dim,
+                                            std::vector<std::pair<uint32_t, float>>& hidden_layer_configs,
+                                            uint32_t output_layer_size,
+                                            float output_layer_sparsity) {
+  auto input_layer = std::make_shared<Input>(input_dim);
+  NodePtr prev_layer = input_layer;
+
+  for (auto size_and_sparsity : hidden_layer_configs) {
+    auto hidden_layer = std::make_shared<FullyConnectedNode>(
+        /* dim= */ size_and_sparsity.first, /* sparsity= */ size_and_sparsity.second,
+        /* activation= */ "relu");
+
+    hidden_layer->addPredecessor(prev_layer);
+    prev_layer = hidden_layer;
+  }
+
+  auto output_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ output_layer_size, /* sparsity= */ output_layer_sparsity,
+      /* activation= */ "softmax");
+
+  output_layer->addPredecessor(prev_layer);
+
+  auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
+                                           output_layer);
+
+  model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
+
+  return model;
+}
+
 constexpr uint64_t ONE_GB = 1 << 30;
+constexpr uint64_t ONE_MB = 1 << 20;
 
 uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
   std::regex small_re("[Ss]mall");
   std::regex medium_re("[Mm]edium");
   std::regex large_re("[Ll]arge");
   std::regex gig_re("[1-9]\\d* ?Gb");
+  std::regex meg_re("[1-9]\\d* ?Mb");
 
   std::optional<uint64_t> system_ram_opt = getSystemRam();
 
@@ -217,8 +241,11 @@ uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
     return std::min<uint64_t>(system_ram / 4, 4 * ONE_GB);
   }
 
-  if (std::regex_search(model_size, gig_re)) {
-    uint64_t requested_size = std::stoull(model_size) * ONE_GB;
+  bool requested_gb = std::regex_search(model_size, gig_re);
+  bool requested_mb = std::regex_search(model_size, meg_re);
+  if (requested_gb || requested_mb) {
+    uint64_t multiplier = requested_gb ? ONE_GB : ONE_MB;
+    uint64_t requested_size = std::stoull(model_size) * multiplier;
 
     if (requested_size > (system_ram / 2)) {
       std::cout << "WARNING: You have requested " << model_size
@@ -231,8 +258,9 @@ uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
   }
 
   throw std::invalid_argument(
-      "'model_size' parameter must be either 'small', 'medium', 'large', or "
-      "a gigabyte size of the model, i.e. 5Gb");
+      "'model_size' parameter must be either 'small', 'medium', 'large', "
+      "a gigabyte size of the model, i.e. 5Gb, or "
+      "a megabyte size of the model, i.e. 500Mb");
 }
 
 std::optional<uint64_t> AutoClassifierBase::getSystemRam() {

@@ -18,6 +18,8 @@ class AutoClassifierBase {
  public:
   AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
                      const std::string& model_size);
+  
+  AutoClassifierBase(uint64_t input_dim, std::vector<std::pair<uint32_t, float>> hidden_layer_configs, uint32_t output_layer_size, float output_layer_sparsity);
 
   void train(
       const std::string& filename,
@@ -36,6 +38,16 @@ class AutoClassifierBase {
                            std::vector<std::vector<uint32_t>>&& test_tokens,
                            bool use_sparse_inference);
 
+  static uint32_t getHiddenLayerSize(const std::string& model_size,
+                                     uint64_t n_classes, uint64_t input_dim);
+
+  static bool canLoadDatasetInMemory(const std::string& filename);
+
+  static BoltGraphPtr buildModel(uint32_t input_dim,
+                                            std::vector<std::pair<uint32_t, float>>& hidden_layer_configs,
+                                            uint32_t output_layer_size,
+                                            float output_layer_sparsity);
+
  private:
   static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   loadStreamingDataset(
@@ -44,16 +56,11 @@ class AutoClassifierBase {
           batch_processor,
       uint32_t batch_size = 256);
 
-  static uint32_t getHiddenLayerSize(const std::string& model_size,
-                                     uint64_t n_classes, uint64_t input_dim);
-
   static float getHiddenLayerSparsity(uint64_t layer_size);
 
   static uint64_t getMemoryBudget(const std::string& model_size);
 
   static std::optional<uint64_t> getSystemRam();
-
-  static bool canLoadDatasetInMemory(const std::string& filename);
 
   // Private constructor for cereal
   AutoClassifierBase() {}
