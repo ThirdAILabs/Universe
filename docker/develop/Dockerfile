@@ -53,7 +53,6 @@ RUN pip3 install --upgrade \
 RUN pip3 install tensorflow tensorflow-datasets ; exit 0
 RUN pip3 install torch torchvision ; exit 0
 RUN pip3 install transformers ; exit 0
-RUN apt-get update ; exit 0
 RUN sudo apt install openssh-client ; exit 0
 RUN apt-get install linux-tools-common linux-tools-generic linux-tools-`uname -r` ; exit 0
 
