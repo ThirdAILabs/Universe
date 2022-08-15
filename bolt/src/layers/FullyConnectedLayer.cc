@@ -37,6 +37,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _b_velocity(config.getDim(), 0),
       _prev_is_active(_prev_dim, false),
       _is_active(config.getDim(), false),
+      _active_pairs(config.getDim() * prev_dim, false),
       _is_distributed(is_distributed),
       _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
@@ -155,17 +156,13 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
   _this_is_dense = DENSE;
 
   if constexpr (!DENSE && !PREV_DENSE) {
-    std::unique_ptr<ActiveNeuronsPair> active_pairs =
-        std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
-                                            std::vector<uint64_t>());
-    for (uint64_t i = 0; i < input.len; i++) {
-      active_pairs->first.push_back(input.active_neurons[i]);
+    for (uint64_t prev_index = 0; prev_index < len_out; prev_index++) {
+      uint64_t prev_act_neuron = output.active_neurons[prev_index];
+      for (uint64_t cur_index = 0; cur_index < len_out; cur_index++) {
+        uint64_t act_neuron = input.active_neurons[cur_index];
+        _active_pairs[act_neuron * _prev_dim + prev_act_neuron] = true;
+      }
     }
-    for (uint64_t n = 0; n < len_out; n++) {
-      active_pairs->second.push_back(output.active_neurons[n]);
-    }
-#pragma omp critical
-    _active_pairs.push_back(std::move(active_pairs));
   }
 
   if constexpr (!DENSE) {
@@ -445,7 +442,6 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
     return;
   }
 
-  // continue if trainable layer
   /*
    * In distributed setting, as of now the updates are dense as we
    * are averaging the gradient over multiple training examples.
@@ -483,21 +479,9 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
     float B2_bias_corrected) {
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  // TODO(Josh): It is possible to update the same active pair multiple times
-  // with the full gradient. Possible solutions include:
-  // 1. Including the gradient in the active pair and doing an update multiple
-  //    times with the smaller gradients. This is effectively equal to batch
-  //     size 1, but we basically already have batch size 1 with sparse sparse.
-  // 2. Having a bloom filter where we cheaply hash the active pairs to a bloom
-  //    filter bit, and if it is already set in the bloom filter skip it,
-  //    otherwise set the bit and do the gradient update.
-  for (uint32_t pair_id = 0; pair_id < _active_pairs.size();  // NOLINT
-       pair_id++) {
-    // MSVC doesn't like if we iterate over objects, only integers
-    // (but clang-tidy wants the range based for loop, so we need NOLINT above)
-    const auto& active_pair = _active_pairs[pair_id];
-    for (uint64_t prev_neuron : active_pair->first) {
-      for (uint64_t cur_neuron : active_pair->second) {
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+      if (_active_pairs[cur_neuron * _prev_dim + prev_neuron]) {
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
       }
@@ -584,7 +568,9 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
 }
 
 inline void FullyConnectedLayer::cleanupWithinBatchVars() {
-  _active_pairs.clear();
+  for (uint64_t i = 0; i < _prev_dim * _dim; i++) {
+    _active_pairs[i] = false;
+  }
   for (uint64_t i = 0; i < _prev_dim; i++) {
     _prev_is_active[i] = false;
   }
@@ -748,6 +734,12 @@ void FullyConnectedLayer::removeOptimizer() {
   _b_gradient.clear();
   _b_momentum.clear();
   _b_velocity.clear();
+}
+
+void FullyConnectedLayer::initActiveNeuronsTrackers() {
+  _active_pairs.assign(_dim * _prev_dim, false);
+  _prev_is_active.assign(_prev_dim, false);
+  _is_active.assign(_dim, false);
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
