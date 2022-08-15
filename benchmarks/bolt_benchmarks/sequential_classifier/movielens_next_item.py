@@ -15,6 +15,7 @@ def seq_with_temporal_feats():
         timestamp="timestamp",
         target=movie_tup,
         sequential=[("movieId", 3706, 5), ("movieId", 3706, 10), ("movieId", 3706, 25), ("movieId", 3706, 50)],
+        metrics=["recall@5", "recall@10", "recall@25", "recall@50", "recall@100"]
     )
 
 def train_and_evaluate(seq):

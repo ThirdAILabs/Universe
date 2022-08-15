@@ -19,8 +19,10 @@ class SequentialClassifier {
       const CategoricalTuple& target, const std::string& timestamp,
       const std::vector<std::string>& static_text = {},
       const std::vector<CategoricalTuple>& static_categorical = {},
-      const std::vector<SequentialTuple>& sequential = {})
-      : _model_size(std::move(model_size)) {
+      const std::vector<SequentialTuple>& sequential = {},
+      std::vector<std::string> metrics = {})
+      : _model_size(std::move(model_size)), _metrics(std::move(metrics)) {
+    _metrics.push_back("categorical_accuracy");
     _schema.user = {user.first, user.second};
     _schema.target = {target.first, target.second};
     for (const auto& text : static_text) {
@@ -57,7 +59,7 @@ class SequentialClassifier {
     TrainConfig train_config =
         TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
                                 /* epochs= */ epochs)
-            .withMetrics({"categorical_accuracy"});
+            .withMetrics(_metrics);
 
     _model->train({train_data}, {}, train_labels, train_config);
   }
@@ -83,7 +85,7 @@ class SequentialClassifier {
     };
 
     PredictConfig config = PredictConfig::makeConfig()
-                               .withMetrics({"categorical_accuracy"})
+                               .withMetrics(_metrics)
                                .withOutputCallback(print_predictions_callback);
 
     if (!_model) {
@@ -145,6 +147,7 @@ class SequentialClassifier {
   }
 
   std::string _model_size;
+  std::vector<std::string> _metrics;
   Sequential::Schema _schema;
   Sequential::State _state;
   BoltGraphPtr _model;

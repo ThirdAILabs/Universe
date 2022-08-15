@@ -511,14 +511,16 @@ void createBoltSubmodule(py::module_& module) {
                     const std::vector<std::string>&,
                     const std::vector<std::pair<std::string, uint32_t>>&,
                     const std::vector<
-                        std::tuple<std::string, uint32_t, uint32_t>>&>(),
+                        std::tuple<std::string, uint32_t, uint32_t>>&,
+                    std::vector<std::string>>(),
            py::arg("model_size"), py::arg("user"), py::arg("target"),
            py::arg("timestamp"),
            py::arg("static_text") = std::vector<std::string>(),
            py::arg("static_categorical") =
                std::vector<std::pair<std::string, uint32_t>>(),
            py::arg("sequential") =
-               std::vector<std::tuple<std::string, uint32_t, uint32_t>>())
+               std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
+           py::arg("metrics") = std::vector<std::string>())
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"))
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
