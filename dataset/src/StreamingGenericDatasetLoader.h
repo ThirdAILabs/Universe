@@ -35,12 +35,14 @@ class StreamingGenericDatasetLoader
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool shuffle = false,
       DatasetShuffleConfig config = DatasetShuffleConfig(),
-      bool has_header = false, char delimiter = ',')
+      bool has_header = false, char delimiter = ',',
+      bool parallel = true)
       : StreamingGenericDatasetLoader(
             std::move(loader),
             std::make_shared<GenericBatchProcessor>(std::move(input_blocks),
                                                     std::move(label_blocks),
-                                                    has_header, delimiter),
+                                                    has_header, delimiter,
+                                                    parallel),
             shuffle, config) {}
 
   /**
@@ -52,11 +54,12 @@ class StreamingGenericDatasetLoader
       std::vector<std::shared_ptr<Block>> label_blocks, uint32_t batch_size,
       bool shuffle = false,
       DatasetShuffleConfig config = DatasetShuffleConfig(),
-      bool has_header = false, char delimiter = ',')
+      bool has_header = false, char delimiter = ',',
+      bool parallel = true)
       : StreamingGenericDatasetLoader(
             std::make_shared<SimpleFileDataLoader>(filename, batch_size),
             std::move(input_blocks), std::move(label_blocks), shuffle, config,
-            has_header, delimiter) {}
+            has_header, delimiter, parallel) {}
 
   std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> nextBatchTuple()
       final {

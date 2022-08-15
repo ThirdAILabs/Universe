@@ -109,7 +109,9 @@ class Sequential::Pipeline {
             /* shuffle = */ for_training,
             /* config = */ {},
             /* has_header = */ false,  // since we already took the header.
-            delimiter};
+            delimiter,
+            /* parallel = */ false};  // We cannot properly capture sequences 
+                                      // in the dataset if we process it in parallel.
   }
 
  private:
@@ -169,7 +171,6 @@ class Sequential::Pipeline {
     std::stringstream history_name_ss;
     history_name_ss << sequential.item.col_name << sequential.track_last_n;
     auto& user_item_history = histories[history_name_ss.str()];
-    // auto& user_item_history = histories[sequential.item.col_name];
     if (!user_item_history) {
       user_item_history = dataset::UserItemHistoryBlock::makeEmptyRecord(
           sequential.user.vocab_size, sequential.track_last_n);

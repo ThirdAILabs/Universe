@@ -16,9 +16,11 @@ class GenericBatchProcessor
  public:
   GenericBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                         std::vector<std::shared_ptr<Block>> label_blocks,
-                        bool has_header = false, char delimiter = ',')
+                        bool has_header = false, char delimiter = ',',
+                        bool parallel = true)
       : _expects_header(has_header),
         _delimiter(delimiter),
+        _parallel(parallel),
         _expected_num_cols(0),
         _input_blocks_dense(
             std::all_of(input_blocks.begin(), input_blocks.end(),
@@ -64,7 +66,9 @@ class GenericBatchProcessor
     std::exception_ptr num_columns_error;
     std::exception_ptr block_err;
 
-// #pragma omp parallel for default(none) \ shared(rows, batch_inputs, batch_labels, num_columns_error, block_err)
+#pragma omp parallel for default(none) \
+    shared(rows, batch_inputs, batch_labels, num_columns_error, block_err) \
+    if (_parallel)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
@@ -169,6 +173,7 @@ class GenericBatchProcessor
 
   bool _expects_header;
   char _delimiter;
+  bool _parallel;
 
   uint32_t _expected_num_cols;
   bool _input_blocks_dense;
