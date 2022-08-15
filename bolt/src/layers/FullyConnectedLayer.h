@@ -160,7 +160,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   bool _prev_is_dense;
   bool _this_is_dense;
 
-  // This is only used if _prev_is_dense == false
+  // This is only used if _prev_is_dense == false and _this_is_dense == true
   std::vector<bool> _prev_is_active;
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;

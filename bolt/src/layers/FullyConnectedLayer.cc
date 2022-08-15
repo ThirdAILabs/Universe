@@ -162,7 +162,6 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
     }
   }
 
-  // we use _is_active for the biases whenever _this_is_dense
   if constexpr (!DENSE) {
     for (uint64_t n = 0; n < len_out; n++) {
       uint64_t act_neuron = output.active_neurons[n];
