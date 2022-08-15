@@ -112,13 +112,12 @@ class SequentialClassifier {
 
     float output_layer_sparsity = getLayerSparsity(n_classes);
 
-    // float hidden_layer_sparsity;
-    // if (output_layer_sparsity < 1.0) {
-    //   hidden_layer_sparsity = 1.0;  // avoid sparse-sparse layers
-    // } else {
-    //   hidden_layer_sparsity = getLayerSparsity(hidden_layer_size);
-    // }
-    float hidden_layer_sparsity = getLayerSparsity(hidden_layer_size);
+    float hidden_layer_sparsity;
+    if (output_layer_sparsity < 1.0) {
+      hidden_layer_sparsity = 1.0;  // avoid sparse-sparse layers
+    } else {
+      hidden_layer_sparsity = getLayerSparsity(hidden_layer_size);
+    }
 
     return AutoClassifierBase::buildModel(input_dim, hidden_layer_size,
                                           hidden_layer_sparsity, n_classes,
