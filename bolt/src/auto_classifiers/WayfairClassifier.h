@@ -120,7 +120,7 @@ class WayfairClassifier {
     return deserialize_into;
   }
 
- private:
+ protected:
   void buildBatchProcessors(uint32_t n_classes) {
     auto multi_label_encoding = std::make_shared<dataset::CategoricalMultiLabel>(/* n_classes= */ n_classes, /* delimiter= */ ',');
     auto label_block = std::make_shared<dataset::CategoricalBlock>(/* col= */ 0, /* encoding= */ multi_label_encoding);
@@ -169,7 +169,6 @@ class WayfairClassifier {
     archive(_n_classes, _classifier);
   }
  
- protected:
   uint32_t _n_classes;
   std::shared_ptr<dataset::GenericBatchProcessor> _processor;
   std::shared_ptr<dataset::GenericBatchProcessor> _single_inference_processor;

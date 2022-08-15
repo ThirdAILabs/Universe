@@ -460,6 +460,35 @@ class PyWayfairClassifier : public WayfairClassifier {
     return activations_array;
   }
 
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<PyWayfairClassifier> load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<PyWayfairClassifier> deserialize_into(
+        new PyWayfairClassifier());
+    iarchive(*deserialize_into);
+    deserialize_into->buildBatchProcessors(deserialize_into->_n_classes);
+    return deserialize_into;
+  }
+
+ private:
+  // Private constructor for cereal.
+  PyWayfairClassifier() : WayfairClassifier() {} 
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_n_classes, _classifier);
+  }
+ 
+
 };
 
 }  // namespace thirdai::bolt::python
