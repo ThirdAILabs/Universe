@@ -3,6 +3,7 @@
 #include "SequentialUtils.h"
 #include <bolt/src/auto_classifiers/AutoClassifierBase.h>
 #include <bolt/src/graph/Graph.h>
+#include <chrono>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -55,7 +56,11 @@ class SequentialClassifier {
     if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
       throw std::invalid_argument("Cannot load dataset in memory.");
     }
+    auto load_start = std::chrono::high_resolution_clock::now();
     auto [train_data, train_labels] = pipeline.loadInMemory();
+    auto load_end = std::chrono::high_resolution_clock::now();
+    uint32_t duration = std::chrono::duration_cast<std::chrono::seconds>(load_end - load_start).count();
+    std::cout << "Loaded training data in " << duration << " seconds." << std::endl;
 
     TrainConfig train_config =
         TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
@@ -96,7 +101,12 @@ class SequentialClassifier {
     if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
       throw std::invalid_argument("Cannot load dataset in memory.");
     }
+
+    auto load_start = std::chrono::high_resolution_clock::now();
     auto [test_data, test_labels] = pipeline.loadInMemory();
+    auto load_end = std::chrono::high_resolution_clock::now();
+    uint32_t duration = std::chrono::duration_cast<std::chrono::seconds>(load_end - load_start).count();
+    std::cout << "Loaded training data in " << duration << " seconds." << std::endl;
 
     _model->predict({test_data}, {}, test_labels, config);
 
