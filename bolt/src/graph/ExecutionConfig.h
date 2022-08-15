@@ -67,8 +67,8 @@ class TrainConfig {
           valid_labels(valid_labels),
           patience(patience),
           predict_config(predict_config),
-          best_validation_accuracy(0),
-          last_validation_accuracy(0) {}
+          best_validation_metric(0),
+          last_validation_metric(0) {}
 
     std::vector<dataset::BoltDatasetPtr> valid_data;
     std::vector<dataset::BoltTokenDatasetPtr> valid_tokens;
@@ -76,8 +76,8 @@ class TrainConfig {
     uint32_t patience;
     PredictConfig predict_config;
 
-    double best_validation_accuracy;
-    double last_validation_accuracy;
+    double best_validation_metric;
+    double last_validation_metric;
   };
 
   TrainConfig& withEarlyStopValidation(

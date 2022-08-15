@@ -338,19 +338,27 @@ bool BoltGraph::shouldEarlyStop(
   // we can access element 0 since we previously asserted having one metric
   std::string metric_name = metadata->predict_config.getMetricNames()[0];
 
-  double accuracy = predict(metadata->valid_data, metadata->valid_tokens,
-                            metadata->valid_labels, metadata->predict_config)
-                        .first["categorical_accuracy"];
+  double metric_val = predict(metadata->valid_data, metadata->valid_tokens,
+                              metadata->valid_labels, metadata->predict_config)
+                          .first[metric_name];
 
-  if (accuracy < metadata->last_validation_accuracy) {
-    if (--metadata->patience) {
+  // for a metric where smaller is better (like MeanSquaredError), negating the
+  // metric value allows the maximization logic below to function like a
+  // minimization objective
+  if (Metric::getMetricByName(metric_name)->smallerIsBetter()) {
+    metric_val = -metric_val;
+  }
+
+  if (metric_val < metadata->last_validation_metric) {
+    metadata->patience--;
+    if (metadata->patience == 0) {
       return true;
     }
-  } else if (accuracy > metadata->best_validation_accuracy) {
-    metadata->best_validation_accuracy = accuracy;
+  } else if (metric_val > metadata->best_validation_metric) {
+    metadata->best_validation_metric = metric_val;
     save(TrainConfig::EarlyStopValidationMetadata::BEST_MODEL_SAVE_LOCATION);
   }
-  metadata->last_validation_accuracy = accuracy;
+  metadata->last_validation_metric = metric_val;
 
   return false;
 }

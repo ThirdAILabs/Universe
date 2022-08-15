@@ -25,10 +25,25 @@ class Metric {
   // called ad the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
 
+  // returns whether its better if the metric is smaller
+  virtual bool smallerIsBetter() const = 0;
+
   // Returns the name of the metric.
   virtual std::string getName() = 0;
 
   virtual ~Metric() = default;
+
+  static std::shared_ptr<Metric> getMetricByName(const std::string& name) {
+    if (name == CategoricalAccuracy::name) {
+      return std::make_shared<CategoricalAccuracy>();
+    } else if (name == WeightedMeanAbsolutePercentageError::name) {
+      return std::make_shared<WeightedMeanAbsolutePercentageError>();
+    } else if (name == MeanSquaredErrorMetric::name) {
+      return std::make_shared<MeanSquaredErrorMetric>();
+    } else {
+      throw std::invalid_argument("'" + name + "' is not a valid metric.");
+    }
+  }
 };
 
 /**
@@ -92,6 +107,8 @@ class CategoricalAccuracy final : public Metric {
 
   std::string getName() final { return name; }
 
+  bool smallerIsBetter() const final { return false; }
+
  private:
   std::atomic<uint32_t> _correct;
   std::atomic<uint32_t> _num_samples;
@@ -135,6 +152,8 @@ class MeanSquaredErrorMetric final : public Metric {
   static constexpr const char* name = "mean_squared_error";
 
   std::string getName() final { return name; }
+
+  bool smallerIsBetter() const final { return true; }
 
  private:
   template <bool DENSE, bool LABEL_DENSE>
@@ -230,6 +249,8 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   static constexpr const char* name = "weighted_mean_absolute_percentage_error";
 
   std::string getName() final { return name; }
+
+  bool smallerIsBetter() const final { return true; }
 
  private:
   std::atomic<float> _sum_of_deviations;
