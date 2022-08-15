@@ -9,6 +9,7 @@
 #include <dataset/src/encodings/text/PairGram.h>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string_view>
 #include <unordered_map>
@@ -37,10 +38,14 @@ class WayfairClassifier {
   void train(const std::string& filename,
              uint32_t epochs,
              float learning_rate,
-             float fmeasure_threshold) {
-    std::stringstream metric_ss;
-    metric_ss << "f_measure(" << fmeasure_threshold << ")";
-    std::vector<std::string> metrics = {metric_ss.str()};
+             const std::vector<float>& fmeasure_thresholds = {0.9}) {
+    
+    std::vector<std::string> metrics;
+    for (auto threshold : fmeasure_thresholds) {
+      std::stringstream metric_ss;
+      metric_ss << "f_measure(" << threshold << ")";
+      metrics.push_back(metric_ss.str());
+    }
 
     _classifier->train(
         filename,
@@ -50,11 +55,14 @@ class WayfairClassifier {
   }
 
   void predict(const std::string& filename,
-               float fmeasure_threshold,
-               const std::optional<std::string>& output_filename) {
-    std::stringstream metric_ss;
-    metric_ss << "f_measure(" << fmeasure_threshold << ")";
-    std::vector<std::string> metrics = {metric_ss.str()};
+               const std::vector<float>& fmeasure_thresholds = {0.9},
+               const std::optional<std::string>& output_filename = std::nullopt) {
+    std::vector<std::string> metrics;
+    for (auto threshold : fmeasure_thresholds) {
+      std::stringstream metric_ss;
+      metric_ss << "f_measure(" << threshold << ")";
+      metrics.push_back(metric_ss.str());
+    }
     
     // All class names are strings of the IDs themselves since the 
     // labels are integers.

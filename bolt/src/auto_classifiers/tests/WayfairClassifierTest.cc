@@ -7,18 +7,6 @@
 
 namespace thirdai::bolt::tests {
 
-std::vector<BoltVector> getPredictionOutputs(std::shared_ptr<bolt::WayfairClassifier> model, const std::vector<std::vector<uint32_t>>& samples) {
-  std::vector<BoltVector> outputs;
-  outputs.reserve(samples.size());
-  for (const auto& tokens : samples) {
-    outputs.push_back(model->predictSingle(tokens));
-  }
-  return outputs;
-}
-
-// checkConsistentWithPredictSingle (but this only works if we dont do sparse inference)
-// getSinglePredictionAccuracies
-
 TEST(WayfairClassifierTest, TestLoadSave) {
   std::shared_ptr<bolt::WayfairClassifier> model =
       std::make_shared<WayfairClassifier>(/* n_classes= */ 5);
@@ -35,15 +23,17 @@ TEST(WayfairClassifierTest, TestLoadSave) {
   
   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
+  
+  std::vector<float> fmeasure_thresholds = {0.9};
 
   model->train(TRAIN_FILENAME, /* epochs = */ 3,
                /* learning_rate = */ 0.01, 
-               /* fmeasure_threshold = */ 0.9);
+               /* fmeasure_thresholds = */ fmeasure_thresholds);
 
   std::string PREDICTION_FILENAME = "predictions.csv";
   model->predict(
       /* filename = */ TRAIN_FILENAME,
-      /* fmeasure_threshold = */ 0.9,
+      /* fmeasure_thresholds = */ fmeasure_thresholds,
       /* output_filename = */ PREDICTION_FILENAME);
 
   float before_load_save_accuracy =
@@ -54,10 +44,11 @@ TEST(WayfairClassifierTest, TestLoadSave) {
   model->save(SAVE_LOCATION);
   auto new_model = WayfairClassifier::load(SAVE_LOCATION);
 
+
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
       new_model->predict(
           /* filename = */ TRAIN_FILENAME,
-          /* fmeasure_threshold = */ 0.9,
+          /* fmeasure_thresholds = */ fmeasure_thresholds,
           /* output_filename = */ PREDICTION_FILENAME));
 
   float after_load_save_accuracy =
@@ -81,9 +72,11 @@ TEST(WayfairClassifierTest, TestPredictSingle) {
   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
 
+  std::vector<float> fmeasure_thresholds = {0.9};
+
   model->train(TRAIN_FILENAME, /* epochs = */ 3,
                     /* learning_rate = */ 0.01,
-                    /* fmeasure_threshold= */ 0.9);
+                    /* fmeasure_thresholds= */ fmeasure_thresholds);
 
   auto output = model->predictSingle({1, 1});
   std::cout << output << std::endl;
