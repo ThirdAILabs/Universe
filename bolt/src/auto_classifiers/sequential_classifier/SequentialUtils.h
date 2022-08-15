@@ -5,6 +5,7 @@
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/encodings/categorical/StreamingStringCategoricalEncoding.h>
@@ -39,6 +40,7 @@ struct Sequential::Schema {
 
   Categorical user;
   Categorical target;
+  std::string timestamp_col_name;
   std::vector<std::string> static_text_attrs;
   std::vector<Categorical> static_categorical_attrs;
   std::vector<Sequential> sequential_attrs;
@@ -110,8 +112,9 @@ class Sequential::Pipeline {
             /* config = */ {},
             /* has_header = */ false,  // since we already took the header.
             delimiter,
-            /* parallel = */ false};  // We cannot properly capture sequences 
-                                      // in the dataset if we process it in parallel.
+            /* parallel = */ false};  // We cannot properly capture sequences
+                                      // in the dataset if we process it in
+                                      // parallel.
   }
 
  private:
@@ -120,6 +123,9 @@ class Sequential::Pipeline {
     std::vector<dataset::BlockPtr> input_blocks;
     input_blocks.push_back(
         makeCategoricalBlock(schema.user, state.lookups, col_nums));
+
+    input_blocks.push_back(std::make_shared<dataset::DateBlock>(
+        col_nums.at(schema.timestamp_col_name)));
 
     for (const auto& text_col_name : schema.static_text_attrs) {
       input_blocks.push_back(std::make_shared<dataset::TextBlock>(

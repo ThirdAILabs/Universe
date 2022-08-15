@@ -193,12 +193,14 @@ BoltGraphPtr AutoClassifierBase::buildModel(uint32_t input_dim,
 }
 
 constexpr uint64_t ONE_GB = 1 << 30;
+constexpr uint64_t ONE_MB = 1 << 20;
 
 uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
   std::regex small_re("[Ss]mall");
   std::regex medium_re("[Mm]edium");
   std::regex large_re("[Ll]arge");
   std::regex gig_re("[1-9]\\d* ?Gb");
+  std::regex meg_re("[1-9]\\d* ?Mb");
 
   std::optional<uint64_t> system_ram_opt = getSystemRam();
 
@@ -229,8 +231,11 @@ uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
     return std::min<uint64_t>(system_ram / 4, 4 * ONE_GB);
   }
 
-  if (std::regex_search(model_size, gig_re)) {
-    uint64_t requested_size = std::stoull(model_size) * ONE_GB;
+  bool requested_gb = std::regex_search(model_size, gig_re);
+  bool requested_mb = std::regex_search(model_size, meg_re);
+  if (requested_gb || requested_mb) {
+    uint64_t multiplier = requested_gb ? ONE_GB : ONE_MB;
+    uint64_t requested_size = std::stoull(model_size) * multiplier;
 
     if (requested_size > (system_ram / 2)) {
       std::cout << "WARNING: You have requested " << model_size
@@ -243,8 +248,9 @@ uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
   }
 
   throw std::invalid_argument(
-      "'model_size' parameter must be either 'small', 'medium', 'large', or "
-      "a gigabyte size of the model, i.e. 5Gb");
+      "'model_size' parameter must be either 'small', 'medium', 'large', "
+      "a gigabyte size of the model, i.e. 5Gb, or "
+      "a megabyte size of the model, i.e. 500Mb");
 }
 
 std::optional<uint64_t> AutoClassifierBase::getSystemRam() {

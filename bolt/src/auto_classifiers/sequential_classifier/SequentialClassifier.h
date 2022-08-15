@@ -25,6 +25,7 @@ class SequentialClassifier {
     _metrics.push_back("categorical_accuracy");
     _schema.user = {user.first, user.second};
     _schema.target = {target.first, target.second};
+    _schema.timestamp_col_name = timestamp;
     for (const auto& text : static_text) {
       _schema.static_text_attrs.push_back({text});
     }
@@ -84,9 +85,9 @@ class SequentialClassifier {
       (*output_file) << target_lookup->originalString(class_id) << std::endl;
     };
 
-    PredictConfig config = PredictConfig::makeConfig()
-                               .withMetrics(_metrics)
-                               .withOutputCallback(print_predictions_callback);
+    PredictConfig config =
+        PredictConfig::makeConfig().withMetrics(_metrics).withOutputCallback(
+            print_predictions_callback);
 
     if (!_model) {
       throw std::runtime_error("Called predict() before training.");
@@ -108,7 +109,7 @@ class SequentialClassifier {
   static BoltGraphPtr buildModel(uint32_t input_dim, uint32_t n_classes,
                                  const std::string& model_size) {
     uint32_t hidden_layer_size = AutoClassifierBase::getHiddenLayerSize(
-        model_size, n_classes, input_dim) / 4;
+                                     model_size, n_classes, input_dim);
 
     float output_layer_sparsity = getLayerSparsity(n_classes);
 
