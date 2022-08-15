@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/encodings/categorical/StreamingStringLookup.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <algorithm>
 #include <atomic>
@@ -39,24 +40,24 @@ class UserItemBuffer {
 };
 
 using UserItemHistoryRecords = std::vector<UserItemBuffer>;
+using UserItemHistoryRecordsPtr = std::shared_ptr<UserItemHistoryRecords>;
 
 /**
  * Tracks up to the last N items associated with each user.
  */
 class UserItemHistoryBlock final : public Block {
  public:
-  UserItemHistoryBlock(
-      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
-      uint32_t track_last_n,
-      std::shared_ptr<std::unordered_map<std::string, uint32_t>> user_id_map,
-      std::shared_ptr<std::unordered_map<std::string, uint32_t>> item_id_map,
-      std::shared_ptr<UserItemHistoryRecords> records)
+  UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
+                       uint32_t timestamp_col, uint32_t track_last_n,
+                       std::shared_ptr<StreamingStringLookup> user_id_map,
+                       std::shared_ptr<StreamingStringLookup> item_id_map,
+                       std::shared_ptr<UserItemHistoryRecords> records)
       : _user_col(user_col),
         _item_col(item_col),
         _timestamp_col(timestamp_col),
         _track_last_n(track_last_n),
-        _user_id_map(std::move(user_id_map)),
-        _item_id_map(std::move(item_id_map)),
+        _user_id_lookup(std::move(user_id_map)),
+        _item_id_lookup(std::move(item_id_map)),
         _records(std::move(records)) {}
 
   static std::shared_ptr<UserItemHistoryRecords> makeEmptyRecord(
@@ -65,7 +66,7 @@ class UserItemHistoryBlock final : public Block {
     return std::make_shared<UserItemHistoryRecords>(std::move(records));
   }
 
-  uint32_t featureDim() const final { return _item_id_map->size(); }
+  uint32_t featureDim() const final { return _item_id_lookup->vocabSize(); }
 
   bool isDense() const final { return false; }
 
@@ -84,8 +85,8 @@ class UserItemHistoryBlock final : public Block {
       auto item_str = std::string(input_row.at(_item_col));
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
-      uint32_t user_id = _user_id_map->at(user_str);
-      uint32_t item_id = _item_id_map->at(item_str);
+      uint32_t user_id = _user_id_lookup->lookup(user_str);
+      uint32_t item_id = _item_id_lookup->lookup(item_str);
       int64_t epoch_timestamp = TimeObject(timestamp_str).secondsSinceEpoch();
 
 #pragma omp critical(user_item_history_block)
@@ -125,8 +126,8 @@ class UserItemHistoryBlock final : public Block {
   uint32_t _timestamp_col;
   uint32_t _track_last_n;
 
-  std::shared_ptr<std::unordered_map<std::string, uint32_t>> _user_id_map;
-  std::shared_ptr<std::unordered_map<std::string, uint32_t>> _item_id_map;
+  std::shared_ptr<StreamingStringLookup> _user_id_lookup;
+  std::shared_ptr<StreamingStringLookup> _item_id_lookup;
 
   std::shared_ptr<UserItemHistoryRecords> _records;
 };

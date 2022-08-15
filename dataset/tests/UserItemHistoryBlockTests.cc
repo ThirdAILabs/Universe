@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/encodings/categorical/StreamingStringLookup.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cstddef>
@@ -46,7 +47,7 @@ std::vector<uint32_t> makeShuffledUserIdSequence(size_t n_users,
   for (uint32_t i = 0; i < user_seq.size(); i++) {
     user_seq[i] = i / n_items;
   }
-
+  
   auto rng = std::default_random_engine{};
   std::shuffle(user_seq.begin(), user_seq.end(), rng);
   return user_seq;
@@ -72,7 +73,8 @@ std::vector<uint32_t> makeItemIdSequence(
 }
 
 std::vector<std::string> makeSamples(std::vector<uint32_t>& user_id_sequence,
-                                     std::vector<uint32_t>& item_id_sequence) {
+                                     std::vector<uint32_t>& item_id_sequence)
+                                     {
   TimeGenerator time_generator;
 
   std::vector<std::string> samples(user_id_sequence.size());
@@ -86,75 +88,74 @@ std::vector<std::string> makeSamples(std::vector<uint32_t>& user_id_sequence,
   return samples;
 }
 
-std::shared_ptr<std::unordered_map<std::string, uint32_t>> makeIdMap(
-    std::vector<uint32_t>& id_sequence) {
-  std::unordered_map<std::string, uint32_t> map;
-  for (auto id : id_sequence) {
-    std::stringstream ss;
-    ss << id;
-    map[ss.str()] = id;
-  }
-  return std::make_shared<std::unordered_map<std::string, uint32_t>>(
-      std::move(map));
-}
-
-void assertItemHistoryValid(bolt::BoltBatch& batch,
+void assertItemHistoryValid(std::vector<std::vector<uint32_t>>& batch,
                             std::vector<uint32_t>& user_id_sequence,
                             std::vector<uint32_t>& item_id_sequence,
                             uint32_t n_items) {
-  for (uint32_t idx = 0; idx < batch.getBatchSize(); idx++) {
-    for (uint32_t pos = 0; pos < batch[idx].len; pos++) {
-      auto active_neuron = batch[idx].active_neurons[pos];
+  for (uint32_t idx = 0; idx < batch.size(); idx++) {
+    for (auto item_id : batch[idx]) {
       // in user's range; not corrupted
-      ASSERT_GE(active_neuron, user_id_sequence[idx] * n_items);
-      ASSERT_LT(active_neuron, (user_id_sequence[idx] + 1) * n_items);
+      ASSERT_GE(item_id, user_id_sequence[idx] * n_items);
+      ASSERT_LT(item_id, (user_id_sequence[idx] + 1) * n_items);
       // does not contain item IDs from the future.
-      ASSERT_LT(active_neuron, item_id_sequence[idx]);
+      ASSERT_LT(item_id, item_id_sequence[idx]);
     }
   }
 }
 
-void assertItemHistoryNotEmpty(bolt::BoltBatch& batch) {
+void assertItemHistoryNotEmpty(std::vector<std::vector<uint32_t>>& batch) {
   uint32_t total_entries = 0;
-  for (uint32_t idx = 0; idx < batch.getBatchSize(); idx++) {
-    total_entries += batch[idx].len;
+  for (auto& items : batch) {
+    total_entries += items.size();
   }
   ASSERT_GT(total_entries, 0);
 }
 
-bolt::BoltBatch processSamples(std::vector<std::string>& samples,
-                               std::vector<uint32_t>& user_id_seq,
-                               std::vector<uint32_t>& item_id_seq,
+std::vector<std::vector<uint32_t>> processSamples(std::vector<std::string>& samples,
+                               uint32_t n_users,
+                               uint32_t n_items_per_user,
                                uint32_t track_last_n) {
-  auto user_id_map = makeIdMap(user_id_seq);
-  auto item_id_map = makeIdMap(item_id_seq);
+  auto user_id_lookup = std::make_shared<StreamingStringLookup>(n_users);
+  auto item_id_lookup = std::make_shared<StreamingStringLookup>(n_users * n_items_per_user);
   auto records =
-      UserItemHistoryBlock::makeEmptyRecord(user_id_map->size(), track_last_n);
+      UserItemHistoryBlock::makeEmptyRecord(n_users, track_last_n);
 
   auto user_item_history_block = std::make_shared<UserItemHistoryBlock>(
       /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2,
-      track_last_n, user_id_map, item_id_map, records);
+      track_last_n, user_id_lookup, item_id_lookup, records);
 
   GenericBatchProcessor processor(
       /* input_blocks = */ {user_item_history_block},
       /* label_blocks = */ {});
 
   auto [batch, _] = processor.createBatch(samples);
-  return std::move(batch);
+
+  std::vector<std::vector<uint32_t>> histories;
+  for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+    std::vector<uint32_t> items;
+    for (uint32_t pos = 0; pos < batch[vec_idx].len; pos++) {
+      auto encoded_item = batch[vec_idx].active_neurons[pos];
+      auto original_item_id_str = item_id_lookup->originalString(encoded_item);
+      items.push_back(std::stoull(original_item_id_str));
+    }
+    histories.push_back(items);
+  }
+
+  return histories;
 }
 
-void assertItemHistoryNotStagnant(bolt::BoltBatch& batch,
+void assertItemHistoryNotStagnant(std::vector<std::vector<uint32_t>>& batch,
                                   std::vector<uint32_t>& user_id_sequence,
                                   uint32_t n_users) {
   std::vector<std::unordered_set<uint32_t>> last_user_item_history(n_users);
   std::vector<bool> user_history_changes(n_users);
 
-  for (uint32_t idx = 0; idx < batch.getBatchSize(); idx++) {
+  for (uint32_t idx = 0; idx < batch.size(); idx++) {
     auto user_id = user_id_sequence[idx];
     std::unordered_set<uint32_t> current_history;
 
-    for (uint32_t pos = 0; pos < batch[idx].len; pos++) {
-      current_history.insert(batch[idx].active_neurons[pos]);
+    for (auto item_id : batch[idx]) {
+      current_history.insert(item_id);
     }
 
     if (!last_user_item_history[user_id].empty() &&
@@ -172,15 +173,15 @@ void assertItemHistoryNotStagnant(bolt::BoltBatch& batch,
 
 TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
   uint32_t n_users = 120;
-  uint32_t n_items = 300;
+  uint32_t n_items_per_user = 300;
   uint32_t track_last_n = 10;
 
-  auto user_id_seq = makeShuffledUserIdSequence(n_users, n_items);
-  auto item_id_seq = makeItemIdSequence(user_id_seq, n_users, n_items);
+  auto user_id_seq = makeShuffledUserIdSequence(n_users, n_items_per_user);
+  auto item_id_seq = makeItemIdSequence(user_id_seq, n_users, n_items_per_user);
   auto samples = makeSamples(user_id_seq, item_id_seq);
 
-  auto batch = processSamples(samples, user_id_seq, item_id_seq, track_last_n);
-  assertItemHistoryValid(batch, user_id_seq, item_id_seq, n_items);
+  auto batch = processSamples(samples, n_users, n_items_per_user, track_last_n); 
+  assertItemHistoryValid(batch, user_id_seq, item_id_seq, n_items_per_user); 
   assertItemHistoryNotStagnant(batch, user_id_seq, n_users);
   assertItemHistoryNotEmpty(batch);
 }
