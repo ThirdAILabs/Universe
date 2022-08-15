@@ -515,11 +515,11 @@ inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
     if (_is_active[cur_neuron]) {
+      _is_active[cur_neuron] = false;
       for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
       }
-      _is_active[cur_neuron] = false;
     }
   }
 }
