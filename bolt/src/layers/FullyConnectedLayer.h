@@ -214,6 +214,10 @@ class FullyConnectedLayer final : public SequentialLayer {
   void forwardImpl(const BoltVector& input, BoltVector& output,
                    const BoltVector* labels);
 
+  template <bool DENSE, bool PREV_DENSE>
+  void markActiveNeuronsForUpdate(const BoltVector& input,
+                                  const BoltVector& output);
+
   void eigenDenseDenseForward(const BoltVector& input, BoltVector& output);
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
@@ -243,10 +247,10 @@ class FullyConnectedLayer final : public SequentialLayer {
             _prev_is_active, _is_active);
 
     /**
-     * Here we init the optimizer so that any calls to train in the network are
-     * safe. If we need to reduce memory usage for smaller machines we can use
-     * the removeOptimizer() method to remove these parameters. This will also
-     * likely require adding an additional node state for uninitialized
+     * Here we init the optimizer so that any calls to train in the network
+     * are safe. If we need to reduce memory usage for smaller machines we can
+     * use the removeOptimizer() method to remove these parameters. This will
+     * also likely require adding an additional node state for uninitialized
      * optimizers so that we have memory safety.
      */
     initOptimizer();

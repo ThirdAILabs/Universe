@@ -87,36 +87,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   uint32_t len_out = nonzerosInOutput<DENSE>();
   std::fill_n(output.gradients, len_out, 0);
 
-  _prev_is_dense = PREV_DENSE;
-  _this_is_dense = DENSE;
-
-  if constexpr (!DENSE && !PREV_DENSE) {
-    std::unique_ptr<ActiveNeuronsPair> active_pairs =
-        std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
-                                            std::vector<uint64_t>());
-    for (uint64_t i = 0; i < input.len; i++) {
-      active_pairs->first.push_back(input.active_neurons[i]);
-    }
-    for (uint64_t n = 0; n < len_out; n++) {
-      active_pairs->second.push_back(output.active_neurons[n]);
-    }
-#pragma omp critical
-    _active_pairs.push_back(std::move(active_pairs));
-  }
-
-  if constexpr (!DENSE) {
-    for (uint64_t n = 0; n < len_out; n++) {
-      uint64_t act_neuron = output.active_neurons[n];
-      _is_active[act_neuron] = true;
-    }
-  }
-
-  if constexpr (!PREV_DENSE) {
-    for (uint64_t i = 0; i < input.len; i++) {
-      uint64_t act_neuron = input.active_neurons[i];
-      _prev_is_active[act_neuron] = true;
-    }
-  }
+  markActiveNeuronsForUpdate<DENSE, PREV_DENSE>(input, output);
 
   for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
@@ -172,6 +143,41 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     for (uint64_t n = 0; n < len_out; n++) {
       output.activations[n] /= (total + EPS);
       assert(!std::isnan(output.activations[n]));
+    }
+  }
+}
+
+template <bool DENSE, bool PREV_DENSE>
+void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
+                                                     const BoltVector& output) {
+  _prev_is_dense = PREV_DENSE;
+  _this_is_dense = DENSE;
+
+  if constexpr (!DENSE && !PREV_DENSE) {
+    std::unique_ptr<ActiveNeuronsPair> active_pairs =
+        std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
+                                            std::vector<uint64_t>());
+    for (uint64_t i = 0; i < input.len; i++) {
+      active_pairs->first.push_back(input.active_neurons[i]);
+    }
+    for (uint64_t n = 0; n < len_out; n++) {
+      active_pairs->second.push_back(output.active_neurons[n]);
+    }
+#pragma omp critical
+    _active_pairs.push_back(std::move(active_pairs));
+  }
+
+  if constexpr (!DENSE) {
+    for (uint64_t n = 0; n < len_out; n++) {
+      uint64_t act_neuron = output.active_neurons[n];
+      _is_active[act_neuron] = true;
+    }
+  }
+
+  if constexpr (!PREV_DENSE) {
+    for (uint64_t i = 0; i < input.len; i++) {
+      uint64_t act_neuron = input.active_neurons[i];
+      _prev_is_active[act_neuron] = true;
     }
   }
 }

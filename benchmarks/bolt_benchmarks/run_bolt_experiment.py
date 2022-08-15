@@ -357,7 +357,7 @@ def switch_to_sparse_inference_if_needed(
     )
     if use_sparse_inference:
         print(f"Switching to sparse inference on epoch {current_epoch}")
-        predict_config.enable_sparse_inference()
+    predict_config.enable_sparse_inference()
 
 
 def build_arg_parser():

@@ -1,6 +1,6 @@
 experiment_identifier = "mnist sparse sparse"
 dataset_identifier = "mnist"
-model_identifier = "100k1k"
+model_identifier = "1k1k"
 
 
 train_metrics = []
@@ -34,18 +34,18 @@ dim = 784
 type = "FullyConnected"
 name = "second"
 pred = "first"
-dim = 100000
+dim = 1000
 activation = 'ReLU'
-sparsity = 0.01
+sparsity = 0.05
 use_default_sampling = true
 
 [[nodes]]
 type = "FullyConnected"
 name = "third"
 pred = "second"
-dim = 100000
+dim = 1000
 activation = 'ReLU'
-sparsity = 0.01
+sparsity = 0.05
 use_default_sampling = true
 
 [[nodes]]
