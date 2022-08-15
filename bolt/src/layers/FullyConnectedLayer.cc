@@ -151,15 +151,16 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
   _this_is_dense = DENSE;
 
   if constexpr (!DENSE && !PREV_DENSE) {
-    for (uint64_t prev_index = 0; prev_index < input.len; prev_index++) {
-      uint64_t prev_act_neuron = input.active_neurons[prev_index];
-      for (uint64_t cur_index = 0; cur_index < len_out; cur_index++) {
-        uint64_t act_neuron = output.active_neurons[cur_index];
+    for (uint64_t cur_index = 0; cur_index < len_out; cur_index++) {
+      uint64_t act_neuron = output.active_neurons[cur_index];
+      for (uint64_t prev_index = 0; prev_index < input.len; prev_index++) {
+        uint64_t prev_act_neuron = input.active_neurons[prev_index];
         _active_pairs[act_neuron * _prev_dim + prev_act_neuron] = true;
       }
     }
   }
 
+  // we use _is_active for the biases whenever _this_is_dense
   if constexpr (!DENSE) {
     for (uint64_t n = 0; n < len_out; n++) {
       uint64_t act_neuron = output.active_neurons[n];
@@ -167,7 +168,8 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
     }
   }
 
-  if constexpr (!PREV_DENSE) {
+  // we only use _prev_is_active in the sparse-dense case
+  if constexpr (!PREV_DENSE && DENSE) {
     for (uint64_t i = 0; i < input.len; i++) {
       uint64_t act_neuron = input.active_neurons[i];
       _prev_is_active[act_neuron] = true;
@@ -437,6 +439,8 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
     return;
   }
 
+  updateBiasParameters(lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
+
   /*
    * In distributed setting, as of now the updates are dense as we
    * are averaging the gradient over multiple training examples.
@@ -463,10 +467,6 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
     updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                      B2_bias_corrected);
   }
-
-  updateBiasParameters(lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
-
-  cleanupWithinBatchVars();
 }
 
 inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
@@ -476,7 +476,9 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-      if (_active_pairs[cur_neuron * _prev_dim + prev_neuron]) {
+      uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
+      if (_active_pairs[active_pair_index]) {
+        _active_pairs[active_pair_index] = false;
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
       }
@@ -496,6 +498,7 @@ inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       if (_prev_is_active[prev_neuron]) {
+        _prev_is_active[prev_neuron] = false;
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
       }
@@ -514,6 +517,7 @@ inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
       }
+      _is_active[cur_neuron] = false;
     }
   }
 }
@@ -558,19 +562,22 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     assert(!std::isnan(_biases[cur_neuron]));
 
     _b_gradient[cur_neuron] = 0;
-    _is_active[cur_neuron] = false;
   }
 }
 
 inline void FullyConnectedLayer::cleanupWithinBatchVars() {
-  for (uint64_t i = 0; i < _prev_dim * _dim; i++) {
-    _active_pairs[i] = false;
-  }
-  for (uint64_t i = 0; i < _prev_dim; i++) {
-    _prev_is_active[i] = false;
-  }
-  for (uint64_t n = 0; n < _dim; n++) {
-    _is_active[n] = false;
+  if (!_prev_is_dense && !_this_is_dense) {
+    for (uint64_t i = 0; i < _prev_dim * _dim; i++) {
+      _active_pairs[i] = false;
+    }
+  } else if (!_prev_is_dense && _this_is_dense) {
+    for (uint64_t i = 0; i < _prev_dim; i++) {
+      _prev_is_active[i] = false;
+    }
+  } else if (_prev_is_dense && !_this_is_dense) {
+    for (uint64_t n = 0; n < _dim; n++) {
+      _is_active[n] = false;
+    }
   }
 }
 
