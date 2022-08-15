@@ -11,14 +11,11 @@ namespace thirdai::bolt {
 
 class GraphPropertyChecks {
  public:
-  static void verifyOutputIsNotInputLayer(const NodePtr& output) {
+  static void verifyOutputLayerIsValid(const NodePtr& output) {
     if (output->isInputNode()) {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be an input node.");
     }
-  }
-
-  static void verifyOutputIsFullyConnectedLayer(const NodePtr& output) {
     if (dynamic_cast<ConcatenateNode*>(output.get())) {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be a Concatenate node.");
