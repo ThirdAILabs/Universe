@@ -17,10 +17,6 @@ TEST(WayfairClassifierTest, TestLoadSave) {
       "1\t1 1", "2\t2 2",
       "3\t3 3", "4\t4 4"};
 
-  std::vector<std::vector<uint32_t>> inference_samples = {
-      {1, 1}, {2, 2},
-      {3, 3}, {4, 4}};
-
   std::vector<std::string> single_labels = {"1", "2", "3", "4"};
   
   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
@@ -86,11 +82,15 @@ TEST(WayfairClassifierTest, TestPredictSingle) {
   ASSERT_GT(output.activations[1], output.activations[2]);
 }
 
+/**
+ * One of the requirements of the Wayfair Classifier
+ * 
+ */
 TEST(WayfairClassifierTest, PredictSingleReturnsAtLeastOneActivationAboveThreshold) {
   std::shared_ptr<bolt::WayfairClassifier> model =
       std::make_shared<WayfairClassifier>(/* n_classes= */ 100);
 
-  // Intentionally predict before training so we can expect all classes to have an original activation of < 0.9
+  // Intentionally predict before training so we can expect most classes
   auto output = model->predictSingle({1, 1}, /* threshold= */ 0.0);
 
   float max_act = -std::numeric_limits<float>::max();

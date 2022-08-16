@@ -449,6 +449,10 @@ class PyWayfairClassifier : public WayfairClassifier {
     uint32_t num_samples = 1;
     float* activations;
     allocateActivations(num_samples, _n_classes, /* active_neurons= */ nullptr, &activations, /* output_sparse= */ false);
+
+    const float* start = output.activations;
+    std::copy(start, start + output.len, activations);
+
     py::object activation_handle =
       py::capsule(activations,
                         [](void* ptr) { delete static_cast<float*>(ptr); });

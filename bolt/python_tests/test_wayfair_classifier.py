@@ -1,0 +1,55 @@
+from thirdai import bolt
+import pytest
+import os
+import time
+
+
+@pytest.mark.unit
+def test_load_save():
+    model = bolt.WayfairClassifier(n_classes = 5)
+    
+    train_contents = [
+        "1\t1 1\n", "2\t2 2\n",
+        "3\t3 3\n", "4\t4 4\n"
+    ]
+
+    temp_train_file = "tempTrainFile.csv"
+    
+    with open(temp_train_file, "w") as f:
+        for line in train_contents:
+            f.write(line)
+
+    model.train(temp_train_file, epochs=5, learning_rate=0.01, fmeasure_threshold=[0.9])
+
+    inference_sample = [1, 1]
+    activations_before_save = model.predict_single(inference_sample)
+    activations_before_save_2 = model.predict_single(inference_sample)
+
+    model_save_file = "saved_model"
+    model.save(model_save_file)
+
+    reloaded_model = bolt.WayfairClassifier.load(model_save_file)
+    activations_after_load = reloaded_model.predict_single(inference_sample)
+
+    print(activations_before_save)
+    print(activations_before_save_2)
+    print(activations_after_load)
+
+    assert (activations_before_save == activations_before_save_2).all()
+    assert (activations_before_save == activations_after_load).all()
+
+    os.remove(temp_train_file)
+
+@pytest.mark.unit
+def test_inference_under_1ms():
+    model = bolt.WayfairClassifier(n_classes = 931)
+    
+    inference_sample = [i for i in range(10)]
+    
+    start_time = time.time()
+    activations = model.predict_single(inference_sample)
+    end_time = time.time()
+
+    print(end_time - start_time)
+    assert (end_time - start_time) < 0.001
+
