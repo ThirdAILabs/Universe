@@ -18,7 +18,7 @@ class MetricAggregator {
                             bool verbose = true)
       : _verbose(verbose) {
     for (const auto& name : metrics) {
-      _metrics.push_back(Metric::getMetricByName(name));
+      _metrics.push_back(MetricUtils::getMetricByName(name));
     }
   }
 

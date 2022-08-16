@@ -183,21 +183,21 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("silence", &TrainConfig::silence)
       .def("with_early_stop_validation", &TrainConfig::withEarlyStopValidation,
            py::arg("valid_data"), py::arg("valid_tokens"),
-           py::arg("valid_labels"), py::arg("patience"),
-           py::arg("predict_config"))
+           py::arg("valid_labels"), py::arg("predict_config"),
+           py::arg("patience"))
       // Helper method that covers the common case of validation based off of a
       // single BoltBatch dataset
       .def(
           "with_early_stop_validation",
           [](TrainConfig& config, const dataset::BoltDatasetPtr& data,
-             const dataset::BoltDatasetPtr& labels, uint32_t patience,
-             const PredictConfig& predict_config) {
+             const dataset::BoltDatasetPtr& labels,
+             const PredictConfig& predict_config, uint32_t patience) {
             return config.withEarlyStopValidation(
-                {data}, /* valid_tokens = */ {}, labels, patience,
-                predict_config);
+                {data}, /* valid_tokens = */ {}, labels, predict_config,
+                patience);
           },
-          py::arg("valid_data"), py::arg("valid_labels"), py::arg("patience"),
-          py::arg("predict_config"))
+          py::arg("valid_data"), py::arg("valid_labels"),
+          py::arg("predict_config"), py::arg("patience"))
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))
       .def("with_reconstruct_hash_functions",

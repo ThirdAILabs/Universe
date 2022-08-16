@@ -13,6 +13,10 @@
 
 namespace thirdai::bolt {
 
+class CategoricalAccuracy;
+class WeightedMeanAbsolutePercentageError;
+class MeanSquaredErrorMetric;
+
 // Metric interface
 class Metric {
  public:
@@ -32,18 +36,6 @@ class Metric {
   virtual std::string getName() = 0;
 
   virtual ~Metric() = default;
-
-  static std::shared_ptr<Metric> getMetricByName(const std::string& name) {
-    if (name == CategoricalAccuracy::name) {
-      return std::make_shared<CategoricalAccuracy>();
-    } else if (name == WeightedMeanAbsolutePercentageError::name) {
-      return std::make_shared<WeightedMeanAbsolutePercentageError>();
-    } else if (name == MeanSquaredErrorMetric::name) {
-      return std::make_shared<MeanSquaredErrorMetric>();
-    } else {
-      throw std::invalid_argument("'" + name + "' is not a valid metric.");
-    }
-  }
 };
 
 /**
@@ -255,6 +247,21 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
  private:
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
+};
+
+class MetricUtils {
+ public:
+  static std::shared_ptr<Metric> getMetricByName(const std::string& name) {
+    if (name == CategoricalAccuracy::name) {
+      return std::make_shared<CategoricalAccuracy>();
+    } else if (name == WeightedMeanAbsolutePercentageError::name) {
+      return std::make_shared<WeightedMeanAbsolutePercentageError>();
+    } else if (name == MeanSquaredErrorMetric::name) {
+      return std::make_shared<MeanSquaredErrorMetric>();
+    } else {
+      throw std::invalid_argument("'" + name + "' is not a valid metric.");
+    }
+  }
 };
 
 }  // namespace thirdai::bolt

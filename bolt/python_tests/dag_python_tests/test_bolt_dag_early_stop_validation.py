@@ -45,8 +45,8 @@ def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
         .with_early_stop_validation(
             valid_data=valid_data,
             valid_labels=valid_labels,
-            patience=3,
             predict_config=predict_config,
+            patience=3,
         )
     )
 

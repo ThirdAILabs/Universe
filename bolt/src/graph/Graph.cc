@@ -345,7 +345,7 @@ bool BoltGraph::shouldEarlyStop(
   // for a metric where smaller is better (like MeanSquaredError), negating the
   // metric value allows the maximization logic below to function like a
   // minimization objective
-  if (Metric::getMetricByName(metric_name)->smallerIsBetter()) {
+  if (MetricUtils::getMetricByName(metric_name)->smallerIsBetter()) {
     metric_val = -metric_val;
   }
 
