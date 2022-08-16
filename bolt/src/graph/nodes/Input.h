@@ -43,6 +43,10 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
+  void initOptimizer() {
+    throw std::logic_error("Should not call initOptimizer() on Input node");
+  }
+
  private:
   void compileImpl() final {
     if (_expected_input_dim == 0) {

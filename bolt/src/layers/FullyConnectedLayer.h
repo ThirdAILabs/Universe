@@ -236,6 +236,9 @@ class FullyConnectedLayer final : public SequentialLayer {
             _prev_is_active, _is_active);
   }
 
+  /**
+   * The optimizer is
+   */
   template <class Archive>
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,

@@ -99,7 +99,8 @@ class BoltGraph {
   // discarded.
   void save(const std::string& filename);
 
-  static std::unique_ptr<BoltGraph> load(const std::string& filename);
+  static std::unique_ptr<BoltGraph> load(const std::string& filename,
+                                         bool for_inference);
 
   std::string summarize(bool print, bool detailed) const;
 
@@ -172,6 +173,8 @@ class BoltGraph {
   void rebuildHashTables();
 
   void reconstructHashFunctions();
+
+  void initOptimizer();
 
   friend class cereal::access;
   template <class Archive>

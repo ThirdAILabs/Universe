@@ -559,13 +559,23 @@ void BoltGraph::save(const std::string& filename) {
   oarchive(*this);
 }
 
-std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {
+std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename,
+                                           bool for_inference = false) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   cereal::BinaryInputArchive iarchive(filestream);
   std::unique_ptr<BoltGraph> deserialize_into(new BoltGraph());
-  iarchive(*deserialize_into);
+  iarchive(*deserialize_into, for_inference);
+  if (!for_inference) {
+    deserialize_into->initOptimizer();
+  }
   return deserialize_into;
+}
+
+void BoltGraph::initOptimizer() {
+  for (auto& node : _nodes) {
+    node->initOptimizer();
+  }
 }
 
 std::string BoltGraph::summarize(bool print, bool detailed) const {
