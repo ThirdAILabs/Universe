@@ -65,13 +65,13 @@ MetricData BoltGraph::train(
 
   verifyCanTrain(train_context);
 
-  uint32_t rebuild_hash_tables_batch =
-      train_config.getRebuildHashTablesBatchInterval(train_context.batchSize(),
-                                                     train_context.len());
+  // uint32_t rebuild_hash_tables_batch =
+  //     train_config.getRebuildHashTablesBatchInterval(train_context.batchSize(),
+  //                                                    train_context.len());
 
-  uint32_t reconstruct_hash_functions_batch =
-      train_config.getReconstructHashFunctionsBatchInterval(
-          train_context.batchSize(), train_context.len());
+  // uint32_t reconstruct_hash_functions_batch =
+  //     train_config.getReconstructHashFunctionsBatchInterval(
+  //         train_context.batchSize(), train_context.len());
 
   /*
     Because of how the datasets are read we know that all batches will not have
@@ -104,10 +104,10 @@ MetricData BoltGraph::train(
         processTrainingBatch(batch_labels, train_config.learningRate(),
                              metrics);
 
-        updateSampling(
-            /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
-            /* reconstruct_hash_functions_batch= */
-            reconstruct_hash_functions_batch);
+        // updateSampling(
+        //     /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
+        //     /* reconstruct_hash_functions_batch= */
+        //     reconstruct_hash_functions_batch);
 
         bar.increment();
       }
