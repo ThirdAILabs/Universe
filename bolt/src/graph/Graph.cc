@@ -101,7 +101,7 @@ MetricData BoltGraph::train(
         train_context.setInputs(batch_idx, _inputs, _token_inputs);
 
         const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
-        processTrainingBatch(batch_labels, train_config.learningRate(),
+        processTrainingBatch(batch_labels,
                              metrics);
 
         // updateSampling(
