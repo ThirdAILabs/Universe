@@ -27,12 +27,14 @@ class MetricAggregator {
             std::make_shared<WeightedMeanAbsolutePercentageError>());
       } else if (name == MeanSquaredErrorMetric::name) {
         _metrics.push_back(std::make_shared<MeanSquaredErrorMetric>());
-      } else if (std::regex_match(name, std::regex("(f_measure\\(0\\.\\d+\\))|(f_measure)"))) {
+      } else if (std::regex_match(
+                     name,
+                     std::regex("(f_measure\\(0\\.\\d+\\))|(f_measure)"))) {
         if (name.find('(') == std::string::npos) {
-           _metrics.push_back(std::make_shared<FMeasure>());
+          _metrics.push_back(std::make_shared<FMeasure>());
         } else {
-          std::string token = name.substr(name.find('(')); // token = (X.XXX)
-          token = token.substr(1, token.length() - 2); // token = X.XXX
+          std::string token = name.substr(name.find('('));  // token = (X.XXX)
+          token = token.substr(1, token.length() - 2);      // token = X.XXX
           float threshold = std::stof(token);
           _metrics.push_back(std::make_shared<FMeasure>(threshold));
         }

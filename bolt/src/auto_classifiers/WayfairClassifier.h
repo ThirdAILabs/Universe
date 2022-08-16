@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/auto_classifiers/AutoClassifierBase.h>
+#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -19,27 +20,22 @@ namespace thirdai::bolt {
 
 class WayfairClassifier {
  public:
-  explicit WayfairClassifier(uint32_t n_classes)
-  : _n_classes(n_classes) {
+  explicit WayfairClassifier(uint32_t n_classes) : _n_classes(n_classes) {
     buildBatchProcessors(n_classes);
 
     assert(n_classes == _processor->getLabelDim());
-    
+
     std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{1000, 1.0}};
 
     _classifier = std::make_unique<AutoClassifierBase>(
-      /* input_dim= */ _processor->getInputDim(),
-      /* hidden_layer_configs= */ hidden_layer_config,
-      /* output_layer_size= */ n_classes,
-      /* output_layer_sparsity= */ n_classes >= 500 ? 0.1 : 1
-    );
+        /* input_dim= */ _processor->getInputDim(),
+        /* hidden_layer_configs= */ hidden_layer_config,
+        /* output_layer_size= */ n_classes,
+        /* output_layer_sparsity= */ n_classes >= 500 ? 0.1 : 1);
   }
 
-  void train(const std::string& filename,
-             uint32_t epochs,
-             float learning_rate,
+  void train(const std::string& filename, uint32_t epochs, float learning_rate,
              const std::vector<float>& fmeasure_thresholds = {0.9}) {
-    
     std::vector<std::string> metrics;
     for (auto threshold : fmeasure_thresholds) {
       std::stringstream metric_ss;
@@ -51,20 +47,22 @@ class WayfairClassifier {
         filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _processor),
-        epochs, learning_rate, /* prepare_for_sparse_inference= */ false, metrics);
+        epochs, learning_rate, /* prepare_for_sparse_inference= */ false,
+        metrics);
   }
 
-  void predict(const std::string& filename,
-               const std::vector<float>& fmeasure_thresholds = {0.9},
-               const std::optional<std::string>& output_filename = std::nullopt) {
+  InferenceResult predict(
+      const std::string& filename,
+      const std::vector<float>& fmeasure_thresholds = {0.9},
+      const std::optional<std::string>& output_filename = std::nullopt) {
     std::vector<std::string> metrics;
     for (auto threshold : fmeasure_thresholds) {
       std::stringstream metric_ss;
       metric_ss << "f_measure(" << threshold << ")";
       metrics.push_back(metric_ss.str());
     }
-    
-    // All class names are strings of the IDs themselves since the 
+
+    // All class names are strings of the IDs themselves since the
     // labels are integers.
     std::vector<std::string> class_id_to_name(_n_classes);
     for (uint32_t id = 0; id < _n_classes; id++) {
@@ -73,28 +71,27 @@ class WayfairClassifier {
       class_id_to_name[id] = id_ss.str();
     }
 
-    _classifier->predict(
-        filename,
-        _processor,
-        output_filename, class_id_to_name, /* use_sparse_inference= */ false, metrics);
+    return _classifier->predict(filename, _processor, output_filename,
+                                class_id_to_name,
+                                /* use_sparse_inference= */ false, metrics);
   }
 
-  BoltVector predictSingle(const std::vector<uint32_t>& tokens, float threshold = 0.9) {
-
+  BoltVector predictSingle(const std::vector<uint32_t>& tokens,
+                           float threshold = 0.9) {
     float epsilon = 0.01;
 
     std::string sentence = tokensToSentence(tokens);
-    // The following step must be separate from the above 
+    // The following step must be separate from the above
     // because we need to keep the sentence in scope and alive.
-    auto sample = sentenceToSample(sentence); 
-    
+    auto sample = sentenceToSample(sentence);
+
     BoltVector input_vector;
     auto input = _processor->makeInputVector(sample, input_vector);
 
     BoltVector output =
         _classifier->predictSingle({input_vector}, {},
                                    /* use_sparse_inference = */ false);
-    
+
     assert(output.isDense());
     auto max_id = output.getIdWithHighestActivation();
     if (output.activations[max_id] < threshold) {
@@ -124,18 +121,22 @@ class WayfairClassifier {
 
  protected:
   void buildBatchProcessors(uint32_t n_classes) {
-    auto multi_label_encoding = std::make_shared<dataset::CategoricalMultiLabel>(/* n_classes= */ n_classes, /* delimiter= */ ',');
-    auto label_block = std::make_shared<dataset::CategoricalBlock>(/* col= */ 0, /* encoding= */ multi_label_encoding);
+    auto multi_label_encoding =
+        std::make_shared<dataset::CategoricalMultiLabel>(
+            /* n_classes= */ n_classes, /* delimiter= */ ',');
+    auto label_block = std::make_shared<dataset::CategoricalBlock>(
+        /* col= */ 0, /* encoding= */ multi_label_encoding);
     std::vector<std::shared_ptr<dataset::Block>> label_blocks = {label_block};
 
-    auto pairgram_encoding = std::make_shared<dataset::PairGram>(/* dim= */ 100000);
-    auto input_block = std::make_shared<dataset::TextBlock>(/* col= */ 1, /* encoding= */ pairgram_encoding);
+    auto pairgram_encoding =
+        std::make_shared<dataset::PairGram>(/* dim= */ 100000);
+    auto input_block = std::make_shared<dataset::TextBlock>(
+        /* col= */ 1, /* encoding= */ pairgram_encoding);
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {input_block};
-    
+
     _processor = std::make_shared<dataset::GenericBatchProcessor>(
-      input_blocks, label_blocks,
-      /* has_header= */ false, /* delimiter= */ '\t'
-    );
+        input_blocks, label_blocks,
+        /* has_header= */ false, /* delimiter= */ '\t');
   }
 
   static std::string tokensToSentence(const std::vector<uint32_t>& tokens) {
@@ -148,11 +149,10 @@ class WayfairClassifier {
     return sentence_ss.str();
   }
 
-  static std::vector<std::string_view> sentenceToSample(const std::string& sentence) {
-    return {
-      std::string_view(sentence.data(), 1),
-      std::string_view(sentence.data() + 1, sentence.size())
-    };
+  static std::vector<std::string_view> sentenceToSample(
+      const std::string& sentence) {
+    return {std::string_view(sentence.data(), 1),
+            std::string_view(sentence.data() + 1, sentence.size())};
   }
 
   // Private constructor for cereal
@@ -164,10 +164,10 @@ class WayfairClassifier {
   void serialize(Archive& archive) {
     archive(_n_classes, _classifier);
   }
- 
+
   uint32_t _n_classes;
   std::shared_ptr<dataset::GenericBatchProcessor> _processor;
   std::unique_ptr<AutoClassifierBase> _classifier;
 };
 
-} // namespace thirdai::bolt
+}  // namespace thirdai::bolt

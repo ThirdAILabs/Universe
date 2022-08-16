@@ -25,21 +25,26 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
-  std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{hidden_layer_size, hidden_layer_sparsity}};
+  std::vector<std::pair<uint32_t, float>> hidden_layer_config = {
+      {hidden_layer_size, hidden_layer_sparsity}};
 
-  _model = buildModel(input_dim, hidden_layer_config, n_classes, /* output_layer_sparsity = */ 1.0);
+  _model = buildModel(input_dim, hidden_layer_config, n_classes,
+                      /* output_layer_sparsity = */ 1.0);
 }
 
-AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, std::vector<std::pair<uint32_t, float>> hidden_layer_configs, uint32_t output_layer_size, float output_layer_sparsity) {
-  _model = buildModel(input_dim, hidden_layer_configs, output_layer_size, output_layer_sparsity);
+AutoClassifierBase::AutoClassifierBase(
+    uint64_t input_dim,
+    std::vector<std::pair<uint32_t, float>> hidden_layer_configs,
+    uint32_t output_layer_size, float output_layer_sparsity) {
+  _model = buildModel(input_dim, hidden_layer_configs, output_layer_size,
+                      output_layer_sparsity);
 }
 
 void AutoClassifierBase::train(
     const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
-    uint32_t epochs, float learning_rate,
-    bool prepare_for_sparse_inference,
+    uint32_t epochs, float learning_rate, bool prepare_for_sparse_inference,
     const std::vector<std::string>& metrics) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
@@ -55,12 +60,13 @@ void AutoClassifierBase::train(
   auto [train_data, train_labels] = dataset->loadInMemory();
 
   TrainConfig first_epoch_config =
-      TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
-                              /* epochs= */ prepare_for_sparse_inference ? 1 : epochs)
+      TrainConfig::makeConfig(
+          /* learning_rate= */ learning_rate,
+          /* epochs= */ prepare_for_sparse_inference ? 1 : epochs)
           .withMetrics(metrics);
-  
+
   _model->train({train_data}, {}, train_labels, first_epoch_config);
-  
+
   // TODO(david) verify freezing hash tables is good for autoclassifier
   // training. The only way we can really test this is when we have a validation
   // based early stop callback already implemented.
@@ -77,14 +83,13 @@ void AutoClassifierBase::train(
   }
 }
 
-void AutoClassifierBase::predict(
+InferenceResult AutoClassifierBase::predict(
     const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
     const std::optional<std::string>& output_filename,
     const std::vector<std::string>& class_id_to_class_name,
-    bool use_sparse_inference,
-    const std::vector<std::string>& metrics) {
+    bool use_sparse_inference, const std::vector<std::string>& metrics) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
   // see comment above in train(..) about loading in memory
@@ -114,11 +119,13 @@ void AutoClassifierBase::predict(
     config = config.enableSparseInference();
   }
 
-  _model->predict({test_data}, {}, test_labels, config);
+  auto result = _model->predict({test_data}, {}, test_labels, config);
 
   if (output_file) {
     output_file->close();
   }
+
+  return result;
 }
 
 BoltVector AutoClassifierBase::predictSingle(
@@ -182,16 +189,17 @@ float AutoClassifierBase::getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
-BoltGraphPtr AutoClassifierBase::buildModel(uint32_t input_dim,
-                                            std::vector<std::pair<uint32_t, float>>& hidden_layer_configs,
-                                            uint32_t output_layer_size,
-                                            float output_layer_sparsity) {
+BoltGraphPtr AutoClassifierBase::buildModel(
+    uint32_t input_dim,
+    std::vector<std::pair<uint32_t, float>>& hidden_layer_configs,
+    uint32_t output_layer_size, float output_layer_sparsity) {
   auto input_layer = std::make_shared<Input>(input_dim);
   NodePtr prev_layer = input_layer;
 
   for (auto size_and_sparsity : hidden_layer_configs) {
     auto hidden_layer = std::make_shared<FullyConnectedNode>(
-        /* dim= */ size_and_sparsity.first, /* sparsity= */ size_and_sparsity.second,
+        /* dim= */ size_and_sparsity.first,
+        /* sparsity= */ size_and_sparsity.second,
         /* activation= */ "relu");
 
     hidden_layer->addPredecessor(prev_layer);

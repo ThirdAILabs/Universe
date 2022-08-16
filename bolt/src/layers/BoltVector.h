@@ -3,10 +3,10 @@
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
 #include <algorithm>
-#include <numeric>
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include <numeric>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -230,35 +230,41 @@ struct BoltVector {
   }
 
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
- 
-  // Returns the active neuron ID's that are greater than activation_threshold. Returns at most max_count_to_return
-  // (if number of neurons exceeds max_count_to_return, returns those with highest activations). If return_at_least_one is true,
-  // returns the neuron with the highest activation even if no neurons otherwise exceeded activation_threshold.
-  std::vector<uint32_t> getThresholdedNeurons(float activation_threshold, bool return_at_least_one, uint32_t max_count_to_return) const {
+
+  // Returns the active neuron ID's that are greater than activation_threshold.
+  // Returns at most max_count_to_return (if number of neurons exceeds
+  // max_count_to_return, returns those with highest activations). If
+  // return_at_least_one is true, returns the neuron with the highest activation
+  // even if no neurons otherwise exceeded activation_threshold.
+  std::vector<uint32_t> getThresholdedNeurons(
+      float activation_threshold, bool return_at_least_one,
+      uint32_t max_count_to_return) const {
     std::vector<uint32_t> thresholded;
     std::vector<uint32_t> ids(len);
     std::iota(ids.begin(), ids.end(), 0);
-    std::stable_sort(ids.begin(), ids.end(),
-       [this](uint32_t i1, uint32_t i2) {return activations[i1] > activations[i2];});
+    std::stable_sort(ids.begin(), ids.end(), [this](uint32_t i1, uint32_t i2) {
+      return activations[i1] > activations[i2];
+    });
 
-    for (unsigned int & id : ids) {
+    for (unsigned int& id : ids) {
       if (activations[id] < activation_threshold) {
         break;
       }
       if (thresholded.size() == max_count_to_return) {
         return thresholded;
-      } 
-      
+      }
+
       uint32_t neuron = this->isDense() ? id : active_neurons[id];
       thresholded.push_back(neuron);
     }
 
     if (return_at_least_one && thresholded.empty()) {
-      uint32_t max_act_neuron = this->isDense() ? ids[0] : active_neurons[ids[0]];
+      uint32_t max_act_neuron =
+          this->isDense() ? ids[0] : active_neurons[ids[0]];
       thresholded.push_back(max_act_neuron);
     }
 
-    return thresholded;    
+    return thresholded;
   }
 
   constexpr bool hasGradients() const { return gradients != nullptr; }

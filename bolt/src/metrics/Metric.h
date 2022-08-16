@@ -238,15 +238,26 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 };
 
 /**
- * The F-Measure is an error that takes into account both precision and recall. It is defined as the harmonic mean of precision and recall. The returned metric is in absolute terms; 1.0 is 100%.
+ * The F-Measure is an error that takes into account both precision and recall.
+ * It is defined as the harmonic mean of precision and recall. The returned
+ * metric is in absolute terms; 1.0 is 100%.
  */
 class FMeasure final : public Metric {
  public:
-  explicit FMeasure(float threshold = 0.8) : _threshold(threshold), _tp(0), _fp(0), _fn(0), _prec_sum(0), _rec_sum(0), _num_samples(0) {}
+  explicit FMeasure(float threshold = 0.8)
+      : _threshold(threshold),
+        _tp(0),
+        _fp(0),
+        _fn(0),
+        _prec_sum(0),
+        _rec_sum(0),
+        _num_samples(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    auto predictions = output.getThresholdedNeurons(/* activation_threshold = */ _threshold, /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
-    
+    auto predictions = output.getThresholdedNeurons(
+        /* activation_threshold = */ _threshold,
+        /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
+
     uint32_t local_tp = 0;
 
     for (uint32_t pred : predictions) {
@@ -261,16 +272,18 @@ class FMeasure final : public Metric {
     for (uint32_t i = 0; i < labels.len; i++) {
       uint32_t label_idx = labels.isDense() ? i : labels.active_neurons[i];
       if (labels.findActiveNeuronNoTemplate(label_idx).activation > 0) {
-        if (std::find(predictions.begin(), predictions.end(), label_idx) == predictions.end()) {
+        if (std::find(predictions.begin(), predictions.end(), label_idx) ==
+            predictions.end()) {
           _fn++;
         }
       }
     }
 
-    MetricUtilities::incrementAtomicFloat(_prec_sum, local_tp / static_cast<float>(predictions.size()));
-    MetricUtilities::incrementAtomicFloat(_rec_sum, local_tp / static_cast<float>(labels.len));
+    MetricUtilities::incrementAtomicFloat(
+        _prec_sum, local_tp / static_cast<float>(predictions.size()));
+    MetricUtilities::incrementAtomicFloat(
+        _rec_sum, local_tp / static_cast<float>(labels.len));
     _num_samples++;
-
   }
 
   double getMetricAndReset(bool verbose) final {
@@ -278,9 +291,10 @@ class FMeasure final : public Metric {
     double recall = static_cast<double>(_tp) / (_tp + _fn);
     double f_measure = (2 * prec * recall) / (prec + recall);
     if (verbose) {
-      std::cout << "Precision: " << prec << std::endl;
-      std::cout << "Recall: " << recall << std::endl;
-      std::cout << "F-Measure: " << f_measure << std::endl;
+      std::cout << "Precision (t=" << _threshold << "): " << prec << std::endl;
+      std::cout << "Recall (t=" << _threshold << "): " << recall << std::endl;
+      std::cout << "F-Measure (t=" << _threshold << "): " << f_measure
+                << std::endl;
     }
     _tp = 0;
     _fp = 0;
@@ -290,7 +304,11 @@ class FMeasure final : public Metric {
 
   static constexpr const char* name = "f_measure";
 
-  std::string getName() final { return name; }
+  std::string getName() final {
+    std::stringstream name_ss;
+    name_ss << name << '_' << _threshold;
+    return name_ss.str();
+  }
 
  private:
   float _threshold;
@@ -301,7 +319,6 @@ class FMeasure final : public Metric {
   std::atomic<float> _prec_sum;
   std::atomic<float> _rec_sum;
   std::atomic<uint32_t> _num_samples;
-
 };
 
 }  // namespace thirdai::bolt

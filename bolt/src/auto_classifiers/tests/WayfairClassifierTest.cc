@@ -1,6 +1,7 @@
 #include "AutoClassifierTestUtils.h"
 #include <bolt/src/auto_classifiers/WayfairClassifier.h>
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/metrics/Metric.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <fstream>
@@ -9,23 +10,31 @@
 
 namespace thirdai::bolt::tests {
 
+float getFMeasure(std::vector<BoltVector> outputs,
+                  std::vector<BoltVector> labels, float threshold) {
+  FMeasure metric(threshold);
+  for (uint32_t vec_idx = 0; vec_idx < outputs.size(); vec_idx++) {
+    metric.computeMetric(outputs[vec_idx], labels[vec_idx]);
+  }
+  return metric.getMetricAndReset(/* verbose= */ false);
+}
+
 TEST(WayfairClassifierTest, TestLoadSave) {
   std::shared_ptr<bolt::WayfairClassifier> model =
       std::make_shared<WayfairClassifier>(/* n_classes= */ 5);
 
-  std::vector<std::string> train_contents = {
-      "1\t1 1", "2\t2 2",
-      "3\t3 3", "4\t4 4"};
+  std::vector<std::string> train_contents = {"1\t1 1", "2\t2 2", "3\t3 3",
+                                             "4\t4 4"};
 
   std::vector<std::string> single_labels = {"1", "2", "3", "4"};
-  
+
   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
-  
+
   std::vector<float> fmeasure_thresholds = {0.9};
 
   model->train(TRAIN_FILENAME, /* epochs = */ 3,
-               /* learning_rate = */ 0.01, 
+               /* learning_rate = */ 0.01,
                /* fmeasure_thresholds = */ fmeasure_thresholds);
 
   std::string PREDICTION_FILENAME = "predictions.csv";
@@ -41,7 +50,6 @@ TEST(WayfairClassifierTest, TestLoadSave) {
   std::string SAVE_LOCATION = "textSaveLocation";
   model->save(SAVE_LOCATION);
   auto new_model = WayfairClassifier::load(SAVE_LOCATION);
-
 
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
       new_model->predict(
@@ -64,17 +72,16 @@ TEST(WayfairClassifierTest, TestPredictSingle) {
   std::shared_ptr<bolt::WayfairClassifier> model =
       std::make_shared<WayfairClassifier>(/* n_classes= */ 3);
 
-  std::vector<std::string> train_contents = {
-      "0,1\t1 1", "2\t2 2",
-      "0,1\t1 1", "2\t2 2"};
+  std::vector<std::string> train_contents = {"0,1\t1 1", "2\t2 2", "0,1\t1 1",
+                                             "2\t2 2"};
   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
 
   std::vector<float> fmeasure_thresholds = {0.9};
 
   model->train(TRAIN_FILENAME, /* epochs = */ 3,
-                    /* learning_rate = */ 0.01,
-                    /* fmeasure_thresholds= */ fmeasure_thresholds);
+               /* learning_rate = */ 0.01,
+               /* fmeasure_thresholds= */ fmeasure_thresholds);
 
   auto output = model->predictSingle({1, 1});
   std::cout << output << std::endl;
@@ -84,9 +91,10 @@ TEST(WayfairClassifierTest, TestPredictSingle) {
 
 /**
  * One of the requirements of the Wayfair Classifier
- * 
+ *
  */
-TEST(WayfairClassifierTest, PredictSingleReturnsAtLeastOneActivationAboveThreshold) {
+TEST(WayfairClassifierTest,
+     PredictSingleReturnsAtLeastOneActivationAboveThreshold) {
   std::shared_ptr<bolt::WayfairClassifier> model =
       std::make_shared<WayfairClassifier>(/* n_classes= */ 100);
 
@@ -97,7 +105,7 @@ TEST(WayfairClassifierTest, PredictSingleReturnsAtLeastOneActivationAboveThresho
   for (uint32_t pos = 0; pos < output.len; pos++) {
     max_act = std::max(max_act, output.activations[pos]);
   }
-  
+
   float threshold = max_act + 0.1;
   auto thresholded_output = model->predictSingle({1, 1}, threshold);
 
@@ -110,7 +118,52 @@ TEST(WayfairClassifierTest, PredictSingleReturnsAtLeastOneActivationAboveThresho
     }
   }
   ASSERT_EQ(n_above_threshold, 1);
+}
 
+TEST(WayfairClassifierTest, ConsistentPredictAndPredictSingle) {
+  std::shared_ptr<bolt::WayfairClassifier> model =
+      std::make_shared<WayfairClassifier>(/* n_classes= */ 500);
+
+  std::vector<std::string> train_contents = {"1,10\t1 1", "2,20,200\t2 2",
+                                             "3\t3 3", "4,400\t4 4"};
+
+  const std::string TRAIN_FILENAME = "tempTrainFile.csv";
+  AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
+
+  std::vector<float> fmeasure_thresholds = {0.1, 0.2, 0.9};
+
+  model->train(TRAIN_FILENAME, /* epochs = */ 5,
+               /* learning_rate = */ 0.01,
+               /* fmeasure_thresholds = */ fmeasure_thresholds);
+
+  std::string PREDICTION_FILENAME = "predictions.csv";
+  auto prediction_results = model->predict(
+      /* filename = */ TRAIN_FILENAME,
+      /* fmeasure_thresholds = */ fmeasure_thresholds,
+      /* output_filename = */ PREDICTION_FILENAME);
+
+  std::vector<BoltVector> vector_labels = {
+      BoltVector::makeSparseVector({1, 10}, {1.0, 1.0}),
+      BoltVector::makeSparseVector({2, 20, 200}, {1.0, 1.0, 1.0}),
+      BoltVector::makeSparseVector({3}, {1.0}),
+      BoltVector::makeSparseVector({4, 400}, {1.0, 1.0})};
+
+  std::vector<std::vector<uint32_t>> single_inference_samples = {
+      {1, 1}, {2, 2}, {3, 3}, {4, 4}};
+
+  std::vector<BoltVector> single_inference_outputs;
+  single_inference_outputs.reserve(single_inference_samples.size());
+  for (auto& sample : single_inference_samples) {
+    single_inference_outputs.push_back(model->predictSingle(sample));
+  }
+
+  for (auto threshold : fmeasure_thresholds) {
+    std::stringstream metric_name_ss;
+    metric_name_ss << "f_measure_" << threshold;
+    ASSERT_NEAR(getFMeasure(single_inference_outputs, vector_labels, threshold),
+                prediction_results.first[metric_name_ss.str()],
+                /* abs_error= */ 0.000001);
+  }
 }
 
 }  // namespace thirdai::bolt::tests

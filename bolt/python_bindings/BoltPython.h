@@ -440,27 +440,27 @@ class SentimentClassifier {
 
 class PyWayfairClassifier : public WayfairClassifier {
  public:
-  explicit PyWayfairClassifier(uint32_t n_classes) : WayfairClassifier(n_classes) {}
+  explicit PyWayfairClassifier(uint32_t n_classes)
+      : WayfairClassifier(n_classes) {}
 
-  py::array_t<float, py::array::c_style | py::array::forcecast> 
-  predictSingle(const std::vector<uint32_t>& tokens) {
+  py::array_t<float, py::array::c_style | py::array::forcecast> predictSingle(
+      const std::vector<uint32_t>& tokens) {
     auto output = WayfairClassifier::predictSingle(tokens);
 
     uint32_t num_samples = 1;
     float* activations;
-    allocateActivations(num_samples, _n_classes, /* active_neurons= */ nullptr, &activations, /* output_sparse= */ false);
+    allocateActivations(num_samples, _n_classes, /* active_neurons= */ nullptr,
+                        &activations, /* output_sparse= */ false);
 
     const float* start = output.activations;
     std::copy(start, start + output.len, activations);
 
-    py::object activation_handle =
-      py::capsule(activations,
-                        [](void* ptr) { delete static_cast<float*>(ptr); });
+    py::object activation_handle = py::capsule(
+        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
 
     py::array_t<float, py::array::c_style | py::array::forcecast>
-      activations_array({_n_classes},
-                        {sizeof(float)},
-                        activations, activation_handle);
+        activations_array({_n_classes}, {sizeof(float)}, activations,
+                          activation_handle);
     return activations_array;
   }
 
@@ -471,7 +471,8 @@ class PyWayfairClassifier : public WayfairClassifier {
     oarchive(*this);
   }
 
-  static std::unique_ptr<PyWayfairClassifier> load(const std::string& filename) {
+  static std::unique_ptr<PyWayfairClassifier> load(
+      const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
@@ -484,15 +485,13 @@ class PyWayfairClassifier : public WayfairClassifier {
 
  private:
   // Private constructor for cereal.
-  PyWayfairClassifier() : WayfairClassifier() {} 
+  PyWayfairClassifier() : WayfairClassifier() {}
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_n_classes, _classifier);
   }
- 
-
 };
 
 }  // namespace thirdai::bolt::python

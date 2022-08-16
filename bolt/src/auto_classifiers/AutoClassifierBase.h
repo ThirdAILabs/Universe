@@ -18,8 +18,11 @@ class AutoClassifierBase {
  public:
   AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
                      const std::string& model_size);
-  
-  AutoClassifierBase(uint64_t input_dim, std::vector<std::pair<uint32_t, float>> hidden_layer_configs, uint32_t output_layer_size, float output_layer_sparsity);
+
+  AutoClassifierBase(
+      uint64_t input_dim,
+      std::vector<std::pair<uint32_t, float>> hidden_layer_configs,
+      uint32_t output_layer_size, float output_layer_sparsity);
 
   void train(
       const std::string& filename,
@@ -29,7 +32,7 @@ class AutoClassifierBase {
       bool prepare_for_sparse_inference = true,
       const std::vector<std::string>& metrics = {"categorical_accuracy"});
 
-  void predict(
+  InferenceResult predict(
       const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
@@ -47,10 +50,10 @@ class AutoClassifierBase {
 
   static bool canLoadDatasetInMemory(const std::string& filename);
 
-  static BoltGraphPtr buildModel(uint32_t input_dim,
-                                            std::vector<std::pair<uint32_t, float>>& hidden_layer_configs,
-                                            uint32_t output_layer_size,
-                                            float output_layer_sparsity);
+  static BoltGraphPtr buildModel(
+      uint32_t input_dim,
+      std::vector<std::pair<uint32_t, float>>& hidden_layer_configs,
+      uint32_t output_layer_size, float output_layer_sparsity);
 
  private:
   static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
