@@ -39,7 +39,8 @@ class AutoClassifierBase {
       const std::optional<std::string>& output_filename,
       const std::vector<std::string>& class_id_to_class_name,
       bool use_sparse_inference = true,
-      const std::vector<std::string>& metrics = {"categorical_accuracy"});
+      const std::vector<std::string>& metrics = {"categorical_accuracy"},
+      bool silent = true);
 
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            std::vector<std::vector<uint32_t>>&& test_tokens,

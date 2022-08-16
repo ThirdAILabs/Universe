@@ -58,9 +58,6 @@ void AutoClassifierBase::train(
     throw std::invalid_argument("Cannot load dataset in memory.");
   }
   auto [train_data, train_labels] = dataset->loadInMemory();
-  std::cout << train_data->at(0)[0] << std::endl;
-  std::cout << train_labels->at(0)[0] << std::endl;
-
 
   TrainConfig first_epoch_config =
       TrainConfig::makeConfig(
@@ -92,7 +89,7 @@ InferenceResult AutoClassifierBase::predict(
         batch_processor,
     const std::optional<std::string>& output_filename,
     const std::vector<std::string>& class_id_to_class_name,
-    bool use_sparse_inference, const std::vector<std::string>& metrics) {
+    bool use_sparse_inference, const std::vector<std::string>& metrics, bool silent) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
   // see comment above in train(..) about loading in memory
@@ -100,9 +97,7 @@ InferenceResult AutoClassifierBase::predict(
     throw std::invalid_argument("Cannot load dataset in memory.");
   }
   auto [test_data, test_labels] = dataset->loadInMemory();
-  std::cout << test_data->at(0)[0] << std::endl;
-  std::cout << test_labels->at(0)[0] << std::endl;
-
+  
   std::optional<std::ofstream> output_file;
   if (output_filename) {
     output_file = dataset::SafeFileIO::ofstream(*output_filename);
@@ -122,6 +117,9 @@ InferenceResult AutoClassifierBase::predict(
                              .silence();
   if (use_sparse_inference) {
     config = config.enableSparseInference();
+  }
+  if (silent) {
+    config = config.silence();
   }
 
   auto result = _model->predict({test_data}, {}, test_labels, config);

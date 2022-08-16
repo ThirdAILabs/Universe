@@ -73,7 +73,8 @@ class WayfairClassifier {
 
     return _classifier->predict(filename, _processor, output_filename,
                                 class_id_to_name,
-                                /* use_sparse_inference= */ false, metrics);
+                                /* use_sparse_inference= */ false, metrics,
+                                /* silent= */ false);
   }
 
   BoltVector predictSingle(const std::vector<uint32_t>& tokens,
