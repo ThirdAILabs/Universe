@@ -22,8 +22,8 @@ namespace thirdai::bolt {
   The transformation sets the activations' means and variances close to 0 and
   1 respectively.
   If the `scale` and `center` parameters are set, the corresponding z-scores
-  are linearly transformed according to the parameters specified by beta and
-  gamma.
+  are linearly transformed according to the parameters specified by the beta and
+  gamma regularizers.
  */
 
 constexpr float OFFSET = 0.00000001;
