@@ -1,23 +1,19 @@
 from thirdai import bolt
-from ..utils import gen_numpy_training_data
+from ..utils import gen_numpy_training_data, get_simple_dag_model
 import pytest
 
 pytestmark = [pytest.mark.unit]
 
 
 def test_freeze_dag_hash_tables():
-    # Define and compile model.
     n_classes = 100
-    input_layer = bolt.graph.Input(dim=n_classes)
-    hidden_layer = bolt.graph.FullyConnected(
-        dim=1000, sparsity=0.15, activation="relu"
-    )(input_layer)
-    output_layer = bolt.graph.FullyConnected(dim=n_classes, activation="softmax")(
-        hidden_layer
-    )
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(bolt.CategoricalCrossEntropyLoss())
+    model = get_simple_dag_model(
+        input_dim=n_classes,
+        hidden_layer_dim=1000,
+        hidden_layer_sparsity=0.15,
+        output_dim=n_classes,
+    )
 
     # Generate dataset.
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)

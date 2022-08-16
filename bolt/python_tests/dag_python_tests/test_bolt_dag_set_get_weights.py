@@ -2,26 +2,11 @@ import math
 import numpy as np
 import pytest
 from thirdai import bolt
-from ..utils import gen_numpy_training_data
+from ..utils import gen_numpy_training_data, get_simple_dag_model
 
 
 LEARNING_RATE = 0.001
 BATCH_SIZE = 64
-
-# Builds a DAG-based model to test setting and getting weights
-def build_simple_model(num_classes, sparsity=0.5):
-    input_layer = bolt.graph.Input(dim=num_classes)
-    hidden_layer = bolt.graph.FullyConnected(dim=num_classes, activation="relu")(
-        input_layer
-    )
-    output_layer = bolt.graph.FullyConnected(
-        dim=100, sparsity=sparsity, activation="softmax"
-    )(hidden_layer)
-
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
-
-    return model
 
 
 @pytest.mark.unit
@@ -36,7 +21,12 @@ def test_dag_get_set_weights():
         n_classes=dataset_dim, n_samples=10000, batch_size_for_conversion=BATCH_SIZE
     )
 
-    model = build_simple_model(num_classes=dataset_dim, sparsity=0.4)
+    model = get_simple_dag_model(
+        input_dim=dataset_dim,
+        hidden_layer_dim=dataset_dim,
+        hidden_layer_sparsity=0.4,
+        output_dim=dataset_dim,
+    )
 
     train_config = bolt.graph.TrainConfig.make(
         learning_rate=LEARNING_RATE, epochs=5
@@ -54,7 +44,12 @@ def test_dag_get_set_weights():
         predict_config=predict_config,
     )
 
-    untrained_model = build_simple_model(num_classes=dataset_dim, sparsity=0.4)
+    untrained_model = get_simple_dag_model(
+        input_dim=dataset_dim,
+        hidden_layer_dim=dataset_dim,
+        hidden_layer_sparsity=0.4,
+        output_dim=dataset_dim,
+    )
 
     hidden_layer = model.get_layer("fc_1")
     output_layer = model.get_layer("fc_2")
@@ -85,7 +80,12 @@ def test_dag_get_set_weights():
 def test_bad_numpy_array_dim():
     dataset_dim = 100
 
-    model = build_simple_model(num_classes=dataset_dim, sparsity=0.4)
+    model = get_simple_dag_model(
+        input_dim=dataset_dim,
+        hidden_layer_dim=dataset_dim,
+        hidden_layer_sparsity=0.4,
+        output_dim=dataset_dim,
+    )
 
     hidden_layer = model.get_layer("fc_1")
 

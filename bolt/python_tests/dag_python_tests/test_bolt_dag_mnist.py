@@ -1,4 +1,5 @@
 from ..test_mnist import load_mnist
+from ..utils import get_simple_dag_model
 from thirdai import bolt
 import os
 import pytest
@@ -25,22 +26,9 @@ def setup_module():
 
 
 def test_bolt_dag_on_mnist():
-    input_layer = bolt.graph.Input(dim=784)
-
-    hidden_layer = bolt.graph.FullyConnected(
-        dim=20000,
-        sparsity=0.01,
-        activation="relu",
-        sampling_config=bolt.DWTASamplingConfig(
-            num_tables=64, hashes_per_table=3, reservoir_size=32
-        ),
-    )(input_layer)
-
-    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(hidden_layer)
-
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+    model = get_simple_dag_model(
+        input_dim=784, hidden_layer_dim=20000, hidden_layer_sparsity=0.01, output_dim=10
+    )
 
     train_data, train_labels, test_data, test_labels = load_mnist()
 
