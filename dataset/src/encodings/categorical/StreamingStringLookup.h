@@ -18,7 +18,7 @@ class StreamingStringLookup {
     _string_to_uid.reserve(n_unique);
   }
 
-  uint32_t lookup(std::string& string) {
+  uint32_t lookup(const std::string& string) {
     uint32_t uid;
 #pragma omp critical(streaming_string_lookup)
     {
