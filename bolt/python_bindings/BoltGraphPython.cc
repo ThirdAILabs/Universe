@@ -189,8 +189,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       // single BoltBatch dataset
       .def(
           "with_early_stop_validation",
-          [](TrainConfig& config, const dataset::BoltDatasetPtr& data,
-             const dataset::BoltDatasetPtr& labels,
+          [](TrainConfig& config, dataset::BoltDatasetPtr data,
+             dataset::BoltDatasetPtr labels,
              const PredictConfig& predict_config, uint32_t patience) {
             return config.withEarlyStopValidation(
                 {data}, /* valid_tokens = */ {}, labels, predict_config,

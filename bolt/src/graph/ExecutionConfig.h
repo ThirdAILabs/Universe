@@ -120,9 +120,9 @@ class TrainConfig {
         "bestModelSaveLocation";
 
     EarlyStopValidationMetadata(
-        const std::vector<dataset::BoltDatasetPtr>&& valid_data,
-        const std::vector<dataset::BoltTokenDatasetPtr>&& valid_tokens,
-        const dataset::BoltDatasetPtr&& valid_labels, uint32_t patience,
+        std::vector<dataset::BoltDatasetPtr> valid_data,
+        std::vector<dataset::BoltTokenDatasetPtr> valid_tokens,
+        dataset::BoltDatasetPtr valid_labels, uint32_t patience,
         const PredictConfig& predict_config)
         : valid_data(valid_data),
           valid_tokens(valid_tokens),
@@ -143,10 +143,10 @@ class TrainConfig {
   };
 
   TrainConfig& withEarlyStopValidation(
-      const std::vector<dataset::BoltDatasetPtr>& valid_data,
-      const std::vector<dataset::BoltTokenDatasetPtr>& valid_tokens,
-      const dataset::BoltDatasetPtr& valid_labels,
-      const PredictConfig& predict_config, uint32_t patience = 3) {
+      std::vector<dataset::BoltDatasetPtr> valid_data,
+      std::vector<dataset::BoltTokenDatasetPtr> valid_tokens,
+      dataset::BoltDatasetPtr valid_labels, const PredictConfig& predict_config,
+      uint32_t patience = 3) {
     uint32_t num_metrics = predict_config.getNumMetricsTracked();
     if (num_metrics != 1) {
       throw std::invalid_argument(
@@ -156,8 +156,7 @@ class TrainConfig {
     }
 
     _early_stop_metadata = EarlyStopValidationMetadata(
-        std::move(valid_data), std::move(valid_tokens), std::move(valid_labels),
-        patience, predict_config);
+        valid_data, valid_tokens, valid_labels, patience, predict_config);
     return *this;
   }
 
