@@ -75,6 +75,10 @@ class StreamingGenericDatasetLoader
 
   uint32_t getLabelDim() { return _processor->getLabelDim(); }
 
+  std::vector<std::shared_ptr<Block>> getInputBlocks() {
+    return _processor->getInputBlocks();
+  }
+
  private:
   void prefillShuffleBuffer() {
     for (size_t i = 0; i < _buffer_size - 1; i++) {

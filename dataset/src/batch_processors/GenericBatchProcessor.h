@@ -126,6 +126,10 @@ class GenericBatchProcessor
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
+  std::vector<std::shared_ptr<Block>> getInputBlocks() const {
+    return _input_blocks;
+  }
+
  private:
   /**
    * Encodes a sample as a BoltVector according to the given blocks.

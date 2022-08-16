@@ -20,6 +20,8 @@ class TabularPairGram : public Block {
 
   bool isDense() const final { return false; };
 
+  uint32_t getColumnNum() const final {return _metadata->getLabelCol();}
+
   std::string giveMessage(
       float gradient_ratio_value,
       std::unordered_map<uint32_t, std::string> col_num_col_name_map,

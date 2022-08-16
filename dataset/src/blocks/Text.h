@@ -39,6 +39,8 @@ class TextBlock : public Block {
   bool isDense() const final { return _encoding->isDense(); };
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
+  
+  uint32_t getColumnNum() const final {return _col;}
 
   std::string giveMessage(
       float gradient_ratio_value,

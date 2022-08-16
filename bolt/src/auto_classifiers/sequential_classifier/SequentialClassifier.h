@@ -7,6 +7,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <chrono>
 #include <cstddef>
 #include <memory>
@@ -33,8 +34,7 @@ class SequentialClassifier {
              bool overwrite_index = false) {
     auto pipeline = _pipeline_builder
                         .buildPipelineForFile(filename, /* shuffle = */ true,
-                                              overwrite_index)
-                        .first;
+                                              overwrite_index);
 
     if (_network == nullptr) {
       _network = AutoClassifierUtils::createNetwork(
@@ -48,88 +48,39 @@ class SequentialClassifier {
     }
   }
 
-  static void sortGradientRatios(
-      std::vector<std::vector<std::pair<float, uint32_t>>>&
-          gradients_ratio_with_indices) {
-    auto func = [](std::pair<float, uint32_t> pair1,
-                   std::pair<float, uint32_t> pair2) {
-      return abs(pair1.first) > abs(pair2.first);
-    };
-    for (auto& gradient_ratio_with_indices : gradients_ratio_with_indices) {
-      sort(gradient_ratio_with_indices.begin(),
-           gradient_ratio_with_indices.end(), func);
-    }
-  }
-
-  static std::pair<std::shared_ptr<dataset::Block>, uint32_t>
-  getBlockAndIndexWithinBlock(
-      std::vector<std::shared_ptr<dataset::Block>> blocks,
-      std::vector<uint32_t> offsets, uint32_t index) {
-    auto iter = std::upper_bound(offsets.begin(), offsets.end(), index);
-    return std::make_pair(blocks[iter - offsets.begin() - 1],
-                          (index - offsets[iter - offsets.begin() - 1]));
-  }
-
-  std::tuple<std::vector<std::vector<std::string>>,
-             std::vector<std::vector<float>>,
-             std::vector<std::vector<uint32_t>>>
+  std::tuple<std::vector<std::string>,
+             std::vector<float>,
+             std::vector<uint32_t>>
   explain(std::string filename, uint32_t label_id = 0, bool label_given = false,
           const LossFunction& loss_fn = CategoricalCrossEntropyLoss()) {
-    // pipeline is a pair of StreamingGenericDatasetLoader and vector of input
-    // blocks.
     auto pipeline =
         _pipeline_builder.buildPipelineForFile(filename, /* shuffle = */
                                                false,
                                                /* overwrite_index = */
                                                false);
-    // gradients_information is a tuple , first is gradients and second is
-    // ratios(gradient/base val) and third is indices in input vector(for sparse
-    // inputs).
+    RootCauseAnalysis explanation(pipeline->getInputBlocks());
     auto gradients_information = _network->getInputGradientsFromStream(
-        /*input_data = */ pipeline.first, loss_fn, /*best_index = */ true,
+        /*input_data = */ pipeline, loss_fn, /*best_index = */ true,
         label_id, label_given);
-    std::vector<std::vector<std::pair<float, uint32_t>>>
-        gradients_ratio_with_indices;
-    std::vector<float> ratio_sums;
-    auto gradients_ratio = std::get<1>(gradients_information);
-    auto gradients_indices = std::get<2>(gradients_information);
-    for (uint32_t i = 0; i < gradients_ratio.size(); i++) {
-      std::vector<std::pair<float, uint32_t>> gradient_ratio_with_indices;
-      float sum = 0;
-      for (uint32_t j = 0; j < gradients_ratio[i].size(); j++) {
-        sum += abs(gradients_ratio[i][j]);
-        gradient_ratio_with_indices.push_back(
-            std::make_pair(gradients_ratio[i][j], gradients_indices[i][j]));
-      }
-      ratio_sums.push_back(sum);
-      gradients_ratio_with_indices.push_back(
-          std::move(gradient_ratio_with_indices));
+    auto gradients_ratio = std::get<1>(gradients_information)[0];
+    auto gradients_indices = std::get<2>(gradients_information)[0];
+    std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices = thirdai::bolt::RootCauseAnalysis::makeGradientRatiosWithIndicesSorted(gradients_ratio, gradients_indices);
+    float ratio_sum = 0;
+    for(float gradient_ratio : gradients_ratio) {
+      ratio_sum += std::abs(gradient_ratio);
     }
-    sortGradientRatios(gradients_ratio_with_indices);
-    std::vector<std::vector<std::string>> all_column_names;
-    std::vector<std::vector<float>> all_gradient_percent_ratio;
-    std::vector<std::vector<uint32_t>> all_indices_within_block;
-    for (uint32_t i = 0; i < gradients_ratio_with_indices.size(); i++) {
-      std::vector<std::string> column_names;
-      std::vector<float> gradient_percent_ratio;
-      std::vector<uint32_t> indices_within_block;
-      for (const auto& col : gradients_ratio_with_indices[i]) {
-        auto block = getBlockAndIndexWithinBlock(
-            pipeline.second, _pipeline_builder.offsets, col.second);
-        indices_within_block.push_back(block.second);
-        column_names.push_back(block.first->giveMessage(
-            /*gradient_ratio_value = */ col.first,
-            /*col_num_col_name_map = */ _pipeline_builder._schema.num_to_name,
-            /*row_ratio_sum = */ ratio_sums[i],
-            /*to_print_message = */ false));
-        gradient_percent_ratio.push_back((col.first / ratio_sums[i]) * 100);
-      }
-      all_column_names.push_back(column_names);
-      all_gradient_percent_ratio.push_back(gradient_percent_ratio);
-      all_indices_within_block.push_back(indices_within_block);
+    std::vector<std::string> column_names;
+    std::vector<float> gradient_percent_ratio;
+    std::vector<uint32_t> indices_within_block;
+    for (const auto& col : gradients_ratio_with_indices) {
+      auto index  = explanation.getIndexOfBlock(col.second);
+      indices_within_block.push_back(col.second-explanation.getOffsetAt(index));
+      auto column = explanation.getColumnNumForBlock(index);
+      column_names.push_back(_pipeline_builder._schema.num_to_name[column]);
+      gradient_percent_ratio.push_back((col.first / ratio_sum) * 100);
     }
-    return std::make_tuple(all_column_names, all_gradient_percent_ratio,
-                           all_indices_within_block);
+    return std::make_tuple(column_names, gradient_percent_ratio,
+                           indices_within_block);
   }
 
   float predict(
@@ -155,8 +106,7 @@ class SequentialClassifier {
 
     auto pipeline = _pipeline_builder
                         .buildPipelineForFile(filename, /* shuffle = */ false,
-                                              /* overwrite_index = */ false)
-                        .first;
+                                              /* overwrite_index = */ false);
     if (_network == nullptr) {
       throw std::runtime_error(
           "[SequentialClassifier::predict] Predict method called before "
@@ -190,8 +140,7 @@ class SequentialClassifier {
 
       pipeline = _pipeline_builder
                      .buildPipelineForFile(filename, /* shuffle = */ true,
-                                           /* overwrite_index = */ true)
-                     .first;
+                                           /* overwrite_index = */ true);
     }
   }
 

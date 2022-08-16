@@ -48,6 +48,8 @@ class CategoricalTrackingBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _expected_num_cols; };
 
+  uint32_t getColumnNum() const final {return _category_col;}
+
   std::string giveMessage(
       float gradient_ratio_value,
       std::unordered_map<uint32_t, std::string> col_num_col_name_map,

@@ -28,14 +28,10 @@ class SequentialClassifierPipelineBuilder {
   SequentialClassifierPipelineBuilder(SequentialClassifierSchema schema,
                                       char delimiter);
 
-  std::pair<std::shared_ptr<dataset::StreamingGenericDatasetLoader>,
-            std::vector<std::shared_ptr<dataset::Block>>>
-  buildPipelineForFile(std::string& filename, bool shuffle,
-                       bool overwrite_index);
+  std::shared_ptr<dataset::StreamingGenericDatasetLoader> buildPipelineForFile(
+      std::string& filename, bool shuffle, bool overwrite_index);
 
   PersistentPipelineStates _states;
-
-  std::vector<uint32_t> offsets;
 
   SequentialClassifierSchema _schema;
 

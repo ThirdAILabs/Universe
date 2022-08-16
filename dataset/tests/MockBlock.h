@@ -21,6 +21,8 @@ class MockBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _column + 1; };
 
+  uint32_t getColumnNum() const final {return _column;}
+
   std::string giveMessage(
       float gradient_ratio_value,
       std::unordered_map<uint32_t, std::string> col_num_col_name_map,
