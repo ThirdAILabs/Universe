@@ -1,5 +1,6 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
+#include <bolt/src/graph/DistributedBoltGraph.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
@@ -368,6 +369,49 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            })
 #endif
       ;
+
+  py::class_<DistributedTrainingContext>(graph_submodule, "DistributedModel")
+      .def(py::init<std::vector<InputPtr>, NodePtr,
+                    const std::vector<dataset::BoltDatasetPtr>&,
+                    const dataset::BoltDatasetPtr&, const TrainConfig&,
+                    std::shared_ptr<LossFunction>, bool>(),
+           py::arg("inputs"), py::arg("output"), py::arg("train_data"),
+           py::arg("train_labels"), py::arg("train_config"), py::arg("loss"),
+           py::arg("print_when_done") = true,
+           "Constucts a Bolt Graph Model For a Single Node"
+           "It constructs a Bolt Graph and initializes the training."
+           "This class further provide multiple APIs to be use in "
+           "Distributed setting.")
+      .def("calculateGraidentSingleNode",
+           &DistributedTrainingContext::calculateGradientSingleNode,
+           py::arg("batch_idx"),
+           "This function trains the BoltGraph Model with training"
+           " batch(batch_indx)")
+      .def("updateParametersSingleNode",
+           &DistributedTrainingContext::updateParametersSingleNode,
+           "This function is called to update parameter using the"
+           " gradients.")
+      .def("numTrainingBatch", &DistributedTrainingContext::numTrainingBatches,
+           "Returns the number of training batch avaailable to this"
+           " BoltGraph")
+      .def("finishTraining", &DistributedTrainingContext::finishTraining)
+      .def(
+          "predict",
+          [](DistributedTrainingContext& model,
+             const dataset::BoltDatasetPtr& data,
+             const dataset::BoltDatasetPtr& labels,
+             const PredictConfig& predict_config) {
+            return dagPredictPythonWrapper(model._bolt_graph, {data},
+                                           /* tokens = */ {}, labels,
+                                           predict_config);
+          },
+          py::arg("test_data"), py::arg("test_labels"),
+          py::arg("predict_config"),
+          "Returns the inference result using test_data, test_labels"
+          " and predict_config")
+      .def("get_layer", &DistributedTrainingContext::getNodeByName,
+           py::arg("layer_name"),
+           "Returns the pointer to layer with name layer_name");
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,

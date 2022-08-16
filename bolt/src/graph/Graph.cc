@@ -143,7 +143,6 @@ MetricData BoltGraph::train(
 }
 
 void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
-                                     float learning_rate,
                                      MetricAggregator& metrics) {
   assert(graphCompiled());
   batch_labels.verifyExpectedDimension(
@@ -165,9 +164,17 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
   }
 
   perBatchCallback();
+}
 
+void BoltGraph::updateParametersAndSampling(
+    float learning_rate, uint32_t rebuild_hash_tables_batch,
+    uint32_t reconstruct_hash_functions_batch) {
   ++_batch_cnt;
   updateParameters(learning_rate, _batch_cnt);
+  updateSampling(
+      /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
+      /* reconstruct_hash_functions_batch= */
+      reconstruct_hash_functions_batch);
 }
 
 void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
@@ -355,6 +362,18 @@ void BoltGraph::cleanupAfterBatchProcessing() {
 void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {
   for (auto& node : _nodes) {
     node->updateParameters(learning_rate, batch_cnt);
+  }
+}
+
+void BoltGraph::enableDistributedTraining() {
+  for (NodePtr& node : _nodes) {
+    FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
+    if (fc_node != nullptr) {
+      fc_node->enableDistributedTraining();
+    } else {
+      throw thirdai::exceptions::NotImplemented(
+          "Only Implemented for Fully Connected Node");
+    }
   }
 }
 

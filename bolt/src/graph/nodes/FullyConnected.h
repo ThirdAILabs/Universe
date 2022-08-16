@@ -86,6 +86,8 @@ class FullyConnectedNode final
     oarchive(*_layer);
   }
 
+  void enableDistributedTraining() { _layer->enableDistributedTraining(); }
+
   void loadParameters(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
@@ -146,7 +148,8 @@ class FullyConnectedNode final
   }
 
   float* getWeightsPtr() {
-    if (getState() != NodeState::Compiled) {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be in a compiled state to call "
           "getWeightsPtr.");
@@ -155,7 +158,8 @@ class FullyConnectedNode final
   }
 
   float* getBiasesPtr() {
-    if (getState() != NodeState::Compiled) {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be in a compiled state to call "
           "getBiasesPtr.");
@@ -164,7 +168,8 @@ class FullyConnectedNode final
   }
 
   float* getWeightGradientsPtr() {
-    if (getState() != NodeState::PreparedForBatchProcessing) {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be in a compiled state to call "
           "getWeightGradientsPtr.");
@@ -173,7 +178,8 @@ class FullyConnectedNode final
   }
 
   float* getBiasGradientsPtr() {
-    if (getState() != NodeState::PreparedForBatchProcessing) {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be in a compiled state to call "
           "getBiasGradientsPtr.");
