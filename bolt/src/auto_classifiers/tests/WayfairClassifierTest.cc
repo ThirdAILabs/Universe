@@ -2,7 +2,9 @@
 #include <bolt/src/auto_classifiers/WayfairClassifier.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <fstream>
+#include <limits>
 #include <memory>
 
 namespace thirdai::bolt::tests {
@@ -82,6 +84,33 @@ TEST(WayfairClassifierTest, TestPredictSingle) {
   std::cout << output << std::endl;
   ASSERT_GT(output.activations[0], output.activations[2]);
   ASSERT_GT(output.activations[1], output.activations[2]);
+}
+
+TEST(WayfairClassifierTest, PredictSingleReturnsAtLeastOneActivationAboveThreshold) {
+  std::shared_ptr<bolt::WayfairClassifier> model =
+      std::make_shared<WayfairClassifier>(/* n_classes= */ 100);
+
+  // Intentionally predict before training so we can expect all classes to have an original activation of < 0.9
+  auto output = model->predictSingle({1, 1}, /* threshold= */ 0.0);
+
+  float max_act = -std::numeric_limits<float>::max();
+  for (uint32_t pos = 0; pos < output.len; pos++) {
+    max_act = std::max(max_act, output.activations[pos]);
+  }
+  
+  float threshold = max_act + 0.1;
+  auto thresholded_output = model->predictSingle({1, 1}, threshold);
+
+  uint32_t n_above_threshold = 0;
+  for (uint32_t pos = 0; pos < output.len; pos++) {
+    if (thresholded_output.activations[pos] >= threshold) {
+      n_above_threshold++;
+    } else {
+      ASSERT_EQ(thresholded_output.activations[pos], output.activations[pos]);
+    }
+  }
+  ASSERT_EQ(n_above_threshold, 1);
+
 }
 
 }  // namespace thirdai::bolt::tests
