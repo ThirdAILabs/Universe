@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/encodings/categorical/StreamingStringLookup.h>
 #include <dataset/src/utils/TimeUtils.h>
@@ -90,16 +91,17 @@ class UserItemHistoryBlock final : public Block {
       uint32_t user_id = _user_id_lookup->lookup(user_str);
       int64_t epoch_timestamp = TimeObject(timestamp_str).secondsSinceEpoch();
       
-      
-      uint32_t item_id = _item_id_lookup->lookup(item_str);
+      auto item_ids = getItemIds(item_str);
 
 #pragma omp critical(user_item_history_block)
       {
         encodeTrackedItems(user_id, epoch_timestamp, vec);
 
-        // Insert new item after adding to the vector to not give away new
-        _records->at(user_id).insert({/* valid = */ true, /* item = */ item_id,
-                                      /* timestamp = */ epoch_timestamp});
+        for (auto id : item_ids) {
+          // Insert new item after adding to the vector to not give away new
+          _records->at(user_id).insert({/* valid = */ true, /* item = */ id,
+                                        /* timestamp = */ epoch_timestamp});
+        }
       }
 
     } catch (std::exception& except) {
@@ -113,6 +115,14 @@ class UserItemHistoryBlock final : public Block {
     if (!_delimiter) {
       return {_item_id_lookup->lookup(item_col)};
     }
+    auto item_str_views = ProcessorUtils::parseCsvRow(item_col, _delimiter.value());
+    std::vector<uint32_t> ids;
+    ids.reserve(item_str_views.size());
+    for (auto str_view : item_str_views) {
+      auto item_str = std::string(str_view);
+      ids.push_back(_item_id_lookup->lookup(item_str));
+    }
+    return ids;
   }
 
   void encodeTrackedItems(uint32_t user_id, int64_t epoch_timestamp,
