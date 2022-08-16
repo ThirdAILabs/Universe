@@ -19,16 +19,9 @@ py::tuple dagPredictPythonWrapper(BoltGraph& model,
                                   const dataset::BoltDatasetPtr& labels,
                                   const PredictConfig& predict_config);
 
-py::tuple dagGetInputGradientsWrapper(
-    BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
-    bool explain_prediction = true,
-    const std::vector<uint32_t>& neurons_to_explain = std::vector<uint32_t>());
-
-py::tuple dagGetInputGradientSingleWrapper(BoltGraph& model,
-                                           std::vector<BoltVector>&& input_data,
-                                           bool explain_prediction,
-                                           bool label_given,
-                                           uint32_t neuron_to_explain);
+py::tuple dagGetInputGradientSingleWrapper(
+    const std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>&
+        gradients);
 using ParameterArray =
     py::array_t<float, py::array::c_style | py::array::forcecast>;
 

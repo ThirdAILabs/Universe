@@ -280,54 +280,56 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "See the TrainConfig documentation above.\n\n"
           "Returns a mapping from metric names to an array of their values for "
           "every epoch.")
-      // Helper method that covers the common case of getting input gradients
-      // based off of a single BoltBatch dataset
-      .def(
-          "get_input_gradients",
-          [](BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
-             bool explain_prediction = true,
-             const std::vector<uint32_t>& neurons_to_explain =
-                 std::vector<uint32_t>()) {
-            return dagGetInputGradientsWrapper(
-                model, input_data, explain_prediction, neurons_to_explain);
-          },
-          py::arg("input_data"), py::arg("explain_prediction") = true,
-          py::arg("neurons_to_explain") = std::vector<uint32_t>())
-      .def("get_input_gradients", &dagGetInputGradientsWrapper,
-           py::arg("input_data"), py::arg("explain_prediction") = true,
-           py::arg("neurons_to_explain") = std::vector<uint32_t>(),
-           "Get the values of input gradients when back propagate "
-           "labels with the highest activation or second highest "
-           "activation or with the required label."
-           "Arguments:\n"
-           " * input_data: The input is same type as we give for train_data of "
-           "train method."
-           " * explain_prediction: Boolean, if set to True, gives gradients "
-           "correspond "
-           "to "
-           "highest activation, Otherwise gives gradients corresponds to "
-           "second highest activation."
-           " * neurons_to_explain: expected labels for each input vector "
-           "default "
-           "to empty vector, if neurons_to_explain is empty then only function "
-           "takes look at the explain_prediction parameter , otherwise gives "
-           "gradients "
-           "corresponds to those labels."
-           " Returns a tuple consists of (0) optional, it only returns the "
-           "corresponding indices for sparse inputs."
-           " and (1) list of lists of gradients "
-           "corresponds to the input vectors.")
+#if THIRDAI_EXPOSE_ALL
       .def(
           "get_input_gradients_single",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
              bool explain_prediction, bool label_given,
              uint32_t neuron_to_explain) {
-            return dagGetInputGradientSingleWrapper(
-                model, std::move(input_data), explain_prediction, label_given,
+            auto gradients = model.getInputGradientSingle(
+                std::move(input_data), explain_prediction, label_given,
                 neuron_to_explain);
+            return dagGetInputGradientSingleWrapper(gradients);
           },
           py::arg("input_data"), py::arg("explain_prediction") = true,
-          py::arg("label_given") = false, py::arg("neuron_to_explain") = 0)
+          py::arg("label_given") = false, py::arg("neuron_to_explain") = 0,
+          "Get the values of input gradients when back propagate "
+          "label with the highest activation or second highest "
+          "activation or with the required label."
+          "Arguments:\n"
+          " * input_data: The input is single input sample."
+          " * explain_prediction: Boolean, if set to True, gives gradients "
+          "correspond to "
+          "highest activation, Otherwise gives gradients corresponds to "
+          "second highest activation."
+          " * label_given: Boolean, If set to true, gives gradients correspond "
+          "to the mentioned neuron_to_explain."
+          " * neuron_to_explain: expected label for input vector, it will only "
+          "be looked if label_given parameter is set to true."
+          " Returns a tuple consists of (0) optional, it only returns the "
+          "corresponding indices for sparse inputs."
+          " and (1) list of gradients "
+          "corresponds to the input vector.")
+#endif
+      .def("explain_prediction",
+           [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
+             auto gradients =
+                 model.getInputGradientSingle(std::move(input_data), true);
+             return dagGetInputGradientSingleWrapper(gradients);
+           })
+      .def("get_input_confidence",
+           [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
+             auto gradients =
+                 model.getInputGradientSingle(std::move(input_data), false);
+             return dagGetInputGradientSingleWrapper(gradients);
+           })
+      .def("explain_required_label",
+           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
+              uint32_t neuron_to_explain) {
+             auto gradients = model.getInputGradientSingle(
+                 std::move(input_data), false, true, neuron_to_explain);
+             return dagGetInputGradientSingleWrapper(gradients);
+           })
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(
@@ -488,27 +490,9 @@ py::tuple dagPredictPythonWrapper(BoltGraph& model,
       /* active_neuron_handle = */ output_handle);
 }
 
-py::tuple dagGetInputGradientsWrapper(
-    BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
-    bool explain_prediction, const std::vector<uint32_t>& neurons_to_explain) {
-  auto gradients = model.getInputGradients(input_data, explain_prediction,
-                                           neurons_to_explain);
-
-  if (gradients.first == std::nullopt) {
-    return py::cast(gradients.second);
-  }
-  return py::cast(gradients);
-}
-
-py::tuple dagGetInputGradientSingleWrapper(BoltGraph& model,
-                                           std::vector<BoltVector>&& input_data,
-                                           bool explain_prediction,
-                                           bool label_given,
-                                           uint32_t neuron_to_explain) {
-  auto gradients =
-      model.getInputGradientSingle(std::move(input_data), explain_prediction,
-                                   label_given, neuron_to_explain);
-
+py::tuple dagGetInputGradientSingleWrapper(
+    const std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>&
+        gradients) {
   if (gradients.first == std::nullopt) {
     return py::cast(gradients.second);
   }

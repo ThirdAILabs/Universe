@@ -79,15 +79,9 @@ class BoltGraph {
       const dataset::BoltDatasetPtr& test_labels,
       const PredictConfig& predict_config);
 
-  std::pair<std::optional<std::vector<std::vector<uint32_t>>>,
-            std::vector<std::vector<float>>>
-  getInputGradients(const dataset::BoltDatasetPtr& input_data,
-                    bool explain_prediction,
-                    const std::vector<uint32_t>& neurons_to_explain);
-
   std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
   getInputGradientSingle(std::vector<BoltVector>&& input_data,
-                         bool explain_prediction, bool label_given,
+                         bool explain_prediction, bool label_given = false,
                          uint32_t neuron_to_explain = 0);
 
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,

@@ -78,7 +78,7 @@ def get_perturbed_dataset_and_assert(
     )
 
 
-def test_bolt_dag_single_input_node_gradients():
+def test_bolt_dag_single_input_node_gradients_single():
     """
     For a given input and a fixed label on output, the INCREASE in activation of that label,
     when we add a small EPS to the input at each index seperately, should be in the
@@ -86,29 +86,6 @@ def test_bolt_dag_single_input_node_gradients():
     If the input gradients are in the order <2,3,1,0> (the order is on the input indices), then the increase in activation for label 1
     should also be in same order, when we add small EPS at each position seperately.
     """
-    model = build_compile_and_set_weights_and_biases()
-    numpy_inputs, numpy_labels = gen_numpy_training_data(
-        n_classes=5, n_samples=100, convert_to_bolt_dataset=False
-    )
-    input_data, act, predict_config = model_train_and_predict(
-        model, numpy_inputs, numpy_labels, 10
-    )
-    gradients = model.get_input_gradients(input_data, neurons_to_explain=numpy_labels)
-    """
-    For every vector in input,we modify the vector at every position(by adding EPS), and we check assertion discussed at start of the function.
-    """
-    for input_num in range(len(numpy_inputs)):
-        get_perturbed_dataset_and_assert(
-            model,
-            numpy_inputs[input_num],
-            predict_config,
-            numpy_labels[input_num],
-            gradients[input_num],
-            act[input_num],
-        )
-
-
-def test_bolt_dag_single_input_node_gradients_single():
     model = build_compile_and_set_weights_and_biases()
     numpy_inputs, numpy_labels = gen_numpy_training_data(
         n_classes=5, n_samples=1, convert_to_bolt_dataset=False

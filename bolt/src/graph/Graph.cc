@@ -228,121 +228,61 @@ BoltGraph::getInputGradientSingle(std::vector<BoltVector>&& input_data,
   try {
     single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs,
                                              _token_inputs);
-    std::vector<float> vec_grad(_inputs[0]->getOutputVector(0).len, 0.0);
-    _inputs[0]->getOutputVector(0).gradients = vec_grad.data();
-    std::vector<uint32_t> input_dataset_indices;
+
+    BoltVector* input_vector = &_inputs[0]->getOutputVector(0);
+
+    std::vector<float> vec_grad(input_vector->len, 0.0);
+
+    // Assigning the vec_grad data() to gradients so that we dont have to
+    // worry about initializing and then freeing the memory.
+
+    input_vector->gradients = vec_grad.data();
+    std::vector<uint32_t> input_vector_indices;
+
+    /*
+    If the required_labels are empty, then we have to find the
+    required_index by output activations, for that we need to do forward
+    pass before creating the batch_label, but if the required_labels are not
+    empty and for some ,If the required label position is not present in the
+    output active neurons , then calculating the gradients with respect to
+    that label doesnot make sense, because loss is only calculated with
+    respect to active neurons, to ensure that output has active neuron at
+    the position of required label we are creating batch_label before
+    forward pass and passing to it, because forward pass ensures to have
+    active neurons at the metioned label index.
+    */
+
     BoltVector label_vector;
     if (!label_given) {
       label_vector = getLabelVectorExplainPrediction(0, explain_prediction);
     } else {
       label_vector = getLabelVectorNeuronsToExplain(neuron_to_explain, 0);
     }
-    if (!_inputs[0]->getOutputVector(0).isDense()) {
-      input_dataset_indices.assign(
-          _inputs[0]->getOutputVector(0).active_neurons,
-          _inputs[0]->getOutputVector(0).active_neurons +
-              _inputs[0]->getOutputVector(0).len);
+
+    if (!input_vector->isDense()) {
+      input_vector_indices.assign(
+          input_vector->active_neurons,
+          input_vector->active_neurons + input_vector->len);
     }
+
     _loss->lossGradients(_output->getOutputVector(0), label_vector, 1);
     backpropagate(0);
-    _inputs[0]->getOutputVector(0).gradients = nullptr;
+
+    // We reset the gradients to nullptr here to prevent the bolt vector
+    // from freeing the memory which is owned by the std::vector we used to
+    // store the gradients
+
+    input_vector->gradients = nullptr;
     cleanupAfterBatchProcessing();
 
-    if (input_dataset_indices.empty()) {
+    if (input_vector_indices.empty()) {
       return std::make_pair(std::nullopt, vec_grad);
     }
-    return std::make_pair(input_dataset_indices, vec_grad);
+    return std::make_pair(input_vector_indices, vec_grad);
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
   }
-}
-
-// TODO (YASH) : ( Extend this getInputGradients for multiple inputs.)
-std::pair<std::optional<std::vector<std::vector<uint32_t>>>,
-          std::vector<std::vector<float>>>
-BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
-                             bool explain_prediction,
-                             const std::vector<uint32_t>& neurons_to_explain) {
-  DatasetContext input_gradients_context({input_data}, {}, nullptr);
-
-  // Because of how the datasets are read we know that all batches will not
-  // have a batch size larger than this so we can just set the batch size
-  // here.
-
-  prepareToProcessBatches(input_gradients_context.batchSize(),
-                          /* use_sparsity=*/true);
-
-  verifyCanGetInputGradients(input_gradients_context, neurons_to_explain.size(),
-                             input_data->len(), explain_prediction,
-                             _output->numNonzerosInOutput());
-
-  std::vector<std::vector<float>> input_dataset_grad;
-
-  std::vector<std::vector<uint32_t>> input_dataset_indices;
-  try {
-    for (uint64_t batch_idx = 0;
-         batch_idx < input_gradients_context.numBatches(); batch_idx++) {
-      input_gradients_context.setInputs(batch_idx, _inputs, _token_inputs);
-      for (uint32_t vec_id = 0;
-           vec_id < input_gradients_context.batchSize(batch_idx); vec_id++) {
-        std::vector<float> vec_grad(_inputs[0]->getOutputVector(vec_id).len,
-                                    0.0);
-        // Assigning the vec_grad data() to gradients so that we dont have to
-        // worry about initializing and then freeing the memory.
-        _inputs[0]->getOutputVector(vec_id).gradients = vec_grad.data();
-        /*
-        If the required_labels are empty, then we have to find the
-        required_index by output activations, for that we need to do forward
-        pass before creating the batch_label, but if the required_labels are not
-        empty and for some ,If the required label position is not present in the
-        output active neurons , then calculating the gradients with respect to
-        that label doesnot make sense, because loss is only calculated with
-        respect to active neurons, to ensure that output has active neuron at
-        the position of required label we are creating batch_label before
-        forward pass and passing to it, because forward pass ensures to have
-        active neurons at the metioned label index.
-        */
-        BoltVector label_vector;
-        if (neurons_to_explain.empty()) {
-          label_vector =
-              getLabelVectorExplainPrediction(vec_id, explain_prediction);
-        } else {
-          uint32_t required_index =
-              neurons_to_explain[batch_idx *
-                                     input_gradients_context.batchSize(0) +
-                                 vec_id];
-          label_vector = getLabelVectorNeuronsToExplain(required_index, vec_id);
-        }
-        if (!_inputs[0]->getOutputVector(vec_id).isDense()) {
-          std::vector<uint32_t> vec_indices(
-              _inputs[0]->getOutputVector(vec_id).active_neurons,
-              _inputs[0]->getOutputVector(vec_id).active_neurons +
-                  _inputs[0]->getOutputVector(vec_id).len);
-          input_dataset_indices.push_back(vec_indices);
-        }
-        _loss->lossGradients(_output->getOutputVector(vec_id), label_vector,
-                             input_gradients_context.batchSize(batch_idx));
-        backpropagate(vec_id);
-
-        // We reset the gradients to nullptr here to prevent the bolt vector
-        // from freeing the memory which is owned by the std::vector we used to
-        // store the gradients
-
-        _inputs[0]->getOutputVector(vec_id).gradients = nullptr;
-        input_dataset_grad.push_back(vec_grad);
-      }
-    }
-  } catch (const std::exception& e) {
-    cleanupAfterBatchProcessing();
-    throw;
-  }
-  cleanupAfterBatchProcessing();
-
-  if (input_dataset_indices.empty()) {
-    return std::make_pair(std::nullopt, input_dataset_grad);
-  }
-  return std::make_pair(input_dataset_indices, input_dataset_grad);
 }
 
 InferenceResult BoltGraph::predict(
