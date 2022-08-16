@@ -7,8 +7,8 @@ def main():
     compression_schemes = ["topk", "DRAGON", "UNBIASED_DRAGON"]
     compression_density = [0.001, 0.01, 0.05, 0.1, 0.2, 0.5]
     scheduler = False
-    models = ["amazon_polarity", "yelp"]
-    # models=["mnist"]
+    # models = ["amazon_polarity", "yelp"]
+    models=["mnist"]
     for model in models:
         print(f"inside benchmarking script with model {model}")
         train_model(
