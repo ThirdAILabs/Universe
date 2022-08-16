@@ -180,12 +180,10 @@ struct EmbeddingLayerConfig {
 
 class NormalizationLayerConfig {
  public:
-  explicit NormalizationLayerConfig(float beta_regularizer = 0.0,
-                                    float gamma_regularizer = 1.0,
-                                    float epsilon = 0.00001)
+  explicit NormalizationLayerConfig(float epsilon = 0.00001)
       : _epsilon(epsilon),
-        _beta_regularizer(beta_regularizer),
-        _gamma_regularizer(gamma_regularizer) {}
+        _beta_regularizer(std::nullopt),
+        _gamma_regularizer(std::nullopt) {}
 
   static NormalizationLayerConfig makeConfig() {
     return NormalizationLayerConfig();
@@ -201,18 +199,15 @@ class NormalizationLayerConfig {
     return *this;
   }
 
-  NormalizationLayerConfig& uncentered() {
-    _beta_regularizer = std::nullopt;
-    return *this;
+  // The default value for _beta_regularizer is 0.0 (has no effect)
+  constexpr float beta() const {
+    return _beta_regularizer.has_value() ? _beta_regularizer.value() : 0.0;
   }
 
-  NormalizationLayerConfig& unscaled() {
-    _gamma_regularizer = std::nullopt;
-    return *this;
+  // The default value for _gamma_regularizer is 1.0 (has no effect)
+  constexpr float gamma() const {
+    return _gamma_regularizer.has_value() ? _gamma_regularizer.value() : 1.0;
   }
-
-  constexpr std::optional<float> beta() const { return _beta_regularizer; }
-  constexpr std::optional<float> gamma() const { return _gamma_regularizer; }
   constexpr float epsilon() const { return _epsilon; }
 
  private:

@@ -197,9 +197,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Sets the centering factor for the normalization configuration")
       .def("scale", &NormalizationLayerConfig::setScalingFactor,
            py::arg("gamma_regularizer"),
-           "Sets the scaling factor the the normalization configuration.")
-      .def("uncentered", &NormalizationLayerConfig::uncentered)
-      .def("unscaled", &NormalizationLayerConfig::unscaled);
+           "Sets the scaling factor the the normalization configuration.");
 
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),

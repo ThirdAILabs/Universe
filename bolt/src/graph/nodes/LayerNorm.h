@@ -126,9 +126,9 @@ class LayerNormNode final : public Node,
           (activation - mean) / (sqrt(variance) + _config->epsilon());
 
       // apply a linear transformation to the z_score using gamma and beta
-      // regularizers
-      z_score += (_config->beta().has_value()) ? _config->beta().value() : 0;
-      z_score *= (_config->gamma().has_value()) ? _config->gamma().value() : 1;
+      // regularizers.
+      z_score += _config->beta();
+      z_score *= _config->gamma();
       (*_batch)[vec_index].activations[neuron_index] = z_score;
     }
   }
@@ -157,7 +157,7 @@ class LayerNormNode final : public Node,
         vec_length * std_deviation * (std_deviation + _config->epsilon()) -
         centered_activation;
     gradient /= denominator;
-    gradient *= _config->gamma().value() * (vec_length - 1);
+    gradient *= _config->gamma() * (vec_length - 1);
 
     return gradient;
   }
@@ -215,8 +215,8 @@ class LayerNormNode final : public Node,
             << " (LayerNorm) ";
     if (detailed) {
       summary << ", epsilon=" << _config->epsilon()
-              << ", beta_regularizer=" << _config->beta().value();
-      summary << ", gamma_regularizer=" << _config->gamma().value();
+              << ", beta_regularizer=" << _config->beta();
+      summary << ", gamma_regularizer=" << _config->gamma();
       summary << ")";
     }
     summary << "\n";
