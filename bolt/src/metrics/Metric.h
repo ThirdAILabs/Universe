@@ -246,9 +246,9 @@ class FMeasure final : public Metric {
  public:
   explicit FMeasure(float threshold = 0.8)
       : _threshold(threshold),
-        _tp(0),
-        _fp(0),
-        _fn(0),
+        _true_positive(0),
+        _false_positive(0),
+        _false_negative(0),
         _prec_sum(0),
         _rec_sum(0),
         _num_samples(0) {}
@@ -262,10 +262,10 @@ class FMeasure final : public Metric {
 
     for (uint32_t pred : predictions) {
       if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
-        _tp++;
+        _true_positive++;
         local_tp++;
       } else {
-        _fp++;
+        _false_positive++;
       }
     }
 
@@ -274,7 +274,7 @@ class FMeasure final : public Metric {
       if (labels.findActiveNeuronNoTemplate(label_idx).activation > 0) {
         if (std::find(predictions.begin(), predictions.end(), label_idx) ==
             predictions.end()) {
-          _fn++;
+          _false_negative++;
         }
       }
     }
@@ -287,8 +287,8 @@ class FMeasure final : public Metric {
   }
 
   double getMetricAndReset(bool verbose) final {
-    double prec = static_cast<double>(_tp) / (_tp + _fp);
-    double recall = static_cast<double>(_tp) / (_tp + _fn);
+    double prec = static_cast<double>(_true_positive) / (_true_positive + _false_positive);
+    double recall = static_cast<double>(_true_positive) / (_true_positive + _false_negative);
     double f_measure = (2 * prec * recall) / (prec + recall);
     if (verbose) {
       std::cout << "Precision (t=" << _threshold << "): " << prec << std::endl;
@@ -296,9 +296,9 @@ class FMeasure final : public Metric {
       std::cout << "F-Measure (t=" << _threshold << "): " << f_measure
                 << std::endl;
     }
-    _tp = 0;
-    _fp = 0;
-    _fn = 0;
+    _true_positive = 0;
+    _false_positive = 0;
+    _false_negative = 0;
     return f_measure;
   }
 
@@ -312,9 +312,9 @@ class FMeasure final : public Metric {
 
  private:
   float _threshold;
-  std::atomic<uint32_t> _tp;
-  std::atomic<uint32_t> _fp;
-  std::atomic<uint32_t> _fn;
+  std::atomic<uint64_t> _true_positive;
+  std::atomic<uint64_t> _false_positive;
+  std::atomic<uint64_t> _false_negative;
 
   std::atomic<float> _prec_sum;
   std::atomic<float> _rec_sum;
