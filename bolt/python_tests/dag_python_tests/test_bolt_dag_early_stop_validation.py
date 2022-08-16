@@ -12,7 +12,7 @@ def train_overfitted_model(train_data, train_labels):
     model = get_simple_dag_model(
         input_dim=N_CLASSES,
         hidden_layer_dim=1000,
-        hidden_layer_sparsity=0.2,
+        hidden_layer_sparsity=1.0,
         output_dim=N_CLASSES,
     )
 
@@ -28,8 +28,8 @@ def train_overfitted_model(train_data, train_labels):
 def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
     model = get_simple_dag_model(
         input_dim=N_CLASSES,
-        hidden_layer_dim=1000,
-        hidden_layer_sparsity=0.2,
+        hidden_layer_dim=2000,
+        hidden_layer_sparsity=1.0,
         output_dim=N_CLASSES,
     )
 
@@ -46,7 +46,7 @@ def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
             valid_data=valid_data,
             valid_labels=valid_labels,
             predict_config=predict_config,
-            patience=3,
+            patience=1,
         )
     )
 
@@ -60,10 +60,10 @@ def test_early_stop_validation():
         n_classes=N_CLASSES, n_samples=100, noise_std=0.3
     )
     valid_data, valid_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=1000
+        n_classes=N_CLASSES, n_samples=1000, noise_std=0.3
     )
     test_data, test_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=1000
+        n_classes=N_CLASSES, n_samples=1000, noise_std=0.3
     )
 
     overfitted_model = train_overfitted_model(train_data, train_labels)

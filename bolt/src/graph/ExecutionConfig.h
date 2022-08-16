@@ -7,6 +7,8 @@
 
 namespace thirdai::bolt {
 
+class TrainConfig;
+
 class PredictConfig {
  public:
   static PredictConfig makeConfig() { return PredictConfig(); }
