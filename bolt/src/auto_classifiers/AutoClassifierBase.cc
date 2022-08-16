@@ -58,6 +58,9 @@ void AutoClassifierBase::train(
     throw std::invalid_argument("Cannot load dataset in memory.");
   }
   auto [train_data, train_labels] = dataset->loadInMemory();
+  std::cout << train_data->at(0)[0] << std::endl;
+  std::cout << train_labels->at(0)[0] << std::endl;
+
 
   TrainConfig first_epoch_config =
       TrainConfig::makeConfig(
@@ -97,6 +100,8 @@ InferenceResult AutoClassifierBase::predict(
     throw std::invalid_argument("Cannot load dataset in memory.");
   }
   auto [test_data, test_labels] = dataset->loadInMemory();
+  std::cout << test_data->at(0)[0] << std::endl;
+  std::cout << test_labels->at(0)[0] << std::endl;
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
