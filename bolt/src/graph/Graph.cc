@@ -584,28 +584,6 @@ void BoltGraph::verifyCanGetInputGradientSingle(
   verifyInputForGraph(single_input_gradients_context);
 }
 
-void BoltGraph::verifyCanGetInputGradients(
-    const DatasetContext& input_gradients_context,
-    uint32_t required_labels_size, uint32_t input_data_len, bool best_index,
-    uint32_t num_output_nonzeros) {
-  if (!graphCompiled()) {
-    throw std::logic_error(
-        "Graph must be compiled before getting input gradients");
-  }
-  if ((required_labels_size != 0) && (required_labels_size != input_data_len)) {
-    throw std::invalid_argument("Length of required_labels " +
-                                std::to_string(required_labels_size) +
-                                "does not match length of provided dataset." +
-                                std::to_string(input_data_len));
-  }
-  if (!best_index && num_output_nonzeros < 2) {
-    throw std::invalid_argument(
-        "The sparse output dimension should be atleast 2 to call "
-        "getSecondHighestActivationId.");
-  }
-  verifyInputForGraph(input_gradients_context);
-}
-
 void BoltGraph::verifyCanPredict(const DatasetContextBase& predict_context,
                                  bool has_labels, bool returning_activations,
                                  uint32_t num_metrics_tracked) {

@@ -161,11 +161,6 @@ class BoltGraph {
 
   void verifyCanTrain(const DatasetContext& train_context);
 
-  void verifyCanGetInputGradients(const DatasetContext& input_gradients_context,
-                                  uint32_t required_labels_size,
-                                  uint32_t input_data_len, bool best_index,
-                                  uint32_t num_output_nonzeros);
-
   void verifyCanGetInputGradientSingle(
       const DatasetContextBase& single_input_gradients_context, bool best_index,
       uint32_t num_output_nonzeros);
