@@ -23,7 +23,6 @@ def test_load_save():
 
     inference_sample = [1, 1]
     activations_before_save = model.predict_single(inference_sample)
-    activations_before_save_2 = model.predict_single(inference_sample)
 
     model_save_file = "saved_model"
     model.save(model_save_file)
@@ -31,11 +30,7 @@ def test_load_save():
     reloaded_model = bolt.WayfairClassifier.load(model_save_file)
     activations_after_load = reloaded_model.predict_single(inference_sample)
 
-    print(activations_before_save)
-    print(activations_before_save_2)
-    print(activations_after_load)
 
-    assert (activations_before_save == activations_before_save_2).all()
     assert (activations_before_save == activations_after_load).all()
 
     os.remove(temp_train_file)
@@ -50,6 +45,5 @@ def test_inference_under_1ms():
     activations = model.predict_single(inference_sample)
     end_time = time.time()
 
-    print(end_time - start_time)
     assert (end_time - start_time) < 0.001
 
