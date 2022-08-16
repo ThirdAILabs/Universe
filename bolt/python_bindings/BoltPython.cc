@@ -511,7 +511,7 @@ void createBoltSubmodule(py::module_& module) {
            " * n_classes: int - How many classes or categories are in the "
            "labels of the dataset.\n")
       .def("train", &PyWayfairClassifier::train, py::arg("train_file"),
-           py::arg("epochs"), py::arg("learning_rate"), py::arg("fmeasure_threshold"),
+           py::arg("epochs"), py::arg("learning_rate"), py::arg("fmeasure_thresholds"),
            "Trains the classifier on the given dataset.\n"
            "Arguments:\n"
            " * train_file: string - The path to the training dataset to use.\n"
@@ -524,7 +524,7 @@ void createBoltSubmodule(py::module_& module) {
            "Arguments:\n"
            " * tokens: List[Int] - A list of integer tokens.\n")
       .def("predict", &PyWayfairClassifier::predict, py::arg("test_file"),
-           py::arg("fmeasure_threshold"),
+           py::arg("fmeasure_thresholds"),
            py::arg("output_file") = std::nullopt,
            "Runs the classifier on the specified test dataset and optionally "
            "logs the prediction to a file.\n"

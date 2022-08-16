@@ -458,8 +458,8 @@ class PyWayfairClassifier : public WayfairClassifier {
                         [](void* ptr) { delete static_cast<float*>(ptr); });
 
     py::array_t<float, py::array::c_style | py::array::forcecast>
-      activations_array({num_samples, _n_classes},
-                        {_n_classes * sizeof(float), sizeof(float)},
+      activations_array({_n_classes},
+                        {sizeof(float)},
                         activations, activation_handle);
     return activations_array;
   }

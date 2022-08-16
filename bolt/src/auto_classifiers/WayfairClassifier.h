@@ -81,13 +81,15 @@ class WayfairClassifier {
 
   BoltVector predictSingle(const std::vector<uint32_t>& tokens, float threshold = 0.9) {
 
+    float epsilon = 0.01;
+
     std::string sentence = tokensToSentence(tokens);
     // The following step must be separate from the above 
     // because we need to keep the sentence in scope and alive.
     auto sample = sentenceToSample(sentence); 
     
     BoltVector input_vector;
-    auto input = _single_inference_processor->makeInputVector(sample, input_vector);
+    auto input = _processor->makeInputVector(sample, input_vector);
 
     BoltVector output =
         _classifier->predictSingle({input_vector}, {},
@@ -96,7 +98,7 @@ class WayfairClassifier {
     assert(output.isDense());
     auto max_id = output.getIdWithHighestActivation();
     if (output.activations[max_id] < threshold) {
-      output.activations[max_id] = threshold;
+      output.activations[max_id] = threshold + epsilon;
     }
 
     return output;
@@ -129,34 +131,28 @@ class WayfairClassifier {
     auto pairgram_encoding = std::make_shared<dataset::PairGram>(/* dim= */ 100000);
     auto input_block = std::make_shared<dataset::TextBlock>(/* col= */ 1, /* encoding= */ pairgram_encoding);
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {input_block};
-    auto single_inference_input_block = std::make_shared<dataset::TextBlock>(/* col= */ 0, /* encoding= */ pairgram_encoding); // No label column during single inference
-    std::vector<std::shared_ptr<dataset::Block>> single_inference_input_blocks = {single_inference_input_block};
     
     _processor = std::make_shared<dataset::GenericBatchProcessor>(
       input_blocks, label_blocks,
-      /* has_header= */ false, /* delimiter= */ '\t'
-    );
-
-    _single_inference_processor = std::make_shared<dataset::GenericBatchProcessor>(
-      single_inference_input_blocks, /* label_blocks= */ std::vector<std::shared_ptr<dataset::Block>>(), // no label block for single inference
       /* has_header= */ false, /* delimiter= */ '\t'
     );
   }
 
   static std::string tokensToSentence(const std::vector<uint32_t>& tokens) {
     std::stringstream sentence_ss;
-    std::string delim = "";
+    char delim = '\t';
     for (auto token : tokens) {
       sentence_ss << delim << token;
-      delim = " ";
+      delim = ' ';
     }
     return sentence_ss.str();
   }
 
   static std::vector<std::string_view> sentenceToSample(const std::string& sentence) {
-    std::vector<std::string_view> sample;
-    sample.push_back(std::string_view(sentence.data(), sentence.size()));
-    return sample;
+    return {
+      std::string_view(sentence.data(), 1),
+      std::string_view(sentence.data() + 1, sentence.size())
+    };
   }
 
   // Private constructor for cereal
@@ -171,7 +167,6 @@ class WayfairClassifier {
  
   uint32_t _n_classes;
   std::shared_ptr<dataset::GenericBatchProcessor> _processor;
-  std::shared_ptr<dataset::GenericBatchProcessor> _single_inference_processor;
   std::unique_ptr<AutoClassifierBase> _classifier;
 };
 
