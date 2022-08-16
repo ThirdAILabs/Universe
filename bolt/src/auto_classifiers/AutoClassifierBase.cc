@@ -113,8 +113,7 @@ InferenceResult AutoClassifierBase::predict(
 
   PredictConfig config = PredictConfig::makeConfig()
                              .withMetrics(metrics)
-                             .withOutputCallback(print_predictions_callback)
-                             .silence();
+                             .withOutputCallback(print_predictions_callback);
   if (use_sparse_inference) {
     config = config.enableSparseInference();
   }
