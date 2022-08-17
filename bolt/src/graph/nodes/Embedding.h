@@ -50,6 +50,8 @@ class EmbeddingNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
+  void prepareForTraining() { _embedding_layer->prepareForTraining(); }
+
   std::string type() const final { return "embedding"; }
 
   NodeState getState() const final {

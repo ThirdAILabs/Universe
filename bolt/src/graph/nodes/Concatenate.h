@@ -63,6 +63,8 @@ class ConcatenateNode final
 
   bool isInputNode() const final { return false; }
 
+  void prepareForTraining() {}
+
  private:
   void compileImpl() final { _compiled = true; }
 

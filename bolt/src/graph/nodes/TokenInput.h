@@ -30,9 +30,9 @@ class TokenInput : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void initOptimizer() {
+  void prepareForTraining() {
     throw std::logic_error(
-        "Should not call initOptimizer() on TokenInput node");
+        "Should not call prepareForTraining() on TokenInput node");
   }
 
  private:

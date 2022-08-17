@@ -120,6 +120,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   void buildLayerSummary(std::stringstream& summary,
                          bool detailed) const override;
 
+  void prepareForTraining();
+
   ~FullyConnectedLayer() = default;
 
  private:
@@ -137,6 +139,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<float> _b_gradient;
   std::vector<float> _b_momentum;
   std::vector<float> _b_velocity;
+
+  bool _prepared_for_training = false;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
@@ -174,9 +178,9 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   LSHSamplingMode _sampling_mode;
 
-  void initOptimizer();
-
-  void removeOptimizer();
+  template <bool DENSE, bool PREV_DENSE>
+  void markActiveNeuronsForUpdate(const BoltVector& input,
+                                  const BoltVector& output, uint32_t len_out);
 
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
@@ -232,27 +236,23 @@ class FullyConnectedLayer final : public SequentialLayer {
   template <class Archive>
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
-            _prev_is_active, _is_active);
+            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode);
   }
 
   /**
-   * The optimizer is
+   * The optimizer is not loaded in by default. If we want to continue training
+   * after a load, the expectation is that the higher level Graph/Network API
+   * will handle this initialization with the prepareForTraining() method.
+   *
+   * Doing this means our load API is as simple as possible for both
+   * training and inference purposes. It doesn't make sense to load the
+   * optimizer by default then remove it with another function since users may
+   * be memory constrained during deployment.
    */
   template <class Archive>
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
-            _prev_is_active, _is_active);
-
-    /**
-     * Here we init the optimizer so that any calls to train in the network are
-     * safe. If we need to reduce memory usage for smaller machines we can use
-     * the removeOptimizer() method to remove these parameters. This will also
-     * likely require adding an additional node state for uninitialized
-     * optimizers so that we have memory safety.
-     */
-    initOptimizer();
+            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode);
   }
 
   /**

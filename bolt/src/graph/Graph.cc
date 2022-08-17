@@ -465,6 +465,10 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
     throw std::invalid_argument("Must pass in labels for training.");
   }
 
+  for (auto& node : _nodes) {
+    node->prepareForTraining();
+  }
+
   verifyInputForGraph(train_context);
 }
 
@@ -559,23 +563,13 @@ void BoltGraph::save(const std::string& filename) {
   oarchive(*this);
 }
 
-std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename,
-                                           bool for_inference = false) {
+std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   cereal::BinaryInputArchive iarchive(filestream);
   std::unique_ptr<BoltGraph> deserialize_into(new BoltGraph());
-  iarchive(*deserialize_into, for_inference);
-  if (!for_inference) {
-    deserialize_into->initOptimizer();
-  }
+  iarchive(*deserialize_into);
   return deserialize_into;
-}
-
-void BoltGraph::initOptimizer() {
-  for (auto& node : _nodes) {
-    node->initOptimizer();
-  }
 }
 
 std::string BoltGraph::summarize(bool print, bool detailed) const {

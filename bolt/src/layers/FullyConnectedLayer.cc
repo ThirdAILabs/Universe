@@ -28,15 +28,7 @@ FullyConnectedLayer::FullyConnectedLayer(
 
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
-      _w_gradient(config.getDim() * prev_dim, 0),
-      _w_momentum(config.getDim() * prev_dim, 0),
-      _w_velocity(config.getDim() * prev_dim, 0),
       _biases(config.getDim()),
-      _b_gradient(config.getDim(), 0),
-      _b_momentum(config.getDim(), 0),
-      _b_velocity(config.getDim(), 0),
-      _prev_is_active(_prev_dim, false),
-      _is_active(config.getDim(), false),
       _is_distributed(is_distributed),
       _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
@@ -49,6 +41,8 @@ FullyConnectedLayer::FullyConnectedLayer(
   if (_sparsity < 1.0) {
     initSparseDatastructures(config.getSamplingConfig(), rd);
   }
+
+  prepareForTraining();
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
@@ -87,36 +81,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   uint32_t len_out = nonzerosInOutput<DENSE>();
   std::fill_n(output.gradients, len_out, 0);
 
-  _prev_is_dense = PREV_DENSE;
-  _this_is_dense = DENSE;
-
-  if constexpr (!DENSE && !PREV_DENSE) {
-    std::unique_ptr<ActiveNeuronsPair> active_pairs =
-        std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
-                                            std::vector<uint64_t>());
-    for (uint64_t i = 0; i < input.len; i++) {
-      active_pairs->first.push_back(input.active_neurons[i]);
-    }
-    for (uint64_t n = 0; n < len_out; n++) {
-      active_pairs->second.push_back(output.active_neurons[n]);
-    }
-#pragma omp critical
-    _active_pairs.push_back(std::move(active_pairs));
-  }
-
-  if constexpr (!DENSE) {
-    for (uint64_t n = 0; n < len_out; n++) {
-      uint64_t act_neuron = output.active_neurons[n];
-      _is_active[act_neuron] = true;
-    }
-  }
-
-  if constexpr (!PREV_DENSE) {
-    for (uint64_t i = 0; i < input.len; i++) {
-      uint64_t act_neuron = input.active_neurons[i];
-      _prev_is_active[act_neuron] = true;
-    }
-  }
+  markActiveNeuronsForUpdate<DENSE, PREV_DENSE>(input, output, len_out);
 
   for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
@@ -172,6 +137,42 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     for (uint64_t n = 0; n < len_out; n++) {
       output.activations[n] /= (total + EPS);
       assert(!std::isnan(output.activations[n]));
+    }
+  }
+}
+
+template <bool DENSE, bool PREV_DENSE>
+void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
+                                                     const BoltVector& output,
+                                                     uint32_t len_out) {
+  _prev_is_dense = PREV_DENSE;
+  _this_is_dense = DENSE;
+
+  if constexpr (!DENSE && !PREV_DENSE) {
+    std::unique_ptr<ActiveNeuronsPair> active_pairs =
+        std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
+                                            std::vector<uint64_t>());
+    for (uint64_t i = 0; i < input.len; i++) {
+      active_pairs->first.push_back(input.active_neurons[i]);
+    }
+    for (uint64_t n = 0; n < len_out; n++) {
+      active_pairs->second.push_back(output.active_neurons[n]);
+    }
+#pragma omp critical
+    _active_pairs.push_back(std::move(active_pairs));
+  }
+
+  if constexpr (!DENSE) {
+    for (uint64_t n = 0; n < len_out; n++) {
+      uint64_t act_neuron = output.active_neurons[n];
+      _is_active[act_neuron] = true;
+    }
+  }
+
+  if constexpr (!PREV_DENSE) {
+    for (uint64_t i = 0; i < input.len; i++) {
+      uint64_t act_neuron = input.active_neurons[i];
+      _prev_is_active[act_neuron] = true;
     }
   }
 }
@@ -723,24 +724,19 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
   }
 }
 
-void FullyConnectedLayer::initOptimizer() {
-  _w_gradient.assign(_dim * _prev_dim, 0);
-  _w_momentum.assign(_dim * _prev_dim, 0);
-  _w_velocity.assign(_dim * _prev_dim, 0);
+void FullyConnectedLayer::prepareForTraining() {
+  if (!_prepared_for_training) {
+    _w_gradient.assign(_dim * _prev_dim, 0);
+    _w_momentum.assign(_dim * _prev_dim, 0);
+    _w_velocity.assign(_dim * _prev_dim, 0);
 
-  _b_gradient.assign(_dim, 0);
-  _b_momentum.assign(_dim, 0);
-  _b_velocity.assign(_dim, 0);
-}
+    _b_gradient.assign(_dim, 0);
+    _b_momentum.assign(_dim, 0);
+    _b_velocity.assign(_dim, 0);
 
-void FullyConnectedLayer::removeOptimizer() {
-  _w_gradient.clear();
-  _w_momentum.clear();
-  _w_velocity.clear();
-
-  _b_gradient.clear();
-  _b_momentum.clear();
-  _b_velocity.clear();
+    _prev_is_active.assign(_prev_dim, false);
+    _is_active.assign(_dim, false);
+  }
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,

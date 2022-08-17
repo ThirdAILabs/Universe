@@ -144,6 +144,12 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     }
   }
 
+  void prepareForTraining() {
+    for (auto& layer : _layers) {
+      layer->prepareForTraining();
+    }
+  }
+
  protected:
   uint64_t _input_dim;
   std::vector<std::shared_ptr<SequentialLayer>> _layers;

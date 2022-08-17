@@ -39,6 +39,14 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::stringstream& summary) const;
 
+  void prepareForTraining() {
+    if (_gradients.empty()) {
+      _gradients.assign(_embedding_block_size, 0);
+      _momentum.assign(_embedding_block_size, 0);
+      _velocity.assign(_embedding_block_size, 0);
+    }
+  }
+
   EmbeddingLayer(const EmbeddingLayer&) = delete;
   EmbeddingLayer(EmbeddingLayer&&) = delete;
   EmbeddingLayer& operator=(const EmbeddingLayer&) = delete;
@@ -90,7 +98,7 @@ class EmbeddingLayer {
   void serialize(Archive& archive) {
     archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
             _log_embedding_block_size, _embedding_block_size, _hash_fn,
-            _embedding_block, _gradients, _momentum, _velocity);
+            _embedding_block);
   }
 
   uint32_t _num_lookups_per_token, _lookup_size, _total_embedding_dim,

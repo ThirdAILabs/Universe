@@ -186,6 +186,8 @@ class Model {
     return (_batch_iter % num_batches) == (num_batches - 1);
   }
 
+  virtual void prepareForTraining() = 0;
+
   uint32_t _epoch_count;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
