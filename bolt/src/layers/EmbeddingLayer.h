@@ -39,8 +39,7 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::stringstream& summary) const;
 
-  // initializes any state needed for training (like the optimizer)
-  void prepareForTraining() {
+  void initOptimizer() {
     if (!_prepared_for_training) {
       _gradients.assign(_embedding_block_size, 0);
       _momentum.assign(_embedding_block_size, 0);

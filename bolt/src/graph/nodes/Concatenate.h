@@ -63,8 +63,7 @@ class ConcatenateNode final
 
   bool isInputNode() const final { return false; }
 
-  // initializes any state needed for training (like the optimizer)
-  void prepareForTraining() final {}
+  void initOptimizer() final {}
 
  private:
   void compileImpl() final { _compiled = true; }

@@ -43,9 +43,8 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void prepareForTraining() final {
-    throw std::logic_error(
-        "Should not call prepareForTraining() on Input node");
+  void initOptimizer() final {
+    throw std::logic_error("Should not call initOptimizer() on Input node");
   }
 
  private:

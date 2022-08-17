@@ -186,8 +186,7 @@ class Model {
     return (_batch_iter % num_batches) == (num_batches - 1);
   }
 
-  // initializes any state needed for training (like the optimizer)
-  virtual void prepareForTraining() = 0;
+  virtual void initOptimizer() = 0;
 
   uint32_t _epoch_count;
 

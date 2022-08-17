@@ -120,8 +120,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   void buildLayerSummary(std::stringstream& summary,
                          bool detailed) const override;
 
-  // initializes any state needed for training (like the optimizer)
-  void prepareForTraining() final;
+  void initOptimizer() final;
 
   ~FullyConnectedLayer() = default;
 
@@ -141,7 +140,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<float> _b_momentum;
   std::vector<float> _b_velocity;
 
-  bool _prepared_for_training = false;
+  bool _optimizer_initialized = false;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
@@ -237,13 +236,14 @@ class FullyConnectedLayer final : public SequentialLayer {
   template <class Archive>
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode);
+            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
+            _prev_is_active, _is_active);
   }
 
   /**
    * The optimizer is not loaded in by default. If we want to continue training
    * after a load, the expectation is that the higher level Graph/Network API
-   * will handle this initialization with the prepareForTraining() method.
+   * will handle this initialization with the initOptimizer() method.
    *
    * Doing this means our load API is as simple as possible for both
    * training and inference purposes. It doesn't make sense to load the
@@ -253,7 +253,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   template <class Archive>
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode);
+            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
+            _prev_is_active, _is_active);
   }
 
   /**

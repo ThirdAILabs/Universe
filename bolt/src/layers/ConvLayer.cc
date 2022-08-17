@@ -37,7 +37,7 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
   _weights = std::vector<float>(_num_filters * _patch_dim);
   _biases = std::vector<float>(_num_filters);
 
-  prepareForTraining();
+  initOptimizer();
 
   buildPatchMaps(next_kernel_size);
 
@@ -318,7 +318,7 @@ void ConvLayer::updateParameters(float lr, uint32_t iter, float B1, float B2,
 }
 
 // initializes any state needed for training (like the optimizer)
-void ConvLayer::prepareForTraining() {
+void ConvLayer::initOptimizer() {
   if (!_prepared_for_training) {
     _w_gradient.assign(_num_filters * _patch_dim, 0);
     _w_momentum.assign(_num_filters * _patch_dim, 0);

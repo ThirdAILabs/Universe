@@ -86,8 +86,7 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
-  // initializes any state needed for training (like the optimizer)
-  void prepareForTraining() final;
+  void initOptimizer() final;
 
  private:
   template <bool DENSE, bool PREV_DENSE>

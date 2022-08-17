@@ -42,7 +42,7 @@ FullyConnectedLayer::FullyConnectedLayer(
     initSparseDatastructures(config.getSamplingConfig(), rd);
   }
 
-  prepareForTraining();
+  initOptimizer();
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
@@ -725,8 +725,8 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
 }
 
 // initializes any state needed for training (like the optimizer)
-void FullyConnectedLayer::prepareForTraining() {
-  if (!_prepared_for_training) {
+void FullyConnectedLayer::initOptimizer() {
+  if (!_optimizer_initialized) {
     _w_gradient.assign(_dim * _prev_dim, 0);
     _w_momentum.assign(_dim * _prev_dim, 0);
     _w_velocity.assign(_dim * _prev_dim, 0);
@@ -735,10 +735,7 @@ void FullyConnectedLayer::prepareForTraining() {
     _b_momentum.assign(_dim, 0);
     _b_velocity.assign(_dim, 0);
 
-    _prev_is_active.assign(_prev_dim, false);
-    _is_active.assign(_dim, false);
-
-    _prepared_for_training = true;
+    _optimizer_initialized = true;
   }
 }
 

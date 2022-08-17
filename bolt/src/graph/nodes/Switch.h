@@ -54,10 +54,9 @@ class SwitchNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  // initializes any state needed for training (like the optimizer)
-  void prepareForTraining() final {
+  void initOptimizer() final {
     for (auto& layer : _layers) {
-      layer->prepareForTraining();
+      layer->initOptimizer();
     }
   }
 

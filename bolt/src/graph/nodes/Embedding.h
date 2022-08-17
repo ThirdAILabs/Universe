@@ -50,8 +50,7 @@ class EmbeddingNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  // initializes any state needed for training (like the optimizer)
-  void prepareForTraining() final { _embedding_layer->prepareForTraining(); }
+  void initOptimizer() final { _embedding_layer->initOptimizer(); }
 
   std::string type() const final { return "embedding"; }
 
