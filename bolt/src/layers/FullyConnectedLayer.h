@@ -249,6 +249,10 @@ class FullyConnectedLayer final : public SequentialLayer {
    * training and inference purposes. It doesn't make sense to load the
    * optimizer by default then remove it with another function since users may
    * be memory constrained during deployment.
+   *
+   * We don't know yet if its worth it to save the optimizer for
+   * retraining/finetuning purposes. If in the future we figure out this has
+   * some benefit we can adjust this method accordingly.
    */
   template <class Archive>
   void load(Archive& archive) {
