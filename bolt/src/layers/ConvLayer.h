@@ -141,7 +141,20 @@ class ConvLayer final : public SequentialLayer {
   uint32_t _kernel_size;
   std::vector<uint32_t> _in_to_out, _out_to_in;  // patch mappings
 
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  /**
+   * The optimizer is not loaded in by default. If we want to continue training
+   * after a load, the expectation is that the higher level Graph/Network API
+   * will handle this initialization with the initOptimizer() method.
+   *
+   * Doing this means our load API is as simple as possible for both
+   * training and inference purposes. It doesn't make sense to load the
+   * optimizer by default then remove it with another function since users may
+   * be memory constrained during deployment.
+   *
+   * We don't know yet if its worth it to save the optimizer for
+   * retraining/finetuning purposes. If in the future we figure out this has
+   * some benefit we can adjust this method accordingly.
+   */
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
