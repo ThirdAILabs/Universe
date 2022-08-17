@@ -30,7 +30,7 @@ class MultiLabelTextDatasetProcessor {
     std::vector<std::string_view> sample = {std::string_view(sentence.data(), sentence.size())};
 
     bolt::BoltVector input_vector;
-    auto exception = _processor->makeInputVector(sample, input_vector);
+    auto exception = _inference_processor->makeInputVector(sample, input_vector);
     if (exception) {
       std::rethrow_exception(exception);
     }
