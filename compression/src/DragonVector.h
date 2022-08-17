@@ -28,13 +28,19 @@ class DragonVector final : public CompressedVector<T> {
   explicit DragonVector(const std::vector<T>& vec, float compression_density,
                         int seed_for_hashing);
 
+  explicit DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
+                        uint32_t size, int seed_for_hashing);
   // compatibility functions with std::vector
 
   T get(uint32_t index) const final;
 
   void set(uint32_t index, T value) final;
 
+  // we are only writing for a simple assign now, later expand to iterators and
+  // array as well?
   void assign(uint32_t size, T value) final;
+
+  void assign(uint32_t size, uint32_t index, T value);
 
   void clear() final;
 
@@ -45,11 +51,14 @@ class DragonVector final : public CompressedVector<T> {
 
   T operator[](uint32_t index) final;
 
-  void extendSketch(DragonVector<T> const& vec);
+  // methods for the Dragon Vector Class
+  void extend(DragonVector<T> const& vec) final;
 
-  void split(int number_chunks);
+  std::vector<DragonVector<T>> split(int number_chunks) const final;
 
   DragonVector<T> concat(DragonVector<T> const& vec);
+
+  bool isAllReducible() const final;
 
  private:
   /*
@@ -61,7 +70,7 @@ class DragonVector final : public CompressedVector<T> {
   std::vector<uint32_t> _indices;
   std::vector<T> _values;
   uint32_t _sketch_size;
-  float _compression_density;
+  float _compression_density = 1;
   int _seed_for_hashing;
   uint32_t _min_sketch_size = 10;
 

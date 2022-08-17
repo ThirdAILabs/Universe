@@ -3,6 +3,7 @@
 #include "CompressionUtils.h"
 #include <_types/_uint32_t.h>
 #include <cstdint>
+#include <memory>
 #include <random>
 
 namespace thirdai::compression {
@@ -24,17 +25,7 @@ class CompressedVector {
 
   explicit CompressedVector<T>(std::string compression_scheme);
 
-  virtual bool isAllReducible() = 0;
-
-  virtual std::unique_ptr<CompressedVector> extend(
-      const std::vector<T>& raw) = 0;
-
-  virtual std::unique_ptr<std::vector<CompressedVector<T>>> split(
-      int number_chunks) = 0;
-
   // std::vector methods for compressed vector
-
-  virtual T operator[](uint32_t index) = 0;
 
   virtual T get(uint32_t index) const = 0;
 
@@ -42,12 +33,22 @@ class CompressedVector {
 
   virtual void assign(uint32_t size, T value) = 0;
 
+  virtual void clear() = 0;
+
   // write more methods for addition, subtraction, multiplying by -1, union,
   // etc.
 
   virtual CompressedVector<T> operator+(CompressedVector<T> const& obj) = 0;
 
-  virtual void clear() = 0;
+  virtual T operator[](uint32_t index) const = 0;
+
+  // methods for the compressed_vector class
+
+  virtual bool isAllReducible() const = 0;
+
+  virtual void extend(const std::vector<T>& raw) = 0;
+
+  virtual std::vector<CompressedVector<T>> split(int number_chunks) const = 0;
 
   virtual ~CompressedVector() = default;
 
@@ -55,3 +56,17 @@ class CompressedVector {
   CompressionScheme _compression_scheme;
 };
 }  // namespace thirdai::compression
+
+/*
+ * We should also create a default compressed vector class that is exactly like
+ * std::vector but has other functionalities like extend, split, concat etc.
+ * We will have scenarios where we only want to compress gradients or parameters
+ * for certain layers and not the other ones, but at the same time, we do not
+ * want distributed bolt to be bothered with what vectors are compressed and
+ * what are normal. Hence, should be some default compressed vector inheriting
+ * from the vector class. And implementing all these functions.
+ */
+
+/*
+ * We will also need to have objects like sparse vector, dense vector.
+ */

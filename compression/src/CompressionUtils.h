@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hashing/src/MurmurHash.h>
+#include <algorithm>
 #include <random>
 #include <string>
 #include <vector>
@@ -34,6 +35,29 @@ inline float getThresholdForTopK(const std::vector<float>& values,
                    sampled_gradients.end());
   float threshold = sampled_gradients[num_samples - topK];
   return threshold;
+}
+
+template <class T>
+std::vector<std::vector<T>> SplitVector(const std::vector<T>& vec, int n) {
+  std::vector<std::vector<T>> outVec;
+
+  size_t length = vec.size() / n;
+  size_t remain = vec.size() % n;
+
+  size_t begin = 0;
+  size_t end = 0;
+
+  for (size_t i = 0; i < std::min(n, vec.size()); ++i) {
+    end += (remain > 0) ? (length + !!(remain--)) : length;
+
+    outVec.emplace_back(std::vector<T>(vec.begin() + begin, vec.begin() + end));
+
+    begin = end;
+  }
+  while (outVec.size() < n) {
+    outVec.push_back(std::vector<T>());
+  }
+  return outVec;
 }
 
 }  // namespace thirdai::compression

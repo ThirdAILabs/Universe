@@ -162,6 +162,8 @@ add_subdirectory(hashing)
 add_subdirectory(hashtable)
 add_subdirectory(wrappers)
 
+add_subdirectory(compression)
+
 # Only add the licensing subdirectory if the corresponding flag is set
 if (${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
@@ -199,6 +201,11 @@ file (
 file (
   GLOB_RECURSE DATASET_SOURCES
   dataset/src/*.cc
+)
+
+file (
+  GLOB_RECURSE COMPRESSION_SOURCES
+  compression/src/*.cc
 )
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and
