@@ -350,6 +350,20 @@ void BoltGraph::prepareToProcessBatches(uint32_t batch_size,
   }
 }
 
+/**
+ * We add this check here since the load(..) function doesn't initialize the
+ * optimizer. Doing this means our load API is as simple as possible for both
+ * training and inference purposes. It doesn't make sense to load the
+ * optimizer by default then remove it with another function since users may
+ * be memory constrained during deployment.
+ *
+ * We don't know yet if its worth it to save the optimizer for
+ * retraining/finetuning purposes. If in the future we figure out this has
+ * some benefit we can adjust this method accordingly.
+ *
+ * Node optimizers should be set in a node's constructor by default. If a
+ * node's optimizer is set then initOptimizer() is a no-op.
+ */
 void BoltGraph::verifyNodeOptimizers() {
   for (auto& node : _nodes) {
     node->initOptimizer();
