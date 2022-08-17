@@ -92,9 +92,9 @@ MetricData BoltGraph::train(
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
       if (train_config.verbose()) {
-        std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
+        spdlog::info("Epoch {}:", (_epoch_count + 1));
       }
-      ProgressBar bar(train_context.numBatches(), train_config.verbose());
+      // ProgressBar bar(train_context.numBatches(), train_config.verbose());
       auto train_start = std::chrono::high_resolution_clock::now();
 
       for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
@@ -107,7 +107,11 @@ MetricData BoltGraph::train(
                                     rebuild_hash_tables_batch,
                                     reconstruct_hash_functions_batch);
 
-        bar.increment();
+        // bar.increment();
+        auto output = metrics.getMetrics();
+        for (auto& p : output) {
+          spdlog::info("{} {}", p.first, p.second[0]);
+        }
       }
 
       perEpochCallback();
@@ -119,10 +123,8 @@ MetricData BoltGraph::train(
 
       time_per_epoch.push_back(static_cast<double>(epoch_time));
       if (train_config.verbose()) {
-        std::cout << std::endl
-                  << "Processed " << train_context.numBatches()
-                  << " training batches in " << epoch_time << " seconds"
-                  << std::endl;
+        spdlog::info("Processed {} training batches in {} seconds",
+                     train_context.numBatches(), epoch_time);
       }
       _epoch_count++;
       metrics.logAndReset();
@@ -321,7 +323,7 @@ InferenceResult BoltGraph::predict(
       _output, predict_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
 
-  ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
+  // ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
@@ -339,7 +341,7 @@ InferenceResult BoltGraph::predict(
 
       processInferenceBatch(batch_size, batch_labels, metrics);
 
-      bar.increment();
+      // bar.increment();
 
       processOutputCallback(predict_config.outputCallback(), batch_size);
 
@@ -358,10 +360,8 @@ InferenceResult BoltGraph::predict(
                           .count();
 
   if (predict_config.verbose()) {
-    std::cout << std::endl
-              << "Processed " << predict_context.numBatches()
-              << " test batches in " << test_time << " milliseconds"
-              << std::endl;
+    spdlog::info("Processed {} test batches in {} milliseconds",
+                 predict_context.numBatches(), test_time);
   }
 
   metrics.logAndReset();
@@ -713,7 +713,7 @@ std::string BoltGraph::summarize(bool print, bool detailed) const {
   }
   summary << "============================================================\n";
   if (print) {
-    std::cout << summary.str() << std::flush;
+    spdlog::info("{}", summary.str());
   }
   return summary.str();
 }

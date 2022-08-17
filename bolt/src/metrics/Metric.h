@@ -1,6 +1,7 @@
 #pragma once
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <spdlog/spdlog.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <atomic>
@@ -32,6 +33,9 @@ class Metric {
   // Returns the value of the metric and resets it. For instance this would be
   // called at the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
+
+  // Get metrics, but do not reset.
+  virtual double getMetric(bool verbose) = 0;
 
   // Returns the name of the metric.
   virtual std::string getName() = 0;
@@ -85,12 +89,16 @@ class CategoricalAccuracy final : public Metric {
     _num_samples++;
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double getMetric(bool verbose) final {
     double acc = static_cast<double>(_correct) / _num_samples;
     if (verbose) {
-      std::cout << "Accuracy: " << acc << " (" << _correct << "/"
-                << _num_samples << ")" << std::endl;
+      spdlog::info("Accuracy: {} ({}/{})", acc, _correct, _num_samples);
     }
+    return acc;
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double acc = getMetric(verbose);
     _correct = 0;
     _num_samples = 0;
     return acc;
@@ -130,11 +138,16 @@ class MeanSquaredErrorMetric final : public Metric {
     _num_samples++;
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double getMetric(bool verbose) final {
     double error = _mse / _num_samples;
     if (verbose) {
-      std::cout << "MSE: " << error << std::endl;
+      spdlog::info("MSE: {}", error);
     }
+    return error;
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double error = getMetric(verbose);
     _mse = 0;
     _num_samples = 0;
     return error;
@@ -221,15 +234,19 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
         _sum_of_truths, std::sqrt(sum_of_squared_label_elems));
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double getMetric(bool verbose) final {
     double wmape = _sum_of_deviations /
                    std::max(_sum_of_truths.load(std::memory_order_relaxed),
                             std::numeric_limits<float>::epsilon());
     if (verbose) {
-      std::cout << "Weighted Mean Absolute Percentage Error: "
-                << std::setprecision(3) << wmape << " (" << wmape * 100 << "%)"
-                << std::endl;
+      spdlog::info("Weighted Mean Absolute Percentage Error: {.3f} ({}%)",
+                   wmape, wmape * 100);
     }
+    return wmape;
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double wmape = getMetric(verbose);
     _sum_of_deviations = 0.0;
     _sum_of_truths = 0.0;
     return wmape;
@@ -266,12 +283,17 @@ class RecallAtK : public Metric {
     _label_count.fetch_add(countLabels(labels));
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double getMetric(bool verbose) final {
     double metric = static_cast<double>(_matches) / _label_count;
     if (verbose) {
       std::cout << "Recall@" << _k << ": " << std::setprecision(3) << metric
                 << std::endl;
     }
+    return metric;
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double metric = getMetric(verbose);
     _matches = 0;
     _label_count = 0;
     return metric;
@@ -360,7 +382,7 @@ class FMeasure final : public Metric {
     }
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double getMetric(bool verbose) final {
     double prec = static_cast<double>(_true_positive) /
                   (_true_positive + _false_positive);
     double recall = static_cast<double>(_true_positive) /
@@ -379,6 +401,11 @@ class FMeasure final : public Metric {
       std::cout << "F-Measure (t=" << _threshold << "): " << f_measure
                 << std::endl;
     }
+    return f_measure;
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double f_measure = getMetric(verbose);
     _true_positive = 0;
     _false_positive = 0;
     _false_negative = 0;

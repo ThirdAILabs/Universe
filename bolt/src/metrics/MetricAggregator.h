@@ -49,6 +49,14 @@ class MetricAggregator {
     }
   }
 
+  MetricData getMetrics() {
+    MetricData output;
+    for (auto& m : _metrics) {
+      output[m->getName()].push_back(m->getMetric(_verbose));
+    }
+    return output;
+  }
+
   MetricData getOutput() { return _output; }
 
   InferenceMetricData getOutputFromInference() {

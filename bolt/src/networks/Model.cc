@@ -2,6 +2,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <spdlog/spdlog.h>
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -40,7 +41,7 @@ MetricData Model<BATCH_T>::train(
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     if (verbose) {
-      std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
+      spdlog::info("Epoch {}:", _epoch_count + 1);
     }
     ProgressBar bar(num_train_batches, verbose);
     auto train_start = std::chrono::high_resolution_clock::now();
@@ -66,9 +67,8 @@ MetricData Model<BATCH_T>::train(
 
     time_per_epoch.push_back(static_cast<double>(epoch_time));
     if (verbose) {
-      std::cout << std::endl
-                << "Processed " << num_train_batches << " training batches in "
-                << epoch_time << " seconds" << std::endl;
+      spdlog::info("Processed {} training batches in {} seconds.",
+                   num_train_batches, epoch_time);
     }
     _epoch_count++;
 
@@ -225,9 +225,8 @@ InferenceMetricData Model<BATCH_T>::predict(
                           test_end - test_start)
                           .count();
   if (verbose) {
-    std::cout << std::endl
-              << "Processed " << num_test_batches << " test batches in "
-              << test_time << " milliseconds" << std::endl;
+    spdlog::info("Processed {} test batches in {} milliseconds.",
+                 num_test_batches, test_time);
   }
 
   metrics.logAndReset();
