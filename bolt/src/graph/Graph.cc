@@ -301,13 +301,15 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
   // Either we shouldn't track any metrics or there need to be labels
   assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
 
-#pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
+#pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics, std::cout)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
     forward(vec_id, /*labels=*/nullptr);
 
     const auto& output = _output->getOutputVector(vec_id);
+
+    std::cout << output << std::endl;
 
     if (batch_labels) {
       const auto& labels = (*batch_labels)[vec_id];
