@@ -45,8 +45,9 @@ void AutoClassifierBase::train(
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
     uint32_t epochs, float learning_rate, bool prepare_for_sparse_inference,
-    const std::vector<std::string>& metrics) {
-  auto dataset = loadStreamingDataset(filename, batch_processor);
+    const std::vector<std::string>& metrics,
+    uint32_t batch_size) {
+  auto dataset = loadStreamingDataset(filename, batch_processor, batch_size);
 
   // The case has yet to come up where loading the dataset in
   // memory is a concern. Additionally, supporting streaming datasets in the DAG
@@ -89,8 +90,9 @@ InferenceResult AutoClassifierBase::predict(
         batch_processor,
     const std::optional<std::string>& output_filename,
     const std::vector<std::string>& class_id_to_class_name,
-    bool use_sparse_inference, const std::vector<std::string>& metrics, bool silent) {
-  auto dataset = loadStreamingDataset(filename, batch_processor);
+    bool use_sparse_inference, const std::vector<std::string>& metrics, bool silent,
+    uint32_t batch_size) {
+  auto dataset = loadStreamingDataset(filename, batch_processor, batch_size);
 
   // see comment above in train(..) about loading in memory
   if (!canLoadDatasetInMemory(filename)) {

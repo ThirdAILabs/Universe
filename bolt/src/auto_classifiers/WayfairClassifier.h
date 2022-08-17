@@ -25,7 +25,7 @@ class WayfairClassifier {
 
     assert(n_classes == _processor->getLabelDim());
 
-    std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{1000, 1.0}};
+    std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{1024, 1.0}};
 
     _classifier = std::make_unique<AutoClassifierBase>(
         /* input_dim= */ _processor->getInputDim(),
@@ -50,7 +50,7 @@ class WayfairClassifier {
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _processor),
         epochs, learning_rate, /* prepare_for_sparse_inference= */ false,
-        metrics);
+        metrics, /* batch_size= */ 2048);
   }
 
   InferenceResult predict(
@@ -76,7 +76,8 @@ class WayfairClassifier {
     return _classifier->predict(filename, _processor, output_filename,
                                 class_id_to_name,
                                 /* use_sparse_inference= */ false, metrics,
-                                /* silent= */ false);
+                                /* silent= */ false,
+                                /* batch_size= */ 2048);
   }
 
   BoltVector predictSingle(const std::vector<uint32_t>& tokens,
