@@ -329,8 +329,6 @@ void ConvLayer::initOptimizer() {
     _b_momentum.assign(_num_filters, 0);
     _b_velocity.assign(_num_filters, 0);
 
-    _is_active.assign(_num_filters * _num_patches, false);
-
     _optimizer_initialized = true;
   }
 }
