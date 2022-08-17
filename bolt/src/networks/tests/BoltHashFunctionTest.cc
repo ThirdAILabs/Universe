@@ -1,4 +1,4 @@
-#include "BoltNetworkTestUtils.h"
+#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
@@ -11,24 +11,25 @@
 namespace thirdai::bolt::tests {
 
 static constexpr uint32_t n_classes = 100;
+static constexpr uint32_t n_batches = 100;
+static constexpr uint32_t batch_size = 100;
 
-static void testSimpleDatasetHashFunction(const std::string& hash_function) {
+static void testSimpleDatasetHashFunction(
+    const SamplingConfigPtr& sampling_config) {
   // As we train for more epochs, the model should learn better using these hash
   // functions.
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(
            /*dim = */ 10000, /*sparsity = */ 0.1,
-           /*act_func = */ ActivationFunction::ReLU,
+           /*act_func = */ "relu",
            /*sampling_config = */
-           SamplingConfig(/*hashes_per_table = */ 5, /*num_tables = */ 64,
-                          /*range_pow = */ 15, /*reservoir size = */ 4,
-                          /*hash_function = */ hash_function)),
-       std::make_shared<FullyConnectedLayerConfig>(
-           n_classes, ActivationFunction::Softmax)},
+           sampling_config),
+       std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
       n_classes);
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset = */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   // train the network for two epochs
   network.train(data, labels, CategoricalCrossEntropyLoss(),
@@ -61,17 +62,20 @@ static void testSimpleDatasetHashFunction(const std::string& hash_function) {
 
 // test for DWTA Hash Function
 TEST(BoltHashFunctionTest, TrainSimpleDatasetDWTA) {
-  testSimpleDatasetHashFunction("DWTA");
-}
+  auto sampling_config = std::make_shared<DWTASamplingConfig>(
+      /* num_tables= */ 64, /* hashes_per_table= */ 3,
+      /* reservoir_size= */ 32);
 
-// test for SRP Hash Function
-TEST(BoltHashFunctionTest, TrainSimpleDatasetSRP) {
-  testSimpleDatasetHashFunction("SRP");
+  testSimpleDatasetHashFunction(sampling_config);
 }
 
 // test for FastSRP Hash Function
 TEST(BoltHashFunctionTest, TrainSimpleDatasetFastSRP) {
-  testSimpleDatasetHashFunction("FastSRP");
+  auto sampling_config = std::make_shared<FastSRPSamplingConfig>(
+      /* num_tables= */ 64, /* hashes_per_table= */ 9,
+      /* reservoir_size= */ 32);
+
+  testSimpleDatasetHashFunction(sampling_config);
 }
 
 }  // namespace thirdai::bolt::tests

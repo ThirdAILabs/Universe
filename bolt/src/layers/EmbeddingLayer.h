@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/vector.hpp>
 #include "BoltVector.h"
 #include "LayerConfig.h"
 #include <hashing/src/UniversalHash.h>
@@ -27,12 +29,12 @@ class EmbeddingLayer {
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
-  uint32_t getEmbeddingDim() const { return _total_embedding_dim_bytes; }
+  uint32_t getEmbeddingDim() const { return _total_embedding_dim; }
 
   void initializeLayer(uint32_t new_batch_size);
 
   BoltBatch createBatchState(const uint32_t batch_size) const {
-    return BoltBatch(_total_embedding_dim_bytes, batch_size, true);
+    return BoltBatch(_total_embedding_dim, batch_size, true);
   }
 
   void buildLayerSummary(std::stringstream& summary) const;
@@ -59,7 +61,7 @@ class EmbeddingLayer {
 
   constexpr uint32_t getOutputOffsetWithinEmbedding(
       uint32_t lookup_index) const {
-    return lookup_index * _lookup_size_bytes;
+    return lookup_index * _lookup_size;
   }
 
   static constexpr uint32_t getHashLocIndex(uint32_t lookup_index,
@@ -80,9 +82,20 @@ class EmbeddingLayer {
         lookup_index, token_index, num_tokens)];
   }
 
-  uint32_t _num_lookups_per_token, _lookup_size_bytes,
-      _total_embedding_dim_bytes, _log_embedding_block_size;
-  uint64_t _embedding_block_size_bytes;
+  // Private constructor for cereal.
+  EmbeddingLayer() : _hash_fn(0) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
+            _log_embedding_block_size, _embedding_block_size, _hash_fn,
+            _embedding_block, _gradients, _momentum, _velocity);
+  }
+
+  uint32_t _num_lookups_per_token, _lookup_size, _total_embedding_dim,
+      _log_embedding_block_size;
+  uint64_t _embedding_block_size;
 
   hashing::UniversalHash _hash_fn;
 

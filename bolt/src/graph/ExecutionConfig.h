@@ -130,6 +130,12 @@ class PredictConfig {
     return *this;
   }
 
+  PredictConfig& withOutputCallback(
+      const std::function<void(const BoltVector&)>& output_callback) {
+    _output_callback = output_callback;
+    return *this;
+  }
+
   bool sparseInferenceEnabled() const { return _use_sparse_inference; }
 
   MetricAggregator getMetricAggregator() const {
@@ -140,15 +146,19 @@ class PredictConfig {
 
   constexpr bool shouldReturnActivations() const { return _return_activations; }
 
+  auto outputCallback() const { return _output_callback; }
+
  private:
   PredictConfig()
       : _metric_names({}),
         _use_sparse_inference(false),
         _verbose(true),
-        _return_activations(false) {}
+        _return_activations(false),
+        _output_callback(std::nullopt) {}
 
   std::vector<std::string> _metric_names;
   bool _use_sparse_inference, _verbose, _return_activations;
+  std::optional<std::function<void(const BoltVector&)>> _output_callback;
 };
 
 }  // namespace thirdai::bolt

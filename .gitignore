@@ -44,6 +44,9 @@ wheelhouse
 *.svm
 *.csv
 
+# Output files
+*.svg
+
 # -- Begin vim .gitignore
 # Swap
 [._]*.s[a-v][a-z]
@@ -58,6 +61,7 @@ Session.vim
 Sessionx.vim
 
 # Temporary
+Testing
 .netrwhist
 *~
 # Auto-generated tag files

@@ -39,12 +39,8 @@ def train_using_random_numpy():
         no_of_training_examples=100000
     )
     layers = [
-        bolt.FullyConnected(
-            dim=100, sparsity=0.2, activation_function=bolt.ActivationFunctions.ReLU
-        ),
-        bolt.FullyConnected(
-            dim=5, sparsity=1.0, activation_function=bolt.ActivationFunctions.Softmax
-        ),
+        bolt.FullyConnected(dim=100, sparsity=0.2, activation_function="relu"),
+        bolt.FullyConnected(dim=5, sparsity=1.0, activation_function="softmax"),
     ]
 
     network = bolt.Network(layers=layers, input_dim=5)

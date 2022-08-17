@@ -1,10 +1,15 @@
 #include "DatasetPython.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/DatasetLoaders.h>
+#include <dataset/src/Datasets.h>
+#include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/NumpyDataset.h>
+#include <dataset/src/ShuffleBatchBuffer.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
@@ -175,6 +180,15 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &CategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
+  py::class_<DateBlock, Block, std::shared_ptr<DateBlock>>(
+      block_submodule, "Date",
+      "Encodes a date column given in YYYY-MM-DD format.")
+      .def(py::init<uint32_t>(), py::arg("col"))
+      .def("feature_dim", &DateBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &DateBlock::isDense,
+           "Returns false since this is a sparse encoding.");
+
   py::class_<DenseArrayBlock, Block, std::shared_ptr<DenseArrayBlock>>(
       block_submodule, "DenseArray",
       "Parses a contiguous set of columns as a dense vector segment.")
@@ -241,14 +255,20 @@ void createDatasetSubmodule(py::module_& module) {
            "shuffling the "
            "dataset.");
 
+  py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleBufferConfig")
+      .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
+           py::arg("seed") = time(NULL));
+
   py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
-      .def(
-          py::init<std::string, std::vector<std::shared_ptr<Block>>,
-                   std::vector<std::shared_ptr<Block>>, uint32_t, bool, char>(),
-          py::arg("filename"), py::arg("input_blocks"), py::arg("label_blocks"),
-          py::arg("batch_size"), py::arg("has_header") = false,
-          py::arg("delimiter") = ',')
-      .def("next_batch", &StreamingGenericDatasetLoader::nextBatch)
+      .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,
+                    std::vector<std::shared_ptr<Block>>, uint32_t, bool,
+                    DatasetShuffleConfig, bool, char>(),
+           py::arg("filename"), py::arg("input_blocks"),
+           py::arg("label_blocks"), py::arg("batch_size"),
+           py::arg("shuffle") = false,
+           py::arg("config") = DatasetShuffleConfig(),
+           py::arg("has_header") = false, py::arg("delimiter") = ',')
+      .def("next_batch", &StreamingGenericDatasetLoader::nextBatchTuple)
       .def("load_in_memory", &StreamingGenericDatasetLoader::loadInMemory)
       .def("get_max_batch_size",
            &StreamingGenericDatasetLoader::getMaxBatchSize)
@@ -261,16 +281,11 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
                         py::arg("values"));
 
-  // The no lint below is because clang tidy doesn't like instantiating an
-  // object without a name and never using it.
-  py::class_<ClickThroughDataset, ClickThroughDatasetPtr>(  // NOLINT
-      dataset_submodule, "ClickThroughDataset");
-
   dataset_submodule.def(
-      "load_click_through_dataset", &loadClickThroughDatasetWrapper,
+      "load_click_through_dataset", &ClickThroughDatasetLoader::loadDataset,
       py::arg("filename"), py::arg("batch_size"),
-      py::arg("num_numerical_features"), py::arg("num_categorical_features"),
-      py::arg("categorical_labels"),
+      py::arg("max_num_numerical_features"),
+      py::arg("max_categorical_features"), py::arg("delimiter") = '\t',
       "Loads a Clickthrough dataset from a file. To be used with DLRM. \n"
       "Each line of the input file should follow this format:\n"
       "```\n"
@@ -286,16 +301,10 @@ void createDatasetSubmodule(py::module_& module) {
       " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
       " * num_numerical_features: Int (positive) - Number of expected "
       "numerical features in each dataset.\n"
-      " * num_categorical_features: Int (positive) - Number of expected "
-      "categorical features in each dataset.\n"
-      " * categorical_labels: Boolean - True if the labels are categorical "
-      "(i.e. a label of 1 means the sample "
-      "belongs to category 1), False if the labels are numerical (i.e. a label "
-      "of 1 means the sample corresponds "
-      "with the value of 1 on the real number line).\n"
-      "Each line of the input file should follow this format:\n\n"
-      "Returns a tuple containing a ClickthroughDataset to store the data "
-      "itself, and a BoltDataset storing the labels.");
+      " * max_categorical_features: Int (positive) - Maximum number of "
+      "expected categorical features in each dataset.\n"
+      "Returns a tuple containing a BoltDataset, BoltTokenDataset to store the "
+      "dense and categorical features, and a BoltDataset storing the labels.");
 
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule, "BoltDataset")
       // We need to explicitly static cast these methods because there are
@@ -308,7 +317,9 @@ void createDatasetSubmodule(py::module_& module) {
            static_cast<bolt::BoltBatch& (BoltDataset::*)(uint64_t i)>(
                &BoltDataset::at),
            py::arg("i"), py::return_value_policy::reference)
-      .def("__len__", &BoltDataset::numBatches);
+      .def("__len__", &BoltDataset::numBatches)
+      .def("save", &BoltDataset::save, py::arg("filename"))
+      .def_static("load", &BoltDataset::load, py::arg("filename"));
 
   py::class_<BoltTokenDataset, BoltTokenDatasetPtr>(  // NOLINT
       dataset_submodule, "BoltTokenDataset");
@@ -379,9 +390,6 @@ void createDatasetSubmodule(py::module_& module) {
       "embedding. "
       "Defaults to 100,000.");
 
-  py::class_<InMemoryDataset<MaskedSentenceBatch>, MLMDatasetPtr>(  // NOLINT
-      dataset_submodule, "MLMDataset");
-
   py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
       .def(py::init<uint32_t>(), py::arg("pairgram_range"))
       .def("load", &MLMDatasetLoader::load, py::arg("filename"),
@@ -416,17 +424,6 @@ py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
   auto [data, labels] = SvmDatasetLoader::loadDataset(filename, batch_size,
                                                       softmax_for_multiclass);
   return py::make_tuple(std::move(data), std::move(labels));
-}
-
-py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
-                                         uint32_t batch_size,
-                                         uint32_t num_dense_features,
-                                         uint32_t num_categorical_features,
-                                         bool sparse_labels) {
-  auto res = ClickThroughDatasetLoader::loadDataset(
-      filename, batch_size, num_dense_features, num_categorical_features,
-      sparse_labels);
-  return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>

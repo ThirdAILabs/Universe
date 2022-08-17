@@ -32,7 +32,7 @@ class StreamingDataset {
     }
   }
 
-  std::optional<std::tuple<BATCH_Ts...>> nextBatchTuple() {
+  virtual std::optional<std::tuple<BATCH_Ts...>> nextBatchTuple() {
     auto rows = _data_loader->nextBatch();
     if (!rows) {
       return std::nullopt;
@@ -44,7 +44,9 @@ class StreamingDataset {
   // This function maps the tuple of batches returned by nextBatch() into a
   // tuple of datasets where each dataset contains a list of batches of the type
   // corresponding to that element of the tuple.
-  std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> loadInMemory() {
+  // NOLINTNEXTLINE
+  virtual std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>
+  loadInMemory() {
     std::tuple<std::vector<BATCH_Ts>...> batch_lists;
 
     uint64_t len = 0;

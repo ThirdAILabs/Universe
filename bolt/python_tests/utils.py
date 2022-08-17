@@ -167,7 +167,7 @@ def remove_files(files):
         os.remove(file)
 
 
-def compute_accuracy(test_labels, pred_file):
+def compute_accuracy_with_file(test_labels, pred_file):
     with open(pred_file) as pred:
         pred_lines = pred.readlines()
 
