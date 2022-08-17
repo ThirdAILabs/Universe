@@ -47,7 +47,8 @@ class StreamingDataset {
   // NOLINTNEXTLINE
   virtual std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>
   loadInMemory() {
-    std::cout << "Loading vectors from '" + _data_loader->resourceName() + "'" << std::endl;
+    std::cout << "Loading vectors from '" + _data_loader->resourceName() + "'"
+              << std::endl;
     std::tuple<std::vector<BATCH_Ts>...> batch_lists;
 
     uint64_t len = 0;

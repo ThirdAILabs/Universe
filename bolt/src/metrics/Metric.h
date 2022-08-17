@@ -254,7 +254,6 @@ class FMeasure final : public Metric {
         _num_samples(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-
     auto predictions = output.getThresholdedNeurons(
         /* activation_threshold = */ _threshold,
         /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
@@ -288,8 +287,10 @@ class FMeasure final : public Metric {
   }
 
   double getMetricAndReset(bool verbose) final {
-    double prec = static_cast<double>(_true_positive) / (_true_positive + _false_positive);
-    double recall = static_cast<double>(_true_positive) / (_true_positive + _false_negative);
+    double prec = static_cast<double>(_true_positive) /
+                  (_true_positive + _false_positive);
+    double recall = static_cast<double>(_true_positive) /
+                    (_true_positive + _false_negative);
     double f_measure = (2 * prec * recall) / (prec + recall);
     if (verbose) {
       std::cout << "Precision (t=" << _threshold << "): " << prec << std::endl;

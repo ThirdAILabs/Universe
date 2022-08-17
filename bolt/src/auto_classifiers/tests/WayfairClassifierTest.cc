@@ -49,10 +49,10 @@ TEST(WayfairClassifierTest, TestLoadSave) {
       new_model->predict(
           /* filename = */ TRAIN_FILENAME,
           /* fmeasure_thresholds = */ fmeasure_thresholds));
-  
+
   auto [metrics_after_loading, _2] = new_model->predict(
-          /* filename = */ TRAIN_FILENAME,
-          /* fmeasure_thresholds = */ fmeasure_thresholds);
+      /* filename = */ TRAIN_FILENAME,
+      /* fmeasure_thresholds = */ fmeasure_thresholds);
 
   for (auto& [key, value] : metrics_before_saving) {
     ASSERT_EQ(value, metrics_after_loading[key]);

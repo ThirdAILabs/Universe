@@ -42,13 +42,13 @@ class StreamingGenericDatasetLoader
                                                     std::move(label_blocks),
                                                     has_header, delimiter),
             shuffle, config) {}
-  
+
   /**
    * This constructor accepts a generic batch processor instead of blocks.
    */
   StreamingGenericDatasetLoader(
-      std::string filename, 
-      std::shared_ptr<GenericBatchProcessor> processor, uint32_t batch_size, bool shuffle = false,
+      std::string filename, std::shared_ptr<GenericBatchProcessor> processor,
+      uint32_t batch_size, bool shuffle = false,
       DatasetShuffleConfig config = DatasetShuffleConfig())
       : StreamingGenericDatasetLoader(
             std::make_shared<SimpleFileDataLoader>(filename, batch_size),

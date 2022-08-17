@@ -13,6 +13,7 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
 #include <dataset/src/encodings/text/PairGram.h>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <memory>
@@ -34,13 +35,12 @@ class WayfairClassifier {
     std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{1024, 1.0}};
 
     _classifier = FullyConnectedGraphNetwork::build(
-      /* input_dim= */ _processor->getInputDim(),
-      /* hidden_dims_and_sparsities= */ hidden_layer_config,
-      /* output_dim= */ n_classes,
-      /* output_sparsity= */ n_classes >= 500 ? 0.1 : 1,
-      /* output_activation= */ "sigmoid",
-      /* loss= */ std::make_shared<BinaryCrossEntropyLoss>()
-    );
+        /* input_dim= */ _processor->getInputDim(),
+        /* hidden_dims_and_sparsities= */ hidden_layer_config,
+        /* output_dim= */ n_classes,
+        /* output_sparsity= */ n_classes >= 500 ? 0.1 : 1,
+        /* output_activation= */ "sigmoid",
+        /* loss= */ std::make_shared<BinaryCrossEntropyLoss>());
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
@@ -52,22 +52,32 @@ class WayfairClassifier {
       metrics.push_back(metric_ss.str());
     }
 
-    dataset::StreamingGenericDatasetLoader dataset(filename, _processor, /* batch_size= */ 2048, /* shuffle= */ true);
+    dataset::StreamingGenericDatasetLoader dataset(
+        filename, _processor, /* batch_size= */ 2048, /* shuffle= */ true);
 
     if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
       throw std::invalid_argument("Cannot load training dataset in memory.");
     }
 
+    std::cout << "Loading training dataset from " << filename << std::endl;
+    auto start_time = std::chrono::high_resolution_clock::now();
     auto [train_data, train_labels] = dataset.loadInMemory();
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::cout << "Finished loading the dataset in "
+              << std::chrono::duration_cast<std::chrono::seconds>(end_time -
+                                                                  start_time)
+                     .count()
+              << " seconds." << std::endl;
 
-    auto config = TrainConfig::makeConfig(learning_rate, epochs).withMetrics(metrics);    
+    auto config =
+        TrainConfig::makeConfig(learning_rate, epochs).withMetrics(metrics);
 
     _classifier->train({train_data}, {}, train_labels, config);
   }
 
-  InferenceResult predict(
-      const std::string& filename,
-      const std::vector<float>& fmeasure_thresholds = {0.9}) {
+  InferenceResult predict(const std::string& filename,
+                          const std::vector<float>& fmeasure_thresholds = {
+                              0.9}) {
     std::vector<std::string> metrics;
     for (auto threshold : fmeasure_thresholds) {
       std::stringstream metric_ss;
@@ -75,13 +85,22 @@ class WayfairClassifier {
       metrics.push_back(metric_ss.str());
     }
 
-    dataset::StreamingGenericDatasetLoader dataset(filename, _processor, /* batch_size= */ 2048);
+    dataset::StreamingGenericDatasetLoader dataset(filename, _processor,
+                                                   /* batch_size= */ 2048);
 
     if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
       throw std::invalid_argument("Cannot load prediction dataset in memory.");
     }
 
+    std::cout << "Loading prediction dataset from " << filename << std::endl;
+    auto start_time = std::chrono::high_resolution_clock::now();
     auto [pred_data, pred_labels] = dataset.loadInMemory();
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::cout << "Finished loading the dataset in "
+              << std::chrono::duration_cast<std::chrono::seconds>(end_time -
+                                                                  start_time)
+                     .count()
+              << " seconds." << std::endl;
 
     auto config = PredictConfig::makeConfig().withMetrics(metrics);
 
@@ -96,7 +115,7 @@ class WayfairClassifier {
     // The following step must be separate from the above
     // because we need to keep the sentence in scope and alive.
     auto sample = sentenceToSample(sentence);
-    
+
     BoltVector input_vector;
     auto exception = _processor->makeInputVector(sample, input_vector);
     if (exception) {

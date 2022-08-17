@@ -31,7 +31,7 @@ class AutoClassifierBase {
       uint32_t epochs, float learning_rate,
       bool prepare_for_sparse_inference = true,
       const std::vector<std::string>& metrics = {"categorical_accuracy"},
-      uint32_t batch_size=256);
+      uint32_t batch_size = 256);
 
   InferenceResult predict(
       const std::string& filename,
@@ -41,8 +41,7 @@ class AutoClassifierBase {
       const std::vector<std::string>& class_id_to_class_name,
       bool use_sparse_inference = true,
       const std::vector<std::string>& metrics = {"categorical_accuracy"},
-      bool silent = true,
-      uint32_t batch_size=256);
+      bool silent = true, uint32_t batch_size = 256);
 
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            std::vector<std::vector<uint32_t>>&& test_tokens,

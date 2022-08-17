@@ -45,8 +45,7 @@ void AutoClassifierBase::train(
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
     uint32_t epochs, float learning_rate, bool prepare_for_sparse_inference,
-    const std::vector<std::string>& metrics,
-    uint32_t batch_size) {
+    const std::vector<std::string>& metrics, uint32_t batch_size) {
   auto dataset = loadStreamingDataset(filename, batch_processor, batch_size);
 
   // The case has yet to come up where loading the dataset in
@@ -90,8 +89,8 @@ InferenceResult AutoClassifierBase::predict(
         batch_processor,
     const std::optional<std::string>& output_filename,
     const std::vector<std::string>& class_id_to_class_name,
-    bool use_sparse_inference, const std::vector<std::string>& metrics, bool silent,
-    uint32_t batch_size) {
+    bool use_sparse_inference, const std::vector<std::string>& metrics,
+    bool silent, uint32_t batch_size) {
   auto dataset = loadStreamingDataset(filename, batch_processor, batch_size);
 
   // see comment above in train(..) about loading in memory
@@ -99,7 +98,7 @@ InferenceResult AutoClassifierBase::predict(
     throw std::invalid_argument("Cannot load dataset in memory.");
   }
   auto [test_data, test_labels] = dataset->loadInMemory();
-  
+
   std::optional<std::ofstream> output_file;
   if (output_filename) {
     output_file = dataset::SafeFileIO::ofstream(*output_filename);
@@ -113,9 +112,9 @@ InferenceResult AutoClassifierBase::predict(
     (*output_file) << class_id_to_class_name[class_id] << std::endl;
   };
 
-  PredictConfig config = PredictConfig::makeConfig()
-                             .withMetrics(metrics)
-                             .withOutputCallback(print_predictions_callback);
+  PredictConfig config =
+      PredictConfig::makeConfig().withMetrics(metrics).withOutputCallback(
+          print_predictions_callback);
   if (use_sparse_inference) {
     config = config.enableSparseInference();
   }

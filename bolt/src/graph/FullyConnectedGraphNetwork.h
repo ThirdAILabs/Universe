@@ -8,13 +8,12 @@ namespace thirdai::bolt {
 class FullyConnectedGraphNetwork {
  public:
   static BoltGraphPtr build(
-    uint32_t input_dim,
-    const std::vector<std::pair<uint32_t, float>>& hidden_dims_and_sparsities,
-    uint32_t output_dim,
-    float output_sparsity,
-    std::string output_activation = "softmax",
-    std::shared_ptr<LossFunction> loss = std::make_shared<CategoricalCrossEntropyLoss>()
-  ) {
+      uint32_t input_dim,
+      const std::vector<std::pair<uint32_t, float>>& hidden_dims_and_sparsities,
+      uint32_t output_dim, float output_sparsity,
+      std::string output_activation = "softmax",
+      std::shared_ptr<LossFunction> loss =
+          std::make_shared<CategoricalCrossEntropyLoss>()) {
     auto input_layer = std::make_shared<Input>(input_dim);
     NodePtr prev_layer = input_layer;
 
@@ -35,7 +34,7 @@ class FullyConnectedGraphNetwork {
     output_layer->addPredecessor(prev_layer);
 
     auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
-                                            output_layer);
+                                             output_layer);
 
     model->compile(std::move(loss));
 
@@ -43,4 +42,4 @@ class FullyConnectedGraphNetwork {
   }
 };
 
-} // namespace thirdai::bolt
+}  // namespace thirdai::bolt
