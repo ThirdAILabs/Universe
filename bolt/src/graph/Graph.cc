@@ -309,8 +309,6 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
 
     const auto& output = _output->getOutputVector(vec_id);
 
-    std::cout << output << std::endl;
-
     if (batch_labels) {
       const auto& labels = (*batch_labels)[vec_id];
       metrics.processSample(output, labels);

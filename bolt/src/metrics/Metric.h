@@ -254,6 +254,8 @@ class FMeasure final : public Metric {
         _num_samples(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    std::cout << output << std::endl;
+
     auto predictions = output.getThresholdedNeurons(
         /* activation_threshold = */ _threshold,
         /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
