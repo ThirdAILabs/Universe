@@ -24,21 +24,6 @@ class DateBlock : public Block {
 
   uint32_t getColumnNum() const final {return _col;}
 
-  std::string giveMessage(
-      float gradient_ratio_value,
-      std::unordered_map<uint32_t, std::string> col_num_col_name_map,
-      float row_ratio_sum, bool to_print_message) const final {
-    if (to_print_message) {
-      std::cout << "The timestamp column  " + col_num_col_name_map.at(_col) +
-                       " is  " +
-                       std::to_string(
-                           ((gradient_ratio_value) / (row_ratio_sum)) * 100) +
-                       "% responsible."
-                << std::endl;
-    }
-    return col_num_col_name_map.at(_col);
-  }
-
  protected:
   static constexpr uint32_t day_of_week_dim = 7;
   static constexpr uint32_t month_of_year_dim = 12;

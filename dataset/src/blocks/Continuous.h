@@ -22,21 +22,6 @@ class ContinuousBlock : public Block {
 
   uint32_t getColumnNum() const final {return _column;}
 
-  std::string giveMessage(
-      float gradient_ratio_value,
-      std::unordered_map<uint32_t, std::string> col_num_col_name_map,
-      float row_ratio_sum, bool to_print_message) const final {
-    if (to_print_message) {
-      std::cout << "The Continuous column  " +
-                       col_num_col_name_map.at(_column) + " is  " +
-                       std::to_string(
-                           ((gradient_ratio_value) / (row_ratio_sum)) * 100) +
-                       "% responsible."
-                << std::endl;
-    }
-    return col_num_col_name_map.at(_column);
-  }
-
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
