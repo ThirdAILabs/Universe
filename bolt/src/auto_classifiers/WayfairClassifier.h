@@ -1,8 +1,13 @@
 #pragma once
 
 #include <bolt/src/auto_classifiers/AutoClassifierBase.h>
+#include <bolt/src/graph/ExecutionConfig.h>
+#include <bolt/src/graph/FullyConnectedGraphNetwork.h>
+#include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/loss_functions/LossFunctions.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
@@ -27,36 +32,18 @@ class WayfairClassifier {
 
     std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{1024, 1.0}};
 
-    _classifier = std::make_unique<AutoClassifierBase>(
-        /* input_dim= */ _processor->getInputDim(),
-        /* hidden_layer_configs= */ hidden_layer_config,
-        /* output_layer_size= */ n_classes,
-        /* output_layer_sparsity= */ n_classes >= 500 ? 0.1 : 1);
+    _classifier = FullyConnectedGraphNetwork::build(
+      /* input_dim= */ _processor->getInputDim(),
+      /* hidden_dims_and_sparsities= */ hidden_layer_config,
+      /* output_dim= */ n_classes,
+      /* output_sparsity= */ n_classes >= 500 ? 0.1 : 1,
+      /* output_activation= */ "sigmoid",
+      /* loss= */ std::make_shared<BinaryCrossEntropyLoss>()
+    );
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
              const std::vector<float>& fmeasure_thresholds = {0.9}) {
-    (void) fmeasure_thresholds;
-    std::vector<std::string> metrics = {"categorical_accuracy"};
-    // std::vector<std::string> metrics;
-    // for (auto threshold : fmeasure_thresholds) {
-    //   std::stringstream metric_ss;
-    //   metric_ss << "f_measure(" << threshold << ")";
-    //   metrics.push_back(metric_ss.str());
-    // }
-
-    _classifier->train(
-        filename,
-        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
-            _processor),
-        epochs, learning_rate, /* prepare_for_sparse_inference= */ false,
-        metrics, /* batch_size= */ 2048);
-  }
-
-  InferenceResult predict(
-      const std::string& filename,
-      const std::vector<float>& fmeasure_thresholds = {0.9},
-      const std::optional<std::string>& output_filename = std::nullopt) {
     std::vector<std::string> metrics;
     for (auto threshold : fmeasure_thresholds) {
       std::stringstream metric_ss;
@@ -64,20 +51,40 @@ class WayfairClassifier {
       metrics.push_back(metric_ss.str());
     }
 
-    // All class names are strings of the IDs themselves since the
-    // labels are integers.
-    std::vector<std::string> class_id_to_name(_n_classes);
-    for (uint32_t id = 0; id < _n_classes; id++) {
-      std::stringstream id_ss;
-      id_ss << id;
-      class_id_to_name[id] = id_ss.str();
+    dataset::StreamingGenericDatasetLoader dataset(filename, _processor, /* batch_size= */ 2048);
+
+    if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
+      throw std::invalid_argument("Cannot load training dataset in memory.");
     }
 
-    return _classifier->predict(filename, _processor, output_filename,
-                                class_id_to_name,
-                                /* use_sparse_inference= */ false, metrics,
-                                /* silent= */ false,
-                                /* batch_size= */ 2048);
+    auto [train_data, train_labels] = dataset.loadInMemory();
+
+    auto config = TrainConfig::makeConfig(learning_rate, epochs).withMetrics(metrics);    
+
+    _classifier->train({train_data}, {}, train_labels, config);
+  }
+
+  InferenceResult predict(
+      const std::string& filename,
+      const std::vector<float>& fmeasure_thresholds = {0.9}) {
+    std::vector<std::string> metrics;
+    for (auto threshold : fmeasure_thresholds) {
+      std::stringstream metric_ss;
+      metric_ss << "f_measure(" << threshold << ")";
+      metrics.push_back(metric_ss.str());
+    }
+
+    dataset::StreamingGenericDatasetLoader dataset(filename, _processor, /* batch_size= */ 2048);
+
+    if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
+      throw std::invalid_argument("Cannot load prediction dataset in memory.");
+    }
+
+    auto [pred_data, pred_labels] = dataset.loadInMemory();
+
+    auto config = PredictConfig::makeConfig().withMetrics(metrics);
+
+    return _classifier->predict({pred_data}, {}, pred_labels, config);
   }
 
   BoltVector predictSingle(const std::vector<uint32_t>& tokens,
@@ -171,7 +178,7 @@ class WayfairClassifier {
 
   uint32_t _n_classes;
   std::shared_ptr<dataset::GenericBatchProcessor> _processor;
-  std::unique_ptr<AutoClassifierBase> _classifier;
+  BoltGraphPtr _classifier;
 };
 
 }  // namespace thirdai::bolt

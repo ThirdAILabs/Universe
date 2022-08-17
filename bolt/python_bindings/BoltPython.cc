@@ -529,7 +529,6 @@ void createBoltSubmodule(py::module_& module) {
       .def(
           "predict", &PyWayfairClassifier::predict, py::arg("test_file"),
           py::arg("fmeasure_thresholds") = std::vector<float>{0.9},
-          py::arg("output_file") = std::nullopt,
           "Runs the classifier on the specified test dataset and optionally "
           "logs the prediction to a file.\n"
           "Arguments:\n"
