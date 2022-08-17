@@ -11,20 +11,6 @@
 namespace thirdai::bolt {
 
 class Presets {
- private:
-  static FullyConnectedNodePtr FullyConnectedLayer(
-    bool has_sampling_config,
-    uint32_t dim, float sparsity, std::string activation_function,
-    uint32_t num_tables=0, uint32_t hashes_per_table=0,
-    uint32_t reservoir_size=0
-  ) {
-    if (!has_sampling_config) {
-      return std::make_shared<FullyConnectedNode>(dim, sparsity, activation_function);
-    }
-    auto sampling_config = std::make_shared<DWTASamplingConfig>(num_tables, hashes_per_table, reservoir_size);
-    return std::make_shared<FullyConnectedNode>(dim, sparsity, activation_function, sampling_config);
-  }
-
  public:
   static FullyConnectedNodePtr FullyConnectedLayer(uint32_t dim, float sparsity, std::string activation_function) {
     return FullyConnectedLayer(/* has_sampling_config= */ false, dim, sparsity, std::move(activation_function), 0, 0, 0);
@@ -58,6 +44,21 @@ class Presets {
 
     return model;
   }
+
+ private:
+  static FullyConnectedNodePtr FullyConnectedLayer(
+    bool has_sampling_config,
+    uint32_t dim, float sparsity, std::string activation_function,
+    uint32_t num_tables=0, uint32_t hashes_per_table=0,
+    uint32_t reservoir_size=0
+  ) {
+    if (!has_sampling_config) {
+      return std::make_shared<FullyConnectedNode>(dim, sparsity, activation_function);
+    }
+    auto sampling_config = std::make_shared<DWTASamplingConfig>(num_tables, hashes_per_table, reservoir_size);
+    return std::make_shared<FullyConnectedNode>(dim, sparsity, activation_function, sampling_config);
+  }
+
 };
 
 }  // namespace thirdai::bolt

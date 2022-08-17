@@ -2,7 +2,7 @@
 
 #include <bolt/src/auto_classifiers/AutoClassifierBase.h>
 #include <bolt/src/graph/ExecutionConfig.h>
-#include <bolt/src/graph/FullyConnectedGraphNetwork.h>
+#include <bolt/src/graph/Presets.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/BoltVector.h>
@@ -39,7 +39,10 @@ class WayfairClassifier {
     _classifier = Presets::FullyConnectedNetwork(
       /* input_dim= */ _processor->getInputDim(),
       /* layers= */ {
-        Presets::FullyConnectedLayer(/* dim= */ 1024, /* sparsity= */ 1.0, "relu"),
+        Presets::FullyConnectedLayer(
+          /* dim= */ 1024, 
+          /* sparsity= */ 1.0, 
+          "relu"),
         Presets::FullyConnectedLayer(
           /* dim= */ n_classes, 
           /* sparsity= */ n_classes >= 500 ? 0.1 : 1, 
