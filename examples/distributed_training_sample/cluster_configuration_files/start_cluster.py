@@ -1,3 +1,4 @@
+from ast import Import
 import os
 import subprocess
 import sys
@@ -56,17 +57,17 @@ def start_cluster(config_yaml_file) -> None:
 
     system_path = os.environ["PATH"]
     install_environment_locations = system_path.split(":")
-    required_installation_path = "/home/" + user + "/.local/bin"
+    required_installation_path = os.popen("which ray").read().replace("/ray\n", "")
 
-    if required_installation_path not in install_environment_locations:
+    if required_installation_path == "":
+        raise ImportError("No module name ray, Try doing pip install 'ray[default]'")
+    elif required_installation_path not in install_environment_locations:
         print(required_installation_path + " not in System PATH")
         current_path = os.environ["PATH"]
         print("Current Path: ", current_path)
-        print("Run the command: export PATH=$PATH:/home/$USER/.local/bin")
+        raise ValueError("Run the command: export PATH=$PATH:/home/$USER/.local/bin")
     else:
         print("Ray module already in system path.")
-
-    print("Starting Ray Cluster")
 
     if not os.path.isdir("/tmp/ray"):
         print("It look like ray is never used here before!")

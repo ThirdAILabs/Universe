@@ -1,6 +1,6 @@
 from typing import Dict, List
 from thirdai._thirdai import bolt, dataset
-from .utils import Utils
+from .utils import load_dataset, make_layers_from_config
 
 
 class Model:
@@ -10,7 +10,7 @@ class Model:
     defined here run on each of the node while distributing.
     """
 
-    def __init__(self, config: Dict, total_nodes: int, layers: List[int], id: int):
+    def __init__(self, config: Dict, total_nodes: int, layer_dims: List[int], id: int):
         """Initailizes Model
 
         Args:
@@ -22,17 +22,17 @@ class Model:
         Raises:
             ValueError: Loading Dataset
         """
-        self.layers = layers
+        self.layer_dims = layer_dims
 
         # getting training and testing data
-        data = Utils.load_dataset(config, total_nodes, id)
+        data = load_dataset(config, total_nodes, id)
         if data is None:
             raise ValueError("Unable to load a dataset. Please check the config")
 
         self.train_data, self.train_label, self.test_data, self.test_label = data
 
         # initializing Distributed Network
-        self.bolt_layers = Utils.create_fully_connected_layer_configs(config["layers"])
+        self.bolt_layers = make_layers_from_config(config["layers"])
         self.input_dim = config["dataset"]["input_dim"]
         self.network = bolt.DistributedNetwork(
             layers=self.bolt_layers, input_dim=self.input_dim
@@ -79,7 +79,7 @@ class Model:
         """
         w_gradients = []
         b_gradients = []
-        for layer in range(len(self.layers) - 1):
+        for layer in range(len(self.layer_dims) - 1):
             x = self.network.get_weights_gradients(layer)
             y = self.network.get_biases_gradients(layer)
             w_gradients.append(x)
@@ -106,7 +106,7 @@ class Model:
         """
         weights = []
         biases = []
-        for layer in range(len(self.layers) - 1):
+        for layer in range(len(self.layer_dims) - 1):
             x = self.network.get_weights(layer)
             y = self.network.get_biases(layer)
             weights.append(x)

@@ -2,7 +2,7 @@ import numpy as np
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from .Worker import Worker
+from .worker import Worker
 
 
 @ray.remote(max_restarts=2)
@@ -19,7 +19,14 @@ class ReplicaWorker(Worker):
         Worker (Worker): Inherits the worker Class
     """
 
-    def __init__(self, layers: List[int], config: Dict, no_of_workers: int, id: int):
+    def __init__(
+        self,
+        layer_dims: List[int],
+        config: Dict,
+        no_of_workers: int,
+        id: int,
+        primary_worker,
+    ):
         """Calls the constructor for Worker
 
         Args:
@@ -28,4 +35,4 @@ class ReplicaWorker(Worker):
             no_of_workers (int): number of workers in training
             id (int): id of this particular replica worker
         """
-        super().__init__(layers, config, no_of_workers, id)
+        super().__init__(layer_dims, config, no_of_workers, id, primary_worker)
