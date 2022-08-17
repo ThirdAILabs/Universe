@@ -51,7 +51,7 @@ class WayfairClassifier {
       metrics.push_back(metric_ss.str());
     }
 
-    dataset::StreamingGenericDatasetLoader dataset(filename, _processor, /* batch_size= */ 2048);
+    dataset::StreamingGenericDatasetLoader dataset(filename, _processor, /* batch_size= */ 2048, /* shuffle= */ true);
 
     if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
       throw std::invalid_argument("Cannot load training dataset in memory.");
