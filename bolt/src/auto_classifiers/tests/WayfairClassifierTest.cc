@@ -37,15 +37,9 @@ TEST(WayfairClassifierTest, TestLoadSave) {
                /* learning_rate = */ 0.01,
                /* fmeasure_thresholds = */ fmeasure_thresholds);
 
-  std::string PREDICTION_FILENAME = "predictions.csv";
-  model->predict(
+  auto [metrics_before_saving, _1] = model->predict(
       /* filename = */ TRAIN_FILENAME,
-      /* fmeasure_thresholds = */ fmeasure_thresholds,
-      /* output_filename = */ PREDICTION_FILENAME);
-
-  float before_load_save_accuracy =
-      AutoClassifierTestUtils::computePredictFileAccuracy(PREDICTION_FILENAME,
-                                                          single_labels);
+      /* fmeasure_thresholds = */ fmeasure_thresholds);
 
   std::string SAVE_LOCATION = "textSaveLocation";
   model->save(SAVE_LOCATION);
@@ -54,17 +48,17 @@ TEST(WayfairClassifierTest, TestLoadSave) {
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
       new_model->predict(
           /* filename = */ TRAIN_FILENAME,
-          /* fmeasure_thresholds = */ fmeasure_thresholds,
-          /* output_filename = */ PREDICTION_FILENAME));
+          /* fmeasure_thresholds = */ fmeasure_thresholds));
+  
+  auto [metrics_after_loading, _2] = new_model->predict(
+          /* filename = */ TRAIN_FILENAME,
+          /* fmeasure_thresholds = */ fmeasure_thresholds);
 
-  float after_load_save_accuracy =
-      AutoClassifierTestUtils::computePredictFileAccuracy(PREDICTION_FILENAME,
-                                                          single_labels);
-
-  ASSERT_EQ(before_load_save_accuracy, after_load_save_accuracy);
+  for (auto& [key, value] : metrics_before_saving) {
+    ASSERT_EQ(value, metrics_after_loading[key]);
+  }
 
   std::remove(TRAIN_FILENAME.c_str());
-  std::remove(PREDICTION_FILENAME.c_str());
   std::remove(SAVE_LOCATION.c_str());
 }
 
@@ -136,11 +130,9 @@ TEST(WayfairClassifierTest, ConsistentPredictAndPredictSingle) {
                /* learning_rate = */ 0.01,
                /* fmeasure_thresholds = */ fmeasure_thresholds);
 
-  std::string PREDICTION_FILENAME = "predictions.csv";
-  auto prediction_results = model->predict(
+  auto [prediction_metrics, _] = model->predict(
       /* filename = */ TRAIN_FILENAME,
-      /* fmeasure_thresholds = */ fmeasure_thresholds,
-      /* output_filename = */ PREDICTION_FILENAME);
+      /* fmeasure_thresholds = */ fmeasure_thresholds);
 
   std::vector<BoltVector> vector_labels = {
       BoltVector::makeSparseVector({1, 10}, {1.0, 1.0}),
@@ -161,7 +153,7 @@ TEST(WayfairClassifierTest, ConsistentPredictAndPredictSingle) {
     std::stringstream metric_name_ss;
     metric_name_ss << "f_measure_" << threshold;
     ASSERT_NEAR(getFMeasure(single_inference_outputs, vector_labels, threshold),
-                prediction_results.first[metric_name_ss.str()],
+                prediction_metrics[metric_name_ss.str()],
                 /* abs_error= */ 0.000001);
   }
 }
