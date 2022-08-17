@@ -254,6 +254,7 @@ class FMeasure final : public Metric {
         _num_samples(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+#pragma omp critical
     std::cout << output << std::endl;
 
     auto predictions = output.getThresholdedNeurons(
