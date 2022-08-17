@@ -278,7 +278,7 @@ void createDatasetSubmodule(py::module_& module) {
   
   py::class_<MultiLabelTextDatasetProcessor>(dataset_submodule, "MultiLabelTextDatasetProcessor")
       .def(py::init<uint32_t>(), py::arg("n_classes"))
-      .def("load_from_file", &MultiLabelTextDatasetProcessor::loadFromFile, py::arg("filename"), py::arg("shuffle"))
+      .def("load_from_file", &MultiLabelTextDatasetProcessor::loadFromFile, py::arg("filename"), py::arg("shuffle")=false)
       .def("from_tokens", &MultiLabelTextDatasetProcessor::fromTokens, py::arg("tokens"));
 
   dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
