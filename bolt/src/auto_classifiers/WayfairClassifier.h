@@ -14,6 +14,7 @@
 #include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -95,9 +96,12 @@ class WayfairClassifier {
     // The following step must be separate from the above
     // because we need to keep the sentence in scope and alive.
     auto sample = sentenceToSample(sentence);
-
+    
     BoltVector input_vector;
-    auto input = _processor->makeInputVector(sample, input_vector);
+    auto exception = _processor->makeInputVector(sample, input_vector);
+    if (exception) {
+      std::rethrow_exception(exception);
+    }
 
     BoltVector output =
         _classifier->predictSingle({input_vector}, {},
@@ -163,7 +167,7 @@ class WayfairClassifier {
   static std::vector<std::string_view> sentenceToSample(
       const std::string& sentence) {
     return {std::string_view(sentence.data(), 1),
-            std::string_view(sentence.data() + 1, sentence.size())};
+            std::string_view(sentence.data() + 1, sentence.size() - 1)};
   }
 
   // Private constructor for cereal
