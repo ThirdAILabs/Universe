@@ -209,7 +209,6 @@ TEST_F(TabularClassifierTestFixture, TestLoadSave) {
 
   std::string SAVE_LOCATION = "tabularSaveLocation";
   tab_model->save(SAVE_LOCATION);
-
   auto new_model = TabularClassifier::load(SAVE_LOCATION);
 
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW

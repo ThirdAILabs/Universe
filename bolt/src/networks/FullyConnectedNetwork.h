@@ -124,7 +124,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     return _layers.at(layer_index)->getSparsity();
   }
 
-  // initializes layers with any state needed for training (like the optimizer)
   void initOptimizer() {
     for (auto& layer : _layers) {
       layer->initOptimizer();

@@ -125,7 +125,7 @@ class ConvLayer final : public SequentialLayer {
 
   std::vector<bool> _is_active;
 
-  bool _prepared_for_training = false;
+  bool _optimizer_initialized = false;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
@@ -146,10 +146,10 @@ class ConvLayer final : public SequentialLayer {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _hasher, _hash_table, _rand_neurons, _patch_dim,
-            _sparse_patch_dim, _num_patches, _num_filters, _num_sparse_filters,
-            _prev_num_filters, _prev_num_sparse_filters, _kernel_size,
-            _in_to_out, _out_to_in);
+            _biases, _is_active, _hasher, _hash_table, _rand_neurons,
+            _patch_dim, _sparse_patch_dim, _num_patches, _num_filters,
+            _num_sparse_filters, _prev_num_filters, _prev_num_sparse_filters,
+            _kernel_size, _in_to_out, _out_to_in);
   }
 
  protected:

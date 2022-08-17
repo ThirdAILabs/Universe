@@ -39,6 +39,8 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
 
   initOptimizer();
 
+  _is_active = std::vector<bool>(_num_filters * _num_patches, false);
+
   buildPatchMaps(next_kernel_size);
 
   std::random_device rd;
@@ -317,9 +319,8 @@ void ConvLayer::updateParameters(float lr, uint32_t iter, float B1, float B2,
   }
 }
 
-// initializes any state needed for training (like the optimizer)
 void ConvLayer::initOptimizer() {
-  if (!_prepared_for_training) {
+  if (!_optimizer_initialized) {
     _w_gradient.assign(_num_filters * _patch_dim, 0);
     _w_momentum.assign(_num_filters * _patch_dim, 0);
     _w_velocity.assign(_num_filters * _patch_dim, 0);
@@ -330,7 +331,7 @@ void ConvLayer::initOptimizer() {
 
     _is_active.assign(_num_filters * _num_patches, false);
 
-    _prepared_for_training = true;
+    _optimizer_initialized = true;
   }
 }
 
