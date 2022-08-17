@@ -119,10 +119,12 @@ include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 include_directories(deps/googletest/googletest/include)
 include_directories(deps/googletest/googlemock/include)
+include_directories(deps/spdlog/include)
 
 # Source dependencies
 add_subdirectory(deps/pybind11)
 add_subdirectory(deps/googletest)
+add_subdirectory(deps/spdlog)
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
