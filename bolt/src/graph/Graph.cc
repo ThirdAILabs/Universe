@@ -350,6 +350,12 @@ void BoltGraph::prepareToProcessBatches(uint32_t batch_size,
   }
 }
 
+void BoltGraph::prepareNodesForTraining() {
+  for (auto& node : _nodes) {
+    node->prepareForTraining();
+  }
+}
+
 void BoltGraph::cleanupAfterBatchProcessing() {
   for (auto& node : _nodes) {
     node->cleanupAfterBatchProcessing();
@@ -465,9 +471,7 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
     throw std::invalid_argument("Must pass in labels for training.");
   }
 
-  for (auto& node : _nodes) {
-    node->prepareForTraining();
-  }
+  prepareNodesForTraining();
 
   verifyInputForGraph(train_context);
 }

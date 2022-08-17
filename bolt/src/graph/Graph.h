@@ -134,6 +134,9 @@ class BoltGraph {
   // Computes the backward pass through the graph.
   void backpropagate(uint32_t vec_index);
 
+  // initializes any state needed for training but not inference
+  void prepareNodesForTraining();
+
   void prepareToProcessBatches(uint32_t batch_size, bool use_sparsity);
 
   void cleanupAfterBatchProcessing();
