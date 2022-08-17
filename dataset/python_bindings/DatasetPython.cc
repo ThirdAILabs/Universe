@@ -6,6 +6,7 @@
 #include <dataset/src/NumpyDataset.h>
 #include <dataset/src/ShuffleBatchBuffer.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/packaged_data_loaders/MultiLabelTextDatasetProcessor.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -274,6 +275,11 @@ void createDatasetSubmodule(py::module_& module) {
            &StreamingGenericDatasetLoader::getMaxBatchSize)
       .def("get_input_dim", &StreamingGenericDatasetLoader::getInputDim)
       .def("get_label_dim", &StreamingGenericDatasetLoader::getLabelDim);
+  
+  py::class_<MultiLabelTextDatasetProcessor>(dataset_submodule, "MultiLabelTextDatasetProcessor")
+      .def(py::init<uint32_t>(), py::arg("n_classes"))
+      .def("load_from_file", &MultiLabelTextDatasetProcessor::loadFromFile, py::arg("filename"), py::arg("shuffle"))
+      .def("from_tokens", &MultiLabelTextDatasetProcessor::fromTokens, py::arg("tokens"));
 
   dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
                         py::arg("indices"), py::arg("values"));
