@@ -197,27 +197,25 @@ TEST_F(TabularClassifierTestFixture, TestLoadSave) {
 
   tab_model->train(TEMP_FILENAME, column_datatypes, /* epochs = */ 3,
                    /* learning_rate = */ 0.01);
-  std::cout << "LMFAOOO" << std::endl;
+
   std::string PREDICTION_FILENAME = "predictions.csv";
   tab_model->predict(
       /* filename = */ TEMP_FILENAME,
       /* output_filename = */ PREDICTION_FILENAME);
-  std::cout << "LMFAOOO" << std::endl;
+
   float before_load_save_accuracy =
       AutoClassifierTestUtils::computePredictFileAccuracy(PREDICTION_FILENAME,
                                                           labels);
 
   std::string SAVE_LOCATION = "tabularSaveLocation";
   tab_model->save(SAVE_LOCATION);
-  std::cout << "LMFAOOO" << std::endl;
+
   auto new_model = TabularClassifier::load(SAVE_LOCATION);
-  std::cout << "LMFAOOO" << std::endl;
 
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
       new_model->predict(
           /* filename = */ TEMP_FILENAME,
           /* output_filename = */ PREDICTION_FILENAME));
-  std::cout << "LMFAOOO" << std::endl;
 
   float after_load_save_accuracy =
       AutoClassifierTestUtils::computePredictFileAccuracy(PREDICTION_FILENAME,
