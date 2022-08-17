@@ -14,14 +14,14 @@ namespace thirdai::compression {
 template <class T>
 DragonVector<T>::DragonVector(const std::vector<T>& vec,
                               float compression_density, int seed_for_hashing)
-    : _sketch_size(std::max(compression_density * vec.size(),
-                            std::min(vec.size(), _min_sketch_size))),
+    : _sketch_size(std::max(uint32_t(compression_density * vec.size()),
+                            std::min(uint32_t(vec.size()), _min_sketch_size))),
       _compression_density(compression_density),
       _seed_for_hashing(seed_for_hashing) {
   _indices.assign(_sketch_size, 0);
   _values.assign(_sketch_size, 0);
 
-  float threshold = thirdai::compression::getThresholdForTopK(
+  T threshold = thirdai::compression::getThresholdForTopK(
       vec, _sketch_size, /*max_samples_for_random_sampling=*/100000);
 
   sketchVector(vec, threshold);
@@ -31,13 +31,13 @@ template <class T>
 DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
                               std::vector<T> values, uint32_t size,
                               int seed_for_hashing)
-    : _sketch_size(size),
+    : _indices(std::move(indices)),
       _values(std::move(values)),
-      _indices(std::move(indices)),
+      _sketch_size(size),
       _seed_for_hashing(seed_for_hashing) {}
 
 template <class T>
-void DragonVector<T>::sketchVector(const std::vector<T>& vec, float threshold) {
+void DragonVector<T>::sketchVector(const std::vector<T>& vec, T threshold) {
   uint32_t loop_size = vec.size();
 #pragma omp parallel for default(none)                                 \
     shared(_indices, _values, vec, _sketch_size, threshold, loop_size, \
@@ -52,6 +52,39 @@ void DragonVector<T>::sketchVector(const std::vector<T>& vec, float threshold) {
       _values[hash] = vec[i];
     }
   }
+}
+
+template <class T>
+void DragonVector<T>::sketchVector(const T* values, T threshold,
+                                   uint32_t size) {
+#pragma omp parallel for default(none)                               \
+    shared(_indices, _values, values, _sketch_size, threshold, size, \
+           _seed_for_hashing)
+  for (uint32_t i = 0; i < size; i++) {
+    if (std::abs(values[i]) > threshold) {
+      int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
+                                              std::to_string(i).length(),
+                                              _seed_for_hashing) %
+                 _sketch_size;
+      _indices[hash] = i;
+      _values[hash] = values[i];
+    }
+  }
+}
+
+template <class T>
+DragonVector<T>::DragonVector(const T* values, float compression_density,
+                              uint32_t size, int seed_for_hashing)
+    : _sketch_size(std::max(uint32_t(compression_density * size),
+                            std::min(size, _min_sketch_size))),
+      _compression_density(compression_density),
+      _seed_for_hashing(seed_for_hashing) {
+  _indices.assign(_sketch_size, 0);
+  _values.assign(_sketch_size, 0);
+
+  T threshold = thirdai::compression::getThresholdForTopK(
+      values, size, _sketch_size, /*max_samples_for_random_sampling=*/100000);
+  sketchVector(values, threshold, size);
 }
 
 /*
@@ -121,7 +154,7 @@ void DragonVector<T>::clear() {
  */
 
 template <class T>
-DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) {
+DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) const {
   if (_seed_for_hashing != vec._seed_for_hashing) {
     throw std::invalid_argument(
         "Seeds for hashing of the two Dragon Sketches are different. Try "
@@ -146,14 +179,14 @@ DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) {
      */
 
     return_indices[i] = _indices[i] + (_indices[i] == 0) * vec._indices[i];
-    return_values[i] == _values[i] + (_indices[i] == 0) * vec._values[i];
+    return_values[i] = _values[i] + (_indices[i] == 0) * vec._values[i];
   }
   return DragonVector(return_indices, return_values, _sketch_size,
                       _seed_for_hashing);
 }
 
 template <class T>
-T DragonVector<T>::operator[](uint32_t index) {
+T DragonVector<T>::operator[](uint32_t index) const {
   return DragonVector<T>::get(index);
 }
 
@@ -178,8 +211,9 @@ void DragonVector<T>::extend(const DragonVector<T>& vec) {
 }
 
 template <class T>
-std::vector<DragonVector<T>> DragonVector<T>::split(int number_chunks) const {
-  if (number_chunks > _sketch_size) {
+std::vector<DragonVector<T>> DragonVector<T>::split(
+    size_t number_chunks) const {
+  if (uint32_t(number_chunks) > _sketch_size) {
     std::cout
         << "Warning: The number of chunks to split the vector is more "
            "than the size of the Dragon vector. Some chunks will be empty";
@@ -192,7 +226,7 @@ std::vector<DragonVector<T>> DragonVector<T>::split(int number_chunks) const {
 
   std::vector<DragonVector<T>> split_dragon;
 
-  if (int(split_indices.size()) != number_chunks) {
+  if (split_indices.size() != number_chunks) {
     throw std::length_error(
         "Number of vectors received after splitting is not the same as the "
         "number of chunks");
@@ -212,9 +246,10 @@ std::vector<DragonVector<T>> DragonVector<T>::split(int number_chunks) const {
 
 // concatenating is the same as extending for the time being
 template <class T>
-DragonVector<T> DragonVector<T>::concat(const DragonVector<T>& vec) {
+DragonVector<T>& DragonVector<T>::concat(const DragonVector<T>& vec) {
   extend(vec);
-  return this;
+  return *this;
 }
+template class DragonVector<float>;
 
 }  // namespace thirdai::compression

@@ -19,6 +19,8 @@ template <class T>
 
 class CompressedVector {
  public:
+  CompressedVector<T>() {}
+
   explicit CompressedVector<T>(std::string compression_scheme,
                                const std::vector<T>& vec,
                                float compression_density);
@@ -38,7 +40,7 @@ class CompressedVector {
   // write more methods for addition, subtraction, multiplying by -1, union,
   // etc.
 
-  virtual CompressedVector<T> operator+(CompressedVector<T> const& obj) = 0;
+  // CompressedVector<T> operator+(CompressedVector<T> const& vec);
 
   virtual T operator[](uint32_t index) const = 0;
 
@@ -46,9 +48,10 @@ class CompressedVector {
 
   virtual bool isAllReducible() const = 0;
 
-  virtual void extend(const std::vector<T>& raw) = 0;
+  // virtual void extend(const CompressedVector<T>& raw) = 0;
 
-  virtual std::vector<CompressedVector<T>> split(int number_chunks) const = 0;
+  // virtual std::vector<CompressedVector<T>> split(int number_chunks) const =
+  // 0;
 
   virtual ~CompressedVector() = default;
 

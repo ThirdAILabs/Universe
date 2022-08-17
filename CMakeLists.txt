@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4...3.18)
 
-if (NOT WIN32)
+if(NOT WIN32)
   set(CMAKE_CXX_COMPILER "g++")
   set(CMAKE_C_COMPILER "gcc")
   message("Not using MSVC (we should not be on Windows then), forcing GCC and G++")
@@ -10,7 +10,7 @@ else()
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-# When I set LD_PRELOAD to be able use ASan with python tests, for some reason 
+# When I set LD_PRELOAD to be able use ASan with python tests, for some reason
 # CMake can't find Python unless we set it to an empty string.
 set(ENV{LD_PRELOAD} "")
 
@@ -25,11 +25,11 @@ separate_arguments(FEATURE_FLAGS)
 message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
 message("====================================")
 
-
-if (MSVC)
-  if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-    message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
+if(MSVC)
+  if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    message(FATAL_ERROR "For now, we only support building in release mode using MSVC")
   endif()
+
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp:llvm /w")
 else()
   add_compile_options(
@@ -39,8 +39,8 @@ else()
     -Wextra
     -Werror
     -Wno-unused-function
-    -pedantic 
-    
+    -pedantic
+
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>
     $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
@@ -81,12 +81,11 @@ endif()
 add_compile_definitions(${FEATURE_FLAGS})
 
 # In debug mode we are using ASan (address sanitizer) to provide better information on errors.
-# We only run with this in debug mode because it carries a performace penalty. 
+# We only run with this in debug mode because it carries a performace penalty.
 # See https://github.com/google/sanitizers/wiki/AddressSanitizer for more information.
 
-
-# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang. 
-if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") 
+# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang.
+if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
   add_compile_options(
     $<$<CONFIG:RelWithAsan>:-fsanitize=address>
     $<$<CONFIG:DebugWithAsan>:-fsanitize=address>
@@ -115,23 +114,24 @@ add_subdirectory(deps/googletest)
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
 # can work with vscode
-include_directories(deps) 
+include_directories(deps)
 
 # Check if there is a license flag, and only if so add the cryptopp lib
 # We have two different License flags, one for if to build the license files
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license (THIRDAI_CHECK_LICENSE).
 # If just the THIRDAI_CHECK_LICENSE flag is set there will be a linker error.
-list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
-SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
-if (${LICENSE_BUILD_FLAG_FOUND})
+list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+SET(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 
+if(${LICENSE_BUILD_FLAG_FOUND})
   message("Building cryptopp...")
+
   # Install CRYPTOPP and set the static lib to be the static library file. This is pretty
   # ugly (the build happens at configure time, not build time) but honestly
-  # okay (I spent way too long getting anything at all to work). Plus, it's 
+  # okay (I spent way too long getting anything at all to work). Plus, it's
   # gated by a feature flag anyways.
   # For now use default 32 jobs to build.
-  if (MSVC)
+  if(MSVC)
     set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/cryptlib.lib)
     message("${CRYPTOPP_LIB} must already exist or there will be errors (you can build with nmake, see https://www.cryptopp.com/wiki/Nmake_(Command_Line) )")
   else()
@@ -141,8 +141,7 @@ if (${LICENSE_BUILD_FLAG_FOUND})
   endif()
 endif()
 
-
-find_package (Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -165,22 +164,22 @@ add_subdirectory(wrappers)
 add_subdirectory(compression)
 
 # Only add the licensing subdirectory if the corresponding flag is set
-if (${LICENSE_BUILD_FLAG_FOUND})
+if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
 file(
-  GLOB BOLT_SOURCES 
+  GLOB BOLT_SOURCES
   bolt/src/auto_classifiers/*.cc
   bolt/src/graph/*.cc
-  bolt/src/layers/*.cc 
-  bolt/src/networks/*.cc 
-  bolt/src/utils/*.cc 
+  bolt/src/layers/*.cc
+  bolt/src/networks/*.cc
+  bolt/src/utils/*.cc
 )
 
 file(
-  GLOB_RECURSE SEARCH_SOURCES 
-  search/src/*.cc 
+  GLOB_RECURSE SEARCH_SOURCES
+  search/src/*.cc
 )
 
 file(
@@ -193,17 +192,17 @@ file(
   hashtable/src/*.cc
 )
 
-file (
+file(
   GLOB_RECURSE WRAPPER_SOURCES
   wrappers/src/*.cc
 )
 
-file (
+file(
   GLOB_RECURSE DATASET_SOURCES
   dataset/src/*.cc
 )
 
-file (
+file(
   GLOB_RECURSE COMPRESSION_SOURCES
   compression/src/*.cc
 )
@@ -212,24 +211,24 @@ file (
 # Debug builds, but not our ASan builds. This means that for now we can't run
 # ASan from python, but honestly this is more trouble than it's worth so for
 # now this is actually a feature rather than a bug.
-
-pybind11_add_module(_thirdai 
-  python_bindings/thirdai.cc 
+pybind11_add_module(_thirdai
+  python_bindings/thirdai.cc
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltGraphPython.cc
   dataset/python_bindings/DatasetPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
-  ${BOLT_SOURCES} 
+  ${BOLT_SOURCES}
   ${DLRM_SOURCES}
-  ${SEARCH_SOURCES} 
+  ${SEARCH_SOURCES}
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
   ${DATASET_SOURCES}
   ${WRAPPER_SOURCES}
   ${DATASET_SOURCES}
+  ${COMPRESSION_SOURCES}
 )
 
-if (${LICENSE_BUILD_FLAG_FOUND})
+if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
 endif()

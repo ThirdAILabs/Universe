@@ -1,6 +1,6 @@
 add_library(bolt_layer_lib ConvLayer.cc EmbeddingLayer.cc FullyConnectedLayer.cc)
 
-target_link_libraries(bolt_layer_lib hash_table_lib hash_function_lib)
+target_link_libraries(bolt_layer_lib hash_table_lib hash_function_lib compression_core_lib)
 
 add_subdirectory(tests)
 

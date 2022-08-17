@@ -72,4 +72,8 @@ tags
 # Persistent undo
 [._]*.un~
 
+#notebooks in compression library
+compression/python_tests/*.ipynb
+compression/python_tests/utils.py
+
 # -- End vim .gitignore

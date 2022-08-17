@@ -18,10 +18,10 @@ class DragonVector final : public CompressedVector<T> {
   // might have to remove these =delete and declare explicit copy constructors
   // by ourselves
 
-  DragonVector(const DragonVector<T>&) = delete;
-  DragonVector(DragonVector<T>&&) = delete;
-  DragonVector& operator=(const DragonVector<T>&) = delete;
-  DragonVector& operator=(DragonVector<T>&&) = delete;
+  // DragonVector(const DragonVector<T>&) = delete;
+  // DragonVector(DragonVector<T>&&) = delete;
+  // DragonVector& operator=(const DragonVector<T>&) = delete;
+  // DragonVector& operator=(DragonVector<T>&&) = delete;
 
   // defining the constructors for the class
 
@@ -30,6 +30,10 @@ class DragonVector final : public CompressedVector<T> {
 
   explicit DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
                         uint32_t size, int seed_for_hashing);
+
+  explicit DragonVector(const T* values, float compression_density,
+                        uint32_t size, int seed_for_hashing);
+
   // compatibility functions with std::vector
 
   T get(uint32_t index) const final;
@@ -47,18 +51,22 @@ class DragonVector final : public CompressedVector<T> {
   // write more methods for addition, subtraction, multiplying by -1, union,
   // etc.
 
-  DragonVector<T> operator+(DragonVector<T> const& vec) final;
+  DragonVector<T> operator+(DragonVector<T> const& vec) const;
 
-  T operator[](uint32_t index) final;
+  T operator[](uint32_t index) const final;
 
   // methods for the Dragon Vector Class
-  void extend(DragonVector<T> const& vec) final;
+  void extend(const DragonVector<T>& vec);
 
-  std::vector<DragonVector<T>> split(int number_chunks) const final;
+  std::vector<DragonVector<T>> split(size_t number_chunks) const;
 
-  DragonVector<T> concat(DragonVector<T> const& vec);
+  DragonVector<T>& concat(DragonVector<T> const& vec);
 
   bool isAllReducible() const final;
+
+  std::vector<uint32_t> getIndices() { return _indices; }
+
+  std::vector<T> getValues() { return _values; }
 
  private:
   /*
@@ -74,7 +82,9 @@ class DragonVector final : public CompressedVector<T> {
   int _seed_for_hashing;
   uint32_t _min_sketch_size = 10;
 
-  void sketchVector(const std::vector<T>& vec, float threshold);
+  void sketchVector(const std::vector<T>& vec, T threshold);
+
+  void sketchVector(const T* values, T threshold, uint32_t size);
 };
 }  // namespace thirdai::compression
 

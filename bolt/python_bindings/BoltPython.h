@@ -11,6 +11,9 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DistributedModel.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <_types/_uint32_t.h>
+#include <compression/src/CompressedVector.h>
+#include <compression/src/DragonVector.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -408,6 +411,39 @@ class DistributedPyNetwork final : public DistributedModel {
 
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
+  }
+
+  py::tuple getCompressedGradients(const std::string& compression_scheme,
+                                   uint32_t layer_index,
+                                   float compression_density,
+                                   bool sketch_biases, int seed_for_hashing) {
+    size_t dim = DistributedModel::getDim(layer_index);
+    size_t prev_dim = (layer_index > 0)
+                          ? DistributedModel::getDim(layer_index - 1)
+                          : DistributedModel::getInputDim();
+
+    if (sketch_biases) {
+      if (compression_scheme == "dragon") {
+        compression::DragonVector<float> dragon_sketch =
+            compression::DragonVector<float>(
+                DistributedModel::getBiasesGradient(layer_index),
+                compression_density, uint32_t(dim), seed_for_hashing);
+
+        return py::make_tuple(py::array_t<uint32_t>(dragon_sketch.getIndices()),
+                              py::array_t<float>(dragon_sketch.getValues()));
+      }
+    } else {
+      if (compression_scheme == "dragon") {
+        compression::DragonVector<float> dragon_sketch =
+            compression::DragonVector<float>(
+                DistributedModel::getBiasesGradient(layer_index),
+                compression_density, uint32_t(dim * prev_dim),
+                seed_for_hashing);
+        return py::make_tuple(py::array_t<uint32_t>(dragon_sketch.getIndices()),
+                              py::array_t<float>(dragon_sketch.getValues()));
+      }
+    }
+    return py::make_tuple(0, 0);
   }
 };
 
