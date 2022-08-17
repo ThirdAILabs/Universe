@@ -67,7 +67,8 @@ class FullyConnectedNode final
 
   bool isInputNode() const final { return false; }
 
-  void prepareForTraining() { _layer->prepareForTraining(); }
+  // initializes any state needed for training (like the optimizer)
+  void prepareForTraining() final { _layer->prepareForTraining(); }
 
   ActivationFunction getActivationFunction() const {
     NodeState node_state = getState();

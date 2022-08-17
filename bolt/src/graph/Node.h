@@ -207,6 +207,7 @@ class Node {
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
 
+  // initializes any state needed for training (like the optimizer)
   virtual void prepareForTraining() = 0;
 
   // Prints out a single line summary in the format

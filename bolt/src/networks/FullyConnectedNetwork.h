@@ -16,14 +16,11 @@
 
 namespace thirdai::bolt {
 
-class DLRM;
-
 namespace python {
 class SentimentClassifier;
 }  // namespace python
 
 class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
-  friend class DLRM;
   friend class TextClassifier;
   friend class python::SentimentClassifier;
 
@@ -127,6 +124,12 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     return _layers.at(layer_index)->getSparsity();
   }
 
+  void prepareForTraining() {
+    for (auto& layer : _layers) {
+      layer->prepareForTraining();
+    }
+  }
+
  private:
   void forward(uint32_t batch_index, const BoltVector& input,
                BoltVector& output, const BoltVector* labels);
@@ -141,12 +144,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
           "Layer index of " + std::to_string(layer_index) +
           " is larger than the maximum layer index of " +
           std::to_string(layer_index - 1));
-    }
-  }
-
-  void prepareForTraining() {
-    for (auto& layer : _layers) {
-      layer->prepareForTraining();
     }
   }
 

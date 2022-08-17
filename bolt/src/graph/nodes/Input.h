@@ -43,7 +43,7 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void prepareForTraining() {
+  void prepareForTraining() final {
     throw std::logic_error(
         "Should not call prepareForTraining() on Input node");
   }

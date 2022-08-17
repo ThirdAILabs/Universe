@@ -724,6 +724,7 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
   }
 }
 
+// initializes any state needed for training (like the optimizer)
 void FullyConnectedLayer::prepareForTraining() {
   if (!_prepared_for_training) {
     _w_gradient.assign(_dim * _prev_dim, 0);
@@ -736,6 +737,8 @@ void FullyConnectedLayer::prepareForTraining() {
 
     _prev_is_active.assign(_prev_dim, false);
     _is_active.assign(_dim, false);
+
+    _prepared_for_training = true;
   }
 }
 

@@ -35,16 +35,9 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
 
   _weights = std::vector<float>(_num_filters * _patch_dim);
-  _w_gradient = std::vector<float>(_num_filters * _patch_dim, 0);
-  _w_momentum = std::vector<float>(_num_filters * _patch_dim, 0);
-  _w_velocity = std::vector<float>(_num_filters * _patch_dim, 0);
-
   _biases = std::vector<float>(_num_filters);
-  _b_gradient = std::vector<float>(_num_filters, 0);
-  _b_momentum = std::vector<float>(_num_filters, 0);
-  _b_velocity = std::vector<float>(_num_filters, 0);
 
-  _is_active = std::vector<bool>(_num_filters * _num_patches, false);
+  prepareForTraining();
 
   buildPatchMaps(next_kernel_size);
 
@@ -321,6 +314,23 @@ void ConvLayer::updateParameters(float lr, uint32_t iter, float B1, float B2,
 
     _b_gradient[n] = 0;
     _is_active[n] = false;
+  }
+}
+
+// initializes any state needed for training (like the optimizer)
+void ConvLayer::prepareForTraining() {
+  if (!_prepared_for_training) {
+    _w_gradient.assign(_num_filters * _patch_dim, 0);
+    _w_momentum.assign(_num_filters * _patch_dim, 0);
+    _w_velocity.assign(_num_filters * _patch_dim, 0);
+
+    _b_gradient.assign(_num_filters, 0);
+    _b_momentum.assign(_num_filters, 0);
+    _b_velocity.assign(_num_filters, 0);
+
+    _is_active.assign(_num_filters * _num_patches, false);
+
+    _prepared_for_training = true;
   }
 }
 

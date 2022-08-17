@@ -39,11 +39,14 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::stringstream& summary) const;
 
+  // initializes any state needed for training (like the optimizer)
   void prepareForTraining() {
-    if (_gradients.empty()) {
+    if (!_prepared_for_training) {
       _gradients.assign(_embedding_block_size, 0);
       _momentum.assign(_embedding_block_size, 0);
       _velocity.assign(_embedding_block_size, 0);
+
+      _prepared_for_training = true;
     }
   }
 
@@ -106,6 +109,8 @@ class EmbeddingLayer {
   uint64_t _embedding_block_size;
 
   hashing::UniversalHash _hash_fn;
+
+  bool _prepared_for_training = false;
 
   std::vector<float> _embedding_block;
   std::vector<float> _gradients;

@@ -67,6 +67,8 @@ class SequentialLayer {
     summary << "dim=" << getDim() << "\n";
   }
 
+  virtual void prepareForTraining() = 0;
+
   virtual ~SequentialLayer() = default;
 };
 }  // namespace thirdai::bolt

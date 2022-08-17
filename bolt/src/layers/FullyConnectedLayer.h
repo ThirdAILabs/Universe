@@ -120,7 +120,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   void buildLayerSummary(std::stringstream& summary,
                          bool detailed) const override;
 
-  void prepareForTraining();
+  // initializes any state needed for training (like the optimizer)
+  void prepareForTraining() final;
 
   ~FullyConnectedLayer() = default;
 
