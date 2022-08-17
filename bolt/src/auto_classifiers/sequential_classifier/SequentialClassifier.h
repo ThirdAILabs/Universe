@@ -12,7 +12,7 @@
 namespace thirdai::bolt {
 
 using CategoricalTuple = std::tuple<std::string, uint32_t, std::optional<char>>;
-using SequentialTuple = std::tuple<std::string, uint32_t, uint32_t, std::optional<char>>;
+using SequentialTuple = std::tuple<std::string, uint32_t, std::optional<char>, uint32_t>;
 
 class SequentialClassifier {
  public:
@@ -37,9 +37,9 @@ class SequentialClassifier {
     for (const auto& seq : sequential) {
       _schema.sequential_attrs.push_back(
           {/* user = */ {std::get<0>(user), std::get<1>(user), std::nullopt},
-           /* item = */ {std::get<0>(seq), std::get<1>(seq), std::get<3>(seq)},
+           /* item = */ {std::get<0>(seq), std::get<1>(seq), std::get<2>(seq)},
            /* timestamp_col_name = */ timestamp,
-           /* track_last_n = */ std::get<2>(seq)});
+           /* track_last_n = */ std::get<3>(seq)});
     }
   }
 

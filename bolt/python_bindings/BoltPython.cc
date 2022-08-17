@@ -511,7 +511,7 @@ void createBoltSubmodule(py::module_& module) {
                const std::tuple<std::string, uint32_t, std::optional<char>>&, const std::string&,
                const std::vector<std::string>&,
                const std::vector<std::tuple<std::string, uint32_t, std::optional<char>>>&,
-               const std::vector<std::tuple<std::string, uint32_t, uint32_t, std::optional<char>>>&,
+               const std::vector<std::tuple<std::string, uint32_t, std::optional<char>, uint32_t>>&,
                std::vector<std::string>>(),
            py::arg("model_size"), py::arg("user"), py::arg("target"),
            py::arg("timestamp"),
