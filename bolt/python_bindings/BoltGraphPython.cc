@@ -284,52 +284,87 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def(
           "get_input_gradients_single",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
-             bool explain_prediction, bool label_given,
-             uint32_t neuron_to_explain) {
+             bool explain_prediction_using_highest_activation,
+             std::optional<uint32_t> neuron_to_explain) {
             auto gradients = model.getInputGradientSingle(
-                std::move(input_data), explain_prediction, label_given,
-                neuron_to_explain);
+                std::move(input_data),
+                explain_prediction_using_highest_activation, neuron_to_explain);
             return dagGetInputGradientSingleWrapper(gradients);
           },
-          py::arg("input_data"), py::arg("explain_prediction") = true,
-          py::arg("label_given") = false, py::arg("neuron_to_explain") = 0,
+          py::arg("input_data"),
+          py::arg("explain_prediction_using_highest_activation") = true,
+          py::arg("neuron_to_explain") = std::nullopt,
           "Get the values of input gradients when back propagate "
           "label with the highest activation or second highest "
           "activation or with the required label."
           "Arguments:\n"
           " * input_data: The input is single input sample."
-          " * explain_prediction: Boolean, if set to True, gives gradients "
+          " * explain_prediction_using_highest_activation: Boolean, if set to "
+          "True, gives gradients "
           "correspond to "
           "highest activation, Otherwise gives gradients corresponds to "
           "second highest activation."
-          " * label_given: Boolean, If set to true, gives gradients correspond "
-          "to the mentioned neuron_to_explain."
-          " * neuron_to_explain: expected label for input vector, it will only "
-          "be looked if label_given parameter is set to true."
+          " * neuron_to_explain: Optional, expected label for input vector, if "
+          "it is provided then model gives gradients corresponds to that label."
           " Returns a tuple consists of (0) optional, it only returns the "
           "corresponding indices for sparse inputs."
           " and (1) list of gradients "
           "corresponds to the input vector.")
 #endif
-      .def("explain_prediction",
-           [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
-             auto gradients =
-                 model.getInputGradientSingle(std::move(input_data), true);
-             return dagGetInputGradientSingleWrapper(gradients);
-           })
-      .def("get_input_confidence",
-           [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
-             auto gradients =
-                 model.getInputGradientSingle(std::move(input_data), false);
-             return dagGetInputGradientSingleWrapper(gradients);
-           })
-      .def("explain_required_label",
-           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
-              uint32_t neuron_to_explain) {
-             auto gradients = model.getInputGradientSingle(
-                 std::move(input_data), false, true, neuron_to_explain);
-             return dagGetInputGradientSingleWrapper(gradients);
-           })
+      .def(
+          "explain_prediction",
+          [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
+            auto gradients =
+                model.getInputGradientSingle(std::move(input_data));
+            return dagGetInputGradientSingleWrapper(gradients);
+          },
+          py::arg("input_data"),
+          "explains why this model predicted the output with respect to input "
+          "vector features."
+          "Arguments:\n"
+          " * input_data: A single input sample."
+          " Returns a tuple consists of (0) optional, it only returns the "
+          "corresponding indices for sparse inputs."
+          " and (1) list of values which"
+          "corresponds to the features in input vector.")
+      .def(
+          "get_input_confidence",
+          [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
+            auto gradients = model.getInputGradientSingle(
+                std::move(input_data),
+                /*explain_prediction_using_highest_activation= */ false);
+            return dagGetInputGradientSingleWrapper(gradients);
+          },
+          py::arg("input_data"),
+          "gets some confidence values for the input vector, high the "
+          "confidence more important the input feature for the model to "
+          "predict."
+          "Arguments:\n"
+          " * input_data: A single input sample."
+          " Returns a tuple consists of (0) optional, it only returns the "
+          "corresponding indices for sparse inputs."
+          " and (1) list of confidence values which "
+          "tells how much important each feature in the input vector.")
+      .def(
+          "explain_required_label",
+          [](BoltGraph& model, std::vector<BoltVector>&& input_data,
+             uint32_t neuron_to_explain) {
+            auto gradients = model.getInputGradientSingle(
+                std::move(input_data),
+                /*explain_prediction_using_highest_activation= */ false,
+                neuron_to_explain);
+            return dagGetInputGradientSingleWrapper(gradients);
+          },
+          py::arg("input_data"), py::arg("neuron_to_explain"),
+          "explains how the input vector values should change "
+          "so that model predicts the desired label."
+          "Arguments:\n"
+          " * input_data: A single input sample."
+          " * neuron_to_explain: desired label user wants model to predict."
+          " Returns a tuple consists of (0) optional, it only returns the "
+          "corresponding indices for sparse inputs."
+          " and (1) list of values which"
+          "tells how each feature should change in the input vector.")
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(

@@ -88,22 +88,26 @@ def test_bolt_dag_single_input_node_gradients_single():
     """
     model = build_compile_and_set_weights_and_biases()
     numpy_inputs, numpy_labels = gen_numpy_training_data(
-        n_classes=5, n_samples=1, convert_to_bolt_dataset=False
+        n_classes=5, n_samples=100, convert_to_bolt_dataset=False
     )
+    """
+    Here we are passing batch size as 1, because that way we can easily acesss single input and pass it to the get_input_gradients_single method.
+    """
     input_data, act, predict_config = model_train_and_predict(
-        model, numpy_inputs, numpy_labels, 1
+        model, numpy_inputs, numpy_labels, batch_size=1
     )
-    gradients = model.get_input_gradients_single(
-        input_data[0], label_given=True, neuron_to_explain=numpy_labels[0]
-    )
-    """
-    For every vector in input,we modify the vector at every position(by adding EPS), and we check assertion discussed at start of the function.
-    """
-    get_perturbed_dataset_and_assert(
-        model,
-        numpy_inputs[0],
-        predict_config,
-        numpy_labels[0],
-        gradients,
-        act[0],
-    )
+    for i in range(len(numpy_inputs)):
+        gradients = model.get_input_gradients_single(
+            input_data[i], neuron_to_explain=numpy_labels[i]
+        )
+        """
+        For every vector in input,we modify the vector at every position(by adding EPS), and we check assertion discussed at start of the function.
+        """
+        get_perturbed_dataset_and_assert(
+            model,
+            numpy_inputs[i],
+            predict_config,
+            numpy_labels[i],
+            gradients,
+            act[i],
+        )

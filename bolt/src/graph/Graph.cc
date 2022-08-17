@@ -185,11 +185,11 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
   }
 }
 
-BoltVector BoltGraph::getLabelVectorExplainPrediction(uint32_t vec_id,
-                                                      bool explain_prediction) {
+BoltVector BoltGraph::getLabelVectorExplainPrediction(
+    uint32_t vec_id, bool explain_prediction_using_highest_activation) {
   uint32_t required_index;
   forward(vec_id, nullptr);
-  if (explain_prediction) {
+  if (explain_prediction_using_highest_activation) {
     required_index = _output->getOutputVector(vec_id).getHighestActivationId();
   } else {
     required_index =
@@ -213,30 +213,31 @@ BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
 }
 
 std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
-BoltGraph::getInputGradientSingle(std::vector<BoltVector>&& input_data,
-                                  bool explain_prediction, bool label_given,
-                                  uint32_t neuron_to_explain) {
+BoltGraph::getInputGradientSingle(
+    std::vector<BoltVector>&& input_data,
+    bool explain_prediction_using_highest_activation,
+    std::optional<uint32_t> neuron_to_explain) {
   SingleUnitDatasetContext single_input_gradients_context(std::move(input_data),
                                                           {});
 
-  prepareToProcessBatches(1, /* use_sparsity=*/true);
+  prepareToProcessBatches(/*batch_size= */ 1, /* use_sparsity=*/true);
 
   verifyCanGetInputGradientSingle(single_input_gradients_context,
-                                  explain_prediction,
+                                  explain_prediction_using_highest_activation,
                                   _output->numNonzerosInOutput());
 
   try {
     single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs,
                                              _token_inputs);
 
-    BoltVector* input_vector = &_inputs[0]->getOutputVector(0);
+    BoltVector& input_vector = _inputs[0]->getOutputVector(/*vec_index= */ 0);
 
-    std::vector<float> vec_grad(input_vector->len, 0.0);
+    std::vector<float> vec_grad(input_vector.len, 0.0);
 
     // Assigning the vec_grad data() to gradients so that we dont have to
     // worry about initializing and then freeing the memory.
 
-    input_vector->gradients = vec_grad.data();
+    input_vector.gradients = vec_grad.data();
     std::vector<uint32_t> input_vector_indices;
 
     /*
@@ -253,26 +254,29 @@ BoltGraph::getInputGradientSingle(std::vector<BoltVector>&& input_data,
     */
 
     BoltVector label_vector;
-    if (!label_given) {
-      label_vector = getLabelVectorExplainPrediction(0, explain_prediction);
+    if (!neuron_to_explain) {
+      label_vector = getLabelVectorExplainPrediction(
+          /*vec_id= */ 0, explain_prediction_using_highest_activation);
     } else {
-      label_vector = getLabelVectorNeuronsToExplain(neuron_to_explain, 0);
+      label_vector = getLabelVectorNeuronsToExplain(
+          /*required_index= */ *neuron_to_explain, /*vec_id= */ 0);
     }
 
-    if (!input_vector->isDense()) {
+    if (!input_vector.isDense()) {
       input_vector_indices.assign(
-          input_vector->active_neurons,
-          input_vector->active_neurons + input_vector->len);
+          input_vector.active_neurons,
+          input_vector.active_neurons + input_vector.len);
     }
 
-    _loss->lossGradients(_output->getOutputVector(0), label_vector, 1);
-    backpropagate(0);
+    _loss->lossGradients(_output->getOutputVector(/*vec_index= */ 0),
+                         label_vector, /*batch_size= */ 1);
+    backpropagate(/*vec_index= */ 0);
 
     // We reset the gradients to nullptr here to prevent the bolt vector
     // from freeing the memory which is owned by the std::vector we used to
     // store the gradients
 
-    input_vector->gradients = nullptr;
+    input_vector.gradients = nullptr;
     cleanupAfterBatchProcessing();
 
     if (input_vector_indices.empty()) {
@@ -570,13 +574,14 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
 }
 
 void BoltGraph::verifyCanGetInputGradientSingle(
-    const DatasetContextBase& single_input_gradients_context, bool best_index,
+    const DatasetContextBase& single_input_gradients_context,
+    bool explain_prediction_using_highest_activation,
     uint32_t num_output_nonzeros) {
   if (!graphCompiled()) {
     throw std::logic_error(
         "Graph must be compiled before getting input gradients");
   }
-  if (!best_index && num_output_nonzeros < 2) {
+  if (!explain_prediction_using_highest_activation && num_output_nonzeros < 2) {
     throw std::invalid_argument(
         "The sparse output dimension should be atleast 2 to call "
         "getSecondHighestActivationId.");

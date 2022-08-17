@@ -80,16 +80,17 @@ class BoltGraph {
       const PredictConfig& predict_config);
 
   std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
-  getInputGradientSingle(std::vector<BoltVector>&& input_data,
-                         bool explain_prediction, bool label_given = false,
-                         uint32_t neuron_to_explain = 0);
+  getInputGradientSingle(
+      std::vector<BoltVector>&& input_data,
+      bool explain_prediction_using_highest_activation = true,
+      std::optional<uint32_t> neuron_to_explain = std::nullopt);
 
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            std::vector<std::vector<uint32_t>>&& test_tokens,
                            bool use_sparse_inference);
 
-  BoltVector getLabelVectorExplainPrediction(uint32_t vec_id,
-                                             bool explain_prediction);
+  BoltVector getLabelVectorExplainPrediction(
+      uint32_t vec_id, bool explain_prediction_using_highest_activation);
 
   BoltVector getLabelVectorNeuronsToExplain(uint32_t required_index,
                                             uint32_t vec_id);
@@ -162,7 +163,8 @@ class BoltGraph {
   void verifyCanTrain(const DatasetContext& train_context);
 
   void verifyCanGetInputGradientSingle(
-      const DatasetContextBase& single_input_gradients_context, bool best_index,
+      const DatasetContextBase& single_input_gradients_context,
+      bool explain_prediction_using_highest_activation,
       uint32_t num_output_nonzeros);
 
   void verifyCanPredict(const DatasetContextBase& predict_context,
