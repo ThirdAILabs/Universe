@@ -26,7 +26,7 @@ class CategoricalBlock : public Block {
    *     the categorical feature to be encoded.
    *   encoding: CategoricalEncoding - the categorical feature encoding model.
    */
-  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding> encoding, std::optional<char> delimiter)
+  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding> encoding, std::optional<char> delimiter = std::nullopt)
       : _col(col), _encoding(std::move(encoding)), _delimiter(delimiter) {}
 
   /**

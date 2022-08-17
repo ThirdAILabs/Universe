@@ -4,6 +4,7 @@
 #include <bolt/src/auto_classifiers/AutoClassifierBase.h>
 #include <bolt/src/graph/Graph.h>
 #include <chrono>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -24,7 +25,7 @@ class SequentialClassifier {
       std::vector<std::string> metrics = {})
       : _model_size(std::move(model_size)), _metrics(std::move(metrics)) {
     _metrics.push_back("categorical_accuracy");
-    _schema.user = {std::get<0>(user), std::get<1>(user), std::get<2>(user)};
+    _schema.user = {std::get<0>(user), std::get<1>(user), std::nullopt};
     _schema.target = {std::get<0>(target), std::get<1>(target), std::get<2>(target)};
     _schema.timestamp_col_name = timestamp;
     for (const auto& text : static_text) {
@@ -35,7 +36,7 @@ class SequentialClassifier {
     }
     for (const auto& seq : sequential) {
       _schema.sequential_attrs.push_back(
-          {/* user = */ {std::get<0>(user), std::get<1>(user), std::get<2>(user)},
+          {/* user = */ {std::get<0>(user), std::get<1>(user), std::nullopt},
            /* item = */ {std::get<0>(seq), std::get<1>(seq), std::get<3>(seq)},
            /* timestamp_col_name = */ timestamp,
            /* track_last_n = */ std::get<2>(seq)});
