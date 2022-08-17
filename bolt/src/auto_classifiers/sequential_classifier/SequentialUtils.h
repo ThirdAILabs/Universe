@@ -29,6 +29,7 @@ struct Sequential::Schema {
   struct Categorical {
     std::string col_name;
     uint32_t vocab_size;
+    std::optional<char> delimiter;
   };
 
   struct Sequential {
@@ -156,7 +157,7 @@ class Sequential::Pipeline {
     return std::make_shared<dataset::CategoricalBlock>(
         col_nums.at(categorical.col_name),
         std::make_shared<dataset::StreamingStringCategoricalEncoding>(
-            string_lookup));
+            string_lookup), categorical.delimiter);
   }
 
   static dataset::BlockPtr makeSequentialBlock(
@@ -186,7 +187,7 @@ class Sequential::Pipeline {
         col_nums.at(sequential.user.col_name),
         col_nums.at(sequential.item.col_name),
         col_nums.at(sequential.timestamp_col_name), sequential.track_last_n,
-        user_lookup, item_lookup, user_item_history);
+        user_lookup, item_lookup, user_item_history, sequential.item.delimiter);
   }
 };
 

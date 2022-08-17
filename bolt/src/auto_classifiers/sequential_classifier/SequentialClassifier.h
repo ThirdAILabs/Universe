@@ -10,8 +10,8 @@
 #include <utility>
 namespace thirdai::bolt {
 
-using CategoricalTuple = std::pair<std::string, uint32_t>;
-using SequentialTuple = std::tuple<std::string, uint32_t, uint32_t>;
+using CategoricalTuple = std::tuple<std::string, uint32_t, std::optional<char>>;
+using SequentialTuple = std::tuple<std::string, uint32_t, uint32_t, std::optional<char>>;
 
 class SequentialClassifier {
  public:
@@ -24,19 +24,19 @@ class SequentialClassifier {
       std::vector<std::string> metrics = {})
       : _model_size(std::move(model_size)), _metrics(std::move(metrics)) {
     _metrics.push_back("categorical_accuracy");
-    _schema.user = {user.first, user.second};
-    _schema.target = {target.first, target.second};
+    _schema.user = {std::get<0>(user), std::get<1>(user), std::get<2>(user)};
+    _schema.target = {std::get<0>(target), std::get<1>(target), std::get<2>(target)};
     _schema.timestamp_col_name = timestamp;
     for (const auto& text : static_text) {
       _schema.static_text_attrs.push_back({text});
     }
     for (const auto& cat : static_categorical) {
-      _schema.static_categorical_attrs.push_back({cat.first, cat.second});
+      _schema.static_categorical_attrs.push_back({std::get<0>(cat), std::get<1>(cat), std::get<2>(cat)});
     }
     for (const auto& seq : sequential) {
       _schema.sequential_attrs.push_back(
-          {/* user = */ {user.first, user.second},
-           /* item = */ {std::get<0>(seq), std::get<1>(seq)},
+          {/* user = */ {std::get<0>(user), std::get<1>(user), std::get<2>(user)},
+           /* item = */ {std::get<0>(seq), std::get<1>(seq), std::get<3>(seq)},
            /* timestamp_col_name = */ timestamp,
            /* track_last_n = */ std::get<2>(seq)});
     }

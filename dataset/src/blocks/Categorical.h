@@ -1,9 +1,11 @@
 #pragma once
 
 #include "BlockInterface.h"
+#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <memory>
+#include <optional>
 
 namespace thirdai::dataset {
 
@@ -24,8 +26,8 @@ class CategoricalBlock : public Block {
    *     the categorical feature to be encoded.
    *   encoding: CategoricalEncoding - the categorical feature encoding model.
    */
-  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding> encoding)
-      : _col(col), _encoding(std::move(encoding)) {}
+  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding> encoding, std::optional<char> delimiter)
+      : _col(col), _encoding(std::move(encoding)), _delimiter(delimiter) {}
 
   /**
    * Constructor with default encoder.
@@ -48,12 +50,24 @@ class CategoricalBlock : public Block {
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec) final {
-    return _encoding->encodeCategory(input_row.at(_col), vec);
+    if (!_delimiter) {
+      return _encoding->encodeCategory(input_row.at(_col), vec);
+    }
+    auto category_col = std::string(input_row.at(_col));
+    auto categories = ProcessorUtils::parseCsvRow(category_col, _delimiter.value());
+    for (auto& category : categories) {
+      auto exception = _encoding->encodeCategory(category, vec);
+      if (exception) {
+        return exception;
+      }
+    }
+    return nullptr;
   }
 
  private:
   uint32_t _col;
   std::shared_ptr<CategoricalEncoding> _encoding;
+  std::optional<char> _delimiter;
 };
 
 }  // namespace thirdai::dataset
