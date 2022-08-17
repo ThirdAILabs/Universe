@@ -36,13 +36,17 @@ class WayfairClassifier {
 
     std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{1024, 1.0}};
 
-    _classifier = FullyConnectedGraphNetwork::build(
-        /* input_dim= */ _processor->getInputDim(),
-        /* hidden_dims_and_sparsities= */ hidden_layer_config,
-        /* output_dim= */ n_classes,
-        /* output_sparsity= */ n_classes >= 500 ? 0.1 : 1,
-        /* output_activation= */ "sigmoid",
-        /* loss= */ std::make_shared<BinaryCrossEntropyLoss>());
+    _classifier = Presets::FullyConnectedNetwork(
+      /* input_dim= */ _processor->getInputDim(),
+      /* layers= */ {
+        Presets::FullyConnectedLayer(/* dim= */ 1024, /* sparsity= */ 1.0, "relu"),
+        Presets::FullyConnectedLayer(
+          /* dim= */ n_classes, 
+          /* sparsity= */ n_classes >= 500 ? 0.1 : 1, 
+          "sigmoid", /* num_tables= */ 64, /* hashes_per_table= */ 4, /* reservoir_size= */ 64)
+      }, 
+      /* loss= */ std::make_shared<BinaryCrossEntropyLoss>());
+
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
@@ -72,7 +76,10 @@ class WayfairClassifier {
               << " seconds." << std::endl;
 
     auto config =
-        TrainConfig::makeConfig(learning_rate, epochs).withMetrics(metrics);
+        TrainConfig::makeConfig(learning_rate, epochs)
+          .withMetrics(metrics)
+          .withRebuildHashTables(10000)
+          .withReconstructHashFunctions(50000);
 
     _classifier->train({train_data}, {}, train_labels, config);
   }
