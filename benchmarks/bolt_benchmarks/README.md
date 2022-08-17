@@ -20,7 +20,7 @@ optional arguments:
 
 ## Config File Usage
 
-The config file is a toml file that contains information about the dataset, model architecture, and other training parameters. These files are located in `benchmarks/bolt_benchmarks/configs` and are saved with the .txt extension so that they can be uploaded as artifacts to mlflow. These config files can specify both fully connected networks and DLRM models. An example script for a fully connected network is `configs/mnist_sh.txt` and an example DLRM scrip tis `configs/criteo_dlrm.txt`.
+The config file is a toml file that contains information about the dataset, model architecture, and other training parameters. These files are located in `benchmarks/bolt_benchmarks/configs` and are saved with the .txt extension so that they can be uploaded as artifacts to mlflow. These config files can specify both fully connected networks and DLRM models. An example script for a fully connected network is `configs/mnist_sh.txt` and an example DLRM scrip tis `configs/criteo_dlrm.txt`. 
 
 When the `bolt.py` script is invoked with a config file it will construct the network and perform the specified training. It will run the test dataset after each epoch, if the test dataset is large then the `max_test_batches` parameter can be specified in the config file that will limit how many test batches will run after each epoch. Note that even with this option it will run on the whole test dataset at the end of training. 
 
@@ -53,7 +53,7 @@ batch_size = 256
 rehash = 6400
 rebuild = 128000
 ```
-* __Network Architecture__ - the way the architecture is specified in the config file depends on if it is a fully connected or DLRM model.
+* __Network Architecture__ - the way the architecture is specified in the config file depends on if it is a fully connected or DLRM model.  
   * __Fully Connected Model__ - for a fully connnected model architecture the layers are specified by the `[[layers]]` sections which give the dimension, activation function, sparsity, and any other sampling paramters (or indicate that it should be autotuned). Example:
   ```toml
   [[layers]]
@@ -77,17 +77,20 @@ rebuild = 128000
   reservoir_size = 128
   range_pow = 15
   ```
-* __DLRM__ - for a DLRM model there are several sections for the architecture. The `[embedding_layer]` section gives the architecture of the embedding layer, its size, number of lookups, etc. The remaining information is in the sections `[[bottom_mlp_layers]]` and `[[top_mlp_layers]]` which have the same format of the `[[layers]]` section for a fully connected model and indicate the architecture of the two fully connected networks that are used in the DLRM model. Example:
+  * __DLRM__ - for a DLRM model there are several sections for the architecture. The `[embedding_layer]` section gives the architecture of the embedding layer, its size, number of lookups, etc. The remaining information is in the sections `[[bottom_mlp_layers]]` and `[[top_mlp_layers]]` which have the same format of the `[[layers]]` section for a fully connected model and indicate the architecture of the two fully connected networks that are used in the DLRM model. Example:
   ```toml
   [embedding_layer]
   num_embedding_lookups = 8
   lookup_size = 16
   log_embedding_block_size = 10
+
   [[bottom_mlp_layers]]
   # ...
+
   [[top_mlp_layers]]
   # ...
   ```
+  
 ## Authentication on S3 Bucket for Uploading Artifacts
 
 TODO(vihan)
