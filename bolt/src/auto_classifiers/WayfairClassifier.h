@@ -36,12 +36,14 @@ class WayfairClassifier {
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
              const std::vector<float>& fmeasure_thresholds = {0.9}) {
-    std::vector<std::string> metrics;
-    for (auto threshold : fmeasure_thresholds) {
-      std::stringstream metric_ss;
-      metric_ss << "f_measure(" << threshold << ")";
-      metrics.push_back(metric_ss.str());
-    }
+    (void) fmeasure_thresholds;
+    std::vector<std::string> metrics = {"categorical_accuracy"};
+    // std::vector<std::string> metrics;
+    // for (auto threshold : fmeasure_thresholds) {
+    //   std::stringstream metric_ss;
+    //   metric_ss << "f_measure(" << threshold << ")";
+    //   metrics.push_back(metric_ss.str());
+    // }
 
     _classifier->train(
         filename,
