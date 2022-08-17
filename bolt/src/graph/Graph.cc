@@ -339,6 +339,7 @@ void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {
 
 void BoltGraph::backpropagate(uint32_t vec_index) {
   for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
+    // std::cout << "NodeName = " << (*node_itr)->name() << std::endl;
     (*node_itr)->backpropagate(vec_index);
   }
 }
@@ -526,9 +527,7 @@ void BoltGraph::verifyInputForGraph(const DatasetContextBase& context) {
 }
 
 void BoltGraph::verifyGraphProperties() {
-  GraphPropertyChecks::verifyOutputIsNotInputLayer(_output);
-
-  GraphPropertyChecks::verifyOutputIsNotConcatLayer(_output);
+  GraphPropertyChecks::verifyOutputLayerIsValid(_output);
 
   GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
                                                                       _loss);

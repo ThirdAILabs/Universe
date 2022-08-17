@@ -287,7 +287,9 @@ def load_click_through_dataset(dataset_config):
     return dataset.load_click_through_dataset(
         filename=dataset_path,
         batch_size=config_get(dataset_config, "batch_size"),
-        num_numerical_features=config_get(dataset_config, "num_numerical_features"),
+        max_num_numerical_features=config_get(
+            dataset_config, "max_num_numerical_features"
+        ),
         max_categorical_features=config_get(dataset_config, "max_categorical_features"),
         delimiter=config_get(dataset_config, "delimiter"),
     )

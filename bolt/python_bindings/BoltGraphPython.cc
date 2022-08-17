@@ -9,6 +9,7 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Switch.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
@@ -130,6 +131,19 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           py::return_value_policy::reference,
           "Returns a ParameterReference object to the bias gradients vector.");
 
+  py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
+      graph_submodule, "LayerNormalization")
+      .def(py::init<>(), "Constructs a normalization layer object.")
+      .def(py::init<const NormalizationLayerConfig&>(),
+           py::arg("layer_norm_config"),
+           "Constructs a normalization layer object"
+           "Arguments:\n"
+           " * layer_norm_config: NormalizationLayerConfig - configuration "
+           "parameters required for normalizing the input. \n")
+      .def("__call__", &LayerNormNode::addPredecessor, py::arg("prev_layer"),
+           "Tells the graph which layer should act as input to this "
+           "normalization layer.");
+
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
       .def(
@@ -175,6 +189,15 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
   py::class_<TokenInput, TokenInputPtr, Node>(graph_submodule, "TokenInput")
       .def(py::init<>(), "Constructs a token input layer node for the graph.");
+
+  py::class_<NormalizationLayerConfig>(graph_submodule, "LayerNormConfig")
+      .def_static("make", &NormalizationLayerConfig::makeConfig)
+      .def("center", &NormalizationLayerConfig::setCenteringFactor,
+           py::arg("beta_regularizer"),
+           "Sets the centering factor for the normalization configuration")
+      .def("scale", &NormalizationLayerConfig::setScalingFactor,
+           py::arg("gamma_regularizer"),
+           "Sets the scaling factor the the normalization configuration.");
 
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
