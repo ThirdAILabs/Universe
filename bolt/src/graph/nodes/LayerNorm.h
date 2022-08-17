@@ -26,7 +26,10 @@ namespace thirdai::bolt {
   gamma regularizers.
  */
 
-constexpr float OFFSET = 0.00000001;
+// Fixed constant to guard against dividing by zero in the
+// gradient computation in the rare cases when the standard deviation
+// evaluates to zero.
+constexpr float DIV_BY_ZERO_GUARD = 0.00000001;
 
 class LayerNormNode final : public Node,
                             public std::enable_shared_from_this<LayerNormNode> {
@@ -151,7 +154,7 @@ class LayerNormNode final : public Node,
                        (std_deviation + _config->epsilon());
 
     // additive term to avoid division by zero
-    denominator += OFFSET;
+    denominator += DIV_BY_ZERO_GUARD;
 
     auto gradient =
         vec_length * std_deviation * (std_deviation + _config->epsilon()) -
