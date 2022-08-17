@@ -429,20 +429,36 @@ class DistributedPyNetwork final : public DistributedModel {
                 DistributedModel::getBiasesGradient(layer_index),
                 compression_density, uint32_t(dim), seed_for_hashing);
 
-        return py::make_tuple(py::array_t<uint32_t>(dragon_sketch.getIndices()),
-                              py::array_t<float>(dragon_sketch.getValues()));
+        return py::make_tuple(
+            py::array_t<uint32_t>(py::cast(dragon_sketch.getIndices())),
+            py::array_t<float>(py::cast(dragon_sketch.getValues())));
       }
     } else {
       if (compression_scheme == "dragon") {
         compression::DragonVector<float> dragon_sketch =
             compression::DragonVector<float>(
-                DistributedModel::getBiasesGradient(layer_index),
+                DistributedModel::getWeightsGradient(layer_index),
                 compression_density, uint32_t(dim * prev_dim),
                 seed_for_hashing);
-        return py::make_tuple(py::array_t<uint32_t>(dragon_sketch.getIndices()),
-                              py::array_t<float>(dragon_sketch.getValues()));
+
+        std::cout << "printing dragon indices: " << std::endl;
+        for (auto x : dragon_sketch.getIndices()) {
+          std::cout << x << " ";
+        }
+        std::cout << std::endl;
+
+        std::cout << "printing dragon gradients: " << std::endl;
+        for (auto x : dragon_sketch.getValues()) {
+          std::cout << x << " ";
+        }
+        std::cout << std::endl;
+
+        return py::make_tuple(
+            py::array_t<uint32_t>(py::cast(dragon_sketch.getIndices())),
+            py::array_t<float>(py::cast(dragon_sketch.getValues())));
       }
     }
+    throw std::logic_error("Not a valid compression scheme specified");
     return py::make_tuple(0, 0);
   }
 };
