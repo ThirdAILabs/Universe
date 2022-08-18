@@ -5,7 +5,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
-#include <bolt/src/auto_classifiers/WayfairClassifier.h>
+#include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -438,14 +438,14 @@ class SentimentClassifier {
   BoltVector _output;
 };
 
-class PyWayfairClassifier : public WayfairClassifier {
+class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
  public:
-  explicit PyWayfairClassifier(uint32_t n_classes)
-      : WayfairClassifier(n_classes) {}
+  explicit PyMultiLabelTextClassifier(uint32_t n_classes)
+      : MultiLabelTextClassifier(n_classes) {}
 
   py::array_t<float, py::array::c_style | py::array::forcecast> predictSingle(
       const std::vector<uint32_t>& tokens) {
-    auto output = WayfairClassifier::predictSingle(tokens);
+    auto output = MultiLabelTextClassifier::predictSingle(tokens);
 
     uint32_t num_samples = 1;
     float* activations;
@@ -471,13 +471,13 @@ class PyWayfairClassifier : public WayfairClassifier {
     oarchive(*this);
   }
 
-  static std::unique_ptr<PyWayfairClassifier> load(
+  static std::unique_ptr<PyMultiLabelTextClassifier> load(
       const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<PyWayfairClassifier> deserialize_into(
-        new PyWayfairClassifier());
+    std::unique_ptr<PyMultiLabelTextClassifier> deserialize_into(
+        new PyMultiLabelTextClassifier());
     iarchive(*deserialize_into);
     deserialize_into->buildBatchProcessors(deserialize_into->_n_classes);
     return deserialize_into;
@@ -485,7 +485,7 @@ class PyWayfairClassifier : public WayfairClassifier {
 
  private:
   // Private constructor for cereal.
-  PyWayfairClassifier() : WayfairClassifier() {}
+  PyMultiLabelTextClassifier() : MultiLabelTextClassifier() {}
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>

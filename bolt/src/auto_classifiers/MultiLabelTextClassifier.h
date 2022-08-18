@@ -2,9 +2,10 @@
 
 #include <bolt/src/auto_classifiers/AutoClassifierBase.h>
 #include <bolt/src/graph/ExecutionConfig.h>
-#include <bolt/src/graph/Presets.h>
+#include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -27,28 +28,28 @@
 
 namespace thirdai::bolt {
 
-class WayfairClassifier {
+class MultiLabelTextClassifier {
  public:
-  explicit WayfairClassifier(uint32_t n_classes) : _n_classes(n_classes) {
+  explicit MultiLabelTextClassifier(uint32_t n_classes) : _n_classes(n_classes) {
     buildBatchProcessors(n_classes);
 
     assert(n_classes == _processor->getLabelDim());
 
     std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{1024, 1.0}};
 
-    _classifier = Presets::FullyConnectedNetwork(
+    _classifier = CommonNetworks::FullyConnected(
       /* input_dim= */ _processor->getInputDim(),
       /* layers= */ {
-        Presets::FullyConnectedLayer(
+        FullyConnectedNode::make(
           /* dim= */ 1024, 
-          /* sparsity= */ 1.0, 
           "relu"),
-        Presets::FullyConnectedLayer(
+        FullyConnectedNode::make(
           /* dim= */ n_classes, 
           /* sparsity= */ n_classes >= 500 ? 0.1 : 1, 
           "sigmoid", /* num_tables= */ 64, /* hashes_per_table= */ 4, /* reservoir_size= */ 64)
-      }, 
-      /* loss= */ std::make_shared<BinaryCrossEntropyLoss>());
+      }
+    );
+    _classifier->compile(std::make_shared<BinaryCrossEntropyLoss>(), /* print_when_done= */ false); 
 
   }
 
@@ -154,12 +155,12 @@ class WayfairClassifier {
     oarchive(*this);
   }
 
-  static std::unique_ptr<WayfairClassifier> load(const std::string& filename) {
+  static std::unique_ptr<MultiLabelTextClassifier> load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<WayfairClassifier> deserialize_into(
-        new WayfairClassifier());
+    std::unique_ptr<MultiLabelTextClassifier> deserialize_into(
+        new MultiLabelTextClassifier());
     iarchive(*deserialize_into);
     deserialize_into->buildBatchProcessors(deserialize_into->_n_classes);
     return deserialize_into;
@@ -212,7 +213,7 @@ class WayfairClassifier {
   }
 
   // Private constructor for cereal
-  WayfairClassifier() {}
+  MultiLabelTextClassifier() {}
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;

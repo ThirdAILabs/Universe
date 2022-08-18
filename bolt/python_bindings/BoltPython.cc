@@ -2,7 +2,6 @@
 #include "BoltGraphPython.h"
 #include <bolt/src/auto_classifiers/TabularClassifier.h>
 #include <bolt/src/auto_classifiers/TextClassifier.h>
-#include <bolt/src/auto_classifiers/WayfairClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -504,13 +503,13 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
-  py::class_<PyWayfairClassifier>(bolt_submodule, "WayfairClassifier")
+  py::class_<PyMultiLabelTextClassifier>(bolt_submodule, "MultiLabelTextClassifier")
       .def(py::init<uint32_t>(), py::arg("n_classes"),
            "Constructs a WayfairClassifier with autotuning.\n"
            "Arguments:\n"
            " * n_classes: int - How many classes or categories are in the "
            "labels of the dataset.\n")
-      .def("train", &PyWayfairClassifier::train, py::arg("train_file"),
+      .def("train", &PyMultiLabelTextClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("fmeasure_thresholds") = std::vector<float>{0.9},
            "Trains the classifier on the given dataset.\n"
@@ -520,14 +519,14 @@ void createBoltSubmodule(py::module_& module) {
            " * learning_rate: Float - The learning rate to use for training.\n"
            " * fmeasure_threshold: Float - The threshold for F-Measure "
            "metric.\n")
-      .def("predict_single", &PyWayfairClassifier::predictSingle,
+      .def("predict_single", &PyMultiLabelTextClassifier::predictSingle,
            py::arg("tokens"),
            "Given a list of tokens, predict the likelihood of each output "
            "class. \n"
            "Arguments:\n"
            " * tokens: List[Int] - A list of integer tokens.\n")
       .def(
-          "predict", &PyWayfairClassifier::predict, py::arg("test_file"),
+          "predict", &PyMultiLabelTextClassifier::predict, py::arg("test_file"),
           py::arg("fmeasure_thresholds") = std::vector<float>{0.9},
           "Runs the classifier on the specified test dataset and optionally "
           "logs the prediction to a file.\n"
@@ -538,14 +537,14 @@ void createBoltSubmodule(py::module_& module) {
           "then the classifier will output the name of the class/category of "
           "each prediction this file with one prediction result on each "
           "line.\n")
-      .def("save", &PyWayfairClassifier::save, py::arg("filename"),
+      .def("save", &PyMultiLabelTextClassifier::save, py::arg("filename"),
            "Saves the classifier to a file. The file path must not require any "
            "folders to be created\n"
            "Arguments:\n"
            " * filename: string - The path to the save location of the "
            "classifier.\n")
       .def_static(
-          "load", &PyWayfairClassifier::load, py::arg("filename"),
+          "load", &PyMultiLabelTextClassifier::load, py::arg("filename"),
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
