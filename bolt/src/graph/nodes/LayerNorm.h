@@ -66,6 +66,8 @@ class LayerNormNode final : public Node,
     return false;
   }
 
+  void initOptimizer() final {}
+
  private:
   void compileImpl() final { _compiled = true; }
 
