@@ -11,7 +11,6 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DistributedModel.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <_types/_uint32_t.h>
 #include <compression/src/CompressedVector.h>
 #include <compression/src/ConversionUtils.h>
 #include <compression/src/DragonVector.h>

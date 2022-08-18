@@ -1,6 +1,5 @@
 #include "DefaultCompressedVector.h"
 #include <hashing/src/MurmurHash.h>
-#include <_types/_uint32_t.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cstddef>
