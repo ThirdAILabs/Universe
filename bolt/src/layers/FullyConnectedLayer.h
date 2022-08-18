@@ -204,8 +204,6 @@ class FullyConnectedLayer final : public SequentialLayer {
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
 
-  inline void cleanupWithinBatchVars();
-
   inline void initSparseDatastructures(const SamplingConfigPtr& sampling_config,
                                        std::random_device& rd);
 
