@@ -413,67 +413,45 @@ class DistributedPyNetwork final : public DistributedModel {
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
   }
 
-  py::tuple getCompressedGradients(const std::string& compression_scheme,
-                                   uint32_t layer_index,
-                                   float compression_density,
-                                   bool sketch_biases, int seed_for_hashing) {
+  py::dict getCompressedGradients(const std::string& compression_scheme,
+                                  uint32_t layer_index,
+                                  float compression_density, bool sketch_biases,
+                                  int seed_for_hashing) {
     size_t dim = DistributedModel::getDim(layer_index);
     size_t prev_dim = (layer_index > 0)
                           ? DistributedModel::getDim(layer_index - 1)
                           : DistributedModel::getInputDim();
 
-    if (sketch_biases) {
-      if (compression_scheme == "dragon") {
-        compression::DragonVector<float> dragon_sketch =
-            compression::DragonVector<float>(
-                DistributedModel::getBiasesGradient(layer_index),
-                compression_density, uint32_t(dim), seed_for_hashing);
+    py::dict compressed_vector;
 
-        return py::make_tuple(
-            py::array_t<uint32_t>(py::cast(dragon_sketch.getIndices())),
-            py::array_t<float>(py::cast(dragon_sketch.getValues())));
+    if (compression_scheme == "dragon") {
+      compression::DragonVector<float> dragon_sketch;
+
+      if (sketch_biases) {
+        dragon_sketch = compression::DragonVector<float>(
+            DistributedModel::getBiasesGradient(layer_index),
+            compression_density, uint32_t(dim), seed_for_hashing);
+      } else {
+        dragon_sketch = compression::DragonVector<float>(
+            DistributedModel::getWeightsGradient(layer_index),
+            compression_density, uint32_t(dim * prev_dim), seed_for_hashing);
       }
-    } else {
-      if (compression_scheme == "dragon") {
-        compression::DragonVector<float> dragon_sketch =
-            compression::DragonVector<float>(
-                DistributedModel::getWeightsGradient(layer_index),
-                compression_density, uint32_t(dim * prev_dim),
-                seed_for_hashing);
+      compressed_vector["compression_scheme"] = "dragon";
+      compressed_vector["original_size"] = dragon_sketch.getOriginalSize();
+      compressed_vector["sketch_size"] = dragon_sketch.getSketchSize();
+      compressed_vector["seed_for_hashing"] = dragon_sketch.getSeedForHashing();
+      compressed_vector["compression_density"] =
+          dragon_sketch.getCompressionDensity();
+      compressed_vector["indices"] =
+          py::array_t<uint32_t>(py::cast(dragon_sketch.getIndices()));
+      compressed_vector["values"] =
+          py::array_t<float>(py::cast(dragon_sketch.getValues()));
 
-        std::cout << "printing dragon vector\n";
-
-        std::cout << "printing dragon indices: " << std::endl;
-        for (auto x : dragon_sketch.getIndices()) {
-          std::cout << x << " ";
-        }
-        std::cout << std::endl;
-
-        std::cout << "printing dragon gradients: " << std::endl;
-        for (auto x : dragon_sketch.getValues()) {
-          std::cout << x << " ";
-        }
-        std::cout << std::endl;
-
-        std::vector<float> decompressedVector =
-            dragon_sketch.decompressVector();
-
-        std::cout << "printing the decompressed dragon vector\n";
-        std::cout << "the size of the decompressed vector is: "
-                  << decompressedVector.size() << std::endl;
-
-        for (float i : decompressedVector) {
-          std::cout << i << " ";
-        }
-        std::cout << "\n";
-
-        return py::make_tuple(
-            py::array_t<uint32_t>(py::cast(dragon_sketch.getIndices())),
-            py::array_t<float>(py::cast(dragon_sketch.getValues())));
-      }
+      return compressed_vector;
     }
+    compressed_vector["is_empty"] = true;
     throw std::logic_error("Not a valid compression scheme specified");
-    return py::make_tuple(0, 0);
+    return compressed_vector;
   }
 };
 
