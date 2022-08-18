@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <iostream>
 #include <numeric>
+#include <limits>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -60,20 +61,45 @@ struct BoltVector {
     }
   }
 
-  uint32_t getIdWithHighestActivation() const {
+  uint32_t getHighestActivationId() const {
     float max_act = activations[0];
     uint32_t id = 0;
     for (uint32_t i = 1; i < len; i++) {
       if (activations[i] > max_act) {
         max_act = activations[i];
-        if (isDense()) {
-          id = i;
-        } else {
-          id = active_neurons[i];
-        }
+        id = i;
       }
     }
-    return id;
+    if (isDense()) {
+      return id;
+    }
+    return active_neurons[id];
+  }
+
+  uint32_t getSecondHighestActivationId() const {
+    float largest_activation = std::numeric_limits<float>::min(),
+          second_largest_activation = std::numeric_limits<float>::min();
+    uint32_t max_id = 0, second_max_id = 0;
+    if (len < 2) {
+      throw std::invalid_argument(
+          "The sparse output dimension should be at least 2 to call "
+          "getSecondHighestActivationId.");
+    }
+    for (uint32_t i = 0; i < len; i++) {
+      if (activations[i] > largest_activation) {
+        second_largest_activation = largest_activation;
+        second_max_id = max_id;
+        largest_activation = activations[i];
+        max_id = i;
+      } else if (activations[i] > second_largest_activation) {
+        second_largest_activation = activations[i];
+        second_max_id = i;
+      }
+    }
+    if (isDense()) {
+      return second_max_id;
+    }
+    return active_neurons[second_max_id];
   }
 
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,

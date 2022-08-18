@@ -143,6 +143,13 @@ setup(
     install_requires=["numpy", "typing_extensions"],
     extras_require={
         "test": ["pytest"],
+        "benchmark": [
+            "toml",
+            "psutil",
+            "scikit-learn",
+            "mlflow",
+            "boto3",
+        ],
     },
     packages=["thirdai"]
     + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
