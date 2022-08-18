@@ -6,7 +6,7 @@ import numpy as np
 
 
 @pytest.mark.unit
-def test_load_save():
+def test_multi_label_text_classifier_load_save():
     model = bolt.MultiLabelTextClassifier(n_classes=931)
 
     train_contents = ["1\t1 1\n", "2\t2 2\n", "3\t3 3\n", "4\t4 4\n"]
@@ -17,10 +17,9 @@ def test_load_save():
         for line in train_contents:
             f.write(line)
 
-    threshold = 0.9
-    metrics = "f_measure(0.9)"
+    threshold = 0.95 # Default threshold
     model.train(
-        temp_train_file, epochs=5, learning_rate=0.01, metrics=metrics
+        temp_train_file, epochs=10, learning_rate=0.1, metrics=[]
     )
 
     inference_sample = [1, 1]
@@ -41,9 +40,35 @@ def test_load_save():
 
     os.remove(temp_train_file)
 
+@pytest.mark.unit
+def test_multi_label_text_classifier_custom_predict_single_threshold():
+    model = bolt.MultiLabelTextClassifier(n_classes=931)
+
+    train_contents = ["1\t1 1\n", "2\t2 2\n", "3\t3 3\n", "4\t4 4\n"]
+
+    temp_train_file = "tempTrainFile.csv"
+
+    with open(temp_train_file, "w") as f:
+        for line in train_contents:
+            f.write(line)
+
+    threshold = 0.65
+    model.train(
+        temp_train_file, epochs=5, learning_rate=0.01, metrics=[]
+    )
+
+    inference_sample = [1, 1]
+    activations_before_save = model.predict_single_from_tokens(inference_sample, activation_threshold=threshold)
+
+    assert activations_before_save.shape == (931,)
+    # We expect the model to predict class 1; class 1 should have max activation.
+    assert activations_before_save[1] == np.max(activations_before_save)
+    assert activations_before_save[1] >= threshold
+
+    os.remove(temp_train_file)
 
 @pytest.mark.unit
-def test_inference_under_1ms():
+def test_multi_label_text_classifier_inference_under_1ms():
     model = bolt.MultiLabelTextClassifier(n_classes=931)
 
     inference_sample = [i for i in range(5)]
