@@ -75,6 +75,14 @@ class DragonVector final : public CompressedVector<T> {
 
   std::vector<T> getValues() { return _values; }
 
+  int getSeedForHashing() const { return _seed_for_hashing; }
+
+  uint32_t getOriginalSize() const { return _original_size; }
+
+  float getCompressionDensity() const { return _compression_density; }
+
+  uint32_t getSketchSize() const { return _sketch_size; }
+
   std::vector<T> decompressVector() const final;
 
  private:
