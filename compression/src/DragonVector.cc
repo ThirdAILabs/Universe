@@ -41,6 +41,22 @@ DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
       _seed_for_hashing(seed_for_hashing) {}
 
 template <class T>
+DragonVector<T>::DragonVector(const T* values, float compression_density,
+                              uint32_t size, int seed_for_hashing)
+    : _sketch_size(std::max(uint32_t(compression_density * size),
+                            std::min(size, _min_sketch_size))),
+      _original_size(size),
+      _compression_density(compression_density),
+      _seed_for_hashing(seed_for_hashing) {
+  _indices.assign(_sketch_size, 0);
+  _values.assign(_sketch_size, 0);
+
+  T threshold = thirdai::compression::getThresholdForTopK(
+      values, size, _sketch_size, /*max_samples_for_random_sampling=*/100000);
+  sketchVector(values, threshold, size);
+}
+
+template <class T>
 void DragonVector<T>::sketchVector(const std::vector<T>& vec, T threshold) {
   uint32_t loop_size = vec.size();
 #pragma omp parallel for default(none)                                 \
@@ -74,22 +90,6 @@ void DragonVector<T>::sketchVector(const T* values, T threshold,
       _values[hash] = values[i];
     }
   }
-}
-
-template <class T>
-DragonVector<T>::DragonVector(const T* values, float compression_density,
-                              uint32_t size, int seed_for_hashing)
-    : _sketch_size(std::max(uint32_t(compression_density * size),
-                            std::min(size, _min_sketch_size))),
-      _original_size(size),
-      _compression_density(compression_density),
-      _seed_for_hashing(seed_for_hashing) {
-  _indices.assign(_sketch_size, 0);
-  _values.assign(_sketch_size, 0);
-
-  T threshold = thirdai::compression::getThresholdForTopK(
-      values, size, _sketch_size, /*max_samples_for_random_sampling=*/100000);
-  sketchVector(values, threshold, size);
 }
 
 /*

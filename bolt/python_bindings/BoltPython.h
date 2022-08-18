@@ -441,6 +441,8 @@ class DistributedPyNetwork final : public DistributedModel {
                 compression_density, uint32_t(dim * prev_dim),
                 seed_for_hashing);
 
+        std::cout << "printing dragon vector\n";
+
         std::cout << "printing dragon indices: " << std::endl;
         for (auto x : dragon_sketch.getIndices()) {
           std::cout << x << " ";
@@ -452,6 +454,18 @@ class DistributedPyNetwork final : public DistributedModel {
           std::cout << x << " ";
         }
         std::cout << std::endl;
+
+        std::vector<float> decompressedVector =
+            dragon_sketch.decompressVector();
+
+        std::cout << "printing the decompressed dragon vector\n";
+        std::cout << "the size of the decompressed vector is: "
+                  << decompressedVector.size() << std::endl;
+
+        for (float i : decompressedVector) {
+          std::cout << i << " ";
+        }
+        std::cout << "\n";
 
         return py::make_tuple(
             py::array_t<uint32_t>(py::cast(dragon_sketch.getIndices())),

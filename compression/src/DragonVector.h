@@ -25,15 +25,14 @@ class DragonVector final : public CompressedVector<T> {
 
   // defining the constructors for the class
 
-  explicit DragonVector(const std::vector<T>& vec, float compression_density,
-                        int seed_for_hashing);
+  DragonVector(const std::vector<T>& vec, float compression_density,
+               int seed_for_hashing);
 
-  explicit DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
-                        uint32_t size, uint32_t original_size,
-                        int seed_for_hashing);
+  DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
+               uint32_t size, uint32_t original_size, int seed_for_hashing);
 
-  explicit DragonVector(const T* values, float compression_density,
-                        uint32_t size, int seed_for_hashing);
+  DragonVector(const T* values, float compression_density, uint32_t size,
+               int seed_for_hashing);
 
   /*
    * Implementing std::vector's standard methods for the class
@@ -87,11 +86,11 @@ class DragonVector final : public CompressedVector<T> {
 
   std::vector<uint32_t> _indices;
   std::vector<T> _values;
+  uint32_t _min_sketch_size = 10;
   uint32_t _sketch_size = 0;
   uint32_t _original_size = 0;
   float _compression_density = 1;
   int _seed_for_hashing;
-  uint32_t _min_sketch_size = 10;
 
   void sketchVector(const std::vector<T>& vec, T threshold);
 
