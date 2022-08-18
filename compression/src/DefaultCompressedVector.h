@@ -55,6 +55,8 @@ class DefaultCompressedVector final : public CompressedVector<T> {
 
   std::vector<T> getValues() { return _values; }
 
+  std::vector<T> decompressVector() const final;
+
  private:
   std::vector<T> _values;
   uint32_t _sketch_size;

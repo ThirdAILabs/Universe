@@ -124,5 +124,10 @@ DefaultCompressedVector<T>& DefaultCompressedVector<T>::concat(
   extend(vec);
   return *this;
 }
+template <class T>
+std::vector<T> DefaultCompressedVector<T>::decompressVector() const {
+  return _values;
+}
+
 template class DefaultCompressedVector<float>;
 }  // namespace thirdai::compression
