@@ -8,6 +8,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -301,6 +302,22 @@ class FMeasure final : public Metric {
     std::stringstream name_ss;
     name_ss << name << '(' << _threshold << ')';
     return name_ss.str();
+  }
+
+  static bool isFMeasure(const std::string& name) {
+    return std::regex_match(
+                     name,
+                     std::regex("(f_measure\\(0\\.\\d+\\))|(f_measure)"));
+  }
+
+  static std::shared_ptr<Metric> make(const std::string& name) {
+    if (name.find('(') == std::string::npos) {
+          return std::make_shared<FMeasure>();
+        }
+        std::string token = name.substr(name.find('('));  // token = (X.XXX)
+        token = token.substr(1, token.length() - 2);      // token = X.XXX
+        float threshold = std::stof(token);
+        return std::make_shared<FMeasure>(threshold);
   }
 
  private:
