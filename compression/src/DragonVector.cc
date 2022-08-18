@@ -190,8 +190,9 @@ T DragonVector<T>::operator[](uint32_t index) const {
   return DragonVector<T>::get(index);
 }
 
-// methods for the Dragon vector class
-
+/*
+ * Implementing utility methods for the class
+ */
 template <class T>
 bool DragonVector<T>::isAllReducible() const {
   return false;
@@ -230,6 +231,11 @@ std::vector<DragonVector<T>> DragonVector<T>::split(
     throw std::length_error(
         "Number of vectors received after splitting is not the same as the "
         "number of chunks");
+  }
+
+  if (split_indices.size() != split_values.size()) {
+    throw std::length_error(
+        "Indices and Values have not been split into equal chunks");
   }
 
   for (size_t i = 0; i < split_indices.size(); i++) {

@@ -34,7 +34,9 @@ class DragonVector final : public CompressedVector<T> {
   explicit DragonVector(const T* values, float compression_density,
                         uint32_t size, int seed_for_hashing);
 
-  // compatibility functions with std::vector
+  /*
+   * Implementing std::vector's standard methods for the class
+   */
 
   T get(uint32_t index) const final;
 
@@ -48,14 +50,18 @@ class DragonVector final : public CompressedVector<T> {
 
   void clear() final;
 
-  // write more methods for addition, subtraction, multiplying by -1, union,
-  // etc.
+  /*
+   * Implementing Operator methods for the class
+   */
 
   DragonVector<T> operator+(DragonVector<T> const& vec) const;
 
   T operator[](uint32_t index) const final;
 
-  // methods for the Dragon Vector Class
+  /*
+   * Implementing utility methods for the class
+   */
+
   void extend(const DragonVector<T>& vec);
 
   std::vector<DragonVector<T>> split(size_t number_chunks) const;
