@@ -673,6 +673,20 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("threshold"),
            "Resets the gradient matrix to zero and then sets the index of the "
            "gradient matrix from the indices in the indices array with their "
+           "corresponding value in the values array")
+      .def("get_compressed_gradients",
+           &DistributedPyNetwork::getCompressedGradients,
+           py::arg("compression_scheme"), py::arg("layer_index"),
+           py::arg("compression_density"), py::arg("sketch_biases"),
+           py::arg("seed_for_hashing"),
+           "Sketches the top-k gradients into an array of values and returns a "
+           "tuple of (sketched_indices,sketched_gradients)")
+      .def("set_compressed_gradients",
+           &DistributedPyNetwork::setCompressedGradients,
+           py::arg("layer_index"), py::arg("set_biases"),
+           py::arg("compressed_vector"),
+           "Resets the gradient matrix to zero and then sets the index of the "
+           "gradient matrix from the indices in the indices array with their "
            "corresponding value in the values array");
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
