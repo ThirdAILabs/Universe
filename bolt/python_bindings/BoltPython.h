@@ -7,6 +7,7 @@
 #include "ConversionUtils.h"
 #include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
@@ -443,25 +444,16 @@ class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
   explicit PyMultiLabelTextClassifier(uint32_t n_classes)
       : MultiLabelTextClassifier(n_classes) {}
 
-  py::array_t<float, py::array::c_style | py::array::forcecast> predictSingle(
+  py::array_t<float, py::array::c_style | py::array::forcecast> predictSingleFromSentence(
+      std::string sentence, float activation_threshold=0.95) {
+    auto output = MultiLabelTextClassifier::predictSingleFromSentence(std::move(sentence), activation_threshold);
+    return boltVectorToNumpy(output);
+  }
+
+  py::array_t<float, py::array::c_style | py::array::forcecast> predictSingleFromTokens(
       const std::vector<uint32_t>& tokens, float activation_threshold=0.95) {
-    auto output = MultiLabelTextClassifier::predictSingle(tokens, activation_threshold);
-
-    uint32_t num_samples = 1;
-    float* activations;
-    allocateActivations(num_samples, _n_classes, /* active_neurons= */ nullptr,
-                        &activations, /* output_sparse= */ false);
-
-    const float* start = output.activations;
-    std::copy(start, start + output.len, activations);
-
-    py::object activation_handle = py::capsule(
-        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-    py::array_t<float, py::array::c_style | py::array::forcecast>
-        activations_array({_n_classes}, {sizeof(float)}, activations,
-                          activation_handle);
-    return activations_array;
+    auto output = MultiLabelTextClassifier::predictSingleFromTokens(tokens, activation_threshold);
+    return boltVectorToNumpy(output);
   }
 
   void save(const std::string& filename) {
@@ -484,6 +476,25 @@ class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
   }
 
  private:
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+  boltVectorToNumpy(const BoltVector& output) {
+    uint32_t num_samples = 1;
+    float* activations;
+    allocateActivations(num_samples, _n_classes, /* active_neurons= */ nullptr,
+                        &activations, /* output_sparse= */ false);
+
+    const float* start = output.activations;
+    std::copy(start, start + output.len, activations);
+
+    py::object activation_handle = py::capsule(
+        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    py::array_t<float, py::array::c_style | py::array::forcecast>
+        activations_array({_n_classes}, {sizeof(float)}, activations,
+                          activation_handle);
+    return activations_array;
+  }
+
   // Private constructor for cereal.
   PyMultiLabelTextClassifier() : MultiLabelTextClassifier() {}
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

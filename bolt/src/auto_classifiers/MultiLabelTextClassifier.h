@@ -106,11 +106,9 @@ class MultiLabelTextClassifier {
     return _classifier->predict({pred_data}, {}, pred_labels, config);
   }
 
-  BoltVector predictSingle(const std::vector<uint32_t>& tokens,
-                           float threshold = 0.95) {
+  BoltVector predictSingleFromSentence(std::string sentence, float threshold = 0.95) {
     float epsilon = 0.001;
 
-    std::string sentence = tokensToSentence(tokens);
     // The following step must be separate from the above
     // because we need to keep the sentence in scope and alive.
     std::vector<std::string_view> sample = {std::string_view(sentence.data(), sentence.size())};
@@ -132,6 +130,12 @@ class MultiLabelTextClassifier {
     }
 
     return output;
+  }
+
+  BoltVector predictSingleFromTokens(const std::vector<uint32_t>& tokens,
+                           float threshold = 0.95) {
+    std::string sentence = tokensToSentence(tokens);
+    return predictSingleFromSentence(sentence, threshold);
   }
 
   void save(const std::string& filename) {
