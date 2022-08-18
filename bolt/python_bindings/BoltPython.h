@@ -13,6 +13,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <_types/_uint32_t.h>
 #include <compression/src/CompressedVector.h>
+#include <compression/src/ConversionUtils.h>
 #include <compression/src/DragonVector.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
@@ -24,8 +25,10 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <csignal>
+#include <cstdint>
 #include <exception>
 #include <iostream>
 #include <limits>
@@ -436,6 +439,7 @@ class DistributedPyNetwork final : public DistributedModel {
             DistributedModel::getWeightsGradient(layer_index),
             compression_density, uint32_t(dim * prev_dim), seed_for_hashing);
       }
+
       compressed_vector["compression_scheme"] = "dragon";
       compressed_vector["original_size"] = dragon_sketch.getOriginalSize();
       compressed_vector["sketch_size"] = dragon_sketch.getSketchSize();
@@ -449,9 +453,63 @@ class DistributedPyNetwork final : public DistributedModel {
 
       return compressed_vector;
     }
+
     compressed_vector["is_empty"] = true;
     throw std::logic_error("Not a valid compression scheme specified");
     return compressed_vector;
+  }
+
+  void setCompressedGradients(uint32_t layer_index, bool set_biases,
+                              const py::object& compressed_vector) {
+    if (py::cast<std::string>(compressed_vector["compression_scheme"]) ==
+        "dragon") {
+      // std::cout << "Compression scheme is dragon" << std::endl;
+
+      using thirdai::compression::python::NumpyArray;
+
+      NumpyArray<uint32_t> indices =
+          compressed_vector["indices"].cast<NumpyArray<uint32_t>>();
+
+      NumpyArray<float> values =
+          compressed_vector["values"].cast<NumpyArray<float>>();
+
+      std::vector<uint32_t> vector_indices =
+          thirdai::compression::python::make_vector_from_1d_numpy_array(
+              py::cast<py::array_t<uint32_t>>(indices));
+
+      std::vector<float> vector_values =
+          thirdai::compression::python::make_vector_from_1d_numpy_array(
+              py::cast<py::array_t<float>>(values));
+
+      compression::DragonVector<float> dragon_sketch =
+          compression::DragonVector<float>(
+              std::move(vector_indices), std::move(vector_values),
+              py::cast<std::uint32_t>(compressed_vector["sketch_size"]),
+              py::cast<std::uint32_t>(compressed_vector["original_size"]),
+              py::cast<int>(compressed_vector["seed_for_hashing"]));
+
+      std::vector<float> gradients = dragon_sketch.decompressVector();
+
+      // std::cout << "start printing the decompressed gradients\n";
+      // for (int i = 0; i < 100; i++) {
+      //   std::cout << gradients[i] << " ";
+      //   if ((i + 1) % 10 == 0) {
+      //     std::cout << std::endl;
+      //   }
+      // }
+      // std::cout << "done printing the decompressed gradients\n";
+
+      if (set_biases) {
+        DistributedModel::setBiasesGradients(layer_index, gradients.data());
+      } else {
+        DistributedModel::setWeightGradients(layer_index, gradients.data());
+      }
+      return;
+    }
+
+    (void)layer_index;
+    (void)set_biases;
+    throw std::logic_error("Compression Scheme specified does not exist :/");
   }
 };
 
