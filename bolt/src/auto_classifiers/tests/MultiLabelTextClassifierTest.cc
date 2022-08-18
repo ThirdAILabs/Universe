@@ -1,5 +1,5 @@
 #include "AutoClassifierTestUtils.h"
-#include <bolt/src/auto_classifiers/WayfairClassifier.h>
+#include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
 #include <gtest/gtest.h>
@@ -19,9 +19,9 @@ float getFMeasure(std::vector<BoltVector> outputs,
   return metric.getMetricAndReset(/* verbose= */ false);
 }
 
-TEST(WayfairClassifierTest, TestLoadSave) {
-  std::shared_ptr<bolt::WayfairClassifier> model =
-      std::make_shared<WayfairClassifier>(/* n_classes= */ 5);
+TEST(MultiLabeelTextClassifierTest, TestLoadSave) {
+  std::shared_ptr<MultiLabelTextClassifier> model =
+      std::make_shared<MultiLabelTextClassifier>(/* n_classes= */ 5);
 
   std::vector<std::string> train_contents = {"1\t1 1", "2\t2 2", "3\t3 3",
                                              "4\t4 4"};
@@ -31,28 +31,28 @@ TEST(WayfairClassifierTest, TestLoadSave) {
   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
 
-  std::vector<float> fmeasure_thresholds = {0.9};
+  std::vector<std::string> metrics = {"f_measure(0.9)"};
 
   model->train(TRAIN_FILENAME, /* epochs = */ 3,
                /* learning_rate = */ 0.01,
-               /* fmeasure_thresholds = */ fmeasure_thresholds);
+               /* metrics = */ metrics);
 
   auto [metrics_before_saving, _1] = model->predict(
       /* filename = */ TRAIN_FILENAME,
-      /* fmeasure_thresholds = */ fmeasure_thresholds);
+      /* metrics = */ metrics);
 
   std::string SAVE_LOCATION = "textSaveLocation";
   model->save(SAVE_LOCATION);
-  auto new_model = WayfairClassifier::load(SAVE_LOCATION);
+  auto new_model = MultiLabelTextClassifier::load(SAVE_LOCATION);
 
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
       new_model->predict(
           /* filename = */ TRAIN_FILENAME,
-          /* fmeasure_thresholds = */ fmeasure_thresholds));
+          /* metrics = */ metrics));
 
   auto [metrics_after_loading, _2] = new_model->predict(
       /* filename = */ TRAIN_FILENAME,
-      /* fmeasure_thresholds = */ fmeasure_thresholds);
+      /* metrics = */ metrics);
 
   for (auto& [key, value] : metrics_before_saving) {
     ASSERT_EQ(value, metrics_after_loading[key]);
@@ -62,20 +62,20 @@ TEST(WayfairClassifierTest, TestLoadSave) {
   std::remove(SAVE_LOCATION.c_str());
 }
 
-TEST(WayfairClassifierTest, TestPredictSingle) {
-  std::shared_ptr<bolt::WayfairClassifier> model =
-      std::make_shared<WayfairClassifier>(/* n_classes= */ 3);
+TEST(MultiLabelTextClassifierTest, TestPredictSingle) {
+  std::shared_ptr<bolt::MultiLabelTextClassifier> model =
+      std::make_shared<MultiLabelTextClassifier>(/* n_classes= */ 3);
 
   std::vector<std::string> train_contents = {"0,1\t1 1", "2\t2 2", "0,1\t1 1",
                                              "2\t2 2"};
   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
 
-  std::vector<float> fmeasure_thresholds = {0.9};
+  std::vector<std::string> metrics = {"f_measure(0.9)"};
 
   model->train(TRAIN_FILENAME, /* epochs = */ 3,
                /* learning_rate = */ 0.01,
-               /* fmeasure_thresholds= */ fmeasure_thresholds);
+               /* metrics= */ metrics);
 
   auto output = model->predictSingle({1, 1});
   std::cout << output << std::endl;
@@ -87,10 +87,10 @@ TEST(WayfairClassifierTest, TestPredictSingle) {
  * One of the requirements of the Wayfair Classifier
  *
  */
-TEST(WayfairClassifierTest,
+TEST(MultiLabelTextClassifierTest,
      PredictSingleReturnsAtLeastOneActivationAboveThreshold) {
-  std::shared_ptr<bolt::WayfairClassifier> model =
-      std::make_shared<WayfairClassifier>(/* n_classes= */ 100);
+  std::shared_ptr<bolt::MultiLabelTextClassifier> model =
+      std::make_shared<MultiLabelTextClassifier>(/* n_classes= */ 100);
 
   // Intentionally predict before training so we can expect most classes
   auto output = model->predictSingle({1, 1}, /* threshold= */ 0.0);
@@ -114,9 +114,9 @@ TEST(WayfairClassifierTest,
   ASSERT_EQ(n_above_threshold, 1);
 }
 
-TEST(WayfairClassifierTest, ConsistentPredictAndPredictSingle) {
-  std::shared_ptr<bolt::WayfairClassifier> model =
-      std::make_shared<WayfairClassifier>(/* n_classes= */ 500);
+TEST(MultiLabelTextClassifierTest, ConsistentPredictAndPredictSingle) {
+  std::shared_ptr<bolt::MultiLabelTextClassifier> model =
+      std::make_shared<MultiLabelTextClassifier>(/* n_classes= */ 500);
 
   std::vector<std::string> train_contents = {"1,10\t1 1", "2,20,200\t2 2",
                                              "3\t3 3", "4,400\t4 4"};
@@ -124,15 +124,16 @@ TEST(WayfairClassifierTest, ConsistentPredictAndPredictSingle) {
   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
 
-  std::vector<float> fmeasure_thresholds = {0.1, 0.2, 0.9};
+  std::vector<float> f_measure_thresholds = {0.1, 0.2, 0.9};
+  std::vector<std::string> metrics = {"f_measure(0.1)", "f_measure(0.2)", "f_measure(0.9)"};
 
   model->train(TRAIN_FILENAME, /* epochs = */ 5,
                /* learning_rate = */ 0.01,
-               /* fmeasure_thresholds = */ fmeasure_thresholds);
+               /* metrics = */ metrics);
 
   auto [prediction_metrics, _] = model->predict(
       /* filename = */ TRAIN_FILENAME,
-      /* fmeasure_thresholds = */ fmeasure_thresholds);
+      /* metrics = */ metrics);
 
   std::vector<BoltVector> vector_labels = {
       BoltVector::makeSparseVector({1, 10}, {1.0, 1.0}),
@@ -149,11 +150,9 @@ TEST(WayfairClassifierTest, ConsistentPredictAndPredictSingle) {
     single_inference_outputs.push_back(model->predictSingle(sample));
   }
 
-  for (auto threshold : fmeasure_thresholds) {
-    std::stringstream metric_name_ss;
-    metric_name_ss << "f_measure_" << threshold;
-    ASSERT_NEAR(getFMeasure(single_inference_outputs, vector_labels, threshold),
-                prediction_metrics[metric_name_ss.str()],
+  for (uint32_t i = 0; i < f_measure_thresholds.size(); i++) {
+    ASSERT_NEAR(getFMeasure(single_inference_outputs, vector_labels, f_measure_thresholds[i]),
+                prediction_metrics[metrics[i]],
                 /* abs_error= */ 0.000001);
   }
 }

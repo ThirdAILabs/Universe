@@ -505,20 +505,19 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<PyMultiLabelTextClassifier>(bolt_submodule, "MultiLabelTextClassifier")
       .def(py::init<uint32_t>(), py::arg("n_classes"),
-           "Constructs a WayfairClassifier with autotuning.\n"
+           "Constructs a MultiLabelTextClassifier with autotuning.\n"
            "Arguments:\n"
            " * n_classes: int - How many classes or categories are in the "
            "labels of the dataset.\n")
       .def("train", &PyMultiLabelTextClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("fmeasure_thresholds") = std::vector<float>{0.9},
+           py::arg("metrics") = std::vector<std::string>(),
            "Trains the classifier on the given dataset.\n"
            "Arguments:\n"
            " * train_file: string - The path to the training dataset to use.\n"
            " * epochs: Int - How many epochs to train for.\n"
            " * learning_rate: Float - The learning rate to use for training.\n"
-           " * fmeasure_threshold: Float - The threshold for F-Measure "
-           "metric.\n")
+           " * metrics: List[string] - Metrics to use during training.\n")
       .def("predict_single", &PyMultiLabelTextClassifier::predictSingle,
            py::arg("tokens"),
            "Given a list of tokens, predict the likelihood of each output "
@@ -527,13 +526,12 @@ void createBoltSubmodule(py::module_& module) {
            " * tokens: List[Int] - A list of integer tokens.\n")
       .def(
           "predict", &PyMultiLabelTextClassifier::predict, py::arg("test_file"),
-          py::arg("fmeasure_thresholds") = std::vector<float>{0.9},
+          py::arg("metrics") = std::vector<std::string>(),
           "Runs the classifier on the specified test dataset and optionally "
           "logs the prediction to a file.\n"
           "Arguments:\n"
           " * test_file: string - The path to the test dataset to use.\n"
-          " * fmeasure_threshold: Float - The threshold for F-Measure metric.\n"
-          " * output_file: string - Optional argument, if this is specified "
+          " * metrics: List[string] - Metrics to use during training.\n"
           "then the classifier will output the name of the class/category of "
           "each prediction this file with one prediction result on each "
           "line.\n")

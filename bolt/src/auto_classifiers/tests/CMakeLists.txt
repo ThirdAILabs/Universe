@@ -18,9 +18,9 @@ target_link_libraries(
   gtest_main
 )
 
-add_executable(bolt_wayfair_classifier_test WayfairClassifierTest.cc)
+add_executable(bolt_multi_label_text_classifier_test MultiLabelTextClassifierTest.cc)
 target_link_libraries(
-  bolt_wayfair_classifier_test
+  bolt_multi_label_text_classifier_test
   PRIVATE
   auto_classifier_lib
   bolt_network_lib
@@ -30,4 +30,4 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(bolt_tabular_classifier_test)
 gtest_discover_tests(bolt_text_classifier_test)
-gtest_discover_tests(bolt_wayfair_classifier_test)
+gtest_discover_tests(bolt_multi_label_text_classifier_test)

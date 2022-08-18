@@ -308,7 +308,7 @@ class FMeasure final : public Metric {
 
   std::string getName() final {
     std::stringstream name_ss;
-    name_ss << name << '_' << _threshold;
+    name_ss << name << '(' << _threshold << ')';
     return name_ss.str();
   }
 
