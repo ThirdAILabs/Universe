@@ -444,8 +444,8 @@ class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
       : MultiLabelTextClassifier(n_classes) {}
 
   py::array_t<float, py::array::c_style | py::array::forcecast> predictSingle(
-      const std::vector<uint32_t>& tokens) {
-    auto output = MultiLabelTextClassifier::predictSingle(tokens);
+      const std::vector<uint32_t>& tokens, float activation_threshold=0.95) {
+    auto output = MultiLabelTextClassifier::predictSingle(tokens, activation_threshold);
 
     uint32_t num_samples = 1;
     float* activations;

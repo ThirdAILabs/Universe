@@ -107,8 +107,8 @@ class MultiLabelTextClassifier {
   }
 
   BoltVector predictSingle(const std::vector<uint32_t>& tokens,
-                           float threshold = 0.9) {
-    float epsilon = 0.01;
+                           float threshold = 0.95) {
+    float epsilon = 0.001;
 
     std::string sentence = tokensToSentence(tokens);
     // The following step must be separate from the above

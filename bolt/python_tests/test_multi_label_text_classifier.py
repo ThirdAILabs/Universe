@@ -7,7 +7,7 @@ import numpy as np
 
 @pytest.mark.unit
 def test_load_save():
-    model = bolt.WayfairClassifier(n_classes=931)
+    model = bolt.MultiLabelTextClassifier(n_classes=931)
 
     train_contents = ["1\t1 1\n", "2\t2 2\n", "3\t3 3\n", "4\t4 4\n"]
 
@@ -18,8 +18,9 @@ def test_load_save():
             f.write(line)
 
     threshold = 0.9
+    metrics = "f_measure(0.9)"
     model.train(
-        temp_train_file, epochs=5, learning_rate=0.01, fmeasure_thresholds=[threshold]
+        temp_train_file, epochs=5, learning_rate=0.01, metrics=metrics
     )
 
     inference_sample = [1, 1]
@@ -33,7 +34,7 @@ def test_load_save():
     model_save_file = "saved_model"
     model.save(model_save_file)
 
-    reloaded_model = bolt.WayfairClassifier.load(model_save_file)
+    reloaded_model = bolt.MultiLabelTextClassifier.load(model_save_file)
     activations_after_load = reloaded_model.predict_single(inference_sample)
 
     assert (activations_before_save == activations_after_load).all()
@@ -43,9 +44,9 @@ def test_load_save():
 
 @pytest.mark.unit
 def test_inference_under_1ms():
-    model = bolt.WayfairClassifier(n_classes=931)
+    model = bolt.MultiLabelTextClassifier(n_classes=931)
 
-    inference_sample = [i for i in range(10)]
+    inference_sample = [i for i in range(5)]
 
     start_time = time.time()
     activations = model.predict_single(inference_sample)

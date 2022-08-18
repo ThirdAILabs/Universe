@@ -519,7 +519,7 @@ void createBoltSubmodule(py::module_& module) {
            " * learning_rate: Float - The learning rate to use for training.\n"
            " * metrics: List[string] - Metrics to use during training.\n")
       .def("predict_single", &PyMultiLabelTextClassifier::predictSingle,
-           py::arg("tokens"),
+           py::arg("tokens"), py::arg("activation_threshold")=0.95,
            "Given a list of tokens, predict the likelihood of each output "
            "class. \n"
            "Arguments:\n"
