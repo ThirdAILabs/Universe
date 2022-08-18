@@ -1,7 +1,7 @@
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from .model import Model
+from thirdai._distributed_bolt._models.fully_connected_network_model import FullyConnectedNetworkModel
 
 
 def calculate_partitions(partition_length: int, partition_id: int, total_length: int):
@@ -47,7 +47,7 @@ class Worker:
         """
 
         # Setting up Model
-        self.model = Model(config, total_nodes, layer_dims, id)
+        self.model = FullyConnectedNetworkModel(config, total_nodes, layer_dims, id)
 
         # Set up variables
         self.total_nodes = total_nodes

@@ -1,1 +1,1 @@
-from .distributed_bolt import *
+from .distributed_fully_connected import *

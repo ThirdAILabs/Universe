@@ -2,7 +2,7 @@ import numpy as np
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from .worker import Worker
+from thirdai._distributed_bolt._private.worker import Worker
 
 
 @ray.remote(max_restarts=2)
