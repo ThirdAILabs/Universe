@@ -77,7 +77,7 @@ TEST(MultiLabelTextClassifierTest, TestPredictSingle) {
                /* learning_rate = */ 0.01,
                /* metrics= */ metrics);
 
-  auto output = model->predictSingle({1, 1});
+  auto output = model->predictSingleFromTokens({1, 1});
   std::cout << output << std::endl;
   ASSERT_GT(output.activations[0], output.activations[2]);
   ASSERT_GT(output.activations[1], output.activations[2]);
@@ -93,7 +93,7 @@ TEST(MultiLabelTextClassifierTest,
       std::make_shared<MultiLabelTextClassifier>(/* n_classes= */ 100);
 
   // Intentionally predict before training so we can expect most classes
-  auto output = model->predictSingle({1, 1}, /* threshold= */ 0.0);
+  auto output = model->predictSingleFromTokens({1, 1}, /* threshold= */ 0.0);
 
   float max_act = -std::numeric_limits<float>::max();
   for (uint32_t pos = 0; pos < output.len; pos++) {
@@ -101,7 +101,7 @@ TEST(MultiLabelTextClassifierTest,
   }
 
   float threshold = max_act + 0.1;
-  auto thresholded_output = model->predictSingle({1, 1}, threshold);
+  auto thresholded_output = model->predictSingleFromTokens({1, 1}, threshold);
 
   uint32_t n_above_threshold = 0;
   for (uint32_t pos = 0; pos < output.len; pos++) {
@@ -147,7 +147,7 @@ TEST(MultiLabelTextClassifierTest, ConsistentPredictAndPredictSingle) {
   std::vector<BoltVector> single_inference_outputs;
   single_inference_outputs.reserve(single_inference_samples.size());
   for (auto& sample : single_inference_samples) {
-    single_inference_outputs.push_back(model->predictSingle(sample));
+    single_inference_outputs.push_back(model->predictSingleFromTokens(sample));
   }
 
   for (uint32_t i = 0; i < f_measure_thresholds.size(); i++) {

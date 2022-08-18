@@ -24,7 +24,7 @@ def test_load_save():
     )
 
     inference_sample = [1, 1]
-    activations_before_save = model.predict_single(inference_sample)
+    activations_before_save = model.predict_single_from_tokens(inference_sample)
 
     assert activations_before_save.shape == (931,)
     # We expect the model to predict class 1; class 1 should have max activation.
@@ -35,7 +35,7 @@ def test_load_save():
     model.save(model_save_file)
 
     reloaded_model = bolt.MultiLabelTextClassifier.load(model_save_file)
-    activations_after_load = reloaded_model.predict_single(inference_sample)
+    activations_after_load = reloaded_model.predict_single_from_tokens(inference_sample)
 
     assert (activations_before_save == activations_after_load).all()
 
@@ -49,7 +49,7 @@ def test_inference_under_1ms():
     inference_sample = [i for i in range(5)]
 
     start_time = time.time()
-    activations = model.predict_single(inference_sample)
+    activations = model.predict_single_from_tokens(inference_sample)
     end_time = time.time()
 
     assert (end_time - start_time) < 0.001
