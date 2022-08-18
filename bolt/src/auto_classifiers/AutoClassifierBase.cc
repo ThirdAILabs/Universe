@@ -1,4 +1,5 @@
 #include "AutoClassifierBase.h"
+#include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/BoltVector.h>
 
 #if defined __linux
@@ -16,7 +17,9 @@
 namespace thirdai::bolt {
 
 AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
-                                       const std::string& model_size) {
+                                       const std::string& model_size,
+                                       bool is_training_distributed)
+    : _is_training_distributed(is_training_distributed) {
   uint32_t hidden_layer_size =
       getHiddenLayerSize(model_size, n_classes, input_dim);
 
@@ -39,6 +42,27 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
                                        output_layer);
 
   _model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
+}
+
+void AutoClassifierBase::initClassifierDistributedTraining(
+    const std::string& filename,
+    const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
+        batch_processor,
+    uint32_t epochs, float learning_rate) {
+  auto dataset = loadStreamingDataset(filename, batch_processor);
+
+  if (!canLoadDatasetInMemory(filename)) {
+    throw std::invalid_argument("Cannot load dataset in memory.");
+  }
+  auto [train_data, train_labels] = dataset->loadInMemory();
+
+  TrainConfig train_config =
+      TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
+                              /* epochs= */ epochs)
+          .withMetrics({"categorical_accuracy"});
+
+  _distributed_train_context = std::make_shared<DistributedTrainingContext>(
+      _model, train_data, train_labels, train_config);
 }
 
 void AutoClassifierBase::train(

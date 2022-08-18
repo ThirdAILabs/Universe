@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/graph/DistributedBoltGraph.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -17,13 +18,26 @@ namespace thirdai::bolt {
 class AutoClassifierBase {
  public:
   AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
-                     const std::string& model_size);
+                     const std::string& model_size,
+                     bool is_training_distributed = false);
 
   void train(
       const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
       uint32_t epochs, float learning_rate);
+
+  void initClassifierDistributedTraining(
+      const std::string& filename,
+      const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
+          batch_processor,
+      uint32_t epochs, float learning_rate);
+
+  DistributedTrainingContext getDistributedTrainingContext() {
+    return *(_distributed_train_context);
+  }
+
+  BoltGraph getBoltGraphModel() { return *(_model); }
 
   void predict(
       const std::string& filename,
@@ -66,6 +80,8 @@ class AutoClassifierBase {
   }
 
   BoltGraphPtr _model;
+  bool _is_training_distributed;
+  DistributedTrainingContextptr _distributed_train_context;
 };
 
 }  // namespace thirdai::bolt

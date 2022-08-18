@@ -692,7 +692,18 @@ void createBoltSubmodule(py::module_& module) {
           "load", &TabularClassifier::load, py::arg("filename"),
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
-          " * filename: string - The location of the saved classifier.\n");
+          " * filename: string - The location of the saved classifier.\n")
+      .def("init_classifier_distributed_training",
+           &TabularClassifier::initClassifierDistributedTraining,
+           py::arg("train_file"), py::arg("column_datatypes"),
+           py::arg("epochs"), py::arg("learning_rate"),
+           "Initializes distributed training For Tabular Classifiers.\n")
+      .def("get_distributed_training_context",
+           &TabularClassifier::getDistributedTrainingContext,
+           "Returns Context for Distributed Training.\n"
+           "This context provide functions for distributed training\n")
+      .def("get_bolt_graph_model", &TabularClassifier::getBoltGraphModel,
+           "Returns model for tabular classifier.\n");
 
   py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
       .def(py::init<const std::string&>(), py::arg("model_path"))
