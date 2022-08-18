@@ -1,8 +1,5 @@
 #include "AutoClassifierBase.h"
-#include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
-#include <memory>
-#include <tuple>
 
 #if defined __linux
 #include <sys/sysinfo.h>
@@ -25,28 +22,31 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
-  std::vector<std::pair<uint32_t, float>> hidden_layer_config = {
-      {hidden_layer_size, hidden_layer_sparsity}};
+  auto input_layer = std::make_shared<Input>(input_dim);
 
-  _model = buildModel(input_dim, hidden_layer_config, n_classes,
-                      /* output_layer_sparsity = */ 1.0);
-}
+  auto hidden_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
+      /* activation= */ "relu");
 
-AutoClassifierBase::AutoClassifierBase(
-    uint64_t input_dim,
-    std::vector<std::pair<uint32_t, float>> hidden_layer_configs,
-    uint32_t output_layer_size, float output_layer_sparsity) {
-  _model = buildModel(input_dim, hidden_layer_configs, output_layer_size,
-                      output_layer_sparsity);
+  hidden_layer->addPredecessor(input_layer);
+
+  auto output_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ n_classes, /* activation= */ "softmax");
+
+  output_layer->addPredecessor(hidden_layer);
+
+  _model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
+                                       output_layer);
+
+  _model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
 }
 
 void AutoClassifierBase::train(
     const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
-    uint32_t epochs, float learning_rate, bool prepare_for_sparse_inference,
-    const std::vector<std::string>& metrics, uint32_t batch_size) {
-  auto dataset = loadStreamingDataset(filename, batch_processor, batch_size);
+    uint32_t epochs, float learning_rate) {
+  auto dataset = loadStreamingDataset(filename, batch_processor);
 
   // The case has yet to come up where loading the dataset in
   // memory is a concern. Additionally, supporting streaming datasets in the DAG
@@ -60,38 +60,32 @@ void AutoClassifierBase::train(
   auto [train_data, train_labels] = dataset->loadInMemory();
 
   TrainConfig first_epoch_config =
-      TrainConfig::makeConfig(
-          /* learning_rate= */ learning_rate,
-          /* epochs= */ prepare_for_sparse_inference ? 1 : epochs)
-          .withMetrics(metrics);
-
-  _model->train({train_data}, {}, train_labels, first_epoch_config);
+      TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
+                              /* epochs= */ 1)
+          .withMetrics({"categorical_accuracy"});
 
   // TODO(david) verify freezing hash tables is good for autoclassifier
   // training. The only way we can really test this is when we have a validation
   // based early stop callback already implemented.
-  if (prepare_for_sparse_inference) {
-    _model->freezeHashTables(/* insert_labels_if_not_found */ true);
+  _model->train({train_data}, {}, train_labels, first_epoch_config);
+  _model->freezeHashTables(/* insert_labels_if_not_found */ true);
 
-    TrainConfig remaining_epochs_config =
-        TrainConfig::makeConfig(/* learning_rate= */
-                                learning_rate,
-                                /* epochs= */ epochs - 1)
-            .withMetrics(metrics);
+  TrainConfig remaining_epochs_config =
+      TrainConfig::makeConfig(/* learning_rate= */
+                              learning_rate,
+                              /* epochs= */ epochs - 1)
+          .withMetrics({"categorical_accuracy"});
 
-    _model->train({train_data}, {}, train_labels, remaining_epochs_config);
-  }
+  _model->train({train_data}, {}, train_labels, remaining_epochs_config);
 }
 
-InferenceResult AutoClassifierBase::predict(
+void AutoClassifierBase::predict(
     const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
     const std::optional<std::string>& output_filename,
-    const std::vector<std::string>& class_id_to_class_name,
-    bool use_sparse_inference, const std::vector<std::string>& metrics,
-    bool silent, uint32_t batch_size) {
-  auto dataset = loadStreamingDataset(filename, batch_processor, batch_size);
+    const std::vector<std::string>& class_id_to_class_name) {
+  auto dataset = loadStreamingDataset(filename, batch_processor);
 
   // see comment above in train(..) about loading in memory
   if (!canLoadDatasetInMemory(filename)) {
@@ -112,23 +106,17 @@ InferenceResult AutoClassifierBase::predict(
     (*output_file) << class_id_to_class_name[class_id] << std::endl;
   };
 
-  PredictConfig config =
-      PredictConfig::makeConfig().withMetrics(metrics).withOutputCallback(
-          print_predictions_callback);
-  if (use_sparse_inference) {
-    config = config.enableSparseInference();
-  }
-  if (silent) {
-    config = config.silence();
-  }
+  PredictConfig config = PredictConfig::makeConfig()
+                             .enableSparseInference()
+                             .withMetrics({"categorical_accuracy"})
+                             .withOutputCallback(print_predictions_callback)
+                             .silence();
 
-  auto result = _model->predict({test_data}, {}, test_labels, config);
+  _model->predict({test_data}, {}, test_labels, config);
 
   if (output_file) {
     output_file->close();
   }
-
-  return result;
 }
 
 BoltVector AutoClassifierBase::predictSingle(
@@ -192,46 +180,13 @@ float AutoClassifierBase::getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
-BoltGraphPtr AutoClassifierBase::buildModel(
-    uint32_t input_dim,
-    std::vector<std::pair<uint32_t, float>>& hidden_layer_configs,
-    uint32_t output_layer_size, float output_layer_sparsity) {
-  auto input_layer = std::make_shared<Input>(input_dim);
-  NodePtr prev_layer = input_layer;
-
-  for (auto size_and_sparsity : hidden_layer_configs) {
-    auto hidden_layer = std::make_shared<FullyConnectedNode>(
-        /* dim= */ size_and_sparsity.first,
-        /* sparsity= */ size_and_sparsity.second,
-        /* activation= */ "relu");
-
-    hidden_layer->addPredecessor(prev_layer);
-    prev_layer = hidden_layer;
-  }
-
-  auto output_layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ output_layer_size, /* sparsity= */ output_layer_sparsity,
-      /* activation= */ "softmax");
-
-  output_layer->addPredecessor(prev_layer);
-
-  auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
-                                           output_layer);
-
-  model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
-
-  return model;
-}
-
 constexpr uint64_t ONE_GB = 1 << 30;
-constexpr uint64_t ONE_MB = 1 << 20;
 
 uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
   std::regex small_re("[Ss]mall");
   std::regex medium_re("[Mm]edium");
   std::regex large_re("[Ll]arge");
   std::regex gig_re("[1-9]\\d* ?Gb");
-  std::regex meg_re("[1-9]\\d* ?Mb");
 
   std::optional<uint64_t> system_ram_opt = getSystemRam();
 
@@ -262,11 +217,8 @@ uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
     return std::min<uint64_t>(system_ram / 4, 4 * ONE_GB);
   }
 
-  bool requested_gb = std::regex_search(model_size, gig_re);
-  bool requested_mb = std::regex_search(model_size, meg_re);
-  if (requested_gb || requested_mb) {
-    uint64_t multiplier = requested_gb ? ONE_GB : ONE_MB;
-    uint64_t requested_size = std::stoull(model_size) * multiplier;
+  if (std::regex_search(model_size, gig_re)) {
+    uint64_t requested_size = std::stoull(model_size) * ONE_GB;
 
     if (requested_size > (system_ram / 2)) {
       std::cout << "WARNING: You have requested " << model_size
@@ -279,9 +231,8 @@ uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
   }
 
   throw std::invalid_argument(
-      "'model_size' parameter must be either 'small', 'medium', 'large', "
-      "a gigabyte size of the model, i.e. 5Gb, or "
-      "a megabyte size of the model, i.e. 500Mb");
+      "'model_size' parameter must be either 'small', 'medium', 'large', or "
+      "a gigabyte size of the model, i.e. 5Gb");
 }
 
 std::optional<uint64_t> AutoClassifierBase::getSystemRam() {
