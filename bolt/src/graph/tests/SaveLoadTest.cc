@@ -4,6 +4,7 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <gtest/gtest.h>
 #include <cstdio>
@@ -20,14 +21,20 @@ class ModelWithLayers {
   ModelWithLayers() {
     input = std::make_shared<Input>(n_classes);
 
-    hidden1 = std::make_shared<FullyConnectedNode>(2000, 0.1, "relu");
+    hidden1 = std::make_shared<FullyConnectedNode>(2000, "relu");
     hidden1->addPredecessor(input);
 
-    hidden2 = std::make_shared<FullyConnectedNode>(2000, 0.1, "relu");
+    normalized_hidden1 = std::make_shared<LayerNormNode>();
+    normalized_hidden1->addPredecessor(hidden1);
+
+    hidden2 = std::make_shared<FullyConnectedNode>(2000, "relu");
     hidden2->addPredecessor(input);
 
+    normalized_hidden2 = std::make_shared<LayerNormNode>();
+    normalized_hidden2->addPredecessor(hidden2);
+
     concat = std::make_shared<ConcatenateNode>();
-    concat->setConcatenatedNodes({hidden1, hidden2});
+    concat->setConcatenatedNodes({normalized_hidden1, normalized_hidden2});
 
     output = std::make_shared<FullyConnectedNode>(n_classes, "softmax");
     output->addPredecessor(concat);
@@ -56,6 +63,8 @@ class ModelWithLayers {
   InputPtr input;
   std::shared_ptr<FullyConnectedNode> hidden1;
   std::shared_ptr<FullyConnectedNode> hidden2;
+  std::shared_ptr<LayerNormNode> normalized_hidden1;
+  std::shared_ptr<LayerNormNode> normalized_hidden2;
   std::shared_ptr<ConcatenateNode> concat;
   std::shared_ptr<FullyConnectedNode> output;
 
