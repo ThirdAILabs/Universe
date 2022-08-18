@@ -29,7 +29,8 @@ class DragonVector final : public CompressedVector<T> {
                         int seed_for_hashing);
 
   explicit DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
-                        uint32_t size, int seed_for_hashing);
+                        uint32_t size, uint32_t original_size,
+                        int seed_for_hashing);
 
   explicit DragonVector(const T* values, float compression_density,
                         uint32_t size, int seed_for_hashing);
@@ -46,7 +47,8 @@ class DragonVector final : public CompressedVector<T> {
   // array as well?
   void assign(uint32_t size, T value) final;
 
-  void assign(uint32_t size, uint32_t index, T value);
+  void assign(uint32_t size, uint32_t index, T value,
+              uint32_t original_size = 0);
 
   void clear() final;
 
@@ -74,6 +76,8 @@ class DragonVector final : public CompressedVector<T> {
 
   std::vector<T> getValues() { return _values; }
 
+  std::vector<T> decompressVector() const final;
+
  private:
   /*
    * If we add a lot of compression schemes, we should have a sparse vector
@@ -83,7 +87,8 @@ class DragonVector final : public CompressedVector<T> {
 
   std::vector<uint32_t> _indices;
   std::vector<T> _values;
-  uint32_t _sketch_size;
+  uint32_t _sketch_size = 0;
+  uint32_t _original_size = 0;
   float _compression_density = 1;
   int _seed_for_hashing;
   uint32_t _min_sketch_size = 10;

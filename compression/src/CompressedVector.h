@@ -48,10 +48,7 @@ class CompressedVector {
 
   virtual bool isAllReducible() const = 0;
 
-  // virtual void extend(const CompressedVector<T>& raw) = 0;
-
-  // virtual std::vector<CompressedVector<T>> split(int number_chunks) const =
-  // 0;
+  virtual std::vector<T> decompressVector() const = 0;
 
   virtual ~CompressedVector() = default;
 
