@@ -6,8 +6,10 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <chrono>
 #include <cstddef>
 #include <memory>
+#include <tuple>
 
 namespace thirdai::dataset {
 
@@ -80,11 +82,24 @@ class StreamingGenericDatasetLoader
   }
 
   std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadInMemory() final {
+    std::cout << "Loading vectors from '" + _data_loader->resourceName() + "'"
+               << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
     while (addNextBatchToBuffer()) {
     }
     auto [input_batches, label_batches] = _buffer.exportBuffer();
-    return {std::make_shared<BoltDataset>(std::move(input_batches)),
-            std::make_shared<BoltDataset>(std::move(label_batches))};
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+    auto dataset = std::make_tuple(
+      std::make_shared<BoltDataset>(std::move(input_batches)),
+      std::make_shared<BoltDataset>(std::move(label_batches))
+    ); 
+
+    std::cout << "Loaded " << std::get<0>(dataset)->len() << " vectors from '" + _data_loader->resourceName() + "'"
+               << " in " << duration << " seconds." << std::endl;
+
+    return dataset;
   }
 
   uint32_t getInputDim() { return _processor->getInputDim(); }
