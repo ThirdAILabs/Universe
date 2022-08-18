@@ -1,9 +1,9 @@
 from typing import Dict, List
 from thirdai._thirdai import bolt, dataset
-from .utils import load_dataset, make_layers_from_config
+from thirdai._distributed_bolt.utils import load_dataset, make_layers_from_config
 
 
-class Model:
+class FullyConnectedNetworkModel:
     """This class implements the APIs to create, train and predict on a network
     which workers are running. Currently, It only supports FullyConnectedNetwork.
     However, It could easily be extended to other models too. The functions
