@@ -37,12 +37,10 @@ MetricData Model<BATCH_T>::train(
 
   std::vector<double> time_per_epoch;
 
-  MetricAggregator metrics(metric_names, verbose);
+  MetricAggregator metrics(metric_names);
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    if (verbose) {
-      spdlog::info("Epoch {}:", _epoch_count + 1);
-    }
+    spdlog::info("Epoch {}:", _epoch_count + 1);
     ProgressBar bar(num_train_batches, verbose);
     auto train_start = std::chrono::high_resolution_clock::now();
 
@@ -66,10 +64,8 @@ MetricData Model<BATCH_T>::train(
                              .count();
 
     time_per_epoch.push_back(static_cast<double>(epoch_time));
-    if (verbose) {
-      spdlog::info("Processed {} training batches in {} seconds.",
-                   num_train_batches, epoch_time);
-    }
+    spdlog::info("Processed {} training batches in {} seconds.",
+                 num_train_batches, epoch_time);
     _epoch_count++;
 
     metrics.logAndReset();
@@ -87,16 +83,14 @@ MetricData Model<BATCH_T>::trainOnStream(
     const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
     uint32_t rebuild_batch, const std::vector<std::string>& metric_names,
     uint32_t metric_log_batch_interval, bool verbose) {
-  MetricAggregator metrics(metric_names, verbose);
+  (void)verbose;  // Silence a warning.
+  MetricAggregator metrics(metric_names);
 
   uint32_t batch_size = train_data->getMaxBatchSize();
   initializeNetworkState(batch_size, /* use_sparsity= */ true);
   BoltBatch outputs = getOutputs(batch_size, /* use_sparsity= */ true);
 
-  if (verbose) {
-    std::cout << std::endl
-              << "Processing training streaming dataset..." << std::endl;
-  }
+  spdlog::info("Processing training streaming dataset...");
 
   auto train_start = std::chrono::high_resolution_clock::now();
 
@@ -123,10 +117,7 @@ MetricData Model<BATCH_T>::trainOnStream(
       std::chrono::duration_cast<std::chrono::seconds>(train_end - train_start)
           .count();
 
-  if (verbose) {
-    std::cout << "Processed streaming dataset in " << train_time << " seconds."
-              << std::endl;
-  }
+  spdlog::info("Processed streaming dataset in {} seconds.", train_time);
 
   metrics.logAndReset();
   auto metric_data = metrics.getOutput();
@@ -186,7 +177,7 @@ InferenceMetricData Model<BATCH_T>::predict(
 
   uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
 
-  MetricAggregator metrics(metric_names, verbose);
+  MetricAggregator metrics(metric_names);
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
@@ -224,10 +215,8 @@ InferenceMetricData Model<BATCH_T>::predict(
   int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                           test_end - test_start)
                           .count();
-  if (verbose) {
-    spdlog::info("Processed {} test batches in {} milliseconds.",
-                 num_test_batches, test_time);
-  }
+  spdlog::info("Processed {} test batches in {} milliseconds.",
+               num_test_batches, test_time);
 
   metrics.logAndReset();
 
@@ -246,7 +235,8 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
     std::optional<std::function<void(const BoltBatch&, uint32_t)>>
         batch_callback,
     bool verbose) {
-  MetricAggregator metrics(metric_names, verbose);
+  (void)verbose;
+  MetricAggregator metrics(metric_names);
 
   uint32_t batch_size = test_data->getMaxBatchSize();
 
@@ -256,10 +246,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
   BoltBatch outputs =
       getOutputs(batch_size, /* use_sparsity= */ use_sparse_inference);
 
-  if (verbose) {
-    std::cout << std::endl
-              << "Processing test streaming dataset..." << std::endl;
-  }
+  spdlog::info("Processing test streaming dataset...");
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
@@ -282,10 +269,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
       std::chrono::duration_cast<std::chrono::seconds>(test_end - test_start)
           .count();
 
-  if (verbose) {
-    std::cout << "Processed streaming dataset in " << test_time << " seconds."
-              << std::endl;
-  }
+  spdlog::info("Processed streaming dataset in {} seconds.", test_time);
 
   metrics.logAndReset();
   auto metric_data = metrics.getOutputFromInference();

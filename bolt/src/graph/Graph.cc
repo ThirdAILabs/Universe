@@ -91,9 +91,7 @@ MetricData BoltGraph::train(
   // automatically delete the training state
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
-      if (train_config.verbose()) {
-        spdlog::info("Epoch {}:", (_epoch_count + 1));
-      }
+      spdlog::info("Epoch {}:", (_epoch_count + 1));
       // ProgressBar bar(train_context.numBatches(), train_config.verbose());
       auto train_start = std::chrono::high_resolution_clock::now();
 
@@ -122,10 +120,8 @@ MetricData BoltGraph::train(
                                .count();
 
       time_per_epoch.push_back(static_cast<double>(epoch_time));
-      if (train_config.verbose()) {
-        spdlog::info("Processed {} training batches in {} seconds",
-                     train_context.numBatches(), epoch_time);
-      }
+      spdlog::info("Processed {} training batches in {} seconds",
+                   train_context.numBatches(), epoch_time);
       _epoch_count++;
       metrics.logAndReset();
     }
@@ -359,10 +355,8 @@ InferenceResult BoltGraph::predict(
                           test_end - test_start)
                           .count();
 
-  if (predict_config.verbose()) {
-    spdlog::info("Processed {} test batches in {} milliseconds",
-                 predict_context.numBatches(), test_time);
-  }
+  spdlog::info("Processed {} test batches in {} milliseconds",
+               predict_context.numBatches(), test_time);
 
   metrics.logAndReset();
   auto metric_vals = metrics.getOutputFromInference();

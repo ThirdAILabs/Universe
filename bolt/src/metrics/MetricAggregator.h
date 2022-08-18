@@ -16,9 +16,7 @@ class MetricAggregator {
   // Loss function metrics are only supported during training. See comments in
   // loss function for why. A nullptr is passed in during testing to indicate
   // that it is not avilable.
-  explicit MetricAggregator(const std::vector<std::string>& metrics,
-                            bool verbose = true)
-      : _verbose(verbose) {
+  explicit MetricAggregator(const std::vector<std::string>& metrics) {
     for (const auto& name : metrics) {
       if (name == CategoricalAccuracy::name) {
         _metrics.push_back(std::make_shared<CategoricalAccuracy>());
@@ -45,14 +43,14 @@ class MetricAggregator {
 
   void logAndReset() {
     for (auto& m : _metrics) {
-      _output[m->getName()].push_back(m->getMetricAndReset(_verbose));
+      _output[m->getName()].push_back(m->getMetricAndReset());
     }
   }
 
   MetricData getMetrics() {
     MetricData output;
     for (auto& m : _metrics) {
-      output[m->getName()].push_back(m->getMetric(_verbose));
+      output[m->getName()].push_back(m->getMetric());
     }
     return output;
   }
@@ -72,7 +70,6 @@ class MetricAggregator {
  private:
   std::vector<std::shared_ptr<Metric>> _metrics;
   MetricData _output;
-  bool _verbose;
 };
 
 }  // namespace thirdai::bolt

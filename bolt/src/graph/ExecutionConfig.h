@@ -48,7 +48,7 @@ class TrainConfig {
   constexpr float learningRate() const { return _learning_rate; }
 
   MetricAggregator getMetricAggregator() const {
-    return MetricAggregator(_metric_names, _verbose);
+    return MetricAggregator(_metric_names);
   }
 
   constexpr bool verbose() const { return _verbose; }
@@ -139,7 +139,7 @@ class PredictConfig {
   bool sparseInferenceEnabled() const { return _use_sparse_inference; }
 
   MetricAggregator getMetricAggregator() const {
-    return MetricAggregator(_metric_names, _verbose);
+    return MetricAggregator(_metric_names);
   }
 
   constexpr bool verbose() const { return _verbose; }

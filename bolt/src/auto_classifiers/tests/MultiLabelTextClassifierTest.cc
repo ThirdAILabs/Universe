@@ -17,7 +17,7 @@ float getFMeasure(std::vector<BoltVector> outputs,
   for (uint32_t vec_idx = 0; vec_idx < outputs.size(); vec_idx++) {
     metric.computeMetric(outputs[vec_idx], labels[vec_idx]);
   }
-  return metric.getMetricAndReset(/* verbose= */ false);
+  return metric.getMetricAndReset();
 }
 
 TEST(MultiLabelTextClassifierTest, TestLoadSave) {
