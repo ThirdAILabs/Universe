@@ -33,6 +33,9 @@ thirdai.egg-info
 # Ignore all .der key files
 *.der
 
+#ignoring files written for test purposes
+bolt/python_tests/delete*
+
 # Docs
 docs/_*
 
@@ -49,6 +52,12 @@ wheelhouse
 
 # Output files
 *.svg
+
+#Python_tests notebooks 
+./bolt/python_tests/*.ipynb
+
+#logfiles 
+thirdai_python_package_tests/distributed_training_sample/*.log
 
 # -- Begin vim .gitignore
 # Swap

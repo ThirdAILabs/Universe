@@ -1,0 +1,32 @@
+job = "Amazon670k Product Recommendation Distributed Training"
+
+[dataset]
+train_data = ["/share/pratik/xaa.txt","/share/pratik/xab.txt"]
+test_data = "/share/data/amazon-670k/test_shuffled_noHeader_sampled.txt"
+format = "svm"
+input_dim = 135909
+max_test_batches = 20
+
+[params]
+loss_fn = "CategoricalCrossEntropyLoss"
+train_metrics = []
+test_metrics = ["categorical_accuracy"]
+learning_rate = 0.0001
+epochs = 100
+batch_size = 4096
+rehash = 6400
+rebuild = 128000
+
+[[layers]]
+dim = 256
+activation = 'ReLU'
+
+[[layers]]
+dim = 670091
+activation = 'Softmax'
+sparsity = 0.005
+use_default_sampling = true
+# hashes_per_table = 5
+# num_tables = 128
+# reservoir_size = 128
+# range_pow = 15

@@ -1,0 +1,32 @@
+job = "MNIST Distributed Training"
+
+[dataset]
+train_data = ["/share/shubh/mnist_data/xaa","/share/shubh/mnist_data/xab"]
+test_data = "/share/data/mnist/mnist.t"
+format = "svm"
+input_dim = 784
+max_test_batches = 20
+
+[params]
+loss_fn = "CategoricalCrossEntropyLoss"
+train_metrics = []
+test_metrics = ["categorical_accuracy"]
+learning_rate = 0.001
+epochs = 5
+batch_size = 2500
+rehash = 6400
+rebuild = 128000
+
+[[layers]]
+dim = 256
+activation = 'ReLU'
+
+[[layers]]
+dim = 10
+activation = 'Softmax'
+sparsity = 1
+use_default_sampling = true
+# hashes_per_table = 5
+# num_tables = 128
+# reservoir_size = 128
+# range_pow = 15

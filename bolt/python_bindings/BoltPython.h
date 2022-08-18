@@ -38,6 +38,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <valarray>
 
 namespace py = pybind11;
 
@@ -414,6 +415,242 @@ class DistributedPyNetwork final : public DistributedModel {
 
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
+  }
+
+  void static checkIndexOutOfRange(uint32_t* indices, uint32_t max_index,
+                                   uint32_t size_of_indices_array) {
+    for (uint32_t i = 0; i < size_of_indices_array; i++) {
+      if (indices[i] >= max_index) {
+        std::string exception_message =
+            "Array index " + std::to_string(indices[i]) +
+            " out of bounds for gradient matrix with maximum index " +
+            std::to_string(max_index);
+        throw std::out_of_range(exception_message);
+      }
+    }
+  }
+
+  void static checkSignedIndexOutOfRange(int* indices, uint64_t max_index,
+                                         uint64_t size_of_indices_array) {
+    for (uint64_t i = 0; i < size_of_indices_array; i++) {
+      if (std::abs(indices[i]) >= static_cast<int>(max_index)) {
+        std::string exception_message =
+            "Array index " + std::to_string(indices[i]) +
+            " out of bounds for gradient matrix with maximum index " +
+            std::to_string(max_index);
+        throw std::out_of_range(exception_message);
+      }
+    }
+  }
+
+  void setGradientsFromIndicesValues(uint32_t layer_index, py::object& indices,
+                                     py::object& values, bool set_biases) {
+    // std::cout<<"inside the set gradients from tuple function"<<std::endl;
+
+    if (!thirdai::bolt::python::isNumpyArray(indices)) {
+      throw std::logic_error(
+          "Expected numpy array of Indices but another datatype found");
+    }
+
+    if (!thirdai::bolt::python::isNumpyArray(values)) {
+      throw std::logic_error(
+          "Expected numpy array of Values but another datatype found");
+    }
+
+    if (!thirdai::bolt::python::checkNumpyDtypeUint32(indices)) {
+      throw std::logic_error(
+          "Expected Indices array to be a numpy array of unsigned 64-bit "
+          "integers(uint32) but another datatype found");
+    }
+
+    if (!thirdai::bolt::python::checkNumpyDtypeFloat32(values)) {
+      throw std::logic_error(
+          "Expected Values array to be a numpy array of 32-bit floats "
+          "(float32) but another datatype found");
+    }
+
+    using thirdai::dataset::python::NumpyArray;
+
+    NumpyArray<uint32_t> cpp_indices = indices.cast<NumpyArray<uint32_t>>();
+    NumpyArray<float> cpp_values = values.cast<NumpyArray<float>>();
+
+    if (cpp_values.shape(0) != cpp_indices.shape(0)) {
+      throw std::logic_error(
+          "The size of the values and indices array do not match.");
+    }
+
+    uint32_t size = static_cast<uint32_t>(cpp_values.shape(0));
+    uint32_t* indices_raw_data = const_cast<uint32_t*>(cpp_indices.data());
+    float* values_raw_data = const_cast<float*>(cpp_values.data());
+
+    bool debug_mode = false;
+    if (set_biases) {
+      if (debug_mode) {
+        std::cout << "checking indices in debug mode" << std::endl;
+        checkIndexOutOfRange(indices_raw_data,
+                             DistributedModel::getDim(layer_index), size);
+      }
+      DistributedModel::setBiasGradientsFromIndicesValues(
+          layer_index, indices_raw_data, values_raw_data, size);
+    } else {
+      if (debug_mode) {
+        checkIndexOutOfRange(
+            indices_raw_data,
+            DistributedModel::getDim(layer_index) *
+                ((layer_index > 0) ? DistributedModel::getDim(layer_index - 1)
+                                   : DistributedModel::getInputDim()),
+            size);
+      }
+      DistributedModel::setWeightGradientsFromIndicesValues(
+          layer_index, indices_raw_data, values_raw_data, size);
+    }
+  }
+
+  py::tuple getIndexedSketchGradients(uint32_t layer_index,
+                                      float compression_density,
+                                      bool sketch_biases,
+                                      int seed_for_hashing) {
+    size_t dim = DistributedModel::getDim(layer_index);
+    size_t prev_dim = (layer_index > 0)
+                          ? DistributedModel::getDim(layer_index - 1)
+                          : DistributedModel::getInputDim();
+
+    uint32_t mem_size;
+    uint32_t* indices;
+    float* gradients;
+
+    if (sketch_biases) {
+      mem_size = static_cast<uint32_t>(compression_density * dim);
+      indices = new uint32_t[mem_size];
+      gradients = new float[mem_size];
+
+      std::memset(indices, 0, sizeof(uint32_t) * mem_size);
+      std::memset(gradients, 0, sizeof(float) * mem_size);
+      DistributedModel::getBiasGradientSketch(layer_index, indices, gradients,
+                                              mem_size, seed_for_hashing);
+    } else {
+      mem_size = static_cast<uint32_t>(compression_density * dim * prev_dim);
+      indices = new uint32_t[mem_size];
+      gradients = new float[mem_size];
+
+      std::memset(indices, 0, sizeof(uint32_t) * mem_size);
+      std::memset(gradients, 0, sizeof(float) * mem_size);
+      DistributedModel::getWeightGradientSketch(layer_index, indices, gradients,
+                                                mem_size, seed_for_hashing);
+    }
+
+    py::capsule free_indices_when_done(
+        indices, [](void* ptr) { delete static_cast<uint64_t*>(ptr); });
+
+    py::capsule free_gradients_when_done(
+        gradients, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    return py::make_tuple(
+        py::array_t<uint32_t>({mem_size}, {sizeof(uint32_t)}, indices,
+                              free_indices_when_done),
+        py::array_t<float>({mem_size}, {sizeof(float)}, gradients,
+                           free_gradients_when_done));
+  }
+
+  py::array_t<int> getUnbiasedIndexedSketchGradients(
+      uint32_t layer_index, float compression_density, bool sketch_biases,
+      int seed_for_hashing, bool pregenerate_distribution, float threshold) {
+    size_t dim = DistributedModel::getDim(layer_index);
+    size_t prev_dim = (layer_index > 0)
+                          ? DistributedModel::getDim(layer_index - 1)
+                          : DistributedModel::getInputDim();
+
+    int mem_size;
+    int* indices;
+
+    if (sketch_biases) {
+      mem_size = static_cast<int>(compression_density * dim);
+      indices = new int[mem_size];
+
+      std::memset(indices, 0, sizeof(int) * mem_size);
+      DistributedModel::getUnbiasedBiasGradientSketch(
+          layer_index, indices, mem_size, seed_for_hashing,
+          pregenerate_distribution, threshold);
+    } else {
+      mem_size = static_cast<int>(compression_density * dim * prev_dim);
+      indices = new int[mem_size];
+      std::memset(indices, 0, sizeof(int) * mem_size);
+
+      // std::cout << "Sketch is set with zeros" << std::endl;
+
+      DistributedModel::getUnbiasedWeightGradientSketch(
+          layer_index, indices, mem_size, seed_for_hashing,
+          pregenerate_distribution, threshold);
+    }
+
+    py::capsule free_indices_when_done(
+        indices, [](void* ptr) { delete static_cast<int*>(ptr); });
+
+    return py::array_t<int>({mem_size}, {sizeof(int)}, indices,
+                            free_indices_when_done);
+  }
+
+  float getUnbiasedThresholdForGradient(uint32_t layer_index,
+                                        float compression_density,
+                                        bool sketch_biases) {
+    int mem_size;
+    size_t dim = DistributedModel::getDim(layer_index);
+    size_t prev_dim = (layer_index > 0)
+                          ? DistributedModel::getDim(layer_index - 1)
+                          : DistributedModel::getInputDim();
+
+    float threshold = 0.01;
+    if (sketch_biases) {
+      mem_size = static_cast<int>(compression_density * dim);
+      // std::cout << "mem_size " << mem_size << std::endl;
+      threshold = DistributedModel::_layers.at(layer_index)
+                      ->getUnbiasedBiasThresholdForGradient(mem_size);
+    } else {
+      mem_size = static_cast<int>(compression_density * dim * prev_dim);
+      threshold = DistributedModel::_layers.at(layer_index)
+                      ->getUnbiasedWeightThresholdForGradient(mem_size);
+    }
+    return threshold;
+  }
+
+  void setUnbiasedGradientsFromIndices(uint32_t layer_index,
+                                       py::object& indices, bool set_biases,
+                                       float threshold) {
+    // std::cout<<"inside the set gradients from tuple function"<<std::endl;
+
+    if (!thirdai::bolt::python::isNumpyArray(indices)) {
+      throw std::logic_error(
+          "Expected numpy array of Indices but another datatype found");
+    }
+
+    if (!thirdai::bolt::python::checkNumpyDtypeInt32(indices)) {
+      throw std::logic_error(
+          "Expected Indices array to be a numpy array of signed 32-bit "
+          "integers(int32) but another datatype found");
+    }
+
+    using thirdai::dataset::python::NumpyArray;
+
+    NumpyArray<int> cpp_indices = indices.cast<NumpyArray<int>>();
+
+    int* indices_raw_data = const_cast<int*>(cpp_indices.data());
+    int size = static_cast<int>(cpp_indices.shape(0));
+
+    if (set_biases) {
+      checkSignedIndexOutOfRange(indices_raw_data,
+                                 DistributedModel::getDim(layer_index), size);
+      DistributedModel::setUnbiasedBiasGradientsFromIndicesValues(
+          layer_index, indices_raw_data, size, threshold);
+    } else {
+      checkSignedIndexOutOfRange(
+          indices_raw_data,
+          DistributedModel::getDim(layer_index) *
+              ((layer_index > 0) ? DistributedModel::getDim(layer_index - 1)
+                                 : DistributedModel::getInputDim()),
+          size);
+      DistributedModel::setUnbiasedWeightGradientsFromIndicesValues(
+          layer_index, indices_raw_data, size, threshold);
+    }
   }
 
   py::dict getCompressedGradients(const std::string& compression_scheme,

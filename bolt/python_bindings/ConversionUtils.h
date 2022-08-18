@@ -164,4 +164,33 @@ inline py::tuple constructPythonInferenceTuple(py::dict&& py_metric_data,
       /* active_neuron_handle = */ active_neuron_handle);
 }
 
+inline bool isNumpyArray(const py::object& obj) {
+  return py::str(obj.get_type()).equal(py::str("<class 'numpy.ndarray'>"));
+}
+
+inline py::str getDtype(const py::object& obj) {
+  return py::str(obj.attr("dtype"));
+}
+
+inline bool checkNumpyDtype(const py::object& obj, const std::string& type) {
+  return getDtype(obj).equal(py::str(type));
+}
+
+inline bool checkNumpyDtypeFloat32(const py::object& obj) {
+  return checkNumpyDtype(obj, "float32");
+}
+
+inline bool checkNumpyDtypeInt32(const py::object& obj) {
+  return checkNumpyDtype(obj, "int32");
+}
+
+inline bool checkNumpyDtypeAnyInt(const py::object& obj) {
+  return checkNumpyDtype(obj, "int32") || checkNumpyDtype(obj, "uint32") ||
+         checkNumpyDtype(obj, "int64") || checkNumpyDtype(obj, "uint64");
+}
+
+inline bool checkNumpyDtypeUint32(const py::object& obj) {
+  return checkNumpyDtype(obj, "uint32");
+}
+
 }  // namespace thirdai::bolt::python

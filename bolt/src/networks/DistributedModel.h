@@ -76,6 +76,44 @@ class DistributedModel : public FullyConnectedNetwork {
 
   void setBiasesGradients(uint32_t layer_index, const float* data);
 
+  void getBiasGradientSketch(uint32_t layer_index, uint32_t* indices,
+                             float* gradients, uint32_t sketch_size,
+                             int seed_for_hashing);
+
+  void getWeightGradientSketch(uint32_t layer_index, uint32_t* indices,
+                               float* gradients, uint32_t sketch_size,
+                               int seed_for_hashing);
+
+  void setBiasGradientsFromIndicesValues(uint32_t layer_index,
+                                         uint32_t* indices_raw_data,
+                                         float* values_raw_data,
+                                         uint32_t sketch_size);
+
+  void setWeightGradientsFromIndicesValues(uint32_t layer_index,
+                                           uint32_t* indices_raw_data,
+                                           float* values_raw_data,
+                                           uint32_t sketch_size);
+
+  void getUnbiasedBiasGradientSketch(uint32_t layer_index, int* indices,
+                                     int sketch_size, int seed_for_hashing,
+                                     bool pregenerate_distribution,
+                                     float threshold);
+
+  void getUnbiasedWeightGradientSketch(uint32_t layer_index, int* indices,
+                                       int sketch_size, int seed_for_hashing,
+                                       bool pregenerate_distribution,
+                                       float threshold);
+
+  void setUnbiasedBiasGradientsFromIndicesValues(uint32_t layer_index,
+                                                 int* indices_raw_data,
+                                                 int sketch_size,
+                                                 float threshold);
+
+  void setUnbiasedWeightGradientsFromIndicesValues(uint32_t layer_index,
+                                                   int* indices_raw_data,
+                                                   int sketch_size,
+                                                   float threshold);
+
  private:
   /*
    outputs here, holds the activations values for output layer,

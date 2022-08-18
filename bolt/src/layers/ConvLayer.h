@@ -86,6 +86,108 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
+  void getBiasGradientSketch(uint32_t* indices, float* gradients,
+                             uint32_t sketch_size,
+                             int seed_for_hashing) const final {
+    (void)indices;
+    (void)gradients;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    throw thirdai::exceptions::NotImplemented(
+        "getBiasGradientSketch not implemented for ConvLayer");
+  }
+
+  void getWeightGradientSketch(uint32_t* indices, float* gradients,
+                               uint32_t sketch_size,
+                               int seed_for_hashing) const final {
+    (void)indices;
+    (void)gradients;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    throw thirdai::exceptions::NotImplemented(
+        "getWeightGradientSketch not implemented for ConvLayer");
+  }
+
+  void setBiasGradientsFromIndicesValues(uint32_t* indices_raw_data,
+                                         float* values_raw_data,
+                                         uint32_t sketch_size) final {
+    (void)indices_raw_data;
+    (void)values_raw_data;
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "setBiasGradientsFromIndicesValues not implemented for ConvLayer");
+  }
+
+  void setWeightGradientsFromIndicesValues(uint32_t* indices_raw_data,
+                                           float* values_raw_data,
+                                           uint32_t sketch_size) final {
+    (void)indices_raw_data;
+    (void)values_raw_data;
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "setWeightGradientsFromIndicesValues not implemented for ConvLayer");
+  }
+
+  void getUnbiasedBiasGradientSketch(int* indices, int sketch_size,
+                                     int seed_for_hashing,
+                                     bool pregenerate_distribution,
+                                     float threshold) const final {
+    (void)indices;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    (void)pregenerate_distribution;
+    (void)threshold;
+    throw thirdai::exceptions::NotImplemented(
+        "getBiasGradientSketch not implemented for ConvLayer");
+  }
+
+  void getUnbiasedWeightGradientSketch(int* indices, int sketch_size,
+                                       int seed_for_hashing,
+                                       bool pregenerate_distribution,
+                                       float threshold) const final {
+    (void)indices;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    (void)pregenerate_distribution;
+    (void)threshold;
+    throw thirdai::exceptions::NotImplemented(
+        "getWeightGradientSketch not implemented for ConvLayer");
+  }
+
+  void setUnbiasedBiasGradientsFromIndicesValues(int* indices_raw_data,
+                                                 int sketch_size,
+                                                 float threshold) final {
+    (void)indices_raw_data;
+    (void)sketch_size;
+    (void)threshold;
+
+    throw thirdai::exceptions::NotImplemented(
+        "setBiasGradientsFromIndicesValues not implemented for ConvLayer");
+  }
+
+  void setUnbiasedWeightGradientsFromIndicesValues(int* indices_raw_data,
+                                                   int sketch_size,
+                                                   float threshold) final {
+    (void)indices_raw_data;
+    (void)sketch_size;
+    (void)threshold;
+
+    throw thirdai::exceptions::NotImplemented(
+        "setWeightGradientsFromIndicesValues not implemented for ConvLayer");
+  }
+
+  float getUnbiasedBiasThresholdForGradient(int sketch_size) const final {
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "getUnbiasedBiasThresholdForGradient not implemented for ConvLayer");
+  }
+
+  float getUnbiasedWeightThresholdForGradient(int sketch_size) const final {
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "getUnbiasedBiasThresholdForGradient not implemented for ConvLayer");
+  }
+
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);

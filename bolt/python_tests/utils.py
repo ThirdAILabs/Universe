@@ -16,6 +16,23 @@ def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, spar
     return network
 
 
+def build_simple_distributed_bolt_network(sparsity=1, n_classes=10):
+    layers = [
+        bolt.FullyConnected(
+            dim=50,
+            sparsity=1,
+            activation_function="relu",
+        ),
+        bolt.FullyConnected(
+            dim=n_classes,
+            sparsity=sparsity,
+            activation_function="softmax",
+        ),
+    ]
+    network = bolt.DistributedNetwork(layers=layers, input_dim=n_classes)
+    return network
+
+
 # Generates easy training data: the ground truth function is f(x_i) = i, where
 # x_i is the one hot encoding of i. Thus the input and output dimension are both
 # n_classes. We randomize the order of the (x_i, i) example and label pairs
@@ -78,7 +95,12 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
 
 
 def train_single_node_distributed_network(
-    network, train_data, train_labels, epochs, learning_rate=0.0005
+    network,
+    train_data,
+    train_labels,
+    epochs,
+    learning_rate=0.0005,
+    update_parameters=True,
 ):
     batch_size = network.prepareNodeForDistributedTraining(
         train_data,
@@ -92,7 +114,8 @@ def train_single_node_distributed_network(
             network.calculateGradientSingleNode(
                 batch_num, bolt.CategoricalCrossEntropyLoss()
             )
-            network.updateParametersSingleNode(learning_rate)
+            if update_parameters:
+                network.updateParametersSingleNode(learning_rate)
 
 
 # Returns a model with a single node

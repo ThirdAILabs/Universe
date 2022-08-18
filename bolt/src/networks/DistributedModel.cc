@@ -20,6 +20,7 @@ uint32_t DistributedModel::prepareNodeForDistributedTraining(
     std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
     const dataset::BoltDatasetPtr& train_labels, uint32_t rehash,
     uint32_t rebuild, bool verbose) {
+  
   _train_data = train_data;
   _train_labels = train_labels;
   uint32_t batch_size = _train_data->at(0).getBatchSize();
@@ -101,5 +102,73 @@ uint32_t DistributedModel::getDim(uint32_t layer_index) const {
 }
 
 uint32_t DistributedModel::getInputDim() const { return _input_dim; }
+
+void DistributedModel::getWeightGradientSketch(uint32_t layer_index,
+                                               uint32_t* indices,
+                                               float* gradients,
+                                               uint32_t sketch_size,
+                                               int seed_for_hashing) {
+  return _layers.at(layer_index)
+      ->getWeightGradientSketch(indices, gradients, sketch_size,
+                                seed_for_hashing);
+}
+
+void DistributedModel::getBiasGradientSketch(uint32_t layer_index,
+                                             uint32_t* indices,
+                                             float* gradients,
+                                             uint32_t sketch_size,
+                                             int seed_for_hashing) {
+  return _layers.at(layer_index)
+      ->getBiasGradientSketch(indices, gradients, sketch_size,
+                              seed_for_hashing);
+}
+
+void DistributedModel::setWeightGradientsFromIndicesValues(
+    uint32_t layer_index, uint32_t* indices_raw_data, float* values_raw_data,
+    uint32_t sketch_size) {
+  _layers.at(layer_index)
+      ->setWeightGradientsFromIndicesValues(indices_raw_data, values_raw_data,
+                                            sketch_size);
+}
+
+void DistributedModel::setBiasGradientsFromIndicesValues(
+    uint32_t layer_index, uint32_t* indices_raw_data, float* values_raw_data,
+    uint32_t sketch_size) {
+  _layers.at(layer_index)
+      ->setBiasGradientsFromIndicesValues(indices_raw_data, values_raw_data,
+                                          sketch_size);
+}
+
+void DistributedModel::getUnbiasedWeightGradientSketch(
+    uint32_t layer_index, int* indices, int sketch_size, int seed_for_hashing,
+    bool pregenerate_distribution, float threshold) {
+  _layers.at(layer_index)
+      ->getUnbiasedWeightGradientSketch(indices, sketch_size, seed_for_hashing,
+                                        pregenerate_distribution, threshold);
+}
+
+void DistributedModel::getUnbiasedBiasGradientSketch(
+    uint32_t layer_index, int* indices, int sketch_size, int seed_for_hashing,
+    bool pregenerate_distribution, float threshold) {
+  _layers.at(layer_index)
+      ->getUnbiasedBiasGradientSketch(indices, sketch_size, seed_for_hashing,
+                                      pregenerate_distribution, threshold);
+}
+
+void DistributedModel::setUnbiasedWeightGradientsFromIndicesValues(
+    uint32_t layer_index, int* indices_raw_data, int sketch_size,
+    float threshold) {
+  _layers.at(layer_index)
+      ->setUnbiasedWeightGradientsFromIndicesValues(indices_raw_data,
+                                                    sketch_size, threshold);
+}
+
+void DistributedModel::setUnbiasedBiasGradientsFromIndicesValues(
+    uint32_t layer_index, int* indices_raw_data, int sketch_size,
+    float threshold) {
+  _layers.at(layer_index)
+      ->setUnbiasedBiasGradientsFromIndicesValues(indices_raw_data, sketch_size,
+                                                  threshold);
+}
 
 }  // namespace thirdai::bolt

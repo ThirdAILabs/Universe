@@ -67,6 +67,44 @@ class SequentialLayer {
     summary << "dim=" << getDim() << "\n";
   }
 
+  virtual void getBiasGradientSketch(uint32_t* indices, float* gradients,
+                                     uint32_t sketch_size,
+                                     int seed_for_hashing) const = 0;
+
+  virtual void getWeightGradientSketch(uint32_t* indices, float* gradients,
+                                       uint32_t sketch_size,
+                                       int seed_for_hashing) const = 0;
+
+  virtual void setBiasGradientsFromIndicesValues(uint32_t* indices_raw_data,
+                                                 float* values_raw_data,
+                                                 uint32_t sketch_size) = 0;
+
+  virtual void setWeightGradientsFromIndicesValues(uint32_t* indices_raw_data,
+                                                   float* values_raw_data,
+                                                   uint32_t sketch_size) = 0;
+
+  virtual void getUnbiasedBiasGradientSketch(int* indices, int sketch_size,
+                                             int seed_for_hashing,
+                                             bool pregenerate_distribution,
+                                             float threshold) const = 0;
+
+  virtual void getUnbiasedWeightGradientSketch(int* indices, int sketch_size,
+                                               int seed_for_hashing,
+                                               bool pregenerate_distribution,
+                                               float threshold) const = 0;
+
+  virtual void setUnbiasedBiasGradientsFromIndicesValues(int* indices_raw_data,
+                                                         int sketch_size,
+                                                         float threshold) = 0;
+
+  virtual void setUnbiasedWeightGradientsFromIndicesValues(
+      int* indices_raw_data, int sketch_size, float threshold) = 0;
+
+  virtual float getUnbiasedBiasThresholdForGradient(int sketch_size) const = 0;
+
+  virtual float getUnbiasedWeightThresholdForGradient(
+      int sketch_size) const = 0;
+
   virtual ~SequentialLayer() = default;
 };
 }  // namespace thirdai::bolt

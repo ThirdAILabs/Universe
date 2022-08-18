@@ -1,6 +1,7 @@
 #include "FullyConnectedLayer.h"
 #include <wrappers/src/EigenDenseWrapper.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <hashing/src/MurmurHash.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
 #include <algorithm>
@@ -755,6 +756,105 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
   }
 
   summary << "\n";
+}
+
+void FullyConnectedLayer::setWeightGradientsFromIndicesValues(
+    uint32_t* indices_raw_data, float* values_raw_data, uint32_t sketch_size) {
+  _w_gradient.clear();
+  _w_gradient.assign(_dim * _prev_dim, 0);
+
+  // not using pragma because of race condition
+  for (uint32_t i = 0; i < sketch_size; i++) {
+    _w_gradient[indices_raw_data[i]] += values_raw_data[i];
+  }
+}
+
+void FullyConnectedLayer::setBiasGradientsFromIndicesValues(
+    uint32_t* indices_raw_data, float* values_raw_data, uint32_t sketch_size) {
+  _b_gradient.clear();
+  _b_gradient.assign(_dim, 0);
+
+  // not using pragma because of race condition
+  for (uint32_t i = 0; i < sketch_size; i++) {
+    _b_gradient[indices_raw_data[i]] += values_raw_data[i];
+  }
+}
+
+void FullyConnectedLayer::getWeightGradientSketch(uint32_t* indices,
+                                                  float* gradients,
+                                                  uint32_t sketch_size,
+                                                  int seed_for_hashing) const {
+  float threshold = 0.1;
+  threshold = thirdai::bolt::getThresholdForTopK(
+      _w_gradient, sketch_size, /*max_samples_for_random_sampling=*/10'000);
+  thirdai::bolt::getDragonSketch(_w_gradient, indices, gradients,
+                                 seed_for_hashing, threshold, sketch_size);
+}
+
+void FullyConnectedLayer::getBiasGradientSketch(uint32_t* indices,
+                                                float* gradients,
+                                                uint32_t sketch_size,
+                                                int seed_for_hashing) const {
+  float threshold = 0.1;
+
+  threshold = thirdai::bolt::getThresholdForTopK(
+      _b_gradient, sketch_size, /*max_samples_for_random_sampling=*/10'000);
+  thirdai::bolt::getDragonSketch(_b_gradient, indices, gradients,
+                                 seed_for_hashing, threshold, sketch_size);
+}
+
+void FullyConnectedLayer::getUnbiasedBiasGradientSketch(
+    int* indices, int sketch_size, int seed_for_hashing,
+    bool pregenerate_distribution, float threshold) const {
+  thirdai::bolt::getUnbiasedSketch(_b_gradient, indices, sketch_size,
+                                   seed_for_hashing, pregenerate_distribution,
+                                   threshold);
+}
+
+void FullyConnectedLayer::getUnbiasedWeightGradientSketch(
+    int* indices, int sketch_size, int seed_for_hashing,
+    bool pregenerate_distribution, float threshold) const {
+  thirdai::bolt::getUnbiasedSketch(_w_gradient, indices, sketch_size,
+                                   seed_for_hashing, pregenerate_distribution,
+                                   threshold);
+}
+
+void FullyConnectedLayer::setUnbiasedBiasGradientsFromIndicesValues(
+    int* indices_raw_data, int sketch_size, float threshold) {
+  _b_gradient.clear();
+  _b_gradient.assign(_dim, 0);
+
+  // not using pragma because of race condition
+  for (int i = 0; i < sketch_size; i++) {
+    _b_gradient[std::abs(indices_raw_data[i])] +=
+        threshold * ((indices_raw_data[i] > 0) - (indices_raw_data[i] < 0));
+  }
+}
+
+void FullyConnectedLayer::setUnbiasedWeightGradientsFromIndicesValues(
+    int* indices_raw_data, int sketch_size, float threshold) {
+  _w_gradient.clear();
+  _w_gradient.assign(_dim * _prev_dim, 0);
+
+  // not using pragma because of race condition
+  for (int i = 0; i < sketch_size; i++) {
+    _w_gradient[std::abs(indices_raw_data[i])] +=
+        threshold * ((indices_raw_data[i] > 0) - (indices_raw_data[i] < 0));
+  }
+}
+
+float FullyConnectedLayer::getUnbiasedBiasThresholdForGradient(
+    int sketch_size) const {
+  // std::cout<<"printing for the biases"<<std::endl;
+  return thirdai::bolt::getThresholdForTopK(
+      _b_gradient, sketch_size, /*max_samples_for_random_sampling=*/10'000);
+}
+
+float FullyConnectedLayer::getUnbiasedWeightThresholdForGradient(
+    int sketch_size) const {
+  // std::cout<<"printing for the weights"<<std::endl;
+  return thirdai::bolt::getThresholdForTopK(
+      _w_gradient, sketch_size, /*max_samples_for_random_sampling=*/10'000);
 }
 
 }  // namespace thirdai::bolt
