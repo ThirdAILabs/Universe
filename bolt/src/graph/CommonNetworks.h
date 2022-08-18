@@ -13,10 +13,10 @@ namespace thirdai::bolt {
 class CommonNetworks {
  public:
   static BoltGraphPtr FullyConnected(
-      uint32_t input_dim,
-      std::vector<FullyConnectedNodePtr> layers) {
+      uint32_t input_dim, std::vector<FullyConnectedNodePtr> layers) {
     if (layers.empty()) {
-      throw std::invalid_argument("CommonNetworks::FullyConnected: Must pass at least one layer.");
+      throw std::invalid_argument(
+          "CommonNetworks::FullyConnected: Must pass at least one layer.");
     }
 
     auto input_layer = std::make_shared<Input>(input_dim);
@@ -29,12 +29,11 @@ class CommonNetworks {
 
     auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
                                              layers.back());
-                                             
+
     return model;
   }
 
  private:
-  
 };
 
 }  // namespace thirdai::bolt

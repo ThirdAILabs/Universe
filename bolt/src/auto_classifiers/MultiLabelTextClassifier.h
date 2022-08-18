@@ -1,8 +1,8 @@
 #pragma once
 
 #include <bolt/src/auto_classifiers/AutoClassifierBase.h>
-#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/CommonNetworks.h>
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -30,7 +30,8 @@ namespace thirdai::bolt {
 
 class MultiLabelTextClassifier {
  public:
-  explicit MultiLabelTextClassifier(uint32_t n_classes) : _n_classes(n_classes) {
+  explicit MultiLabelTextClassifier(uint32_t n_classes)
+      : _n_classes(n_classes) {
     buildBatchProcessors(n_classes);
 
     assert(n_classes == _processor->getLabelDim());
@@ -38,24 +39,21 @@ class MultiLabelTextClassifier {
     std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{1024, 1.0}};
 
     _classifier = CommonNetworks::FullyConnected(
-      /* input_dim= */ _processor->getInputDim(),
-      /* layers= */ {
-        FullyConnectedNode::make(
-          /* dim= */ 1024, 
-          "relu"),
-        FullyConnectedNode::make(
-          /* dim= */ n_classes, 
-          /* sparsity= */ n_classes >= 500 ? 0.1 : 1, 
-          "sigmoid", /* num_tables= */ 64, /* hashes_per_table= */ 4, /* reservoir_size= */ 64)
-      }
-    );
-    _classifier->compile(std::make_shared<BinaryCrossEntropyLoss>(), /* print_when_done= */ false); 
-
+        /* input_dim= */ _processor->getInputDim(),
+        /* layers= */ {
+            FullyConnectedNode::make(
+                /* dim= */ 1024, "relu"),
+            FullyConnectedNode::make(
+                /* dim= */ n_classes,
+                /* sparsity= */ n_classes >= 500 ? 0.1 : 1, "sigmoid",
+                /* num_tables= */ 64, /* hashes_per_table= */ 4,
+                /* reservoir_size= */ 64)});
+    _classifier->compile(std::make_shared<BinaryCrossEntropyLoss>(),
+                         /* print_when_done= */ false);
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
              const std::vector<std::string>& metrics = {}) {
-    
     dataset::StreamingGenericDatasetLoader dataset(
         filename, _processor, /* batch_size= */ 2048, /* shuffle= */ true);
 
@@ -73,11 +71,10 @@ class MultiLabelTextClassifier {
                      .count()
               << " seconds." << std::endl;
 
-    auto config =
-        TrainConfig::makeConfig(learning_rate, epochs)
-          .withMetrics(metrics)
-          .withRebuildHashTables(10000)
-          .withReconstructHashFunctions(50000);
+    auto config = TrainConfig::makeConfig(learning_rate, epochs)
+                      .withMetrics(metrics)
+                      .withRebuildHashTables(10000)
+                      .withReconstructHashFunctions(50000);
 
     _classifier->train({train_data}, {}, train_labels, config);
   }
@@ -106,15 +103,18 @@ class MultiLabelTextClassifier {
     return _classifier->predict({pred_data}, {}, pred_labels, config);
   }
 
-  BoltVector predictSingleFromSentence(std::string sentence, float threshold = 0.95) {
+  BoltVector predictSingleFromSentence(std::string sentence,
+                                       float threshold = 0.95) {
     float epsilon = 0.001;
 
     // The following step must be separate from the above
     // because we need to keep the sentence in scope and alive.
-    std::vector<std::string_view> sample = {std::string_view(sentence.data(), sentence.size())};
+    std::vector<std::string_view> sample = {
+        std::string_view(sentence.data(), sentence.size())};
 
     BoltVector input_vector;
-    auto exception = _inference_processor->makeInputVector(sample, input_vector);
+    auto exception =
+        _inference_processor->makeInputVector(sample, input_vector);
     if (exception) {
       std::rethrow_exception(exception);
     }
@@ -133,7 +133,7 @@ class MultiLabelTextClassifier {
   }
 
   BoltVector predictSingleFromTokens(const std::vector<uint32_t>& tokens,
-                           float threshold = 0.95) {
+                                     float threshold = 0.95) {
     std::string sentence = tokensToSentence(tokens);
     return predictSingleFromSentence(sentence, threshold);
   }
@@ -145,7 +145,8 @@ class MultiLabelTextClassifier {
     oarchive(*this);
   }
 
-  static std::unique_ptr<MultiLabelTextClassifier> load(const std::string& filename) {
+  static std::unique_ptr<MultiLabelTextClassifier> load(
+      const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
@@ -159,27 +160,29 @@ class MultiLabelTextClassifier {
  protected:
   void buildBatchProcessors(uint32_t n_classes) {
     _processor = std::make_shared<dataset::GenericBatchProcessor>(
-        buildInputBlocks(/* for_single_inference= */ false), 
+        buildInputBlocks(/* for_single_inference= */ false),
         buildLabelBlocks(/* for_single_inference= */ false, n_classes),
         /* has_header= */ false, /* delimiter= */ '\t');
 
     _inference_processor = std::make_shared<dataset::GenericBatchProcessor>(
-        buildInputBlocks(/* for_single_inference= */ true), 
+        buildInputBlocks(/* for_single_inference= */ true),
         buildLabelBlocks(/* for_single_inference= */ true),
         /* has_header= */ false, /* delimiter= */ '\t');
   }
 
-  static std::vector<dataset::BlockPtr> buildInputBlocks(bool for_single_inference) {
+  static std::vector<dataset::BlockPtr> buildInputBlocks(
+      bool for_single_inference) {
     auto pairgram_encoding =
         std::make_shared<dataset::PairGram>(/* dim= */ 100000);
     uint32_t column = for_single_inference ? 0 : 1;
-    return {std::make_shared<dataset::TextBlock>(
-        column, pairgram_encoding)};
+    return {std::make_shared<dataset::TextBlock>(column, pairgram_encoding)};
   }
 
-  static std::vector<dataset::BlockPtr> buildLabelBlocks(bool for_single_inference, uint32_t n_classes=0) {
+  static std::vector<dataset::BlockPtr> buildLabelBlocks(
+      bool for_single_inference, uint32_t n_classes = 0) {
     if (!for_single_inference && n_classes == 0) {
-      throw std::invalid_argument("buildLabelBlocks: Must pass n_classes if not for single inference.");
+      throw std::invalid_argument(
+          "buildLabelBlocks: Must pass n_classes if not for single inference.");
     }
     if (for_single_inference) {
       return {};

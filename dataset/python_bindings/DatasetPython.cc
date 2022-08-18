@@ -274,7 +274,7 @@ void createDatasetSubmodule(py::module_& module) {
            &StreamingGenericDatasetLoader::getMaxBatchSize)
       .def("get_input_dim", &StreamingGenericDatasetLoader::getInputDim)
       .def("get_label_dim", &StreamingGenericDatasetLoader::getLabelDim);
-  
+
   dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
                         py::arg("indices"), py::arg("values"));
 

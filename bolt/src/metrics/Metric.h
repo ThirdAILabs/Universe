@@ -253,7 +253,7 @@ class FMeasure final : public Metric {
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     auto predictions = output.getThresholdedNeurons(
         /* activation_threshold = */ _threshold,
-        /* return_at_least_one = */ true, 
+        /* return_at_least_one = */ true,
         /* max_count_to_return = */ std::numeric_limits<uint32_t>::max());
 
     for (uint32_t pred : predictions) {
@@ -265,15 +265,16 @@ class FMeasure final : public Metric {
     }
 
     for (uint32_t i = 0; i < labels.len; i++) {
-      uint32_t label_active_neuron = labels.isDense() ? i : labels.active_neurons[i];
-      if (labels.findActiveNeuronNoTemplate(label_active_neuron).activation > 0) {
-        if (std::find(predictions.begin(), predictions.end(), label_active_neuron) ==
-            predictions.end()) {
+      uint32_t label_active_neuron =
+          labels.isDense() ? i : labels.active_neurons[i];
+      if (labels.findActiveNeuronNoTemplate(label_active_neuron).activation >
+          0) {
+        if (std::find(predictions.begin(), predictions.end(),
+                      label_active_neuron) == predictions.end()) {
           _false_negative++;
         }
       }
     }
-
   }
 
   double getMetricAndReset(bool verbose) final {
@@ -307,7 +308,6 @@ class FMeasure final : public Metric {
   std::atomic<uint64_t> _true_positive;
   std::atomic<uint64_t> _false_positive;
   std::atomic<uint64_t> _false_negative;
-
 };
 
 }  // namespace thirdai::bolt

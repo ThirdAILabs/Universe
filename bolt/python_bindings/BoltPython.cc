@@ -503,7 +503,8 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
-  py::class_<PyMultiLabelTextClassifier>(bolt_submodule, "MultiLabelTextClassifier")
+  py::class_<PyMultiLabelTextClassifier>(bolt_submodule,
+                                         "MultiLabelTextClassifier")
       .def(py::init<uint32_t>(), py::arg("n_classes"),
            "Constructs a MultiLabelTextClassifier with autotuning.\n"
            "Arguments:\n"
@@ -518,29 +519,31 @@ void createBoltSubmodule(py::module_& module) {
            " * epochs: Int - How many epochs to train for.\n"
            " * learning_rate: Float - The learning rate to use for training.\n"
            " * metrics: List[string] - Metrics to use during training.\n")
-      .def("predict_single_from_sentence", &PyMultiLabelTextClassifier::predictSingleFromSentence,
-           py::arg("sentence"), py::arg("activation_threshold")=0.95,
+      .def("predict_single_from_sentence",
+           &PyMultiLabelTextClassifier::predictSingleFromSentence,
+           py::arg("sentence"), py::arg("activation_threshold") = 0.95,
            "Given a sentence, predict the likelihood of each output "
            "class. \n"
            "Arguments:\n"
            " * sentence: string - The input sentence.\n")
-      .def("predict_single_from_tokens", &PyMultiLabelTextClassifier::predictSingleFromTokens,
-           py::arg("tokens"), py::arg("activation_threshold")=0.95,
+      .def("predict_single_from_tokens",
+           &PyMultiLabelTextClassifier::predictSingleFromTokens,
+           py::arg("tokens"), py::arg("activation_threshold") = 0.95,
            "Given a list of tokens, predict the likelihood of each output "
            "class. \n"
            "Arguments:\n"
            " * tokens: List[Int] - A list of integer tokens.\n")
-      .def(
-          "predict", &PyMultiLabelTextClassifier::predict, py::arg("test_file"),
-          py::arg("metrics") = std::vector<std::string>(),
-          "Runs the classifier on the specified test dataset and optionally "
-          "logs the prediction to a file.\n"
-          "Arguments:\n"
-          " * test_file: string - The path to the test dataset to use.\n"
-          " * metrics: List[string] - Metrics to use during training.\n"
-          "then the classifier will output the name of the class/category of "
-          "each prediction this file with one prediction result on each "
-          "line.\n")
+      .def("predict", &PyMultiLabelTextClassifier::predict,
+           py::arg("test_file"),
+           py::arg("metrics") = std::vector<std::string>(),
+           "Runs the classifier on the specified test dataset and optionally "
+           "logs the prediction to a file.\n"
+           "Arguments:\n"
+           " * test_file: string - The path to the test dataset to use.\n"
+           " * metrics: List[string] - Metrics to use during training.\n"
+           "then the classifier will output the name of the class/category of "
+           "each prediction this file with one prediction result on each "
+           "line.\n")
       .def("save", &PyMultiLabelTextClassifier::save, py::arg("filename"),
            "Saves the classifier to a file. The file path must not require any "
            "folders to be created\n"

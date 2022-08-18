@@ -125,7 +125,8 @@ TEST(MultiLabelTextClassifierTest, ConsistentPredictAndPredictSingle) {
   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
 
   std::vector<float> f_measure_thresholds = {0.1, 0.2, 0.9};
-  std::vector<std::string> metrics = {"f_measure(0.1)", "f_measure(0.2)", "f_measure(0.9)"};
+  std::vector<std::string> metrics = {"f_measure(0.1)", "f_measure(0.2)",
+                                      "f_measure(0.9)"};
 
   model->train(TRAIN_FILENAME, /* epochs = */ 5,
                /* learning_rate = */ 0.01,
@@ -151,7 +152,8 @@ TEST(MultiLabelTextClassifierTest, ConsistentPredictAndPredictSingle) {
   }
 
   for (uint32_t i = 0; i < f_measure_thresholds.size(); i++) {
-    ASSERT_NEAR(getFMeasure(single_inference_outputs, vector_labels, f_measure_thresholds[i]),
+    ASSERT_NEAR(getFMeasure(single_inference_outputs, vector_labels,
+                            f_measure_thresholds[i]),
                 prediction_metrics[metrics[i]],
                 /* abs_error= */ 0.000001);
   }

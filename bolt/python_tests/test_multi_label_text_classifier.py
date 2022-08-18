@@ -17,10 +17,8 @@ def test_multi_label_text_classifier_load_save():
         for line in train_contents:
             f.write(line)
 
-    threshold = 0.95 # Default threshold
-    model.train(
-        temp_train_file, epochs=10, learning_rate=0.1, metrics=[]
-    )
+    threshold = 0.95  # Default threshold
+    model.train(temp_train_file, epochs=10, learning_rate=0.1, metrics=[])
 
     inference_sample = [1, 1]
     activations_before_save = model.predict_single_from_tokens(inference_sample)
@@ -40,6 +38,7 @@ def test_multi_label_text_classifier_load_save():
 
     os.remove(temp_train_file)
 
+
 @pytest.mark.unit
 def test_multi_label_text_classifier_custom_predict_single_threshold():
     model = bolt.MultiLabelTextClassifier(n_classes=931)
@@ -53,12 +52,12 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
             f.write(line)
 
     threshold = 0.65
-    model.train(
-        temp_train_file, epochs=5, learning_rate=0.01, metrics=[]
-    )
+    model.train(temp_train_file, epochs=5, learning_rate=0.01, metrics=[])
 
     inference_sample = [1, 1]
-    activations_before_save = model.predict_single_from_tokens(inference_sample, activation_threshold=threshold)
+    activations_before_save = model.predict_single_from_tokens(
+        inference_sample, activation_threshold=threshold
+    )
 
     assert activations_before_save.shape == (931,)
     # We expect the model to predict class 1; class 1 should have max activation.
@@ -66,6 +65,7 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
     assert activations_before_save[1] >= threshold
 
     os.remove(temp_train_file)
+
 
 @pytest.mark.unit
 def test_multi_label_text_classifier_inference_under_1ms():

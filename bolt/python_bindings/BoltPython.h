@@ -444,15 +444,19 @@ class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
   explicit PyMultiLabelTextClassifier(uint32_t n_classes)
       : MultiLabelTextClassifier(n_classes) {}
 
-  py::array_t<float, py::array::c_style | py::array::forcecast> predictSingleFromSentence(
-      std::string sentence, float activation_threshold=0.95) {
-    auto output = MultiLabelTextClassifier::predictSingleFromSentence(std::move(sentence), activation_threshold);
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+  predictSingleFromSentence(std::string sentence,
+                            float activation_threshold = 0.95) {
+    auto output = MultiLabelTextClassifier::predictSingleFromSentence(
+        std::move(sentence), activation_threshold);
     return boltVectorToNumpy(output);
   }
 
-  py::array_t<float, py::array::c_style | py::array::forcecast> predictSingleFromTokens(
-      const std::vector<uint32_t>& tokens, float activation_threshold=0.95) {
-    auto output = MultiLabelTextClassifier::predictSingleFromTokens(tokens, activation_threshold);
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+  predictSingleFromTokens(const std::vector<uint32_t>& tokens,
+                          float activation_threshold = 0.95) {
+    auto output = MultiLabelTextClassifier::predictSingleFromTokens(
+        tokens, activation_threshold);
     return boltVectorToNumpy(output);
   }
 
