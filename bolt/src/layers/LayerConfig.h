@@ -178,6 +178,55 @@ struct EmbeddingLayerConfig {
   }
 };
 
+class NormalizationLayerConfig {
+ public:
+  explicit NormalizationLayerConfig(float epsilon = 0.00001)
+      : _epsilon(epsilon),
+        _beta_regularizer(std::nullopt),
+        _gamma_regularizer(std::nullopt) {}
+
+  static NormalizationLayerConfig makeConfig() {
+    return NormalizationLayerConfig();
+  }
+
+  NormalizationLayerConfig& setCenteringFactor(float centering_factor) {
+    _beta_regularizer = centering_factor;
+    return *this;
+  }
+
+  NormalizationLayerConfig& setScalingFactor(float scaling_factor) {
+    _gamma_regularizer = scaling_factor;
+    return *this;
+  }
+
+  // The default value for _beta_regularizer is 0.0 (has no effect)
+  constexpr float beta() const {
+    return _beta_regularizer.has_value() ? _beta_regularizer.value() : 0.0;
+  }
+
+  // The default value for _gamma_regularizer is 1.0 (has no effect)
+  constexpr float gamma() const {
+    return _gamma_regularizer.has_value() ? _gamma_regularizer.value() : 1.0;
+  }
+  constexpr float epsilon() const { return _epsilon; }
+
+ private:
+  // small threshold added to avoid division by zero
+  float _epsilon;
+
+  // If beta_regularizer and gamma_regularizer are set, then the z-score
+  // will be scaled (multiplied) by a factor of _gamma_regularizer and
+  // shifted (centered) by a factor of _beta_regularizer
+  std::optional<float> _beta_regularizer;
+  std::optional<float> _gamma_regularizer;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_beta_regularizer, _gamma_regularizer, _epsilon);
+  }
+};
+
 }  // namespace thirdai::bolt
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayerConfig)
