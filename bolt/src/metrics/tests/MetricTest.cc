@@ -229,6 +229,101 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
   ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 0.5);
 }
 
+TEST(MetricTest, FMeasure) {
+  // For the following test 'metric' is a metric that computes the metric for
+  // all of the samples whereas 'single' is checked for each sample. This is to
+  // ensure that both the computed value is per sample and that the overall
+  // value is correct.
+  FMeasure metric;
+  FMeasure single;
+
+  {  // Dense outputs, dense labels
+    //                                          tp: 1, fp: 2, fn: 1
+    //                         thresholded_neurons: 0, 3, 4
+    BoltVector a =
+        BoltVector::makeDenseVector({1.0, 0.2, 0.0, 1.0, 0.9, 0.0, 0.5, 0.0});
+    BoltVector l_a =
+        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0});
+    //                                          tp: 2, fp: 1, fn: 1
+    BoltVector b =
+        BoltVector::makeDenseVector({1.0, 0.0, 0.1, 0.9, 1.0, 0.0, 0.0, 0.6});
+    BoltVector l_b =
+        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0});
+
+    // Check correct value is computed for each sample
+    single.computeMetric(a, l_a);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.4);
+    single.computeMetric(b, l_b);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 2.0 / 3);
+
+    // Accumulate in overall metric
+    metric.computeMetric(a, l_a);
+    metric.computeMetric(b, l_b);
+  }
+
+  {  // Dense outputs, sparse labels
+    BoltVector a =
+        BoltVector::makeDenseVector({0.2, 0.2, 0.0, 0.9, 0.0, 1.0, 0.1, 0.0});
+    BoltVector l_a = BoltVector::makeSparseVector({3, 4, 7}, {1.0, 1.0, 1.0});
+
+    BoltVector b =
+        BoltVector::makeDenseVector({0.5, 0.0, 0.0, 1.0, 0.0, 0.9, 0.0, 0.0});
+    BoltVector l_b = BoltVector::makeSparseVector({3, 5}, {1.0, 1.0});
+
+    // Check correct value is computed for each sample
+    single.computeMetric(a, l_a);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.4);
+    single.computeMetric(b, l_b);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
+
+    // Accumulate in overall metric
+    metric.computeMetric(a, l_a);
+    metric.computeMetric(b, l_b);
+  }
+
+  {  // Sparse outputs, dense labels
+    BoltVector a = BoltVector::makeSparseVector({0, 3, 5}, {0.1, 0.9, 1.0});
+    BoltVector l_a =
+        BoltVector::makeDenseVector({0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0});
+
+    BoltVector b = BoltVector::makeSparseVector({2, 3, 5}, {0.5, 1.0, 0.9});
+    BoltVector l_b =
+        BoltVector::makeDenseVector({0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0});
+
+    // Check correct value is computed for each sample
+    single.computeMetric(a, l_a);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.4);
+    single.computeMetric(b, l_b);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
+
+    // Accumulate in overall metric
+    metric.computeMetric(a, l_a);
+    metric.computeMetric(b, l_b);
+  }
+
+  {  // Sparse outputs, sparse labels
+    BoltVector a = BoltVector::makeSparseVector({0, 2, 3, 4, 7},
+                                                {0.9, 0.2, 1.0, 0.9, 0.6});
+    BoltVector l_a = BoltVector::makeSparseVector({0, 6}, {1.0, 1.0});
+
+    BoltVector b = BoltVector::makeSparseVector({0, 1, 3, 4, 5},
+                                                {1.0, 0.0, 0.9, 1.0, 0.6});
+    BoltVector l_b = BoltVector::makeSparseVector({0, 4, 6}, {1.0, 1.0, 1.0});
+
+    // Check correct value is computed for each sample
+    single.computeMetric(a, l_a);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.4);
+    single.computeMetric(b, l_b);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 2.0 / 3);
+
+    // Accumulate in overall metric
+    metric.computeMetric(a, l_a);
+    metric.computeMetric(b, l_b);
+  }
+
+  ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 0.6);
+}
+
 /**
  * Tests that the Weighted Mean Absolute Percentage Error (WMAPE)
  * metric is thread-safe and can run in parallel.
