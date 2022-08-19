@@ -44,7 +44,7 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
     """
     predict_single() can either accept a threshold or use a default value.
     In this test, we want to make sure that the custom threshold works.
-    We expect that there is always one output activation greater than or 
+    We expect that there is always one output activation greater than or
     equal to the threshold.
     """
     model = bolt.MultiLabelTextClassifier(n_classes=931)
@@ -57,9 +57,9 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
         for line in train_contents:
             f.write(line)
 
-    threshold = 1.5 # We chose 1.5 because this is an impossible threshold 
-                    # to reach naturally, which forces predict_single to 
-                    # force the highest activation to this threshold.
+    threshold = 1.5  # We chose 1.5 because this is an impossible threshold
+    # to reach naturally, which forces predict_single to
+    # force the highest activation to this threshold.
     model.train(temp_train_file, epochs=5, learning_rate=0.01, metrics=[])
 
     inference_sample = [1, 1]
