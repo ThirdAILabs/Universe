@@ -32,8 +32,6 @@ class CommonNetworks {
 
     return model;
   }
-
- private:
 };
 
 }  // namespace thirdai::bolt

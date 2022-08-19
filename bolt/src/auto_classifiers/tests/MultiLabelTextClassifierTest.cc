@@ -7,6 +7,7 @@
 #include <fstream>
 #include <limits>
 #include <memory>
+#include <string>
 
 namespace thirdai::bolt::tests {
 
@@ -77,15 +78,33 @@ TEST(MultiLabelTextClassifierTest, TestPredictSingle) {
                /* learning_rate = */ 0.01,
                /* metrics= */ metrics);
 
-  auto output = model->predictSingleFromTokens({1, 1});
-  std::cout << output << std::endl;
-  ASSERT_GT(output.activations[0], output.activations[2]);
-  ASSERT_GT(output.activations[1], output.activations[2]);
+  auto output_from_tokens = model->predictSingleFromTokens({1, 1});
+  auto output_from_sentence = model->predictSingleFromSentence("1 1");
+
+  /*
+    Since the tokens {1, 1} should map to labels 0 and 1,
+    we expect that activations of classes 0 and 1 are
+    both greater than the activation of class 2.
+  */
+  ASSERT_GT(output_from_tokens.activations[0],
+            output_from_tokens.activations[2]);
+  ASSERT_GT(output_from_tokens.activations[1],
+            output_from_tokens.activations[2]);
+  ASSERT_EQ(output_from_tokens.activations[0],
+            output_from_sentence.activations[0]);
+  ASSERT_EQ(output_from_tokens.activations[1],
+            output_from_sentence.activations[1]);
+  ASSERT_EQ(output_from_tokens.activations[2],
+            output_from_sentence.activations[2]);
 }
 
 /**
- * One of the requirements of the Wayfair Classifier
- *
+ * This classifier is built for multi label classification with a
+ * threshold based approach. That is, we retrieve classes whose
+ * activations exceed the given threshold. If no class exceeds this
+ * threshold, then the model should artificially set the highest
+ * activation to this threshold so that at least one label is
+ * returned.
  */
 TEST(MultiLabelTextClassifierTest,
      PredictSingleReturnsAtLeastOneActivationAboveThreshold) {
@@ -142,17 +161,32 @@ TEST(MultiLabelTextClassifierTest, ConsistentPredictAndPredictSingle) {
       BoltVector::makeSparseVector({3}, {1.0}),
       BoltVector::makeSparseVector({4, 400}, {1.0, 1.0})};
 
-  std::vector<std::vector<uint32_t>> single_inference_samples = {
+  std::vector<std::vector<uint32_t>> single_inference_token_samples = {
       {1, 1}, {2, 2}, {3, 3}, {4, 4}};
+  std::vector<std::string> single_inference_sentence_samples = {"1 1", "2 2",
+                                                                "3 3", "4 4"};
 
-  std::vector<BoltVector> single_inference_outputs;
-  single_inference_outputs.reserve(single_inference_samples.size());
-  for (auto& sample : single_inference_samples) {
-    single_inference_outputs.push_back(model->predictSingleFromTokens(sample));
+  std::vector<BoltVector> token_single_inference_outputs;
+  std::vector<BoltVector> sentence_single_inference_outputs;
+  token_single_inference_outputs.reserve(single_inference_token_samples.size());
+  sentence_single_inference_outputs.reserve(
+      single_inference_sentence_samples.size());
+
+  for (auto& sample : single_inference_token_samples) {
+    token_single_inference_outputs.push_back(
+        model->predictSingleFromTokens(sample));
+  }
+  for (auto& sample : single_inference_sentence_samples) {
+    sentence_single_inference_outputs.push_back(
+        model->predictSingleFromSentence(sample));
   }
 
   for (uint32_t i = 0; i < f_measure_thresholds.size(); i++) {
-    ASSERT_NEAR(getFMeasure(single_inference_outputs, vector_labels,
+    ASSERT_NEAR(getFMeasure(token_single_inference_outputs, vector_labels,
+                            f_measure_thresholds[i]),
+                prediction_metrics[metrics[i]],
+                /* abs_error= */ 0.000001);
+    ASSERT_NEAR(getFMeasure(sentence_single_inference_outputs, vector_labels,
                             f_measure_thresholds[i]),
                 prediction_metrics[metrics[i]],
                 /* abs_error= */ 0.000001);

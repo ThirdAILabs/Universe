@@ -306,18 +306,17 @@ class FMeasure final : public Metric {
 
   static bool isFMeasure(const std::string& name) {
     return std::regex_match(
-                     name,
-                     std::regex("(f_measure\\(0\\.\\d+\\))|(f_measure)"));
+        name, std::regex("(f_measure\\(0\\.\\d+\\))|(f_measure)"));
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
     if (name.find('(') == std::string::npos) {
-          return std::make_shared<FMeasure>();
-        }
-        std::string token = name.substr(name.find('('));  // token = (X.XXX)
-        token = token.substr(1, token.length() - 2);      // token = X.XXX
-        float threshold = std::stof(token);
-        return std::make_shared<FMeasure>(threshold);
+      return std::make_shared<FMeasure>();
+    }
+    std::string token = name.substr(name.find('('));  // token = (X.XXX)
+    token = token.substr(1, token.length() - 2);      // token = X.XXX
+    float threshold = std::stof(token);
+    return std::make_shared<FMeasure>(threshold);
   }
 
  private:

@@ -510,15 +510,19 @@ void createBoltSubmodule(py::module_& module) {
            "Arguments:\n"
            " * n_classes: int - How many classes or categories are in the "
            "labels of the dataset.\n")
-      .def("train", &PyMultiLabelTextClassifier::train, py::arg("train_file"),
-           py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("metrics") = std::vector<std::string>(),
-           "Trains the classifier on the given dataset.\n"
-           "Arguments:\n"
-           " * train_file: string - The path to the training dataset to use.\n"
-           " * epochs: Int - How many epochs to train for.\n"
-           " * learning_rate: Float - The learning rate to use for training.\n"
-           " * metrics: List[string] - Metrics to use during training.\n")
+      .def(
+          "train", &PyMultiLabelTextClassifier::train, py::arg("train_file"),
+          py::arg("epochs"), py::arg("learning_rate"),
+          py::arg("metrics") = std::vector<std::string>(),
+          "Trains the classifier on the given dataset.\n"
+          "Arguments:\n"
+          " * train_file: string - The path to the training dataset to use. "
+          "The file should not have a header. Each row is formatted as follows:"
+          "'''<label1>,<label2>,...,<labelN>\\t<text>'''"
+          "where label1...labelN are integers."
+          " * epochs: Int - How many epochs to train for.\n"
+          " * learning_rate: Float - The learning rate to use for training.\n"
+          " * metrics: List[string] - Metrics to use during training.\n")
       .def("predict_single_from_sentence",
            &PyMultiLabelTextClassifier::predictSingleFromSentence,
            py::arg("sentence"), py::arg("activation_threshold") = 0.95,

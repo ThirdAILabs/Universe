@@ -449,7 +449,13 @@ class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
                             float activation_threshold = 0.95) {
     auto output = MultiLabelTextClassifier::predictSingleFromSentence(
         std::move(sentence), activation_threshold);
-    return boltVectorToNumpy(output);
+
+    float* activations;
+    allocateActivations(/* num_samples= */ 1, _n_classes,
+                        /* active_neurons= */ nullptr, &activations,
+                        /* output_sparse= */ false);
+
+    return denseBoltVectorToNumpy(output, activations);
   }
 
   py::array_t<float, py::array::c_style | py::array::forcecast>
@@ -457,7 +463,13 @@ class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
                           float activation_threshold = 0.95) {
     auto output = MultiLabelTextClassifier::predictSingleFromTokens(
         tokens, activation_threshold);
-    return boltVectorToNumpy(output);
+
+    float* activations;
+    allocateActivations(/* num_samples= */ 1, _n_classes,
+                        /* active_neurons= */ nullptr, &activations,
+                        /* output_sparse= */ false);
+
+    return denseBoltVectorToNumpy(output, activations);
   }
 
   void save(const std::string& filename) {
@@ -480,25 +492,6 @@ class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
   }
 
  private:
-  py::array_t<float, py::array::c_style | py::array::forcecast>
-  boltVectorToNumpy(const BoltVector& output) {
-    uint32_t num_samples = 1;
-    float* activations;
-    allocateActivations(num_samples, _n_classes, /* active_neurons= */ nullptr,
-                        &activations, /* output_sparse= */ false);
-
-    const float* start = output.activations;
-    std::copy(start, start + output.len, activations);
-
-    py::object activation_handle = py::capsule(
-        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-    py::array_t<float, py::array::c_style | py::array::forcecast>
-        activations_array({_n_classes}, {sizeof(float)}, activations,
-                          activation_handle);
-    return activations_array;
-  }
-
   // Private constructor for cereal.
   PyMultiLabelTextClassifier() : MultiLabelTextClassifier() {}
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

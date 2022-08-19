@@ -36,40 +36,36 @@ class MultiLabelTextClassifier {
 
     assert(n_classes == _processor->getLabelDim());
 
-    std::vector<std::pair<uint32_t, float>> hidden_layer_config = {{1024, 1.0}};
-
+    /*
+      TODO(Geordie, Tharun): Add more tuned presets / make configurable by size.
+      While these numbers are currently hard-coded for Wayfair, they are also
+      reasonable configurations in general.
+    */
     _classifier = CommonNetworks::FullyConnected(
-        /* input_dim= */ _processor->getInputDim(),
-        /* layers= */ {
-            FullyConnectedNode::make(
-                /* dim= */ 1024, "relu"),
-            FullyConnectedNode::make(
-                /* dim= */ n_classes,
-                /* sparsity= */ n_classes >= 500 ? 0.1 : 1, "sigmoid",
-                /* num_tables= */ 64, /* hashes_per_table= */ 4,
-                /* reservoir_size= */ 64)});
+        /* input_dim= */ _labeled_processor->getInputDim(),
+        /* layers= */ {FullyConnectedNode::make(
+                           /* dim= */ 1024, "relu"),
+                       FullyConnectedNode::make(
+                           /* dim= */ n_classes,
+                           /* sparsity= */ getOutputSparsity(n_classes),
+                           /* activation= */ "sigmoid",
+                           /* num_tables= */ 64, /* hashes_per_table= */ 4,
+                           /* reservoir_size= */ 64)});
     _classifier->compile(std::make_shared<BinaryCrossEntropyLoss>(),
                          /* print_when_done= */ false);
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
              const std::vector<std::string>& metrics = {}) {
-    dataset::StreamingGenericDatasetLoader dataset(
-        filename, _processor, /* batch_size= */ 2048, /* shuffle= */ true);
+    dataset::StreamingGenericDatasetLoader dataset(filename, _labeled_processor,
+                                                   /* batch_size= */ 2048,
+                                                   /* shuffle= */ true);
 
     if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
       throw std::invalid_argument("Cannot load training dataset in memory.");
     }
 
-    std::cout << "Loading training dataset from " << filename << std::endl;
-    auto start_time = std::chrono::high_resolution_clock::now();
     auto [train_data, train_labels] = dataset.loadInMemory();
-    auto end_time = std::chrono::high_resolution_clock::now();
-    std::cout << "Finished loading the dataset in "
-              << std::chrono::duration_cast<std::chrono::seconds>(end_time -
-                                                                  start_time)
-                     .count()
-              << " seconds." << std::endl;
 
     auto config = TrainConfig::makeConfig(learning_rate, epochs)
                       .withMetrics(metrics)
@@ -81,22 +77,14 @@ class MultiLabelTextClassifier {
 
   InferenceResult predict(const std::string& filename,
                           const std::vector<std::string>& metrics = {}) {
-    dataset::StreamingGenericDatasetLoader dataset(filename, _processor,
+    dataset::StreamingGenericDatasetLoader dataset(filename, _labeled_processor,
                                                    /* batch_size= */ 2048);
 
     if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
       throw std::invalid_argument("Cannot load prediction dataset in memory.");
     }
 
-    std::cout << "Loading prediction dataset from " << filename << std::endl;
-    auto start_time = std::chrono::high_resolution_clock::now();
     auto [pred_data, pred_labels] = dataset.loadInMemory();
-    auto end_time = std::chrono::high_resolution_clock::now();
-    std::cout << "Finished loading the dataset in "
-              << std::chrono::duration_cast<std::chrono::seconds>(end_time -
-                                                                  start_time)
-                     .count()
-              << " seconds." << std::endl;
 
     auto config = PredictConfig::makeConfig().withMetrics(metrics);
 
@@ -114,7 +102,7 @@ class MultiLabelTextClassifier {
 
     BoltVector input_vector;
     auto exception =
-        _inference_processor->makeInputVector(sample, input_vector);
+        _unlabeled_processor->makeInputVector(sample, input_vector);
     if (exception) {
       std::rethrow_exception(exception);
     }
@@ -132,6 +120,16 @@ class MultiLabelTextClassifier {
     return output;
   }
 
+  /**
+   * We provide a convenience function to predict with tokens because
+   * we are ware that practitioners may preprocess data with their own
+   * tokenizers.
+   *
+   * We don't have a similar convenience function for training and
+   * predicting because even if they do use tokens, we will read
+   * these tokens from a file anyway so there is no need for such
+   * a function.
+   */
   BoltVector predictSingleFromTokens(const std::vector<uint32_t>& tokens,
                                      float threshold = 0.95) {
     std::string sentence = tokensToSentence(tokens);
@@ -158,33 +156,62 @@ class MultiLabelTextClassifier {
   }
 
  protected:
+  static float getOutputSparsity(uint32_t output_dim) {
+    /*
+      For smaller output layers, we return a sparsity
+      that puts the sparse dimension between 80 and 160.
+    */
+    if (output_dim < 450) {
+      return 1.0;
+    }
+    if (output_dim < 900) {
+      return 0.2;
+    }
+    if (output_dim < 1800) {
+      return 0.1;
+    }
+    /*
+      For larger layers, we return a sparsity that
+      puts the sparse dimension between 100 and 260.
+    */
+    if (output_dim < 4000) {
+      return 0.05;
+    }
+    if (output_dim < 10000) {
+      return 0.02;
+    }
+    if (output_dim < 20000) {
+      return 0.01;
+    }
+    return 0.05;
+  }
+
   void buildBatchProcessors(uint32_t n_classes) {
-    _processor = std::make_shared<dataset::GenericBatchProcessor>(
-        buildInputBlocks(/* for_single_inference= */ false),
-        buildLabelBlocks(/* for_single_inference= */ false, n_classes),
+    _labeled_processor = std::make_shared<dataset::GenericBatchProcessor>(
+        buildInputBlocks(/* no_label= */ false),
+        buildLabelBlocks(/* no_label= */ false, n_classes),
         /* has_header= */ false, /* delimiter= */ '\t');
 
-    _inference_processor = std::make_shared<dataset::GenericBatchProcessor>(
-        buildInputBlocks(/* for_single_inference= */ true),
-        buildLabelBlocks(/* for_single_inference= */ true),
+    _unlabeled_processor = std::make_shared<dataset::GenericBatchProcessor>(
+        buildInputBlocks(/* no_label= */ true),
+        buildLabelBlocks(/* no_label= */ true),
         /* has_header= */ false, /* delimiter= */ '\t');
   }
 
-  static std::vector<dataset::BlockPtr> buildInputBlocks(
-      bool for_single_inference) {
+  static std::vector<dataset::BlockPtr> buildInputBlocks(bool no_label) {
     auto pairgram_encoding =
         std::make_shared<dataset::PairGram>(/* dim= */ 100000);
-    uint32_t column = for_single_inference ? 0 : 1;
+    uint32_t column = no_label ? 0 : 1;
     return {std::make_shared<dataset::TextBlock>(column, pairgram_encoding)};
   }
 
   static std::vector<dataset::BlockPtr> buildLabelBlocks(
-      bool for_single_inference, uint32_t n_classes = 0) {
-    if (!for_single_inference && n_classes == 0) {
+      bool no_label, uint32_t n_classes = 0) {
+    if (!no_label && n_classes == 0) {
       throw std::invalid_argument(
           "buildLabelBlocks: Must pass n_classes if not for single inference.");
     }
-    if (for_single_inference) {
+    if (no_label) {
       return {};
     }
     auto multi_label_encoding =
@@ -216,8 +243,8 @@ class MultiLabelTextClassifier {
   }
 
   uint32_t _n_classes;
-  std::shared_ptr<dataset::GenericBatchProcessor> _processor;
-  std::shared_ptr<dataset::GenericBatchProcessor> _inference_processor;
+  std::shared_ptr<dataset::GenericBatchProcessor> _labeled_processor;
+  std::shared_ptr<dataset::GenericBatchProcessor> _unlabeled_processor;
   BoltGraphPtr _classifier;
 };
 

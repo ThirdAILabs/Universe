@@ -41,6 +41,12 @@ def test_multi_label_text_classifier_load_save():
 
 @pytest.mark.unit
 def test_multi_label_text_classifier_custom_predict_single_threshold():
+    """
+    predict_single() can either accept a threshold or use a default value.
+    In this test, we want to make sure that the custom threshold works.
+    We expect that there is always one output activation greater than or 
+    equal to the threshold.
+    """
     model = bolt.MultiLabelTextClassifier(n_classes=931)
 
     train_contents = ["1\t1 1\n", "2\t2 2\n", "3\t3 3\n", "4\t4 4\n"]
@@ -51,7 +57,9 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
         for line in train_contents:
             f.write(line)
 
-    threshold = 0.65
+    threshold = 1.5 # We chose 1.5 because this is an impossible threshold 
+                    # to reach naturally, which forces predict_single to 
+                    # force the highest activation to this threshold.
     model.train(temp_train_file, epochs=5, learning_rate=0.01, metrics=[])
 
     inference_sample = [1, 1]
@@ -71,10 +79,10 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
 def test_multi_label_text_classifier_inference_under_1ms():
     model = bolt.MultiLabelTextClassifier(n_classes=931)
 
-    inference_sample = [i for i in range(5)]
+    inference_sample = list(range(5))
 
     start_time = time.time()
-    activations = model.predict_single_from_tokens(inference_sample)
+    model.predict_single_from_tokens(inference_sample)
     end_time = time.time()
 
     assert (end_time - start_time) < 0.001
