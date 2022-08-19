@@ -76,6 +76,7 @@ class DistributedBolt:
                             for worker in self.workers
                         ]
                     )
+                # self.logging.info('Calculate Gradients Time: ' + str(time.time() - start_calculating_gradients_time))
                 self.bolt_computation_time += (
                     time.time() - start_calculating_gradients_time
                 )
@@ -122,6 +123,7 @@ class DistributedBolt:
                         self.learning_rate
                     )
                 )
+                # self.logging.info('Update Parameters Time: ' + str(time.time() - start_update_parameter_time))
                 self.bolt_computation_time += time.time() - start_update_parameter_time
 
                 self.logging.info(
@@ -135,11 +137,11 @@ class DistributedBolt:
                     + str(self.averaging_and_communication_time)
                 )
 
-            for id, worker in enumerate(self.workers):
-                acc, _ = ray.get(worker.predict.remote())
-                self.logging.info(
-                    "Accuracy on workers %d: %lf", id, acc["categorical_accuracy"]
-                )
+            # for id, worker in enumerate(self.workers):
+            #     acc = ray.get(worker.predict.remote())
+            #     self.logging.info(
+            #         "Accuracy on workers %d: %lf", id, acc
+            #     )
 
     def predict(self):
         """Calls network.predict() on worker of head node and returns the predictions.

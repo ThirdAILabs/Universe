@@ -30,7 +30,7 @@ class TabularClassifier {
                    "resets this metadata."
                 << std::endl;
     }
-    _metadata = processTabularMetadata(filename, column_datatypes);
+    _metadata = processTabularMetadata(filename, column_datatypes, 128);
 
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();

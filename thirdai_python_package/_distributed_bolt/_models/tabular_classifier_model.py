@@ -47,7 +47,7 @@ class TabularClassifierModel:
             self.classifier.get_distributed_training_context()
         )
         self.classifier_model = self.classifier.get_bolt_graph_model()
-        self.num_of_batches = self.distributed_training_context.numTrainingBatch()
+        self.num_of_training_batches = self.distributed_training_context.numTrainingBatch()
 
     def calculate_gradients(self, batch_no: int):
         """This function trains the network and calculate gradients for the
@@ -160,8 +160,9 @@ class TabularClassifierModel:
         Returns:
             InferenceMetricData: tuple of matric and activations
         """
+        self.distributed_training_context.finishTraining()
         self.classifier.predict(
-            test_file=self.test_file, prediction_file=self.prediction_file
+            test_file=self.test_file, output_file=self.prediction_file
         )
 
         df = pd.read_csv(self.test_file)

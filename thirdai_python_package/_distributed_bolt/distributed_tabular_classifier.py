@@ -27,7 +27,7 @@ class TabularClassifier(DistributedBolt):
                 + config_filename
             )
 
-        if len(config["dataset"]["train_data"]) != no_of_workers:
+        if len(config["dataset"]["train_file"]) != no_of_workers:
             raise ValueError(
                 "Received ",
                 str(len(config["dataset"]["train_data"])),
@@ -93,11 +93,11 @@ class TabularClassifier(DistributedBolt):
             for worker_id in range(self.no_of_workers - 1)
         ]
 
-        ray.get([worker.make_tabular_classifier_model.remote(column_datatypes) for worker in self.workers])
-
 
         self.workers = [self.primary_worker]
         self.workers.extend(self.replica_workers)
+
+        ray.get([worker.make_tabular_classifier_model.remote(column_datatypes) for worker in self.workers])
 
         self.primary_worker.add_workers.remote(self.workers)
 

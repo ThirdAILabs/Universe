@@ -67,7 +67,7 @@ class FullyConnectedNetwork(DistributedBolt):
         self.model_type = ModelType.FullyConnectedNetwork
         self.epochs = config["params"]["epochs"]
         self.learning_rate = config["params"]["learning_rate"]
-        self.num_layers = len(config["layers"])
+        self.num_layers = len(config["layers"])+1
 
         num_cpus = get_num_cpus()
         if num_cpus_per_node is not -1:

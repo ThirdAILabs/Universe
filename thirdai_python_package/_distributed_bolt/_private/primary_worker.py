@@ -136,22 +136,29 @@ class PrimaryWorker(Worker):
         Returns:
             _type_: _description_
         """
-        self.layer_dims = [784,256,10]
         gradients_list = ray.get(
             [worker.get_calculated_gradients.remote() for worker in self.workers]
         )
+        w_g_node_zero,b_g_node_zero = gradients_list[0]
 
+        weights_shapes = []
+        biases_shapes = []
+        for w_g_layer in w_g_node_zero:
+            weights_shapes.append(w_g_layer.shape)
+        
+        for b_g_layer in b_g_node_zero:
+            biases_shapes.append(b_g_layer.shape)
         # Here we are initializing the w_average_gradients for storing the sum
         self.w_gradients_avg = np.array(
             [
-                np.zeros((self.layer_dims[layer_no + 1], self.layer_dims[layer_no]))
-                for layer_no in range(len(self.layer_dims) - 1)
+                np.zeros(weights_shapes[layer_no])
+                for layer_no in range(self.num_layers - 1)
             ]
         )
         self.b_gradients_avg = np.array(
             [
-                np.zeros((self.layer_dims[layer_no + 1]))
-                for layer_no in range(len(self.layer_dims) - 1)
+                np.zeros(biases_shapes[layer_no])
+                for layer_no in range(self.num_layers - 1)
             ]
         )
 

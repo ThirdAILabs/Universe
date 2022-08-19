@@ -110,16 +110,14 @@ class Worker:
         """
         self.model.calculate_gradients(batch_no)
 
-        self.w_partitions = []
-        self.b_partitions = []
-
         self.w_gradients, self.b_gradients = self.model.get_calculated_gradients()
 
-        for x in self.w_gradients:
-            self.w_partitions.append(int(len(x) / self.total_nodes))
+        if len(self.w_partitions)==0:
+            for x in self.w_gradients:
+                self.w_partitions.append(int(len(x) / self.total_nodes))
 
-        for y in self.b_gradients:
-            self.b_partitions.append(int(len(y) / self.total_nodes))
+            for y in self.b_gradients:
+                self.b_partitions.append(int(len(y) / self.total_nodes))
 
     def calculate_gradients_linear(self, batch_no: int):
         """This function is called only when the mode of communication is
