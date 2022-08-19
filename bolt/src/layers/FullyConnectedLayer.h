@@ -209,15 +209,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   inline void deinitSparseDatastructures();
 
-  void sparseDenseOptionOne(float lr, float B1, float B2, float eps,
-                            float B1_bias_corrected, float B2_bias_corrected);
-
-  void sparseDenseOptionTwo(float lr, float B1, float B2, float eps,
-                            float B1_bias_corrected, float B2_bias_corrected);
-
-  void sparseDenseOptionThree(float lr, float B1, float B2, float eps,
-                              float B1_bias_corrected, float B2_bias_corrected);
-
   template <bool DENSE, bool PREV_DENSE>
   void markActiveNeuronsForUpdate(const BoltVector& input,
                                   const BoltVector& output, uint32_t len_out);

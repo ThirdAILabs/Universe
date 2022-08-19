@@ -490,75 +490,26 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
   }
 }
 
-void FullyConnectedLayer::sparseDenseOptionOne(float lr, float B1, float B2,
-                                               float eps,
-                                               float B1_bias_corrected,
-                                               float B2_bias_corrected) {
-#pragma omp parallel for default(none) \
-    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-      if (_prev_is_active[prev_neuron]) {
-        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
-                                     B1_bias_corrected, B2_bias_corrected);
-      }
-    }
-  }
-
-  for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-    _prev_is_active[prev_neuron] = false;
-  }
-}
-
-void FullyConnectedLayer::sparseDenseOptionTwo(float lr, float B1, float B2,
-                                               float eps,
-                                               float B1_bias_corrected,
-                                               float B2_bias_corrected) {
-#pragma omp parallel for default(none) \
-    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-      if (_prev_is_active[prev_neuron]) {
-        _prev_is_active[prev_neuron] = false;
-        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
-                                     B1_bias_corrected, B2_bias_corrected);
-      }
-    }
-  }
-
-#pragma omp parallel for default(none)
-  for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-    _prev_is_active[prev_neuron] = false;
-  }
-}
-
-void FullyConnectedLayer::sparseDenseOptionThree(float lr, float B1, float B2,
-                                                 float eps,
-                                                 float B1_bias_corrected,
-                                                 float B2_bias_corrected) {
-#pragma omp parallel for default(none) \
-    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-    if (_prev_is_active[prev_neuron]) {
-      _prev_is_active[prev_neuron] = false;
-      for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
-                                     B1_bias_corrected, B2_bias_corrected);
-      }
-    }
-  }
-}
-
 inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
-  sparseDenseOptionOne(lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+      if (_prev_is_active[prev_neuron]) {
+        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
+                                     B1_bias_corrected, B2_bias_corrected);
+      }
+    }
+  }
 
-  // sparseDenseOptionTwo(lr, B1, B2, eps, B1_bias_corrected,
-  // B2_bias_corrected);
-
-  // sparseDenseOptionThree(lr, B1, B2, eps, B1_bias_corrected,
-  // B2_bias_corrected);
+  // We update this outside because its faster to have cache efficient for loops
+  // above. We also don't use pragma here because there's almost no speedup over
+  // a regular loop and pragma comes with much more variability
+  for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+    _prev_is_active[prev_neuron] = false;
+  }
 }
 
 inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
