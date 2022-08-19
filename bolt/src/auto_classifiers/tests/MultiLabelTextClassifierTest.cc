@@ -32,7 +32,8 @@ TEST(MultiLabelTextClassifierTest, TestLoadSave) {
   const std::string TRAIN_FILENAME = "tempTrainFile.csv";
   AutoClassifierTestUtils::setTempFileContents(TRAIN_FILENAME, train_contents);
 
-  std::vector<std::string> metrics = {"f_measure(0.9)"};
+  std::string f_measure_metric = "f_measure(0.9)";
+  std::vector<std::string> metrics = {f_measure_metric};
 
   model->train(TRAIN_FILENAME, /* epochs = */ 3,
                /* learning_rate = */ 0.01,
@@ -55,9 +56,8 @@ TEST(MultiLabelTextClassifierTest, TestLoadSave) {
       /* filename = */ TRAIN_FILENAME,
       /* metrics = */ metrics);
 
-  for (auto& [key, value] : metrics_before_saving) {
-    ASSERT_EQ(value, metrics_after_loading[key]);
-  }
+  ASSERT_EQ(metrics_before_saving[f_measure_metric],
+            metrics_after_loading[f_measure_metric]);
 
   std::remove(TRAIN_FILENAME.c_str());
   std::remove(SAVE_LOCATION.c_str());
