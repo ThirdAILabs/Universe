@@ -24,6 +24,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <alloca.h>
 #include <csignal>
 #include <exception>
 #include <iostream>
