@@ -163,14 +163,13 @@ class FullyConnectedLayer final : public SequentialLayer {
   // _sparsity is less than 1.
   bool _prev_is_dense;
   bool _this_is_dense;
-  // This is only used if _prev_is_dense == false and _this_is_dense == false
-  // This is a vector of unique_ptr so that the push_back in the critical
-  // region is just a pointer move and can be very fast
-  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs;
-  // This is only used if _prev_is_dense == false
+
+  // This is only used if _prev_is_dense == false and _this_is_dense == true
   std::vector<bool> _prev_is_active;
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
+  // This is only used if _this_is_dense == false and _this_is_dense == false
+  std::vector<bool> _active_pairs;
 
   // A flag to check whether the current network is running in the normal
   // settings and distributed settings
@@ -181,6 +180,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   template <bool DENSE, bool PREV_DENSE>
   void markActiveNeuronsForUpdate(const BoltVector& input,
                                   const BoltVector& output, uint32_t len_out);
+
+  void initActiveNeuronsTrackers();
 
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
@@ -207,12 +208,14 @@ class FullyConnectedLayer final : public SequentialLayer {
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
 
-  inline void cleanupWithinBatchVars();
-
   inline void initSparseDatastructures(const SamplingConfigPtr& sampling_config,
                                        std::random_device& rd);
 
   inline void deinitSparseDatastructures();
+
+  template <bool DENSE, bool PREV_DENSE>
+  void markActiveNeuronsForUpdate(const BoltVector& input,
+                                  const BoltVector& output, uint32_t len_out);
 
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
@@ -236,8 +239,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   template <class Archive>
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
-            _prev_is_active, _is_active);
+            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode);
   }
 
   /**
@@ -257,8 +259,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   template <class Archive>
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
-            _prev_is_active, _is_active);
+            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode);
   }
 
   /**
