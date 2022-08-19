@@ -102,7 +102,7 @@ void AutoClassifierBase::predict(
     if (!output_file) {
       return;
     }
-    uint32_t class_id = output.getIdWithHighestActivation();
+    uint32_t class_id = output.getHighestActivationId();
     (*output_file) << class_id_to_class_name[class_id] << std::endl;
   };
 

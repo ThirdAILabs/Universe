@@ -214,8 +214,10 @@ class FullyConnectedNode final
   }
 
   void backpropagateImpl(uint32_t vec_index) final {
-    // TODO(Nicholas, Josh): Change to avoid having this check
-    if (_predecessor->isInputNode()) {
+    // We are checking whether predecessor has gradients or not rather than its
+    // an input ot not because,this way will be helpful to calculate gradients
+    // for input in getInputGradientsSingle.
+    if (!_predecessor->getOutputVector(vec_index).gradients) {
       _layer->backpropagateInputLayer(_predecessor->getOutputVector(vec_index),
                                       this->getOutputVectorImpl(vec_index));
     } else {
