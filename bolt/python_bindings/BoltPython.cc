@@ -696,7 +696,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("init_classifier_distributed_training",
            &TabularClassifier::initClassifierDistributedTraining,
            py::arg("train_file"), py::arg("column_datatypes"),
-           py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("epochs"), py::arg("learning_rate"), py::arg("batch_size"),
            "Initializes distributed training For Tabular Classifiers.\n")
       .def("get_distributed_training_context",
            &TabularClassifier::getDistributedTrainingContext,

@@ -62,21 +62,13 @@ class DistributedBolt:
                 # Here we are asking every worker to calculate their gradients and return
                 # once they all calculate their gradients
                 start_calculating_gradients_time = time.time()
-                if circular:
-                    ray.get(
-                        [
-                            worker.calculate_gradients_circular.remote(batch_no)
-                            for worker in self.workers
-                        ]
-                    )
-                else:
-                    ray.get(
-                        [
-                            worker.calculate_gradients_linear.remote(batch_no)
-                            for worker in self.workers
-                        ]
-                    )
-                # self.logging.info('Calculate Gradients Time: ' + str(time.time() - start_calculating_gradients_time))
+                ray.get(
+                    [
+                        worker.calculate_gradients.remote(batch_no)
+                        for worker in self.workers
+                    ]
+                )
+                self.logging.info('Calculate Gradients Time: ' + str(time.time() - start_calculating_gradients_time))
                 self.bolt_computation_time += (
                     time.time() - start_calculating_gradients_time
                 )
@@ -123,7 +115,7 @@ class DistributedBolt:
                         self.learning_rate
                     )
                 )
-                # self.logging.info('Update Parameters Time: ' + str(time.time() - start_update_parameter_time))
+                self.logging.info('Update Parameters Time: ' + str(time.time() - start_update_parameter_time))
                 self.bolt_computation_time += time.time() - start_update_parameter_time
 
                 self.logging.info(

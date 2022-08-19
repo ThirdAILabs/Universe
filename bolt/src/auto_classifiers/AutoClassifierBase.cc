@@ -48,8 +48,8 @@ void AutoClassifierBase::initClassifierDistributedTraining(
     const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
-    uint32_t epochs, float learning_rate) {
-  auto dataset = loadStreamingDataset(filename, batch_processor);
+    uint32_t epochs, float learning_rate, int batch_size) {
+  auto dataset = loadStreamingDataset(filename, batch_processor, batch_size);
 
   if (!canLoadDatasetInMemory(filename)) {
     throw std::invalid_argument("Cannot load dataset in memory.");

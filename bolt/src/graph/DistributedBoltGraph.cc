@@ -25,6 +25,7 @@ void DistributedTrainingContext::updateParametersSingleNode() const {
                                            _reconstruct_hash_functions_batch);
 }
 uint64_t DistributedTrainingContext::numTrainingBatches() const {
+  std::cout << _train_context.numBatches() << std::endl;
   return _train_context.numBatches();
 }
 

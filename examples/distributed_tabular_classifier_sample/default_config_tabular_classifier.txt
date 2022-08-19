@@ -1,8 +1,8 @@
 job = "Tabular Classification"
 
 [dataset]
-train_file = ["/share/pratik/train_census_income_1.csv", "/share/pratik/train_census_income_2.csv"]
-test_file = "/share/pratik/census_income_test.csv"
+train_file = ["/share/pratik/wesad_train.csv", "/share/pratik/wesad_train.csv"]
+test_file = "/share/pratik/wesad_test.csv"
 prediction_file = "/share/pratik/prediction.csv"
 
 
@@ -11,3 +11,4 @@ epochs = 2
 learning_rate = 0.01
 model_size = "1Gb"
 n_classes = 10
+batch_size = 1000

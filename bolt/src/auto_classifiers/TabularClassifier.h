@@ -23,14 +23,14 @@ class TabularClassifier {
 
   void initClassifierDistributedTraining(
       const std::string& filename, std::vector<std::string>& column_datatypes,
-      uint32_t epochs, float learning_rate) {
+      uint32_t epochs, float learning_rate, int batch_size = 256) {
     if (_metadata) {
       std::cout << "Note: Metadata from the training dataset is used for "
                    "predictions on future test data. Calling train(..) again "
                    "resets this metadata."
                 << std::endl;
     }
-    _metadata = processTabularMetadata(filename, column_datatypes, 128);
+    _metadata = processTabularMetadata(filename, column_datatypes, batch_size);
 
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
@@ -38,7 +38,7 @@ class TabularClassifier {
         filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
-        epochs, learning_rate);
+        epochs, learning_rate, batch_size);
   }
 
   DistributedTrainingContext getDistributedTrainingContext() {

@@ -33,6 +33,7 @@ class TabularClassifierModel:
 
         self.model_size = config["params"]["model_size"]
         self.n_classes = config["params"]["n_classes"]
+        self.batch_size = config["params"]["batch_size"]
 
         self.classifier = bolt.TabularClassifier(
             model_size=self.model_size, n_classes=self.n_classes
@@ -42,6 +43,7 @@ class TabularClassifierModel:
             column_datatypes=column_datatypes,
             epochs=1,
             learning_rate=0.01,
+            batch_size=self.batch_size, 
         )
         self.distributed_training_context = (
             self.classifier.get_distributed_training_context()

@@ -86,40 +86,21 @@ class Worker:
         """
         self.friend = friend
 
-    def calculate_gradients_circular(self, batch_no: int):
-        """This function is called only when the mode of
-        communication is circular.
 
 
-        This functions calls the API 'calculateGradientSingleNode',
-        which calculates the gradients for the network managed by
-        this particular worker. The calculateGradientSingleNode trains
-        the network and calculates the gradient for the particular
-        training batch with batch no. batch_no and with loss function
-        specified in the config.
-
-        This function also defines the partition size which defines the
-        size of block of gradients which are communicated between a worker
-        and its friend.
-
-        Args:
-            batch_no (int): training batch to calculate gradients on.
-
-        Returns:
-            _type_: _description_
-        """
-        self.model.calculate_gradients(batch_no)
+    def get_calculated_gradients_circular(self):
 
         self.w_gradients, self.b_gradients = self.model.get_calculated_gradients()
 
-        if len(self.w_partitions)==0:
+        if len(self.w_gradients)==0:
             for x in self.w_gradients:
                 self.w_partitions.append(int(len(x) / self.total_nodes))
 
             for y in self.b_gradients:
                 self.b_partitions.append(int(len(y) / self.total_nodes))
+        return True
 
-    def calculate_gradients_linear(self, batch_no: int):
+    def calculate_gradients(self, batch_no: int):
         """This function is called only when the mode of communication is
         linear.
 
@@ -139,7 +120,7 @@ class Worker:
         self.model.calculate_gradients(batch_no)
         return True
 
-    def get_calculated_gradients(self):
+    def get_calculated_gradients_linear(self):
         """This function is called only when the mode of communication
         is Linear.
 

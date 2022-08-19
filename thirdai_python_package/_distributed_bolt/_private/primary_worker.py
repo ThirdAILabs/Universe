@@ -57,7 +57,9 @@ class PrimaryWorker(Worker):
         Returns:
             _type_: _description_
         """
-
+        ray.get(
+            [worker.get_calculated_gradients_circular.remote() for worker in self.workers]
+        )
         # The following code implements the two loops for Baidu's All-Reduce and All-Gather.
         # In the first run, each of the worker passes their partition to next worker
 
@@ -137,7 +139,7 @@ class PrimaryWorker(Worker):
             _type_: _description_
         """
         gradients_list = ray.get(
-            [worker.get_calculated_gradients.remote() for worker in self.workers]
+            [worker.get_calculated_gradients_linear.remote() for worker in self.workers]
         )
         w_g_node_zero,b_g_node_zero = gradients_list[0]
 

@@ -1,7 +1,7 @@
 import thirdai.distributed_bolt as db
 import pandas as pd
 
-TEST_FILE = "/share/pratik/test.csv"
+TEST_FILE = "/share/pratik/wesad_test.csv"
 
 
 if __name__ == "__main__":
@@ -13,6 +13,8 @@ if __name__ == "__main__":
             column_datatypes.append("numeric")
         elif col_type == "object":
             column_datatypes.append("categorical")
+        else:
+            column_datatypes.append("numeric")
     column_datatypes.append("label")
 
 
@@ -23,6 +25,6 @@ if __name__ == "__main__":
         num_cpus_per_node=20,
         column_datatypes=column_datatypes,
     )
-    head.train(circular=False)
+    head.train(circular=True)
     acc = head.predict()
     print(acc)

@@ -31,7 +31,7 @@ class AutoClassifierBase {
       const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
-      uint32_t epochs, float learning_rate);
+      uint32_t epochs, float learning_rate, int batch_size);
 
   DistributedTrainingContext getDistributedTrainingContext() {
     return *(_distributed_train_context);
@@ -56,7 +56,7 @@ class AutoClassifierBase {
       const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
-      uint32_t batch_size = 256);
+      uint32_t batch_size = 128);
 
   static uint32_t getHiddenLayerSize(const std::string& model_size,
                                      uint64_t n_classes, uint64_t input_dim);
