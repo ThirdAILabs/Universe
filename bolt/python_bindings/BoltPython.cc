@@ -529,7 +529,8 @@ void createBoltSubmodule(py::module_& module) {
            "Given a sentence, predict the likelihood of each output "
            "class. \n"
            "Arguments:\n"
-           " * sentence: string - The input sentence.\n")
+           " * sentence: string - The input sentence.\n"
+           " * threshold: string - Threshold for multilabel prediction.\n")
       .def("predict_single_from_tokens",
            &PyMultiLabelTextClassifier::predictSingleFromTokens,
            py::arg("tokens"), py::arg("activation_threshold") = 0.95,
