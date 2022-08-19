@@ -544,7 +544,7 @@ void createBoltSubmodule(py::module_& module) {
            "logs the prediction to a file.\n"
            "Arguments:\n"
            " * test_file: string - The path to the test dataset to use.\n"
-           " * metrics: List[string] - Metrics to use during training.\n"
+           " * metrics: List[string] - Metrics to use during prediction.\n"
            "then the classifier will output the name of the class/category of "
            "each prediction this file with one prediction result on each "
            "line.\n")

@@ -20,7 +20,7 @@ float getFMeasure(std::vector<BoltVector> outputs,
   return metric.getMetricAndReset(/* verbose= */ false);
 }
 
-TEST(MultiLabeelTextClassifierTest, TestLoadSave) {
+TEST(MultiLabelTextClassifierTest, TestLoadSave) {
   std::shared_ptr<MultiLabelTextClassifier> model =
       std::make_shared<MultiLabelTextClassifier>(/* n_classes= */ 5);
 

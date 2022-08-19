@@ -101,9 +101,8 @@ class MultiLabelTextClassifier {
         std::string_view(sentence.data(), sentence.size())};
 
     BoltVector input_vector;
-    auto exception =
-        _unlabeled_processor->makeInputVector(sample, input_vector);
-    if (exception) {
+    if (auto exception =
+            _unlabeled_processor->makeInputVector(sample, input_vector)) {
       std::rethrow_exception(exception);
     }
 
