@@ -239,13 +239,13 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 };
 
 /**
- * The F-Measure is an error that takes into account both precision and recall.
+ * The F-Measure is a metric that takes into account both precision and recall.
  * It is defined as the harmonic mean of precision and recall. The returned
  * metric is in absolute terms; 1.0 is 100%.
  */
 class FMeasure final : public Metric {
  public:
-  explicit FMeasure(float threshold = 0.8)
+  explicit FMeasure(float threshold)
       : _threshold(threshold),
         _true_positive(0),
         _false_positive(0),
@@ -265,9 +265,9 @@ class FMeasure final : public Metric {
       }
     }
 
-    for (uint32_t i = 0; i < labels.len; i++) {
+    for (uint32_t pos = 0; pos < labels.len; pos++) {
       uint32_t label_active_neuron =
-          labels.isDense() ? i : labels.active_neurons[i];
+          labels.isDense() ? pos : labels.active_neurons[pos];
       if (labels.findActiveNeuronNoTemplate(label_active_neuron).activation >
           0) {
         if (std::find(predictions.begin(), predictions.end(),
@@ -283,7 +283,14 @@ class FMeasure final : public Metric {
                   (_true_positive + _false_positive);
     double recall = static_cast<double>(_true_positive) /
                     (_true_positive + _false_negative);
-    double f_measure = (2 * prec * recall) / (prec + recall);
+    double f_measure; 
+    
+    if (prec == 0 && recall == 0) {
+      f_measure = 0;
+    } else {
+      f_measure = (2 * prec * recall) / (prec + recall);
+    }
+
     if (verbose) {
       std::cout << "Precision (t=" << _threshold << "): " << prec << std::endl;
       std::cout << "Recall (t=" << _threshold << "): " << recall << std::endl;
@@ -306,13 +313,10 @@ class FMeasure final : public Metric {
 
   static bool isFMeasure(const std::string& name) {
     return std::regex_match(
-        name, std::regex("(f_measure\\(0\\.\\d+\\))|(f_measure)"));
+        name, std::regex("f_measure\\(0\\.\\d+\\)"));
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
-    if (name.find('(') == std::string::npos) {
-      return std::make_shared<FMeasure>();
-    }
     std::string token = name.substr(name.find('('));  // token = (X.XXX)
     token = token.substr(1, token.length() - 2);      // token = X.XXX
     float threshold = std::stof(token);
