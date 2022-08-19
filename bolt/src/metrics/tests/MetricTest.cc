@@ -234,8 +234,8 @@ TEST(MetricTest, FMeasure) {
   // all of the samples whereas 'single' is checked for each sample. This is to
   // ensure that both the computed value is per sample and that the overall
   // value is correct.
-  FMeasure metric;
-  FMeasure single;
+  FMeasure metric(/* threshold= */ 0.8);
+  FMeasure single(/* threshold= */ 0.8);
 
   {  // Dense outputs, dense labels
 
