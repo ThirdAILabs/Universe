@@ -151,9 +151,6 @@ class FullyConnectedLayer final : public SequentialLayer {
     }
   }
 
-  using ActiveNeuronsPair =
-      std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
-
   // This set of variables are only used within a batch, so we do not use
   // _this_is_dense to check if the layer is sparse, we instead check if
   // _sparsity is less than 1.
