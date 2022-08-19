@@ -1,0 +1,94 @@
+name: Upload to Test Pypi
+
+# Kills old jobs from the same pr if we push a new commit
+# See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency: 
+  group: testpypi-${{ github.head_ref }}
+  cancel-in-progress: true
+
+# Run on pushes and releases. The actual upload will only happen on a 
+# release.
+# Note this action does not ever upload to the main Pypi repo. For now, do that
+# by downloading the build artifacts and doing it manually. See 
+# https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
+# for more details.
+on: 
+  push: 
+    branches: [main]
+  release:
+    types:
+      - published
+  workflow_dispatch:  
+
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-12]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      # Build CryptoPP static lib on windows first
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: matrix.os == 'windows-2019'
+      - name: Build CryptoPP static lib
+        run: |
+          cd deps/cryptopp
+          nmake /f cryptest.nmake
+        if: matrix.os == 'windows-2019'
+
+
+      - name: Build and test wheels
+        uses: pypa/cibuildwheel@v2.5.0
+        env:
+          
+          # Mac and windows will use this path, since they do not run in docker
+          THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
+         
+          # TODO(josh): Get cross compiling working to build more types of wheels
+          # Online compile cpython wheels (pytorch does this too), no big 
+          # advantage to JIT compilation of python since most of our processing
+          # happens in C++ (it can actually make it slower!). Also, on some
+          # platforms numpy isn't available so our tests don't work.
+          CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64"
+          CIBW_BUILD_VERBOSITY: 3
+          CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
+
+          # On linux we copy a valid license to the home directory within the docker
+          CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
+          CIBW_TEST_REQUIRES: datasets mmh3 numpy pytest
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./wheelhouse/*.whl
+
+
+  upload_all:
+    name: Upload to test pypi
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+
+    steps:
+    - uses: actions/setup-python@v2
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: dist
+
+    - uses: pypa/gh-action-pypi-publish@v1.5.0
+      with:
+        user: __token__
+        password: ${{ secrets.TEST_PYPI_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/
