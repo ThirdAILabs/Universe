@@ -283,8 +283,8 @@ class FMeasure final : public Metric {
                   (_true_positive + _false_positive);
     double recall = static_cast<double>(_true_positive) /
                     (_true_positive + _false_negative);
-    double f_measure; 
-    
+    double f_measure;
+
     if (prec == 0 && recall == 0) {
       f_measure = 0;
     } else {
@@ -312,8 +312,7 @@ class FMeasure final : public Metric {
   }
 
   static bool isFMeasure(const std::string& name) {
-    return std::regex_match(
-        name, std::regex("f_measure\\(0\\.\\d+\\)"));
+    return std::regex_match(name, std::regex("f_measure\\(0\\.\\d+\\)"));
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
