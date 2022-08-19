@@ -10,9 +10,9 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt/src/utils/logging.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
-#include <spdlog/spdlog.h>
 #include <algorithm>
 #include <chrono>
 #include <csignal>
@@ -27,6 +27,23 @@
 #include <unordered_set>
 
 namespace thirdai::bolt {
+
+namespace {
+
+std::string logline_metrics(const MetricData& output) {
+  std::stringstream stream;
+  bool first = true;
+  for (auto& p : output) {
+    if (!first) {
+      stream << " | ";
+    }
+    stream << p.first << ":" << p.second[0];
+    first = false;
+  }
+  return stream.str();
+}
+
+}  // namespace
 
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
                         bool print_when_done) {
@@ -65,7 +82,7 @@ MetricData BoltGraph::train(
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config) {
   DatasetContext train_context(train_data, train_tokens, train_labels);
-  spdlog::info("BoltGraph::train");
+  log::info("BoltGraph::train");
 
   verifyCanTrain(train_context);
 
@@ -110,17 +127,8 @@ MetricData BoltGraph::train(
         // bar.increment();
         auto output = metrics.getMetrics();
 
-        std::stringstream stream;
-        bool first = true;
-        for (auto& p : output) {
-          if (!first) {
-            stream << " | ";
-          }
-          stream << p.first << ":" << p.second[0];
-          first = false;
-        }
-        spdlog::info("epoch {} | batch {} | {}", (_epoch_count + 1), batch_idx,
-                     stream.str());
+        log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
+                  logline_metrics(output));
       }
 
       perEpochCallback();
@@ -131,8 +139,9 @@ MetricData BoltGraph::train(
                                .count();
 
       time_per_epoch.push_back(static_cast<double>(epoch_time));
-      spdlog::info("Processed {} training batches in {} seconds",
-                   train_context.numBatches(), epoch_time);
+      log::info("epoch {} | full |  batches {} | time {}s | {}", _epoch_count,
+                train_context.numBatches(), epoch_time,
+                logline_metrics(metrics.getMetrics()));
       _epoch_count++;
       metrics.logAndReset();
     }
@@ -366,8 +375,9 @@ InferenceResult BoltGraph::predict(
                           test_end - test_start)
                           .count();
 
-  spdlog::info("Processed {} test batches in {} milliseconds",
-               predict_context.numBatches(), test_time);
+  log::info("test | full |  batches {} | time {}s | {}", _epoch_count,
+            predict_context.numBatches(), test_time,
+            logline_metrics(metrics.getMetrics()));
 
   metrics.logAndReset();
   auto metric_vals = metrics.getOutputFromInference();
@@ -718,7 +728,7 @@ std::string BoltGraph::summarize(bool print, bool detailed) const {
   }
   summary << "============================================================\n";
   if (print) {
-    spdlog::info("{}", summary.str());
+    log::info("{}", summary.str());
   }
   return summary.str();
 }

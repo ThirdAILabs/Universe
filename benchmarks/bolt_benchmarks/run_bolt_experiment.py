@@ -10,7 +10,9 @@ from utils import (
     log_prediction_metrics,
     config_get,
 )
+
 from thirdai import bolt, dataset
+from thirdai import setup_logging
 
 
 def main():
@@ -21,6 +23,7 @@ def main():
 
     config = toml.load(args.config_path)
 
+    setup_logging()
     model = load_and_compile_model(config)
     datasets = load_all_datasets(config)
     start_mlflow(config, mlflow_args=args)

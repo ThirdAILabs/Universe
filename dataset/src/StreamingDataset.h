@@ -2,9 +2,9 @@
 
 #include "BatchProcessor.h"
 #include "DataLoader.h"
+#include <bolt/src/utils/logging.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/InMemoryDataset.h>
-#include <spdlog/spdlog.h>
 #include <chrono>
 #include <memory>
 #include <optional>
@@ -79,7 +79,7 @@ class StreamingDataset {
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-    spdlog::info(
+    log::info(
         "Loaded {} vectors from '{}' in {} seconds.", len,
         _data_loader->resourceName(),
         std::chrono::duration_cast<std::chrono::seconds>(end - start).count());

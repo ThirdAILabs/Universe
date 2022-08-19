@@ -1,5 +1,6 @@
 // Code to create thirdai modules
 #include <bolt/python_bindings/BoltPython.h>
+#include <bolt/src/utils/logging.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <search/python_bindings/DocSearchPython.h>
@@ -36,6 +37,12 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         py::arg("license_path"),
         "Set a license filepath for any future calls to the thirdai library.");
 #endif
+
+  m.def("setup_logging", &thirdai::log::setup_logging,
+        py::arg("log_to_stderr") = thirdai::log::kDefaultLogToStderr,
+        py::arg("path") = thirdai::log::kDefaultLogPath,
+        py::arg("pattern") = thirdai::log::kDefaultPattern,
+        py::arg("level") = thirdai::log::kDefaultLogLevel);
 
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:
