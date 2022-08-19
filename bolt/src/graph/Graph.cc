@@ -12,6 +12,7 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <spdlog/spdlog.h>
 #include <algorithm>
 #include <chrono>
 #include <csignal>
@@ -19,6 +20,7 @@
 #include <optional>
 #include <ostream>
 #include <queue>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -63,6 +65,7 @@ MetricData BoltGraph::train(
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config) {
   DatasetContext train_context(train_data, train_tokens, train_labels);
+  spdlog::info("BoltGraph::train");
 
   verifyCanTrain(train_context);
 
@@ -91,7 +94,6 @@ MetricData BoltGraph::train(
   // automatically delete the training state
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
-      spdlog::info("Epoch {}:", (_epoch_count + 1));
       // ProgressBar bar(train_context.numBatches(), train_config.verbose());
       auto train_start = std::chrono::high_resolution_clock::now();
 
@@ -107,9 +109,18 @@ MetricData BoltGraph::train(
 
         // bar.increment();
         auto output = metrics.getMetrics();
+
+        std::stringstream stream;
+        bool first = true;
         for (auto& p : output) {
-          spdlog::info("{} {}", p.first, p.second[0]);
+          if (!first) {
+            stream << " | ";
+          }
+          stream << p.first << ":" << p.second[0];
+          first = false;
         }
+        spdlog::info("epoch {} | batch {} | {}", (_epoch_count + 1), batch_idx,
+                     stream.str());
       }
 
       perEpochCallback();
