@@ -1,12 +1,14 @@
 #pragma once
-
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/MetricHelpers.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <atomic>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <memory>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -22,7 +24,7 @@ class Metric {
                              const BoltVector& labels) = 0;
 
   // Returns the value of the metric and resets it. For instance this would be
-  // called ad the end of each epoch.
+  // called at the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
 
   // Returns the name of the metric.
@@ -52,7 +54,7 @@ class CategoricalAccuracy final : public Metric {
     if (!max_act_index) {
       throw std::runtime_error(
           "Unable to find a output activation larger than the minimum "
-          "representable float. This is likely do to a Nan or incorrect "
+          "representable float. This is likely due to a Nan or incorrect "
           "activation function in the final layer.");
     }
 
@@ -61,7 +63,7 @@ class CategoricalAccuracy final : public Metric {
                                      : output.active_neurons[*max_act_index];
 
     if (labels.isDense()) {
-      // If labels are dense we check if the predection has a non-zero label.
+      // If labels are dense we check if the prediction has a non-zero label.
       if (labels.activations[pred] > 0) {
         _correct++;
       }
@@ -234,6 +236,97 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
  private:
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
+};
+
+/**
+ * The F-Measure is a metric that takes into account both precision and recall.
+ * It is defined as the harmonic mean of precision and recall. The returned
+ * metric is in absolute terms; 1.0 is 100%.
+ */
+class FMeasure final : public Metric {
+ public:
+  explicit FMeasure(float threshold)
+      : _threshold(threshold),
+        _true_positive(0),
+        _false_positive(0),
+        _false_negative(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    auto predictions = output.getThresholdedNeurons(
+        /* activation_threshold = */ _threshold,
+        /* return_at_least_one = */ true,
+        /* max_count_to_return = */ std::numeric_limits<uint32_t>::max());
+
+    for (uint32_t pred : predictions) {
+      if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
+        _true_positive++;
+      } else {
+        _false_positive++;
+      }
+    }
+
+    for (uint32_t pos = 0; pos < labels.len; pos++) {
+      uint32_t label_active_neuron =
+          labels.isDense() ? pos : labels.active_neurons[pos];
+      if (labels.findActiveNeuronNoTemplate(label_active_neuron).activation >
+          0) {
+        if (std::find(predictions.begin(), predictions.end(),
+                      label_active_neuron) == predictions.end()) {
+          _false_negative++;
+        }
+      }
+    }
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double prec = static_cast<double>(_true_positive) /
+                  (_true_positive + _false_positive);
+    double recall = static_cast<double>(_true_positive) /
+                    (_true_positive + _false_negative);
+    double f_measure;
+
+    if (prec == 0 && recall == 0) {
+      f_measure = 0;
+    } else {
+      f_measure = (2 * prec * recall) / (prec + recall);
+    }
+
+    if (verbose) {
+      std::cout << "Precision (t=" << _threshold << "): " << prec << std::endl;
+      std::cout << "Recall (t=" << _threshold << "): " << recall << std::endl;
+      std::cout << "F-Measure (t=" << _threshold << "): " << f_measure
+                << std::endl;
+    }
+    _true_positive = 0;
+    _false_positive = 0;
+    _false_negative = 0;
+    return f_measure;
+  }
+
+  static constexpr const char* name = "f_measure";
+
+  std::string getName() final {
+    std::stringstream name_ss;
+    name_ss << name << '(' << _threshold << ')';
+    return name_ss.str();
+  }
+
+  static bool isFMeasure(const std::string& name) {
+    return std::regex_match(name, std::regex("f_measure\\(0\\.\\d+\\)"));
+  }
+
+  static std::shared_ptr<Metric> make(const std::string& name) {
+    std::string token = name.substr(name.find('('));  // token = (X.XXX)
+    token = token.substr(1, token.length() - 2);      // token = X.XXX
+    float threshold = std::stof(token);
+    return std::make_shared<FMeasure>(threshold);
+  }
+
+ private:
+  float _threshold;
+  std::atomic<uint64_t> _true_positive;
+  std::atomic<uint64_t> _false_positive;
+  std::atomic<uint64_t> _false_negative;
 };
 
 }  // namespace thirdai::bolt
