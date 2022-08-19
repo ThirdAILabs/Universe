@@ -1,3 +1,5 @@
+#pragma once
+
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
