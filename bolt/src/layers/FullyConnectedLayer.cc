@@ -83,8 +83,8 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   uint32_t len_out = nonzerosInOutput<DENSE>();
   std::fill_n(output.gradients, len_out, 0);
 
-  // active neurons are for updateParameters so aren't needed if !trainable
-  if (!_trainable) {
+  // active neurons are for updateParameters so we only mark them if trainable
+  if (_trainable) {
     // TODO(david) this is not needed for inference, we can optionally remove
     // this with some refactoring if we want slightly faster inference
     markActiveNeuronsForUpdate<DENSE, PREV_DENSE>(input, output, len_out);
@@ -480,6 +480,7 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
+      // could use bloom filter here also?
       if (_active_pairs[active_pair_index]) {
         _active_pairs[active_pair_index] = false;
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
@@ -489,10 +490,10 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
   }
 }
 
-inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
-    float lr, float B1, float B2, float eps, float B1_bias_corrected,
-    float B2_bias_corrected) {
-  // OPTION 1:
+void FullyConnectedLayer::sparseDenseOptionOne(float lr, float B1, float B2,
+                                               float eps,
+                                               float B1_bias_corrected,
+                                               float B2_bias_corrected) {
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
@@ -507,40 +508,57 @@ inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
   for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
     _prev_is_active[prev_neuron] = false;
   }
+}
 
-  // OPTION 2
-  // #pragma omp parallel for default(none)
-  //     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  //   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-  //     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++)
-  //     {
-  //       if (_prev_is_active[prev_neuron]) {
-  //         _prev_is_active[prev_neuron] = false;
-  //         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2,
-  //         eps,
-  //                                      B1_bias_corrected, B2_bias_corrected);
-  //       }
-  //     }
-  //   }
+void FullyConnectedLayer::sparseDenseOptionTwo(float lr, float B1, float B2,
+                                               float eps,
+                                               float B1_bias_corrected,
+                                               float B2_bias_corrected) {
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+      if (_prev_is_active[prev_neuron]) {
+        _prev_is_active[prev_neuron] = false;
+        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
+                                     B1_bias_corrected, B2_bias_corrected);
+      }
+    }
+  }
 
-  // #pragma omp parallel for default(none)
-  //   for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-  //     _prev_is_active[prev_neuron] = false;
-  //   }
+#pragma omp parallel for default(none)
+  for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+    _prev_is_active[prev_neuron] = false;
+  }
+}
 
-  // OPTION 3
-  // #pragma omp parallel for default(none)
-  //     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  //   for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-  //     if (_prev_is_active[prev_neuron]) {
-  //       _prev_is_active[prev_neuron] = false;
-  //       for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-  //         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2,
-  //         eps,
-  //                                      B1_bias_corrected, B2_bias_corrected);
-  //       }
-  //     }
-  //   }
+void FullyConnectedLayer::sparseDenseOptionThree(float lr, float B1, float B2,
+                                                 float eps,
+                                                 float B1_bias_corrected,
+                                                 float B2_bias_corrected) {
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+    if (_prev_is_active[prev_neuron]) {
+      _prev_is_active[prev_neuron] = false;
+      for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
+                                     B1_bias_corrected, B2_bias_corrected);
+      }
+    }
+  }
+}
+
+inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
+    float lr, float B1, float B2, float eps, float B1_bias_corrected,
+    float B2_bias_corrected) {
+  sparseDenseOptionOne(lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
+
+  // sparseDenseOptionTwo(lr, B1, B2, eps, B1_bias_corrected,
+  // B2_bias_corrected);
+
+  // sparseDenseOptionThree(lr, B1, B2, eps, B1_bias_corrected,
+  // B2_bias_corrected);
 }
 
 inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
