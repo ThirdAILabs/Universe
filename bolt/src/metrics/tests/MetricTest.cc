@@ -237,7 +237,7 @@ TEST(MetricTest, FMeasure) {
   FMeasure metric;
   FMeasure single;
 
-  { // Dense outputs, dense labels
+  {  // Dense outputs, dense labels
 
     //                                          tp: 1, fp: 2, fn: 1
     //                         thresholded_neurons: 0, 3, 4
@@ -266,11 +266,13 @@ TEST(MetricTest, FMeasure) {
   {  // Dense outputs, sparse labels
     BoltVector dense_pred_1 =
         BoltVector::makeDenseVector({0.2, 0.2, 0.0, 0.9, 0.0, 1.0, 0.1, 0.0});
-    BoltVector sparse_label_1 = BoltVector::makeSparseVector({3, 4, 7}, {1.0, 1.0, 1.0});
+    BoltVector sparse_label_1 =
+        BoltVector::makeSparseVector({3, 4, 7}, {1.0, 1.0, 1.0});
 
     BoltVector dense_pred_2 =
         BoltVector::makeDenseVector({0.5, 0.0, 0.0, 1.0, 0.0, 0.9, 0.0, 0.0});
-    BoltVector sparse_label_2 = BoltVector::makeSparseVector({3, 5}, {1.0, 1.0});
+    BoltVector sparse_label_2 =
+        BoltVector::makeSparseVector({3, 5}, {1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.computeMetric(dense_pred_1, sparse_label_1);
@@ -284,11 +286,13 @@ TEST(MetricTest, FMeasure) {
   }
 
   {  // Sparse outputs, dense labels
-    BoltVector sparse_pred_1 = BoltVector::makeSparseVector({0, 3, 5}, {0.1, 0.9, 1.0});
+    BoltVector sparse_pred_1 =
+        BoltVector::makeSparseVector({0, 3, 5}, {0.1, 0.9, 1.0});
     BoltVector dense_label_1 =
         BoltVector::makeDenseVector({0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0});
 
-    BoltVector sparse_pred_2 = BoltVector::makeSparseVector({2, 3, 5}, {0.5, 1.0, 0.9});
+    BoltVector sparse_pred_2 =
+        BoltVector::makeSparseVector({2, 3, 5}, {0.5, 1.0, 0.9});
     BoltVector dense_label_2 =
         BoltVector::makeDenseVector({0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0});
 
@@ -304,13 +308,15 @@ TEST(MetricTest, FMeasure) {
   }
 
   {  // Sparse outputs, sparse labels
-    BoltVector sparse_pred_1 = BoltVector::makeSparseVector({0, 2, 3, 4, 7},
-                                                {0.9, 0.2, 1.0, 0.9, 0.6});
-    BoltVector sparse_label_1 = BoltVector::makeSparseVector({0, 6}, {1.0, 1.0});
+    BoltVector sparse_pred_1 = BoltVector::makeSparseVector(
+        {0, 2, 3, 4, 7}, {0.9, 0.2, 1.0, 0.9, 0.6});
+    BoltVector sparse_label_1 =
+        BoltVector::makeSparseVector({0, 6}, {1.0, 1.0});
 
-    BoltVector sparse_pred_2 = BoltVector::makeSparseVector({0, 1, 3, 4, 5},
-                                                {1.0, 0.0, 0.9, 1.0, 0.6});
-    BoltVector sparse_label_2 = BoltVector::makeSparseVector({0, 4, 6}, {1.0, 1.0, 1.0});
+    BoltVector sparse_pred_2 = BoltVector::makeSparseVector(
+        {0, 1, 3, 4, 5}, {1.0, 0.0, 0.9, 1.0, 0.6});
+    BoltVector sparse_label_2 =
+        BoltVector::makeSparseVector({0, 4, 6}, {1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.computeMetric(sparse_pred_1, sparse_label_1);

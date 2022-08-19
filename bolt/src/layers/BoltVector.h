@@ -6,8 +6,8 @@
 #include <cassert>
 #include <cstdint>
 #include <iostream>
-#include <numeric>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <sstream>
 #include <string>
