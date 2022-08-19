@@ -34,7 +34,7 @@ class MultiLabelTextClassifier {
       : _n_classes(n_classes) {
     buildBatchProcessors(n_classes);
 
-    assert(n_classes == _processor->getLabelDim());
+    assert(n_classes == _labeled_processor->getLabelDim());
 
     /*
       TODO(Geordie, Tharun): Add more tuned presets / make configurable by size.
