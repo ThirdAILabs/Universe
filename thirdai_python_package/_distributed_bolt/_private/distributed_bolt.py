@@ -9,13 +9,7 @@ class DistributedBolt:
     """Implements all the user level Distributed Bolt APIs to the users."""
 
     def __init__(
-        self,
-        workers,
-        logger,
-        epochs,
-        primary_worker,
-        num_of_batches
-        
+        self, workers, logger, epochs, primary_worker, num_of_batches, model_type
     ):
         """Initializes the DistributeBolt class.
 
@@ -37,6 +31,7 @@ class DistributedBolt:
         self.epochs = epochs
         self.num_of_batches = num_of_batches
         self.primary_worker = primary_worker
+        self.model_type = model_type
 
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0

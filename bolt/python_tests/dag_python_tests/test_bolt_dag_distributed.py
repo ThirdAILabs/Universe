@@ -4,7 +4,14 @@ pytestmark = [pytest.mark.unit]
 
 from thirdai import bolt, dataset
 from ..utils import gen_numpy_training_data
-from ..test_tabular_classifier import PREDICTION_FILE, TRAIN_FILE, get_census_income_metadata, setup_module, TEST_FILE, compute_accuracy_with_file
+from ..test_tabular_classifier import (
+    PREDICTION_FILE,
+    TRAIN_FILE,
+    get_census_income_metadata,
+    setup_module,
+    TEST_FILE,
+    compute_accuracy_with_file,
+)
 import numpy as np
 
 PREDICTION_FILE_1 = "./census_income_predictions_1.txt"
@@ -87,7 +94,7 @@ def check_params(model_a, model_b):
     assert (
         FC_1_WEIGHTS and FC_2_WEIGHTS and FC_1_BIASES and FC_2_BIASES
     ), "Model Parameters are not the same across two models after training"
-    
+
 
 def check_models(model_a, model_b, train_x, train_y):
     predict_config = (
@@ -115,7 +122,7 @@ def check_models(model_a, model_b, train_x, train_y):
     ), "Accuracy is less than threshold."
 
 
-def updates_weights_across_models(model_a,model_b):
+def updates_weights_across_models(model_a, model_b):
     # update same parameters across both the model
     model_b.get_layer("fc_1").weights.set(model_a.get_layer("fc_1").weights.get())
     model_b.get_layer("fc_1").biases.set(model_a.get_layer("fc_1").biases.get())
@@ -126,6 +133,7 @@ def updates_weights_across_models(model_a,model_b):
         model_a.get_layer("fc_1").weights.get()
         == model_b.get_layer("fc_1").weights.get()
     ).all()
+
 
 def get_average_set_gradients(model_a, model_b):
     (
@@ -146,12 +154,10 @@ def get_average_set_gradients(model_a, model_b):
     model_b.get_layer("fc_2").bias_gradients.set(avg_bias_gradients_fc_2)
 
     assert (
-        model_a.get_layer("fc_1").weight_gradients.get()
-        == avg_weight_gradients_fc_1
+        model_a.get_layer("fc_1").weight_gradients.get() == avg_weight_gradients_fc_1
     ).all(), "Model A gradients are not equal to average Gradients"
     assert (
-        model_b.get_layer("fc_1").weight_gradients.get()
-        == avg_weight_gradients_fc_1
+        model_b.get_layer("fc_1").weight_gradients.get() == avg_weight_gradients_fc_1
     ).all(), "Model B gradients are not equal to average Gradients"
 
 
@@ -189,10 +195,9 @@ def test_distributed_training_with_bolt():
     check_models(model_a=model_a, model_b=model_b, train_x=train_x, train_y=train_y)
 
 
-
 def test_distributed_tabular_classifier():
     (n_classes, column_datatypes, test_labels) = get_census_income_metadata()
-    
+
     classifier_a = bolt.TabularClassifier(model_size="medium", n_classes=n_classes)
     classifier_b = bolt.TabularClassifier(model_size="medium", n_classes=n_classes)
 
@@ -200,38 +205,47 @@ def test_distributed_tabular_classifier():
         train_file=TRAIN_FILE,
         column_datatypes=column_datatypes,
         epochs=1,
-        learning_rate=0.01,)
+        learning_rate=0.01,
+    )
     classifier_b.init_classifier_distributed_training(
         train_file=TRAIN_FILE,
         column_datatypes=column_datatypes,
         epochs=1,
-        learning_rate=0.01,)
+        learning_rate=0.01,
+    )
 
-    distributed_training_context_model_a = classifier_a.get_distributed_training_context()
-    distributed_training_context_model_b = classifier_b.get_distributed_training_context()
+    distributed_training_context_model_a = (
+        classifier_a.get_distributed_training_context()
+    )
+    distributed_training_context_model_b = (
+        classifier_b.get_distributed_training_context()
+    )
 
     classifier_model_a = classifier_a.get_bolt_graph_model()
-    classifier_model_b= classifier_b.get_bolt_graph_model()
+    classifier_model_b = classifier_b.get_bolt_graph_model()
 
     epochs = 1
-    num_of_training_batches = min(distributed_training_context_model_a.numTrainingBatch(),distributed_training_context_model_b.numTrainingBatch())
+    num_of_training_batches = min(
+        distributed_training_context_model_a.numTrainingBatch(),
+        distributed_training_context_model_b.numTrainingBatch(),
+    )
 
-
-    updates_weights_across_models(model_a=classifier_model_a, model_b=classifier_model_b)
-
+    updates_weights_across_models(
+        model_a=classifier_model_a, model_b=classifier_model_b
+    )
 
     for epoch in range(epochs):
         for batch_num in range(num_of_training_batches):
             distributed_training_context_model_a.calculateGradientSingleNode(batch_num)
             distributed_training_context_model_b.calculateGradientSingleNode(batch_num)
 
-            get_average_set_gradients(model_a=classifier_model_a, model_b=classifier_model_b)
+            get_average_set_gradients(
+                model_a=classifier_model_a, model_b=classifier_model_b
+            )
 
             distributed_training_context_model_a.updateParametersSingleNode()
             distributed_training_context_model_b.updateParametersSingleNode()
 
-    
-    
     distributed_training_context_model_a.finishTraining()
     distributed_training_context_model_b.finishTraining()
 
@@ -241,11 +255,11 @@ def test_distributed_tabular_classifier():
 
     acc_model_a = compute_accuracy_with_file(test_labels, PREDICTION_FILE_1)
     acc_model_b = compute_accuracy_with_file(test_labels, PREDICTION_FILE_2)
-    
+
     # Due to sparse inference, accuracy of both the model would not be the same
     # So, no check for equality for accuracy
     ACCURACY_GREATER_THAN_THRESHOLD_A = acc_model_a > 0.77
-    ACCURACY_GREATER_THAN_THRESHOLD_B =  acc_model_b > 0.77
+    ACCURACY_GREATER_THAN_THRESHOLD_B = acc_model_b > 0.77
 
     assert (
         ACCURACY_GREATER_THAN_THRESHOLD_A and ACCURACY_GREATER_THAN_THRESHOLD_B

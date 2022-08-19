@@ -10,7 +10,7 @@ class FullyConnectedNetworkModel:
     defined here run on each of the node while distributing.
     """
 
-    def __init__(self, config: Dict, total_nodes: int, layer_dims: List[int], id: int):
+    def __init__(self, config: Dict, total_nodes: int, num_layers: int, id: int):
         """Initailizes Model
 
         Args:
@@ -22,7 +22,7 @@ class FullyConnectedNetworkModel:
         Raises:
             ValueError: Loading Dataset
         """
-        self.layer_dims = layer_dims
+        self.num_layers = num_layers
 
         # getting training and testing data
         data = load_dataset(config, total_nodes, id)
@@ -79,7 +79,7 @@ class FullyConnectedNetworkModel:
         """
         w_gradients = []
         b_gradients = []
-        for layer in range(len(self.layer_dims) - 1):
+        for layer in range(self.num_layers - 1):
             x = self.network.get_weights_gradients(layer)
             y = self.network.get_biases_gradients(layer)
             w_gradients.append(x)
@@ -106,7 +106,7 @@ class FullyConnectedNetworkModel:
         """
         weights = []
         biases = []
-        for layer in range(len(self.layer_dims) - 1):
+        for layer in range(self.num_layers - 1):
             x = self.network.get_weights(layer)
             y = self.network.get_biases(layer)
             weights.append(x)

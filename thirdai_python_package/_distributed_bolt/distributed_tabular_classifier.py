@@ -10,10 +10,12 @@ from .utils import get_num_cpus, init_logging
 from typing import Tuple, Any, Optional, Dict, List
 
 
-class FullyConnectedNetwork(DistributedBolt):
-    def __init__(self, no_of_workers, config_filename, num_cpus_per_node):
+class TabularClassifier(DistributedBolt):
+    def __init__(
+        self, no_of_workers, config_filename, num_cpus_per_node, column_datatypes
+    ):
 
-        self.logging = init_logging("distributed_fully_connected.log")
+        self.logging = init_logging("tabular_classifier.log")
         self.logging.info("Training has started!")
 
         try:
@@ -64,16 +66,14 @@ class FullyConnectedNetwork(DistributedBolt):
 
         self.logging.info("Ray Initialized")
 
-        self.model_type = ModelType.FullyConnectedNetwork
+        self.model_type = ModelType.TabularClassifier
         self.epochs = config["params"]["epochs"]
         self.learning_rate = config["params"]["learning_rate"]
-        self.num_layers = len(config["layers"])
+        self.num_layers = 3
 
         num_cpus = get_num_cpus()
         if num_cpus_per_node is not -1:
             num_cpus = num_cpus_per_node
-
-        
 
         self.primary_worker = PrimaryWorker.options(
             num_cpus=num_cpus, max_concurrency=100
@@ -93,10 +93,11 @@ class FullyConnectedNetwork(DistributedBolt):
             for worker_id in range(self.no_of_workers - 1)
         ]
 
+        ray.get([worker.make_tabular_classifier_model.remote(column_datatypes) for worker in self.workers])
+
+
         self.workers = [self.primary_worker]
         self.workers.extend(self.replica_workers)
-
-        ray.get([worker.make_fully_connected_model.remote() for worker in self.workers])
 
         self.primary_worker.add_workers.remote(self.workers)
 

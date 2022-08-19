@@ -48,24 +48,16 @@ def make_layers_from_config(configs: List[Dict[str, Any]]) -> List[bolt.FullyCon
             layer = bolt.FullyConnected(
                 dim=config.get("dim"),
                 sparsity=config.get("sparsity", 1.0),
-                activation_function=bolt.getActivationFunction(
+                activation_function=
                     config.get("activation")
-                ),
+                
             )
         else:
             layer = bolt.FullyConnected(
                 dim=config.get("dim"),
                 sparsity=config.get("sparsity", 1.0),
-                activation_function=bolt.getActivationFunction(
+                activation_function=
                     config.get("activation")
-                ),
-                sampling_config=bolt.SamplingConfig(
-                    hashes_per_table=config.get("hashes_per_table", 0),
-                    num_tables=config.get("num_tables", 0),
-                    range_pow=config.get("range_pow", 0),
-                    reservoir_size=config.get("reservoir_size", 128),
-                    hash_function=config.get("hash_function", "DWTA"),
-                ),
             )
 
         layers.append(layer)

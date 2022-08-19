@@ -1,7 +1,12 @@
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from thirdai._distributed_bolt._models.fully_connected_network_model import FullyConnectedNetworkModel
+from thirdai._distributed_bolt._models.fully_connected_network_model import (
+    FullyConnectedNetworkModel,
+)
+from thirdai._distributed_bolt._models.tabular_classifier_model import (
+    TabularClassifierModel,
+)
 
 
 def calculate_partitions(partition_length: int, partition_id: int, total_length: int):
@@ -34,9 +39,7 @@ class Worker:
 
     """
 
-    def __init__(
-        self, layer_dims: List, config: Dict, total_nodes: int, id: int, primary_worker
-    ):
+    def __init__(self, config, num_layers:int, total_nodes: int, id: int, primary_worker, model_type):
         """Initializes the model to run
 
         Args:
@@ -47,12 +50,14 @@ class Worker:
         """
 
         # Setting up Model
-        self.model = FullyConnectedNetworkModel(config, total_nodes, layer_dims, id)
+        self.model = None
 
         # Set up variables
         self.total_nodes = total_nodes
         self.id = id
         self.primary_worker = primary_worker
+        self.num_layers = num_layers
+        self.config = config
 
         # class variable for circular function
         self.friend = None  # this variable is set up in add_friend
@@ -60,6 +65,15 @@ class Worker:
         self.b_partitions = []
         self.friend_bias_gradient_list = []
         self.friend_weight_gradient_list = []
+        self.model_type = model_type
+
+    def make_fully_connected_model(self):
+        self.model = FullyConnectedNetworkModel(self.config, self.total_nodes, self.num_layers, self.id)
+        return True
+
+    def make_tabular_classifier_model(self, column_datatypes):
+        self.model = TabularClassifierModel(self.config, self.total_nodes, self.num_layers, self.id, column_datatypes)
+        return True
 
     def add_friend(self, friend):
         """This function is only needed for circular way of communication.

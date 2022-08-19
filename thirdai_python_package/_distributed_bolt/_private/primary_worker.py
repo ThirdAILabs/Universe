@@ -21,10 +21,7 @@ class PrimaryWorker(Worker):
     """
 
     def __init__(
-        self,
-        layer_dims: List[int],
-        config: Dict,
-        no_of_workers: int,
+        self, num_layers: int, config: Dict, no_of_workers: int, model_type
     ):
         """Initializes the Primary Worker Class
 
@@ -33,12 +30,12 @@ class PrimaryWorker(Worker):
             config (Dict):  configuration file dictionary
             no_of_workers (int): number of workers in training
         """
-        self.layer_dims = layer_dims
+        self.num_layers = num_layers
 
         # set up in add workers
         self.workers = None
 
-        super().__init__(self.layer_dims, config, no_of_workers, 0, self)
+        super().__init__(config, self.num_layers, no_of_workers, 0, self, model_type)
 
     def add_workers(self, workers):
         """Adds the list of workers to the Primary Worker
@@ -139,6 +136,7 @@ class PrimaryWorker(Worker):
         Returns:
             _type_: _description_
         """
+        self.layer_dims = [784,256,10]
         gradients_list = ray.get(
             [worker.get_calculated_gradients.remote() for worker in self.workers]
         )
