@@ -39,7 +39,7 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::stringstream& summary) const;
 
-  void initOptimizer() {
+  void initTrainDatastructures() {
     if (!_optimizer_initialized) {
       _gradients.assign(_embedding_block_size, 0);
       _momentum.assign(_embedding_block_size, 0);
@@ -96,14 +96,15 @@ class EmbeddingLayer {
   EmbeddingLayer() : _hash_fn(0) {}
 
   /**
-   * The optimizer is not loaded in by default. If we want to continue training
+   * Training data-structures (like the optimizer and the active neurons
+   * trackers) are not loaded in by default. If we want to continue training
    * after a load, the expectation is that the higher level Graph/Network API
-   * will handle this initialization with the initOptimizer() method.
+   * will handle this initialization with the initTrainDatastructures() method.
    *
    * Doing this means our load API is as simple as possible for both
-   * training and inference purposes. It doesn't make sense to load the
-   * optimizer by default then remove it with another function since users may
-   * be memory constrained during deployment.
+   * training and inference purposes. It doesn't make sense to load these
+   * data-structures by default then remove them with another function since
+   * users may be memory constrained during deployment.
    *
    * We don't know yet if its worth it to save the optimizer for
    * retraining/finetuning purposes. If in the future we figure out this has

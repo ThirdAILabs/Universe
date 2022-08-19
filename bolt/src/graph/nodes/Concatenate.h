@@ -63,7 +63,7 @@ class ConcatenateNode final
 
   bool isInputNode() const final { return false; }
 
-  void initOptimizer() final {}
+  void initTrainDatastructures() final {}
 
  private:
   void compileImpl() final { _compiled = true; }

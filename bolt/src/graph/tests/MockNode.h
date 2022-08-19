@@ -51,7 +51,7 @@ class MockNode : public Node {
 
   MOCK_METHOD(NodeState, getState, (), (const override));
 
-  MOCK_METHOD(void, initOptimizer, (), (override));
+  MOCK_METHOD(void, initTrainDatastructures, (), (override));
 };
 
 class MockNodeWithOutput : public MockNode {

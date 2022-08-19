@@ -186,7 +186,7 @@ class Model {
     return (_batch_iter % num_batches) == (num_batches - 1);
   }
 
-  virtual void initOptimizer() = 0;
+  virtual void initTrainDatastructures() = 0;
 
   uint32_t _epoch_count;
 

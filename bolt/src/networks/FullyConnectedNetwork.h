@@ -124,9 +124,9 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     return _layers.at(layer_index)->getSparsity();
   }
 
-  void initOptimizer() final {
+  void initTrainDatastructures() final {
     for (auto& layer : _layers) {
-      layer->initOptimizer();
+      layer->initTrainDatastructures();
     }
   }
 

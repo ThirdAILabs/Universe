@@ -26,7 +26,7 @@ uint32_t DistributedModel::prepareNodeForDistributedTraining(
   _rebuild_batch = getRebuildBatch(rebuild, batch_size, train_data->len());
   _rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
 
-  initOptimizer();
+  initTrainDatastructures();
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.

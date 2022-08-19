@@ -86,7 +86,7 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
-  void initOptimizer() final;
+  void initTrainDatastructures() final;
 
  private:
   template <bool DENSE, bool PREV_DENSE>
@@ -125,7 +125,7 @@ class ConvLayer final : public SequentialLayer {
 
   std::vector<bool> _is_active;
 
-  bool _optimizer_initialized = false;
+  bool _train_structures_initialized = false;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
@@ -142,14 +142,15 @@ class ConvLayer final : public SequentialLayer {
   std::vector<uint32_t> _in_to_out, _out_to_in;  // patch mappings
 
   /**
-   * The optimizer is not loaded in by default. If we want to continue training
+   * Training data-structures (like the optimizer and the active neurons
+   * trackers) are not loaded in by default. If we want to continue training
    * after a load, the expectation is that the higher level Graph/Network API
-   * will handle this initialization with the initOptimizer() method.
+   * will handle this initialization with the initTrainDatastructures() method.
    *
    * Doing this means our load API is as simple as possible for both
-   * training and inference purposes. It doesn't make sense to load the
-   * optimizer by default then remove it with another function since users may
-   * be memory constrained during deployment.
+   * training and inference purposes. It doesn't make sense to load these
+   * data-structures by default then remove them with another function since
+   * users may be memory constrained during deployment.
    *
    * We don't know yet if its worth it to save the optimizer for
    * retraining/finetuning purposes. If in the future we figure out this has
@@ -159,10 +160,10 @@ class ConvLayer final : public SequentialLayer {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _is_active, _hasher, _hash_table, _rand_neurons,
-            _patch_dim, _sparse_patch_dim, _num_patches, _num_filters,
-            _num_sparse_filters, _prev_num_filters, _prev_num_sparse_filters,
-            _kernel_size, _in_to_out, _out_to_in);
+            _biases, _hasher, _hash_table, _rand_neurons, _patch_dim,
+            _sparse_patch_dim, _num_patches, _num_filters, _num_sparse_filters,
+            _prev_num_filters, _prev_num_sparse_filters, _kernel_size,
+            _in_to_out, _out_to_in);
   }
 
  protected:
