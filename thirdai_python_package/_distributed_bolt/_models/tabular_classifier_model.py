@@ -177,6 +177,6 @@ class TabularClassifierModel:
 
         assert len(predictions) == len(test_labels)
         return sum(
-            (int(prediction) == int(answer))
+            (str(prediction) == str(answer))
             for (prediction, answer) in zip(predictions, test_labels)
         ) / len(predictions)
