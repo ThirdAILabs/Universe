@@ -395,7 +395,7 @@ def build_arg_parser():
 
     parser.add_argument("--verbose", action="store_true", help="Logs to stderr, based on the log-level. Use --log-level to control granularity.")
     parser.add_argument("--log-file", type=str, help="File to write on disk to.", default="")
-    parser.add_argument("--log-level", type=str, help="Log level to configure.", default="info", choices=["off","fatal","error","warn","info","debug","trace"])
+    parser.add_argument("--log-level", type=str, help="Log level to configure.", default="info", choices=["off","critical","error","warn","info","debug","trace"])
     return parser
 
 
