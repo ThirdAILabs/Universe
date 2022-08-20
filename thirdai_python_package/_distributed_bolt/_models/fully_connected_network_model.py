@@ -79,6 +79,7 @@ class FullyConnectedNetworkModel:
         """
         w_gradients = []
         b_gradients = []
+
         for layer in range(self.num_layers - 1):
             x = self.network.get_weights_gradients(layer)
             y = self.network.get_biases_gradients(layer)
