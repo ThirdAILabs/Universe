@@ -229,10 +229,7 @@ class Worker:
             self.friend_weight_gradient_list,
             self.friend_bias_gradient_list,
         ) = ray.get(get_ray_object)
-        print('Inside Process Ring')
-        print(len(self.friend_weight_gradient_list), len(self.w_partitions))
         for i in range(len(self.friend_weight_gradient_list)):
-            # print(i, len(self.w_partitions))
             # Getting the indices of the partition to work on
             l_weight_idx, r_weight_idx = calculate_partitions(
                 partition_length=self.w_partitions[i],
@@ -311,7 +308,6 @@ class Worker:
                 partition_id=partition_id,
                 total_length=len(self.b_gradients[i]),
             )
-            print(len(self.w_gradients[i]), len(self.b_gradients[i]))
 
             assert (
                 self.w_partitions[i] > 0
@@ -329,7 +325,6 @@ class Worker:
             w_gradient_subarray.append(self.w_gradients[i][l_weight_idx:r_weight_idx])
             b_gradient_subarray.append(self.b_gradients[i][l_bias_idx:r_bias_idx])
 
-        print(len(w_gradient_subarray),len(b_gradient_subarray))
         return w_gradient_subarray, b_gradient_subarray
 
     def update_parameters(self, learning_rate: float) -> bool:
