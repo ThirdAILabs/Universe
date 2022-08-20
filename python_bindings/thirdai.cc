@@ -41,8 +41,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   m.def("setup_logging", &thirdai::log::setup_logging,
         py::arg("log_to_stderr") = thirdai::log::kDefaultLogToStderr,
         py::arg("path") = thirdai::log::kDefaultLogPath,
-        py::arg("pattern") = thirdai::log::kDefaultPattern,
-        py::arg("level") = thirdai::log::kDefaultLogLevel);
+        py::arg("level") = thirdai::log::kDefaultLogLevel,
+        py::arg("pattern") = thirdai::log::kDefaultPattern);
 
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:

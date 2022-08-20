@@ -23,7 +23,8 @@ def main():
 
     config = toml.load(args.config_path)
 
-    setup_logging()
+    setup_logging(log_to_stderr=args.verbose, path=args.log_file, level=args.log_level)
+
     model = load_and_compile_model(config)
     datasets = load_all_datasets(config)
     start_mlflow(config, mlflow_args=args)
@@ -391,6 +392,10 @@ def build_arg_parser():
         type=str,
         help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
     )
+
+    parser.add_argument("--verbose", action="store_true", help="Logs to stderr, based on the log-level. Use --log-level to control granularity.")
+    parser.add_argument("--log-file", type=str, help="File to write on disk to.", default="")
+    parser.add_argument("--log-level", type=str, help="Log level to configure.", default="info", choices=["off","fatal","error","warn","info","debug","trace"])
     return parser
 
 
