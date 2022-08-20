@@ -7,7 +7,7 @@ namespace thirdai::dataset {
 
 TEST(CategoricalMultiLabelTest, TestLabelParsing) {
   auto multi_label_encoding =
-      std::make_shared<CategoricalMultiLabel>(/* max_label= */ 100);
+      std::make_shared<CategoricalMultiLabel>(/* n_classes= */ 100);
   std::vector<std::shared_ptr<Block>> label_blocks = {
       std::make_shared<CategoricalBlock>(/* column_num= */ 0,
                                          multi_label_encoding),
