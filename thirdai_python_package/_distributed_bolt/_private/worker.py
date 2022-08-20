@@ -71,8 +71,8 @@ class Worker:
         self.model = FullyConnectedNetworkModel(self.config, self.total_nodes, self.num_layers, self.id)
         return True
 
-    def make_tabular_classifier_model(self, column_datatypes):
-        self.model = TabularClassifierModel(self.config, self.total_nodes, self.num_layers, self.id, column_datatypes)
+    def make_tabular_classifier_model(self, column_datatypes, n_classes):
+        self.model = TabularClassifierModel(self.config, self.total_nodes, self.num_layers, self.id, column_datatypes, n_classes)
         return True
 
     def add_friend(self, friend):

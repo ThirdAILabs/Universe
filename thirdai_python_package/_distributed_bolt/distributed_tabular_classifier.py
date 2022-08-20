@@ -12,7 +12,7 @@ from typing import Tuple, Any, Optional, Dict, List
 
 class TabularClassifier(DistributedBolt):
     def __init__(
-        self, no_of_workers, config_filename, num_cpus_per_node, column_datatypes
+        self, no_of_workers, config_filename, num_cpus_per_node, column_datatypes, n_classes
     ):
 
         self.logging = init_logging("tabular_classifier.log")
@@ -97,7 +97,7 @@ class TabularClassifier(DistributedBolt):
         self.workers = [self.primary_worker]
         self.workers.extend(self.replica_workers)
 
-        ray.get([worker.make_tabular_classifier_model.remote(column_datatypes) for worker in self.workers])
+        ray.get([worker.make_tabular_classifier_model.remote(column_datatypes, n_classes) for worker in self.workers])
 
         self.primary_worker.add_workers.remote(self.workers)
 

@@ -11,7 +11,7 @@ class TabularClassifierModel:
     """
 
     def __init__(
-        self, config: Dict, total_nodes: int, num_layers: int, id: int, column_datatypes
+        self, config: Dict, total_nodes: int, num_layers: int, id: int, column_datatypes, n_classes
     ):
         """Initailizes Model
 
@@ -30,9 +30,9 @@ class TabularClassifierModel:
         self.train_file = config["dataset"]["train_file"][id]
         self.test_file = config["dataset"]["test_file"]
         self.prediction_file = config["dataset"]["prediction_file"]
-
+        
+        self.n_classes = n_classes
         self.model_size = config["params"]["model_size"]
-        self.n_classes = config["params"]["n_classes"]
         self.batch_size = config["params"]["batch_size"]
 
         self.classifier = bolt.TabularClassifier(
