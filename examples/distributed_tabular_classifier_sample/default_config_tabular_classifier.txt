@@ -1,8 +1,8 @@
 job = "Tabular Classification"
 
 [dataset]
-train_file = ["/share/pratik/xaa", "/share/pratik/xab"]
-test_file = "/share/pratik/higgs_boson_very_small_test"
+train_file = ["/share/pratik/xaa", "/share/pratik/xab", "/share/pratik/xac", "/share/pratik/xad"]
+test_file = "/share/pratik/sampled_higgs_boson_test.csv"
 prediction_file = "/share/pratik/prediction.csv"
 
 
@@ -10,4 +10,4 @@ prediction_file = "/share/pratik/prediction.csv"
 epochs = 1
 learning_rate = 0.01
 model_size = "1Gb"
-batch_size = 200
+batch_size = 10000

@@ -24,9 +24,9 @@ if __name__ == "__main__":
 
     config_filename = "./default_config_tabular_classifier.txt"
     head = db.TabularClassifier(
-        no_of_workers=2,
+        no_of_workers=4,
         config_filename=config_filename,
-        num_cpus_per_node=20,
+        num_cpus_per_node=48,
         column_datatypes=get_col_datatypes(dataset_base_filename),
         n_classes = n_classes
     )
