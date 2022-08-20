@@ -156,10 +156,19 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
   ActivationFunction getActFunc() const final { return act_func; }
 };
 
+
+enum class EmbeddingReductionType {
+  SUM,
+  CONCATENATION,
+};
+
 struct EmbeddingLayerConfig {
   uint32_t num_embedding_lookups;
   uint32_t lookup_size;
   uint32_t log_embedding_block_size;
+
+  EmbeddingReductionType reduction;
+  std::optional<uint32_t> num_tokens_per_input;
 
   // Public constructor, needed for cereal to construct optional, should not be
   // used otherwise.

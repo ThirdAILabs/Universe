@@ -1,7 +1,9 @@
 #pragma once
 
+#include <wrappers/src/EigenDenseWrapper.h>
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
+#include <Eigen/src/Core/Map.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -255,6 +257,10 @@ struct BoltVector {
     ss << "]";
 
     return ss.str();
+  }
+
+  Eigen::Map<Eigen::VectorXf> activationsAsEigenVector() const {
+    return {activations, len};
   }
 
   ~BoltVector() noexcept { freeMemory(); }

@@ -2,6 +2,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <algorithm>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -9,9 +10,24 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                                uint32_t seed)
     : _num_lookups_per_token(config.num_embedding_lookups),
       _lookup_size(config.lookup_size),
-      _total_embedding_dim(config.num_embedding_lookups * config.lookup_size),
       _log_embedding_block_size(config.log_embedding_block_size),
+      _reduction(config.reduction),
+      _num_tokens_per_input(config.num_tokens_per_input),
       _hash_fn(seed) {
+  _total_embedding_dim = config.lookup_size * config.num_embedding_lookups;
+
+  switch (config.reduction) {
+    case EmbeddingReductionType::SUM:
+      break;
+    case EmbeddingReductionType::CONCATENATION:
+      if (!config.num_tokens_per_input) {
+        throw std::invalid_argument(
+            "Must specify a number of tokens per input with a concatenation "
+            "reduction.");
+      }
+      _total_embedding_dim *= config.num_tokens_per_input.value();
+  }
+
   // We allocate the extra _lookup_size elements such that if a point hashes to
   // the end of 2^_embedding_block_size we don't have to worry about wrapping it
   // around.
@@ -32,9 +48,13 @@ void EmbeddingLayer::forward(uint32_t vec_index,
                              const std::vector<uint32_t>& tokens,
                              BoltVector& output) {
   assert(output.len == _total_embedding_dim);
+  assert(_reduction == EmbeddingReductionType::SUM ||
+         _num_tokens_per_input.value() == tokens.size());
   assert(output.active_neurons == nullptr);
 
-  std::fill_n(output.activations, _total_embedding_dim, 0);
+  if (_reduction == EmbeddingReductionType::SUM) {
+    std::fill_n(output.activations, _total_embedding_dim, 0);
+  }
   std::fill_n(output.gradients, _total_embedding_dim, 0);
 
   _embedding_block_offsets[vec_index].clear();
@@ -53,9 +73,23 @@ void EmbeddingLayer::forward(uint32_t vec_index,
 
       assert(embedding_block_offset < _embedding_block_size - _lookup_size);
 
-      // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
-      for (uint32_t i = 0; i < _lookup_size; i++) {
-        output_start[i] += _embedding_block[embedding_block_offset + i];
+      switch (_reduction) {
+        case EmbeddingReductionType::SUM:
+          // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
+          for (uint32_t i = 0; i < _lookup_size; i++) {
+            output_start[i] += _embedding_block[embedding_block_offset + i];
+          }
+          break;
+        case EmbeddingReductionType::CONCATENATION:
+          std::copy(
+              _embedding_block.data() + embedding_block_offset,
+              _embedding_block.data() + embedding_block_offset + _lookup_size,
+              output_start);
+
+          // Shift output_start since each token maps to unique range in the
+          // output vector.
+          output_start += _num_lookups_per_token * _lookup_size;
+          break;
       }
     }
   }
@@ -81,6 +115,12 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
 
       for (uint32_t i = 0; i < _lookup_size; i++) {
         update_loc[i] += output_gradients[i];
+      }
+
+      if (_reduction == EmbeddingReductionType::CONCATENATION) {
+        // Shift output_gradients since each token maps to unique range in the
+        // output vector.
+        output_gradients += _num_lookups_per_token * _lookup_size;
       }
     }
   }

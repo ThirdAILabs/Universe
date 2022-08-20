@@ -96,6 +96,8 @@ class EmbeddingLayer {
   uint32_t _num_lookups_per_token, _lookup_size, _total_embedding_dim,
       _log_embedding_block_size;
   uint64_t _embedding_block_size;
+  EmbeddingReductionType _reduction;
+  std::optional<uint32_t> _num_tokens_per_input;
 
   hashing::UniversalHash _hash_fn;
 
