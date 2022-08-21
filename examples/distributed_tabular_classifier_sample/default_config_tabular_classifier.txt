@@ -1,7 +1,7 @@
 job = "Tabular Classification"
 
 [dataset]
-train_file = ["/share/pratik/xaa", "/share/pratik/xab", "/share/pratik/xac", "/share/pratik/xad"]
+train_file = ["/share/pratik/xaa", "/share/pratik/xab", "/share/pratik/xac", "/share/pratik/xad", "/share/pratik/xae", "/share/pratik/xaf", "/share/pratik/xag", "/share/pratik/xah"]
 test_file = "/share/pratik/wesad_test.csv"
 prediction_file = "/share/pratik/prediction.csv"
 
@@ -10,4 +10,4 @@ prediction_file = "/share/pratik/prediction.csv"
 epochs = 1
 learning_rate = 0.01
 model_size = "1Gb"
-batch_size = 100000
+batch_size = 50000

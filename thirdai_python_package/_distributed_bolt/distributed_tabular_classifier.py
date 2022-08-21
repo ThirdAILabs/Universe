@@ -18,14 +18,16 @@ class TabularClassifier(DistributedBolt):
         self.logging = init_logging("tabular_classifier.log")
         self.logging.info("Training has started!")
 
-        try:
-            config = toml.load(config_filename)
-        except Exception:
-            self.logging.error(
-                "Could not load the toml file! "
-                + "Config File Location:"
-                + config_filename
-            )
+        config = toml.load(config_filename)
+
+        # try:
+        #     config = toml.load(config_filename)
+        # except Exception:
+        #     self.logging.error(
+        #         "Could not load the toml file! "
+        #         + "Config File Location:"
+        #         + config_filename
+        #     )
 
         if len(config["dataset"]["train_file"]) != no_of_workers:
             raise ValueError(
