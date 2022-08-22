@@ -359,6 +359,26 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     return;
   }
 
+  if (isRandomSampling()) {
+    uint32_t label_len = 0;
+    if (labels) {
+      label_len = labels->len;
+      std::copy(labels->active_neurons, labels->active_neurons + labels->len,
+                output.active_neurons);
+    }
+    uint64_t random_offset = rand();
+
+    uint64_t neurons_to_sample = _sparse_dim - label_len;
+    uint64_t chunk_1_end = std::min(_dim, random_offset + neurons_to_sample);
+    uint64_t chunk_2_end = 
+
+        std::copy(
+            _rand_neurons.begin() + random_offset,
+            _rand_neurons.begin() + random_offset + _sparse_dim - label_len,
+            output.active_neurons + label_len);
+    return;
+  }
+
   std::unordered_set<uint32_t> active_set;
 
   uint32_t label_len = labels != nullptr ? labels->len : 0;
@@ -367,48 +387,43 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     active_set.insert(labels->active_neurons[i]);
   }
 
-  uint32_t random_neuron_offset;
-  if (!isRandomSampling()) {
-    std::vector<uint32_t> hashes(_hasher->numTables());
-    if constexpr (PREV_DENSE) {
-      _hasher->hashSingleDense(input.activations, input.len, hashes.data());
-    } else {
-      _hasher->hashSingleSparse(input.active_neurons, input.activations,
-                                input.len, hashes.data());
-    }
-
-    if (_sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions) {
-      /**
-       * QueryBySet just returns a set of the elements in the given buckets of
-       * the hash table.
-       *
-       * QueryAndInsertForInference returns the set of elements in the given
-       * buckets but will also insert the labels (during training only) for the
-       * vector into the buckets the vector maps to if they are not already
-       * present in the buckets. The intuition is that during sparse inference
-       * this will help force the hash tables to map vectors towards buckets
-       * that contain their correct labels. This is specific to the output
-       * layer.
-       *
-       * We call QueryAndInsertForInference if the following conditions are met:
-       *   1. We have sparse inference enabled.
-       *   2. Activation = Softmax or Sigmoid, meaning it's a classification
-       * task, and that the given layer is the last layer, as this is the only
-       *      place where we use these activation functions.
-       */
-      _hash_table->queryAndInsertForInference(hashes.data(), active_set,
-                                              _sparse_dim);
-    } else {
-      _hash_table->queryBySet(hashes.data(), active_set);
-    }
-    random_neuron_offset = hashes.at(0);
+  std::vector<uint32_t> hashes(_hasher->numTables());
+  if constexpr (PREV_DENSE) {
+    _hasher->hashSingleDense(input.activations, input.len, hashes.data());
   } else {
-    random_neuron_offset = rand();
+    _hasher->hashSingleSparse(input.active_neurons, input.activations,
+                              input.len, hashes.data());
   }
+
+  if (_sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions) {
+    /**
+     * QueryBySet just returns a set of the elements in the given buckets of
+     * the hash table.
+     *
+     * QueryAndInsertForInference returns the set of elements in the given
+     * buckets but will also insert the labels (during training only) for the
+     * vector into the buckets the vector maps to if they are not already
+     * present in the buckets. The intuition is that during sparse inference
+     * this will help force the hash tables to map vectors towards buckets
+     * that contain their correct labels. This is specific to the output
+     * layer.
+     *
+     * We call QueryAndInsertForInference if the following conditions are met:
+     *   1. We have sparse inference enabled.
+     *   2. Activation = Softmax or Sigmoid, meaning it's a classification
+     * task, and that the given layer is the last layer, as this is the only
+     *      place where we use these activation functions.
+     */
+    _hash_table->queryAndInsertForInference(hashes.data(), active_set,
+                                            _sparse_dim);
+  } else {
+    _hash_table->queryBySet(hashes.data(), active_set);
+  }
+
   if (active_set.size() < _sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
     // safe and we want to have deterministic outcomes
-    uint32_t rand_offset = random_neuron_offset % _dim;
+    uint32_t rand_offset = hashes.at(0) % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
       rand_offset = rand_offset % _dim;
