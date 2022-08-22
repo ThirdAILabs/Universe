@@ -57,6 +57,20 @@ DragonVector<T>::DragonVector(const T* values, float compression_density,
 }
 
 template <class T>
+DragonVector<T>::DragonVector(const DragonVector<float>& vec)
+    : CompressedVector<T>(vec),
+      _min_sketch_size(vec._min_sketch_size),
+      _sketch_size(vec._sketch_size),
+      _original_size(vec._original_size),
+      _compression_density(vec._compression_density),
+      _seed_for_hashing(vec._seed_for_hashing) {
+  _indices.insert(std::end(_indices), std::begin(vec._indices),
+                  std::end(vec._indices));
+  _values.insert(std::end(_values), std::begin(vec._values),
+                 std::end(vec._values));
+}
+
+template <class T>
 void DragonVector<T>::sketchVector(const std::vector<T>& vec, T threshold) {
   uint32_t loop_size = vec.size();
 #pragma omp parallel for default(none)                                 \
@@ -73,7 +87,6 @@ void DragonVector<T>::sketchVector(const std::vector<T>& vec, T threshold) {
     }
   }
 }
-
 template <class T>
 void DragonVector<T>::sketchVector(const T* values, T threshold,
                                    uint32_t size) {
@@ -192,6 +205,7 @@ template <class T>
 void DragonVector<T>::clear() {
   _sketch_size = 0;
   _original_size = 0;
+  _compression_density = 1;
   _values.clear();
   _indices.clear();
 }

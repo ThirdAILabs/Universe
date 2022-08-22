@@ -1,3 +1,4 @@
 add_library(compression_core_lib DragonVector.cc DefaultCompressedVector.cc)
-
+target_link_libraries(compression_core_lib hash_function_lib)
+add_subdirectory(tests)
 enable_testing()
