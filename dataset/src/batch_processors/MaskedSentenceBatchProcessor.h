@@ -16,7 +16,7 @@ class MaskedSentenceBatchProcessor final
   explicit MaskedSentenceBatchProcessor(uint32_t output_range)
       : _output_range(output_range),
         _unknown_token_hash(TextEncodingUtils::computeUnigram(
-            /* key= */ "[UNK]", /* len= */ 5)),
+            special_tokens::UNK.data(), special_tokens::UNK.size())),
         _rand(723204) {}
 
   std::tuple<BoltBatch, BoltTokenBatch, BoltBatch> createBatch(
