@@ -184,6 +184,28 @@ class FullyConnectedNode final
     return _layer->getBiasGradientsPtr();
   }
 
+  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim,
+                                                  std::string activation) {
+    return std::make_shared<FullyConnectedNode>(dim, std::move(activation));
+  }
+
+  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim, float sparsity,
+                                                  std::string activation) {
+    return std::make_shared<FullyConnectedNode>(dim, sparsity,
+                                                std::move(activation));
+  }
+
+  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim, float sparsity,
+                                                  std::string activation,
+                                                  uint32_t num_tables,
+                                                  uint32_t hashes_per_table,
+                                                  uint32_t reservoir_size) {
+    auto sampling_config = std::make_shared<DWTASamplingConfig>(
+        num_tables, hashes_per_table, reservoir_size);
+    return std::make_shared<FullyConnectedNode>(dim, sparsity, activation,
+                                                sampling_config);
+  }
+
  private:
   void compileImpl() final {
     assert(_config.has_value());
@@ -212,8 +234,10 @@ class FullyConnectedNode final
   }
 
   void backpropagateImpl(uint32_t vec_index) final {
-    // TODO(Nicholas, Josh): Change to avoid having this check
-    if (_predecessor->isInputNode()) {
+    // We are checking whether predecessor has gradients or not rather than its
+    // an input ot not because,this way will be helpful to calculate gradients
+    // for input in getInputGradientsSingle.
+    if (!_predecessor->getOutputVector(vec_index).gradients) {
       _layer->backpropagateInputLayer(_predecessor->getOutputVector(vec_index),
                                       this->getOutputVectorImpl(vec_index));
     } else {

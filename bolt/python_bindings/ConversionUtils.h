@@ -164,4 +164,20 @@ inline py::tuple constructPythonInferenceTuple(py::dict&& py_metric_data,
       /* active_neuron_handle = */ active_neuron_handle);
 }
 
+inline static py::array_t<float, py::array::c_style | py::array::forcecast>
+denseBoltVectorToNumpy(const BoltVector& output, float* activations) {
+  assert(output.isDense());
+
+  const float* start = output.activations;
+  std::copy(start, start + output.len, activations);
+
+  py::object activation_handle = py::capsule(
+      activations, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+      activations_array({output.len}, {sizeof(float)}, activations,
+                        activation_handle);
+  return activations_array;
+}
+
 }  // namespace thirdai::bolt::python

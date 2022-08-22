@@ -52,7 +52,7 @@ class TextClassifier {
                                    /* use_sparse_inference = */ true);
 
     return _batch_processor->getClassName(
-        /* class_id = */ output.getIdWithHighestActivation());
+        /* class_id = */ output.getHighestActivationId());
   }
 
   void save(const std::string& filename) {
