@@ -110,7 +110,6 @@ class Worker:
                 self.b_partitions.append(partition_length)
             else:
                 self.b_partitions.append(1)
-        print(self.w_partitions, self.b_partitions)
         return True
 
     def calculate_gradients(self, batch_no: int):
