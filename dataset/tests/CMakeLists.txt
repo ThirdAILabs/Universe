@@ -55,6 +55,12 @@ target_link_libraries(
   gtest_main
 )
 
+target_link_libraries(
+  date_block_test
+  PUBLIC
+  OpenMP::OpenMP_CXX
+)
+
 add_executable(
   text_block_test
   TextBlockTests.cc
@@ -102,6 +108,12 @@ target_link_libraries(
   gtest_main
 )
 
+target_link_libraries(
+  streaming_generic_dataset_loader_tests
+  PUBLIC
+  OpenMP::OpenMP_CXX
+)
+
 add_executable(
   categorical_multi_label_test
   CategoricalMultiLabelTest.cc
@@ -125,6 +137,12 @@ target_link_libraries(
   gtest_main
   dataset_core_lib
   hash_function_lib
+)
+
+target_link_libraries(
+  text_processing_tests
+  PUBLIC
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
