@@ -37,8 +37,21 @@ class StreamingStringCategoricalEncoding final : public CategoricalEncoding {
 
   uint32_t featureDim() const final { return _lookup->vocabSize(); };
 
+  static std::shared_ptr<CategoricalEncoding> make(uint32_t n_unique) {
+    return std::make_shared<StreamingStringCategoricalEncoding>(n_unique);
+  }
+
+  static std::shared_ptr<CategoricalEncoding> make(
+      StreamingStringLookupPtr lookup) {
+    return std::make_shared<StreamingStringCategoricalEncoding>(
+        std::move(lookup));
+  }
+
  private:
   StreamingStringLookupPtr _lookup;
 };
+
+using StreamingStringCategoricalEncodingPtr =
+    std::shared_ptr<StreamingStringCategoricalEncoding>;
 
 }  // namespace thirdai::dataset

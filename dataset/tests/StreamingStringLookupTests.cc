@@ -113,9 +113,8 @@ TEST(StreamingStringLookupTests, DoesNotBreakWhenMoreStringsThanExpected) {
 TEST(StreamingStringLookupTests, InBlock) {
   auto strings = generateRandomStrings(
       /* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-  auto lookup = std::make_shared<StreamingStringLookup>(/* n_unique = */ 1000);
-  auto lookup_encoding =
-      std::make_shared<StreamingStringCategoricalEncoding>(lookup);
+  auto lookup = StreamingStringLookup::make(/* n_unique = */ 1000);
+  auto lookup_encoding = StreamingStringCategoricalEncoding::make(lookup);
   auto lookup_block = std::make_shared<CategoricalBlock>(
       /* col = */ 0, /* encoding = */ lookup_encoding);
 
