@@ -57,7 +57,7 @@ DragonVector<T>::DragonVector(const T* values, float compression_density,
 }
 
 template <class T>
-DragonVector<T>::DragonVector(const DragonVector<float>& vec)
+DragonVector<T>::DragonVector(const DragonVector<T>& vec)
     : CompressedVector<T>(vec),
       _min_sketch_size(vec._min_sketch_size),
       _sketch_size(vec._sketch_size),

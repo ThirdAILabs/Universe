@@ -1,10 +1,8 @@
 #include <gtest/gtest.h>
-#include <_types/_uint32_t.h>
 #include <compression/src/DragonVector.h>
 #include <sys/types.h>
 #include <random>
 #include <vector>
-
 namespace thirdai::compression::tests {
 
 class DragonVectorTest : public testing::Test {

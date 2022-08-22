@@ -25,6 +25,14 @@ DefaultCompressedVector<T>::DefaultCompressedVector(const T* values,
   _values.assign(values, values + size);
 }
 
+template <class T>
+DefaultCompressedVector<T>::DefaultCompressedVector(
+    const DefaultCompressedVector<T>& vec)
+    : CompressedVector<T>(vec), _sketch_size(vec._sketch_size) {
+  _values.insert(std::end(_values), std::begin(vec._values),
+                 std::end(vec._values));
+}
+
 /*
  * Implementing std::vector's standard methods for the class
  */

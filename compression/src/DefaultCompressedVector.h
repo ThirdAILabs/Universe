@@ -18,6 +18,25 @@ class DefaultCompressedVector final : public CompressedVector<T> {
 
   explicit DefaultCompressedVector(const T* values, uint32_t size);
 
+  DefaultCompressedVector(const DefaultCompressedVector<T>& vec);
+
+  DefaultCompressedVector& operator=(DefaultCompressedVector<T> vec) {
+    swap(*this, vec);
+    return *this;
+  }
+
+  DefaultCompressedVector(DefaultCompressedVector<T>&& vec)
+      : DefaultCompressedVector<T>() {
+    swap(*this, vec);
+  }
+
+  friend void swap(DefaultCompressedVector<T>& first,
+                   DefaultCompressedVector<T>& second) {
+    using std::swap;
+    swap(first._values, second._values);
+    swap(first._sketch_size, second._sketch_size);
+  }
+
   /*
    * Implementing std::vector's standard methods for the class
    */

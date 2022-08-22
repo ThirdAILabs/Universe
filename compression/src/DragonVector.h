@@ -18,7 +18,7 @@ class DragonVector final : public CompressedVector<T> {
   // might have to remove these =delete and declare explicit copy constructors
   // by ourselves
 
-  explicit DragonVector(const DragonVector<float>& vec);
+  DragonVector(const DragonVector<T>& vec);
   // DragonVector(const DragonVector<T>&) = delete;
   // DragonVector(DragonVector<T>&&) = delete;
 
