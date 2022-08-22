@@ -1,7 +1,6 @@
 #include "DistributedBoltGraph.h"
 #include "Graph.h"
 #include <bolt/src/graph/DatasetContext.h>
-#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/loss_functions/LossFunctions.h>

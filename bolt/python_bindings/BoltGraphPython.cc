@@ -1,10 +1,11 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
 #include <bolt/src/graph/DistributedBoltGraph.h>
-#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/PredictConfig.h>
+#include <bolt/src/graph/TrainConfig.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -181,23 +182,25 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
       .def("silence", &TrainConfig::silence)
-      .def("with_early_stop_validation", &TrainConfig::withEarlyStopValidation,
-           py::arg("valid_data"), py::arg("valid_tokens"),
-           py::arg("valid_labels"), py::arg("predict_config"),
-           py::arg("patience"))
-      // Helper method that covers the common case of validation based off of a
-      // single BoltBatch dataset
-      .def(
-          "with_early_stop_validation",
-          [](TrainConfig& config, dataset::BoltDatasetPtr data,
-             dataset::BoltDatasetPtr labels,
-             const PredictConfig& predict_config, uint32_t patience) {
-            return config.withEarlyStopValidation(
-                {data}, /* valid_tokens = */ {}, labels, predict_config,
-                patience);
-          },
-          py::arg("valid_data"), py::arg("valid_labels"),
-          py::arg("predict_config"), py::arg("patience"))
+      //  .def("with_early_stop_validation",
+      //  &TrainConfig::withEarlyStopValidation,
+      //       py::arg("valid_data"), py::arg("valid_tokens"),
+      //       py::arg("valid_labels"), py::arg("predict_config"),
+      //       py::arg("patience"))
+      //  // Helper method that covers the common case of validation based off
+      //  of a
+      //  // single BoltBatch dataset
+      //  .def(
+      //      "with_early_stop_validation",
+      //      [](TrainConfig& config, dataset::BoltDatasetPtr data,
+      //         dataset::BoltDatasetPtr labels,
+      //         const PredictConfig& predict_config, uint32_t patience) {
+      //        return config.withEarlyStopValidation(
+      //            {data}, /* valid_tokens = */ {}, labels, predict_config,
+      //            patience);
+      //      },
+      //      py::arg("valid_data"), py::arg("valid_labels"),
+      //      py::arg("predict_config"), py::arg("patience"))
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))
       .def("with_reconstruct_hash_functions",

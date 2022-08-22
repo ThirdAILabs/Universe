@@ -7,9 +7,10 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "DatasetContext.h"
-#include "ExecutionConfig.h"
 #include "InferenceOutputTracker.h"
 #include "Node.h"
+#include "PredictConfig.h"
+#include "TrainConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/layers/BoltVector.h>

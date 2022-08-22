@@ -111,15 +111,6 @@ MetricData BoltGraph::train(
 
       perEpochCallback();
 
-      if (train_config.usingEarlyStopValidation()) {
-        cleanupAfterBatchProcessing();
-        if (shouldEarlyStop(train_config.getEarlyStopValidationMetadata())) {
-          break;
-        }
-        prepareToProcessBatches(train_context.batchSize(),
-                                /* use_sparsity=*/true);
-      }
-
       auto train_end = std::chrono::high_resolution_clock::now();
       int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
                                train_end - train_start)
@@ -144,14 +135,6 @@ MetricData BoltGraph::train(
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
-
-  if (train_config.usingEarlyStopValidation()) {
-    *this = *load(
-        TrainConfig::EarlyStopValidationMetadata::BEST_MODEL_SAVE_LOCATION);
-    std::remove(
-        TrainConfig::EarlyStopValidationMetadata::BEST_MODEL_SAVE_LOCATION
-            .c_str());
-  }
 
   return metric_data;
 }
@@ -331,36 +314,6 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
       metrics.processSample(output, labels);
     }
   }
-}
-
-bool BoltGraph::shouldEarlyStop(
-    std::optional<TrainConfig::EarlyStopValidationMetadata> metadata) {
-  // we can access element 0 since we previously asserted having one metric
-  std::string metric_name = metadata->predict_config.getMetricNames()[0];
-
-  double metric_val = predict(metadata->valid_data, metadata->valid_tokens,
-                              metadata->valid_labels, metadata->predict_config)
-                          .first[metric_name];
-
-  // for a metric where smaller is better (like MeanSquaredError), negating the
-  // metric value allows the maximization logic below to function like a
-  // minimization objective
-  if (MetricUtils::getMetricByName(metric_name)->smallerIsBetter()) {
-    metric_val = -metric_val;
-  }
-
-  if (metric_val < metadata->last_validation_metric) {
-    metadata->patience--;
-    if (metadata->patience == 0) {
-      return true;
-    }
-  } else if (metric_val > metadata->best_validation_metric) {
-    metadata->best_validation_metric = metric_val;
-    save(TrainConfig::EarlyStopValidationMetadata::BEST_MODEL_SAVE_LOCATION);
-  }
-  metadata->last_validation_metric = metric_val;
-
-  return false;
 }
 
 void BoltGraph::processOutputCallback(

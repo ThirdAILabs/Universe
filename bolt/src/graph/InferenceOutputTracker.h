@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ExecutionConfig.h"
 #include "Node.h"
 
 namespace thirdai::bolt {

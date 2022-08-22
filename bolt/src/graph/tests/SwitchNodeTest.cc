@@ -1,6 +1,7 @@
 #include "TestDatasetGenerators.h"
-#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/PredictConfig.h>
+#include <bolt/src/graph/TrainConfig.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/Switch.h>
