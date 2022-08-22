@@ -5,7 +5,9 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
+#include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
@@ -536,6 +538,69 @@ class SentimentClassifier {
  private:
   std::unique_ptr<PyNetwork> _model;
   BoltVector _output;
+};
+
+class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
+ public:
+  explicit PyMultiLabelTextClassifier(uint32_t n_classes)
+      : MultiLabelTextClassifier(n_classes) {}
+
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+  predictSingleFromSentence(std::string sentence,
+                            float activation_threshold = 0.95) {
+    auto output = MultiLabelTextClassifier::predictSingleFromSentence(
+        std::move(sentence), activation_threshold);
+
+    float* activations;
+    allocateActivations(/* num_samples= */ 1, _n_classes,
+                        /* active_neurons= */ nullptr, &activations,
+                        /* output_sparse= */ false);
+
+    return denseBoltVectorToNumpy(output, activations);
+  }
+
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+  predictSingleFromTokens(const std::vector<uint32_t>& tokens,
+                          float activation_threshold = 0.95) {
+    auto output = MultiLabelTextClassifier::predictSingleFromTokens(
+        tokens, activation_threshold);
+
+    float* activations;
+    allocateActivations(/* num_samples= */ 1, _n_classes,
+                        /* active_neurons= */ nullptr, &activations,
+                        /* output_sparse= */ false);
+
+    return denseBoltVectorToNumpy(output, activations);
+  }
+
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<PyMultiLabelTextClassifier> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<PyMultiLabelTextClassifier> deserialize_into(
+        new PyMultiLabelTextClassifier());
+    iarchive(*deserialize_into);
+    deserialize_into->buildBatchProcessors(deserialize_into->_n_classes);
+    return deserialize_into;
+  }
+
+ private:
+  // Private constructor for cereal.
+  PyMultiLabelTextClassifier() : MultiLabelTextClassifier() {}
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_n_classes, _classifier);
+  }
 };
 
 }  // namespace thirdai::bolt::python
