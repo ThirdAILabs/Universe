@@ -85,6 +85,10 @@ MetricData BoltGraph::train(
 
   MetricAggregator metrics = train_config.getMetricAggregator();
 
+  // CallbackList callbacks = train_config.getCallbacks();
+
+  // callbacks.onTrainBegin();
+
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state

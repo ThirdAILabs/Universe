@@ -8,19 +8,19 @@ namespace thirdai::bolt {
 
 class EarlyStopValidation : public Callback {
  public:
-  EarlyStopValidation(std::vector<dataset::BoltDatasetPtr> valid_data,
-                      std::vector<dataset::BoltTokenDatasetPtr> valid_tokens,
-                      dataset::BoltDatasetPtr valid_labels,
-                      const PredictConfig& predict_config,
-                      uint32_t patience = 3)
-      : valid_data(valid_data),
-        valid_tokens(valid_tokens),
-        valid_labels(valid_labels),
-        patience(patience),
-        predict_config(predict_config),
-        best_validation_metric(0),
-        last_validation_metric(0) {
-    uint32_t num_metrics = predict_config.getNumMetricsTracked();
+  EarlyStopValidation(
+      std::vector<dataset::BoltDatasetPtr> validation_data,
+      std::vector<dataset::BoltTokenDatasetPtr> validation_tokens,
+      dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config,
+      uint32_t patience = 3)
+      : _validation_data(std::move(validation_data)),
+        _validation_tokens(std::move(validation_tokens)),
+        _validation_labels(std::move(validation_labels)),
+        _patience(patience),
+        _predict_config(std::move(predict_config)),
+        _best_validation_metric(0),
+        _last_validation_metric(0) {
+    uint32_t num_metrics = _predict_config.getNumMetricsTracked();
     if (num_metrics != 1) {
       throw std::invalid_argument(
           "Validation-based early stopping only supports the use of one "
@@ -31,11 +31,12 @@ class EarlyStopValidation : public Callback {
 
   void onEpochEnd() final {
     // we can access element 0 since we previously asserted having one metric
-    std::string metric_name = predict_config.getMetricNames()[0];
+    std::string metric_name = _predict_config.getMetricNames()[0];
 
-    double metric_val =
-        predict(valid_data, valid_tokens, valid_labels, predict_config)
-            .first[metric_name];
+    double metric_val = _model
+                            ->predict(_validation_data, _validation_tokens,
+                                      _validation_labels, _predict_config)
+                            .first[metric_name];
 
     // for a metric where smaller is better (like MeanSquaredError), negating
     // the metric value allows the maximization logic below to function like a
@@ -44,31 +45,29 @@ class EarlyStopValidation : public Callback {
       metric_val = -metric_val;
     }
 
-    if (metric_val < last_validation_metric) {
-      patience--;
-      if (patience == 0) {
-        return true;
+    if (metric_val < _last_validation_metric) {
+      _patience--;
+      if (_patience == 0) {
+        _model->shouldStopTraining()
       }
-    } else if (metric_val > best_validation_metric) {
-      best_validation_metric = metric_val;
-      best_weights = model->getWeights();
+    } else if (metric_val > _best_validation_metric) {
+      _best_validation_metric = metric_val;
+      _best_weights = _model->getWeights();
     }
     last_validation_metric = metric_val;
-
-    return false;
   }
 
-  void onTrainEnd() final { model->setWeights(best_weights); }
+  void onTrainEnd() final { _model->setWeights(_best_weights); }
 
  private:
-  std::vector<dataset::BoltDatasetPtr> valid_data;
-  std::vector<dataset::BoltTokenDatasetPtr> valid_tokens;
-  dataset::BoltDatasetPtr valid_labels;
-  uint32_t patience;
-  PredictConfig predict_config;
+  std::vector<dataset::BoltDatasetPtr> _validation_data;
+  std::vector<dataset::BoltTokenDatasetPtr> _validation_tokens;
+  dataset::BoltDatasetPtr _validation_labels;
+  uint32_t _patience;
+  PredictConfig _predict_config;
 
-  double best_validation_metric;
-  double last_validation_metric;
+  double _best_validation_metric;
+  double _last_validation_metric;
 };
 
 }  // namespace thirdai::bolt

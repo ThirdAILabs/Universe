@@ -7,10 +7,9 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "DatasetContext.h"
+#include "ExecutionConfig.h"
 #include "InferenceOutputTracker.h"
 #include "Node.h"
-#include "PredictConfig.h"
-#include "TrainConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/layers/BoltVector.h>
@@ -174,9 +173,6 @@ class BoltGraph {
   void serialize(Archive& archive);
 
   bool graphCompiled() const { return _loss != nullptr; }
-
-  bool shouldEarlyStop(std::optional<TrainConfig::EarlyStopValidationMetadata>
-                           early_stop_metadata);
 
   void processOutputCallback(
       const std::optional<std::function<void(const BoltVector&)>>&

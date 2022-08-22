@@ -5,8 +5,13 @@
 
 namespace thirdai::bolt {
 
+class BoltGraph;
+using BoltGraphPtr = std::shared_ptr<BoltGraph>;
+
 class Callback {
  public:
+  void setModel(BoltGraphPtr model) { _model = std::move(model); }
+
   virtual void onTrainBegin(){};
 
   virtual void onTrainEnd(){};
@@ -18,46 +23,52 @@ class Callback {
   virtual void onBatchBegin(){};
 
   virtual void onBatchEnd(){};
+
+  virtual ~Callback() = default;
+
+ private:
+  BoltGraphPtr _model;
 };
 
 using CallbackPtr = std::shared_ptr<Callback>;
 
 class CallbackList {
  public:
-  CallbackList(std::vector<CallbackPtr> callbacks) : _callbacks(callbacks) {}
+  explicit CallbackList(std::vector<CallbackPtr> callbacks)
+      : _callbacks(std::move(callbacks)) {}
 
   void onTrainBegin() {
-    for (auto callback : _callbacks) {
+    for (const auto& callback : _callbacks) {
       callback->onTrainBegin();
     }
   };
 
   void onTrainEnd() {
-    for (auto callback : _callbacks) {
+    for (const auto& callback : _callbacks) {
       callback->onTrainEnd();
     }
   };
 
   void onEpochBegin() {
-    for (auto callback : _callbacks) {
+    for (const auto& callback : _callbacks) {
       callback->onEpochBegin();
     }
   };
 
   void onEpochEnd() {
-    for (auto callback : _callbacks) {
+    for (const auto& callback : _callbacks) {
       callback->onEpochEnd();
     }
   };
 
   void onBatchBegin() {
-    for (auto callback : _callbacks) {
+    for (const auto& callback : _callbacks) {
       callback->onBatchBegin();
     }
   };
 
   void onBatchEnd() {
-    for (auto callback : _callbacks) {
+    for (const auto& callback : _callbacks) {
       callback->onBatchEnd();
     }
   };

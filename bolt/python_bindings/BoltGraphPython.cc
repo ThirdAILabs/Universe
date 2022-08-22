@@ -1,11 +1,10 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
 #include <bolt/src/graph/DistributedBoltGraph.h>
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/PredictConfig.h>
-#include <bolt/src/graph/TrainConfig.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
