@@ -41,6 +41,10 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "FastSRPSamplingConfig")
       .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("reservoir_size"));
+
+  py::class_<RandomSamplingConfig, std::shared_ptr<RandomSamplingConfig>,
+             SamplingConfig>(bolt_submodule, "RandomSamplingConfig")
+      .def(py::init<>());
 #endif
 
   py::enum_<ActivationFunction>(
@@ -57,12 +61,15 @@ void createBoltSubmodule(py::module_& module) {
              "Hyperbolic tangent activation function; "
              "maps the outputs of a layer to the range [-1, 1].")
       .value("Softmax", ActivationFunction::Softmax,
-             "Softmax activation function; converts logits to classification "
-             "probabilities. Currently, this activation function can only be "
+             "Softmax activation function; converts logits to "
+             "classification "
+             "probabilities. Currently, this activation function can "
+             "only be "
              "applied to the final layer in the neural network.")
       .value("Sigmoid", ActivationFunction::Sigmoid,
              "Sigmoid activation function; converts logits to indepedent"
-             "probabilities. Currently, this activation function can only be "
+             "probabilities. Currently, this activation function can only "
+             "be "
              "applied to the final layer in the neural network.");
 
   bolt_submodule.def("getActivationFunction", &getActivationFunction,

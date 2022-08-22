@@ -37,8 +37,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _b_velocity(config.getDim(), 0),
       _prev_is_active(_prev_dim, false),
       _is_active(config.getDim(), false),
-      _is_distributed(is_distributed),
-      _sampling_mode(LSHSamplingMode::Default) {
+      _is_distributed(is_distributed) {
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -368,41 +367,48 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     active_set.insert(labels->active_neurons[i]);
   }
 
-  std::vector<uint32_t> hashes(_hasher->numTables());
-  if constexpr (PREV_DENSE) {
-    _hasher->hashSingleDense(input.activations, input.len, hashes.data());
-  } else {
-    _hasher->hashSingleSparse(input.active_neurons, input.activations,
-                              input.len, hashes.data());
-  }
+  uint32_t random_neuron_offset;
+  if (!isRandomSampling()) {
+    std::vector<uint32_t> hashes(_hasher->numTables());
+    if constexpr (PREV_DENSE) {
+      _hasher->hashSingleDense(input.activations, input.len, hashes.data());
+    } else {
+      _hasher->hashSingleSparse(input.active_neurons, input.activations,
+                                input.len, hashes.data());
+    }
 
-  if (_sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions) {
-    /**
-     * QueryBySet just returns a set of the elements in the given buckets of the
-     * hash table.
-     *
-     * QueryAndInsertForInference returns the set of elements in the given
-     * buckets but will also insert the labels (during training only) for the
-     * vector into the buckets the vector maps to if they are not already
-     * present in the buckets. The intuition is that during sparse inference
-     * this will help force the hash tables to map vectors towards buckets that
-     * contain their correct labels. This is specific to the output layer.
-     *
-     * We call QueryAndInsertForInference if the following conditions are met:
-     *   1. We have sparse inference enabled.
-     *   2. Activation = Softmax or Sigmoid, meaning it's a classification task,
-     *      and that the given layer is the last layer, as this is the only
-     *      place where we use these activation functions.
-     */
-    _hash_table->queryAndInsertForInference(hashes.data(), active_set,
-                                            _sparse_dim);
+    if (_sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions) {
+      /**
+       * QueryBySet just returns a set of the elements in the given buckets of
+       * the hash table.
+       *
+       * QueryAndInsertForInference returns the set of elements in the given
+       * buckets but will also insert the labels (during training only) for the
+       * vector into the buckets the vector maps to if they are not already
+       * present in the buckets. The intuition is that during sparse inference
+       * this will help force the hash tables to map vectors towards buckets
+       * that contain their correct labels. This is specific to the output
+       * layer.
+       *
+       * We call QueryAndInsertForInference if the following conditions are met:
+       *   1. We have sparse inference enabled.
+       *   2. Activation = Softmax or Sigmoid, meaning it's a classification
+       * task, and that the given layer is the last layer, as this is the only
+       *      place where we use these activation functions.
+       */
+      _hash_table->queryAndInsertForInference(hashes.data(), active_set,
+                                              _sparse_dim);
+    } else {
+      _hash_table->queryBySet(hashes.data(), active_set);
+    }
+    random_neuron_offset = hashes.at(0);
   } else {
-    _hash_table->queryBySet(hashes.data(), active_set);
+    random_neuron_offset = rand();
   }
   if (active_set.size() < _sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
     // safe and we want to have deterministic outcomes
-    uint32_t rand_offset = (hashes[0]) % _dim;
+    uint32_t rand_offset = random_neuron_offset % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
       rand_offset = rand_offset % _dim;
@@ -607,6 +613,12 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 
 void FullyConnectedLayer::initSparseDatastructures(
     const SamplingConfigPtr& sampling_config, std::random_device& rd) {
+  if (sampling_config->isRandomSampling()) {
+    _sampling_mode = BoltSamplingMode::RandomSampling;
+  } else {
+    _sampling_mode = BoltSamplingMode::LSH;
+  }
+
   _hasher = sampling_config->getHashFunction(_prev_dim);
 
   _hash_table = sampling_config->getHashTable();
@@ -629,7 +641,8 @@ inline void FullyConnectedLayer::deinitSparseDatastructures() {
 }
 
 void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
-  if ((!_trainable && !force_build) || _sparsity >= 1.0 || hashTablesFrozen()) {
+  if ((!_trainable && !force_build) || _sparsity >= 1.0 || hashTablesFrozen() ||
+      isRandomSampling()) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -652,7 +665,8 @@ void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
 void FullyConnectedLayer::buildHashTables() { buildHashTablesImpl(false); }
 
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen()) {
+  if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen() ||
+      isRandomSampling()) {
     return;
   }
 

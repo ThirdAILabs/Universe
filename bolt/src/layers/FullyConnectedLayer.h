@@ -18,10 +18,11 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-enum class LSHSamplingMode {
-  Default,
+enum class BoltSamplingMode {
+  LSH,
   FreezeHashTables,
-  FreezeHashTablesWithInsertions
+  FreezeHashTablesWithInsertions,
+  RandomSampling
 };
 
 class FullyConnectedLayer final : public SequentialLayer {
@@ -61,16 +62,19 @@ class FullyConnectedLayer final : public SequentialLayer {
   }
 
   void freezeHashTables(bool insert_labels_if_not_found) final {
+    if (isRandomSampling()) {
+      return;
+    }
     if (insert_labels_if_not_found) {
-      _sampling_mode = LSHSamplingMode::FreezeHashTablesWithInsertions;
+      _sampling_mode = BoltSamplingMode::FreezeHashTablesWithInsertions;
     } else {
-      _sampling_mode = LSHSamplingMode::FreezeHashTables;
+      _sampling_mode = BoltSamplingMode::FreezeHashTables;
     }
   }
 
   bool hashTablesFrozen() const {
-    return _sampling_mode == LSHSamplingMode::FreezeHashTables ||
-           _sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions;
+    return _sampling_mode == BoltSamplingMode::FreezeHashTables ||
+           _sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions;
   }
 
   void buildHashTables() final;
@@ -172,7 +176,11 @@ class FullyConnectedLayer final : public SequentialLayer {
   // settings and distributed settings
   bool _is_distributed;
 
-  LSHSamplingMode _sampling_mode;
+  BoltSamplingMode _sampling_mode;
+
+  bool isRandomSampling() const {
+    return _sampling_mode == BoltSamplingMode::RandomSampling;
+  }
 
   void initOptimizer();
 
