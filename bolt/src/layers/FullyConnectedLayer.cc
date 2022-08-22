@@ -366,16 +366,21 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
       std::copy(labels->active_neurons, labels->active_neurons + labels->len,
                 output.active_neurons);
     }
-    uint64_t random_offset = rand();
+    uint64_t random_offset = rand() % _dim;
 
     uint64_t neurons_to_sample = _sparse_dim - label_len;
-    uint64_t chunk_1_end = std::min(_dim, random_offset + neurons_to_sample);
-    uint64_t chunk_2_end = 
+    uint64_t length_to_end = std::min(_dim - random_offset, neurons_to_sample);
+    uint64_t length_of_remainder = length_to_end < neurons_to_sample
+                                       ? neurons_to_sample - length_to_end
+                                       : 0;
 
-        std::copy(
-            _rand_neurons.begin() + random_offset,
-            _rand_neurons.begin() + random_offset + _sparse_dim - label_len,
-            output.active_neurons + label_len);
+    std::copy(_rand_neurons.begin() + random_offset,
+              _rand_neurons.begin() + random_offset + length_to_end,
+              output.active_neurons + label_len);
+
+    std::copy(_rand_neurons.begin(),
+              _rand_neurons.begin() + length_of_remainder,
+              output.active_neurons + label_len + length_to_end);
     return;
   }
 
