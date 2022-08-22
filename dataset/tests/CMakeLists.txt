@@ -45,6 +45,17 @@ target_link_libraries(
 )
 
 add_executable(
+  date_block_test
+  DateBlockTests.cc
+)
+
+target_link_libraries(
+  date_block_test
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
   text_block_test
   TextBlockTests.cc
 )
@@ -130,6 +141,7 @@ gtest_discover_tests(svm_dataset_test)
 gtest_discover_tests(click_through_dataset_test)
 gtest_discover_tests(segmented_feature_vectors_test)
 gtest_discover_tests(categorical_block_test)
+gtest_discover_tests(date_block_test)
 gtest_discover_tests(text_block_test)
 gtest_discover_tests(block_batch_processor_test)
 gtest_discover_tests(generic_batch_processor_test)

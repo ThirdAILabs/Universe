@@ -197,3 +197,50 @@ def compute_accuracy_with_file(test_labels, pred_file):
     return sum(
         (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
     ) / len(predictions)
+
+
+def gen_random_weights_simple_network(input_output_layer_dim, hidden_layer_dim):
+    w1 = np.random.randn(hidden_layer_dim, input_output_layer_dim).astype(np.float32)
+    w2 = np.random.randn(input_output_layer_dim, hidden_layer_dim).astype(np.float32)
+    return w1, w2
+
+
+def gen_random_bias_simple_network(output_layer_dim, hidden_layer_dim):
+    b1 = np.random.randn(hidden_layer_dim).astype(np.float32)
+    b2 = np.random.randn(output_layer_dim).astype(np.float32)
+    return b1, b2
+
+
+# given a numpy vector we create bunch of numpy vectors from it by adding delta(0.001) at each index
+# seperately and creating a bolt dataset from these created numpy vectors.
+def get_perturbed_dataset(numpy_input):
+    perturbed_vectors = []
+    for i in range(len(numpy_input)):
+        """
+        We are making a copy because in python assign operation makes two variables to point
+        to same address space, and we only want to modify one and keep the other same.
+        """
+        vec = np.array(numpy_input)
+        vec[i] = vec[i] + 0.001
+        perturbed_vectors.append(vec)
+    perturbed_vectors = np.array(perturbed_vectors)
+    perturbed_dataset = dataset.from_numpy(
+        perturbed_vectors, batch_size=len(numpy_input)
+    )
+    return perturbed_dataset
+
+
+# get the activation difference at particular label from all the perturbed_activations
+# with respect to normal_activation (activations of normal vector without any perturbation)
+# and assert the difference in activation are in same order of input gradients.
+def assert_activation_difference_and_gradients_in_same_order(
+    perturbed_activations, numpy_label, gradient_vector, normal_activation
+):
+    act_difference_at_required_label = [
+        perturbed_act[numpy_label] - normal_activation[numpy_label]
+        for perturbed_act in perturbed_activations
+    ]
+    assert np.array_equal(
+        np.argsort(act_difference_at_required_label),
+        np.argsort(gradient_vector),
+    )

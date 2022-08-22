@@ -1,8 +1,26 @@
 enable_testing()
 
+add_executable(layer_norm_node_test LayerNormNodeTest.cc)
+target_link_libraries(
+  layer_norm_node_test
+  PRIVATE
+  bolt_graph_lib
+  gtest_main
+  gmock_main
+)
+
 add_executable(concatenated_node_test ConcatenatedNodeTest.cc)
 target_link_libraries(
   concatenated_node_test
+  PRIVATE
+  bolt_graph_lib
+  gtest_main
+  gmock_main
+)
+
+add_executable(vector_norm_test VectorNormTest.cc)
+target_link_libraries(
+  vector_norm_test
   PRIVATE
   bolt_graph_lib
   gtest_main
@@ -76,12 +94,14 @@ target_link_libraries(
 )
 
 include(GoogleTest)
+gtest_discover_tests(layer_norm_node_test)
 gtest_discover_tests(concatenated_node_test)
 gtest_discover_tests(fully_connected_dag_test)
 gtest_discover_tests(graph_traversal_test)
 gtest_discover_tests(graph_reject_inputs_test)
 gtest_discover_tests(state_machine_test)
 gtest_discover_tests(embedding_node_test)
+gtest_discover_tests(vector_norm_test)
 gtest_discover_tests(save_load_test)
 gtest_discover_tests(switch_node_test)
 gtest_discover_tests(dag_dlrm_test)

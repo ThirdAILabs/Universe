@@ -1,6 +1,6 @@
 import pytest
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 from thirdai import bolt, dataset
 from ..utils import gen_numpy_training_data
@@ -16,9 +16,6 @@ def build_single_node_bolt_dag_model(train_data, train_labels, sparsity, num_cla
         dim=2000,
         sparsity=sparsity,
         activation="relu",
-        sampling_config=bolt.DWTASamplingConfig(
-            num_tables=64, hashes_per_table=3, reservoir_size=32
-        ),
     )(input_layer)
     output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
         hidden_layer

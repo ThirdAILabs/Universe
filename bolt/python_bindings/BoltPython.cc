@@ -503,6 +503,63 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
+  py::class_<PyMultiLabelTextClassifier>(bolt_submodule,
+                                         "MultiLabelTextClassifier")
+      .def(py::init<uint32_t>(), py::arg("n_classes"),
+           "Constructs a MultiLabelTextClassifier with autotuning.\n"
+           "Arguments:\n"
+           " * n_classes: int - How many classes or categories are in the "
+           "labels of the dataset.\n")
+      .def(
+          "train", &PyMultiLabelTextClassifier::train, py::arg("train_file"),
+          py::arg("epochs"), py::arg("learning_rate"),
+          py::arg("metrics") = std::vector<std::string>(),
+          "Trains the classifier on the given dataset.\n"
+          "Arguments:\n"
+          " * train_file: string - The path to the training dataset to use. "
+          "The file should not have a header. Each row is formatted as follows:"
+          "'''<label1>,<label2>,...,<labelN>\\t<text>'''"
+          "where label1...labelN are integers."
+          " * epochs: Int - How many epochs to train for.\n"
+          " * learning_rate: Float - The learning rate to use for training.\n"
+          " * metrics: List[string] - Metrics to use during training.\n")
+      .def("predict_single_from_sentence",
+           &PyMultiLabelTextClassifier::predictSingleFromSentence,
+           py::arg("sentence"), py::arg("activation_threshold") = 0.95,
+           "Given a sentence, predict the likelihood of each output "
+           "class. \n"
+           "Arguments:\n"
+           " * sentence: string - The input sentence.\n")
+      .def("predict_single_from_tokens",
+           &PyMultiLabelTextClassifier::predictSingleFromTokens,
+           py::arg("tokens"), py::arg("activation_threshold") = 0.95,
+           "Given a list of tokens, predict the likelihood of each output "
+           "class. \n"
+           "Arguments:\n"
+           " * tokens: List[Int] - A list of integer tokens.\n")
+      .def("predict", &PyMultiLabelTextClassifier::predict,
+           py::arg("test_file"),
+           py::arg("metrics") = std::vector<std::string>(),
+           "Runs the classifier on the specified test dataset and optionally "
+           "logs the prediction to a file.\n"
+           "Arguments:\n"
+           " * test_file: string - The path to the test dataset to use.\n"
+           " * metrics: List[string] - Metrics to use during prediction.\n"
+           "then the classifier will output the name of the class/category of "
+           "each prediction this file with one prediction result on each "
+           "line.\n")
+      .def("save", &PyMultiLabelTextClassifier::save, py::arg("filename"),
+           "Saves the classifier to a file. The file path must not require any "
+           "folders to be created\n"
+           "Arguments:\n"
+           " * filename: string - The path to the save location of the "
+           "classifier.\n")
+      .def_static(
+          "load", &PyMultiLabelTextClassifier::load, py::arg("filename"),
+          "Loads and builds a saved classifier from file.\n"
+          "Arguments:\n"
+          " * filename: string - The location of the saved classifier.\n");
+
   py::class_<DistributedPyNetwork>(
       bolt_submodule, "DistributedNetwork",
       "Fully connected Distributed neural network.")
@@ -678,7 +735,8 @@ void createBoltSubmodule(py::module_& module) {
           "line.\n")
       .def("predict_single", &TabularClassifier::predictSingle,
            py::arg("input_row"),
-           "Given a list of input values, predict the class. \n"
+           "Given a list of input values excluding the label column, predict "
+           "the class.\n"
            "Arguments:\n"
            " * input_row: List of strings representing input values.\n")
       .def("save", &TabularClassifier::save, py::arg("filename"),

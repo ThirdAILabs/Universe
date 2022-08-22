@@ -2,6 +2,8 @@
 
 #include "Metric.h"
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <memory>
+#include <regex>
 
 namespace thirdai::bolt {
 

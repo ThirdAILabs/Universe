@@ -61,42 +61,39 @@ class TabularClassifier {
   }
 
   std::string predictSingle(std::vector<std::string>& values) {
-    // TODO(david) this repeats code in the batch processor but to reuse the
-    // same code we'd need to refactor the data pipeline quite a bit
-    std::vector<uint32_t> unigram_hashes;
-    uint32_t col = 0;
-    for (const std::string& value : values) {
-      switch (_metadata->getColType(col)) {
-        case dataset::TabularDataType::Numeric: {
-          std::exception_ptr err;
-          uint32_t unigram = _metadata->getNumericHashValue(col, value, err);
-          if (err) {
-            std::rethrow_exception(err);
-          }
-          unigram_hashes.push_back(unigram);
-          break;
-        }
-        case dataset::TabularDataType::Categorical: {
-          uint32_t unigram = _metadata->getStringHashValue(value, col);
-          unigram_hashes.push_back(unigram);
-          break;
-        }
-        case dataset::TabularDataType::Label: {
-          // single inference won't specify the label so we skip it
-          col++;
-          break;
-        }
-      }
-      col++;
+    if (values.size() != _metadata->numColumns() - 1) {
+      throw std::invalid_argument(
+          "Passed in an input of size " + std::to_string(values.size()) +
+          " but needed a vector of size " +
+          std::to_string(_metadata->numColumns() - 1) +
+          ". predict_single expects a vector of values in the same format as "
+          "the original csv but without the label present.");
     }
-    BoltVector input = dataset::TextEncodingUtils::computePairgramsFromUnigrams(
-        unigram_hashes, _input_dim);
+
+    std::vector<std::string_view> encodable_values(values.begin(),
+                                                   values.end());
+
+    /*
+      the batch processor fails if the number of columns mismatches with the
+      original format. since we are only creating an input vector here the
+      label is not relevant, thus we add some bogus here in the label's column
+    */
+    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
+                            /* value = */ " ");
+
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
+
+    BoltVector input;
+    if (auto err = batch_processor->makeInputVector(encodable_values, input)) {
+      std::rethrow_exception(err);
+    }
 
     BoltVector output =
         _classifier->predictSingle({input}, {},
                                    /* use_sparse_inference = */ true);
 
-    return _metadata->getClassIdToNames()[output.getIdWithHighestActivation()];
+    return _metadata->getClassIdToNames()[output.getHighestActivationId()];
   }
 
   void save(const std::string& filename) {
