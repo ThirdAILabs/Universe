@@ -74,8 +74,14 @@ target_link_libraries(
   ${LIBS}
 )
 
-gtest_discover_tests(murmurhash_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(universalhash_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(srp_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(fast_srp_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(densified_minhash_test DISCOVERY_TIMEOUT 30)
+set(HASHING_TESTS
+  murmurhash_test
+  universalhash_test
+  srp_test
+  fast_srp_test
+  densified_minhash_test
+)
+
+foreach(HASHING_TEST IN LISTS HASHING_TESTS)
+  gtest_discover_tests(${HASHING_TEST} DISCOVERY_TIMEOUT 30)
+endforeach()

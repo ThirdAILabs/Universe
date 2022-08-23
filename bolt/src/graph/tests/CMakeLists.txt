@@ -94,14 +94,21 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(layer_norm_node_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(concatenated_node_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(fully_connected_dag_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(graph_traversal_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(graph_reject_inputs_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(state_machine_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(embedding_node_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(vector_norm_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(save_load_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(switch_node_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(dag_dlrm_test DISCOVERY_TIMEOUT 30)
+
+set(DAG_TESTS
+  layer_norm_node_test
+  concatenated_node_test
+  fully_connected_dag_test
+  graph_traversal_test
+  graph_reject_inputs_test
+  state_machine_test
+  embedding_node_test
+  vector_norm_test
+  save_load_test
+  switch_node_test
+  dag_dlrm_test
+)
+
+foreach(DAG_TEST IN LISTS DAG_TESTS)
+  gtest_discover_tests(${DAG_TEST} DISCOVERY_TIMEOUT 30)
+endforeach()

@@ -38,8 +38,15 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(fully_connected_layer_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(embedding_layer_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(bolt_vector_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(bolt_layer_test_utils_test DISCOVERY_TIMEOUT 30)
-gtest_discover_tests(bolt_vector_save_load_test DISCOVERY_TIMEOUT 30)
+
+set(BOLT_LAYER_TESTS
+  fully_connected_layer_test
+  embedding_layer_test
+  bolt_vector_test
+  bolt_layer_test_utils_test
+  bolt_vector_save_load_test
+)
+
+foreach(BOLT_LAYER_TEST IN LISTS BOLT_LAYER_TESTS)
+  gtest_discover_tests(${BOLT_LAYER_TEST} DISCOVERY_TIMEOUT 30)
+endforeach()
