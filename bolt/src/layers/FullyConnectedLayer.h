@@ -234,6 +234,13 @@ class FullyConnectedLayer final : public SequentialLayer {
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
                            const BoltVector* labels);
 
+  void dropoutRandomSampling(const BoltVector& input, const BoltVector& output,
+                             const BoltVector* labels);
+
+  template<bool PREV_DENSE>
+  void lshSampling(const BoltVector& input, BoltVector& output,
+                   const BoltVector* labels);
+
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
 

@@ -150,6 +150,17 @@ class HashUtils {
     return lhs;
   }
 
+  /**
+   * Computes a cheap and simple hash of an integer.
+   * https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
+   */
+  static uint32_t simpleIntegerHash(uint32_t val) {
+    val = ((val >> 16) ^ val) * 0x45d9f3b;
+    val = ((val >> 16) ^ val) * 0x45d9f3b;
+    val = (val >> 16) ^ val;
+    return val;
+  }
+
  private:
   /**
    * Does an in place densification of a power of 2 number of hashes. Starts
