@@ -3,6 +3,7 @@
 #include "ConversionUtils.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <dataset/src/Datasets.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
@@ -18,6 +19,9 @@ py::tuple dagPredictPythonWrapper(BoltGraph& model,
                                   const dataset::BoltDatasetPtr& labels,
                                   const PredictConfig& predict_config);
 
+py::tuple dagGetInputGradientSingleWrapper(
+    const std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>&
+        gradients);
 using ParameterArray =
     py::array_t<float, py::array::c_style | py::array::forcecast>;
 

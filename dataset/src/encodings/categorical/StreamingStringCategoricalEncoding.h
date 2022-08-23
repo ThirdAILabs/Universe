@@ -12,11 +12,16 @@ namespace thirdai::dataset {
 /**
  * Maps string values to sparse ids while continuously building
  * an encoding map in a streaming fashion.
+ *
+ * This is in contrast to StringCategoricalEncoding, which requires
+ * a precomputed vocabulary mapping.
  */
 class StreamingStringCategoricalEncoding final : public CategoricalEncoding {
  public:
-  explicit StreamingStringCategoricalEncoding(
-      std::shared_ptr<StreamingStringLookup> lookup)
+  explicit StreamingStringCategoricalEncoding(uint32_t n_unique)
+      : _lookup(StreamingStringLookup::make(n_unique)) {}
+
+  explicit StreamingStringCategoricalEncoding(StreamingStringLookupPtr lookup)
       : _lookup(std::move(lookup)) {}
 
   std::exception_ptr encodeCategory(const std::string_view id,
@@ -26,12 +31,27 @@ class StreamingStringCategoricalEncoding final : public CategoricalEncoding {
     return nullptr;
   };
 
+  StreamingStringLookupPtr getLookup() { return _lookup; };
+
   bool isDense() const final { return false; };
 
   uint32_t featureDim() const final { return _lookup->vocabSize(); };
 
+  static std::shared_ptr<CategoricalEncoding> make(uint32_t n_unique) {
+    return std::make_shared<StreamingStringCategoricalEncoding>(n_unique);
+  }
+
+  static std::shared_ptr<CategoricalEncoding> make(
+      StreamingStringLookupPtr lookup) {
+    return std::make_shared<StreamingStringCategoricalEncoding>(
+        std::move(lookup));
+  }
+
  private:
-  std::shared_ptr<StreamingStringLookup> _lookup;
+  StreamingStringLookupPtr _lookup;
 };
+
+using StreamingStringCategoricalEncodingPtr =
+    std::shared_ptr<StreamingStringCategoricalEncoding>;
 
 }  // namespace thirdai::dataset

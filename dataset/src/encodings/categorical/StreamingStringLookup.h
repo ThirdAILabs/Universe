@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -11,6 +12,15 @@
 
 namespace thirdai::dataset {
 
+/**
+ * A thread-safe mapping from strings to contiguous unique IDs.
+ * StreamingStringLookup expects the number of unique strings
+ * in the vocabulary and maps strings to an ID between 0 and
+ * n_unique - 1 inclusive. If it sees new unique strings past
+ * the expected number of unique strings, it prints a warning
+ * and assigns an ID of n_unique to the string. This is
+ * considered as the "out-of-vocab" ID.
+ */
 class StreamingStringLookup {
  public:
   explicit StreamingStringLookup(uint32_t n_unique)
@@ -59,6 +69,10 @@ class StreamingStringLookup {
     return _expected_n_unique + 1;  // + 1 for out-of-vocab.
   }
 
+  static std::shared_ptr<StreamingStringLookup> make(uint32_t n_unique) {
+    return std::make_shared<StreamingStringLookup>(n_unique);
+  }
+
  private:
   inline uint32_t outOfVocab() const {
     std::cerr << "[StreamingStringLookup] WARNING: expected "
@@ -73,5 +87,7 @@ class StreamingStringLookup {
   std::vector<std::string> _uid_to_string;
   uint32_t _expected_n_unique;
 };
+
+using StreamingStringLookupPtr = std::shared_ptr<StreamingStringLookup>;
 
 }  // namespace thirdai::dataset
