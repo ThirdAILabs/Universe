@@ -74,8 +74,8 @@ target_link_libraries(
   ${LIBS}
 )
 
-gtest_discover_tests(murmurhash_test)
-gtest_discover_tests(universalhash_test)
-gtest_discover_tests(srp_test)
-gtest_discover_tests(fast_srp_test)
-gtest_discover_tests(densified_minhash_test)
+gtest_discover_tests(murmurhash_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(universalhash_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(srp_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(fast_srp_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(densified_minhash_test DISCOVERY_TIMEOUT 30)

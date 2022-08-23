@@ -38,8 +38,8 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(fully_connected_layer_test)
-gtest_discover_tests(embedding_layer_test)
-gtest_discover_tests(bolt_vector_test)
-gtest_discover_tests(bolt_layer_test_utils_test)
-gtest_discover_tests(bolt_vector_save_load_test)
+gtest_discover_tests(fully_connected_layer_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(embedding_layer_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(bolt_vector_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(bolt_layer_test_utils_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(bolt_vector_save_load_test DISCOVERY_TIMEOUT 30)

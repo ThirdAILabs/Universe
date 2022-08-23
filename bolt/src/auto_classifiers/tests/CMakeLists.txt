@@ -28,6 +28,6 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(bolt_tabular_classifier_test)
-gtest_discover_tests(bolt_text_classifier_test)
-gtest_discover_tests(bolt_multi_label_text_classifier_test)
+gtest_discover_tests(bolt_tabular_classifier_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(bolt_text_classifier_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(bolt_multi_label_text_classifier_test DISCOVERY_TIMEOUT 30)

@@ -37,6 +37,6 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(vector_hash_table_test)
-gtest_discover_tests(sampled_hash_table_test)
-gtest_discover_tests(tiny_table_test)
+gtest_discover_tests(vector_hash_table_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(sampled_hash_table_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(tiny_table_test DISCOVERY_TIMEOUT 30)

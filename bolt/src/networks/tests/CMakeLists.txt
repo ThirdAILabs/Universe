@@ -17,5 +17,5 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(fully_connected_network_test)
-gtest_discover_tests(bolt_hash_function_test)
+gtest_discover_tests(fully_connected_network_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(bolt_hash_function_test DISCOVERY_TIMEOUT 30)
