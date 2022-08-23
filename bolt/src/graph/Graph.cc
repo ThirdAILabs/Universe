@@ -4,6 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
+#include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
@@ -184,6 +185,110 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
   }
 }
 
+BoltVector BoltGraph::getLabelVectorExplainPrediction(
+    uint32_t vec_id, bool explain_prediction_using_highest_activation) {
+  uint32_t required_index;
+  forward(vec_id, nullptr);
+  if (explain_prediction_using_highest_activation) {
+    required_index = _output->getOutputVector(vec_id).getHighestActivationId();
+  } else {
+    required_index =
+        _output->getOutputVector(vec_id).getSecondHighestActivationId();
+  }
+  return BoltVector::makeSparseVector({required_index}, {1.0});
+}
+
+BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
+                                                     uint32_t vec_id) {
+  if (required_index >= _output->outputDim()) {
+    throw std::invalid_argument(
+        "Cannot pass required index " + std::to_string(required_index) +
+        " to getInputGradients for network with output dim " +
+        std::to_string(_output->outputDim()));
+  }
+  BoltVector label_vector =
+      BoltVector::makeSparseVector({required_index}, {1.0});
+  forward(vec_id, &label_vector);
+  return label_vector;
+}
+
+std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
+BoltGraph::getInputGradientSingle(
+    std::vector<BoltVector>&& input_data,
+    bool explain_prediction_using_highest_activation,
+    std::optional<uint32_t> neuron_to_explain) {
+  SingleUnitDatasetContext single_input_gradients_context(std::move(input_data),
+                                                          {});
+
+  prepareToProcessBatches(/*batch_size= */ 1, /* use_sparsity=*/true);
+
+  verifyCanGetInputGradientSingle(single_input_gradients_context,
+                                  explain_prediction_using_highest_activation,
+                                  _output->numNonzerosInOutput());
+
+  try {
+    single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs,
+                                             _token_inputs);
+
+    BoltVector& input_vector = _inputs[0]->getOutputVector(/*vec_index= */ 0);
+
+    std::vector<float> vec_grad(input_vector.len, 0.0);
+
+    // Assigning the vec_grad data() to gradients so that we dont have to
+    // worry about initializing and then freeing the memory.
+
+    input_vector.gradients = vec_grad.data();
+    std::vector<uint32_t> input_vector_indices;
+
+    /*
+    If the required_labels are empty, then we have to find the
+    required_index by output activations, for that we need to do forward
+    pass before creating the batch_label, but if the required_labels are not
+    empty and for some ,If the required label position is not present in the
+    output active neurons , then calculating the gradients with respect to
+    that label doesnot make sense, because loss is only calculated with
+    respect to active neurons, to ensure that output has active neuron at
+    the position of required label we are creating batch_label before
+    forward pass and passing to it, because forward pass ensures to have
+    active neurons at the metioned label index.
+    */
+
+    BoltVector label_vector;
+    if (!neuron_to_explain) {
+      label_vector = getLabelVectorExplainPrediction(
+          /*vec_id= */ 0, explain_prediction_using_highest_activation);
+    } else {
+      label_vector = getLabelVectorNeuronsToExplain(
+          /*required_index= */ *neuron_to_explain, /*vec_id= */ 0);
+    }
+
+    if (!input_vector.isDense()) {
+      input_vector_indices.assign(
+          input_vector.active_neurons,
+          input_vector.active_neurons + input_vector.len);
+    }
+
+    _loss->lossGradients(_output->getOutputVector(/*vec_index= */ 0),
+                         label_vector, /*batch_size= */ 1);
+    backpropagate(/*vec_index= */ 0);
+
+    // We reset the gradients to nullptr here to prevent the bolt vector
+    // from freeing the memory which is owned by the std::vector we used to
+    // store the gradients
+
+    input_vector.gradients = nullptr;
+    cleanupAfterBatchProcessing();
+
+    if (input_vector_indices.empty()) {
+      return std::make_pair(std::nullopt, vec_grad);
+    }
+    return std::make_pair(input_vector_indices, vec_grad);
+  } catch (const std::exception& e) {
+    cleanupAfterBatchProcessing();
+    throw;
+  }
+}
+
 InferenceResult BoltGraph::predict(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
@@ -339,6 +444,7 @@ void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {
 
 void BoltGraph::backpropagate(uint32_t vec_index) {
   for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
+    // std::cout << "NodeName = " << (*node_itr)->name() << std::endl;
     (*node_itr)->backpropagate(vec_index);
   }
 }
@@ -468,6 +574,22 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
   verifyInputForGraph(train_context);
 }
 
+void BoltGraph::verifyCanGetInputGradientSingle(
+    const DatasetContextBase& single_input_gradients_context,
+    bool explain_prediction_using_highest_activation,
+    uint32_t num_output_nonzeros) {
+  if (!graphCompiled()) {
+    throw std::logic_error(
+        "Graph must be compiled before getting input gradients");
+  }
+  if (!explain_prediction_using_highest_activation && num_output_nonzeros < 2) {
+    throw std::invalid_argument(
+        "The sparse output dimension should be atleast 2 to call "
+        "getSecondHighestActivationId.");
+  }
+  verifyInputForGraph(single_input_gradients_context);
+}
+
 void BoltGraph::verifyCanPredict(const DatasetContextBase& predict_context,
                                  bool has_labels, bool returning_activations,
                                  uint32_t num_metrics_tracked) {
@@ -504,9 +626,7 @@ void BoltGraph::verifyInputForGraph(const DatasetContextBase& context) {
 }
 
 void BoltGraph::verifyGraphProperties() {
-  GraphPropertyChecks::verifyOutputIsNotInputLayer(_output);
-
-  GraphPropertyChecks::verifyOutputIsNotConcatLayer(_output);
+  GraphPropertyChecks::verifyOutputLayerIsValid(_output);
 
   GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
                                                                       _loss);

@@ -9,8 +9,8 @@ namespace thirdai::dataset {
 
 class CategoricalMultiLabel final : public CategoricalEncoding {
  public:
-  explicit CategoricalMultiLabel(uint32_t max_label, char delimiter = ',')
-      : _max_label(max_label), _delimiter(delimiter) {}
+  explicit CategoricalMultiLabel(uint32_t n_classes, char delimiter = ',')
+      : _n_classes(n_classes), _delimiter(delimiter) {}
 
   std::exception_ptr encodeCategory(std::string_view labels,
                                     SegmentedFeatureVector& vec) final {
@@ -18,10 +18,10 @@ class CategoricalMultiLabel final : public CategoricalEncoding {
     char* end;
     do {
       uint32_t label = std::strtoul(start, &end, 10);
-      if (label > _max_label) {
+      if (label >= _n_classes) {
         return std::make_exception_ptr(
             std::invalid_argument("Received label " + std::to_string(label) +
-                                  " larger than max_label"));
+                                  " larger than or equal to n_classes"));
       }
       vec.addSparseFeatureToSegment(label, 1.0);
       start = end;
@@ -31,10 +31,10 @@ class CategoricalMultiLabel final : public CategoricalEncoding {
 
   bool isDense() const final { return false; }
 
-  uint32_t featureDim() const final { return _max_label; }
+  uint32_t featureDim() const final { return _n_classes; }
 
  private:
-  uint32_t _max_label;
+  uint32_t _n_classes;
   char _delimiter = ',';
 };
 

@@ -205,40 +205,12 @@ class Worker:
         self.model.set_gradients(self.w_gradients, self.b_gradients)
         return True
 
-    def process_ring(
+    def update_partitions(
         self,
-        update_id: int,
-        reduce: Optional[bool] = True,
-        avg_gradients: Optional[bool] = False,
+        partition_id,
+        reduce,
+        avg_gradients,
     ):
-        """This function contains the main code for the circular ring communication
-        pattern.
-
-        The function first calculates the partition index range on which it will
-        work, then get the graidnets on that range from its friend worker and sums
-        it to the partition the partition the current worker.
-
-        Here Each of the node communicates the partitioned gradients with
-        their friend nodes, and those friend node communicate with their friends
-        and the communication there by happens in a circle.
-
-        Args:
-            update_id (int): This id is use to calculate the partition to work on.
-            reduce (Optional[bool], optional): This bool determines whether we need
-            to reduce or gather, True: reduce, False: Gather. Defaults to True.
-            avg_gradients (Optional[bool], optional): _description_. Defaults to False.
-
-        Returns:
-            _type_: _description_
-        """
-
-        partition_id = (update_id + self.id - 1) % self.total_nodes
-
-        get_ray_object = self.friend.receive_array_partitions.remote(update_id)
-        (
-            self.friend_weight_gradient_list,
-            self.friend_bias_gradient_list,
-        ) = ray.get(get_ray_object)
         for i in range(len(self.friend_weight_gradient_list)):
 
             # Getting the indices of the partition to work on
@@ -293,6 +265,42 @@ class Worker:
                     self.b_gradients[i][
                         l_bias_idx:r_bias_idx
                     ] = self.friend_bias_gradient_list[i]
+
+    def process_ring(
+        self,
+        update_id: int,
+        reduce: Optional[bool] = True,
+        avg_gradients: Optional[bool] = False,
+    ):
+        """This function contains the main code for the circular ring communication
+        pattern.
+
+        The function first calculates the partition index range on which it will
+        work, then get the graidnets on that range from its friend worker and sums
+        it to the partition the partition the current worker.
+
+        Here Each of the node communicates the partitioned gradients with
+        their friend nodes, and those friend node communicate with their friends
+        and the communication there by happens in a circle.
+
+        Args:
+            update_id (int): This id is use to calculate the partition to work on.
+            reduce (Optional[bool], optional): This bool determines whether we need
+            to reduce or gather, True: reduce, False: Gather. Defaults to True.
+            avg_gradients (Optional[bool], optional): _description_. Defaults to False.
+
+        Returns:
+            _type_: _description_
+        """
+
+        partition_id = (update_id + self.id - 1) % self.total_nodes
+
+        get_ray_object = self.friend.receive_array_partitions.remote(update_id)
+        (
+            self.friend_weight_gradient_list,
+            self.friend_bias_gradient_list,
+        ) = ray.get(get_ray_object)
+        self.update_partitions(partition_id, reduce, avg_gradients)
 
     def receive_array_partitions(self, update_id: int):
         """This function will only be get called for circular ring communication

@@ -76,6 +76,9 @@ class DistributedBolt:
                 start_circular_communication_time = time.time()
                 if circular:
                     ray.get(
+                        [worker.get_calculated_gradients_circular.remote() for worker in self.workers]
+                    )
+                    ray.get(
                         self.primary_worker.subwork_circular_communication.remote(
                             batch_no
                         )
