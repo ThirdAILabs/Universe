@@ -1,6 +1,4 @@
 import ray
-from thirdai._distributed_bolt._private.primary_worker import PrimaryWorker
-from thirdai._distributed_bolt._private.replica_worker import ReplicaWorker
 import time as time
 from typing import Tuple, Any, Optional, Dict, List
 
