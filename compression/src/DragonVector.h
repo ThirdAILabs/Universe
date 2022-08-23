@@ -10,14 +10,13 @@ namespace thirdai::compression {
 // Interface for a DragonVector
 template <class T>
 class DragonVector final : public CompressedVector<T> {
-  // add a friend test class here
-
  public:
   DragonVector<T>() {}
 
   DragonVector(const DragonVector<T>& vec);
 
-  // using "copy-swap idiom" for = operator.
+  // using "copy-swap idiom" for = operator. This implementation makes sure that
+  // we do not have to check for self-reference.
   DragonVector& operator=(DragonVector<T> vec) {
     swap(*this, vec);
     return *this;
@@ -37,6 +36,11 @@ class DragonVector final : public CompressedVector<T> {
 
   // defining the constructors for the class
 
+  /*
+   * If we are constructing a dragon vector from (indices,values) then we need
+   * to know the size of the original vector. Keeping track of the original size
+   * is important when we want to decompress a vector.
+   */
   DragonVector(const std::vector<T>& vec, float compression_density,
                int seed_for_hashing);
 
@@ -56,7 +60,7 @@ class DragonVector final : public CompressedVector<T> {
 
   // we are only writing for a simple assign now, later expand to iterators and
   // array as well?
-  void assign(uint32_t size, T value) final;
+  void assign(uint32_t size, T value);
 
   void assign(uint32_t size, uint32_t index, T value,
               uint32_t original_size = 0);
@@ -67,7 +71,20 @@ class DragonVector final : public CompressedVector<T> {
    * Implementing Operator methods for the class
    */
 
+  /*
+   * DragonSketch are by default not additive. Ideally, we would be "adding"
+   * dragon sketches by concatenating them. We should still implement + operator
+   * because it comes in handy in a distributed setting where we may want to
+   * all-reduce dragon vectors.
+   */
+
   DragonVector<T> operator+(DragonVector<T> const& vec) const;
+
+  /*
+   * To-Do(Shubh):
+   * This method should return a reference to the element at the index so that
+   * we can do things like vector[i]=a.
+   */
 
   T operator[](uint32_t index) const final;
 
@@ -91,7 +108,9 @@ class DragonVector final : public CompressedVector<T> {
 
   float getCompressionDensity() const { return _compression_density; }
 
-  uint32_t getSketchSize() const { return _sketch_size; }
+  uint32_t getSketchSize() const {
+    return static_cast<uint32_t>(_indices.size());
+  }
 
   std::vector<T> decompressVector() const final;
 
@@ -110,9 +129,8 @@ class DragonVector final : public CompressedVector<T> {
   float _compression_density = 1;
   int _seed_for_hashing;
 
-  void sketchVector(const std::vector<T>& vec, T threshold);
-
-  void sketchVector(const T* values, T threshold, uint32_t size);
+  void sketchVector(const T* values, T threshold, uint32_t size,
+                    uint32_t sketch_size);
 };
 }  // namespace thirdai::compression
 

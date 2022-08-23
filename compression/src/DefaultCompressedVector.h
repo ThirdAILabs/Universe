@@ -46,7 +46,7 @@ class DefaultCompressedVector final : public CompressedVector<T> {
 
   // we are only writing for a simple assign now, later expand to iterators and
   // array as well?
-  void assign(uint32_t size, T value) final;
+  void assign(uint32_t size, T value);
 
   void clear() final;
 

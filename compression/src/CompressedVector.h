@@ -19,20 +19,44 @@ class CompressedVector {
 
   virtual void set(uint32_t index, T value) = 0;
 
-  virtual void assign(uint32_t size, T value) = 0;
+  void assign(uint32_t size, T value);
 
   virtual void clear() = 0;
 
+  /*
+   * Addition operator for adding two sketches. We will have a check to make
+   * sure that we only call this method on compressed vectors which are additive
+   * such as count sketches.
+   */
   CompressedVector<T> operator+(CompressedVector<T> const& vec);
 
+  /*
+   * To-Do(Shubh):
+   * This method should return a reference to the element at the index so that
+   * we can do things like vector[i]=a.
+   */
   virtual T operator[](uint32_t index) const = 0;
 
   // methods for the compressed_vector class
 
+  /*
+   * Count sketches, count-min sketches are additive in nature. Others are not.
+   * All the derived compression schemes should implement this function so that
+   * we do not add two non-additive count sketches.
+   */
   virtual bool isAdditive() const = 0;
 
+  /*
+   * Extending a sketch is appending the given sketch to the current object.
+   * Similar to additiveness, not all sketches are extendible for e.g.,
+   * count-sketches.
+   */
   void extend(const CompressedVector<T>& vec);
 
+  /*
+   * Returns a std::vector formed by decompressing the compressed vector. This
+   * method should be implemented by all the schemes.
+   */
   virtual std::vector<T> decompressVector() const = 0;
 
   virtual ~CompressedVector() = default;

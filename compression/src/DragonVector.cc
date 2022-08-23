@@ -24,32 +24,34 @@ DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
                               int seed_for_hashing)
     : _indices(std::move(indices)),
       _values(std::move(values)),
-      _sketch_size(static_cast<uint32_t>(_indices.size())),
       _original_size(original_size),
       _seed_for_hashing(seed_for_hashing) {}
 
 template <class T>
 DragonVector<T>::DragonVector(const T* values, uint32_t size,
                               float compression_density, int seed_for_hashing)
-    : _sketch_size(std::max(static_cast<uint32_t>(compression_density * size),
-                            std::min(size, _min_sketch_size))),
-      _original_size(size),
+    : _original_size(size),
       _compression_density(compression_density),
       _seed_for_hashing(seed_for_hashing) {
-  _indices.assign(_sketch_size, 0);
-  _values.assign(_sketch_size, 0);
+  uint32_t sketch_size =
+      (std::max(static_cast<uint32_t>(compression_density * size),
+                std::min(size, _min_sketch_size)));
+  _indices.assign(sketch_size, 0);
+  _values.assign(sketch_size, 0);
+
+  // First calculate an approximate top-k threshold. Then, we sketch the
+  // original vector to a smaller dragon vector
 
   T threshold = thirdai::compression::getThresholdForTopK(
-      values, size, _sketch_size, /*max_samples_for_random_sampling=*/100000,
+      values, size, sketch_size, /*max_samples_for_random_sampling=*/100000,
       _seed_for_hashing);
-  sketchVector(values, threshold, size);
+  sketchVector(values, threshold, size, sketch_size);
 }
 
 template <class T>
 DragonVector<T>::DragonVector(const DragonVector<T>& vec)
     : CompressedVector<T>(vec),
       _min_sketch_size(vec._min_sketch_size),
-      _sketch_size(vec._sketch_size),
       _original_size(vec._original_size),
       _compression_density(vec._compression_density),
       _seed_for_hashing(vec._seed_for_hashing) {
@@ -59,35 +61,23 @@ DragonVector<T>::DragonVector(const DragonVector<T>& vec)
                  std::end(vec._values));
 }
 
+/*
+ * For elements in the values array with absolute value greater than the
+ * threshold, we hash the corresponding indices to a smaller _indices array and
+ * store the elements in the _values array.
+ */
 template <class T>
-void DragonVector<T>::sketchVector(const std::vector<T>& vec, T threshold) {
-  uint32_t loop_size = vec.size();
-#pragma omp parallel for default(none)                                 \
-    shared(_indices, _values, vec, _sketch_size, threshold, loop_size, \
-           _seed_for_hashing)
-  for (uint32_t i = 0; i < loop_size; i++) {
-    if (std::abs(vec[i]) > threshold) {
-      int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
-                                              std::to_string(i).length(),
-                                              _seed_for_hashing) %
-                 _sketch_size;
-      _indices[hash] = i;
-      _values[hash] = vec[i];
-    }
-  }
-}
-template <class T>
-void DragonVector<T>::sketchVector(const T* values, T threshold,
-                                   uint32_t size) {
-#pragma omp parallel for default(none)                               \
-    shared(_indices, _values, values, _sketch_size, threshold, size, \
+void DragonVector<T>::sketchVector(const T* values, T threshold, uint32_t size,
+                                   uint32_t sketch_size) {
+#pragma omp parallel for default(none)                              \
+    shared(_indices, _values, values, sketch_size, threshold, size, \
            _seed_for_hashing)
   for (uint32_t i = 0; i < size; i++) {
     if (std::abs(values[i]) > threshold) {
       int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
                                               std::to_string(i).length(),
                                               _seed_for_hashing) %
-                 _sketch_size;
+                 sketch_size;
       _indices[hash] = i;
       _values[hash] = values[i];
     }
@@ -98,9 +88,14 @@ void DragonVector<T>::sketchVector(const T* values, T threshold,
  * Implementing std::vector's standard methods for the class
  */
 
+/*
+ * Both get and set methods should check that the dragon vector isn't empty,
+ * index<_original_size. Errors thrown are similar to what std::vector would
+ * thrown on incorrect accesses.
+ */
 template <class T>
 T DragonVector<T>::get(uint32_t index) const {
-  if (_sketch_size == 0) {
+  if (_indices.empty()) {
     throw std::logic_error(
         "Accessing elements from an empty compressed vector");
   }
@@ -111,19 +106,20 @@ T DragonVector<T>::get(uint32_t index) const {
         std::to_string(_original_size));
   }
 
+  uint32_t sketch_size = _indices.size();
   int hash = thirdai::hashing::MurmurHash(std::to_string(index).c_str(),
                                           std::to_string(index).length(),
                                           _seed_for_hashing) %
-             _sketch_size;
+             sketch_size;
 
-  // if the index at the hash position is equal to index, we return hash back,
-  // otherwise we return a zero. no branching if-else
+  // If the index at the hash position is equal to index, we return the value
+  // back, otherwise we return a zero. This is no-branching if-else.
   return (_indices[hash] == index) * _values[hash];
 }
 
 template <class T>
 void DragonVector<T>::set(uint32_t index, T value) {
-  if (_sketch_size == 0) {
+  if (_indices.empty()) {
     throw std::logic_error(
         "Incorrectly setting the index of an empty compressed vector");
   }
@@ -133,44 +129,19 @@ void DragonVector<T>::set(uint32_t index, T value) {
         "Index out of range for the compressed vector of size " +
         std::to_string(_original_size));
   }
-
+  uint32_t sketch_size = _indices.size();
   int hash = thirdai::hashing::MurmurHash(std::to_string(index).c_str(),
                                           std::to_string(index).length(),
                                           _seed_for_hashing) %
-             _sketch_size;
+             sketch_size;
 
   _indices[hash] = index;
   _values[hash] = value;
 }
 
-// ideally this method should not be called.
-// what should we do with _original_size? I think we should let it remain the
-// same but throw an error if assign is called on an uninitialized dragon vector
-
-template <class T>
-void DragonVector<T>::assign(uint32_t size, T value) {
-  std::cout << "Warning: Assigning all indices are being set to 0. Also pass "
-               "the index if want to set index to a specific value "
-            << std::endl;
-
-  if (_original_size == 0) {
-    std::cout
-        << ("Unsafe: Do not call assign on an unintialized compressed vector "
-            "without specifying the value of "
-            "original vector. Original vector size is being set to size");
-  }
-
-  _sketch_size = size;
-  _original_size = size;
-  _values.assign(_sketch_size, value);
-  _indices.assign(_sketch_size, 0);
-}
-
 template <class T>
 void DragonVector<T>::assign(uint32_t size, uint32_t index, T value,
                              uint32_t original_size) {
-  _sketch_size = size;
-
   if (original_size != 0) {
     _original_size = original_size;
   } else {
@@ -186,13 +157,12 @@ void DragonVector<T>::assign(uint32_t size, uint32_t index, T value,
     }
   }
 
-  _values.assign(_sketch_size, value);
-  _indices.assign(_sketch_size, index);
+  _values.assign(size, value);
+  _indices.assign(size, index);
 }
 
 template <class T>
 void DragonVector<T>::clear() {
-  _sketch_size = 0;
   _original_size = 0;
   _compression_density = 1;
   _values.clear();
@@ -210,7 +180,7 @@ DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) const {
         "Seeds for hashing of the two Dragon Sketches are different. Try "
         "concatenating the sketches");
   }
-  if (_sketch_size != vec._sketch_size) {
+  if (_indices.size() != vec._indices.size()) {
     throw std::length_error(
         "Cannot add two Dragon Sketches of different sizes");
   }
@@ -221,13 +191,13 @@ DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) const {
         "sizes");
   }
 
-  std::vector<uint32_t> return_indices(_sketch_size, 0);
-  std::vector<T> return_values(_sketch_size, 0);
+  std::vector<uint32_t> return_indices(_indices.size(), 0);
+  std::vector<T> return_values(_indices.size(), 0);
 
-#pragma omp parallel for default(none) shared( \
-    vec, _sketch_size, _values, _indices, return_indices, return_values)
+#pragma omp parallel for default(none) \
+    shared(vec, _values, _indices, return_indices, return_values)
 
-  for (uint32_t i = 0; i < _sketch_size; i++) {
+  for (uint32_t i = 0; i < _indices.size(); i++) {
     /*
      * s=s1+s2
      * If s1[index] is non-zero, we use value and index from s1, otherwise use
@@ -249,6 +219,11 @@ T DragonVector<T>::operator[](uint32_t index) const {
 /*
  * Implementing utility methods for the class
  */
+
+/*
+ * Dragon vectors are not additive by default. But we can still define schemes
+ * to add them up.
+ */
 template <class T>
 bool DragonVector<T>::isAdditive() const {
   return false;
@@ -256,9 +231,11 @@ bool DragonVector<T>::isAdditive() const {
 
 template <class T>
 void DragonVector<T>::extend(const DragonVector<T>& vec) {
-  // We should not check whether the seeds for hashing are the same for the two
-  // Dragon vectors. We will directly append the indices and values of given
-  // vector to the current one but leave all other parameters intact
+  /*
+   * We should not check whether the seeds for hashing are the same for the two
+   * Dragon vectors. We will directly append the indices and values of given
+   * vector to the current one but leave all other parameters intact
+   */
 
   if (_original_size != vec._original_size) {
     throw std::length_error(
@@ -270,14 +247,20 @@ void DragonVector<T>::extend(const DragonVector<T>& vec) {
                   std::end(vec._indices));
   _values.insert(std::end(_values), std::begin(vec._values),
                  std::end(vec._values));
-  _sketch_size += vec._sketch_size;
   //_original_size remains the same
 }
 
+/*
+ * Splitting a dragon vector into smaller parts. This is useful when we are
+ * training in a distributed setting with ring-all-reduce framework. We need to
+ * split the data into smaller parts and communicate.
+ * The parameters _original_size, _seed_for_hashing remain the same for
+ * the split vectors.
+ */
 template <class T>
 std::vector<DragonVector<T>> DragonVector<T>::split(
     size_t number_chunks) const {
-  if (uint32_t(number_chunks) > _sketch_size) {
+  if (uint32_t(number_chunks) > _indices.size()) {
     std::cout
         << "Warning: The number of chunks to split the vector is more "
            "than the size of the Dragon vector. Some chunks will be empty";
@@ -312,10 +295,15 @@ std::vector<DragonVector<T>> DragonVector<T>::split(
   return split_dragon;
 }
 
+/*
+ * We are storing indices,values tuple hence, decompressing is just putting
+ * corresponding values for the stored indices
+ */
 template <class T>
 std::vector<T> DragonVector<T>::decompressVector() const {
   std::vector<T> decompressedVector(_original_size, 0);
-  for (uint32_t i = 0; i < _sketch_size; i++) {
+  uint32_t sketch_size = static_cast<uint32_t>(_indices.size());
+  for (uint32_t i = 0; i < sketch_size; i++) {
     decompressedVector[_indices[i]] += _values[i];
   }
   return decompressedVector;
