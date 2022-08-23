@@ -247,8 +247,8 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
 #if THIRDAI_USE_EIGEN_FOR_BACKPROP
       eigenDenseDenseBackpropagate<true>(input, output);
 #else
-      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
-                        /*PREV_DENSE=*/true>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true, /*PREV_DENSE=*/true>(
+          input, output);
 #endif
     } else {
       backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
@@ -283,9 +283,9 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
     output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
 
     if (output.gradients[n] == 0.0) {
-      // Neurons with gradients of 0 will not propagate gradients to weights
-      // or the previous layer. We will also likely have a number of 0
-      // gradients with ReLU.
+      // Neurons with gradients of 0 will not propagate gradients to weights or
+      // the previous layer. We will also likely have a number of 0 gradients
+      // with ReLU.
       continue;
     }
 
@@ -372,21 +372,20 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
 
   if (_sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions) {
     /**
-     * QueryBySet just returns a set of the elements in the given buckets of
-     * the hash table.
+     * QueryBySet just returns a set of the elements in the given buckets of the
+     * hash table.
      *
      * QueryAndInsertForInference returns the set of elements in the given
      * buckets but will also insert the labels (during training only) for the
      * vector into the buckets the vector maps to if they are not already
      * present in the buckets. The intuition is that during sparse inference
-     * this will help force the hash tables to map vectors towards buckets
-     * that contain their correct labels. This is specific to the output
-     * layer.
+     * this will help force the hash tables to map vectors towards buckets that
+     * contain their correct labels. This is specific to the output layer.
      *
      * We call QueryAndInsertForInference if the following conditions are met:
      *   1. We have sparse inference enabled.
-     *   2. Activation = Softmax or Sigmoid, meaning it's a classification
-     * task, and that the given layer is the last layer, as this is the only
+     *   2. Activation = Softmax or Sigmoid, meaning it's a classification task,
+     *      and that the given layer is the last layer, as this is the only
      *      place where we use these activation functions.
      */
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
@@ -475,17 +474,14 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
   // with the full gradient. Possible solutions include:
   // 1. Including the gradient in the active pair and doing an update multiple
   //    times with the smaller gradients. This is effectively equal to batch
-  //     size 1, but we basically already have batch size 1 with sparse
-  //     sparse.
-  // 2. Having a bloom filter where we cheaply hash the active pairs to a
-  // bloom
+  //    size 1, but we basically already have batch size 1 with sparse sparse.
+  // 2. Having a bloom filter where we cheaply hash the active pairs to a bloom
   //    filter bit, and if it is already set in the bloom filter skip it,
   //    otherwise set the bit and do the gradient update.
   for (uint32_t pair_id = 0; pair_id < _active_pairs.size();  // NOLINT
        pair_id++) {
     // MSVC doesn't like if we iterate over objects, only integers
-    // (but clang-tidy wants the range based for loop, so we need NOLINT
-    // above)
+    // (but clang-tidy wants the range based for loop, so we need NOLINT above)
     const auto& active_pair = _active_pairs[pair_id];
     for (uint64_t prev_neuron : active_pair->first) {
       for (uint64_t cur_neuron : active_pair->second) {

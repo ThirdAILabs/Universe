@@ -456,27 +456,6 @@ void BoltGraph::prepareToProcessBatches(uint32_t batch_size,
   }
 }
 
-/**
- * We add this check here since the load(..) function doesn't initialize
- * training data-structures by default (like optimizer or active neurons
- * trackers). Doing this means our load API is as simple as possible for both
- * training and inference purposes. It doesn't make sense to load things like
- * the optimizer by default then remove them with another function since users
- * may be memory constrained during deployment.
- *
- * We don't know yet if its worth it to save the optimizer for
- * retraining/finetuning purposes. If in the future we figure out this has
- * some benefit we can adjust this method accordingly.
- *
- * Training data-structures should be set in a node's constructor by default. If
- * they're already set then verifyCanTrain() is a no-op.
- */
-void BoltGraph::verifyNodesAreTrainReady() {
-  for (auto& node : _nodes) {
-    node->verifyCanTrain();
-  }
-}
-
 void BoltGraph::cleanupAfterBatchProcessing() {
   for (auto& node : _nodes) {
     node->cleanupAfterBatchProcessing();
@@ -592,7 +571,9 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
     throw std::invalid_argument("Must pass in labels for training.");
   }
 
-  verifyNodesAreTrainReady();
+  for (auto& node : _nodes) {
+    node->verifyCanTrain();
+  }
 
   verifyInputForGraph(train_context);
 }

@@ -214,10 +214,6 @@ class FullyConnectedLayer final : public SequentialLayer {
   inline void deinitSparseDatastructures();
 
   template <bool DENSE, bool PREV_DENSE>
-  void markActiveNeuronsForUpdate(const BoltVector& input,
-                                  const BoltVector& output, uint32_t len_out);
-
-  template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
                    const BoltVector* labels);
 
