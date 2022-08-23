@@ -29,7 +29,7 @@ target_link_libraries(
 
 include(GoogleTest)
 
-set(AUTO_CLASSIFIER_TESTS 
+set(AUTO_CLASSIFIER_TESTS
   bolt_tabular_classifier_test
   bolt_text_classifier_test
   bolt_multi_label_text_classifier_test
