@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <atomic>
 #include <exception>
+#include <memory>
 #include <optional>
 #include <unordered_map>
 namespace thirdai::dataset {
@@ -62,6 +63,19 @@ class UserItemHistoryBlock final : public Block {
         _user_id_lookup(std::move(user_id_map)),
         _item_id_lookup(std::move(item_id_map)),
         _records(std::move(records)) {}
+  
+  UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
+                       uint32_t timestamp_col, uint32_t track_last_n,
+                       uint32_t n_unique_users, uint32_t n_unique_items,
+                       std::optional<char> delimiter = std::nullopt)
+      : _user_col(user_col),
+        _item_col(item_col),
+        _timestamp_col(timestamp_col),
+        _track_last_n(track_last_n),
+        _delimiter(delimiter),
+        _user_id_lookup(StreamingStringLookup::make(n_unique_users)),
+        _item_id_lookup(StreamingStringLookup::make(n_unique_items)),
+        _records(makeEmptyRecord(n_unique_users, track_last_n)) {}
 
   static std::shared_ptr<UserItemHistoryRecords> makeEmptyRecord(
       uint32_t n_users, uint32_t track_last_n) {
@@ -108,6 +122,22 @@ class UserItemHistoryBlock final : public Block {
       return std::make_exception_ptr(except);
     }
     return nullptr;
+  }
+
+  static std::shared_ptr<Block> make(uint32_t user_col, uint32_t item_col,
+                       uint32_t timestamp_col, uint32_t track_last_n,
+                       std::shared_ptr<StreamingStringLookup> user_id_map,
+                       std::shared_ptr<StreamingStringLookup> item_id_map,
+                       std::shared_ptr<UserItemHistoryRecords> records,
+                       std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<UserItemHistoryBlock>(user_col, item_col, timestamp_col, track_last_n, user_id_map, item_id_map, records, delimiter);
+  }
+
+  static std::shared_ptr<Block> make(uint32_t user_col, uint32_t item_col,
+                       uint32_t timestamp_col, uint32_t track_last_n,
+                       uint32_t n_unique_users, uint32_t n_unique_items,
+                       std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<UserItemHistoryBlock>(user_col, item_col, timestamp_col, track_last_n, n_unique_users, n_unique_items, delimiter);
   }
 
  private:
