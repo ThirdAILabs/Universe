@@ -2,7 +2,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -12,7 +11,6 @@
 namespace thirdai::bolt {
 
 template class Model<bolt::BoltBatch>;
-template class Model<dataset::ClickThroughBatch>;
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(

@@ -22,12 +22,6 @@ py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
                                     bool softmax_for_multiclass = true);
 
-py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
-                                         uint32_t batch_size,
-                                         uint32_t num_dense_features,
-                                         uint32_t num_categorical_features,
-                                         bool sparse_labels);
-
 /*
  * This function takes a single sentence, and parses it into an sparse
  * vector of features. Right now it only supports the following parsing:
@@ -79,8 +73,6 @@ class PyBlockBatchProcessor : public BlockBatchProcessor {
     processBatch(batch);
   }
 };
-
-using MLMDatasetPtr = std::shared_ptr<InMemoryDataset<MaskedSentenceBatch>>;
 
 class MLMDatasetLoader {
  public:

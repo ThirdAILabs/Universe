@@ -20,7 +20,7 @@ def start_mlflow(config, mlflow_args):
             experiment_name, mlflow_args.run_name, dataset_name, model_name
         )
         log_machine_info()
-        if mlflow_args.upload_artifacts:
+        if not mlflow_args.disable_upload_artifacts:
             mlflow.log_artifact(mlflow_args.config_path)
 
 
@@ -95,17 +95,32 @@ def log_config_info(config):
 
 
 def find_full_filepath(filename: str) -> str:
+    if os.path.exists(filename):
+        return filename
+
+    # Load path prefixes to look for datasets from config file in the repository.
     data_path_file = (
         os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
     )
+
     prefix_table = toml.load(data_path_file)
-    for prefix in prefix_table["prefixes"]:
-        if os.path.exists(prefix + filename):
-            return prefix + filename
+
+    # Collect prefixes from environment variable. Configured similiar to *nix
+    # or Windows PATH variable, separated by path sep.
+    env_prefix_paths = os.environ.get("THIRDAI_DATASET_PATH", "").split(os.pathsep)
+
+    # Configure environment variable prefix paths to have more priority over
+    # config prefix paths.
+    prefixes = env_prefix_paths + prefix_table["prefixes"]
+
+    for prefix in prefixes:
+        candidate_path = os.path.join(prefix, filename)
+        if os.path.exists(candidate_path):
+            return candidate_path
     print(
         "Could not find file '"
         + filename
-        + "' on any filepaths. Add correct path to 'Universe/dataset_paths.toml'"
+        + "' on any filepaths. Add correct path to 'Universe/dataset_paths.toml or specify in THIRDAI_DATASET_PATH environment variable'"
     )
     sys.exit(1)
 

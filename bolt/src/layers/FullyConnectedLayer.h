@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "BoltVector.h"
@@ -47,6 +48,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) final;
 
+  void enableDistributedTraining() { _is_distributed = true; };
+
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool use_sparsity) const final {
     bool is_sparse = (_sparsity < 1.0) && use_sparsity;
@@ -80,6 +83,14 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   uint32_t getSparseDim() const final { return _sparse_dim; }
 
+  float* getWeightsPtr() { return _weights.data(); }
+
+  float* getBiasesPtr() { return _biases.data(); }
+
+  float* getWeightGradientsPtr() { return _w_gradient.data(); }
+
+  float* getBiasGradientsPtr() { return _b_gradient.data(); }
+
   float* getWeights() const final;
 
   float* getBiases() const final;
@@ -106,10 +117,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   ActivationFunction getActivationFunction() const { return _act_func; }
 
-  const SamplingConfig& getSamplingConfig() const final {
-    return _sampling_config;
-  }
-
   void buildLayerSummary(std::stringstream& summary,
                          bool detailed) const override;
 
@@ -131,10 +138,18 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<float> _b_momentum;
   std::vector<float> _b_velocity;
 
-  SamplingConfig _sampling_config;
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
+
+  template <bool DENSE>
+  constexpr uint32_t nonzerosInOutput() const {
+    if constexpr (DENSE) {
+      return _dim;
+    } else {
+      return _sparse_dim;
+    }
+  }
 
   using ActiveNeuronsPair =
       std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
@@ -158,27 +173,6 @@ class FullyConnectedLayer final : public SequentialLayer {
   bool _is_distributed;
 
   LSHSamplingMode _sampling_mode;
-
-  static std::unique_ptr<hashing::HashFunction> assignHashFunction(
-      const SamplingConfig& config, uint64_t dim) {
-    switch (config._hash_function) {
-      case HashFunctionEnum::DWTA:
-        return std::make_unique<hashing::DWTAHashFunction>(
-            dim, config.hashes_per_table, config.num_tables, config.range_pow);
-
-      case HashFunctionEnum::FastSRP:
-        return std::make_unique<hashing::FastSRP>(dim, config.hashes_per_table,
-                                                  config.num_tables);
-
-      case HashFunctionEnum::SRP:
-        return std::make_unique<hashing::SparseRandomProjection>(
-            dim, config.hashes_per_table, config.num_tables);
-
-      // Not supposed to reach here but compiler complains
-      default:
-        throw std::invalid_argument("Hash function not supported.");
-    }
-  }
 
   void initOptimizer();
 
@@ -208,17 +202,25 @@ class FullyConnectedLayer final : public SequentialLayer {
   inline void updateBiasParameters(float lr, float B1, float B2, float eps,
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
+
   inline void cleanupWithinBatchVars();
 
-  inline void initSparseDatastructures(std::random_device& rd);
+  inline void initSparseDatastructures(const SamplingConfigPtr& sampling_config,
+                                       std::random_device& rd);
+
   inline void deinitSparseDatastructures();
 
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
                    const BoltVector* labels);
 
+  void eigenDenseDenseForward(const BoltVector& input, BoltVector& output);
+
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);
+
+  template <bool FIRST_LAYER>
+  void eigenDenseDenseBackpropagate(BoltVector& input, BoltVector& output);
 
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
@@ -227,30 +229,18 @@ class FullyConnectedLayer final : public SequentialLayer {
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
 
-  /**
-   * Not serializing _shallow_save because it is only used to decide to how to
-   * save the model. If _shallow_save or _is_shallow is true, archive
-   * _is_shallow as true. If both are false, archive _is_shallow as false. While
-   * dearchiving, we only need to know whether or not the layer is shallow,
-   * hence, _shallow_save not archived.
-   */
   template <class Archive>
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _sampling_config, _hasher, _hash_table, _rand_neurons,
-            _sampling_mode, _prev_is_active, _is_active);
+            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
+            _prev_is_active, _is_active);
   }
 
-  /**
-   * Load first whether the layer is shallow
-   * Does not load the optimizer state if is_shallow
-   * Loads the optimizer state if !is_shallow
-   */
   template <class Archive>
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _sampling_config, _hasher, _hash_table, _rand_neurons,
-            _sampling_mode, _prev_is_active, _is_active);
+            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
+            _prev_is_active, _is_active);
 
     /**
      * Here we init the optimizer so that any calls to train in the network are

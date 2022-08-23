@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/graph/Node.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <stdexcept>
@@ -93,6 +94,12 @@ class TokenInput : public Node {
         "TokenInputNode is in an invalid internal state");
   }
 
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _compiled);
+  }
+
   dataset::BoltTokenBatch* _tokens;
   bool _compiled;
 };
@@ -100,3 +107,5 @@ class TokenInput : public Node {
 using TokenInputPtr = std::shared_ptr<TokenInput>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::TokenInput)

@@ -2,7 +2,6 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -46,7 +45,7 @@ void DistributedModel::calculateGradientSingleNode(
   const BoltBatch& batch_labels = _train_labels->at(batch_idx);
 
 #pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, _outputs, loss_fn)
+    shared(batch_inputs, batch_labels, loss_fn)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     forward(vec_id, batch_inputs, _outputs[vec_id], &batch_labels[vec_id]);
 

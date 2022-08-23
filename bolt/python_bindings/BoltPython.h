@@ -5,11 +5,12 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
+#include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
-#include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/DistributedModel.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
@@ -99,6 +100,19 @@ class PyNetwork final : public FullyConnectedNetwork {
 #endif
 
     return metrics;
+  }
+
+  py::tuple getInputGradients(
+      dataset::BoltDatasetPtr& data, const LossFunction& loss_fn,
+      bool best_index = true,
+      const std::vector<uint32_t>& required_labels = std::vector<uint32_t>()) {
+    auto gradients = FullyConnectedNetwork::getInputGradients(
+        data, loss_fn, best_index, required_labels);
+
+    if (gradients.second == std::nullopt) {
+      return py::cast(gradients.first);
+    }
+    return py::cast(gradients);
   }
 
   py::tuple predict(
@@ -222,45 +236,6 @@ class PyNetwork final : public FullyConnectedNetwork {
 
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   PyNetwork() : FullyConnectedNetwork(){};
-};
-
-class PyDLRM final : public DLRM {
- public:
-  PyDLRM(bolt::EmbeddingLayerConfig embedding_config,
-         SequentialConfigList bottom_mlp_configs,
-         SequentialConfigList top_mlp_configs, uint32_t input_dim)
-      : DLRM(embedding_config, std::move(bottom_mlp_configs),
-             std::move(top_mlp_configs), input_dim) {}
-
-  py::tuple predict(
-      const dataset::ClickThroughDatasetPtr& test_data,
-      const dataset::BoltDatasetPtr& test_labels, bool use_sparse_inference,
-      const std::vector<std::string>& metrics = {}, bool verbose = true,
-      uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
-    uint32_t num_samples = test_data->len();
-    uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
-
-    bool output_sparse = inference_output_dim < getOutputDim();
-
-    // Declare pointers to memory for activations and active neurons, if the
-    // allocation succeeds this will be assigned valid addresses by the
-    // allocateActivations function. Otherwise the nullptr will indicate that
-    // activations are not being computed.
-    uint32_t* active_neurons = nullptr;
-    float* activations = nullptr;
-
-    allocateActivations(num_samples, inference_output_dim, &active_neurons,
-                        &activations, output_sparse);
-
-    auto metric_data =
-        DLRM::predict(test_data, test_labels, active_neurons, activations,
-                      use_sparse_inference, metrics, verbose, batch_limit);
-    py::dict py_metric_data = py::cast(metric_data);
-
-    return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
-                                         inference_output_dim, activations,
-                                         active_neurons);
-  }
 };
 
 class DistributedPyNetwork final : public DistributedModel {
@@ -461,6 +436,69 @@ class SentimentClassifier {
  private:
   std::unique_ptr<PyNetwork> _model;
   BoltVector _output;
+};
+
+class PyMultiLabelTextClassifier : public MultiLabelTextClassifier {
+ public:
+  explicit PyMultiLabelTextClassifier(uint32_t n_classes)
+      : MultiLabelTextClassifier(n_classes) {}
+
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+  predictSingleFromSentence(std::string sentence,
+                            float activation_threshold = 0.95) {
+    auto output = MultiLabelTextClassifier::predictSingleFromSentence(
+        std::move(sentence), activation_threshold);
+
+    float* activations;
+    allocateActivations(/* num_samples= */ 1, _n_classes,
+                        /* active_neurons= */ nullptr, &activations,
+                        /* output_sparse= */ false);
+
+    return denseBoltVectorToNumpy(output, activations);
+  }
+
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+  predictSingleFromTokens(const std::vector<uint32_t>& tokens,
+                          float activation_threshold = 0.95) {
+    auto output = MultiLabelTextClassifier::predictSingleFromTokens(
+        tokens, activation_threshold);
+
+    float* activations;
+    allocateActivations(/* num_samples= */ 1, _n_classes,
+                        /* active_neurons= */ nullptr, &activations,
+                        /* output_sparse= */ false);
+
+    return denseBoltVectorToNumpy(output, activations);
+  }
+
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<PyMultiLabelTextClassifier> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<PyMultiLabelTextClassifier> deserialize_into(
+        new PyMultiLabelTextClassifier());
+    iarchive(*deserialize_into);
+    deserialize_into->buildBatchProcessors(deserialize_into->_n_classes);
+    return deserialize_into;
+  }
+
+ private:
+  // Private constructor for cereal.
+  PyMultiLabelTextClassifier() : MultiLabelTextClassifier() {}
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_n_classes, _classifier);
+  }
 };
 
 }  // namespace thirdai::bolt::python

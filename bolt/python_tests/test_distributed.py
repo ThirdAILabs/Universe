@@ -21,12 +21,12 @@ def build_simple_bolt_network(sparsity=1, n_classes=10):
         bolt.FullyConnected(
             dim=50,
             sparsity=1,
-            activation_function=bolt.ActivationFunctions.ReLU,
+            activation_function="relu",
         ),
         bolt.FullyConnected(
             dim=n_classes,
             sparsity=sparsity,
-            activation_function=bolt.ActivationFunctions.Softmax,
+            activation_function="softmax",
         ),
     ]
     network = bolt.DistributedNetwork(layers=layers, input_dim=n_classes)

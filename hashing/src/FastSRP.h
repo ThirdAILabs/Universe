@@ -7,7 +7,7 @@
 
 namespace thirdai::hashing {
 
-class FastSRP : public HashFunction {
+class FastSRP final : public HashFunction {
  public:
   FastSRP(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
           uint32_t out_mod = UINT32_MAX, uint32_t seed = time(nullptr));
@@ -18,7 +18,12 @@ class FastSRP : public HashFunction {
   void hashSingleDense(const float* values, uint32_t dim,
                        uint32_t* output) const override;
 
-  // This method lets cereal know which data members to serialize
+  std::unique_ptr<HashFunction> copyWithNewSeeds() const final {
+    return std::make_unique<FastSRP>(
+        /* input_dim= */ _dim, /* hashes_per_table= */ _hashes_per_table,
+        /* num_tables= */ _num_tables, /* out_mod= */ _range);
+  }
+  std::string getName() const final { return "FastSRP"; }
 
  private:
   uint32_t _hashes_per_table, _num_hashes, _log_num_hashes, _dim, _binsize,

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/array.hpp>
+#include <array>
 #include <cstdint>
 #include <string>
 
@@ -23,8 +26,17 @@ class UniversalHash {
   uint32_t gethash(uint64_t key);
 
  private:
+  // Private constructor for cereal.
+  UniversalHash() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_seed, T);
+  }
+
   uint32_t _seed;
-  uint32_t T[8][256];
+  std::array<std::array<uint32_t, 256>, 8> T;
 };
 
 }  // namespace thirdai::hashing

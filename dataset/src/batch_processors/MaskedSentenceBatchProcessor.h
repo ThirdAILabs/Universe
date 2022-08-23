@@ -4,7 +4,6 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <random>
 #include <unordered_map>

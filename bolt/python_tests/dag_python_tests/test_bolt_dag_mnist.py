@@ -31,8 +31,8 @@ def test_bolt_dag_on_mnist():
         dim=20000,
         sparsity=0.01,
         activation="relu",
-        sampling_config=bolt.SamplingConfig(
-            num_tables=64, hashes_per_table=3, range_pow=9, reservoir_size=32
+        sampling_config=bolt.DWTASamplingConfig(
+            num_tables=64, hashes_per_table=3, reservoir_size=32
         ),
     )(input_layer)
 

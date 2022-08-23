@@ -22,7 +22,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectInputLayerInOutput) {
 TEST(GraphRejectsInvalidInputsTest,
      RejectSoftmaxWithoutCategoricalCrossEntropy) {
   auto layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ 10, /* activation= */ ActivationFunction::Softmax);
+      /* dim= */ 10, /* activation= */ "softmax");
   BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
@@ -33,7 +33,7 @@ TEST(GraphRejectsInvalidInputsTest,
 TEST(GraphRejectsInvalidInputsTest,
      RejectCategoricalCrossEntropyWithoutSoftmax) {
   auto layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ 10, /* activation= */ ActivationFunction::ReLU);
+      /* dim= */ 10, /* activation= */ "relu");
   BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
@@ -43,7 +43,7 @@ TEST(GraphRejectsInvalidInputsTest,
 
 TEST(GraphRejectsInvalidInputsTest, RejectBinaryCrossEntropyWithoutSigmoid) {
   auto layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ 10, /* activation= */ ActivationFunction::Softmax);
+      /* dim= */ 10, /* activation= */ "softmax");
   BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
@@ -54,7 +54,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectBinaryCrossEntropyWithoutSigmoid) {
 TEST(GraphRejectsInvalidInputsTest, AcceptsCategoricalCrossEntropyWithSoftmax) {
   auto input = std::make_shared<Input>(/* dim= */ 10);
   auto layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ 10, /* activation= */ ActivationFunction::Softmax);
+      /* dim= */ 10, /* activation= */ "softmax");
   layer->addPredecessor(input);
 
   BoltGraph graph(/* inputs= */ {input}, /* output= */ layer);
@@ -66,7 +66,7 @@ TEST(GraphRejectsInvalidInputsTest, AcceptsCategoricalCrossEntropyWithSoftmax) {
 TEST(GraphRejectsInvalidInputsTest, AcceptsBinaryCrossEntropyWithSigmoid) {
   auto input = std::make_shared<Input>(/* dim= */ 10);
   auto layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ 10, /* activation= */ ActivationFunction::Sigmoid);
+      /* dim= */ 10, /* activation= */ "sigmoid");
   layer->addPredecessor(input);
 
   BoltGraph graph(/* inputs= */ {input}, /* output= */ layer);
@@ -86,7 +86,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectConcatenatingInputLayer) {
 TEST(GraphRejectsInvalidInputsTest, RejectConcatenateAsOutputLayer) {
   auto input = std::make_shared<Input>(/* dim= */ 10);
   auto layer = std::make_shared<FullyConnectedNode>(
-                   /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
+                   /* dim= */ 10, /* activation= */ "relu")
                    ->addPredecessor(input);
   auto concat =
       std::make_shared<ConcatenateNode>()->setConcatenatedNodes({layer, layer});
@@ -99,20 +99,20 @@ TEST(GraphRejectsInvalidInputsTest, RejectConcatenateAsOutputLayer) {
 TEST(GraphRejectsInvalidInputsTest, AcceptsCorrectConcatenation) {
   auto input = std::make_shared<Input>(/* dim= */ 10);
   auto layer_1 = std::make_shared<FullyConnectedNode>(
-                     /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
+                     /* dim= */ 10, /* activation= */ "relu")
                      ->addPredecessor(input);
   auto layer_2 = std::make_shared<FullyConnectedNode>(
-                     /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
+                     /* dim= */ 10, /* activation= */ "relu")
                      ->addPredecessor(input);
   auto concat_1 = std::make_shared<ConcatenateNode>()->setConcatenatedNodes(
       {layer_1, layer_2, layer_2});
   auto layer_3 = std::make_shared<FullyConnectedNode>(
-                     /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
+                     /* dim= */ 10, /* activation= */ "relu")
                      ->addPredecessor(concat_1);
   auto concat_2 = std::make_shared<ConcatenateNode>()->setConcatenatedNodes(
       {layer_1, layer_3, concat_1});
   auto output = std::make_shared<FullyConnectedNode>(
-                    /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
+                    /* dim= */ 10, /* activation= */ "relu")
                     ->addPredecessor(concat_2);
   BoltGraph graph(/* inputs= */ {input}, /* output= */ output);
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
@@ -124,7 +124,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectsUnkownInput) {
   auto input2 = std::make_shared<Input>(/* dim= */ 20);
 
   auto layer = std::make_shared<FullyConnectedNode>(
-                   /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
+                   /* dim= */ 10, /* activation= */ "relu")
                    ->addPredecessor(input1);
 
   BoltGraph graph(/* inputs= */ {input2}, /* output= */ layer);
@@ -138,7 +138,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectsUnusedInput) {
   auto input2 = std::make_shared<Input>(/* dim= */ 20);
 
   auto layer = std::make_shared<FullyConnectedNode>(
-                   /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
+                   /* dim= */ 10, /* activation= */ "relu")
                    ->addPredecessor(input1);
 
   BoltGraph graph(/* inputs= */ {input1, input2}, /* output= */ layer);

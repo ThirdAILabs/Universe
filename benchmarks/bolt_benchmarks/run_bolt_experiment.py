@@ -57,7 +57,10 @@ def load_and_compile_model(model_config):
             pred_nodes = [get_node_by_name(pred_name) for pred_name in pred_names]
             for pred_name in pred_names:
                 nodes_with_no_successor.remove(pred_name)
-            node(pred_nodes)
+            if config_get(node_config, "type") == "Switch":
+                node(pred_nodes[0], pred_nodes[1])
+            else:
+                node(pred_nodes)
         else:
             raise ValueError(
                 "Node should either be an Input/TokenInput or specify pred/preds"
@@ -101,7 +104,15 @@ def load_all_datasets(dataset_config):
         if format == "svm":
             loaded_datasets = load_svm_dataset(single_dataset_config)
         elif format == "click":
-            loaded_datasets = load_clickthrough_dataset(single_dataset_config)
+            loaded_datasets = load_click_through_dataset(single_dataset_config)
+        elif format == "mlm_with_tokens":
+            loaded_datasets = load_mlm_datasets(
+                single_dataset_config, return_tokens=True
+            )
+        elif format == "mlm_without_tokens":
+            loaded_datasets = load_mlm_datasets(
+                single_dataset_config, return_tokens=False
+            )
         else:
             raise ValueError(f"{format} is an unrecognized dataformat")
 
@@ -119,15 +130,20 @@ def load_all_datasets(dataset_config):
                 )
             result[dataset_type].append(dataset)
 
-    for label_name in ["train_labels", "test_labels"]:
-        if len(result[label_name]) > 1:
-            raise ValueError(
-                f"Must pass in 0 or 1 label datasets, but found {len(result[label_name])} {label_name}s"
-            )
-        if len(result[label_name]) == 1:
-            result[label_name] = result[label_name][0]
-        else:
-            result[label_name] = None
+    if len(result["train_labels"]) != 1:
+        raise ValueError(
+            f"Must have 1 train label dataset but found {len(result['train_labels'])} train_labels."
+        )
+    result["train_labels"] = result["train_labels"][0]
+
+    if len(result["test_labels"]) == 1:
+        result["test_labels"] = result["test_labels"][0]
+    elif len(result["test_labels"]) == 0:
+        result["test_labels"] = None
+    else:
+        raise ValueError(
+            f"Must have 0 or 1 test label datasets but found {len(result['test_labels'])} test_labels."
+        )
 
     return result
 
@@ -161,8 +177,20 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         if use_mlflow:
             log_prediction_metrics(predict_metrics)
 
+        # TODO(Nick): Should we compute auc for criteo?
+
     if "save" in experiment_config.keys():
         model.save(config_get(experiment_config, "save"))
+
+
+def get_sampling_config(layer_config):
+    return bolt.SamplingConfig(
+        hashes_per_table=config_get(layer_config, "hashes_per_table"),
+        num_tables=config_get(layer_config, "num_tables"),
+        range_pow=config_get(layer_config, "range_pow"),
+        reservoir_size=config_get(layer_config, "reservoir_size"),
+        hash_function=layer_config.get("hash_function", "DWTA"),
+    )
 
 
 def construct_fully_connected_node(fc_config):
@@ -180,13 +208,40 @@ def construct_fully_connected_node(fc_config):
         dim=config_get(fc_config, "dim"),
         sparsity=sparsity,
         activation_function=config_get(fc_config, "activation"),
-        sampling_config=bolt.SamplingConfig(
-            hashes_per_table=config_get(fc_config, "hashes_per_table"),
-            num_tables=config_get(fc_config, "num_tables"),
-            range_pow=config_get(fc_config, "range_pow"),
-            reservoir_size=config_get(fc_config, "reservoir_size"),
-            hash_function=fc_config.get("hash_function", "DWTA"),
-        ),
+        sampling_config=get_sampling_config(fc_config),
+    )
+
+
+def construct_embedding_node(embedding_config):
+    num_embedding_lookups = config_get(embedding_config, "num_embedding_lookups")
+    lookup_size = config_get(embedding_config, "lookup_size")
+    log_embedding_block_size = config_get(embedding_config, "log_embedding_block_size")
+
+    return bolt.graph.Embedding(
+        num_embedding_lookups=num_embedding_lookups,
+        lookup_size=lookup_size,
+        log_embedding_block_size=log_embedding_block_size,
+    )
+
+
+def construct_switch_node(switch_config):
+    use_default_sampling = switch_config.get("use_default_sampling", False)
+    sparsity = switch_config.get("sparsity", 1)
+
+    if use_default_sampling or sparsity == 1:
+        return bolt.graph.Switch(
+            dim=config_get(switch_config, "dim"),
+            sparsity=sparsity,
+            activation=config_get(switch_config, "activation"),
+            n_layers=config_get(switch_config, "n_layers"),
+        )
+
+    return bolt.graph.Switch(
+        dim=config_get(switch_config, "dim"),
+        sparsity=sparsity,
+        activation_function=config_get(switch_config, "activation"),
+        sampling_config=get_sampling_config(switch_config),
+        n_layers=config_get(switch_config, "n_layers"),
     )
 
 
@@ -198,20 +253,24 @@ def construct_node(node_config):
         return bolt.graph.Concatenate()
     if node_type == "FullyConnected":
         return construct_fully_connected_node(node_config)
-    if node_type == "TokenInput" or node_type == "Embedding":
-        raise ValueError("Tokens and Embedding nodes not added quite yet")
+    if node_type == "TokenInput":
+        return bolt.graph.TokenInput()
+    if node_type == "Embedding":
+        return construct_embedding_node(node_config)
+    if node_type == "Switch":
+        return construct_switch_node(node_config)
     raise ValueError(f"{node_type} is not a valid node type.")
 
 
 def get_loss(model_config):
-    loss_string = config_get(model_config, "loss_fn")
+    loss_string = config_get(model_config, "loss_fn").lower()
     # TODO(josh/nick): Add an option to pass in the loss function as string to compile
     # TODO(josh): Consider moving to python 3.10 so we have the match pattern
-    if loss_string.lower() == "categoricalcrossentropyloss":
+    if loss_string == "categoricalcrossentropyloss" or loss_string == "cce":
         return bolt.CategoricalCrossEntropyLoss()
-    if loss_string.lower() == "binarycrossentropyloss":
+    if loss_string == "binarycrossentropyloss" or loss_string == "bce":
         return bolt.BinaryCrossEntropyLoss()
-    if loss_string.lower() == "meansquarederror":
+    if loss_string == "meansquarederror" or loss_string == "mse":
         return bolt.MeanSquaredError()
     raise ValueError(f"{loss_string} is not a valid loss function.")
 
@@ -223,8 +282,40 @@ def load_svm_dataset(dataset_config):
     )
 
 
-def load_clickthrough_dataset(dataset_config):
-    raise ValueError("Clickthrough loading not quite added yet")
+def load_click_through_dataset(dataset_config):
+    dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+    return dataset.load_click_through_dataset(
+        filename=dataset_path,
+        batch_size=config_get(dataset_config, "batch_size"),
+        max_num_numerical_features=config_get(
+            dataset_config, "max_num_numerical_features"
+        ),
+        max_categorical_features=config_get(dataset_config, "max_categorical_features"),
+        delimiter=config_get(dataset_config, "delimiter"),
+    )
+
+
+def load_mlm_datasets(dataset_config, return_tokens):
+    # We load the train and test data at the same time because the need to use
+    # the same loader to ensure that the words in the vocabulary are mapped to
+    # the same output neuron.
+    train_path = find_full_filepath(config_get(dataset_config, "train_path"))
+    test_path = find_full_filepath(config_get(dataset_config, "test_path"))
+
+    mlm_loader = dataset.MLMDatasetLoader(
+        pairgram_range=config_get(dataset_config, "pairgram_range")
+    )
+
+    batch_size = config_get(dataset_config, "batch_size")
+
+    train_data = mlm_loader.load(filename=train_path, batch_size=batch_size)
+
+    test_data = mlm_loader.load(filename=test_path, batch_size=batch_size)
+
+    if return_tokens:
+        return train_data + test_data
+
+    return train_data[0], train_data[2], test_data[0], test_data[2]
 
 
 # Because of how our experiment works, we always set num_epochs=1 and return
@@ -296,11 +387,6 @@ def build_arg_parser():
         default="",
         type=str,
         help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
-    )
-    parser.add_argument(
-        "--upload_artifacts",
-        action="store_true",
-        help="Whether to upload artifacts to mlflow.",
     )
     return parser
 

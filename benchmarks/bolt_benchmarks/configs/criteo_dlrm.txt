@@ -1,0 +1,85 @@
+experiment_identifier = "Criteo DLRM"
+model_identifier = "criteo_dlrm"
+dataset_identifier = "criteo_click_through_small"
+
+
+train_metrics = []
+epochs = 5
+reconstruct_hash_functions = 6400
+rebuild_hash_tables = 128000
+learning_rate = 0.0001
+loss_fn = "CategoricalCrossEntropyLoss"
+test_metrics = ["categorical_accuracy"]
+
+[[datasets]]
+format = "click"
+type_list = ["train_data", "train_tokens", "train_labels"]
+path = "criteo-small/train_shuf.txt"
+batch_size = 256
+max_num_numerical_features = 15
+max_categorical_features = 23
+delimiter = " "
+
+[[datasets]]
+format = "click"
+type_list = ["test_data", "test_tokens", "test_labels"]
+path = "criteo-small/test_shuf.txt"
+batch_size = 256
+max_num_numerical_features = 15
+max_categorical_features = 23
+delimiter = " "
+
+
+[[nodes]]
+type = "Input"
+name = "numerical_input"
+dim = 15
+
+[[nodes]]
+type = "FullyConnected"
+name = "hidden1"
+pred = "numerical_input"
+dim = 1000
+sparsity = 0.2
+activation = "relu"
+use_default_sampling = true
+
+[[nodes]]
+type = "FullyConnected"
+name = "hidden2"
+pred = "hidden1"
+dim = 100
+activation = "relu"
+
+[[nodes]] 
+type = "TokenInput"
+name = "categorical_input"
+
+[[nodes]]
+type = "Embedding"
+name = "embedding"
+pred = "categorical_input"
+num_embedding_lookups = 8
+lookup_size = 16
+log_embedding_block_size = 10
+
+[[nodes]]
+type = "Concatenate"
+name = "concat"
+preds = ["hidden2", "embedding"]
+
+[[nodes]] 
+type = "FullyConnected"
+name = "hidden3"
+pred = "concat"
+dim = 1000
+sparsity = 0.2
+activation = "relu"
+use_default_sampling = true
+
+[[nodes]]
+type = "FullyConnected"
+name = "output"
+pred = "hidden3"
+dim = 2
+activation = "softmax"

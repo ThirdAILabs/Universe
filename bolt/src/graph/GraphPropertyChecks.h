@@ -4,23 +4,32 @@
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 
 namespace thirdai::bolt {
 
 class GraphPropertyChecks {
  public:
-  static void verifyOutputIsNotInputLayer(const NodePtr& output) {
+  static void verifyOutputLayerIsValid(const NodePtr& output) {
     if (output->isInputNode()) {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be an input node.");
     }
-  }
-
-  static void verifyOutputIsNotConcatLayer(const NodePtr& output) {
     if (dynamic_cast<ConcatenateNode*>(output.get())) {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be a Concatenate node.");
+    }
+
+    // For clarity, the output can be normalized. There is nothing in the
+    // implementation that prohibits a normalization layer from being the
+    // output layer. But for best practices, oftentimes it doesn't make
+    // sense to normalize the outputs (for instance if the outputs are the
+    // results of applying the softmax activation, which yields values in
+    // [0, 1] interval).
+    if (dynamic_cast<LayerNormNode*>(output.get())) {
+      throw exceptions::GraphCompilationFailure(
+          "Output node cannot be a normalization node");
     }
   }
 

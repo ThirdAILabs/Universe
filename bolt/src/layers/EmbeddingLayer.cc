@@ -8,20 +8,18 @@ namespace thirdai::bolt {
 EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                                uint32_t seed)
     : _num_lookups_per_token(config.num_embedding_lookups),
-      _lookup_size_bytes(config.lookup_size),
-      _total_embedding_dim_bytes(config.num_embedding_lookups *
-                                 config.lookup_size),
+      _lookup_size(config.lookup_size),
+      _total_embedding_dim(config.num_embedding_lookups * config.lookup_size),
       _log_embedding_block_size(config.log_embedding_block_size),
       _hash_fn(seed) {
   // We allocate the extra _lookup_size elements such that if a point hashes to
   // the end of 2^_embedding_block_size we don't have to worry about wrapping it
   // around.
-  _embedding_block_size_bytes =
-      (1 << _log_embedding_block_size) + _lookup_size_bytes;
-  _embedding_block = std::vector<float>(_embedding_block_size_bytes, 0);
-  _gradients = std::vector<float>(_embedding_block_size_bytes, 0);
-  _momentum = std::vector<float>(_embedding_block_size_bytes, 0);
-  _velocity = std::vector<float>(_embedding_block_size_bytes, 0);
+  _embedding_block_size = (1 << _log_embedding_block_size) + _lookup_size;
+  _embedding_block = std::vector<float>(_embedding_block_size, 0);
+  _gradients = std::vector<float>(_embedding_block_size, 0);
+  _momentum = std::vector<float>(_embedding_block_size, 0);
+  _velocity = std::vector<float>(_embedding_block_size, 0);
 
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -33,11 +31,11 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
 void EmbeddingLayer::forward(uint32_t vec_index,
                              const std::vector<uint32_t>& tokens,
                              BoltVector& output) {
-  assert(output.len == _total_embedding_dim_bytes);
+  assert(output.len == _total_embedding_dim);
   assert(output.active_neurons == nullptr);
 
-  std::fill_n(output.activations, _total_embedding_dim_bytes, 0);
-  std::fill_n(output.gradients, _total_embedding_dim_bytes, 0);
+  std::fill_n(output.activations, _total_embedding_dim, 0);
+  std::fill_n(output.gradients, _total_embedding_dim, 0);
 
   _embedding_block_offsets[vec_index].clear();
   _embedding_block_offsets[vec_index].reserve(tokens.size() *
@@ -53,11 +51,10 @@ void EmbeddingLayer::forward(uint32_t vec_index,
           getEmbeddingBlockOffset(token, lookup_index);
       recordEmbeddingBlockOffset(vec_index, embedding_block_offset);
 
-      assert(embedding_block_offset <
-             _embedding_block_size_bytes - _lookup_size_bytes);
+      assert(embedding_block_offset < _embedding_block_size - _lookup_size);
 
       // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
-      for (uint32_t i = 0; i < _lookup_size_bytes; i++) {
+      for (uint32_t i = 0; i < _lookup_size; i++) {
         output_start[i] += _embedding_block[embedding_block_offset + i];
       }
     }
@@ -78,12 +75,11 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
       uint64_t embedding_block_offset = retrieveEmbeddingBlockOffset(
           vec_index, lookup_index, token_index, num_tokens);
 
-      assert(embedding_block_offset <
-             _embedding_block_size_bytes - _lookup_size_bytes);
+      assert(embedding_block_offset < _embedding_block_size - _lookup_size);
 
       float* update_loc = _gradients.data() + embedding_block_offset;
 
-      for (uint32_t i = 0; i < _lookup_size_bytes; i++) {
+      for (uint32_t i = 0; i < _lookup_size; i++) {
         update_loc[i] += output_gradients[i];
       }
     }
@@ -130,8 +126,9 @@ void EmbeddingLayer::initializeLayer(uint32_t new_batch_size) {
 
 void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
   summary << " num_embedding_lookups=" << _num_lookups_per_token;
-  summary << ", lookup_size=" << _lookup_size_bytes;
+  summary << ", lookup_size=" << _lookup_size;
   summary << ", log_embedding_block_size=" << _log_embedding_block_size;
+  summary << "\n";
 }
 
 std::vector<std::pair<uint64_t, uint64_t>>
@@ -147,12 +144,12 @@ EmbeddingLayer::getDisjointUpdateRanges() const {
   std::vector<std::pair<uint64_t, uint64_t>> disjoint_ranges;
   for (uint32_t i = 0; i < all_embedding_locs.size(); i++) {
     uint64_t start = all_embedding_locs[i];
-    uint64_t end = start + _lookup_size_bytes;
+    uint64_t end = start + _lookup_size;
     for (uint32_t j = i + 1; j < all_embedding_locs.size(); j++) {
       if (all_embedding_locs[j] > end) {
         break;
       }
-      end = all_embedding_locs[j] + _lookup_size_bytes;
+      end = all_embedding_locs[j] + _lookup_size;
       i++;
     }
     disjoint_ranges.push_back({start, end});

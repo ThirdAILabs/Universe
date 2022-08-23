@@ -18,18 +18,31 @@
 
 namespace thirdai::bolt {
 
+class SwitchNode;
+
 class FullyConnectedNode final
     : public Node,
       public std::enable_shared_from_this<FullyConnectedNode> {
+  friend class SwitchNode;
+
  public:
-  // This pattern means that any valid constructor for a
-  // FullyConnectedLayerConfig can be used to initialize the
-  // FullyConnectedLayerNode, and that the args are directly forwarded to the
-  // constructor for the config.
-  template <typename... Args>
-  explicit FullyConnectedNode(Args&&... args)
+  FullyConnectedNode(uint64_t dim, const std::string& activation)
       : _layer(nullptr),
-        _config(FullyConnectedLayerConfig(std::forward<Args>(args)...)),
+        _config(FullyConnectedLayerConfig(dim, activation)),
+        _predecessor(nullptr) {}
+
+  FullyConnectedNode(uint64_t dim, float sparsity,
+                     const std::string& activation)
+      : _layer(nullptr),
+        _config(FullyConnectedLayerConfig(dim, sparsity, activation)),
+        _predecessor(nullptr) {}
+
+  FullyConnectedNode(uint64_t dim, float sparsity,
+                     const std::string& activation,
+                     SamplingConfigPtr sampling_config)
+      : _layer(nullptr),
+        _config(FullyConnectedLayerConfig(dim, sparsity, activation,
+                                          std::move(sampling_config))),
         _predecessor(nullptr) {}
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node) {
@@ -58,7 +71,7 @@ class FullyConnectedNode final
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
-      return _config->act_func;
+      return _config->getActFunc();
     }
     return _layer->getActivationFunction();
   }
@@ -69,6 +82,8 @@ class FullyConnectedNode final
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*_layer);
   }
+
+  void enableDistributedTraining() { _layer->enableDistributedTraining(); }
 
   void loadParameters(const std::string& filename) {
     std::ifstream filestream =
@@ -111,7 +126,7 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
-  float getNodeSparsity() {
+  float getSparsity() {
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
@@ -120,16 +135,75 @@ class FullyConnectedNode final
     return _layer->getSparsity();
   }
 
-  void setNodeSparsity(float sparsity) {
+  std::shared_ptr<FullyConnectedNode> setSparsity(float sparsity) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state");
+          "FullyConnectedNode must be in a compiled state to call setSparsity");
     }
     _layer->setSparsity(sparsity);
+    return shared_from_this();
   }
 
-  const SamplingConfig& getSamplingConfig() const {
-    return _layer->getSamplingConfig();
+  float* getWeightsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightsPtr.");
+    }
+    return _layer->getWeightsPtr();
+  }
+
+  float* getBiasesPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasesPtr.");
+    }
+    return _layer->getBiasesPtr();
+  }
+
+  float* getWeightGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightGradientsPtr.");
+    }
+    return _layer->getWeightGradientsPtr();
+  }
+
+  float* getBiasGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasGradientsPtr.");
+    }
+    return _layer->getBiasGradientsPtr();
+  }
+
+  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim,
+                                                  std::string activation) {
+    return std::make_shared<FullyConnectedNode>(dim, std::move(activation));
+  }
+
+  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim, float sparsity,
+                                                  std::string activation) {
+    return std::make_shared<FullyConnectedNode>(dim, sparsity,
+                                                std::move(activation));
+  }
+
+  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim, float sparsity,
+                                                  std::string activation,
+                                                  uint32_t num_tables,
+                                                  uint32_t hashes_per_table,
+                                                  uint32_t reservoir_size) {
+    auto sampling_config = std::make_shared<DWTASamplingConfig>(
+        num_tables, hashes_per_table, reservoir_size);
+    return std::make_shared<FullyConnectedNode>(dim, sparsity, activation,
+                                                sampling_config);
   }
 
  private:
@@ -160,8 +234,10 @@ class FullyConnectedNode final
   }
 
   void backpropagateImpl(uint32_t vec_index) final {
-    // TODO(Nicholas, Josh): Change to avoid having this check
-    if (_predecessor->isInputNode()) {
+    // We are checking whether predecessor has gradients or not rather than its
+    // an input ot not because,this way will be helpful to calculate gradients
+    // for input in getInputGradientsSingle.
+    if (!_predecessor->getOutputVector(vec_index).gradients) {
       _layer->backpropagateInputLayer(_predecessor->getOutputVector(vec_index),
                                       this->getOutputVectorImpl(vec_index));
     } else {
@@ -227,6 +303,8 @@ class FullyConnectedNode final
 
   NodePtr _predecessor;
 };
+
+using FullyConnectedNodePtr = std::shared_ptr<FullyConnectedNode>;
 
 }  // namespace thirdai::bolt
 

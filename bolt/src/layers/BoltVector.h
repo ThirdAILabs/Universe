@@ -1,9 +1,13 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include <limits>
+#include <numeric>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -32,7 +36,8 @@ struct BoltVector {
       : active_neurons(nullptr),
         activations(nullptr),
         gradients(nullptr),
-        len(0) {}
+        len(0),
+        _owns_data(true) {}
 
   constexpr explicit BoltVector(uint32_t* an, float* a, float* g, uint32_t l)
       : active_neurons(an),
@@ -56,20 +61,45 @@ struct BoltVector {
     }
   }
 
-  uint32_t getIdWithHighestActivation() const {
+  uint32_t getHighestActivationId() const {
     float max_act = activations[0];
     uint32_t id = 0;
     for (uint32_t i = 1; i < len; i++) {
       if (activations[i] > max_act) {
         max_act = activations[i];
-        if (isDense()) {
-          id = i;
-        } else {
-          id = active_neurons[i];
-        }
+        id = i;
       }
     }
-    return id;
+    if (isDense()) {
+      return id;
+    }
+    return active_neurons[id];
+  }
+
+  uint32_t getSecondHighestActivationId() const {
+    float largest_activation = std::numeric_limits<float>::min(),
+          second_largest_activation = std::numeric_limits<float>::min();
+    uint32_t max_id = 0, second_max_id = 0;
+    if (len < 2) {
+      throw std::invalid_argument(
+          "The sparse output dimension should be at least 2 to call "
+          "getSecondHighestActivationId.");
+    }
+    for (uint32_t i = 0; i < len; i++) {
+      if (activations[i] > largest_activation) {
+        second_largest_activation = largest_activation;
+        second_max_id = max_id;
+        largest_activation = activations[i];
+        max_id = i;
+      } else if (activations[i] > second_largest_activation) {
+        second_largest_activation = activations[i];
+        second_max_id = i;
+      }
+    }
+    if (isDense()) {
+      return second_max_id;
+    }
+    return active_neurons[second_max_id];
   }
 
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
@@ -105,8 +135,6 @@ struct BoltVector {
     return vector;
   }
 
-  // TODO(nicholas): delete copy constructor/assignment and make load dataset
-  // return smart pointer
   BoltVector(const BoltVector& other) : len(other.len), _owns_data(true) {
     if (other.active_neurons != nullptr) {
       active_neurons = new uint32_t[len];
@@ -127,7 +155,7 @@ struct BoltVector {
     }
   }
 
-  BoltVector(BoltVector&& other)
+  BoltVector(BoltVector&& other) noexcept
       : active_neurons(other.active_neurons),
         activations(other.activations),
         gradients(other.gradients),
@@ -139,8 +167,6 @@ struct BoltVector {
     other.len = 0;
   }
 
-  // TODO(nicholas): delete copy constructor/assignment and make load dataset
-  // return smart pointer
   BoltVector& operator=(const BoltVector& other) {
     if (&other == this) {
       return *this;
@@ -171,7 +197,7 @@ struct BoltVector {
     return *this;
   }
 
-  BoltVector& operator=(BoltVector&& other) {
+  BoltVector& operator=(BoltVector&& other) noexcept {
     this->len = other.len;
     freeMemory();
 
@@ -186,6 +212,15 @@ struct BoltVector {
     other.len = 0;
 
     return *this;
+  }
+
+  template <bool DENSE>
+  constexpr uint32_t activeNeuronAtIndex(uint32_t index) const {
+    if constexpr (DENSE) {
+      return index;
+    } else {
+      return active_neurons[index];
+    }
   }
 
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& state) {
@@ -207,7 +242,7 @@ struct BoltVector {
    */
   template <bool DENSE>
   FoundActiveNeuron findActiveNeuron(uint32_t active_neuron) const {
-    if (DENSE) {
+    if constexpr (DENSE) {
       return {active_neuron, activations[active_neuron]};
     }
     return findSparseActiveNeuron(active_neuron);
@@ -221,6 +256,44 @@ struct BoltVector {
   }
 
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
+
+  // Returns the active neuron ID's that are greater than activation_threshold.
+  // Returns at most max_count_to_return (if number of neurons exceeds
+  // max_count_to_return, returns those with highest activations). If
+  // return_at_least_one is true, returns the neuron with the highest activation
+  // even if no neurons otherwise exceeded activation_threshold.
+  std::vector<uint32_t> getThresholdedNeurons(
+      float activation_threshold, bool return_at_least_one,
+      uint32_t max_count_to_return) const {
+    std::vector<uint32_t> thresholded;
+    std::vector<uint32_t> ids(len);
+    std::iota(ids.begin(), ids.end(), 0);
+    std::stable_sort(ids.begin(), ids.end(), [this](uint32_t i1, uint32_t i2) {
+      return activations[i1] > activations[i2];
+    });
+
+    for (unsigned int& id : ids) {
+      if (activations[id] < activation_threshold) {
+        break;
+      }
+      if (thresholded.size() == max_count_to_return) {
+        return thresholded;
+      }
+
+      uint32_t neuron = this->isDense() ? id : active_neurons[id];
+      thresholded.push_back(neuron);
+    }
+
+    if (return_at_least_one && thresholded.empty()) {
+      uint32_t max_act_neuron =
+          this->isDense() ? ids[0] : active_neurons[ids[0]];
+      thresholded.push_back(max_act_neuron);
+    }
+
+    return thresholded;
+  }
+
+  constexpr bool hasGradients() const { return gradients != nullptr; }
 
   std::string toString() const {
     std::stringstream ss;
@@ -247,7 +320,7 @@ struct BoltVector {
     return ss.str();
   }
 
-  ~BoltVector() { freeMemory(); }
+  ~BoltVector() noexcept { freeMemory(); }
 
  private:
   /**
@@ -277,11 +350,57 @@ struct BoltVector {
       delete[] this->gradients;
     }
   }
+
+  friend class cereal::access;
+  template <class Archive>
+  void save(Archive& archive) const {
+    archive(len);
+    bool is_sparse = !isDense();
+    bool has_gradients = hasGradients();
+    archive(is_sparse, has_gradients);
+
+    if (is_sparse) {
+      archive(cereal::binary_data(active_neurons, len * sizeof(uint32_t)));
+    }
+
+    archive(cereal::binary_data(activations, len * sizeof(float)));
+
+    if (has_gradients) {
+      archive(cereal::binary_data(gradients, len * sizeof(float)));
+    }
+  }
+
+  template <class Archive>
+  void load(Archive& archive) {
+    archive(len);
+
+    bool is_sparse, has_gradients;
+    archive(is_sparse, has_gradients);
+
+    if (is_sparse) {
+      active_neurons = new uint32_t[len];
+      archive(cereal::binary_data(active_neurons, len * sizeof(uint32_t)));
+    }
+
+    activations = new float[len];
+    archive(cereal::binary_data(activations, len * sizeof(float)));
+
+    if (has_gradients) {
+      gradients = new float[len];
+      archive(cereal::binary_data(gradients, len * sizeof(float)));
+    }
+  }
 };
 
 class BoltBatch {
  private:
   std::vector<BoltVector> _vectors;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_vectors);
+  }
 
  public:
   BoltBatch() {}
@@ -347,18 +466,6 @@ class BoltBatch {
   BoltBatch& operator=(const BoltBatch& other) = delete;
 
   BoltBatch& operator=(BoltBatch&& other) = default;
-
-  friend std::ostream& operator<<(std::ostream& out, const BoltBatch& state) {
-    std::cout << "-------------------------------------------------------------"
-              << std::endl;
-    for (uint32_t i = 0; i < state._vectors.size(); i++) {
-      std::cout << "Vector: " << i << ":\n"
-                << state._vectors.at(i) << std::endl;
-    }
-    std::cout << "-------------------------------------------------------------"
-              << std::endl;
-    return out;
-  }
 };
 
 }  // namespace thirdai::bolt

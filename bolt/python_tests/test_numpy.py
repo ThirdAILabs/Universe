@@ -19,7 +19,7 @@ def train_simple_bolt_model(
         bolt.FullyConnected(
             dim=n_classes,
             sparsity=sparsity,
-            activation_function=bolt.ActivationFunctions.Softmax,
+            activation_function="softmax",
         )
     ]
     network = bolt.Network(layers=layers, input_dim=n_classes)
@@ -58,12 +58,12 @@ def train_simple_bolt_model_non_trainable_hidden_layer(
         bolt.FullyConnected(
             dim=100,
             sparsity=load_factor,
-            activation_function=bolt.ActivationFunctions.ReLU,
+            activation_function="relu",
         ),
         bolt.FullyConnected(
             dim=n_classes,
             sparsity=load_factor,
-            activation_function=bolt.ActivationFunctions.Softmax,
+            activation_function="softmax",
         ),
     ]
     network = bolt.Network(layers=layers, input_dim=n_classes)
@@ -102,7 +102,7 @@ def train_sparse_bolt_model(
         bolt.FullyConnected(
             dim=n_classes,
             sparsity=1,
-            activation_function=bolt.getActivationFunction("ReLU"),
+            activation_function="relu",
         )
     ]
     network = bolt.Network(layers=layers, input_dim=inp_dim)

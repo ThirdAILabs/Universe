@@ -1,0 +1,7 @@
+train_file="string_mlm.txt"
+test_file="string_mlm.txt"
+num_classes=30224
+epochs=3
+learning_rate=0.01
+batch_size=32
+task="mlm"

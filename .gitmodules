@@ -16,3 +16,6 @@
 [submodule "deps/cryptopp"]
 	path = deps/cryptopp
 	url = https://github.com/ThirdAILabs/CrypoppFork
+[submodule "deps/flamegraph"]
+	path = deps/flamegraph
+	url = https://github.com/ThirdAILabs/FlameGraphFork
