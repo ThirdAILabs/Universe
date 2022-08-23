@@ -114,18 +114,13 @@ class ConvLayer final : public SequentialLayer {
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
-  std::vector<float> _w_gradient;
-  std::vector<float> _w_momentum;
-  std::vector<float> _w_velocity;
-
   std::vector<float> _biases;
-  std::vector<float> _b_gradient;
-  std::vector<float> _b_momentum;
-  std::vector<float> _b_velocity;
+
+  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
+  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
+  bool _optimizer_initialized = false;
 
   std::vector<bool> _is_active;
-
-  bool _optimizer_initialized = false;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;

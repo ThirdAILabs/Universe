@@ -87,9 +87,9 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getBiasesPtr() { return _biases.data(); }
 
-  float* getWeightGradientsPtr() { return _w_gradient.data(); }
+  float* getWeightGradientsPtr() { return _weight_optimizer->gradients.data(); }
 
-  float* getBiasGradientsPtr() { return _b_gradient.data(); }
+  float* getBiasGradientsPtr() { return _bias_optimizer->gradients.data(); }
 
   float* getWeights() const final;
 
@@ -131,15 +131,10 @@ class FullyConnectedLayer final : public SequentialLayer {
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
-  std::vector<float> _w_gradient;
-  std::vector<float> _w_momentum;
-  std::vector<float> _w_velocity;
-
   std::vector<float> _biases;
-  std::vector<float> _b_gradient;
-  std::vector<float> _b_momentum;
-  std::vector<float> _b_velocity;
 
+  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
+  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
   bool _optimizer_initialized = false;
 
   std::unique_ptr<hashing::HashFunction> _hasher;

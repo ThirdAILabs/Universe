@@ -40,12 +40,8 @@ class EmbeddingLayer {
   void buildLayerSummary(std::stringstream& summary) const;
 
   void initOptimizer() {
-    if (!_optimizer_initialized) {
-      _gradients.assign(_embedding_block_size, 0);
-      _momentum.assign(_embedding_block_size, 0);
-      _velocity.assign(_embedding_block_size, 0);
-
-      _optimizer_initialized = true;
+    if (!_optimizer) {
+      _optimizer = AdamOptimizer(_embedding_block_size);
     }
   }
 
@@ -124,12 +120,9 @@ class EmbeddingLayer {
 
   hashing::UniversalHash _hash_fn;
 
-  bool _optimizer_initialized = false;
-
   std::vector<float> _embedding_block;
-  std::vector<float> _gradients;
-  std::vector<float> _momentum;
-  std::vector<float> _velocity;
+
+  std::optional<AdamOptimizer> _optimizer = std::nullopt;
 
   // This structure stores the embedding block offset for each token in each
   // input. This is used for backpropagation and for update paramters to know

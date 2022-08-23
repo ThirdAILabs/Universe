@@ -95,7 +95,6 @@ MetricData BoltGraph::train(
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
       ProgressBar bar(train_context.numBatches(), train_config.verbose());
-
       auto train_start = std::chrono::high_resolution_clock::now();
 
       for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
@@ -320,6 +319,7 @@ InferenceResult BoltGraph::predict(
       /* total_num_samples = */ predict_context.len());
 
   ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
+
   auto test_start = std::chrono::high_resolution_clock::now();
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
