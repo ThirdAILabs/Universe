@@ -1,13 +1,13 @@
 #pragma once
 
 #include "CompressedVector.h"
-#include <_types/_uint32_t.h>
 #include <cstddef>
 #include <cstdint>
 #include <random>
 
 namespace thirdai::compression {
 
+// Interface for a DragonVector
 template <class T>
 class DragonVector final : public CompressedVector<T> {
   // add a friend test class here
@@ -15,13 +15,9 @@ class DragonVector final : public CompressedVector<T> {
  public:
   DragonVector<T>() {}
 
-  // might have to remove these =delete and declare explicit copy constructors
-  // by ourselves
-
   DragonVector(const DragonVector<T>& vec);
-  // DragonVector(const DragonVector<T>&) = delete;
-  // DragonVector(DragonVector<T>&&) = delete;
 
+  // using "copy-swap idiom" for = operator.
   DragonVector& operator=(DragonVector<T> vec) {
     swap(*this, vec);
     return *this;
@@ -30,17 +26,14 @@ class DragonVector final : public CompressedVector<T> {
   DragonVector(DragonVector<T>&& vec) : DragonVector<T>() { swap(*this, vec); }
 
   friend void swap(DragonVector<T>& first, DragonVector<T>& second) {
-    using std::swap;
-    swap(first._indices, second._indices);
-    swap(first._values, second._values);
-    swap(first._min_sketch_size, second._min_sketch_size);
-    swap(first._original_size, second._original_size);
-    swap(first._sketch_size, second._sketch_size);
-    swap(first._compression_density, second._compression_density);
-    swap(first._seed_for_hashing, second._seed_for_hashing);
+    std::swap(first._indices, second._indices);
+    std::swap(first._values, second._values);
+    std::swap(first._min_sketch_size, second._min_sketch_size);
+    std::swap(first._original_size, second._original_size);
+    std::swap(first._sketch_size, second._sketch_size);
+    std::swap(first._compression_density, second._compression_density);
+    std::swap(first._seed_for_hashing, second._seed_for_hashing);
   }
-
-  // DragonVector& operator=(DragonVector<T>&&) = delete;
 
   // defining the constructors for the class
 
@@ -48,9 +41,9 @@ class DragonVector final : public CompressedVector<T> {
                int seed_for_hashing);
 
   DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
-               uint32_t size, uint32_t original_size, int seed_for_hashing);
+               uint32_t original_size, int seed_for_hashing);
 
-  DragonVector(const T* values, float compression_density, uint32_t size,
+  DragonVector(const T* values, uint32_t size, float compression_density,
                int seed_for_hashing);
 
   /*
@@ -88,7 +81,7 @@ class DragonVector final : public CompressedVector<T> {
 
   DragonVector<T>& concat(DragonVector<T> const& vec);
 
-  bool isAllReducible() const final;
+  bool isAdditive() const final;
 
   std::vector<uint32_t> getIndices() { return _indices; }
 

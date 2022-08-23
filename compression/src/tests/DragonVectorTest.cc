@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <compression/src/DragonVector.h>
 #include <sys/types.h>
+#include <cstddef>
+#include <cstdint>
 #include <random>
 #include <vector>
 namespace thirdai::compression::tests {
@@ -31,10 +33,9 @@ class DragonVectorTest : public testing::Test {
 
     _vec = DragonVector<float>(_original_vec, _compression_density,
                                _seed_for_hashing);
-
     _vec_from_array =
-        DragonVector<float>(_original_vec.data(), _compression_density,
-                            _original_size, _seed_for_hashing);
+        DragonVector<float>(_original_vec.data(), _original_size,
+                            _compression_density, _seed_for_hashing);
   }
 };
 
@@ -111,8 +112,30 @@ TEST_F(DragonVectorTest, ExtendTest) {
 
 TEST_F(DragonVectorTest, SplitTest) {
   size_t number_chunks = 3;
+
+  std::cout << "printing original vec\n";
+  std::cout << "size: " << _vec.getSketchSize() << " ";
+  for (int i : _original_vec) {
+    std::cout << _original_vec[i] << " ";
+  }
+  std::cout << "\n";
+
+  std::cout << "printing dragon vec\n";
+  for (uint32_t i = 0; i < _vec.getSketchSize(); i++) {
+    std::cout << _vec.getIndices()[i] << " ";
+  }
+  std::cout << "\n";
+
   std::vector<DragonVector<float>> splitVector = _vec.split(number_chunks);
-  std::cout << "SplitVector has been made\n";
+  std::cout << "SplitVector has been made and printing it\n";
+
+  for (auto x : splitVector) {
+    std::cout << "size: " << x.getSketchSize() << " ";
+    for (auto y : x.getIndices()) {
+      std::cout << y << " ";
+    }
+    std::cout << "\n";
+  }
   uint32_t curr_vec = 0;
   uint32_t curr_index = 0;
 

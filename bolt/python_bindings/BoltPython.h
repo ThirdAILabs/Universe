@@ -13,7 +13,6 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DistributedModel.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <_types/_uint32_t.h>
 #include <compression/src/CompressedVector.h>
 #include <compression/src/ConversionUtils.h>
 #include <compression/src/DragonVector.h>
@@ -486,7 +485,6 @@ class DistributedPyNetwork final : public DistributedModel {
       compression::DragonVector<float> dragon_sketch =
           compression::DragonVector<float>(
               std::move(vector_indices), std::move(vector_values),
-              py::cast<std::uint32_t>(compressed_vector["sketch_size"]),
               py::cast<std::uint32_t>(compressed_vector["original_size"]),
               py::cast<int>(compressed_vector["seed_for_hashing"]));
 

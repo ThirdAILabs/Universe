@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CompressedVector.h"
-#include <_types/_uint32_t.h>
 #include <cstddef>
 #include <cstdint>
 #include <random>
@@ -16,7 +15,7 @@ class DefaultCompressedVector final : public CompressedVector<T> {
 
   explicit DefaultCompressedVector(const std::vector<T>& vec);
 
-  explicit DefaultCompressedVector(const T* values, uint32_t size);
+  DefaultCompressedVector(const T* values, uint32_t size);
 
   DefaultCompressedVector(const DefaultCompressedVector<T>& vec);
 
@@ -70,7 +69,7 @@ class DefaultCompressedVector final : public CompressedVector<T> {
 
   DefaultCompressedVector<T>& concat(DefaultCompressedVector<T> const& vec);
 
-  bool isAllReducible() const final;
+  bool isAdditive() const final;
 
   std::vector<T> getValues() { return _values; }
 

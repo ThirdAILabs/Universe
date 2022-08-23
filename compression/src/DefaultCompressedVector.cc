@@ -1,6 +1,5 @@
 #include "DefaultCompressedVector.h"
 #include <hashing/src/MurmurHash.h>
-#include <_types/_uint32_t.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cstddef>
@@ -91,7 +90,7 @@ T DefaultCompressedVector<T>::operator[](uint32_t index) const {
  */
 
 template <class T>
-bool DefaultCompressedVector<T>::isAllReducible() const {
+bool DefaultCompressedVector<T>::isAdditive() const {
   return false;
 }
 

@@ -702,7 +702,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("get_compressed_gradients",
            &DistributedPyNetwork::getCompressedGradients,
            py::arg("compression_scheme"), py::arg("layer_index"),
-           py::arg("compression_density"), py::arg("sketch_biases"),
+           py::arg("compression_density") = 1, py::arg("sketch_biases"),
            py::arg("seed_for_hashing"),
            "Sketches the top-k gradients into an array of values and returns a "
            "tuple of (sketched_indices,sketched_gradients)")

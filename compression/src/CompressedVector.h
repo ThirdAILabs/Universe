@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CompressionUtils.h"
-#include <_types/_uint32_t.h>
 #include <cstdint>
 #include <memory>
 #include <random>
@@ -15,17 +14,11 @@ enum class CompressionScheme {
   Default
 };
 
+// a generic compressed vector class
 template <class T>
-
 class CompressedVector {
  public:
   CompressedVector<T>() {}
-
-  explicit CompressedVector<T>(std::string compression_scheme,
-                               const std::vector<T>& vec,
-                               float compression_density);
-
-  explicit CompressedVector<T>(std::string compression_scheme);
 
   // std::vector methods for compressed vector
 
@@ -37,23 +30,19 @@ class CompressedVector {
 
   virtual void clear() = 0;
 
-  // write more methods for addition, subtraction, multiplying by -1, union,
-  // etc.
-
-  // CompressedVector<T> operator+(CompressedVector<T> const& vec);
+  CompressedVector<T> operator+(CompressedVector<T> const& vec);
 
   virtual T operator[](uint32_t index) const = 0;
 
   // methods for the compressed_vector class
 
-  virtual bool isAllReducible() const = 0;
+  virtual bool isAdditive() const = 0;
+
+  void extend(const CompressedVector<T>& vec);
 
   virtual std::vector<T> decompressVector() const = 0;
 
   virtual ~CompressedVector() = default;
-
- protected:
-  CompressionScheme _compression_scheme;
 };
 }  // namespace thirdai::compression
 
