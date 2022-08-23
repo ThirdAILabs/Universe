@@ -40,16 +40,8 @@ class FullyConnectedNetwork(DistributedBolt):
 
         self.no_of_workers = no_of_workers
 
-        # check for whether OMP_NUM_THREADS already set by user
+        # setting OMP_NUM_THREADS to number of num_cpus
         num_omp_threads = str(get_num_cpus())
-        # if "OMP_NUM_THREADS" in os.environ:
-        #     num_omp_threads = os.environ["OMP_NUM_THREADS"]
-        #     self.logging.warning(
-        #         "Reading OMP_NUM_THREADS from environment to be " + num_omp_threads
-        #     )
-        #     self.logging.warning(
-        #         "To use default OMP_NUM_THREADS, try running the program in new shell, or update the OMP_NUM_THREADS in the current environment"
-        #     )
 
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
         runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
