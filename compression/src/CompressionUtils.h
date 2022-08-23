@@ -11,47 +11,39 @@ namespace thirdai::compression {
 // an approximation for top-k threshold by random sampling
 template <class T>
 inline T getThresholdForTopK(const std::vector<T>& values, uint32_t sketch_size,
-                             uint32_t max_samples_for_random_sampling) {
-  uint32_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
-  if (num_samples < 20) {
-    num_samples =
-        static_cast<uint32_t>(std::min(20, static_cast<int>(values.size())));
-  }
-  uint32_t topK =
-      static_cast<uint32_t>(1.0 * num_samples * sketch_size / values.size());
-
-  std::vector<T> sampled_gradients(num_samples, 0);
-
-  srand(time(0));
-  for (uint32_t i = 0; i < num_samples; i++) {
-    sampled_gradients[i] = std::abs(values[rand() % values.size()]);
-  }
-
-  // threshold is an estimate for the kth largest element in the gradients
-  // matrix
-
-  std::nth_element(sampled_gradients.begin(),
-                   sampled_gradients.begin() + num_samples - topK,
-                   sampled_gradients.end());
-  T threshold = sampled_gradients[num_samples - topK];
-  return threshold;
+                             uint32_t max_samples_for_random_sampling,
+                             int seed_for_sampling) {
+  return getThresholdForTopK(values.data, static_cast<uint32_t>(values.size()),
+                             sketch_size, max_samples_for_random_sampling,
+                             seed_for_sampling);
 }
 
 template <class T>
 inline T getThresholdForTopK(const T* values, uint32_t size,
                              uint32_t sketch_size,
-                             uint32_t max_samples_for_random_sampling) {
+                             uint32_t max_samples_for_random_sampling,
+                             int seed_for_sampling) {
   uint32_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
-  if (num_samples < 20) {
-    num_samples = static_cast<uint32_t>(std::min(20, static_cast<int>(size)));
+
+  uint32_t min_samples = 20;
+
+  // there will be scenarios when num_samples takes very small values such as 1,
+  // hence, we ensure that we sample at least 20 points
+  if (num_samples < min_samples) {
+    num_samples = static_cast<uint32_t>(std::min(min_samples, size));
   }
+
+  // sketch_size and size are both uint32_t and hence, we multiply by 1.0 to
+  // upcast the division
   uint32_t topK = static_cast<uint32_t>(1.0 * num_samples * sketch_size / size);
 
   std::vector<T> sampled_gradients(num_samples, 0);
 
-  srand(time(0));
+  // changing rand is very important
+  std::mt19937 gen(seed_for_sampling);
+  std::uniform_int_distribution<> distrib(0, size - 1);
   for (uint32_t i = 0; i < num_samples; i++) {
-    sampled_gradients[i] = std::abs(values[rand() % size]);
+    sampled_gradients[i] = std::abs(values[distrib(gen)]);
   }
 
   // threshold is an estimate for the kth largest element in the gradients
@@ -65,8 +57,8 @@ inline T getThresholdForTopK(const T* values, uint32_t size,
 }
 
 template <class T>
-std::vector<std::vector<T>> SplitVector(const std::vector<T>& vec, size_t n) {
-  std::vector<std::vector<T>> outVec;
+std::vector<std::vector<T>> splitVector(const std::vector<T>& vec, size_t n) {
+  std::vector<std::vector<T>> out_vec;
 
   size_t length = vec.size() / n;
   size_t remain = vec.size() % n;
@@ -77,14 +69,15 @@ std::vector<std::vector<T>> SplitVector(const std::vector<T>& vec, size_t n) {
   for (size_t i = 0; i < std::min(size_t(n), vec.size()); ++i) {
     end += (remain > 0) ? (length + !!(remain--)) : length;
 
-    outVec.emplace_back(std::vector<T>(vec.begin() + begin, vec.begin() + end));
+    out_vec.emplace_back(
+        std::vector<T>(vec.begin() + begin, vec.begin() + end));
 
     begin = end;
   }
-  while (outVec.size() < n) {
-    outVec.push_back(std::vector<T>());
+  while (out_vec.size() < n) {
+    out_vec.push_back(std::vector<T>());
   }
-  return outVec;
+  return out_vec;
 }
 
 }  // namespace thirdai::compression

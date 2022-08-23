@@ -40,7 +40,8 @@ DragonVector<T>::DragonVector(const T* values, uint32_t size,
   _values.assign(_sketch_size, 0);
 
   T threshold = thirdai::compression::getThresholdForTopK(
-      values, size, _sketch_size, /*max_samples_for_random_sampling=*/100000);
+      values, size, _sketch_size, /*max_samples_for_random_sampling=*/100000,
+      _seed_for_hashing);
   sketchVector(values, threshold, size);
 }
 
@@ -283,9 +284,9 @@ std::vector<DragonVector<T>> DragonVector<T>::split(
   }
 
   std::vector<std::vector<uint32_t>> split_indices =
-      thirdai::compression::SplitVector(_indices, number_chunks);
+      thirdai::compression::splitVector(_indices, number_chunks);
   std::vector<std::vector<T>> split_values =
-      thirdai::compression::SplitVector(_values, number_chunks);
+      thirdai::compression::splitVector(_values, number_chunks);
 
   std::vector<DragonVector<T>> split_dragon;
 
