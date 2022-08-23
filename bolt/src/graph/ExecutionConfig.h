@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <limits>
 #include <optional>
@@ -42,6 +43,13 @@ class TrainConfig {
     _reconstruct_hash_functions = reconstruct;
     return *this;
   }
+
+  TrainConfig& withCallbacks(const std::vector<CallbackPtr>& callbacks) {
+    _callbacks = std::make_shared<CallbackList>(std::move(callbacks));
+    return *this;
+  }
+
+  CallbackListPtr getCallbacks() const { return _callbacks; }
 
   constexpr uint32_t epochs() const { return _epochs; }
 
@@ -94,7 +102,8 @@ class TrainConfig {
         _verbose(true),
         _batch_size({}),
         _rebuild_hash_tables(std::nullopt),
-        _reconstruct_hash_functions(std::nullopt) {}
+        _reconstruct_hash_functions(std::nullopt),
+        _callbacks({}) {}
 
   uint32_t _epochs;
   float _learning_rate;
@@ -104,6 +113,8 @@ class TrainConfig {
 
   std::optional<uint32_t> _rebuild_hash_tables;
   std::optional<uint32_t> _reconstruct_hash_functions;
+
+  CallbackListPtr _callbacks;
 };
 
 class PredictConfig {

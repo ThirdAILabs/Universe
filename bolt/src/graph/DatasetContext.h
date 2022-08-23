@@ -37,8 +37,8 @@ class DatasetContextBase {
  */
 class DatasetContext final : public DatasetContextBase {
  public:
-  DatasetContext(std::vector<dataset::BoltDatasetPtr> data,
-                 std::vector<dataset::BoltTokenDatasetPtr> tokens,
+  DatasetContext(dataset::BoltDatasetList data,
+                 dataset::BoltTokenDatasetList tokens,
                  dataset::BoltDatasetPtr labels)
       : _data(std::move(data)),
         _tokens(std::move(tokens)),
@@ -116,10 +116,10 @@ class DatasetContext final : public DatasetContextBase {
     }
   }
 
-  std::vector<dataset::BoltDatasetPtr> _data;
-  std::vector<dataset::BoltTokenDatasetPtr> _tokens;
+  dataset::BoltDatasetList _data;
+  dataset::BoltTokenDatasetList _tokens;
   dataset::BoltDatasetPtr _labels;
-  std::vector<dataset::DatasetBasePtr> _all_dag_datasets;
+  dataset::DatasetBaseList _all_dag_datasets;
 };
 
 /**

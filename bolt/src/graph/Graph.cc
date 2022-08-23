@@ -86,15 +86,17 @@ MetricData BoltGraph::train(
 
   MetricAggregator metrics = train_config.getMetricAggregator();
 
-  // CallbackList callbacks = train_config.getCallbacks();
+  CallbackListPtr callbacks = train_config.getCallbacks();
 
-  // callbacks.onTrainBegin();
+  callbacks->onTrainBegin();
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+      callbacks->onEpochBegin();
+
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
@@ -103,6 +105,8 @@ MetricData BoltGraph::train(
 
       for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
            batch_idx++) {
+        callbacks->onBatchBegin();
+
         train_context.setInputs(batch_idx, _inputs, _token_inputs);
 
         const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
@@ -112,8 +116,14 @@ MetricData BoltGraph::train(
                                     reconstruct_hash_functions_batch);
 
         bar.increment();
+
+        callbacks->onBatchEnd();
       }
 
+      callbacks->onEpochEnd();
+      if (callbacks->wantToEarlyStop()) {
+        break;
+      }
       perEpochCallback();
 
       auto train_end = std::chrono::high_resolution_clock::now();
@@ -137,6 +147,8 @@ MetricData BoltGraph::train(
   }
 
   cleanupAfterBatchProcessing();
+
+  callbacks->onTrainEnd();
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);

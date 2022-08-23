@@ -24,9 +24,11 @@ class Callback {
 
   virtual void onBatchEnd(){};
 
+  virtual bool wantsToEarlyStop() { return false; }
+
   virtual ~Callback() = default;
 
- private:
+ protected:
   BoltGraphPtr _model;
 };
 
@@ -41,40 +43,51 @@ class CallbackList {
     for (const auto& callback : _callbacks) {
       callback->onTrainBegin();
     }
-  };
+  }
 
   void onTrainEnd() {
     for (const auto& callback : _callbacks) {
       callback->onTrainEnd();
     }
-  };
+  }
 
   void onEpochBegin() {
     for (const auto& callback : _callbacks) {
       callback->onEpochBegin();
     }
-  };
+  }
 
   void onEpochEnd() {
     for (const auto& callback : _callbacks) {
       callback->onEpochEnd();
     }
-  };
+  }
 
   void onBatchBegin() {
     for (const auto& callback : _callbacks) {
       callback->onBatchBegin();
     }
-  };
+  }
 
   void onBatchEnd() {
     for (const auto& callback : _callbacks) {
       callback->onBatchEnd();
     }
-  };
+  }
+
+  bool wantToEarlyStop() {
+    for (const auto& callback : _callbacks) {
+      if (callback->wantsToEarlyStop()) {
+        return true;
+      }
+    }
+    return false;
+  }
 
  private:
   std::vector<CallbackPtr> _callbacks;
 };
+
+using CallbackListPtr = std::shared_ptr<CallbackList>;
 
 }  // namespace thirdai::bolt

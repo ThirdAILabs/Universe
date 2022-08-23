@@ -324,6 +324,8 @@ class FMeasure final : public Metric {
     return name_ss.str();
   }
 
+  bool smallerIsBetter() const final { return false; }
+
   static bool isFMeasure(const std::string& name) {
     return std::regex_match(name, std::regex("f_measure\\(0\\.\\d+\\)"));
   }
