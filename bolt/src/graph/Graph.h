@@ -160,7 +160,7 @@ class BoltGraph {
 
   std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
 
-  void verifyCanTrain(const DatasetContext& train_context);
+  void initOptimizer(const DatasetContext& train_context);
 
   void verifyCanGetInputGradientSingle(
       const DatasetContextBase& single_input_gradients_context,

@@ -32,7 +32,7 @@ class DistributedTrainingContext {
             train_config.getReconstructHashFunctionsBatchInterval(
                 _train_context.batchSize(), _train_context.len())) {
     _bolt_graph.compile(std::move(loss), print_when_done);
-    _bolt_graph.verifyCanTrain(_train_context);
+    _bolt_graph.initOptimizer(_train_context);
     _bolt_graph.prepareToProcessBatches(_train_context.batchSize(),
                                         /* use_sparsity=*/true);
     _bolt_graph.enableDistributedTraining();

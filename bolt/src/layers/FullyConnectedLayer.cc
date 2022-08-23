@@ -29,6 +29,8 @@ FullyConnectedLayer::FullyConnectedLayer(
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
       _biases(config.getDim()),
+      _prev_is_active(_prev_dim, false),
+      _is_active(config.getDim(), false),
       _is_distributed(is_distributed),
       _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
@@ -42,7 +44,7 @@ FullyConnectedLayer::FullyConnectedLayer(
     initSparseDatastructures(config.getSamplingConfig(), rd);
   }
 
-  verifyCanTrain();
+  initOptimizer();
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
@@ -717,7 +719,7 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
   }
 }
 
-void FullyConnectedLayer::verifyCanTrain() {
+void FullyConnectedLayer::initOptimizer() {
   if (!_train_structures_initialized) {
     _w_gradient.assign(_dim * _prev_dim, 0);
     _w_momentum.assign(_dim * _prev_dim, 0);
@@ -726,9 +728,6 @@ void FullyConnectedLayer::verifyCanTrain() {
     _b_gradient.assign(_dim, 0);
     _b_momentum.assign(_dim, 0);
     _b_velocity.assign(_dim, 0);
-
-    _prev_is_active.assign(_prev_dim, false);
-    _is_active.assign(_dim, false);
 
     _train_structures_initialized = true;
   }

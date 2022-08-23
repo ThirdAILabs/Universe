@@ -64,7 +64,7 @@ MetricData BoltGraph::train(
     const TrainConfig& train_config) {
   DatasetContext train_context(train_data, train_tokens, train_labels);
 
-  verifyCanTrain(train_context);
+  initOptimizer(train_context);
 
   uint32_t rebuild_hash_tables_batch =
       train_config.getRebuildHashTablesBatchInterval(train_context.batchSize(),
@@ -305,6 +305,7 @@ InferenceResult BoltGraph::predict(
       /* returning_activations = */ predict_config.shouldReturnActivations(),
       /* num_metrics_tracked = */ metrics.getNumMetricsTracked());
 
+  std::cout << "XDDDD" << std::endl;
   /*
    Because of how the datasets are read we know that all batches will not have
    a batch size larger than the first batch_size. We will be using the same
@@ -319,7 +320,7 @@ InferenceResult BoltGraph::predict(
       /* total_num_samples = */ predict_context.len());
 
   ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
-
+  std::cout << "XDDDD" << std::endl;
   auto test_start = std::chrono::high_resolution_clock::now();
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
@@ -328,12 +329,14 @@ InferenceResult BoltGraph::predict(
   try {
     for (uint64_t batch_idx = 0; batch_idx < predict_context.numBatches();
          batch_idx++) {
+      std::cout << "XDDDD" << std::endl;
       predict_context.setInputs(batch_idx, _inputs, _token_inputs);
 
       uint64_t batch_size = predict_context.batchSize(batch_idx);
       const BoltBatch* batch_labels =
           has_labels ? &predict_context.labels()->at(batch_idx) : nullptr;
 
+      std::cout << "XDDDD" << std::endl;
       processInferenceBatch(batch_size, batch_labels, metrics);
 
       bar.increment();
@@ -405,14 +408,22 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
                                       MetricAggregator& metrics) {
   // Either we shouldn't track any metrics or there need to be labels
   assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
+  std::cout << "HAHAHAH" << std::endl;
 
-#pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
+  // #pragma omp parallel for default(none) shared(batch_size, batch_labels,
+  // metrics)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
+    std::cout << "HAHAHAH" << std::endl;
+
     forward(vec_id, /*labels=*/nullptr);
 
+    std::cout << "HAHAHAH" << std::endl;
+
     const auto& output = _output->getOutputVector(vec_id);
+
+    std::cout << "HAHAHAH" << std::endl;
 
     if (batch_labels) {
       const auto& labels = (*batch_labels)[vec_id];
@@ -562,7 +573,7 @@ std::unordered_map<NodePtr, int32_t> BoltGraph::getSuccessorCounts() const {
   return num_successors;
 }
 
-void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
+void BoltGraph::initOptimizer(const DatasetContext& train_context) {
   if (!graphCompiled()) {
     throw std::logic_error("Graph must be compiled before training");
   }
@@ -572,7 +583,7 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
   }
 
   for (auto& node : _nodes) {
-    node->verifyCanTrain();
+    node->initOptimizer();
   }
 
   verifyInputForGraph(train_context);

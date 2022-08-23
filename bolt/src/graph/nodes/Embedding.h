@@ -50,7 +50,7 @@ class EmbeddingNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  void verifyCanTrain() final { _embedding_layer->verifyCanTrain(); }
+  void initOptimizer() final { _embedding_layer->initOptimizer(); }
 
   std::string type() const final { return "embedding"; }
 

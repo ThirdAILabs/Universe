@@ -54,9 +54,9 @@ class SwitchNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  void verifyCanTrain() final {
+  void initOptimizer() final {
     for (auto& layer : _layers) {
-      layer->verifyCanTrain();
+      layer->initOptimizer();
     }
   }
 

@@ -39,7 +39,7 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::stringstream& summary) const;
 
-  void verifyCanTrain() {
+  void initOptimizer() {
     if (!_optimizer_initialized) {
       _gradients.assign(_embedding_block_size, 0);
       _momentum.assign(_embedding_block_size, 0);
@@ -99,7 +99,7 @@ class EmbeddingLayer {
    * Training data-structures (like the optimizer and the active neurons
    * trackers) are not loaded in by default. If we want to continue training
    * after a load, the expectation is that the higher level Graph/Network API
-   * will handle this initialization with the verifyCanTrain() method.
+   * will handle this initialization with the initOptimizer() method.
    *
    * Doing this means our load API is as simple as possible for both
    * training and inference purposes. It doesn't make sense to load these

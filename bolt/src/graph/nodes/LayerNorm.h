@@ -66,7 +66,7 @@ class LayerNormNode final : public Node,
     return false;
   }
 
-  void verifyCanTrain() final {}
+  void initOptimizer() final {}
 
  private:
   void compileImpl() final { _compiled = true; }

@@ -67,7 +67,7 @@ class FullyConnectedNode final
 
   bool isInputNode() const final { return false; }
 
-  void verifyCanTrain() final { _layer->verifyCanTrain(); }
+  void initOptimizer() final { _layer->initOptimizer(); }
 
   ActivationFunction getActivationFunction() const {
     NodeState node_state = getState();
