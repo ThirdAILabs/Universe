@@ -201,14 +201,14 @@ DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) const {
     /*
      * s=s1+s2
      * If s1[index] is non-zero, we use value and index from s1, otherwise use
-     * sketch 2 Should not use if-else because of branching overheads.
+     * sketch 2. Should not use if-else because of branching overheads.
      */
 
     return_indices[i] = _indices[i] + (_indices[i] == 0) * vec._indices[i];
     return_values[i] = _values[i] + (_indices[i] == 0) * vec._values[i];
   }
-  return DragonVector(return_indices, return_values, _original_size,
-                      _seed_for_hashing);
+  return DragonVector(std::move(return_indices), std::move(return_values),
+                      _original_size, _seed_for_hashing);
 }
 
 template <class T>
