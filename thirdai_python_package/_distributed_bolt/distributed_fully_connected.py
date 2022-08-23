@@ -10,12 +10,31 @@ from typing import Tuple, Any, Optional, Dict, List
 
 
 class FullyConnectedNetwork(DistributedBolt):
+    """This class implements the public facing APIs for
+    Fully Connected Network Class.
+
+    Args:
+        DistributedBolt (Class): Implements the generic class for 
+        Public Facing APIs which includes functions like train, predict
+    """    
     def __init__(
         self,
         no_of_workers,
         config_filename,
         num_cpus_per_node
     ):
+        """This function initializes this class, which provides wrapper over DistributedBolt and
+        implements the user facing FullyConnectedNetwork API.
+
+        Args:
+            no_of_workers (int): number of workers
+            config_filename (dict): configuration file for FullyConnectedNetwork
+            num_cpus_per_node (int): Number of CPUs per node
+
+        Raises:
+            ValueError: If number of training files is not equal to number of nodes
+            Exception: If ray initialization doesnot happens
+        """    
 
         self.logging = init_logging("distributed_fully_connected.log")
         self.logging.info("Training has started!")
