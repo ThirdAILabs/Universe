@@ -6,13 +6,6 @@
 #include <random>
 
 namespace thirdai::compression {
-enum class CompressionScheme {
-  CountMin,
-  CountSketch,
-  Dragon,
-  UnbiasedDragon,
-  Default
-};
 
 // a generic compressed vector class
 template <class T>

@@ -79,8 +79,6 @@ class DragonVector final : public CompressedVector<T> {
 
   std::vector<DragonVector<T>> split(size_t number_chunks) const;
 
-  DragonVector<T>& concat(DragonVector<T> const& vec);
-
   bool isAdditive() const final;
 
   std::vector<uint32_t> getIndices() { return _indices; }

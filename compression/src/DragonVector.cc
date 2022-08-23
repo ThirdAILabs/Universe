@@ -321,12 +321,6 @@ std::vector<T> DragonVector<T>::decompressVector() const {
   return decompressedVector;
 }
 
-// concatenating is the same as extending for the time being
-template <class T>
-DragonVector<T>& DragonVector<T>::concat(const DragonVector<T>& vec) {
-  extend(vec);
-  return *this;
-}
 template class DragonVector<float>;
 
 }  // namespace thirdai::compression
