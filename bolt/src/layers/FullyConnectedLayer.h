@@ -172,8 +172,6 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<bool> _prev_is_active;
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
-  // This is only used if _this_is_dense == false and _this_is_dense == false
-  std::vector<bool> _active_pairs;
 
   // A flag to check whether the current network is running in the normal
   // settings and distributed settings

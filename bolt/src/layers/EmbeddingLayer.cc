@@ -17,9 +17,8 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   // around.
   _embedding_block_size = (1 << _log_embedding_block_size) + _lookup_size;
   _embedding_block = std::vector<float>(_embedding_block_size, 0);
-  _gradients = std::vector<float>(_embedding_block_size, 0);
-  _momentum = std::vector<float>(_embedding_block_size, 0);
-  _velocity = std::vector<float>(_embedding_block_size, 0);
+
+  verifyCanTrain();
 
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
