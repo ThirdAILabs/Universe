@@ -34,6 +34,8 @@ class EarlyStopValidation : public Callback {
     // we can access element 0 since we previously asserted having one metric
     std::string metric_name = _predict_config.getMetricNames()[0];
 
+    _model->cleanupAfterBatchProcessing();
+
     double metric_val = _model
                             ->predict(_validation_data, _validation_tokens,
                                       _validation_labels, _predict_config)
