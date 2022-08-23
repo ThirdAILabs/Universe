@@ -64,7 +64,7 @@ MetricData BoltGraph::train(
     const TrainConfig& train_config) {
   DatasetContext train_context(train_data, train_tokens, train_labels);
 
-  initOptimizer(train_context);
+  verifyCanTrain(train_context);
 
   uint32_t rebuild_hash_tables_batch =
       train_config.getRebuildHashTablesBatchInterval(train_context.batchSize(),
@@ -95,6 +95,7 @@ MetricData BoltGraph::train(
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
       ProgressBar bar(train_context.numBatches(), train_config.verbose());
+
       auto train_start = std::chrono::high_resolution_clock::now();
 
       for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
@@ -405,8 +406,7 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
   // Either we shouldn't track any metrics or there need to be labels
   assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
 
-  // #pragma omp parallel for default(none) shared(batch_size, batch_labels,
-  // metrics)
+#pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
@@ -562,7 +562,7 @@ std::unordered_map<NodePtr, int32_t> BoltGraph::getSuccessorCounts() const {
   return num_successors;
 }
 
-void BoltGraph::initOptimizer(const DatasetContext& train_context) {
+void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
   if (!graphCompiled()) {
     throw std::logic_error("Graph must be compiled before training");
   }

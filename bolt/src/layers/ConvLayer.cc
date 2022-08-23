@@ -320,7 +320,7 @@ void ConvLayer::updateParameters(float lr, uint32_t iter, float B1, float B2,
 }
 
 void ConvLayer::initOptimizer() {
-  if (!_train_structures_initialized) {
+  if (!_optimizer_initialized) {
     _w_gradient.assign(_num_filters * _patch_dim, 0);
     _w_momentum.assign(_num_filters * _patch_dim, 0);
     _w_velocity.assign(_num_filters * _patch_dim, 0);
@@ -329,9 +329,7 @@ void ConvLayer::initOptimizer() {
     _b_momentum.assign(_num_filters, 0);
     _b_velocity.assign(_num_filters, 0);
 
-    _is_active.assign(_num_filters * _num_patches, false);
-
-    _train_structures_initialized = true;
+    _optimizer_initialized = true;
   }
 }
 

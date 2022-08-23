@@ -125,7 +125,7 @@ class ConvLayer final : public SequentialLayer {
 
   std::vector<bool> _is_active;
 
-  bool _train_structures_initialized = false;
+  bool _optimizer_initialized = false;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
