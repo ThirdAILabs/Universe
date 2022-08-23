@@ -164,7 +164,11 @@ class FullyConnectedLayer final : public SequentialLayer {
   bool _prev_is_dense;
   bool _this_is_dense;
 
-  // This is only used if _prev_is_dense == false and _this_is_dense == true
+  // This is only used if _prev_is_dense == false and _this_is_dense == false
+  // This is a vector of unique_ptr so that the push_back in the critical
+  // region is just a pointer move and can be very fast
+  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs;
+  // This is only used if _prev_is_dense == false
   std::vector<bool> _prev_is_active;
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
@@ -201,6 +205,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   inline void updateBiasParameters(float lr, float B1, float B2, float eps,
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
+
+  inline void cleanupWithinBatchVars();
 
   inline void initSparseDatastructures(const SamplingConfigPtr& sampling_config,
                                        std::random_device& rd);

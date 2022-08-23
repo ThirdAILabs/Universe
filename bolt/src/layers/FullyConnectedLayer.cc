@@ -154,13 +154,17 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
   _this_is_dense = DENSE;
 
   if constexpr (!DENSE && !PREV_DENSE) {
-    for (uint64_t cur_index = 0; cur_index < len_out; cur_index++) {
-      uint64_t act_neuron = output.active_neurons[cur_index];
-      for (uint64_t prev_index = 0; prev_index < input.len; prev_index++) {
-        uint64_t prev_act_neuron = input.active_neurons[prev_index];
-        _active_pairs[act_neuron * _prev_dim + prev_act_neuron] = true;
-      }
+    std::unique_ptr<ActiveNeuronsPair> active_pairs =
+        std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
+                                            std::vector<uint64_t>());
+    for (uint64_t i = 0; i < input.len; i++) {
+      active_pairs->first.push_back(input.active_neurons[i]);
     }
+    for (uint64_t n = 0; n < len_out; n++) {
+      active_pairs->second.push_back(output.active_neurons[n]);
+    }
+#pragma omp critical
+    _active_pairs.push_back(std::move(active_pairs));
   }
 
   if constexpr (!DENSE) {
@@ -440,8 +444,6 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
     return;
   }
 
-  updateBiasParameters(lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
-
   /*
    * In distributed setting, as of now the updates are dense as we
    * are averaging the gradient over multiple training examples.
@@ -468,19 +470,30 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
     updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                      B2_bias_corrected);
   }
+
+  updateBiasParameters(lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
+
+  cleanupWithinBatchVars();
 }
 
 inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
-#pragma omp parallel for default(none) \
-    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-      uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
-      // could use bloom filter here also?
-      if (_active_pairs[active_pair_index]) {
-        _active_pairs[active_pair_index] = false;
+  // TODO(Josh): It is possible to update the same active pair multiple times
+  // with the full gradient. Possible solutions include:
+  // 1. Including the gradient in the active pair and doing an update multiple
+  //    times with the smaller gradients. This is effectively equal to batch
+  //     size 1, but we basically already have batch size 1 with sparse sparse.
+  // 2. Having a bloom filter where we cheaply hash the active pairs to a bloom
+  //    filter bit, and if it is already set in the bloom filter skip it,
+  //    otherwise set the bit and do the gradient update.
+  for (uint32_t pair_id = 0; pair_id < _active_pairs.size();  // NOLINT
+       pair_id++) {
+    // MSVC doesn't like if we iterate over objects, only integers
+    // (but clang-tidy wants the range based for loop, so we need NOLINT above)
+    const auto& active_pair = _active_pairs[pair_id];
+    for (uint64_t prev_neuron : active_pair->first) {
+      for (uint64_t cur_neuron : active_pair->second) {
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
       }
@@ -491,6 +504,10 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
 inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
+  // TODO(josh): Possibly reorder these loops to put the _is_active on the
+  // outside? I worry this will hurt cache efficiency on the gradient lookups.
+  // It also might eventually depend on the underlying memory layout of the
+  // weights/parameters, which will be optimized for easy vectorization.
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
@@ -501,13 +518,6 @@ inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
       }
     }
   }
-
-  // We update this outside because its faster to have cache efficient for loops
-  // above. We also don't use pragma here because there's almost no speedup over
-  // a regular loop and pragma comes with much more variability
-  for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-    _prev_is_active[prev_neuron] = false;
-  }
 }
 
 inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
@@ -517,7 +527,6 @@ inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
     if (_is_active[cur_neuron]) {
-      _is_active[cur_neuron] = false;
       for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
@@ -566,6 +575,16 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     assert(!std::isnan(_biases[cur_neuron]));
 
     _b_gradient[cur_neuron] = 0;
+  }
+}
+
+inline void FullyConnectedLayer::cleanupWithinBatchVars() {
+  _active_pairs.clear();
+  for (uint64_t i = 0; i < _prev_dim; i++) {
+    _prev_is_active[i] = false;
+  }
+  for (uint64_t n = 0; n < _dim; n++) {
+    _is_active[n] = false;
   }
 }
 
@@ -716,7 +735,6 @@ void FullyConnectedLayer::initTrainDatastructures() {
     _b_momentum.assign(_dim, 0);
     _b_velocity.assign(_dim, 0);
 
-    _active_pairs.assign(_dim * _prev_dim, false);
     _prev_is_active.assign(_prev_dim, false);
     _is_active.assign(_dim, false);
 
