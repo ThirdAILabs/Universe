@@ -1,8 +1,8 @@
 #include "Model.h"
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt/src/utils/logging.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <spdlog/spdlog.h>
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -40,7 +40,7 @@ MetricData Model<BATCH_T>::train(
   MetricAggregator metrics(metric_names);
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    spdlog::info("Epoch {}:", _epoch_count + 1);
+    log::info("Epoch {}:", _epoch_count + 1);
     ProgressBar bar(num_train_batches, verbose);
     auto train_start = std::chrono::high_resolution_clock::now();
 
@@ -64,8 +64,8 @@ MetricData Model<BATCH_T>::train(
                              .count();
 
     time_per_epoch.push_back(static_cast<double>(epoch_time));
-    spdlog::info("Processed {} training batches in {} seconds.",
-                 num_train_batches, epoch_time);
+    log::info("Processed {} training batches in {} seconds.", num_train_batches,
+              epoch_time);
     _epoch_count++;
 
     metrics.logAndReset();
@@ -90,7 +90,7 @@ MetricData Model<BATCH_T>::trainOnStream(
   initializeNetworkState(batch_size, /* use_sparsity= */ true);
   BoltBatch outputs = getOutputs(batch_size, /* use_sparsity= */ true);
 
-  spdlog::info("Processing training streaming dataset...");
+  log::info("Processing training streaming dataset...");
 
   auto train_start = std::chrono::high_resolution_clock::now();
 
@@ -117,7 +117,7 @@ MetricData Model<BATCH_T>::trainOnStream(
       std::chrono::duration_cast<std::chrono::seconds>(train_end - train_start)
           .count();
 
-  spdlog::info("Processed streaming dataset in {} seconds.", train_time);
+  log::info("Processed streaming dataset in {} seconds.", train_time);
 
   metrics.logAndReset();
   auto metric_data = metrics.getOutput();
@@ -215,8 +215,8 @@ InferenceMetricData Model<BATCH_T>::predict(
   int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                           test_end - test_start)
                           .count();
-  spdlog::info("Processed {} test batches in {} milliseconds.",
-               num_test_batches, test_time);
+  log::info("Processed {} test batches in {} milliseconds.", num_test_batches,
+            test_time);
 
   metrics.logAndReset();
 
@@ -246,7 +246,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
   BoltBatch outputs =
       getOutputs(batch_size, /* use_sparsity= */ use_sparse_inference);
 
-  spdlog::info("Processing test streaming dataset...");
+  log::info("Processing test streaming dataset...");
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
@@ -269,7 +269,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
       std::chrono::duration_cast<std::chrono::seconds>(test_end - test_start)
           .count();
 
-  spdlog::info("Processed streaming dataset in {} seconds.", test_time);
+  log::info("Processed streaming dataset in {} seconds.", test_time);
 
   metrics.logAndReset();
   auto metric_data = metrics.getOutputFromInference();
