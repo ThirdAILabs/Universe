@@ -75,16 +75,13 @@ std::vector<std::vector<T>> splitVector(const std::vector<T>& vec, size_t n) {
   size_t length = vec.size() / n;
   size_t remain = vec.size() % n;
 
-  size_t begin = 0;
-  size_t end = 0;
-
-  for (size_t i = 0; i < std::min(n, vec.size()); ++i) {
-    end += (remain > 0) ? (length + !!(remain--)) : length;
+  size_t loop_size = std::min(n, vec.size());
+  for (size_t i = 0; i < loop_size; ++i) {
+    size_t begin = i * length + std::min(i, remain);
+    size_t end = (i < remain) ? begin + length + 1 : begin + length;
 
     out_vec.emplace_back(
         std::vector<T>(vec.begin() + begin, vec.begin() + end));
-
-    begin = end;
   }
   while (out_vec.size() < n) {
     out_vec.push_back(std::vector<T>());

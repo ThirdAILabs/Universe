@@ -109,7 +109,7 @@ std::vector<DefaultCompressedVector<T>> DefaultCompressedVector<T>::split(
            "than the size of the Dragon vector. Some chunks will be empty";
   }
   std::vector<std::vector<T>> split_values =
-      thirdai::compression::SplitVector(_values, number_chunks);
+      thirdai::compression::splitVector(_values, number_chunks);
 
   std::vector<DefaultCompressedVector<T>> split_default;
 
