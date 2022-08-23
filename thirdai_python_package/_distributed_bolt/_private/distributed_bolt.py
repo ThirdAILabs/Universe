@@ -8,15 +8,7 @@ from typing import Tuple, Any, Optional, Dict, List
 class DistributedBolt:
     """Implements all the user level Distributed Bolt APIs to the users."""
 
-    def __init__(
-        self,
-        workers,
-        logger,
-        epochs,
-        primary_worker,
-        num_of_batches
-        
-    ):
+    def __init__(self, workers, logger, epochs, primary_worker, num_of_batches):
         """Initializes the DistributeBolt class.
 
         Args:

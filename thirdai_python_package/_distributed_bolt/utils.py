@@ -48,15 +48,13 @@ def make_layers_from_config(configs: List[Dict[str, Any]]) -> List[bolt.FullyCon
             layer = bolt.FullyConnected(
                 dim=config.get("dim"),
                 sparsity=config.get("sparsity", 1.0),
-                activation_function=config.get("activation")
-                
+                activation_function=config.get("activation"),
             )
         else:
             layer = bolt.FullyConnected(
                 dim=config.get("dim"),
                 sparsity=config.get("sparsity", 1.0),
-                activation_function=config.get("activation")
-            
+                activation_function=config.get("activation"),
             )
 
         layers.append(layer)

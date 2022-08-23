@@ -1,7 +1,9 @@
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from thirdai._distributed_bolt._models.fully_connected_network_model import FullyConnectedNetworkModel
+from thirdai._distributed_bolt._models.fully_connected_network_model import (
+    FullyConnectedNetworkModel,
+)
 
 
 def calculate_partitions(partition_length: int, partition_id: int, total_length: int):
