@@ -120,7 +120,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   void buildLayerSummary(std::stringstream& summary,
                          bool detailed) const override;
 
-  void initTrainDatastructures() final;
+  void verifyCanTrain() final;
 
   ~FullyConnectedLayer() = default;
 
@@ -246,7 +246,7 @@ class FullyConnectedLayer final : public SequentialLayer {
    * Training data-structures (like the optimizer and the active neurons
    * trackers) are not loaded in by default. If we want to continue training
    * after a load, the expectation is that the higher level Graph/Network API
-   * will handle this initialization with the initTrainDatastructures() method.
+   * will handle this initialization with the verifyCanTrain() method.
    *
    * Doing this means our load API is as simple as possible for both
    * training and inference purposes. It doesn't make sense to load these

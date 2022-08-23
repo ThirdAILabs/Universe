@@ -469,11 +469,11 @@ void BoltGraph::prepareToProcessBatches(uint32_t batch_size,
  * some benefit we can adjust this method accordingly.
  *
  * Training data-structures should be set in a node's constructor by default. If
- * they're already set then initTrainDatastructures() is a no-op.
+ * they're already set then verifyCanTrain() is a no-op.
  */
 void BoltGraph::verifyNodesAreTrainReady() {
   for (auto& node : _nodes) {
-    node->initTrainDatastructures();
+    node->verifyCanTrain();
   }
 }
 

@@ -54,9 +54,9 @@ class SwitchNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  void initTrainDatastructures() final {
+  void verifyCanTrain() final {
     for (auto& layer : _layers) {
-      layer->initTrainDatastructures();
+      layer->verifyCanTrain();
     }
   }
 

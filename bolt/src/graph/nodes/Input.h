@@ -43,9 +43,8 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void initTrainDatastructures() final {
-    throw std::logic_error(
-        "Should not call initTrainDatastructures() on Input node");
+  void verifyCanTrain() final {
+    throw std::logic_error("Should not call verifyCanTrain() on Input node");
   }
 
  private:

@@ -67,7 +67,7 @@ class SequentialLayer {
     summary << "dim=" << getDim() << "\n";
   }
 
-  virtual void initTrainDatastructures() = 0;
+  virtual void verifyCanTrain() = 0;
 
   virtual ~SequentialLayer() = default;
 };

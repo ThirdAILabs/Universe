@@ -30,9 +30,9 @@ class TokenInput : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void initTrainDatastructures() {
+  void verifyCanTrain() {
     throw std::logic_error(
-        "Should not call initTrainDatastructures() on TokenInput node");
+        "Should not call verifyCanTrain() on TokenInput node");
   }
 
  private:
