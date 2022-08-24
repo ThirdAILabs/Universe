@@ -73,17 +73,3 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
     assert activations_before_save[1] >= threshold
 
     os.remove(temp_train_file)
-
-load_save_failed = 0
-custom_predict_single_failed = 0
-for _ in range(20):
-    try:
-        test_multi_label_text_classifier_load_save()
-    except:
-        load_save_failed += 1
-    try:
-        test_multi_label_text_classifier_custom_predict_single_threshold()
-    except:
-        custom_predict_single_failed += 1
-print("LOAD SAVE FAILED", load_save_failed, "TIMES")
-print("CUSTOM PREDICT SINGLE FAILED", custom_predict_single_failed, "TIMES")
