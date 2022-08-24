@@ -134,7 +134,4 @@ TEST_F(DragonVectorTest, SplitTest) {
   }
 }
 
-// add a test for addition of two dragon vectors
-TEST_F(DragonVectorTest, AddDragonVectorTest) { (void)1; }
-
 }  // namespace thirdai::compression::tests
