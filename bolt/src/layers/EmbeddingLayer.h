@@ -4,9 +4,11 @@
 #include <cereal/types/vector.hpp>
 #include "BoltVector.h"
 #include "LayerConfig.h"
+#include <bolt/src/layers/Optimizer.h>
 #include <hashing/src/UniversalHash.h>
 #include <cmath>
 #include <ctime>
+#include <optional>
 #include <vector>
 
 namespace thirdai::bolt {

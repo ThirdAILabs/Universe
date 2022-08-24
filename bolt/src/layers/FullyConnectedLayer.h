@@ -7,9 +7,11 @@
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include "SequentialLayer.h"
+#include <bolt/src/layers/Optimizer.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
+#include <optional>
 #include <random>
 
 namespace thirdai::bolt {
@@ -135,7 +137,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
-  bool _optimizer_initialized = false;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;

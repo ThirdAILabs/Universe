@@ -5,9 +5,11 @@
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include "SequentialLayer.h"
+#include <bolt/src/layers/Optimizer.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <exceptions/src/Exceptions.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -118,7 +120,6 @@ class ConvLayer final : public SequentialLayer {
 
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
-  bool _optimizer_initialized = false;
 
   std::vector<bool> _is_active;
 
