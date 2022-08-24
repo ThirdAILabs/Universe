@@ -491,6 +491,9 @@ void createBoltSubmodule(py::module_& module) {
            "then the classifier will output the name of the class/category of "
            "each prediction this file with one prediction result on each "
            "line.\n")
+#if THIRDAI_EXPOSE_ALL
+      .def("get_hyper_parameters", &TextClassifier::getHyperParameterSummary)
+#endif
       .def("save", &TextClassifier::save, py::arg("filename"),
            "Saves the classifier to a file. The file path must not require any "
            "folders to be created\n"

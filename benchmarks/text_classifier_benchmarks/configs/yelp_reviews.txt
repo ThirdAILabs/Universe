@@ -1,0 +1,11 @@
+experiment_name = "Yelp Reviews"
+dataset_name = "yelp_reviews"
+
+model_size = "medium"
+epochs = 5
+learning_rate = 0.0001
+
+n_classes = 2
+train_dataset_path = "yelp_reviews/train.txt"
+test_dataset_path = "yelp_reviews/test.txt"
+prediction_file_path = "predictions.txt"

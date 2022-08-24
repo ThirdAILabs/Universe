@@ -10,7 +10,9 @@
 #include <iostream>
 #include <optional>
 #include <regex>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::bolt {
 
@@ -37,6 +39,10 @@ class AutoClassifierBase {
                            bool use_sparse_inference);
 
   static bool canLoadDatasetInMemory(const std::string& filename);
+
+  std::unordered_map<std::string, std::string> getHyperParameterSummary() const {
+    return _hyper_parameters;
+  }
 
  private:
   static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
@@ -66,6 +72,7 @@ class AutoClassifierBase {
   }
 
   BoltGraphPtr _model;
+  std::unordered_map<std::string, std::string> _hyper_parameters;
 };
 
 }  // namespace thirdai::bolt

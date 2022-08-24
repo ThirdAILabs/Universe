@@ -8,6 +8,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <dataset/src/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <unordered_map>
 
 namespace thirdai::bolt {
 
@@ -69,6 +70,10 @@ class TextClassifier {
     std::unique_ptr<TextClassifier> deserialize_into(new TextClassifier());
     iarchive(*deserialize_into);
     return deserialize_into;
+  }
+
+  std::unordered_map<std::string, std::string> getHyperParameterSummary() const {
+    return _classifier->getHyperParameterSummary();
   }
 
  private:
