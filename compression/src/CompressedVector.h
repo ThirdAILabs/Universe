@@ -28,7 +28,14 @@ class CompressedVector {
    * sure that we only call this method on compressed vectors which are additive
    * such as count sketches.
    */
-  CompressedVector<T> operator+(CompressedVector<T> const& vec);
+
+  /*
+   * CompressedVector is an abstract class hence, we cannot instantiate objects.
+   * We should return a shared pointer to the derived class objects in this +
+   * operator.
+   * Should we even have this method in the compressed vector class?
+   */
+  // CompressedVector<T> operator+(CompressedVector<T> const& vec);
 
   /*
    * To-Do(Shubh):
