@@ -20,12 +20,13 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
                                        const std::string& model_size) {
   uint32_t hidden_layer_size =
       getHiddenLayerSize(model_size, n_classes, input_dim);
-  
+
   _hyper_parameters["hidden_layer_size"] = std::to_string(hidden_layer_size);
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
-  _hyper_parameters["hidden_layer_sparsity"] = std::to_string(hidden_layer_sparsity);
+  _hyper_parameters["hidden_layer_sparsity"] =
+      std::to_string(hidden_layer_sparsity);
 
   auto input_layer = std::make_shared<Input>(input_dim);
 

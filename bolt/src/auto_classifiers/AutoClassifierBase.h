@@ -40,7 +40,8 @@ class AutoClassifierBase {
 
   static bool canLoadDatasetInMemory(const std::string& filename);
 
-  std::unordered_map<std::string, std::string> getHyperParameterSummary() const {
+  std::unordered_map<std::string, std::string> getHyperParameterSummary()
+      const {
     return _hyper_parameters;
   }
 

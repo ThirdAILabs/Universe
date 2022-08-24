@@ -72,7 +72,8 @@ class TextClassifier {
     return deserialize_into;
   }
 
-  std::unordered_map<std::string, std::string> getHyperParameterSummary() const {
+  std::unordered_map<std::string, std::string> getHyperParameterSummary()
+      const {
     return _classifier->getHyperParameterSummary();
   }
 

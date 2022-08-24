@@ -16,10 +16,7 @@ def parse_args():
         help="List of config file paths to benchmark",
     )
     parser.add_argument(
-        "-m",
-        "--model_type",
-        default="engine",
-        choices=["engine", "text_classifier"]
+        "-m", "--model_type", default="engine", choices=["engine", "text_classifier"]
     )
     parser.add_argument(
         "--test_run",
@@ -30,6 +27,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 def experiment_script(model_type):
     if model_type == "engine":
         return "bolt_benchmarks/run_bolt_experiment.py"
@@ -37,6 +35,7 @@ def experiment_script(model_type):
         return "text_classifier_benchmarks/run_text_classifier_experiment.py"
     else:
         raise ValueError(f"Model type cannot be {model_type}.")
+
 
 def main():
     cur_date = str(date.today())

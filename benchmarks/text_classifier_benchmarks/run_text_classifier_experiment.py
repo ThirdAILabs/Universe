@@ -73,6 +73,7 @@ def build_arg_parser():
 
     return parser
 
+
 def main():
     parser = build_arg_parser()
     args = parser.parse_args()
@@ -85,10 +86,11 @@ def main():
 
     if mlflow_enabled:
         start_mlflow(
-            config_get(config, "experiment_name"), 
-            args.run_name, 
+            config_get(config, "experiment_name"),
+            args.run_name,
             config_get(config, "dataset_name"),
-            model_name="text_classifier")
+            model_name="text_classifier",
+        )
         log_machine_info()
         mlflow.log_params({"run_name": args.run_name, **vars(config)})
 
@@ -102,9 +104,11 @@ def main():
     if mlflow_enabled:
         mlflow.log_params(classifier.get_hyper_parameters())
     evaluate_classifier(
-        classifier, 
-        config_get(config, "test_dataset_path"), 
-        output_file=config_get_or(config, "prediction_file_path", default="predictions.txt")
+        classifier,
+        config_get(config, "test_dataset_path"),
+        output_file=config_get_or(
+            config, "prediction_file_path", default="predictions.txt"
+        ),
     )
 
 
