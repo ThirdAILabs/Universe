@@ -6,6 +6,9 @@
 namespace thirdai::hashing {
 
 uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
+  const uint8_t* d =
+      reinterpret_cast<const uint8_t*>(key);  // 32 bit extract from `key'
+
   uint32_t c1 = 0xcc9e2d51;
   uint32_t c2 = 0x1b873593;
   uint32_t r1 = 15;
@@ -14,8 +17,7 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   uint32_t n = 0xe6546b64;
   uint32_t h = 0;
   uint32_t k = 0;
-  const uint8_t* d =
-      reinterpret_cast<const uint8_t*>(key);  // 32 bit extract from `key'
+
   const uint32_t* chunks = NULL;
   const uint8_t* tail = NULL;  // tail - last 8 bytes
   int i = 0;

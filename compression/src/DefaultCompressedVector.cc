@@ -12,25 +12,25 @@ namespace thirdai::compression {
 
 template <class T>
 DefaultCompressedVector<T>::DefaultCompressedVector(const std::vector<T>& vec)
-    : _sketch_size(vec.size()) {
+    : _values(vec) {
   _values.clear();
   _values.insert(std::end(_values), std::begin(vec), std::end(vec));
 }
 
 template <class T>
 DefaultCompressedVector<T>::DefaultCompressedVector(const T* values,
-                                                    uint32_t size)
-    : _sketch_size(size) {
+                                                    uint32_t size) {
   _values.assign(values, values + size);
 }
 
 template <class T>
 DefaultCompressedVector<T>::DefaultCompressedVector(
     const DefaultCompressedVector<T>& vec)
-    : CompressedVector<T>(vec), _sketch_size(vec._sketch_size) {
-  _values.insert(std::end(_values), std::begin(vec._values),
-                 std::end(vec._values));
-}
+    : CompressedVector<T>(vec), _values(vec._values) {}
+
+template <class T>
+DefaultCompressedVector<T>::DefaultCompressedVector(std::vector<T>&& vec)
+    : _values(std::move(vec)) {}
 
 /*
  * Implementing std::vector's standard methods for the class
@@ -49,13 +49,11 @@ void DefaultCompressedVector<T>::set(uint32_t index, T value) {
 template <class T>
 void DefaultCompressedVector<T>::assign(uint32_t size, T value) {
   _values.assign(size, value);
-  _sketch_size = size;
 }
 
 template <class T>
 void DefaultCompressedVector<T>::clear() {
   _values.clear();
-  _sketch_size = 0;
 }
 
 /*
@@ -65,17 +63,16 @@ void DefaultCompressedVector<T>::clear() {
 template <class T>
 DefaultCompressedVector<T> DefaultCompressedVector<T>::operator+(
     DefaultCompressedVector<T> const& vec) const {
-  if (_sketch_size != vec._sketch_size) {
+  if (_values.size() != vec._values.size()) {
     throw std::length_error(
         "Cannot add Default Compressed Vectors of different sizes");
   }
-  std::vector<T> return_values(_sketch_size, 0);
-#pragma omp parallel for default(none) \
-    shared(return_values, _sketch_size, _values, vec)
-  for (uint32_t i = 0; i < _sketch_size; i++) {
+  std::vector<T> return_values(_values.size(), 0);
+#pragma omp parallel for default(none) shared(return_values, _values, vec)
+  for (uint32_t i = 0; i < _values.size(); i++) {
     return_values[i] = _values[i] + vec._values[i];
   }
-  return DefaultCompressedVector(return_values);
+  return DefaultCompressedVector(std::move(return_values));
 }
 
 // normally we use vec[i]=value to set it. here we are just fetching the i'th
@@ -103,7 +100,7 @@ void DefaultCompressedVector<T>::extend(const DefaultCompressedVector<T>& vec) {
 template <class T>
 std::vector<DefaultCompressedVector<T>> DefaultCompressedVector<T>::split(
     size_t number_chunks) const {
-  if (uint32_t(number_chunks) > _sketch_size) {
+  if (uint32_t(number_chunks) > _values.size()) {
     std::cout
         << "Warning: The number of chunks to split the vector is more "
            "than the size of the Dragon vector. Some chunks will be empty";
@@ -120,17 +117,12 @@ std::vector<DefaultCompressedVector<T>> DefaultCompressedVector<T>::split(
   }
 
   for (size_t i = 0; i < split_values.size(); i++) {
-    split_default.push_back(DefaultCompressedVector(split_values[i]));
+    split_default.push_back(
+        DefaultCompressedVector(std::move(split_values[i])));
   }
   return split_default;
 }
 
-template <class T>
-DefaultCompressedVector<T>& DefaultCompressedVector<T>::concat(
-    const DefaultCompressedVector<T>& vec) {
-  extend(vec);
-  return *this;
-}
 template <class T>
 std::vector<T> DefaultCompressedVector<T>::decompressVector() const {
   return _values;

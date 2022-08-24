@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CompressedVector.h"
+#include <_types/_uint32_t.h>
 #include <cstddef>
 #include <cstdint>
 #include <random>
@@ -11,6 +12,8 @@ class DefaultCompressedVector final : public CompressedVector<T> {
   // add a friend test class here
 
  public:
+  // defining the constructors for the class
+
   DefaultCompressedVector<T>() {}
 
   explicit DefaultCompressedVector(const std::vector<T>& vec);
@@ -19,6 +22,10 @@ class DefaultCompressedVector final : public CompressedVector<T> {
 
   DefaultCompressedVector(const DefaultCompressedVector<T>& vec);
 
+  explicit DefaultCompressedVector(std::vector<T>&& vec);
+
+  // using "copy-swap idiom" for = operator. This implementation makes sure that
+  // we do not have to check for self-reference.
   DefaultCompressedVector& operator=(DefaultCompressedVector<T> vec) {
     swap(*this, vec);
     return *this;
@@ -33,7 +40,6 @@ class DefaultCompressedVector final : public CompressedVector<T> {
                    DefaultCompressedVector<T>& second) {
     using std::swap;
     swap(first._values, second._values);
-    swap(first._sketch_size, second._sketch_size);
   }
 
   /*
@@ -57,6 +63,12 @@ class DefaultCompressedVector final : public CompressedVector<T> {
   DefaultCompressedVector<T> operator+(
       DefaultCompressedVector<T> const& vec) const;
 
+  /*
+   * To-Do(Shubh):
+   * This method should return a reference to the element at the index so that
+   * we can do things like vector[i]=a.
+   */
+
   T operator[](uint32_t index) const final;
 
   /*
@@ -67,16 +79,15 @@ class DefaultCompressedVector final : public CompressedVector<T> {
 
   std::vector<DefaultCompressedVector<T>> split(size_t number_chunks) const;
 
-  DefaultCompressedVector<T>& concat(DefaultCompressedVector<T> const& vec);
-
   bool isAdditive() const final;
 
   std::vector<T> getValues() { return _values; }
 
   std::vector<T> decompressVector() const final;
 
+  uint32_t size() { return _values.size(); }
+
  private:
   std::vector<T> _values;
-  uint32_t _sketch_size;
 };
 }  // namespace thirdai::compression

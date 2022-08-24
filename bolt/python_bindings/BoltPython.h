@@ -443,7 +443,7 @@ class DistributedPyNetwork final : public DistributedModel {
 
       compressed_vector["compression_scheme"] = "dragon";
       compressed_vector["original_size"] = dragon_sketch.getOriginalSize();
-      compressed_vector["sketch_size"] = dragon_sketch.getSketchSize();
+      compressed_vector["sketch_size"] = dragon_sketch.size();
       compressed_vector["seed_for_hashing"] = dragon_sketch.getSeedForHashing();
       compressed_vector["compression_density"] =
           dragon_sketch.getCompressionDensity();

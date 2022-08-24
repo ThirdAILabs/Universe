@@ -220,10 +220,6 @@ T DragonVector<T>::operator[](uint32_t index) const {
  * Implementing utility methods for the class
  */
 
-/*
- * Dragon vectors are not additive by default. But we can still define schemes
- * to add them up.
- */
 template <class T>
 bool DragonVector<T>::isAdditive() const {
   return false;
@@ -250,13 +246,6 @@ void DragonVector<T>::extend(const DragonVector<T>& vec) {
   //_original_size remains the same
 }
 
-/*
- * Splitting a dragon vector into smaller parts. This is useful when we are
- * training in a distributed setting with ring-all-reduce framework. We need to
- * split the data into smaller parts and communicate.
- * The parameters _original_size, _seed_for_hashing remain the same for
- * the split vectors.
- */
 template <class T>
 std::vector<DragonVector<T>> DragonVector<T>::split(
     size_t number_chunks) const {
@@ -295,10 +284,6 @@ std::vector<DragonVector<T>> DragonVector<T>::split(
   return split_dragon;
 }
 
-/*
- * We are storing indices,values tuple hence, decompressing is just putting
- * corresponding values for the stored indices
- */
 template <class T>
 std::vector<T> DragonVector<T>::decompressVector() const {
   std::vector<T> decompressedVector(_original_size, 0);

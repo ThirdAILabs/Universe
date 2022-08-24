@@ -11,7 +11,22 @@ namespace thirdai::compression {
 template <class T>
 class DragonVector final : public CompressedVector<T> {
  public:
+  // defining the constructors for the class
   DragonVector<T>() {}
+
+  /*
+   * If we are constructing a dragon vector from (indices,values) then we need
+   * to know the size of the original vector. Keeping track of the original size
+   * is important when we want to decompress a vector.
+   */
+  DragonVector(const std::vector<T>& vec, float compression_density,
+               int seed_for_hashing);
+
+  DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
+               uint32_t original_size, int seed_for_hashing);
+
+  DragonVector(const T* values, uint32_t size, float compression_density,
+               int seed_for_hashing);
 
   DragonVector(const DragonVector<T>& vec);
 
@@ -29,26 +44,9 @@ class DragonVector final : public CompressedVector<T> {
     std::swap(first._values, second._values);
     std::swap(first._min_sketch_size, second._min_sketch_size);
     std::swap(first._original_size, second._original_size);
-    std::swap(first._sketch_size, second._sketch_size);
     std::swap(first._compression_density, second._compression_density);
     std::swap(first._seed_for_hashing, second._seed_for_hashing);
   }
-
-  // defining the constructors for the class
-
-  /*
-   * If we are constructing a dragon vector from (indices,values) then we need
-   * to know the size of the original vector. Keeping track of the original size
-   * is important when we want to decompress a vector.
-   */
-  DragonVector(const std::vector<T>& vec, float compression_density,
-               int seed_for_hashing);
-
-  DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
-               uint32_t original_size, int seed_for_hashing);
-
-  DragonVector(const T* values, uint32_t size, float compression_density,
-               int seed_for_hashing);
 
   /*
    * Implementing std::vector's standard methods for the class
@@ -94,7 +92,19 @@ class DragonVector final : public CompressedVector<T> {
 
   void extend(const DragonVector<T>& vec);
 
+  /*
+   * Splitting a dragon vector into smaller parts. This is useful when we are
+   * training in a distributed setting with ring-all-reduce framework. We need
+   * to split the data into smaller parts and communicate. The parameters
+   * _original_size, _seed_for_hashing remain the same for the split vectors.
+   */
+
   std::vector<DragonVector<T>> split(size_t number_chunks) const;
+
+  /*
+   * Dragon vectors are not additive by default. But we can still define schemes
+   * to add them up.
+   */
 
   bool isAdditive() const final;
 
@@ -108,10 +118,12 @@ class DragonVector final : public CompressedVector<T> {
 
   float getCompressionDensity() const { return _compression_density; }
 
-  uint32_t getSketchSize() const {
-    return static_cast<uint32_t>(_indices.size());
-  }
+  uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
 
+  /*
+   * We are storing indices,values tuple hence, decompressing is just putting
+   * corresponding values for the stored indices
+   */
   std::vector<T> decompressVector() const final;
 
  private:
@@ -124,7 +136,6 @@ class DragonVector final : public CompressedVector<T> {
   std::vector<uint32_t> _indices;
   std::vector<T> _values;
   uint32_t _min_sketch_size = 10;
-  uint32_t _sketch_size = 0;
   uint32_t _original_size = 0;
   float _compression_density = 1;
   int _seed_for_hashing;

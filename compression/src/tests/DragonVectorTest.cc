@@ -39,12 +39,14 @@ class DragonVectorTest : public testing::Test {
   }
 };
 
+// We have two constructors that takes in a vector or an array and compresses
+// it. Testing those two constructors here
 TEST_F(DragonVectorTest, ConstructorTest) {
   // size checks
   ASSERT_EQ(_vec.getOriginalSize(), _original_size);
   ASSERT_EQ(_vec_from_array.getOriginalSize(), _original_size);
-  ASSERT_EQ(_vec.getSketchSize(), _sketch_size);
-  ASSERT_EQ(_vec_from_array.getSketchSize(), _sketch_size);
+  ASSERT_EQ(_vec.size(), _sketch_size);
+  ASSERT_EQ(_vec_from_array.size(), _sketch_size);
 
   // we can probably remove these two asserts because compression density is not
   // integral to dragon vector
@@ -74,6 +76,7 @@ TEST_F(DragonVectorTest, ConstructorTest) {
   }
 }
 
+// Testing get set methods
 TEST_F(DragonVectorTest, GetSetTest) {
   std::vector<uint32_t> indices_vec = _vec.getIndices();
 
@@ -95,6 +98,8 @@ TEST_F(DragonVectorTest, GetSetTest) {
   }
 }
 
+// We are extending a dragon vector by itself. The original size of the dragon
+// vector should remain the same
 TEST_F(DragonVectorTest, ExtendTest) {
   DragonVector<float> ns(_vec);
   _vec.extend(ns);
@@ -113,34 +118,12 @@ TEST_F(DragonVectorTest, ExtendTest) {
 TEST_F(DragonVectorTest, SplitTest) {
   size_t number_chunks = 3;
 
-  std::cout << "printing original vec\n";
-  std::cout << "size: " << _vec.getSketchSize() << " ";
-  for (int i : _original_vec) {
-    std::cout << _original_vec[i] << " ";
-  }
-  std::cout << "\n";
-
-  std::cout << "printing dragon vec\n";
-  for (uint32_t i = 0; i < _vec.getSketchSize(); i++) {
-    std::cout << _vec.getIndices()[i] << " ";
-  }
-  std::cout << "\n";
-
   std::vector<DragonVector<float>> splitVector = _vec.split(number_chunks);
-  std::cout << "SplitVector has been made and printing it\n";
-
-  for (auto x : splitVector) {
-    std::cout << "size: " << x.getSketchSize() << " ";
-    for (auto y : x.getIndices()) {
-      std::cout << y << " ";
-    }
-    std::cout << "\n";
-  }
   uint32_t curr_vec = 0;
   uint32_t curr_index = 0;
 
   for (uint32_t i = 0; i < _sketch_size; i++, curr_index++) {
-    if (curr_index == splitVector[curr_vec].getSketchSize()) {
+    if (curr_index == splitVector[curr_vec].size()) {
       curr_vec++;
       curr_index = 0;
     }
