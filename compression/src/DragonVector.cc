@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-
 using UniversalHash = thirdai::hashing::UniversalHash;
 
 namespace thirdai::compression {
