@@ -83,7 +83,7 @@ constexpr float actFuncDerivative(float activation,
 }
 
 struct AdamOptimizer {
-  AdamOptimizer(uint64_t len)
+  explicit AdamOptimizer(uint64_t len)
       : gradients(len, 0.0), momentum(len, 0.0), velocity(len, 0.0) {}
 
   std::vector<float> gradients;
