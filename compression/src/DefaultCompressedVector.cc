@@ -12,10 +12,7 @@ namespace thirdai::compression {
 
 template <class T>
 DefaultCompressedVector<T>::DefaultCompressedVector(const std::vector<T>& vec)
-    : _values(vec) {
-  _values.clear();
-  _values.insert(std::end(_values), std::begin(vec), std::end(vec));
-}
+    : DefaultCompressedVector(vec.data(), static_cast<uint32_t>(vec.size())) {}
 
 template <class T>
 DefaultCompressedVector<T>::DefaultCompressedVector(const T* values,

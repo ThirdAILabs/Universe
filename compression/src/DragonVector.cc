@@ -54,15 +54,12 @@ DragonVector<T>::DragonVector(const T* values, uint32_t size,
 template <class T>
 DragonVector<T>::DragonVector(const DragonVector<T>& vec)
     : CompressedVector<T>(vec),
+      _indices(vec._indices),
+      _values(vec._values),
       _min_sketch_size(vec._min_sketch_size),
       _original_size(vec._original_size),
       _compression_density(vec._compression_density),
-      _seed_for_hashing(vec._seed_for_hashing) {
-  _indices.insert(std::end(_indices), std::begin(vec._indices),
-                  std::end(vec._indices));
-  _values.insert(std::end(_values), std::begin(vec._values),
-                 std::end(vec._values));
-}
+      _seed_for_hashing(vec._seed_for_hashing) {}
 
 /*
  * For elements in the values array with absolute value greater than the
