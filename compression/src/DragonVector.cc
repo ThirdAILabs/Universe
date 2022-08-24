@@ -1,5 +1,6 @@
 #include "DragonVector.h"
-#include <hashing/src/MurmurHash.h>
+#include <hashing/src/UniversalHash.h>
+#include <_types/_uint32_t.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cmath>
@@ -9,6 +10,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+using UniversalHash = thirdai::hashing::UniversalHash;
 
 namespace thirdai::compression {
 
@@ -69,15 +72,14 @@ DragonVector<T>::DragonVector(const DragonVector<T>& vec)
 template <class T>
 void DragonVector<T>::sketchVector(const T* values, T threshold, uint32_t size,
                                    uint32_t sketch_size) {
+  UniversalHash hash_function = UniversalHash(_seed_for_hashing);
 #pragma omp parallel for default(none)                              \
     shared(_indices, _values, values, sketch_size, threshold, size, \
-           _seed_for_hashing)
+           _seed_for_hashing, hash_function)
+
   for (uint32_t i = 0; i < size; i++) {
     if (std::abs(values[i]) > threshold) {
-      int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
-                                              std::to_string(i).length(),
-                                              _seed_for_hashing) %
-                 sketch_size;
+      uint32_t hash = hash_function.gethash(i) % sketch_size;
       _indices[hash] = i;
       _values[hash] = values[i];
     }
@@ -105,13 +107,9 @@ T DragonVector<T>::get(uint32_t index) const {
         "Index out of range for the compressed vector of size " +
         std::to_string(_original_size));
   }
-
   uint32_t sketch_size = _indices.size();
-  int hash = thirdai::hashing::MurmurHash(std::to_string(index).c_str(),
-                                          std::to_string(index).length(),
-                                          _seed_for_hashing) %
-             sketch_size;
-
+  UniversalHash hash_function = UniversalHash(_seed_for_hashing);
+  uint32_t hash = hash_function.gethash(index) % sketch_size;
   // If the index at the hash position is equal to index, we return the value
   // back, otherwise we return a zero. This is no-branching if-else.
   return (_indices[hash] == index) * _values[hash];
@@ -130,11 +128,8 @@ void DragonVector<T>::set(uint32_t index, T value) {
         std::to_string(_original_size));
   }
   uint32_t sketch_size = _indices.size();
-  int hash = thirdai::hashing::MurmurHash(std::to_string(index).c_str(),
-                                          std::to_string(index).length(),
-                                          _seed_for_hashing) %
-             sketch_size;
-
+  UniversalHash hash_function = UniversalHash(_seed_for_hashing);
+  uint32_t hash = hash_function.gethash(index) % sketch_size;
   _indices[hash] = index;
   _values[hash] = value;
 }

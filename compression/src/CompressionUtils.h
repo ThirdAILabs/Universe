@@ -1,12 +1,23 @@
 #pragma once
 
-#include <hashing/src/MurmurHash.h>
+#include <hashing/src/UniversalHash.h>
 #include <algorithm>
 #include <random>
 #include <string>
 #include <vector>
 
 namespace thirdai::compression {
+
+// To-Do:
+// Remove printVector function before merging the PR
+template <class T>
+inline void printVector(std::vector<T> vec, const std::string& name) {
+  std::cout << "Printing the vector " << name << std::endl;
+  for (auto x : vec) {
+    std::cout << x << " ";
+  }
+  std::cout << std::endl;
+}
 
 // an approximation for top-k threshold by random sampling
 template <class T>

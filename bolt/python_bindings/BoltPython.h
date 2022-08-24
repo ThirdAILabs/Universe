@@ -427,20 +427,18 @@ class DistributedPyNetwork final : public DistributedModel {
                           : DistributedModel::getInputDim();
 
     py::dict compressed_vector;
-
     if (compression_scheme == "dragon") {
       compression::DragonVector<float> dragon_sketch;
 
       if (sketch_biases) {
         dragon_sketch = compression::DragonVector<float>(
-            DistributedModel::getBiasesGradient(layer_index),
-            compression_density, uint32_t(dim), seed_for_hashing);
+            DistributedModel::getBiasesGradient(layer_index), uint32_t(dim),
+            compression_density, seed_for_hashing);
       } else {
         dragon_sketch = compression::DragonVector<float>(
             DistributedModel::getWeightsGradient(layer_index),
-            compression_density, uint32_t(dim * prev_dim), seed_for_hashing);
+            uint32_t(dim * prev_dim), compression_density, seed_for_hashing);
       }
-
       compressed_vector["compression_scheme"] = "dragon";
       compressed_vector["original_size"] = dragon_sketch.getOriginalSize();
       compressed_vector["sketch_size"] = dragon_sketch.size();

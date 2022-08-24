@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <compression/src/CompressionUtils.h>
 #include <compression/src/DragonVector.h>
 #include <sys/types.h>
 #include <cstddef>
