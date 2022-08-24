@@ -360,15 +360,15 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   if (isRandomSampling()) {
-    dropoutRandomSampling(input, output, labels);
+    randomNeuronSampling(input, output, labels);
   } else {
-    lshSampling<PREV_DENSE>(input, output, labels);
+    lshNeuronSampling<PREV_DENSE>(input, output, labels);
   }
 }
 
-void FullyConnectedLayer::dropoutRandomSampling(const BoltVector& input,
-                                                const BoltVector& output,
-                                                const BoltVector* labels) {
+void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
+                                               const BoltVector& output,
+                                               const BoltVector* labels) {
   uint32_t label_len = 0;
   if (labels) {
     label_len = labels->len;
@@ -395,9 +395,9 @@ void FullyConnectedLayer::dropoutRandomSampling(const BoltVector& input,
 }
 
 template <bool PREV_DENSE>
-void FullyConnectedLayer::lshSampling(const BoltVector& input,
-                                      BoltVector& output,
-                                      const BoltVector* labels) {
+void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
+                                            BoltVector& output,
+                                            const BoltVector* labels) {
   std::unordered_set<uint32_t> active_set;
 
   uint32_t label_len = labels != nullptr ? labels->len : 0;
@@ -797,9 +797,13 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
   summary << activationFunctionToStr(_act_func);
 
   if (detailed && _sparsity < 1.0) {
-    summary << " (hash_function=" << _hasher->getName() << ", ";
-    _hash_table->summarize(summary);
-    summary << ")";
+    if (isRandomSampling()) {
+      summary << " (using random sampling)";
+    } else {
+      summary << " (hash_function=" << _hasher->getName() << ", ";
+      _hash_table->summarize(summary);
+      summary << ")";
+    }
   }
 
   summary << "\n";
