@@ -73,6 +73,15 @@ class DLRMFeatureInteractionNode final : public Node {
     return total;
   }
 
+  static float dotProduct(const float* const emb1, const float* const emb2,
+                          uint32_t dim) {
+    float total = 0.0;
+    for (uint32_t i = 0; i < dim; i++) {
+      total += emb1[i] * emb2[i];
+    }
+    return total;
+  }
+
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     (void)labels;
 
@@ -100,14 +109,20 @@ class DLRMFeatureInteractionNode final : public Node {
     }
 
     // Compute pairwise interactions between embeddings.
-    Eigen::Map<EigenRowMajorMatrix> eigen_embedding_chunks(
-        embedding_output.activations, {_num_chunks, embedding_chunk_size});
 
-    Eigen::Map<EigenRowMajorMatrix> eigen_pairwise_output(
-        output_vector.activations + _num_chunks, {_num_chunks, _num_chunks});
+    // TODO(Nicholas): is it faster to use eigen here since its more optimized
+    // for dense computations, however it requires computing every pairwise dot
+    // product twice?
 
-    eigen_pairwise_output =
-        eigen_embedding_chunks * eigen_embedding_chunks.transpose();
+    /** Eigen dot product computation
+     * Eigen::Map<EigenRowMajorMatrix> eigen_embedding_chunks(
+     *   embedding_output.activations, {_num_chunks, embedding_chunk_size});
+     *
+     * auto pairwise_dot_products =
+     *    eigen_embedding_chunks * eigen_embedding_chunks.transpose();
+     */
+
+     for (uint32_t emb_idx_a = 0; emb_idx_a < _num_chunks)
   }
 
   void backpropagateImpl(uint32_t vec_index) final { (void)vec_index; }
