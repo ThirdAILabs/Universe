@@ -16,14 +16,11 @@
 
 namespace thirdai::bolt {
 
-class DLRM;
-
 namespace python {
 class SentimentClassifier;
 }  // namespace python
 
 class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
-  friend class DLRM;
   friend class TextClassifier;
   friend class python::SentimentClassifier;
 
@@ -125,6 +122,12 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   float getLayerSparsity(uint32_t layer_index) {
     checkLayerIndex(layer_index);
     return _layers.at(layer_index)->getSparsity();
+  }
+
+  void initOptimizer() final {
+    for (auto& layer : _layers) {
+      layer->initOptimizer();
+    }
   }
 
  private:

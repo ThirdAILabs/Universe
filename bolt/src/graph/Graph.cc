@@ -571,6 +571,10 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
     throw std::invalid_argument("Must pass in labels for training.");
   }
 
+  for (auto& node : _nodes) {
+    node->initOptimizer();
+  }
+
   verifyInputForGraph(train_context);
 }
 
