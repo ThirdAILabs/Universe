@@ -27,7 +27,7 @@ class DefaultCompressedVectorTest : public testing::Test {
   }
 };
 
-TEST_F(DefaultCompressedVectorTest, ConstructorTest) {
+TEST_F(DefaultCompressedVectorTest, ConstructorDefaultCompressedVectorTest) {
   ASSERT_EQ(static_cast<uint32_t>(_num_samples), _vec.size());
   std::vector<float> values = _vec.getValues();
   for (int i = 0; i < _num_samples; ++i) {
@@ -35,7 +35,7 @@ TEST_F(DefaultCompressedVectorTest, ConstructorTest) {
   }
 }
 
-TEST_F(DefaultCompressedVectorTest, GetSetTest) {
+TEST_F(DefaultCompressedVectorTest, GetSetDefaultCompressedVectorTest) {
   std::mt19937 rng;
   std::vector<float> temp_vec;
   std::uniform_real_distribution<float> dist(-100, 100);

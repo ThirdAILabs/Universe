@@ -41,7 +41,7 @@ class DragonVectorTest : public testing::Test {
 
 // We have two constructors that takes in a vector or an array and compresses
 // it. Testing those two constructors here
-TEST_F(DragonVectorTest, ConstructorTest) {
+TEST_F(DragonVectorTest, ConstructorDragonVectorTest) {
   // size checks
   ASSERT_EQ(_vec.getOriginalSize(), _original_size);
   ASSERT_EQ(_vec_from_array.getOriginalSize(), _original_size);
@@ -77,7 +77,7 @@ TEST_F(DragonVectorTest, ConstructorTest) {
 }
 
 // Testing get set methods
-TEST_F(DragonVectorTest, GetSetTest) {
+TEST_F(DragonVectorTest, GetSetDragonVectorTest) {
   std::vector<uint32_t> indices_vec = _vec.getIndices();
 
   for (uint32_t i = 0; i < _sketch_size; i++) {
@@ -100,7 +100,7 @@ TEST_F(DragonVectorTest, GetSetTest) {
 
 // We are extending a dragon vector by itself. The original size of the dragon
 // vector should remain the same
-TEST_F(DragonVectorTest, ExtendTest) {
+TEST_F(DragonVectorTest, ExtendDragonVectorTest) {
   DragonVector<float> ns(_vec);
   _vec.extend(ns);
 
@@ -135,6 +135,6 @@ TEST_F(DragonVectorTest, SplitTest) {
 }
 
 // add a test for addition of two dragon vectors
-TEST_F(DragonVectorTest, AddTest) { (void)1; }
+TEST_F(DragonVectorTest, AddDragonVectorTest) { (void)1; }
 
 }  // namespace thirdai::compression::tests
