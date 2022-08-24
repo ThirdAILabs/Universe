@@ -152,9 +152,7 @@ void assertItemHistoryNotStagnant(std::vector<std::vector<uint32_t>>& batch,
     auto user_id = user_id_sequence[idx];
     std::unordered_set<uint32_t> current_history;
 
-    for (auto item_id : batch[idx]) {
-      current_history.insert(item_id);
-    }
+    current_history.insert(batch[idx].begin(), batch[idx].end());
 
     if (!last_user_item_history[user_id].empty() &&
         last_user_item_history[user_id] != current_history) {
