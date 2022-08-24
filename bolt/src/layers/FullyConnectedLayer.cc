@@ -378,7 +378,9 @@ void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
 
   uint64_t random_offset =
       hashing::HashUtils::simpleIntegerHash(
-          *reinterpret_cast<uint32_t*>(&input.activations[0])) &
+          // Hack to intepret the float as an integer without doing a
+          // conversion.
+          *reinterpret_cast<uint32_t*>(&input.activations[0])) %
       _dim;
 
   uint64_t neurons_to_sample = _sparse_dim - label_len;
@@ -426,12 +428,6 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
      * this will help force the hash tables to map vectors towards buckets
      * that contain their correct labels. This is specific to the output
      * layer.
-     *
-     * We call QueryAndInsertForInference if the following conditions are met:
-     *   1. We have sparse inference enabled.
-     *   2. Activation = Softmax or Sigmoid, meaning it's a classification
-     * task, and that the given layer is the last layer, as this is the only
-     *      place where we use these activation functions.
      */
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
@@ -441,7 +437,7 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
 
   if (active_set.size() < _sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
-    // safe and we want to have deterministic outcomes
+    // safe and we want to have deterministic sampling.
     uint32_t rand_offset = hashes.at(0) % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
