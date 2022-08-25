@@ -68,6 +68,8 @@ class ConcatenateNode final
 
   void loadCheckpointFromMemory() {}
 
+  void initOptimizer() final {}
+
  private:
   void compileImpl() final { _compiled = true; }
 

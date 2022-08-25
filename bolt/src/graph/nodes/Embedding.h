@@ -56,6 +56,8 @@ class EmbeddingNode final : public Node,
     _embedding_layer->loadCheckpointFromMemory();
   }
 
+  void initOptimizer() final { _embedding_layer->initOptimizer(); }
+
   std::string type() const final { return "embedding"; }
 
   NodeState getState() const final {

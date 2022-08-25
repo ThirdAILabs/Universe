@@ -217,6 +217,8 @@ class Node {
 
   virtual void loadCheckpointFromMemory() = 0;
 
+  virtual void initOptimizer() = 0;
+
   // Prints out a single line summary in the format
   // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...
   void summarize(std::stringstream& summary, bool detailed) const {

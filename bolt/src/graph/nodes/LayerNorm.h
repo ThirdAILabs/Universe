@@ -71,6 +71,8 @@ class LayerNormNode final : public Node,
 
   void loadCheckpointFromMemory() {}
 
+  void initOptimizer() final {}
+
  private:
   void compileImpl() final { _compiled = true; }
 
