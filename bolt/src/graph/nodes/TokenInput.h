@@ -30,6 +30,16 @@ class TokenInput : public Node {
 
   bool isInputNode() const final { return true; }
 
+  void checkpointInMemory() {
+    throw std::invalid_argument(
+        "Should not call checkpointInMemory() in an TokenInput node");
+  }
+
+  void loadCheckpointFromMemory() {
+    throw std::invalid_argument(
+        "Should not call loadCheckpointFromMemory() in an TokenInput node");
+  }
+
  private:
   void compileImpl() final { _compiled = true; }
 

@@ -708,6 +708,23 @@ float* FullyConnectedLayer::getBiasesGradient() { return _b_gradient.data(); }
 
 float* FullyConnectedLayer::getWeightsGradient() { return _w_gradient.data(); }
 
+void FullyConnectedLayer::checkpointInMemory() {
+  std::vector<float> _weights_copy = _weights;
+  std::vector<float> _biases_copy = _biases;
+  _weight_bias_checkpoint =
+      std::make_pair<std::vector<float>, std::vector<float>>(
+          std::move(_weights_copy), std::move(_biases_copy));
+}
+
+void FullyConnectedLayer::loadCheckpointFromMemory() {
+  if (!_weight_bias_checkpoint) {
+    throw std::invalid_argument(
+        "Error loading in memory checkpoint. No weights and biases saved.");
+  }
+  _weights = _weight_bias_checkpoint->first;
+  _biases = _weight_bias_checkpoint->second;
+}
+
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
   _sparsity = sparsity;

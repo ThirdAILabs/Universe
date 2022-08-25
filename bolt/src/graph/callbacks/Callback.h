@@ -13,10 +13,10 @@ using BoltGraphPtr = std::shared_ptr<BoltGraph>;
  * interface allows you to call various methods at different steps during the
  * model training process. Right now this callback is only used during training
  * but could easily be adapted for use during inference by adding the virtual
- * methods onPredictBegin and onPredictEnd.
+ * methods: onPredictBegin and onPredictEnd.
  *
  * This class has access to the associated BoltGraph object as it is set at the
- * beginning of train(..). Callbacks are allowed to modify as needed.
+ * beginning of train(..). Callbacks are allowed to modify it as needed.
  */
 class Callback {
  public:

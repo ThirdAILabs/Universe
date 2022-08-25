@@ -7,6 +7,7 @@
 #include <hashing/src/UniversalHash.h>
 #include <cmath>
 #include <ctime>
+#include <optional>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -36,6 +37,10 @@ class EmbeddingLayer {
   BoltBatch createBatchState(const uint32_t batch_size) const {
     return BoltBatch(_total_embedding_dim, batch_size, true);
   }
+
+  void checkpointInMemory();
+
+  void loadCheckpointFromMemory();
 
   void buildLayerSummary(std::stringstream& summary) const;
 
@@ -104,9 +109,11 @@ class EmbeddingLayer {
   std::vector<float> _momentum;
   std::vector<float> _velocity;
 
+  std::optional<std::vector<float>> _embedding_block_checkpoint;
+
   // This structure stores the embedding block offset for each token in each
-  // input. This is used for backpropagation and for update paramters to know
-  // what parts of the embedding block were used.
+  // input. This is used for backpropagation and for update paramters to
+  // know what parts of the embedding block were used.
   std::vector<std::vector<uint64_t>> _embedding_block_offsets;
 };
 

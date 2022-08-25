@@ -54,6 +54,18 @@ class SwitchNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
+  void checkpointInMemory() {
+    for (auto& layer : _layers) {
+      layer->checkpointInMemory();
+    }
+  }
+
+  void loadCheckpointFromMemory() {
+    for (auto& layer : _layers) {
+      layer->loadCheckpointFromMemory();
+    }
+  }
+
   std::shared_ptr<SwitchNode> addPredecessors(NodePtr predecessor,  // NOLINT
                                               TokenInputPtr token_input) {
     for (auto& layer : _layers) {

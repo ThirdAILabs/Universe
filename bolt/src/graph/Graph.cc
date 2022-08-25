@@ -706,6 +706,24 @@ std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {
   return deserialize_into;
 }
 
+/**
+ * These checkpoint functions are used for the purposes of saving a "best
+ * model's" state during training. Each node does this differently, thus we
+ * dispatch to the nodes themselves to handle their own checkpoints. This allows
+ * us to easily save and restore a model's state.
+ */
+void BoltGraph::checkpointInMemory() {
+  for (auto& node : _nodes) {
+    node->checkpointInMemory();
+  }
+}
+
+void BoltGraph::loadCheckpointFromMemory() {
+  for (auto& node : _nodes) {
+    node->loadCheckpointFromMemory();
+  }
+}
+
 std::string BoltGraph::summarize(bool print, bool detailed) const {
   if (!graphCompiled()) {
     throw std::logic_error("Cannot summarize the graph before it is compiled.");

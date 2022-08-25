@@ -114,6 +114,10 @@ class BoltGraph {
 
   static std::unique_ptr<BoltGraph> load(const std::string& filename);
 
+  void checkpointInMemory();
+
+  void loadCheckpointFromMemory();
+
   std::string summarize(bool print, bool detailed) const;
 
   NodePtr getNodeByName(const std::string& node_name) const;
@@ -241,7 +245,7 @@ class BoltGraph {
 
   // stores the models batch size while nodes are prepared for batch processing,
   // otherwise returns nullopt
-  std::optional<uint32_t> _batch_size;
+  std::optional<uint32_t> _batch_size = std::nullopt;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

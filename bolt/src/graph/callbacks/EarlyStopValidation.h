@@ -13,7 +13,7 @@ namespace thirdai::bolt {
  * parameter by 1. When the patience value reaches 0 the model stops
  * training.
  *
- * This class always resets the model to use the best weights based on
+ * This class always resets the model to use its best checkpoint based on
  * validation performance. The purpose of this callback is to save potentially
  * harmful or unneeded training cycles, however one can always set patience
  * equal to the number of training epochs if the goal is to simply save and use
@@ -53,12 +53,14 @@ class EarlyStopValidation : public Callback {
     // we can access element 0 since we previously asserted having one metric
     std::string metric_name = _predict_config.getMetricNames()[0];
 
+    // since we're in the middle of training and want to predict, we have to
+    // properly manage the model's batch state. we find the training batch size
+    // to reset the batch state after the early stopping logic
     if (!_model->getBatchSize().has_value()) {
       throw std::invalid_argument(
           "Misuse of EarlyStopValidation Callback. Model is not prepared for "
           "batch processing.");
     }
-
     uint32_t train_batch_size = _model->getBatchSize().value();
 
     _model->cleanupAfterBatchProcessing();
@@ -82,7 +84,7 @@ class EarlyStopValidation : public Callback {
       }
     } else if (metric_val > _best_validation_metric) {
       _best_validation_metric = metric_val;
-      _model->save(BEST_MODEL_SAVE_LOCATION);
+      _model->checkpointInMemory();
     }
     _last_validation_metric = metric_val;
 
@@ -90,9 +92,7 @@ class EarlyStopValidation : public Callback {
                                     /* use_sparsity = */ true);
   }
 
-  void onTrainEnd() final {
-    *_model = *BoltGraph::load(BEST_MODEL_SAVE_LOCATION);
-  }
+  void onTrainEnd() final { _model->loadCheckpointFromMemory(); }
 
   bool shouldStopTraining() final { return _should_stop_training; }
 
@@ -107,8 +107,6 @@ class EarlyStopValidation : public Callback {
   double _last_validation_metric;
 
   bool _should_stop_training;
-
-  const std::string BEST_MODEL_SAVE_LOCATION = ".bestModel";
 };
 
 using EarlyStopValidationPtr = std::shared_ptr<EarlyStopValidation>;

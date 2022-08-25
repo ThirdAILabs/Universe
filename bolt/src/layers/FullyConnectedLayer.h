@@ -10,7 +10,9 @@
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
+#include <optional>
 #include <random>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -111,6 +113,10 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getWeightsGradient() final;
 
+  void checkpointInMemory();
+
+  void loadCheckpointFromMemory();
+
   float getSparsity() const final { return _sparsity; }
 
   void setSparsity(float sparsity) final;
@@ -137,6 +143,9 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<float> _b_gradient;
   std::vector<float> _b_momentum;
   std::vector<float> _b_velocity;
+
+  std::optional<std::pair<std::vector<float>, std::vector<float>>>
+      _weight_bias_checkpoint = std::nullopt;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;

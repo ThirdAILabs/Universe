@@ -15,10 +15,6 @@
 
 namespace thirdai::bolt {
 
-class CategoricalAccuracy;
-class WeightedMeanAbsolutePercentageError;
-class MeanSquaredErrorMetric;
-
 // Metric interface
 class Metric {
  public:
