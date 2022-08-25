@@ -50,9 +50,9 @@ class EmbeddingNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  void checkpointInMemory() { _embedding_layer->checkpointInMemory(); }
+  void checkpointInMemory() final { _embedding_layer->checkpointInMemory(); }
 
-  void loadCheckpointFromMemory() {
+  void loadCheckpointFromMemory() final {
     _embedding_layer->loadCheckpointFromMemory();
   }
 

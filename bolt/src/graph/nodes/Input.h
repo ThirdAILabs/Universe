@@ -43,6 +43,10 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
+  void initOptimizer() final {
+    throw std::logic_error("Should not call initOptimizer() on Input node");
+  }
+
   void checkpointInMemory() {
     throw std::invalid_argument(
         "Should not call checkpointInMemory() in an Input node");
@@ -51,119 +55,120 @@ class Input final : public Node {
   void loadCheckpointFromMemory() {
     throw std::invalid_argument(
         "Should not call loadCheckpointFromMemory() in an Input node");
+  }
 
-    void initOptimizer() final {
-      throw std::logic_error("Should not call initOptimizer() on Input node");
+  void initOptimizer() final {
+    throw std::logic_error("Should not call initOptimizer() on Input node");
+  }
+
+ private:
+  void compileImpl() final {
+    if (_expected_input_dim == 0) {
+      throw exceptions::GraphCompilationFailure(
+          "Cannot have input layer with dimension 0.");
     }
+    _compiled = true;
+  }
 
-   private:
-    void compileImpl() final {
-      if (_expected_input_dim == 0) {
-        throw exceptions::GraphCompilationFailure(
-            "Cannot have input layer with dimension 0.");
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    return {};
+  }
+
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
+    (void)batch_size;
+    (void)use_sparsity;
+    throw exceptions::NodeStateMachineError(
+        "Should never call prepareForBatchProcessing on Input (instead "
+        "should "
+        "call setInputs).");
+  }
+
+  uint32_t numNonzerosInOutputImpl() const final {
+    throw std::logic_error(
+        "Cannot know ahead of time the number of nonzeros "
+        "in the output of an Input layer.");
+  }
+
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
+    (void)labels;
+    (void)vec_index;
+  }
+
+  void backpropagateImpl(uint32_t vec_index) final { (void)vec_index; }
+
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+    (void)learning_rate;
+    (void)batch_cnt;
+  }
+
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
+    return (*_input_batch)[vec_index];
+  }
+
+  void cleanupAfterBatchProcessingImpl() final { _input_batch = nullptr; }
+
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
+    (void)detailed;
+    summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
+  }
+
+  std::string type() const final { return "input"; }
+
+  std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
+
+  NodeState getState() const final {
+    if (!_compiled && _input_batch == nullptr) {
+      return NodeState::PredecessorsSet;
+    }
+    if (_compiled && _input_batch == nullptr) {
+      return NodeState::Compiled;
+    }
+    if (_compiled && _input_batch != nullptr) {
+      return NodeState::PreparedForBatchProcessing;
+    }
+    throw exceptions::NodeStateMachineError(
+        "InputNode is in an invalid internal state");
+  }
+
+  void checkDimForInput(const BoltVector& vec) const {
+    if (vec.isDense()) {
+      if (vec.len != _expected_input_dim) {
+        throw std::invalid_argument(
+            "Received dense BoltVector with dimension=" +
+            std::to_string(vec.len) + " in input layer with dimension=" +
+            std::to_string(_expected_input_dim));
       }
-      _compiled = true;
-    }
-
-    std::vector<std::shared_ptr<FullyConnectedLayer>>
-    getInternalFullyConnectedLayersImpl() const final {
-      return {};
-    }
-
-    void prepareForBatchProcessingImpl(uint32_t batch_size, bool use_sparsity)
-        final {
-      (void)batch_size;
-      (void)use_sparsity;
-      throw exceptions::NodeStateMachineError(
-          "Should never call prepareForBatchProcessing on Input (instead "
-          "should "
-          "call setInputs).");
-    }
-
-    uint32_t numNonzerosInOutputImpl() const final {
-      throw std::logic_error(
-          "Cannot know ahead of time the number of nonzeros "
-          "in the output of an Input layer.");
-    }
-
-    void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
-      (void)labels;
-      (void)vec_index;
-    }
-
-    void backpropagateImpl(uint32_t vec_index) final { (void)vec_index; }
-
-    void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-      (void)learning_rate;
-      (void)batch_cnt;
-    }
-
-    BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
-      return (*_input_batch)[vec_index];
-    }
-
-    void cleanupAfterBatchProcessingImpl() final { _input_batch = nullptr; }
-
-    void summarizeImpl(std::stringstream & summary, bool detailed) const final {
-      (void)detailed;
-      summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
-    }
-
-    std::string type() const final { return "input"; }
-
-    std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
-
-    NodeState getState() const final {
-      if (!_compiled && _input_batch == nullptr) {
-        return NodeState::PredecessorsSet;
-      }
-      if (_compiled && _input_batch == nullptr) {
-        return NodeState::Compiled;
-      }
-      if (_compiled && _input_batch != nullptr) {
-        return NodeState::PreparedForBatchProcessing;
-      }
-      throw exceptions::NodeStateMachineError(
-          "InputNode is in an invalid internal state");
-    }
-
-    void checkDimForInput(const BoltVector& vec) const {
-      if (vec.isDense()) {
-        if (vec.len != _expected_input_dim) {
+    } else {
+      for (uint32_t i = 0; i < vec.len; i++) {
+        uint32_t active_neuron = vec.active_neurons[i];
+        if (active_neuron >= _expected_input_dim) {
           throw std::invalid_argument(
-              "Received dense BoltVector with dimension=" +
-              std::to_string(vec.len) + " in input layer with dimension=" +
+              "Received sparse BoltVector with active_neuron=" +
+              std::to_string(active_neuron) +
+              " in input layer with dimension=" +
               std::to_string(_expected_input_dim));
         }
-      } else {
-        for (uint32_t i = 0; i < vec.len; i++) {
-          uint32_t active_neuron = vec.active_neurons[i];
-          if (active_neuron >= _expected_input_dim) {
-            throw std::invalid_argument(
-                "Received sparse BoltVector with active_neuron=" +
-                std::to_string(active_neuron) +
-                " in input layer with dimension=" +
-                std::to_string(_expected_input_dim));
-          }
-        }
       }
     }
+  }
 
-    // Private constructor for cereal.
-    Input() {}
+  // Private constructor for cereal.
+  Input() {}
 
-    friend class cereal::access;
-    template <class Archive>
-    void serialize(Archive & archive) {
-      archive(cereal::base_class<Node>(this), _compiled, _expected_input_dim);
-    }
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _compiled, _expected_input_dim);
+  }
 
-    bool _compiled;
-    BoltBatch* _input_batch;
-    uint32_t _expected_input_dim;
-  };
+  bool _compiled;
+  BoltBatch* _input_batch;
+  uint32_t _expected_input_dim;
+};
 
-  using InputPtr = std::shared_ptr<Input>;
+using InputPtr = std::shared_ptr<Input>;
 
 }  // namespace thirdai::bolt
 
