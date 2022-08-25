@@ -90,7 +90,7 @@ class UserItemHistoryBlock final : public Block {
 
       uint32_t user_id = _user_id_lookup->lookup(user_str);
       int64_t epoch_timestamp = TimeObject(timestamp_str).secondsSinceEpoch();
-      
+
       auto item_ids = getItemIds(item_str);
 
 #pragma omp critical(user_item_history_block)
@@ -115,7 +115,8 @@ class UserItemHistoryBlock final : public Block {
     if (!_delimiter) {
       return {_item_id_lookup->lookup(item_col)};
     }
-    auto item_str_views = ProcessorUtils::parseCsvRow(item_col, _delimiter.value());
+    auto item_str_views =
+        ProcessorUtils::parseCsvRow(item_col, _delimiter.value());
     std::vector<uint32_t> ids;
     ids.reserve(item_str_views.size());
     for (auto str_view : item_str_views) {

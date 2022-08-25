@@ -249,16 +249,20 @@ class RecallAtK : public Metric {
   explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    auto top_k = output.isDense() ? topK</* DENSE= */ true>(output, _k)
-                                  : topK</* DENSE= */ false>(output, _k);
+    auto top_k = output.findKLargestActivationsK(_k);
 
-    auto matches =
-        labels.isDense()
-            ? countMatchesInTopK</* DENSE= */ true>(std::move(top_k), labels)
-            : countMatchesInTopK</* DENSE= */ false>(std::move(top_k), labels);
+    uint32_t matches = 0;
+    while (!top_k.empty()) {
+      if (labels
+              .findActiveNeuronNoTemplate(
+                  /* active_neuron= */ top_k.top().second)
+              .activation > 0) {
+        matches++;
+      }
+      top_k.pop();
+    }
 
     _matches.fetch_add(matches);
-
     _label_count.fetch_add(countLabels(labels));
   }
 
@@ -273,9 +277,7 @@ class RecallAtK : public Metric {
     return metric;
   }
 
-  std::string getName() final {
-    return "recall@" + std::to_string(_k);
-  }
+  std::string getName() final { return "recall@" + std::to_string(_k); }
 
   static inline bool isRecallAtK(const std::string& name) {
     return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
@@ -289,44 +291,6 @@ class RecallAtK : public Metric {
   }
 
  private:
-  using ValueIndexPair = std::pair<float, uint32_t>;
-
-  // This compares the first element in the pair, then the second element.
-  using TopKActivationsQueue =
-      std::priority_queue<ValueIndexPair, std::vector<ValueIndexPair>,
-                          std::greater<ValueIndexPair>>;
-
-  template <bool DENSE>
-  static inline TopKActivationsQueue topK(const BoltVector& output, uint32_t k) {
-    TopKActivationsQueue top_k;
-    for (uint32_t pos = 0; pos < std::min(k, output.len); pos++) {
-      top_k.push(valueIndexPair<DENSE>(output, pos));
-    }
-    for (uint32_t pos = k; pos < output.len; pos++) {
-      auto val_idx_pair = valueIndexPair<DENSE>(output, pos);
-      if (val_idx_pair > top_k.top()) {
-        top_k.pop();
-        top_k.push(std::move(val_idx_pair));
-      }
-    }
-    return top_k;
-  }
-
-  template <bool DENSE>
-  static inline uint32_t countMatchesInTopK(TopKActivationsQueue&& top_k,
-                                            const BoltVector& labels) {
-    uint32_t correct = 0;
-    while (!top_k.empty()) {
-      if (labels
-              .findActiveNeuron<DENSE>(/* active_neuron= */ top_k.top().second)
-              .activation > 0) {
-        correct++;
-      }
-      top_k.pop();
-    }
-    return correct;
-  }
-
   static uint32_t countLabels(const BoltVector& labels) {
     uint32_t correct_labels = 0;
     for (uint32_t i = 0; i < labels.len; i++) {
@@ -335,15 +299,6 @@ class RecallAtK : public Metric {
       }
     }
     return correct_labels;
-  }
-
-  template <bool DENSE>
-  static inline ValueIndexPair valueIndexPair(const BoltVector& output,
-                                              uint32_t pos) {
-    if (DENSE) {
-      return {output.activations[pos], pos};
-    }
-    return {output.activations[pos], output.active_neurons[pos]};
   }
 
   uint32_t _k;
