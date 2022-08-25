@@ -4,14 +4,20 @@
 #include <sys/types.h>
 #include <algorithm>
 #include <atomic>
+#include <cstdlib>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <queue>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -237,6 +243,71 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
 };
+
+class RecallAtK : public Metric {
+ public:
+  explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    auto top_k = output.findKLargestActivationsK(_k);
+
+    uint32_t matches = 0;
+    while (!top_k.empty()) {
+      if (labels
+              .findActiveNeuronNoTemplate(
+                  /* active_neuron= */ top_k.top().second)
+              .activation > 0) {
+        matches++;
+      }
+      top_k.pop();
+    }
+
+    _matches.fetch_add(matches);
+    _label_count.fetch_add(countLabels(labels));
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double metric = static_cast<double>(_matches) / _label_count;
+    if (verbose) {
+      std::cout << "Recall@" << _k << ": " << std::setprecision(3) << metric
+                << std::endl;
+    }
+    _matches = 0;
+    _label_count = 0;
+    return metric;
+  }
+
+  std::string getName() final { return "recall@" + std::to_string(_k); }
+
+  static inline bool isRecallAtK(const std::string& name) {
+    return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
+  }
+
+  static std::shared_ptr<Metric> make(const std::string& name) {
+    auto k_str = name.substr(7);
+    char* end_ptr;
+    auto k = std::strtol(k_str.data(), &end_ptr, 10);
+    return std::make_shared<RecallAtK>(k);
+  }
+
+ private:
+  static uint32_t countLabels(const BoltVector& labels) {
+    uint32_t correct_labels = 0;
+    for (uint32_t i = 0; i < labels.len; i++) {
+      if (labels.activations[i] > 0) {
+        correct_labels++;
+      }
+    }
+    return correct_labels;
+  }
+
+  uint32_t _k;
+  std::atomic_uint64_t _matches;
+  std::atomic_uint64_t _label_count;
+};
+
+using MetricData = std::unordered_map<std::string, std::vector<double>>;
+using InferenceMetricData = std::unordered_map<std::string, double>;
 
 /**
  * The F-Measure is a metric that takes into account both precision and recall.
