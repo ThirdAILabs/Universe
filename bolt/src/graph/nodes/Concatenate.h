@@ -123,7 +123,6 @@ class ConcatenateNode final
       const auto& current_input_node = concatenated_nodes.at(input_node_id);
       BoltVector& current_input =
           current_input_node->getOutputVector(vec_index);
-      current_input.zeroGradients();
 
       uint32_t start_position = positional_offsets.at(input_node_id);
       uint32_t end_position = positional_offsets.at(input_node_id + 1);

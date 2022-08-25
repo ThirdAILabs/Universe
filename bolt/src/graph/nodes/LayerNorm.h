@@ -188,7 +188,7 @@ class LayerNormNode final : public Node,
         continue;
       }
 
-      input_vector.gradients[neuron_index] =
+      input_vector.gradients[neuron_index] +=
           output_vector.gradients[neuron_index] * grad;
     }
   }

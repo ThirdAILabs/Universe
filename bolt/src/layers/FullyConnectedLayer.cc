@@ -49,6 +49,7 @@ FullyConnectedLayer::FullyConnectedLayer(
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
+  // TODO(Nicholas): This can be removed when we depreciate the old bolt api.
   if (input.hasGradients()) {
     input.zeroGradients();
   }
