@@ -74,7 +74,7 @@ def start_cluster(config_yaml_file) -> None:
         ray.init()
 
     os.system("ray stop")
-    os.system("ray up cluster_configuration.yaml")
+    os.system("ray up " + config_yaml_file)
 
 
 if __name__ == "__main__":
