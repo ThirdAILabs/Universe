@@ -110,5 +110,5 @@ set(DAG_TESTS
 )
 
 foreach(DAG_TEST IN LISTS DAG_TESTS)
-  gtest_discover_tests(${DAG_TEST} DISCOVERY_TIMEOUT 30)
+  gtest_discover_tests(${DAG_TEST} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
 endforeach()

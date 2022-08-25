@@ -154,5 +154,5 @@ set(DATASET_TESTS
 )
 
 foreach(DATASET_TEST in ${DATASET_TESTS})
-  gtest_discover_tests(${DATASET_TESTS} DISCOVERY_TIMEOUT 30)
+  gtest_discover_tests(${DATASET_TESTS} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
 endforeach()

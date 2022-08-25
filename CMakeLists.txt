@@ -98,6 +98,18 @@ if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
   )
 endif()
 
+# Custom command line options
+
+# The following is added for Windows workflows failing on GitHub, inorder to
+# provide a configurable TimeOut.  The default value is set to 5,
+# from
+# http://github.com/Kitware/CMake/blob/9d1ecd72fb45af722da7668d0c7482b7a0b1876f/Modules/GoogleTest.cmake#L419-L436,
+# retaining default behaviour.
+# 
+# For Windows workflow, we may configure this to a higher value now through CMake command-line supply.
+
+set(THIRDAI_GTEST_DISCOVERY_TIMEOUT 5 CACHE STRING "Timeout for GoogleTest discovery, configurable from command-line.")
+
 find_package(OpenMP REQUIRED)
 
 # Header only dependencies

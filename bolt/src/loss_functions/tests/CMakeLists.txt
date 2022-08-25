@@ -8,4 +8,4 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(loss_function_gradient_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(loss_function_gradient_test DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})

@@ -14,4 +14,4 @@ target_link_libraries(
   gtest_main
 )
 
-gtest_discover_tests(maxflash_array_test DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(maxflash_array_test DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
