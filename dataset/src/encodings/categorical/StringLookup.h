@@ -51,7 +51,7 @@ class StringLookup final : public CategoricalEncoding {
     uint32_t uid;
     try {
       uid = _vocab->getUid(id_str);
-    } catch (const std::invalid_argument& e) {
+    } catch (...) {
       return std::current_exception();
     }
 
