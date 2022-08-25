@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -111,6 +114,13 @@ class ThreadSafeVocabulary {
   std::unordered_map<std::string, uint32_t> _string_to_uid;
   std::vector<std::string> _uid_to_string;
   bool _seen_all_strings;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_string_to_uid, _uid_to_string, _seen_all_strings);
+  }
 };
 
 using ThreadSafeVocabularyPtr = std::shared_ptr<ThreadSafeVocabulary>;
