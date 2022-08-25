@@ -26,7 +26,7 @@ class StringLookup final : public CategoricalEncoding {
     if (_vocab->size() > n_classes) {
       std::stringstream error_ss;
       error_ss << "[StringLookup] Received vocab with size > n_classes ("
-               << vocab->size() << " vs. " << n_classes << ").";
+               << _vocab->size() << " vs. " << n_classes << ").";
       throw std::invalid_argument(error_ss.str());
     }
 

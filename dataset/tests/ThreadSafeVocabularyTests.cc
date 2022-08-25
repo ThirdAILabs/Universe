@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
+#include <exception>
 #include <fstream>
 #include <random>
 #include <string>
@@ -46,9 +47,17 @@ static std::vector<std::string> generateRandomStrings(size_t n_unique,
 std::vector<uint32_t> getUids(ThreadSafeVocabulary& lookup,
                               std::vector<std::string>& strings) {
   std::vector<uint32_t> uids(strings.size());
-#pragma omp parallel for default(none) shared(strings, uids, lookup)
+  std::exception_ptr exception;
+#pragma omp parallel for default(none) shared(strings, uids, lookup, exception)
   for (uint32_t idx = 0; idx < strings.size(); idx++) {
-    uids[idx] = lookup.getUid(strings[idx]);
+    try {
+      uids[idx] = lookup.getUid(strings[idx]);
+    } catch (...) {
+      exception = std::current_exception();
+    }
+  }
+  if (exception) {
+    std::rethrow_exception(exception);
   }
   return uids;
 }
