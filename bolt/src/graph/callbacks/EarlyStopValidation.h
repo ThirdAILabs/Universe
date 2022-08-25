@@ -6,12 +6,25 @@
 
 namespace thirdai::bolt {
 
+/**
+ * This class is intended to stop training early based on results from a given
+ * validation set. After each epoch if the model performs worse on the
+ * validation set than in the previous epoch, we decrement the "patience"
+ * parameter by 1. When the patience value reaches 0 the model stops
+ * training.
+ *
+ * This class always resets the model to use the best weights based on
+ * validation performance. The purpose of this callback is to save potentially
+ * harmful or unneeded training cycles, however one can always set patience
+ * equal to the number of training epochs if the goal is to simply save and use
+ * the best model from a training job.
+ */
 class EarlyStopValidation : public Callback {
  public:
   EarlyStopValidation(dataset::BoltDatasetList validation_data,
                       dataset::BoltTokenDatasetList validation_tokens,
                       dataset::BoltDatasetPtr validation_labels,
-                      PredictConfig predict_config, uint32_t patience = 3)
+                      PredictConfig predict_config, uint32_t patience = 2)
       : _validation_data(std::move(validation_data)),
         _validation_tokens(std::move(validation_tokens)),
         _validation_labels(std::move(validation_labels)),
