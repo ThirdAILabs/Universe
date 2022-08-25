@@ -133,8 +133,8 @@ class EmbeddingLayer {
   std::optional<std::vector<float>> _embedding_block_checkpoint;
 
   // This structure stores the embedding block offset for each token in each
-  // input. This is used for backpropagation and for update paramters to
-  // know what parts of the embedding block were used.
+  // input. This is used for backpropagation and for update paramters to know
+  // what parts of the embedding block were used.
   std::vector<std::vector<uint64_t>> _embedding_block_offsets;
 };
 

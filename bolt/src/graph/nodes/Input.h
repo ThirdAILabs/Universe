@@ -43,10 +43,6 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void initOptimizer() final {
-    throw std::logic_error("Should not call initOptimizer() on Input node");
-  }
-
   void checkpointInMemory() {
     throw std::invalid_argument(
         "Should not call checkpointInMemory() in an Input node");
@@ -80,8 +76,7 @@ class Input final : public Node {
     (void)batch_size;
     (void)use_sparsity;
     throw exceptions::NodeStateMachineError(
-        "Should never call prepareForBatchProcessing on Input (instead "
-        "should "
+        "Should never call prepareForBatchProcessing on Input (instead should "
         "call setInputs).");
   }
 

@@ -164,8 +164,8 @@ class SwitchNode final : public Node,
   }
 
   NodeState getState() const final {
-    // All layers are constructed identically and all method are called on
-    // all layers, so we can use _layers[0] here.
+    // All layers are constructed identically and all method are called on all
+    // layers, so we can use _layers[0] here.
     return _layers.at(0)->getState();
   }
 
