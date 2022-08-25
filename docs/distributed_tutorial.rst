@@ -63,6 +63,5 @@ Look at train_distributed_amzn670k.py for sample code.
 
 IMPORTANT
 ------------------
-1. Make sure you have the ``DistributedBolt_V1`` branch built on every node(head node and worker node) you are running.
-2. Set up passwordless ssh between nodes(for easier usage)
-3. If the num_cpus_per_node is not set, DistributedBolt will automatically get the number of CPUs available on the current and initialize the worker node with that count.
+1. Set up passwordless ssh between nodes(for easier usage)
+2. If the num_cpus_per_node is not set, DistributedBolt will automatically get the number of CPUs available on the current and initialize the worker node with that count.
