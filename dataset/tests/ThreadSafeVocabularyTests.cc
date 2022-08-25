@@ -73,10 +73,10 @@ void assertStringsEqual(std::vector<std::string>& strings_1,
   }
 }
 
-std::vector<uint32_t> getUidsFromBatch(bolt::BoltBatch& batch) {
+std::vector<uint32_t> getUidsFromBatch(bolt::BoltBatch& batch, uint32_t block_idx=0, uint32_t block_dim=0) {
   std::vector<uint32_t> uids;
   for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
-    uids.push_back(batch[i].active_neurons[0]);
+    uids.push_back(batch[i].active_neurons[block_idx] - block_idx * block_dim);
   }
   return uids;
 }
@@ -114,6 +114,37 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
   auto uids = getUidsFromBatch(batch);
   auto reverted_strings = backToStrings(*vocab, uids);
   assertStringsEqual(strings, reverted_strings);
+}
+
+TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
+  uint32_t n_unique = 1000;
+  auto strings = generateRandomStrings(
+      n_unique, /* repetitions = */ 1000, /* len = */ 10);
+  auto vocab = ThreadSafeVocabulary::make();
+  auto lookup_encoding = StringLookup::make(n_unique, vocab);
+  auto lookup_block_1 = std::make_shared<CategoricalBlock>(
+      /* col = */ 0, /* encoding = */ lookup_encoding);
+  auto lookup_block_2 = std::make_shared<CategoricalBlock>(
+      /* col = */ 0, /* encoding = */ lookup_encoding);
+  auto lookup_block_3 = std::make_shared<CategoricalBlock>(
+      /* col = */ 0, /* encoding = */ lookup_encoding);
+
+  GenericBatchProcessor processor(/* input_blocks = */ {lookup_block_1, lookup_block_2, lookup_block_3},
+                                  /* label_blocks = */ {});
+  auto [batch, _] = processor.createBatch(strings);
+  
+  uint32_t lookup_block_dim = lookup_block_1->featureDim();
+  auto block_1_uids = getUidsFromBatch(batch, /* block_idx= */ 0, lookup_block_dim);
+  auto block_2_uids = getUidsFromBatch(batch, /* block_idx= */ 1, lookup_block_dim);
+  auto block_3_uids = getUidsFromBatch(batch, /* block_idx= */ 2, lookup_block_dim);
+  
+  auto block_1_reverted_strings = backToStrings(*vocab, block_1_uids);
+  auto block_2_reverted_strings = backToStrings(*vocab, block_2_uids);
+  auto block_3_reverted_strings = backToStrings(*vocab, block_3_uids);
+  
+  assertStringsEqual(strings, block_1_reverted_strings);
+  assertStringsEqual(strings, block_2_reverted_strings);
+  assertStringsEqual(strings, block_3_reverted_strings);
 }
 
 TEST(ThreadSafeVocabularyTests, SeenAllStringsBehavior) {
