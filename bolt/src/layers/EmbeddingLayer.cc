@@ -33,9 +33,8 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   // around.
   _embedding_block_size = (1 << _log_embedding_block_size) + _lookup_size;
   _embedding_block = std::vector<float>(_embedding_block_size, 0);
-  _gradients = std::vector<float>(_embedding_block_size, 0);
-  _momentum = std::vector<float>(_embedding_block_size, 0);
-  _velocity = std::vector<float>(_embedding_block_size, 0);
+
+  initOptimizer();
 
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -111,7 +110,7 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
 
       assert(embedding_block_offset < _embedding_block_size - _lookup_size);
 
-      float* update_loc = _gradients.data() + embedding_block_offset;
+      float* update_loc = _optimizer->gradients.data() + embedding_block_offset;
 
       for (uint32_t i = 0; i < _lookup_size; i++) {
         update_loc[i] += output_gradients[i];
@@ -142,20 +141,21 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
     // (but clang-tidy wants the range based for loop, so we need NOLINT above)
     const auto& pair = disjoint_ranges[pair_id];
     for (uint64_t n = pair.first; n < pair.second; n++) {
-      float grad = _gradients[n];
+      float grad = _optimizer->gradients[n];
       assert(!std::isnan(grad));
 
-      _momentum[n] = B1 * _momentum[n] + (1 - B1) * grad;
-      _velocity[n] = B2 * _velocity[n] + (1 - B2) * grad * grad;
-      assert(!std::isnan(_momentum[n]));
-      assert(!std::isnan(_velocity[n]));
+      _optimizer->momentum[n] = B1 * _optimizer->momentum[n] + (1 - B1) * grad;
+      _optimizer->velocity[n] =
+          B2 * _optimizer->velocity[n] + (1 - B2) * grad * grad;
+      assert(!std::isnan(_optimizer->momentum[n]));
+      assert(!std::isnan(_optimizer->velocity[n]));
 
       _embedding_block[n] +=
-          lr * (_momentum[n] / B1_bias_corrected) /
-          (std::sqrt(_velocity[n] / B2_bias_corrected) + eps);
+          lr * (_optimizer->momentum[n] / B1_bias_corrected) /
+          (std::sqrt(_optimizer->velocity[n] / B2_bias_corrected) + eps);
       assert(!std::isnan(_embedding_block[n]));
 
-      _gradients[n] = 0;
+      _optimizer->gradients[n] = 0;
     }
   }
 }
