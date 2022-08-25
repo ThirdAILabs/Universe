@@ -86,14 +86,14 @@ class PrimaryWorker(Worker):
         update_id = 0
         for node in range(self.total_nodes - 1):
             if node == self.total_nodes - 2:
-                blocking_run = ray.get(
+                ray.get(
                     [
                         worker.process_ring.remote(update_id, avg_gradients=True)
                         for worker in self.workers
                     ]
                 )
             else:
-                blocking_run = ray.get(
+                ray.get(
                     [worker.process_ring.remote(update_id) for worker in self.workers]
                 )
             update_id -= 1
@@ -119,7 +119,7 @@ class PrimaryWorker(Worker):
         # Second Run
         update_id = 1
         for node in range(self.total_nodes - 1):
-            blocking_run = ray.get(
+            ray.get(
                 [
                     worker.process_ring.remote(update_id, reduce=False)
                     for worker in self.workers

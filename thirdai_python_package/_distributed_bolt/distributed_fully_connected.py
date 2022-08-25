@@ -56,8 +56,9 @@ class FullyConnectedNetwork(DistributedBolt):
         self.no_of_workers = no_of_workers
 
         # setting OMP_NUM_THREADS to number of num_cpus
+        # Ray expicitly forces the OMP_NUM_THREADS in environment to 1.
+        # So, we need to change the OMP_NUM_THREADS to support parallization
         num_omp_threads = str(get_num_cpus())
-
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
         runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
 
@@ -86,10 +87,14 @@ class FullyConnectedNetwork(DistributedBolt):
         if num_cpus_per_node is not -1:
             num_cpus = num_cpus_per_node
 
+        # max_concurrency here, indicates the number of threads 
+        # that this particular worker can run.
         self.primary_worker = PrimaryWorker.options(
             num_cpus=num_cpus, max_concurrency=100
         ).remote(self.layer_dims, config, self.no_of_workers)
 
+        # max_conxurrenxy here, indicates the number of threads
+        # this particular worker can run
         self.replica_workers = [
             ReplicaWorker.options(num_cpus=num_cpus, max_concurrency=100).remote(
                 self.layer_dims,
