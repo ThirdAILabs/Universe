@@ -25,10 +25,15 @@ class TokenInput : public Node {
   }
 
   uint32_t outputDim() const final {
-    throw std::logic_error("Cannot call outputDim() in TokenInput node");
+    throw std::logic_error("Cannot call outputDim() on TokenInput node");
   }
 
   bool isInputNode() const final { return true; }
+
+  void initOptimizer() {
+    throw std::logic_error(
+        "Should not call initOptimizer() on TokenInput node");
+  }
 
  private:
   void compileImpl() final { _compiled = true; }
@@ -43,8 +48,8 @@ class TokenInput : public Node {
     (void)batch_size;
     (void)use_sparsity;
     throw exceptions::NodeStateMachineError(
-        "Should never call prepareForBatchProcessing on Input (instead should "
-        "call setInputs).");
+        "Should never call prepareForBatchProcessing on TokenInput (instead "
+        "should call setInputs).");
   }
 
   uint32_t numNonzerosInOutputImpl() const final {

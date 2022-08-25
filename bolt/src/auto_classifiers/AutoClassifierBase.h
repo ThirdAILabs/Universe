@@ -36,15 +36,7 @@ class AutoClassifierBase {
                            std::vector<std::vector<uint32_t>>&& test_tokens,
                            bool use_sparse_inference);
 
-  static uint32_t getHiddenLayerSize(const std::string& model_size,
-                                     uint64_t n_classes, uint64_t input_dim);
-
   static bool canLoadDatasetInMemory(const std::string& filename);
-
-  static BoltGraphPtr buildModel(uint32_t input_dim, uint32_t hidden_layer_size,
-                                 float hidden_layer_sparsity,
-                                 uint32_t output_layer_size,
-                                 float output_layer_sparsity);
 
  private:
   static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
@@ -53,6 +45,9 @@ class AutoClassifierBase {
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
       uint32_t batch_size = 256);
+
+  static uint32_t getHiddenLayerSize(const std::string& model_size,
+                                     uint64_t n_classes, uint64_t input_dim);
 
   static float getHiddenLayerSparsity(uint64_t layer_size);
 

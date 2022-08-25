@@ -2,6 +2,8 @@
 
 #include "Metric.h"
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <memory>
+#include <regex>
 
 namespace thirdai::bolt {
 
@@ -27,6 +29,8 @@ class MetricAggregator {
         _metrics.push_back(std::make_shared<MeanSquaredErrorMetric>());
       } else if (RecallAt::isRecallAtK(name)) {
         _metrics.push_back(std::make_shared<RecallAt>(RecallAt::getK(name)));
+      } else if (FMeasure::isFMeasure(name)) {
+        _metrics.push_back(FMeasure::make(name));
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }
