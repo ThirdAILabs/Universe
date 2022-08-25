@@ -93,7 +93,7 @@ class TabularClassifier {
         _classifier->predictSingle({input}, {},
                                    /* use_sparse_inference = */ true);
 
-    return _metadata->getClassIdToNames()[output.getIdWithHighestActivation()];
+    return _metadata->getClassIdToNames()[output.getHighestActivationId()];
   }
 
   void save(const std::string& filename) {

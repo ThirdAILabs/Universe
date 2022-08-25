@@ -6,6 +6,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 
@@ -187,6 +188,8 @@ class GenericBatchProcessor
   std::vector<std::shared_ptr<Block>> _input_blocks;
   std::vector<std::shared_ptr<Block>> _label_blocks;
 };
+
+using GenericBatchProcessorPtr = std::shared_ptr<GenericBatchProcessor>;
 
 }  // namespace thirdai::dataset
 

@@ -47,7 +47,9 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
   float* getEmbeddingBlock() const { return _layer->_embedding_block.data(); }
 
-  float* getEmbeddingGradients() const { return _layer->_gradients.data(); }
+  float* getEmbeddingGradients() const {
+    return _layer->_optimizer->gradients.data();
+  }
 
   uint32_t _lookup_size = 20, _num_lookups = 50, _log_block_size = 10;
   std::unique_ptr<EmbeddingLayer> _layer;

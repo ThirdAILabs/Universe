@@ -54,6 +54,12 @@ class SwitchNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
+  void initOptimizer() final {
+    for (auto& layer : _layers) {
+      layer->initOptimizer();
+    }
+  }
+
   std::shared_ptr<SwitchNode> addPredecessors(NodePtr predecessor,  // NOLINT
                                               TokenInputPtr token_input) {
     for (auto& layer : _layers) {

@@ -16,7 +16,7 @@ format = "click"
 type_list = ["train_data", "train_tokens", "train_labels"]
 path = "criteo-small/train_shuf.txt"
 batch_size = 256
-num_numerical_features = 15
+max_num_numerical_features = 15
 max_categorical_features = 23
 delimiter = " "
 
@@ -25,7 +25,7 @@ format = "click"
 type_list = ["test_data", "test_tokens", "test_labels"]
 path = "criteo-small/test_shuf.txt"
 batch_size = 256
-num_numerical_features = 15
+max_num_numerical_features = 15
 max_categorical_features = 23
 delimiter = " "
 

@@ -17,6 +17,8 @@ class SegmentedFeatureVectorTest;
 class CategoricalBlockTest;
 class TextBlockTest;
 
+using BlockPtr = std::shared_ptr<Block>;
+
 /**
  * Segmented feature vector abstract class.
  * A vector representation that can be extended with

@@ -13,6 +13,7 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
+#include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
@@ -125,6 +126,12 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns False since this is a sparse encoding.")
       .def("is_dense", &ContiguousNumericId::isDense,
            "The dimension of the encoding.");
+
+  py::class_<CategoricalMultiLabel, CategoricalEncoding,
+             std::shared_ptr<CategoricalMultiLabel>>(
+      block_submodule, "CategoricalMultiLabelBlock")
+      .def(py::init<uint32_t, char>(), py::arg("n_classes"),
+           py::arg("delimiter") = ',');
 
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",

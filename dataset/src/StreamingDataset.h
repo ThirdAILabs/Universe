@@ -112,8 +112,10 @@ class StreamingDataset {
     return dataset;
   }
 
- private:
+ protected:
   std::shared_ptr<DataLoader> _data_loader;
+
+ private:
   std::shared_ptr<BatchProcessor<BATCH_Ts...>> _batch_processor;
 };
 
