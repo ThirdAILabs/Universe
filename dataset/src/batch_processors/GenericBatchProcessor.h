@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>

@@ -80,26 +80,6 @@ class DLRMFeatureInteractionNode final : public Node {
 
   uint32_t numNonzerosInOutputImpl() const final { return outputDim(); }
 
-  template <bool DENSE>
-  static float dotProduct(const BoltVector& fc_output,
-                          const float* const embedding) {
-    float total = 0.0;
-    for (uint32_t i = 0; i < fc_output.len; i++) {
-      total += fc_output.activations[i] *
-               embedding[fc_output.activeNeuronAtIndex<DENSE>(i)];
-    }
-    return total;
-  }
-
-  static float embeddingDotProduct(const float* const emb1,
-                                   const float* const emb2, uint32_t dim) {
-    float total = 0.0;
-    for (uint32_t i = 0; i < dim; i++) {
-      total += emb1[i] * emb2[i];
-    }
-    return total;
-  }
-
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     (void)labels;
 
@@ -118,13 +98,13 @@ class DLRMFeatureInteractionNode final : public Node {
     for (uint32_t emb_idx = 0; emb_idx < _compiled_state->_num_embedding_chunks;
          emb_idx++) {
       if (fc_output.isDense()) {
-        output_vector.activations[emb_idx] =
-            dotProduct<true>(fc_output, embedding_output.activations +
-                                            emb_idx * embedding_chunk_size);
+        output_vector.activations[emb_idx] = fcOutputEmbeddingDotProduct<true>(
+            fc_output,
+            embedding_output.activations + emb_idx * embedding_chunk_size);
       } else {
-        output_vector.activations[emb_idx] =
-            dotProduct<false>(fc_output, embedding_output.activations +
-                                             emb_idx * embedding_chunk_size);
+        output_vector.activations[emb_idx] = fcOutputEmbeddingDotProduct<false>(
+            fc_output,
+            embedding_output.activations + emb_idx * embedding_chunk_size);
       }
     }
 
@@ -143,19 +123,67 @@ class DLRMFeatureInteractionNode final : public Node {
      */
 
     uint32_t output_idx = _compiled_state->_num_embedding_chunks;
-    for (uint32_t emb_idx_a = 0;
-         emb_idx_a < _compiled_state->_num_embedding_chunks; emb_idx_a++) {
-      for (uint32_t emb_idx_b = emb_idx_a + 1;
-           emb_idx_b < _compiled_state->_num_embedding_chunks; emb_idx_b++) {
+    for (uint32_t emb_idx_1 = 0;
+         emb_idx_1 < _compiled_state->_num_embedding_chunks; emb_idx_1++) {
+      for (uint32_t emb_idx_2 = emb_idx_1 + 1;
+           emb_idx_2 < _compiled_state->_num_embedding_chunks; emb_idx_2++) {
         output_vector.activations[output_idx++] = embeddingDotProduct(
-            embedding_output.activations + emb_idx_a * embedding_chunk_size,
-            embedding_output.activations + emb_idx_b * embedding_chunk_size,
+            embedding_output.activations + emb_idx_1 * embedding_chunk_size,
+            embedding_output.activations + emb_idx_2 * embedding_chunk_size,
             embedding_chunk_size);
       }
     }
   }
 
-  void backpropagateImpl(uint32_t vec_index) final { (void)vec_index; }
+  void backpropagateImpl(uint32_t vec_index) final {
+    BoltVector& fc_output = _fully_connected_node->getOutputVector(vec_index);
+
+    BoltVector& embedding_output = _embedding_node->getOutputVector(vec_index);
+
+    BoltVector& output_vector = (*_outputs)[vec_index];
+
+    uint32_t embedding_chunk_size =
+        embedding_output.len / _compiled_state->_num_embedding_chunks;
+
+    for (uint32_t emb_idx = 0; emb_idx < _compiled_state->_num_embedding_chunks;
+         emb_idx++) {
+      float dot_product_gradient = output_vector.gradients[emb_idx];
+
+      uint64_t embedding_offset = emb_idx * embedding_chunk_size;
+      const float* embedding = embedding_output.activations + embedding_offset;
+      float* embedding_grad = embedding_output.gradients + embedding_offset;
+
+      if (fc_output.isDense()) {
+        fcOutputEmbeddingDotProductBackward<true>(
+            dot_product_gradient, fc_output, embedding, embedding_grad);
+      } else {
+        fcOutputEmbeddingDotProductBackward<false>(
+            dot_product_gradient, fc_output, embedding, embedding_grad);
+      }
+    }
+
+    uint32_t output_idx = _compiled_state->_num_embedding_chunks;
+    for (uint32_t emb_idx_1 = 0;
+         emb_idx_1 < _compiled_state->_num_embedding_chunks; emb_idx_1++) {
+      for (uint32_t emb_idx_2 = emb_idx_1 + 1;
+           emb_idx_2 < _compiled_state->_num_embedding_chunks; emb_idx_2++) {
+        float dot_product_gradient = output_vector.gradients[output_idx++];
+
+        uint64_t emb_1_offset = emb_idx_1 * embedding_chunk_size;
+        const float* emb_1 = embedding_output.activations + emb_1_offset;
+        float* emb_1_grad = embedding_output.gradients + emb_1_offset;
+
+        uint64_t emb_2_offset = emb_idx_2 * embedding_chunk_size;
+        const float* emb_2 = embedding_output.activations + emb_2_offset;
+        float* emb_2_grad = embedding_output.gradients + emb_2_offset;
+
+        embeddingDotProductBackward(dot_product_gradient, emb_1, emb_1_grad,
+                                    emb_2, emb_2_grad, embedding_chunk_size);
+      }
+    }
+  }
+
+  void initOptimizer() final {}
 
   void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
     (void)learning_rate;
@@ -204,6 +232,51 @@ class DLRMFeatureInteractionNode final : public Node {
   }
 
  private:
+  template <bool DENSE>
+  static float fcOutputEmbeddingDotProduct(const BoltVector& fc_output,
+                                           const float* const embedding) {
+    float total = 0.0;
+    for (uint32_t i = 0; i < fc_output.len; i++) {
+      total += fc_output.activations[i] *
+               embedding[fc_output.activeNeuronAtIndex<DENSE>(i)];
+    }
+    return total;
+  }
+
+  template <bool DENSE>
+  static void fcOutputEmbeddingDotProductBackward(float dot_product_gradient,
+                                                  const BoltVector& fc_output,
+                                                  const float* const embedding,
+                                                  float* const emb_gradient) {
+    for (uint32_t i = 0; i < fc_output.len; i++) {
+      uint32_t active_neuron = fc_output.activeNeuronAtIndex<DENSE>(i);
+      fc_output.gradients[i] = dot_product_gradient * embedding[active_neuron];
+      emb_gradient[active_neuron] =
+          dot_product_gradient * fc_output.activations[i];
+    }
+  }
+
+  static float embeddingDotProduct(const float* const emb_1,
+                                   const float* const emb_2, uint32_t dim) {
+    float total = 0.0;
+    for (uint32_t i = 0; i < dim; i++) {
+      total += emb_1[i] * emb_2[i];
+    }
+    return total;
+  }
+
+  static void embeddingDotProductBackward(float dot_product_gradient,
+                                          const float* const emb_1,
+                                          float* const emb_1_grad,
+                                          const float* const emb_2,
+                                          float* const emb_2_grad,
+                                          uint32_t dim) {
+    for (uint32_t i = 0; i < dim; i++) {
+      emb_1_grad[i] = dot_product_gradient * emb_2[i];
+      emb_2_grad[i] = dot_product_gradient * emb_1[i];
+    }
+  }
+
   FullyConnectedNodePtr _fully_connected_node;
   EmbeddingNodePtr _embedding_node;
 
