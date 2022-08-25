@@ -270,9 +270,9 @@ BoltGraph::getInputGradientSingle(
           input_vector.active_neurons + input_vector.len);
     }
 
+    resetOutputGradients(/* vec_index= */ 0);
     _loss->lossGradients(_output->getOutputVector(/*vec_index= */ 0),
                          label_vector, /*batch_size= */ 1);
-    resetOutputGradients(/* vec_index= */ 0);
     backpropagate(/*vec_index= */ 0);
 
     // We reset the gradients to nullptr here to prevent the bolt vector
