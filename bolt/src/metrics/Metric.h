@@ -10,6 +10,7 @@
 #include <limits>
 #include <memory>
 #include <queue>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -242,9 +243,9 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::atomic<float> _sum_of_truths;
 };
 
-class RecallAt : public Metric {
+class RecallAtK : public Metric {
  public:
-  explicit RecallAt(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
+  explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     auto top_k = output.isDense() ? topK</* DENSE= */ true>(output, _k)
@@ -271,35 +272,34 @@ class RecallAt : public Metric {
     return metric;
   }
 
-  static constexpr const char* name = "recall@";
-
   std::string getName() final {
-    std::stringstream name_ss;
-    name_ss << name << _k;
-    return name_ss.str();
+    return "recall@" + std::to_string(_k);
   }
 
-  static inline bool isRecallAtK(const std::string& metric_name) {
-    return metric_name.substr(0, 7) == name;
+  static inline bool isRecallAtK(const std::string& name) {
+    return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
   }
 
-  static inline uint32_t getK(const std::string& metric_name) {
-    auto k = metric_name.substr(7);
+  static std::shared_ptr<Metric> make(const std::string& name) {
+    auto k_str = name.substr(7);
     char* end_ptr;
-    return std::strtol(k.data(), &end_ptr, 10);
+    auto k = std::strtol(k_str.data(), &end_ptr, 10);
+    return std::make_shared<RecallAtK>(k);
   }
 
  private:
-  using val_idx_pair_t = std::pair<float, uint32_t>;
-  using top_k_t =
-      std::priority_queue<val_idx_pair_t, std::vector<val_idx_pair_t>,
-                          std::greater<val_idx_pair_t>>;
+  using ValueIndexPair = std::pair<float, uint32_t>;
+
+  // This compares the first element in the pair, then the second element.
+  using TopKActivationsQueue =
+      std::priority_queue<ValueIndexPair, std::vector<ValueIndexPair>,
+                          std::greater<ValueIndexPair>>;
 
   template <bool DENSE>
-  static inline top_k_t topK(const BoltVector& output, uint32_t k) {
-    top_k_t top_k;
+  static inline TopKActivationsQueue topK(const BoltVector& output, uint32_t k) {
+    TopKActivationsQueue top_k;
     for (uint32_t pos = 0; pos < std::min(k, output.len); pos++) {
-      top_k.push(std::move(valueIndexPair<DENSE>(output, pos)));
+      top_k.push(valueIndexPair<DENSE>(output, pos));
     }
     for (uint32_t pos = k; pos < output.len; pos++) {
       auto val_idx_pair = valueIndexPair<DENSE>(output, pos);
@@ -312,10 +312,10 @@ class RecallAt : public Metric {
   }
 
   template <bool DENSE>
-  static inline uint32_t countMatchesInTopK(top_k_t&& top_k,
+  static inline uint32_t countMatchesInTopK(TopKActivationsQueue&& top_k,
                                             const BoltVector& labels) {
     uint32_t correct = 0;
-    for (uint32_t i = 0; i < top_k.size(); i++) {
+    while (!top_k.empty()) {
       if (labels
               .findActiveNeuron<DENSE>(/* active_neuron= */ top_k.top().second)
               .activation > 0) {
@@ -337,7 +337,7 @@ class RecallAt : public Metric {
   }
 
   template <bool DENSE>
-  static inline val_idx_pair_t valueIndexPair(const BoltVector& output,
+  static inline ValueIndexPair valueIndexPair(const BoltVector& output,
                                               uint32_t pos) {
     if (DENSE) {
       return {output.activations[pos], pos};
