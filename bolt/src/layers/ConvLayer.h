@@ -5,9 +5,11 @@
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include "SequentialLayer.h"
+#include <bolt/src/layers/Optimizer.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <exceptions/src/Exceptions.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -86,6 +88,8 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
+  void initOptimizer() final;
+
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);
@@ -112,14 +116,10 @@ class ConvLayer final : public SequentialLayer {
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
-  std::vector<float> _w_gradient;
-  std::vector<float> _w_momentum;
-  std::vector<float> _w_velocity;
-
   std::vector<float> _biases;
-  std::vector<float> _b_gradient;
-  std::vector<float> _b_momentum;
-  std::vector<float> _b_velocity;
+
+  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
+  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
 
   std::vector<bool> _is_active;
 
@@ -137,16 +137,29 @@ class ConvLayer final : public SequentialLayer {
   uint32_t _kernel_size;
   std::vector<uint32_t> _in_to_out, _out_to_in;  // patch mappings
 
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  /**
+   * Training data-structures (like the optimizer and the active neurons
+   * trackers) are not loaded in by default. If we want to continue training
+   * after a load, the expectation is that the higher level Graph/Network API
+   * will handle this initialization with the initOptimizer() method.
+   *
+   * Doing this means our load API is as simple as possible for both
+   * training and inference purposes. It doesn't make sense to load these
+   * data-structures by default then remove them with another function since
+   * users may be memory constrained during deployment.
+   *
+   * We don't know yet if its worth it to save the optimizer for
+   * retraining/finetuning purposes. If in the future we figure out this has
+   * some benefit we can adjust this method accordingly.
+   */
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-            _b_momentum, _b_velocity, _is_active, _hasher, _hash_table,
-            _rand_neurons, _patch_dim, _sparse_patch_dim, _num_patches,
-            _num_filters, _num_sparse_filters, _prev_num_filters,
-            _prev_num_sparse_filters, _kernel_size, _in_to_out, _out_to_in);
+            _biases, _is_active, _hasher, _hash_table, _rand_neurons,
+            _patch_dim, _sparse_patch_dim, _num_patches, _num_filters,
+            _num_sparse_filters, _prev_num_filters, _prev_num_sparse_filters,
+            _kernel_size, _in_to_out, _out_to_in);
   }
 
  protected:
