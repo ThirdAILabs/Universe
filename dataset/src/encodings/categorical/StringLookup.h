@@ -10,6 +10,15 @@
 
 namespace thirdai::dataset {
 
+/**
+ * Maps string values to sparse ids as specified by the input map
+ *
+ * You can declare that all strings have been seen by calling the
+ * declareSeenAllStrings() method. Doing so will make this
+ * encoding more efficient in parallel settings but it will throw
+ * an error when given an unseen string. declareSeenAllStrings()
+ * cannot be undone.
+ */
 class StringLookup final : public CategoricalEncoding {
  public:
   StringLookup(uint32_t n_classes, ThreadSafeVocabularyPtr vocab)

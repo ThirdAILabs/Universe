@@ -13,27 +13,26 @@
 namespace thirdai::dataset {
 
 /**
- * A thread-safe data structure for getting UIDs
- * corresponding to strings and vice versa.
+ * A thread-safe data structure for getting UIDs corresponding
+ * to strings and vice versa.
  *
- * You can declare that all strings have been seen
- * by calling the declareSeenAllStrings() method.
- * Doing so will make this data structure more
- * efficient in parallel settings but it will
+ * You can declare that all strings have been seen by calling the
+ * declareSeenAllStrings() method. Doing so will make this data
+ * structure more efficient in parallel settings but it will
  * throw an error when given an unseen string.
  * declareSeenAllStrings() cannot be undone.
  *
- * Safe to be used by multiple functions / objects
- * at the same time.
+ * Safe to be used by multiple functions / objects at the same
+ * time.
  */
 class ThreadSafeVocabulary {
  public:
-  ThreadSafeVocabulary() : _read_only(false) {}
+  ThreadSafeVocabulary() : _seen_all_strings(false) {}
 
   explicit ThreadSafeVocabulary(
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map,
       bool seen_all_strings = false)
-      : _string_to_uid(std::move(string_to_uid_map)), _read_only(false) {
+      : _string_to_uid(std::move(string_to_uid_map)), _seen_all_strings(false) {
     _uid_to_string.resize(_string_to_uid.size());
     for (auto& [string, uid] : _string_to_uid) {
       _uid_to_string[uid] = string;
@@ -44,7 +43,7 @@ class ThreadSafeVocabulary {
   }
 
   uint32_t getUid(const std::string& string) {
-    if (_read_only) {
+    if (_seen_all_strings) {
       return getExistingUid(string);
     }
     return getUidInCriticalSection(string);
@@ -60,9 +59,9 @@ class ThreadSafeVocabulary {
 
   uint32_t size() const { return _string_to_uid.size(); }
 
-  void declareSeenAllStrings() { _read_only = true; };
+  void declareSeenAllStrings() { _seen_all_strings = true; };
 
-  bool hasSeenAllStrings() const { return _read_only; }
+  bool hasSeenAllStrings() const { return _seen_all_strings; }
 
   void reserve(size_t n_unique) {
     _string_to_uid.reserve(n_unique);
@@ -82,7 +81,7 @@ class ThreadSafeVocabulary {
 
  private:
   uint32_t getExistingUid(const std::string& string) {
-    assert(_read_only);
+    assert(_seen_all_strings);
     if (!_string_to_uid.count(string)) {
       std::stringstream error_ss;
       error_ss << "[ThreadSafeVocabulary] Seeing a new string '" << string
@@ -93,7 +92,7 @@ class ThreadSafeVocabulary {
   }
 
   uint32_t getUidInCriticalSection(const std::string& string) {
-    assert(!_read_only);
+    assert(!_seen_all_strings);
     uint32_t uid;
 #pragma omp critical(streaming_string_lookup)
     {
@@ -111,7 +110,7 @@ class ThreadSafeVocabulary {
 
   std::unordered_map<std::string, uint32_t> _string_to_uid;
   std::vector<std::string> _uid_to_string;
-  bool _read_only;
+  bool _seen_all_strings;
 };
 
 using ThreadSafeVocabularyPtr = std::shared_ptr<ThreadSafeVocabulary>;
