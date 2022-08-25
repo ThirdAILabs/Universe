@@ -25,8 +25,14 @@ namespace thirdai::dataset {
  * throw an error when given an unseen string.
  * declareSeenAllStrings() cannot be undone.
  *
- * Safe to be used by multiple functions / objects at the same
- * time.
+ * This object is safe to be used by multiple functions / objects 
+ * at the same time.
+ * 
+ * Context of this design:
+ * This object was designed to enable different blocks to share 
+ * the same vocabulary if they operate on the same input data 
+ * columns. This significantly reduces memory consumption when 
+ * dealing with large datasets with many unique strings.
  */
 class ThreadSafeVocabulary {
  public:
