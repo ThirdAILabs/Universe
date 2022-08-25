@@ -194,8 +194,6 @@ class TextEncodingUtils {
 
     std::sort(indices.begin(), indices.end());
 
-    std::vector<uint32_t> new_indices;
-
     /**
      * If current index is the same as the next index, keep accumulating
      * summed_val. Otherwise, add sparse feature at the current index with the
