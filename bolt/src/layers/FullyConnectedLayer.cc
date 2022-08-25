@@ -81,7 +81,6 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 
   float max_act = 0;
   uint32_t len_out = nonzerosInOutput<DENSE>();
-  std::fill_n(output.gradients, len_out, 0);
 
   _prev_is_dense = PREV_DENSE;
   _this_is_dense = DENSE;
@@ -183,7 +182,6 @@ void FullyConnectedLayer::eigenDenseDenseForward(const BoltVector& input,
                                                  BoltVector& output) {
   _prev_is_dense = true;
   _this_is_dense = true;
-  std::fill_n(output.gradients, output.len, 0);
 
   Eigen::Map<
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
@@ -280,6 +278,10 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
   assert(_weight_optimizer.has_value() && _bias_optimizer.has_value());
 
   uint32_t len_out = nonzerosInOutput<DENSE>();
+
+  if constexpr (!FIRST_LAYER) {
+    input.zeroGradients();
+  }
 
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));

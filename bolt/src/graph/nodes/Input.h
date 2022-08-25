@@ -96,7 +96,7 @@ class Input final : public Node {
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
-    summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
+    summary << name() << " (Input): dim=" << _expected_input_dim << "\n";
   }
 
   std::string type() const final { return "input"; }
