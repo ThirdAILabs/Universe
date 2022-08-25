@@ -5,6 +5,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -209,7 +210,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("rebuild_hash_tables"))
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
-           py::arg("reconstruct_hash_functions"));
+           py::arg("reconstruct_hash_functions"))
+      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"));
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)
@@ -515,6 +517,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("get_layer", &DistributedTrainingContext::getNodeByName,
            py::arg("layer_name"),
            "Returns the pointer to layer with name layer_name");
+
+  createCallbacksSubmodule(graph_submodule);
+}
+
+void createCallbacksSubmodule(py::module_& graph_submodule) {
+  auto callbacks_submodule = graph_submodule.def_submodule("callbacks");
+
+  py::class_<Callback, CallbackPtr>(callbacks_submodule, "Callback");  // NOLINT
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
