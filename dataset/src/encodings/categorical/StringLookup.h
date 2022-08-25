@@ -80,7 +80,7 @@ class StringLookup final : public CategoricalEncoding {
                                      ThreadSafeVocabularyPtr vocab) {
     return std::make_shared<StringLookup>(n_classes, std::move(vocab));
   }
-  
+
   static CategoricalEncodingPtr make(uint32_t n_classes) {
     return std::make_shared<StringLookup>(n_classes);
   }
