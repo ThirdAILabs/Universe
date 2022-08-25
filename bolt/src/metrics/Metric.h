@@ -402,7 +402,7 @@ class FMeasure final : public Metric {
       std::stringstream error_ss;
       error_ss << "Invoked FMeasure::make with invalid string '" << name
                << "'. FMeasure::make should be invoked with a string "
-                  "in this format: 'f_measure(threshold)', where "
+                  "in the format 'f_measure(threshold)', where "
                   "threshold is a positive floating point number.";
       throw std::invalid_argument(error_ss.str());
     }
