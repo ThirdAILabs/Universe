@@ -9,5 +9,5 @@ if __name__ == "__main__":
         num_cpus_per_node=20,
     )
     head.train(circular=True)
-    acc, _ = head.predict()
-    print(acc["categorical_accuracy"])
+    metrics, _ = head.predict()
+    print(metrics["categorical_accuracy"])
