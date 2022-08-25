@@ -7,7 +7,7 @@
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
-#include <dataset/src/encodings/categorical/StringCategoricalEncoding.h>
+#include <dataset/src/encodings/categorical/StringLookup.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
 namespace thirdai::bolt {
@@ -142,8 +142,8 @@ class TabularClassifier {
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
         std::make_shared<dataset::CategoricalBlock>(
             _metadata->getLabelCol(),
-            std::make_shared<dataset::StringCategoricalEncoding>(
-                _metadata->getClassToIdMap()))};
+            dataset::StringLookup::make(_metadata->getClassToIdMap(),
+                                        /* seen_all_strings= */ true))};
 
     return std::make_shared<dataset::GenericBatchProcessor>(
         /* input_blocks = */ input_blocks,

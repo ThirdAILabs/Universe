@@ -2,8 +2,8 @@
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/encodings/categorical/StreamingStringCategoricalEncoding.h>
-#include <dataset/src/encodings/categorical/StreamingStringLookup.h>
+#include <dataset/src/encodings/categorical/StringLookup.h>
+#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <chrono>
@@ -43,24 +43,22 @@ static std::vector<std::string> generateRandomStrings(size_t n_unique,
   return strings;
 }
 
-std::vector<uint32_t> getUids(StreamingStringLookup& lookup,
-                              std::vector<std::string>& strings,
-                              bool parallel) {
+std::vector<uint32_t> getUids(ThreadSafeVocabulary& lookup,
+                              std::vector<std::string>& strings) {
   std::vector<uint32_t> uids(strings.size());
-#pragma omp parallel for default(none) \
-    shared(strings, uids, lookup) if (parallel)
+#pragma omp parallel for default(none) shared(strings, uids, lookup)
   for (uint32_t idx = 0; idx < strings.size(); idx++) {
-    uids[idx] = lookup.lookup(strings[idx]);
+    uids[idx] = lookup.getUid(strings[idx]);
   }
   return uids;
 }
 
-std::vector<std::string> backToStrings(StreamingStringLookup& lookup,
+std::vector<std::string> backToStrings(ThreadSafeVocabulary& lookup,
                                        std::vector<uint32_t>& uids) {
   std::vector<std::string> strings;
   strings.reserve(uids.size());
   for (auto uid : uids) {
-    strings.push_back(lookup.originalString(uid));
+    strings.push_back(*lookup.getString(uid));
   }
 
   return strings;
@@ -83,38 +81,29 @@ std::vector<uint32_t> getUidsFromBatch(bolt::BoltBatch& batch) {
   return uids;
 }
 
-TEST(StreamingStringLookupTests, CorrectStandalone) {
+template <typename LAMBDA_T>
+uint32_t time(LAMBDA_T function) {
+  auto start = std::chrono::high_resolution_clock::now();
+  function();
+  auto end = std::chrono::high_resolution_clock::now();
+  return std::chrono::duration_cast<std::chrono::microseconds>(end - start)
+      .count();
+}
+
+TEST(ThreadSafeVocabularyTests, Standalone) {
   auto strings = generateRandomStrings(
       /* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-  StreamingStringLookup lookup(/* n_unique = */ 1000);
-  auto uids = getUids(lookup, strings, /* parallel = */ true);
-  auto reverted_strings = backToStrings(lookup, uids);
+  ThreadSafeVocabulary vocab;
+  auto uids = getUids(vocab, strings);
+  auto reverted_strings = backToStrings(vocab, uids);
   assertStringsEqual(strings, reverted_strings);
 }
 
-TEST(StreamingStringLookupTests, DoesNotBreakWhenMoreStringsThanExpected) {
-  /*
-    We expect that any string after the first n_unique strings
-    is treated as out-of-vocab. Thus, the last 10 strings to be
-    processed cannot be converted back to their original form.
-    To easily identify which strings to exclude from the equality
-    assertion at the end, each unique string only appears once
-    and we process the strings sequentially.
-  */
-  auto strings = generateRandomStrings(
-      /* n_unique = */ 1010, /* repetitions = */ 1, /* len = */ 10);
-  StreamingStringLookup lookup(/* n_unique = */ 1000);
-
-  auto uids = getUids(lookup, strings, /* parallel = */ false);
-  auto reverted_strings = backToStrings(lookup, uids);
-  assertStringsEqual(strings, reverted_strings, /* exclude_last_n = */ 10);
-}
-
-TEST(StreamingStringLookupTests, InBlock) {
+TEST(ThreadSafeVocabularyTests, InBlock) {
   auto strings = generateRandomStrings(
       /* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-  auto lookup = StreamingStringLookup::make(/* n_unique = */ 1000);
-  auto lookup_encoding = StreamingStringCategoricalEncoding::make(lookup);
+  auto vocab = ThreadSafeVocabulary::make();
+  auto lookup_encoding = StringLookup::make(/* n_classes= */ 1000, vocab);
   auto lookup_block = std::make_shared<CategoricalBlock>(
       /* col = */ 0, /* encoding = */ lookup_encoding);
 
@@ -123,8 +112,35 @@ TEST(StreamingStringLookupTests, InBlock) {
   auto [batch, _] = processor.createBatch(strings);
 
   auto uids = getUidsFromBatch(batch);
-  auto reverted_strings = backToStrings(*lookup, uids);
+  auto reverted_strings = backToStrings(*vocab, uids);
   assertStringsEqual(strings, reverted_strings);
+}
+
+TEST(ThreadSafeVocabularyTests, SeenAllStringsBehavior) {
+  auto seen_strings = generateRandomStrings(
+      /* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
+  ThreadSafeVocabulary vocab;
+
+  auto before_seen_strings_duration =
+      time([&]() { getUids(vocab, seen_strings); });
+
+  vocab.declareSeenAllStrings();
+
+  std::vector<uint32_t> uids;
+  auto after_seen_strings_duration =
+      time([&]() { uids = getUids(vocab, seen_strings); });
+
+  ASSERT_LT(after_seen_strings_duration, before_seen_strings_duration);
+
+  auto reverted_strings = backToStrings(vocab, uids);
+  assertStringsEqual(seen_strings, reverted_strings);
+
+  // Different string length so the strings are guaranteed to be unseen
+  auto unseen_strings = generateRandomStrings(
+      /* n_unique = */ 1, /* repetitions = */ 1, /* len = */ 20);
+
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      vocab.getUid(unseen_strings.front()), std::invalid_argument);
 }
 
 }  // namespace thirdai::dataset
