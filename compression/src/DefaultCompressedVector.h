@@ -86,6 +86,8 @@ class DefaultCompressedVector final : public CompressedVector<T> {
 
   uint32_t size() { return _values.size(); }
 
+  std::string getCompressionScheme() const final { return "default"; }
+
  private:
   std::vector<T> _values;
 };

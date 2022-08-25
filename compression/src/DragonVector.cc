@@ -38,6 +38,8 @@ DragonVector<T>::DragonVector(const T* values, uint32_t size,
   uint32_t sketch_size =
       (std::max(static_cast<uint32_t>(compression_density * size),
                 std::min(size, _min_sketch_size)));
+
+  // should we move this to the initialization list?
   _indices.assign(sketch_size, 0);
   _values.assign(sketch_size, 0);
 
@@ -166,6 +168,13 @@ void DragonVector<T>::clear() {
 
 template <class T>
 DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) const {
+  DragonVector<T> return_vec = DragonVector(*this);
+  return_vec += vec;
+  return return_vec;
+}
+
+template <class T>
+DragonVector<T>& DragonVector<T>::operator+=(const DragonVector<T>& vec) {
   if (_seed_for_hashing != vec._seed_for_hashing) {
     throw std::invalid_argument(
         "Seeds for hashing of the two Dragon Sketches are different. Try "
@@ -182,11 +191,7 @@ DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) const {
         "sizes");
   }
 
-  std::vector<uint32_t> return_indices(_indices.size(), 0);
-  std::vector<T> return_values(_indices.size(), 0);
-
-#pragma omp parallel for default(none) \
-    shared(vec, _values, _indices, return_indices, return_values)
+#pragma omp parallel for default(none) shared(vec, _values, _indices)
 
   for (uint32_t i = 0; i < _indices.size(); i++) {
     /*
@@ -195,11 +200,10 @@ DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) const {
      * sketch 2. Should not use if-else because of branching overheads.
      */
 
-    return_indices[i] = _indices[i] + (_indices[i] == 0) * vec._indices[i];
-    return_values[i] = _values[i] + (_indices[i] == 0) * vec._values[i];
+    _indices[i] = _indices[i] + (_indices[i] == 0) * vec._indices[i];
+    _values[i] = _values[i] + (_indices[i] == 0) * vec._values[i];
   }
-  return DragonVector(std::move(return_indices), std::move(return_values),
-                      _original_size, _seed_for_hashing);
+  return *this;
 }
 
 template <class T>
@@ -283,6 +287,11 @@ std::vector<T> DragonVector<T>::decompressVector() const {
     decompressedVector[_indices[i]] += _values[i];
   }
   return decompressedVector;
+}
+
+template <class T>
+std::string DragonVector<T>::getCompressionScheme() const {
+  return "dragon";
 }
 
 template class DragonVector<float>;

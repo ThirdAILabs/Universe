@@ -78,6 +78,7 @@ class DragonVector final : public CompressedVector<T> {
 
   DragonVector<T> operator+(DragonVector<T> const& vec) const;
 
+  DragonVector<T>& operator+=(DragonVector<T> const& vec);
   /*
    * To-Do(Shubh):
    * This method should return a reference to the element at the index so that
@@ -120,9 +121,50 @@ class DragonVector final : public CompressedVector<T> {
 
   uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
 
+  std::string getCompressionScheme() const final;
+
+  static DragonVector<T> addVectors(
+      const std::vector<std::unique_ptr<DragonVector<T>>>& vec) {
+    DragonVector<T> return_vec = *vec[0].get();
+    for (size_t i = 1; i < vec.size(); i++) {
+      return_vec = *vec[i].get() + return_vec;
+    }
+    return return_vec;
+  }
+
+  static DragonVector<T> addVectors(
+      const std::vector<std::unique_ptr<CompressedVector<T>>>& vec) {
+    return addVectors(castToDragonVector(vec));
+  }
+
+  static DragonVector<T> concatVectors(
+      const std::vector<std::unique_ptr<CompressedVector<T>>>& vec) {
+    return concatVectors(castToDragonVector(vec));
+  }
+
+  static DragonVector<T> concatVectors(
+      const std::vector<std::unique_ptr<DragonVector<T>>>& vec) {
+    DragonVector<T> return_vec = *vec[0].get();
+    for (size_t i = 1; i < vec.size(); i++) {
+      return_vec.extend(*vec[i].get());
+    }
+    return return_vec;
+  }
+
+  static std::vector<std::unique_ptr<DragonVector<T>>> castToDragonVector(
+      const std::vector<std::unique_ptr<CompressedVector<T>>>& vec) {
+    std::vector<std::unique_ptr<DragonVector<T>>> final_vec;
+    final_vec.reserve(vec.size());
+    for (const auto& i : vec) {
+      final_vec.push_back(std::make_unique<DragonVector<T>>(
+          *dynamic_cast<DragonVector<T>*>(i.get())));
+    }
+    return final_vec;
+  }
+
   /*
-   * We are storing indices,values tuple hence, decompressing is just putting
-   * corresponding values for the stored indices
+   * We are storing indices,values tuple hence, decompressing is just
+   * putting corresponding values for the stored indices
    */
   std::vector<T> decompressVector() const final;
 

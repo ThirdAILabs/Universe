@@ -66,6 +66,8 @@ class CompressedVector {
    */
   virtual std::vector<T> decompressVector() const = 0;
 
+  virtual std::string getCompressionScheme() const = 0;
+
   virtual ~CompressedVector() = default;
 };
 }  // namespace thirdai::compression
