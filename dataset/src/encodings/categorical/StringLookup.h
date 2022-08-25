@@ -33,9 +33,6 @@ class StringLookup final : public CategoricalEncoding {
     _vocab->reserve(n_classes);
   }
 
-  explicit StringLookup(ThreadSafeVocabularyPtr vocab)
-      : StringLookup(vocab->size(), vocab) {}
-
   explicit StringLookup(uint32_t n_classes)
       : StringLookup(n_classes, ThreadSafeVocabulary::make()) {}
 
@@ -83,11 +80,7 @@ class StringLookup final : public CategoricalEncoding {
                                      ThreadSafeVocabularyPtr vocab) {
     return std::make_shared<StringLookup>(n_classes, std::move(vocab));
   }
-
-  static CategoricalEncodingPtr make(ThreadSafeVocabularyPtr vocab) {
-    return std::make_shared<StringLookup>(std::move(vocab));
-  }
-
+  
   static CategoricalEncodingPtr make(uint32_t n_classes) {
     return std::make_shared<StringLookup>(n_classes);
   }
