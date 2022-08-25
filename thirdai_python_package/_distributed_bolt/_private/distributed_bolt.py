@@ -55,7 +55,7 @@ class DistributedBolt:
 
         for epoch in range(self.epochs):
 
-            for batch_no in range(int(self.num_of_batches)):
+            for batch_no in range(self.num_of_batches):
                 # Here we are asking every worker to calculate their gradients and return
                 # once they all calculate their gradients
                 start_calculating_gradients_time = time.time()
