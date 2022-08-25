@@ -42,10 +42,10 @@ class TimeGenerator {
 };
 
 std::vector<uint32_t> makeShuffledUserIdSequence(size_t n_users,
-                                                 size_t n_items) {
-  std::vector<uint32_t> user_seq(n_users * n_items);
+                                                 size_t n_items_per_user) {
+  std::vector<uint32_t> user_seq(n_users * n_items_per_user);
   for (uint32_t i = 0; i < user_seq.size(); i++) {
-    user_seq[i] = i / n_items;
+    user_seq[i] = i / n_items_per_user;
   }
 
   auto rng = std::default_random_engine{};
@@ -55,8 +55,8 @@ std::vector<uint32_t> makeShuffledUserIdSequence(size_t n_users,
 
 std::vector<uint32_t> makeItemIdSequence(
     std::vector<uint32_t>& user_id_sequence, uint32_t n_users,
-    uint32_t n_items) {
-  std::vector<uint32_t> items_generated_for_user(n_users);
+    uint32_t n_items_per_user) {
+  std::vector<uint32_t> items_generated_for_user(n_users, 0);
   std::vector<uint32_t> item_id_sequence;
   for (auto user_id : user_id_sequence) {
     /*
@@ -65,7 +65,7 @@ std::vector<uint32_t> makeItemIdSequence(
       before the current item) 2) Item IDs are disjoint for each user (Easily
       check whether the history is corrupted)
     */
-    item_id_sequence.push_back(user_id * n_items +
+    item_id_sequence.push_back(user_id * n_items_per_user +
                                items_generated_for_user[user_id]);
     items_generated_for_user[user_id]++;
   }
@@ -142,7 +142,7 @@ std::vector<std::vector<uint32_t>> processSamples(
   return histories;
 }
 
-void assertItemHistoryNotStagnant(std::vector<std::vector<uint32_t>>& batch,
+void assertItemHistoryGetsUpdated(std::vector<std::vector<uint32_t>>& batch,
                                   std::vector<uint32_t>& user_id_sequence,
                                   uint32_t n_users) {
   std::vector<std::unordered_set<uint32_t>> last_user_item_history(n_users);
@@ -180,7 +180,7 @@ TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
 
   auto batch = processSamples(samples, n_users, n_items_per_user, track_last_n);
   assertItemHistoryValid(batch, user_id_seq, item_id_seq, n_items_per_user);
-  assertItemHistoryNotStagnant(batch, user_id_seq, n_users);
+  assertItemHistoryGetsUpdated(batch, user_id_seq, n_users);
   assertItemHistoryNotEmpty(batch);
 }
 }  // namespace thirdai::dataset

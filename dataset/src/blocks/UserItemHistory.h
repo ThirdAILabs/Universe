@@ -12,7 +12,6 @@
 #include <unordered_map>
 namespace thirdai::dataset {
 struct ItemRecord {
-  bool valid;
   uint32_t item;
   int64_t timestamp;
 };
@@ -26,7 +25,7 @@ class UserItemBuffer {
 
   void insert(ItemRecord element) { _buffer[getAndUpdateIdx()] = element; }
 
-  const std::vector<ItemRecord>& view() { return _buffer; }
+  const std::vector<std::optional<ItemRecord>>& view() { return _buffer; }
 
  private:
   uint32_t getAndUpdateIdx() {
@@ -37,7 +36,7 @@ class UserItemBuffer {
 
   uint32_t nextIdx(uint32_t idx) { return (idx + 1) % _buffer.size(); }
 
-  std::vector<ItemRecord> _buffer;
+  std::vector<std::optional<ItemRecord>> _buffer;
   uint32_t _idx;
 };
 
@@ -77,7 +76,7 @@ class UserItemHistoryBlock final : public Block {
         _item_id_lookup(StreamingStringLookup::make(n_unique_items)),
         _records(makeEmptyRecord(n_unique_users, track_last_n)) {}
 
-  static std::shared_ptr<UserItemHistoryRecords> makeEmptyRecord(
+  static UserItemHistoryRecordsPtr makeEmptyRecord(
       uint32_t n_users, uint32_t track_last_n) {
     UserItemHistoryRecords records(n_users, UserItemBuffer(track_last_n));
     return std::make_shared<UserItemHistoryRecords>(std::move(records));
@@ -113,13 +112,13 @@ class UserItemHistoryBlock final : public Block {
 
         for (auto id : item_ids) {
           // Insert new item after adding to the vector to not give away new
-          _records->at(user_id).insert({/* valid = */ true, /* item = */ id,
+          _records->at(user_id).insert({/* item = */ id,
                                         /* timestamp = */ epoch_timestamp});
         }
       }
 
-    } catch (std::exception& except) {
-      return std::make_exception_ptr(except);
+    } catch (...) {
+      return std::current_exception();
     }
     return nullptr;
   }
@@ -164,8 +163,8 @@ class UserItemHistoryBlock final : public Block {
         break;
       }
 
-      if (item.valid && item.timestamp <= epoch_timestamp) {
-        vec.addSparseFeatureToSegment(item.item, 1.0);
+      if (item && item->timestamp <= epoch_timestamp) {
+        vec.addSparseFeatureToSegment(item->item, 1.0);
         added++;
       }
     }
