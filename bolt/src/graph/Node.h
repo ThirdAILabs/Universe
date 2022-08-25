@@ -90,7 +90,6 @@ class Node {
    */
   inline void forward(uint32_t vec_index, const BoltVector* labels) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
-    getOutputVectorImpl(vec_index).zeroGradients();
     forwardImpl(vec_index, labels);
   }
 

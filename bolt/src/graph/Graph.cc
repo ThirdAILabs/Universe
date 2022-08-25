@@ -152,6 +152,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
   for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
+    resetOutputGradients(vec_id);
+
     _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
                          batch_labels.getBatchSize());
 
@@ -270,6 +272,7 @@ BoltGraph::getInputGradientSingle(
 
     _loss->lossGradients(_output->getOutputVector(/*vec_index= */ 0),
                          label_vector, /*batch_size= */ 1);
+    resetOutputGradients(/* vec_index= */ 0);
     backpropagate(/*vec_index= */ 0);
 
     // We reset the gradients to nullptr here to prevent the bolt vector
@@ -465,6 +468,12 @@ void BoltGraph::cleanupAfterBatchProcessing() {
 void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {
   for (auto& node : _nodes) {
     node->updateParameters(learning_rate, batch_cnt);
+  }
+}
+
+void BoltGraph::resetOutputGradients(uint32_t vec_index) {
+  for (auto& node : _nodes) {
+    node->getOutputVector(vec_index).zeroOutGradients();
   }
 }
 
