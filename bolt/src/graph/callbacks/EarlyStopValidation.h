@@ -8,11 +8,10 @@ namespace thirdai::bolt {
 
 class EarlyStopValidation : public Callback {
  public:
-  EarlyStopValidation(const dataset::BoltDatasetList& validation_data,
-                      const dataset::BoltTokenDatasetList& validation_tokens,
-                      const dataset::BoltDatasetPtr& validation_labels,
-                      const PredictConfig& predict_config,
-                      uint32_t patience = 3)
+  EarlyStopValidation(dataset::BoltDatasetList validation_data,
+                      dataset::BoltTokenDatasetList validation_tokens,
+                      dataset::BoltDatasetPtr validation_labels,
+                      PredictConfig predict_config, uint32_t patience = 3)
       : _validation_data(std::move(validation_data)),
         _validation_tokens(std::move(validation_tokens)),
         _validation_labels(std::move(validation_labels)),
@@ -30,9 +29,24 @@ class EarlyStopValidation : public Callback {
     }
   }
 
+  EarlyStopValidation(dataset::BoltDatasetPtr validation_data,
+                      dataset::BoltDatasetPtr validation_labels,
+                      PredictConfig predict_config, uint32_t patience = 3)
+      : EarlyStopValidation({std::move(validation_data)}, {},
+                            std::move(validation_labels),
+                            std::move(predict_config), patience) {}
+
   void onEpochEnd() final {
     // we can access element 0 since we previously asserted having one metric
     std::string metric_name = _predict_config.getMetricNames()[0];
+
+    if (!_model->getBatchSize().has_value()) {
+      throw std::invalid_argument(
+          "Misuse of EarlyStopValidation Callback. Model is not prepared for "
+          "batch processing.");
+    }
+
+    uint32_t train_batch_size = _model->getBatchSize().value();
 
     _model->cleanupAfterBatchProcessing();
 
@@ -58,13 +72,16 @@ class EarlyStopValidation : public Callback {
       _model->save(BEST_MODEL_SAVE_LOCATION);
     }
     _last_validation_metric = metric_val;
+
+    _model->prepareToProcessBatches(train_batch_size,
+                                    /* use_sparsity = */ true);
   }
 
   void onTrainEnd() final {
     *_model = *BoltGraph::load(BEST_MODEL_SAVE_LOCATION);
   }
 
-  bool wantsToEarlyStop() { return _should_stop_training; }
+  bool shouldStopTraining() final { return _should_stop_training; }
 
  private:
   dataset::BoltDatasetList _validation_data;
@@ -80,5 +97,7 @@ class EarlyStopValidation : public Callback {
 
   const std::string BEST_MODEL_SAVE_LOCATION = ".bestModel";
 };
+
+using EarlyStopValidationPtr = std::shared_ptr<EarlyStopValidation>;
 
 }  // namespace thirdai::bolt

@@ -182,6 +182,8 @@ class BoltGraph {
     return (_batch_cnt % num_batches) == (num_batches - 1);
   }
 
+  std::optional<uint32_t> getBatchSize() const { return _batch_size; }
+
   void rebuildHashTables();
 
   void reconstructHashFunctions();
@@ -236,6 +238,10 @@ class BoltGraph {
 
   std::optional<GraphCallback> _per_batch_callback;
   std::optional<GraphCallback> _per_epoch_callback;
+
+  // stores the models batch size while nodes are prepared for batch processing,
+  // otherwise returns nullopt
+  std::optional<uint32_t> _batch_size;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

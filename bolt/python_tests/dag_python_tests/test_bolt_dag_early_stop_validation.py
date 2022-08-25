@@ -1,6 +1,5 @@
 from cgi import test
 from thirdai import bolt
-from thirdai.graph import callbacks
 from ..utils import gen_numpy_training_data, get_simple_dag_model
 import pytest
 
@@ -41,13 +40,13 @@ def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
     )
 
     train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=20)
+        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=50)
         .with_metrics(["categorical_accuracy"])
         .with_callbacks(
             [
-                callbacks.EarlyStopValidation(
-                    valid_data=valid_data,
-                    valid_labels=valid_labels,
+                bolt.graph.callbacks.EarlyStopValidation(
+                    validation_data=valid_data,
+                    validation_labels=valid_labels,
                     predict_config=predict_config,
                     patience=1,
                 )

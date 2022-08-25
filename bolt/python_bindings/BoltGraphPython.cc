@@ -525,29 +525,20 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 void createCallbacksSubmodule(py::module_& graph_submodule) {
   auto callbacks_submodule = graph_submodule.def_submodule("callbacks");
 
-  py::class_<Callback, CallbackPtr>(graph_submodule, "Callback");  // NOLINT
+  py::class_<Callback, CallbackPtr>(callbacks_submodule, "Callback");  // NOLINT
 
-  py::class_<EarlyStopValidation, Callback>(callbacks_submodule,
-                                            "EarlyStopValidation")
+  py::class_<EarlyStopValidation, EarlyStopValidationPtr, Callback>(
+      callbacks_submodule, "EarlyStopValidation")
       .def(py::init<std::vector<dataset::BoltDatasetPtr>,
                     std::vector<dataset::BoltTokenDatasetPtr>,
                     dataset::BoltDatasetPtr, PredictConfig, uint32_t>(),
            py::arg("validation_data"), py::arg("validation_tokens"),
            py::arg("validation_labels"), py::arg("predict_config"),
-           py::arg("patience"));
-  // Helper method that covers the common case of validation based off of a
-  // single BoltBatch dataset
-  //  .def(
-  //      "with_early_stop_validation",
-  //      [](TrainConfig& config, dataset::BoltDatasetPtr data,
-  //         dataset::BoltDatasetPtr labels,
-  //         const PredictConfig& predict_config, uint32_t patience) {
-  //        return config.withEarlyStopValidation(
-  //            {data}, /* valid_tokens = */ {}, labels, predict_config,
-  //            patience);
-  //      },
-  //      py::arg("valid_data"), py::arg("valid_labels"),
-  //      py::arg("predict_config"), py::arg("patience"))
+           py::arg("patience"))
+      .def(py::init<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr,
+                    PredictConfig, uint32_t>(),
+           py::arg("validation_data"), py::arg("validation_labels"),
+           py::arg("predict_config"), py::arg("patience"));
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,

@@ -10,7 +10,9 @@ using BoltGraphPtr = std::shared_ptr<BoltGraph>;
 
 class Callback {
  public:
-  void setModel(BoltGraphPtr model) { _model = std::move(model); }
+  Callback() {}
+
+  void setModel(BoltGraph* model) { _model = model; }
 
   virtual void onTrainBegin(){};
 
@@ -24,12 +26,12 @@ class Callback {
 
   virtual void onBatchEnd(){};
 
-  virtual bool wantsToEarlyStop() { return false; }
+  virtual bool shouldStopTraining() { return false; }
 
   virtual ~Callback() = default;
 
  protected:
-  BoltGraphPtr _model;
+  BoltGraph* _model;
 };
 
 using CallbackPtr = std::shared_ptr<Callback>;
@@ -38,6 +40,12 @@ class CallbackList {
  public:
   explicit CallbackList(std::vector<CallbackPtr> callbacks)
       : _callbacks(std::move(callbacks)) {}
+
+  void setModel(BoltGraph* model) {
+    for (const auto& callback : _callbacks) {
+      callback->setModel(model);
+    }
+  }
 
   void onTrainBegin() {
     for (const auto& callback : _callbacks) {
@@ -75,19 +83,15 @@ class CallbackList {
     }
   }
 
-  bool wantToEarlyStop() {
-    for (const auto& callback : _callbacks) {
-      if (callback->wantsToEarlyStop()) {
-        return true;
-      }
-    }
-    return false;
+  bool shouldStopTraining() {
+    return std::any_of(_callbacks.begin(), _callbacks.end(),
+                       [&](const CallbackPtr& callback) {
+                         return callback->shouldStopTraining();
+                       });
   }
 
  private:
   std::vector<CallbackPtr> _callbacks;
 };
-
-using CallbackListPtr = std::shared_ptr<CallbackList>;
 
 }  // namespace thirdai::bolt
