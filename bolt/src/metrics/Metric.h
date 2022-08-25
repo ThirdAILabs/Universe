@@ -284,9 +284,23 @@ class RecallAtK : public Metric {
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
-    auto k_str = name.substr(7);
+    if (!isRecallAtK(name)) {
+      std::stringstream error_ss;
+      error_ss << "Invoked RecallAtK::make with invalid string '" << name
+               << "'. RecallAtK::make should be invoked with a string in "
+                  "the format 'recall@k', where k is a positive integer.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
     char* end_ptr;
-    auto k = std::strtol(k_str.data(), &end_ptr, 10);
+    auto k = std::strtol(name.data() + 7, &end_ptr, 10);
+    if (k <= 0) {
+      std::stringstream error_ss;
+      error_ss << "RecallAtK invoked with k = " << k
+               << ". k should be greater than 0.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
     return std::make_shared<RecallAtK>(k);
   }
 
@@ -305,9 +319,6 @@ class RecallAtK : public Metric {
   std::atomic_uint64_t _matches;
   std::atomic_uint64_t _label_count;
 };
-
-using MetricData = std::unordered_map<std::string, std::vector<double>>;
-using InferenceMetricData = std::unordered_map<std::string, double>;
 
 /**
  * The F-Measure is a metric that takes into account both precision and recall.
@@ -387,9 +398,26 @@ class FMeasure final : public Metric {
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
+    if (!isFMeasure(name)) {
+      std::stringstream error_ss;
+      error_ss << "Invoked FMeasure::make with invalid string '" << name
+               << "'. FMeasure::make should be invoked with a string "
+                  "in this format: 'f_measure(threshold)', where "
+                  "threshold is a positive floating point number.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
     std::string token = name.substr(name.find('('));  // token = (X.XXX)
     token = token.substr(1, token.length() - 2);      // token = X.XXX
     float threshold = std::stof(token);
+
+    if (threshold <= 0) {
+      std::stringstream error_ss;
+      error_ss << "FMeasure invoked with threshold = " << threshold
+               << ". The threshold should be greater than 0.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
     return std::make_shared<FMeasure>(threshold);
   }
 
@@ -399,5 +427,8 @@ class FMeasure final : public Metric {
   std::atomic<uint64_t> _false_positive;
   std::atomic<uint64_t> _false_negative;
 };
+
+using MetricData = std::unordered_map<std::string, std::vector<double>>;
+using InferenceMetricData = std::unordered_map<std::string, double>;
 
 }  // namespace thirdai::bolt
