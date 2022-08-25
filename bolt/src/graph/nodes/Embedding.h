@@ -50,6 +50,8 @@ class EmbeddingNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
+  void initOptimizer() final { _embedding_layer->initOptimizer(); }
+
   std::string type() const final { return "embedding"; }
 
   NodeState getState() const final {

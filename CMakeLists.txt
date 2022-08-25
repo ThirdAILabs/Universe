@@ -214,7 +214,6 @@ pybind11_add_module(_thirdai
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   ${BOLT_SOURCES} 
-  ${DLRM_SOURCES}
   ${SEARCH_SOURCES} 
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
