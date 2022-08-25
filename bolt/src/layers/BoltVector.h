@@ -223,7 +223,7 @@ struct BoltVector {
     }
   }
 
-  void zeroGradients() {  // NOLINT clang-tidy things this method is const
+  void zeroGradients() const {
     assert(hasGradients());
     std::fill_n(gradients, len, 0.0);
   }

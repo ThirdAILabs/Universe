@@ -49,6 +49,10 @@ FullyConnectedLayer::FullyConnectedLayer(
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
+  if (input.hasGradients()) {
+    input.zeroGradients();
+  }
+
   if (output.isDense()) {
     if (input.isDense()) {
       eigenDenseDenseForward(input, output);
@@ -278,10 +282,6 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
   assert(_weight_optimizer.has_value() && _bias_optimizer.has_value());
 
   uint32_t len_out = nonzerosInOutput<DENSE>();
-
-  if constexpr (!FIRST_LAYER) {
-    input.zeroGradients();
-  }
 
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
