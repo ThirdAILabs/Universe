@@ -22,7 +22,7 @@ class Callback {
  public:
   Callback() {}
 
-  void setModel(BoltGraph* model) { _model = model; }
+  void setModel(BoltGraphPtr model) { _model = model; }
 
   virtual void onTrainBegin(){};
 
@@ -41,7 +41,7 @@ class Callback {
   virtual ~Callback() = default;
 
  protected:
-  BoltGraph* _model;
+  BoltGraphPtr _model;
 };
 
 using CallbackPtr = std::shared_ptr<Callback>;
@@ -55,7 +55,7 @@ class CallbackList {
   explicit CallbackList(std::vector<CallbackPtr> callbacks)
       : _callbacks(std::move(callbacks)) {}
 
-  void setModel(BoltGraph* model) {
+  void setModel(BoltGraphPtr model) {
     for (const auto& callback : _callbacks) {
       callback->setModel(model);
     }

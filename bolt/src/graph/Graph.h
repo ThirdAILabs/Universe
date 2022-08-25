@@ -28,7 +28,7 @@ namespace thirdai::bolt {
 class DistributedTrainingContext;
 using GraphCallback = std::function<void()>;
 
-class BoltGraph {
+class BoltGraph : public std::enable_shared_from_this<BoltGraph> {
   friend class DistributedTrainingContext;
 
  public:

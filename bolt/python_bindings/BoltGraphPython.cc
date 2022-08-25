@@ -220,7 +220,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("silence", &PredictConfig::silence)
       .def("return_activations", &PredictConfig::returnActivations);
 
-  py::class_<BoltGraph>(graph_submodule, "Model")
+  py::class_<BoltGraph, BoltGraphPtr>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"

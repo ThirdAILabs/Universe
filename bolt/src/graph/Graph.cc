@@ -87,7 +87,7 @@ MetricData BoltGraph::train(
   MetricAggregator metrics = train_config.getMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
-  callbacks.setModel(this);
+  callbacks.setModel(shared_from_this());
   callbacks.onTrainBegin();
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
