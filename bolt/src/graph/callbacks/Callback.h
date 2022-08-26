@@ -39,8 +39,6 @@ class Callback {
 
   virtual bool shouldStopTraining() { return false; }
 
-  virtual CallbackPtr makeCopy();
-
   virtual ~Callback() = default;
 
  protected:
