@@ -65,6 +65,16 @@ struct BoltVector {
     }
   }
 
+  static BoltVector singleElementSparseVector(uint32_t active_neuron,
+                                              float activation = 1.0) {
+    BoltVector vec(/* l= */ 1, /* is_dense= */ false,
+                   /* has_gradient= */ false);
+    vec.active_neurons[0] = active_neuron;
+    vec.activations[0] = activation;
+
+    return vec;
+  }
+
   uint32_t getHighestActivationId() const {
     float max_act = activations[0];
     uint32_t id = 0;

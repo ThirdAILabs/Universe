@@ -72,7 +72,7 @@ class MultiLabelTextClassifier {
                       .withRebuildHashTables(10000)
                       .withReconstructHashFunctions(50000);
 
-    _classifier->train({train_data}, {}, train_labels, config);
+    _classifier->train({train_data}, train_labels, config);
   }
 
   InferenceResult predict(const std::string& filename,
@@ -88,7 +88,7 @@ class MultiLabelTextClassifier {
 
     auto config = PredictConfig::makeConfig().withMetrics(metrics);
 
-    return _classifier->predict({pred_data}, {}, pred_labels, config);
+    return _classifier->predict({pred_data}, pred_labels, config);
   }
 
   BoltVector predictSingleFromSentence(std::string sentence,
@@ -107,7 +107,7 @@ class MultiLabelTextClassifier {
     }
 
     BoltVector output =
-        _classifier->predictSingle({input_vector}, {},
+        _classifier->predictSingle({input_vector},
                                    /* use_sparse_inference = */ false);
 
     assert(output.isDense());

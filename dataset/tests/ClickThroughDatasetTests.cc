@@ -131,15 +131,17 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     }
   }
 
-  void verifyTokenBatch(const BoltTokenBatch& tokens, uint32_t vec_count_base) {
+  void verifyTokenBatch(const BoltBatch& tokens, uint32_t vec_count_base) {
     ASSERT_TRUE(tokens.getBatchSize() == _batch_size ||
                 tokens.getBatchSize() == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < tokens.getBatchSize(); v++) {
-      ASSERT_EQ(tokens[v].size(), getNumCategoricalFeatures());
-      for (uint32_t i = 0; i < tokens[v].size(); i++) {
-        ASSERT_EQ(tokens[v].at(i), _ground_truths_vectors.at(vec_count_base + v)
-                                       .categorical_features.at(i));
+      ASSERT_EQ(tokens[v].len, getNumCategoricalFeatures());
+      for (uint32_t i = 0; i < tokens[v].len; i++) {
+        ASSERT_EQ(tokens[v].active_neurons[i],
+                  _ground_truths_vectors.at(vec_count_base + v)
+                      .categorical_features.at(i));
+        ASSERT_EQ(tokens[v].activations[i], 1.0);
       }
     }
   }
