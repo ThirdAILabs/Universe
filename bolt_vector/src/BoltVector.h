@@ -450,6 +450,10 @@ class BoltBatch {
     return _vectors[i];
   }
 
+  auto begin() const { return _vectors.begin(); }
+
+  auto end() const { return _vectors.end(); }
+
   uint32_t getBatchSize() const { return _vectors.size(); }
 
   /*

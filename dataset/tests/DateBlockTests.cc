@@ -15,7 +15,7 @@ class DateBlockTests : public testing::Test {
     return std::get<0>(processor.createBatch(input_rows));
   }
 
-  static std::optional<uint32_t> dayOfWeek(BoltVector& vector) {
+  static std::optional<uint32_t> dayOfWeek(const BoltVector& vector) {
     for (size_t act_idx = 0; act_idx < vector.len; act_idx++) {
       auto active_neuron = vector.active_neurons[act_idx];
       if (active_neuron >= dayOfWeekOffset() &&
@@ -26,7 +26,7 @@ class DateBlockTests : public testing::Test {
     return {};
   }
 
-  static std::optional<uint32_t> monthOfYear(BoltVector& vector) {
+  static std::optional<uint32_t> monthOfYear(const BoltVector& vector) {
     for (size_t act_idx = 0; act_idx < vector.len; act_idx++) {
       auto active_neuron = vector.active_neurons[act_idx];
       if (active_neuron >= monthOfYearOffset() &&
@@ -37,7 +37,7 @@ class DateBlockTests : public testing::Test {
     return {};
   }
 
-  static std::optional<uint32_t> weekOfMonth(BoltVector& vector) {
+  static std::optional<uint32_t> weekOfMonth(const BoltVector& vector) {
     for (size_t act_idx = 0; act_idx < vector.len; act_idx++) {
       auto active_neuron = vector.active_neurons[act_idx];
       if (active_neuron >= weekOfMonthOffset() &&
@@ -48,7 +48,7 @@ class DateBlockTests : public testing::Test {
     return {};
   }
 
-  static std::optional<uint32_t> weekOfYear(BoltVector& vector) {
+  static std::optional<uint32_t> weekOfYear(const BoltVector& vector) {
     for (size_t act_idx = 0; act_idx < vector.len; act_idx++) {
       auto active_neuron = vector.active_neurons[act_idx];
       if (active_neuron >= weekOfYearOffset() &&
@@ -101,25 +101,25 @@ TEST_F(DateBlockTests, ValidValues) {
   };
 
   auto batch = featurize(samples);
-  for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-    ASSERT_EQ(batch[vec_idx].len, 4);
+  for (const auto& vec : batch) {
+    ASSERT_EQ(vec.len, 4);
 
-    auto day_of_week = dayOfWeek(batch[vec_idx]);
+    auto day_of_week = dayOfWeek(vec);
     ASSERT_TRUE(day_of_week.has_value());
     ASSERT_GE(*day_of_week, 0);
     ASSERT_LT(*day_of_week, dayOfWeekDim());
 
-    auto month_of_year = monthOfYear(batch[vec_idx]);
+    auto month_of_year = monthOfYear(vec);
     ASSERT_TRUE(month_of_year.has_value());
     ASSERT_GE(*month_of_year, 0);
     ASSERT_LT(*month_of_year, monthOfYearDim());
 
-    auto week_of_month = weekOfMonth(batch[vec_idx]);
+    auto week_of_month = weekOfMonth(vec);
     ASSERT_TRUE(week_of_month.has_value());
     ASSERT_GE(*week_of_month, 0);
     ASSERT_LT(*week_of_month, weekOfMonthDim());
 
-    auto week_of_year = weekOfYear(batch[vec_idx]);
+    auto week_of_year = weekOfYear(vec);
     ASSERT_TRUE(week_of_year.has_value());
     ASSERT_GE(*week_of_year, 0);
     ASSERT_LT(*week_of_year, weekOfYearDim());
@@ -134,8 +134,8 @@ TEST_F(DateBlockTests, DayOfWeekBehavesAsExpected) {
   };
   auto batch = featurize(samples);
 
-  for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-    auto day_of_week = dayOfWeek(batch[vec_idx]);
+  for (const auto& vec : batch) {
+    auto day_of_week = dayOfWeek(vec);
     ASSERT_TRUE(day_of_week.has_value());
     days_of_week_seen[*day_of_week] = true;
   }
@@ -154,8 +154,8 @@ TEST_F(DateBlockTests, MonthOfYearBehavesAsExpected) {
   };
   auto batch = featurize(samples);
 
-  for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-    auto month_of_year = monthOfYear(batch[vec_idx]);
+  for (const auto& vec : batch) {
+    auto month_of_year = monthOfYear(vec);
     ASSERT_TRUE(month_of_year.has_value());
     months_of_year_seen[*month_of_year] = true;
   }
@@ -172,8 +172,8 @@ TEST_F(DateBlockTests, WeekOfMonthBehavesAsExpected) {
   };
   auto batch = featurize(samples);
 
-  for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-    auto week_of_month = weekOfMonth(batch[vec_idx]);
+  for (const auto& vec : batch) {
+    auto week_of_month = weekOfMonth(vec);
     ASSERT_TRUE(week_of_month.has_value());
     weeks_of_month_seen[*week_of_month] = true;
   }
@@ -207,8 +207,8 @@ TEST_F(DateBlockTests, WeekOfYearBehavesAsExpected) {
 
   auto batch = featurize(samples);
 
-  for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-    auto week_of_year = weekOfYear(batch[vec_idx]);
+  for (const auto& vec : batch) {
+    auto week_of_year = weekOfYear(vec);
     ASSERT_TRUE(week_of_year.has_value());
     weeks_of_year_seen[*week_of_year] = true;
   }
