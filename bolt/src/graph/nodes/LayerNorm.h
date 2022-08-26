@@ -5,8 +5,8 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <cmath>
 #include <memory>
@@ -188,7 +188,7 @@ class LayerNormNode final : public Node,
         continue;
       }
 
-      input_vector.gradients[neuron_index] =
+      input_vector.gradients[neuron_index] +=
           output_vector.gradients[neuron_index] * grad;
     }
   }

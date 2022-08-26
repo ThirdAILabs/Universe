@@ -4,7 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <cstdint>
@@ -112,7 +112,6 @@ class ConcatenateNode final
     (void)labels;
 
     const BoltVector& output_vector = getOutputVectorImpl(vec_index);
-    std::fill_n(output_vector.gradients, output_vector.len, 0);
 
     const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =

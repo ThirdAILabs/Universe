@@ -3,13 +3,13 @@
 #include "BatchProcessor.h"
 #include "InMemoryDataset.h"
 #include "StreamingDataset.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 
 namespace thirdai::dataset {
 
 // TODO(Nicholas, Josh): Rename to just Dataset?
-using BoltDataset = InMemoryDataset<bolt::BoltBatch>;
+using BoltDataset = InMemoryDataset<BoltBatch>;
 using BoltDatasetPtr = std::shared_ptr<BoltDataset>;
 using BoltDatasetList = std::vector<BoltDatasetPtr>;
 
