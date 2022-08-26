@@ -62,7 +62,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   }
 
   void freezeHashTables(bool insert_labels_if_not_found) final {
-    if (isRandomSampling()) {
+    if (useRandomSampling()) {
       return;
     }
     if (insert_labels_if_not_found) {
@@ -178,7 +178,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   BoltSamplingMode _sampling_mode;
 
-  bool isRandomSampling() const {
+  bool useRandomSampling() const {
     return _sampling_mode == BoltSamplingMode::RandomSampling;
   }
 
@@ -213,10 +213,10 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   inline void cleanupWithinBatchVars();
 
-  inline void initSparseDatastructures(const SamplingConfigPtr& sampling_config,
-                                       std::random_device& rd);
+  inline void initSamplingDatastructures(
+      const SamplingConfigPtr& sampling_config, std::random_device& rd);
 
-  inline void deinitSparseDatastructures();
+  inline void deinitSamplingDatastructures();
 
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,

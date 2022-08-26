@@ -61,15 +61,12 @@ void createBoltSubmodule(py::module_& module) {
              "Hyperbolic tangent activation function; "
              "maps the outputs of a layer to the range [-1, 1].")
       .value("Softmax", ActivationFunction::Softmax,
-             "Softmax activation function; converts logits to "
-             "classification "
-             "probabilities. Currently, this activation function can "
-             "only be "
+             "Softmax activation function; converts logits to classification "
+             "probabilities. Currently, this activation function can only be "
              "applied to the final layer in the neural network.")
       .value("Sigmoid", ActivationFunction::Sigmoid,
              "Sigmoid activation function; converts logits to indepedent"
-             "probabilities. Currently, this activation function can only "
-             "be "
+             "probabilities. Currently, this activation function can only be "
              "applied to the final layer in the neural network.");
 
   bolt_submodule.def("getActivationFunction", &getActivationFunction,

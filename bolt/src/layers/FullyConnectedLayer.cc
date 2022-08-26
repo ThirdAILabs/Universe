@@ -46,7 +46,7 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    initSparseDatastructures(config.getSamplingConfig(), rd);
+    initSamplingDatastructures(config.getSamplingConfig(), rd);
   }
 }
 
@@ -359,11 +359,25 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     return;
   }
 
-  if (isRandomSampling()) {
+  if (useRandomSampling()) {
     randomNeuronSampling(input, output, labels);
   } else {
     lshNeuronSampling<PREV_DENSE>(input, output, labels);
   }
+}
+
+static void wrapAroundCopy(const uint32_t* const src, uint64_t src_len,
+                           uint32_t* const dest, uint64_t copy_size,
+                           uint64_t starting_offset) {
+  assert(starting_offset < src_len);
+  assert(copy_size <= src_len);
+
+  uint64_t length_to_end = std::min(src_len - starting_offset, copy_size);
+  uint64_t length_of_remainder =
+      length_to_end < copy_size ? copy_size - length_to_end : 0;
+
+  std::copy(src + starting_offset, src + starting_offset + length_to_end, dest);
+  std::copy(src, src + length_of_remainder, dest + length_to_end);
 }
 
 void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
@@ -371,11 +385,13 @@ void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
                                                const BoltVector* labels) {
   uint32_t label_len = 0;
   if (labels) {
-    label_len = labels->len;
-    std::copy(labels->active_neurons, labels->active_neurons + labels->len,
+    label_len = std::min<uint64_t>(labels->len, _sparse_dim);
+    std::copy(labels->active_neurons, labels->active_neurons + label_len,
               output.active_neurons);
   }
 
+  // This is because rand() is not threadsafe and because we want to make the
+  // output more deterministic.
   uint64_t random_offset =
       hashing::HashUtils::simpleIntegerHash(
           // Hack to intepret the float as an integer without doing a
@@ -384,16 +400,11 @@ void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
       _dim;
 
   uint64_t neurons_to_sample = _sparse_dim - label_len;
-  uint64_t length_to_end = std::min(_dim - random_offset, neurons_to_sample);
-  uint64_t length_of_remainder =
-      length_to_end < neurons_to_sample ? neurons_to_sample - length_to_end : 0;
 
-  std::copy(_rand_neurons.begin() + random_offset,
-            _rand_neurons.begin() + random_offset + length_to_end,
-            output.active_neurons + label_len);
-
-  std::copy(_rand_neurons.begin(), _rand_neurons.begin() + length_of_remainder,
-            output.active_neurons + label_len + length_to_end);
+  wrapAroundCopy(/* src= */ _rand_neurons.data(), /* src_len= */ _dim,
+                 /* dest= */ output.active_neurons + label_len,
+                 /* copy_size= */ neurons_to_sample,
+                 /* starting_offset= */ random_offset);
 }
 
 template <bool PREV_DENSE>
@@ -641,7 +652,7 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   _w_gradient[indx] = 0;
 }
 
-void FullyConnectedLayer::initSparseDatastructures(
+void FullyConnectedLayer::initSamplingDatastructures(
     const SamplingConfigPtr& sampling_config, std::random_device& rd) {
   if (sampling_config->isRandomSampling()) {
     _sampling_mode = BoltSamplingMode::RandomSampling;
@@ -664,7 +675,7 @@ void FullyConnectedLayer::initSparseDatastructures(
   std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
 }
 
-inline void FullyConnectedLayer::deinitSparseDatastructures() {
+inline void FullyConnectedLayer::deinitSamplingDatastructures() {
   _hasher = {};
   _hash_table = {};
   _rand_neurons = {};
@@ -672,7 +683,7 @@ inline void FullyConnectedLayer::deinitSparseDatastructures() {
 
 void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
   if ((!_trainable && !force_build) || _sparsity >= 1.0 || hashTablesFrozen() ||
-      isRandomSampling()) {
+      useRandomSampling()) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -696,7 +707,7 @@ void FullyConnectedLayer::buildHashTables() { buildHashTablesImpl(false); }
 
 void FullyConnectedLayer::reBuildHashFunction() {
   if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen() ||
-      isRandomSampling()) {
+      useRandomSampling()) {
     return;
   }
 
@@ -753,7 +764,7 @@ float* FullyConnectedLayer::getBiasesGradient() { return _b_gradient.data(); }
 float* FullyConnectedLayer::getWeightsGradient() { return _w_gradient.data(); }
 
 void FullyConnectedLayer::setSparsity(float sparsity) {
-  deinitSparseDatastructures();
+  deinitSamplingDatastructures();
   _sparsity = sparsity;
 
   _sparse_dim = _sparsity * _dim;
@@ -763,7 +774,7 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
   if (_sparsity < 1.0) {
     auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
     std::random_device rd;
-    initSparseDatastructures(sampling_config, rd);
+    initSamplingDatastructures(sampling_config, rd);
   }
 }
 
@@ -793,7 +804,7 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
   summary << activationFunctionToStr(_act_func);
 
   if (detailed && _sparsity < 1.0) {
-    if (isRandomSampling()) {
+    if (useRandomSampling()) {
       summary << " (using random sampling)";
     } else {
       summary << " (hash_function=" << _hasher->getName() << ", ";
