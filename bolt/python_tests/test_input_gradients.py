@@ -53,42 +53,6 @@ def initialize_network():
 
 
 @pytest.mark.unit
-def test_input_gradients():
-    """
-    For a given input and a fixed label on output, the INCREASE in activation of that label,
-    when we add a small EPS to the input at each index seperately, should be in the
-    same order as the input gradients. For example, let us have an input vector [1,0,0,0] and we choose output label as 1.
-    If the input gradients are in the order <2,3,1,0> (the order is on the input indices), then the increase in activation for label 1
-    should also be in same order, when we add small EPS at each position seperately.
-    """
-    network = initialize_network()
-    numpy_inputs, numpy_labels = gen_numpy_training_data(
-        4, convert_to_bolt_dataset=False
-    )
-    inputs = dataset.from_numpy(numpy_inputs, batch_size=256)
-    labels = dataset.from_numpy(numpy_labels, batch_size=256)
-    train_network(network, inputs, labels, epochs=5)
-    gradients = network.get_input_gradients(
-        inputs,
-        bolt.CategoricalCrossEntropyLoss(),
-        required_labels=numpy_labels,
-    )
-    _, act = network.predict(inputs, None)
-    """
-    For every vector in input,we modify the vector at every position(by adding EPS), and we check the above assertion.
-    """
-    for input_num in range(len(numpy_inputs)):
-        perturbed_dataset = get_perturbed_dataset(numpy_inputs[input_num])
-        _, perturbed_activations = network.predict(perturbed_dataset, None)
-        assert_activation_difference_and_gradients_in_same_order(
-            perturbed_activations,
-            numpy_labels[input_num],
-            gradients[input_num],
-            act[input_num],
-        )
-
-
-@pytest.mark.unit
 def test_return_indices_for_sparse_and_dense_inputs():
     """
     For Dense inputs we should not return indices but for sparse inputs we should return sparse indices.
