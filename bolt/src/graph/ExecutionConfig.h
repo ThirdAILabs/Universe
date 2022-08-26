@@ -45,22 +45,11 @@ class TrainConfig {
   }
 
   TrainConfig& withCallbacks(const std::vector<CallbackPtr>& callbacks) {
-    _callbacks = callbacks;
+    _callbacks = CallbackList(callbacks);
     return *this;
   }
 
-  /**
-   * The assumption is that each callback is designed to function for a single
-   * train call. Thus if we want to use the same TrainConfig for a different
-   * train call we need to return a copy of the callbacks for that call to use.
-   */
-  CallbackList getCallbacks() const {
-    std::vector<CallbackPtr> callbacks_copy;
-    for (const auto& callback : _callbacks) {
-      callbacks_copy.push_back(callback->makeCopy());
-    }
-    return CallbackList(callbacks_copy);
-  }
+  CallbackList getCallbacks() const { return _callbacks; }
 
   constexpr uint32_t epochs() const { return _epochs; }
 
@@ -125,7 +114,7 @@ class TrainConfig {
   std::optional<uint32_t> _rebuild_hash_tables;
   std::optional<uint32_t> _reconstruct_hash_functions;
 
-  std::vector<CallbackPtr> _callbacks;
+  CallbackList _callbacks;
 };
 
 class PredictConfig {

@@ -20,14 +20,7 @@ using BoltGraphPtr = std::shared_ptr<BoltGraph>;
  */
 class Callback {
  public:
-  void setModel(BoltGraph* model) {
-    if (_model != nullptr) {
-      throw std::invalid_argument(
-          "Setting model twice in a callback is not allowed");
-    }
-
-    _model = model;
-  }
+  void setModel(BoltGraph* model) { _model = model; }
 
   virtual void onTrainBegin(){};
 
