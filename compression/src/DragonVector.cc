@@ -52,16 +52,6 @@ DragonVector<T>::DragonVector(const T* values, uint32_t size,
   sketchVector(values, threshold, size, sketch_size);
 }
 
-template <class T>
-DragonVector<T>::DragonVector(const DragonVector<T>& vec)
-    : CompressedVector<T>(vec),
-      _indices(vec._indices),
-      _values(vec._values),
-      _min_sketch_size(vec._min_sketch_size),
-      _original_size(vec._original_size),
-      _compression_density(vec._compression_density),
-      _seed_for_hashing(vec._seed_for_hashing) {}
-
 /*
  * For elements in the values array with absolute value greater than the
  * threshold, we hash the corresponding indices to a smaller _indices array and

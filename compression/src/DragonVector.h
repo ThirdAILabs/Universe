@@ -28,8 +28,6 @@ class DragonVector final : public CompressedVector<T> {
   DragonVector(const T* values, uint32_t size, float compression_density,
                int seed_for_hashing);
 
-  DragonVector(const DragonVector<T>& vec);
-
   // using "copy-swap idiom" for = operator. This implementation makes sure that
   // we do not have to check for self-reference.
   DragonVector& operator=(DragonVector<T> vec) {
