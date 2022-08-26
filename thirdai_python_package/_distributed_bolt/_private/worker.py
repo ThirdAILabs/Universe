@@ -57,13 +57,13 @@ class Worker:
         self.primary_worker = primary_worker
 
         # class variable for circular function
-        self.friend = None  # this variable is set up in add_friend
+        self.friend = None  # this variable is set up in set_friend
         self.w_partitions = []
         self.b_partitions = []
         self.friend_bias_gradient_list = []
         self.friend_weight_gradient_list = []
 
-    def add_friend(self, friend):
+    def set_friend(self, friend):
         """This function is only needed for circular way of communication.
         This function assigns each of the worker their friend to which
         they will be communicating their gradients. Look at this link:
@@ -73,6 +73,14 @@ class Worker:
             friend (_type_): storing the friend for this worker
         """
         self.friend = friend
+
+    def calculate_gradients_partitions(self):
+        for w_layers in self.w_gradients:
+            self.w_partitions.append(int(len(w_layers) / self.total_nodes))
+
+        for b_layers in self.b_gradients:
+            self.b_partitions.append(int(len(b_layers) / self.total_nodes))
+
 
     def calculate_gradients_circular(self, batch_no: int):
         """This function is called only when the mode of
@@ -103,11 +111,7 @@ class Worker:
 
         self.w_gradients, self.b_gradients = self.model.get_calculated_gradients()
 
-        for x in self.w_gradients:
-            self.w_partitions.append(int(len(x) / self.total_nodes))
-
-        for y in self.b_gradients:
-            self.b_partitions.append(int(len(y) / self.total_nodes))
+        self.calculate_gradients_partitions()
 
     def calculate_gradients_linear(self, batch_no: int):
         """This function is called only when the mode of communication is

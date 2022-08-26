@@ -6,22 +6,17 @@ from typing import Tuple, Any, Optional, Dict, List
 
 
 class DistributedBolt:
-    """Implements all the user level Distributed Bolt APIs to the users."""
+    """Implements all the user level Distributed Bolt APIs."""
 
     def __init__(self, workers, logger, epochs, primary_worker, num_of_batches):
         """Initializes the DistributeBolt class.
 
         Args:
-            no_of_workers (int): Number of workers to start training on.
-            This number should be less than equal to the number of nodes(including the head node) training
-            is started.
-            config_filename (str): The name of the config file which is going to be used for training.
-            num_cpus_per_node (Optional[int], optional): Number of CPUs to be used on a node. Default Value = number of cpus on current
-            node. Defaults to -1.
-
-        Raises:
-            ValueError: Number of Dataset not equal to number of nodes
-            Exception: Ray Cluster not started.
+            workers (List[Ray Actor]): Store all the workers including primary
+            logger (Logging): gives the Logger
+            epochs (int): number of epochs
+            primary_worker (Ray Actor): Primary Worker
+            num_of_batches (int): number of training batches
         """
 
         self.logger = logger
@@ -46,7 +41,7 @@ class DistributedBolt:
             self.logging.info("Circular communication pattern is choosen")
             for i in range(len(self.workers)):
                 ray.get(
-                    self.workers[i].add_friend.remote(
+                    self.workers[i].set_friend.remote(
                         self.workers[(i - 1) % (len(self.workers))]
                     )
                 )
