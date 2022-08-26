@@ -15,9 +15,10 @@ using UniversalHash = thirdai::hashing::UniversalHash;
 namespace thirdai::compression {
 
 template <class T>
-DragonVector<T>::DragonVector(const std::vector<T>& vec,
+DragonVector<T>::DragonVector(const std::vector<T>& vector_to_compress,
                               float compression_density, int seed_for_hashing)
-    : DragonVector(vec.data(), static_cast<uint32_t>(vec.size()),
+    : DragonVector(vector_to_compress.data(),
+                   static_cast<uint32_t>(vector_to_compress.size()),
                    compression_density, seed_for_hashing) {}
 
 template <class T>
@@ -30,7 +31,7 @@ DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
       _seed_for_hashing(seed_for_hashing) {}
 
 template <class T>
-DragonVector<T>::DragonVector(const T* values, uint32_t size,
+DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
                               float compression_density, int seed_for_hashing)
     : _original_size(size),
       _compression_density(compression_density),
@@ -47,9 +48,9 @@ DragonVector<T>::DragonVector(const T* values, uint32_t size,
   // original vector to a smaller dragon vector
 
   T threshold = thirdai::compression::getThresholdForTopK(
-      values, size, sketch_size, /*max_samples_for_random_sampling=*/100000,
-      _seed_for_hashing);
-  sketchVector(values, threshold, size, sketch_size);
+      values_to_compress, size, sketch_size,
+      /*max_samples_for_random_sampling=*/100000, _seed_for_hashing);
+  sketchVector(values_to_compress, threshold, size, sketch_size);
 }
 
 /*
@@ -204,9 +205,9 @@ std::vector<DragonVector<T>> DragonVector<T>::split(
   }
 
   std::vector<std::vector<uint32_t>> split_indices =
-      thirdai::compression::splitVector(_indices, number_chunks);
+      thirdai::compression::split(_indices, number_chunks);
   std::vector<std::vector<T>> split_values =
-      thirdai::compression::splitVector(_values, number_chunks);
+      thirdai::compression::split(_values, number_chunks);
 
   std::vector<DragonVector<T>> split_dragon;
 
@@ -218,7 +219,7 @@ std::vector<DragonVector<T>> DragonVector<T>::split(
 }
 
 template <class T>
-std::vector<T> DragonVector<T>::decompressVector() const {
+std::vector<T> DragonVector<T>::decompress() const {
   std::vector<T> decompressedVector(_original_size, 0);
   uint32_t sketch_size = static_cast<uint32_t>(_indices.size());
   for (uint32_t i = 0; i < sketch_size; i++) {

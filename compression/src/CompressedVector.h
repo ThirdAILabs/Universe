@@ -64,7 +64,7 @@ class CompressedVector {
    * Returns a std::vector formed by decompressing the compressed vector. This
    * method should be implemented by all the schemes.
    */
-  virtual std::vector<T> decompressVector() const = 0;
+  virtual std::vector<T> decompress() const = 0;
 
   virtual std::string getCompressionScheme() const = 0;
 

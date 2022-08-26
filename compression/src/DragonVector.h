@@ -19,16 +19,16 @@ class DragonVector final : public CompressedVector<T> {
    * to know the size of the original vector. Keeping track of the original size
    * is important when we want to decompress a vector.
    */
-  DragonVector(const std::vector<T>& vec, float compression_density,
-               int seed_for_hashing);
+  DragonVector(const std::vector<T>& vector_to_compress,
+               float compression_density, int seed_for_hashing);
 
   DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
                uint32_t original_size, int seed_for_hashing);
 
-  DragonVector(const T* values, uint32_t size, float compression_density,
-               int seed_for_hashing);
+  DragonVector(const T* values_to_compress, uint32_t size,
+               float compression_density, int seed_for_hashing);
 
-  DragonVector(const DragonVector<T>& vec) = default;
+  DragonVector(const DragonVector<T>& vector_to_copy) = default;
 
   // using "copy-swap idiom" for = operator. This implementation makes sure that
   // we do not have to check for self-reference.
@@ -166,7 +166,7 @@ class DragonVector final : public CompressedVector<T> {
    * We are storing indices,values tuple hence, decompressing is just
    * putting corresponding values for the stored indices
    */
-  std::vector<T> decompressVector() const final;
+  std::vector<T> decompress() const final;
 
  private:
   /*
