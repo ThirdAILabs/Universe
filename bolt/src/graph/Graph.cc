@@ -7,10 +7,10 @@
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
@@ -78,9 +78,9 @@ MetricData BoltGraph::train(
 
   MetricAggregator metrics = train_config.getMetricAggregator();
 
-  CallbackListPtr callbacks = train_config.getCallbacks();
-  callbacks->setModel(this);
-  callbacks->onTrainBegin();
+  CallbackList callbacks = train_config.getCallbacks();
+  callbacks.setModel(this);
+  callbacks.onTrainBegin();
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
@@ -106,7 +106,7 @@ MetricData BoltGraph::train(
 
       for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
            batch_idx++) {
-        callbacks->onBatchBegin();
+        callbacks.onBatchBegin();
 
         train_context.setInputs(batch_idx, _inputs, _token_inputs);
 
@@ -123,8 +123,8 @@ MetricData BoltGraph::train(
         callbacks->onBatchEnd();
       }
 
-      callbacks->onEpochEnd();
-      if (callbacks->shouldStopTraining()) {
+      callbacks.onEpochEnd();
+      if (callbacks.shouldStopTraining()) {
         break;
       }
       perEpochCallback();
@@ -151,7 +151,7 @@ MetricData BoltGraph::train(
 
   cleanupAfterBatchProcessing();
 
-  callbacks->onTrainEnd();
+  callbacks.onTrainEnd();
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
@@ -170,6 +170,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
 #pragma omp parallel for default(none) shared(batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
+
+    resetOutputGradients(vec_id);
 
     _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
                          batch_labels.getBatchSize());
@@ -287,6 +289,7 @@ BoltGraph::getInputGradientSingle(
           input_vector.active_neurons + input_vector.len);
     }
 
+    resetOutputGradients(/* vec_index= */ 0);
     _loss->lossGradients(_output->getOutputVector(/*vec_index= */ 0),
                          label_vector, /*batch_size= */ 1);
     backpropagate(/*vec_index= */ 0);
@@ -486,6 +489,12 @@ void BoltGraph::cleanupAfterBatchProcessing() {
 void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {
   for (auto& node : _nodes) {
     node->updateParameters(learning_rate, batch_cnt);
+  }
+}
+
+void BoltGraph::resetOutputGradients(uint32_t vec_index) {
+  for (auto& node : _nodes) {
+    node->getOutputVector(vec_index).zeroOutGradients();
   }
 }
 

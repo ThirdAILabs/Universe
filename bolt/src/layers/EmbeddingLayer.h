@@ -2,9 +2,9 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/vector.hpp>
-#include "BoltVector.h"
 #include "LayerConfig.h"
 #include <bolt/src/layers/Optimizer.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
 #include <cmath>
 #include <ctime>

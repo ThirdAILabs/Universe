@@ -2,7 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <cstddef>
 #include <iomanip>
@@ -106,7 +106,7 @@ class Input final : public Node {
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
-    summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
+    summary << name() << " (Input): dim=" << _expected_input_dim << "\n";
   }
 
   std::string type() const final { return "input"; }

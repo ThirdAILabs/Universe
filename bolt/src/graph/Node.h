@@ -1,7 +1,7 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <queue>
 #include <stdexcept>

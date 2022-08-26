@@ -8,6 +8,9 @@ namespace thirdai::bolt {
 class BoltGraph;
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;
 
+class Callback;
+using CallbackPtr = std::shared_ptr<Callback>;
+
 /**
  * This class represents a generic Callback interface. Implementing this
  * interface allows you to call various methods at different steps during the
@@ -20,16 +23,7 @@ using BoltGraphPtr = std::shared_ptr<BoltGraph>;
  */
 class Callback {
  public:
-  Callback() {}
-
-  void setModel(BoltGraph* model) {
-    if (_model != nullptr) {
-      throw std::invalid_argument(
-          "Setting model twice in a callback is not allowed");
-    }
-
-    _model = model;
-  }
+  void setModel(BoltGraph* model) { _model = model; }
 
   virtual void onTrainBegin(){};
 
@@ -54,8 +48,6 @@ class Callback {
   // refactor all instances of BoltGraph to BoltGraphPtr which is another PR
   BoltGraph* _model = nullptr;
 };
-
-using CallbackPtr = std::shared_ptr<Callback>;
 
 /**
  * This class serves as a helpful intermediary between models and callbacks by
@@ -118,7 +110,5 @@ class CallbackList {
  private:
   std::vector<CallbackPtr> _callbacks;
 };
-
-using CallbackListPtr = std::shared_ptr<CallbackList>;
 
 }  // namespace thirdai::bolt
