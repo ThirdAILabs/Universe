@@ -284,6 +284,7 @@ class RecallAtK : public Metric {
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
+    
     if (!isRecallAtK(name)) {
       std::stringstream error_ss;
       error_ss << "Invoked RecallAtK::make with invalid string '" << name
