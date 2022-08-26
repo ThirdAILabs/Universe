@@ -156,7 +156,6 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
   ActivationFunction getActFunc() const final { return act_func; }
 };
 
-
 enum class EmbeddingReductionType {
   SUM,
   CONCATENATION,
@@ -174,11 +173,15 @@ struct EmbeddingLayerConfig {
   // used otherwise.
   EmbeddingLayerConfig() {}
 
-  EmbeddingLayerConfig(uint32_t _num_embedding_lookups, uint32_t _lookup_size,
-                       uint32_t _log_embedding_block_size)
+  EmbeddingLayerConfig(
+      uint32_t _num_embedding_lookups, uint32_t _lookup_size,
+      uint32_t _log_embedding_block_size, EmbeddingReductionType _reduction,
+      std::optional<uint32_t> _num_tokens_per_input = std::nullopt)
       : num_embedding_lookups(_num_embedding_lookups),
         lookup_size(_lookup_size),
-        log_embedding_block_size(_log_embedding_block_size) {}
+        log_embedding_block_size(_log_embedding_block_size),
+        reduction(_reduction),
+        num_tokens_per_input(_num_tokens_per_input) {}
 
   friend class cereal::access;
   template <class Archive>

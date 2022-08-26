@@ -213,22 +213,6 @@ void createBoltSubmodule(py::module_& module) {
            "`getActivationFunction('ReLU')`\n"
            " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
            " * num_patches: Int (positive) - Number of patches.");
-
-  py::class_<thirdai::bolt::EmbeddingLayerConfig>(
-      bolt_submodule, "Embedding",
-      "Defines a space-efficient embedding table lookup layer.")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(),
-           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
-           py::arg("log_embedding_block_size"),
-           "Constructs an embedding layer.\n"
-           "Arguments:\n"
-           " * num_embedding_lookups: Int (positive) - The number of embedding "
-           "table "
-           "lookups per categorical feature.\n"
-           " * lookup_size: Int (positive) - Embedding dimension.\n"
-           " * log_embedding_block_size: Int (positive) - log (base 2) of the "
-           "size of the "
-           "embedding table.");
 #endif
 
   py::class_<PyNetwork>(bolt_submodule, "Network",

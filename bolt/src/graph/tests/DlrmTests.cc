@@ -48,7 +48,8 @@ BoltGraph getModel() {
   auto token_input = std::make_shared<TokenInput>();
   auto embedding = std::make_shared<EmbeddingNode>(
       /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
-      /* log_embedding_block_size= */ 12);
+      /* log_embedding_block_size= */ 12,
+      /* reduction= */ EmbeddingReductionType::SUM);
   embedding->addInput(token_input);
 
   auto concat = std::make_shared<ConcatenateNode>();

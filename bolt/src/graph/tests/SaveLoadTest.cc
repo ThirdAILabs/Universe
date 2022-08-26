@@ -147,7 +147,8 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
 
   auto embedding_layer = std::make_shared<EmbeddingNode>(
       /* num_embedding_lookups= */ 4, /* lookup_size= */ 8,
-      /* log_embedding_block_size= */ 14);
+      /* log_embedding_block_size= */ 14,
+      /* reduction= */ EmbeddingReductionType::SUM);
   embedding_layer->addInput(token_input);
 
   auto fully_connected_layer = std::make_shared<FullyConnectedNode>(

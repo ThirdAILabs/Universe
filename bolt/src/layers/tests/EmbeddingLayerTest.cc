@@ -17,13 +17,59 @@ constexpr uint32_t seed = 8274953;
 class EmbeddingLayerTestFixture : public ::testing::Test {
  public:
   void SetUp() override {
-    EmbeddingLayerConfig config(_num_lookups, _lookup_size, _log_block_size);
+    EmbeddingLayerConfig config(_num_lookups, _lookup_size, _log_block_size,
+                                EmbeddingReductionType::SUM,
+                                _num_tokens_per_input);
     _layer = std::make_unique<EmbeddingLayer>(config, seed);
 
     std::iota(_layer->_embedding_block.begin(), _layer->_embedding_block.end(),
               1.0);
 
     _layer->initializeLayer(/* new_batch_size= */ 4);
+  }
+
+  void testEmbeddingBackpropagation(
+      const std::vector<std::vector<uint32_t>>& tokens,
+      bool sum_reduction) const {
+    BoltBatch output = _layer->createBatchState(tokens.size());
+
+    for (uint32_t i = 0; i < tokens.size(); i++) {
+      _layer->forward(i, tokens[i], output[i]);
+    }
+
+    std::unordered_map<uint32_t, float> deltas;
+
+    for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
+      for (uint32_t i = 0; i < output[batch_index].len; i++) {
+        // Make the gradient some semi-random value, make sure its a multiple of
+        // 2 to prevent floating point inpreceision.
+        output[batch_index].gradients[i] = 0.5 * i + batch_index * 0.125;
+      }
+
+      _layer->backpropagate(batch_index, output[batch_index]);
+
+      for (uint32_t token_idx = 0; token_idx < tokens[batch_index].size();
+           token_idx++) {
+        for (uint32_t lookup_index = 0; lookup_index < _num_lookups;
+             lookup_index++) {
+          uint64_t loc =
+              getHashLocFromLayer(tokens[batch_index][token_idx], lookup_index);
+
+          for (uint32_t i = 0; i < _lookup_size; i++) {
+            uint32_t gradient_offset = lookup_index * _lookup_size + i;
+            if (!sum_reduction) {
+              gradient_offset += token_idx * _num_lookups * _lookup_size;
+            }
+
+            deltas[loc + i] += output[batch_index].gradients[gradient_offset];
+          }
+        }
+      }
+    }
+
+    for (uint32_t i = 0; i < getEmbeddingBlockSize(); i++) {
+      ASSERT_FLOAT_EQ(getEmbeddingGradients()[i], deltas[i]);
+    }
   }
 
   uint32_t getEmbeddingBlockSize() const {
@@ -51,13 +97,19 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     return _layer->_optimizer->gradients.data();
   }
 
-  uint32_t _lookup_size = 20, _num_lookups = 50, _log_block_size = 10;
+  void makeConcatReduction() const {
+    _layer->_reduction = EmbeddingReductionType::CONCATENATION;
+    _layer->_total_embedding_dim *= _num_tokens_per_input;
+  }
+
+  uint32_t _lookup_size = 5, _num_lookups = 8, _log_block_size = 10,
+           _num_tokens_per_input = 3;
   std::unique_ptr<EmbeddingLayer> _layer;
 };
 
 // Test that the hash locs computed are unique if the token or lookup_index
 // changes.
-TEST_F(EmbeddingLayerTestFixture, TestGetHashLoc) {
+TEST_F(EmbeddingLayerTestFixture, TestEmbeddingBlockOffsetUniqueness) {
   ASSERT_NE(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 17),
             getHashLocFromLayer(/* token= */ 17, /* lookup_index= */ 5));
   ASSERT_NE(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 17),
@@ -91,7 +143,7 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
 
 // Check that with multiple tokens per input, the embedding is the sum of the
 // contents of the embedding block at each hash location.
-TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
+TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingSumReduction) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
@@ -119,9 +171,13 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
   }
 }
 
-TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
+// Check that with multiple tokens per input, the embedding is the concatenation
+// of the contents of the embedding block at each hash location.
+TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingConcatReduction) {
+  makeConcatReduction();
+
   std::vector<std::vector<uint32_t>> tokens = {
-      {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
+      {7, 4, 18}, {98, 34, 55}, {9, 2, 24}, {61, 75, 11}};
 
   BoltBatch output = _layer->createBatchState(tokens.size());
 
@@ -129,33 +185,40 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
     _layer->forward(i, tokens[i], output[i]);
   }
 
-  std::unordered_map<uint32_t, float> deltas;
-
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
-    for (uint32_t i = 0; i < _num_lookups * _lookup_size; i++) {
-      // Make the gradient some semi-random value, make sure its a multiple of 2
-      // to prevent floating point inpreceision.
-      output[batch_index].gradients[i] = 0.5 * i + batch_index * 0.125;
-    }
+    ASSERT_EQ(output[batch_index].len,
+              _num_tokens_per_input * _lookup_size * _num_lookups);
 
-    _layer->backpropagate(batch_index, output[batch_index]);
+    const float* embedding = output[batch_index].activations;
 
+    uint32_t embedding_idx = 0;
     for (uint32_t token : tokens[batch_index]) {
       for (uint32_t lookup_index = 0; lookup_index < _num_lookups;
            lookup_index++) {
-        uint64_t loc = getHashLocFromLayer(token, lookup_index);
-
         for (uint32_t i = 0; i < _lookup_size; i++) {
-          deltas[loc + i] +=
-              output[batch_index].gradients[lookup_index * _lookup_size + i];
+          uint64_t start = getHashLocFromLayer(token, lookup_index);
+          float expected_val = start + i + 1;
+          ASSERT_EQ(embedding[embedding_idx++], expected_val);
         }
       }
     }
   }
+}
 
-  for (uint32_t i = 0; i < getEmbeddingBlockSize(); i++) {
-    ASSERT_FLOAT_EQ(getEmbeddingGradients()[i], deltas[i]);
-  }
+TEST_F(EmbeddingLayerTestFixture, BackpropagationSumReduction) {
+  std::vector<std::vector<uint32_t>> tokens = {
+      {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
+
+  testEmbeddingBackpropagation(tokens, true);
+}
+
+TEST_F(EmbeddingLayerTestFixture, BackpropagationConcatReduction) {
+  makeConcatReduction();
+
+  std::vector<std::vector<uint32_t>> tokens = {
+      {7, 4, 18}, {98, 34, 55}, {9, 2, 24}, {61, 75, 11}};
+
+  testEmbeddingBackpropagation(tokens, false);
 }
 
 // Test that the disjoint ranges are computed correctly for gradient updates,
@@ -166,7 +229,8 @@ TEST_F(EmbeddingLayerTestFixture, UpdateRangeCorrectness) {
 
   EmbeddingLayerConfig config(/* num_embedding_lookups= */ 4,
                               /* lookup_size= */ 5,
-                              /* log_embedding_block_size= */ 7);
+                              /* log_embedding_block_size= */ 7,
+                              EmbeddingReductionType::SUM);
   EmbeddingLayer layer(config);
 
   std::vector<std::pair<uint64_t, uint64_t>> ranges =

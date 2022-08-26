@@ -18,12 +18,16 @@ class EmbeddingNode final : public Node,
                             public std::enable_shared_from_this<EmbeddingNode> {
  public:
   EmbeddingNode(uint32_t num_embedding_lookups, uint32_t lookup_size,
-                uint32_t log_embedding_block_size)
+                uint32_t log_embedding_block_size,
+                EmbeddingReductionType reduction,
+                std::optional<uint32_t> num_tokens_per_input = std::nullopt)
       : _embedding_layer(nullptr),
         _config(EmbeddingLayerConfig(
             /* num_embedding_lookups= */ num_embedding_lookups,
             /* lookup_size= */ lookup_size,
-            /* log_embedding_block_size= */ log_embedding_block_size)),
+            /* log_embedding_block_size= */ log_embedding_block_size,
+            /* reduction= */ reduction,
+            /* num_tokens_per_input= */ num_tokens_per_input)),
         _outputs(std::nullopt),
         _token_input(nullptr) {}
 

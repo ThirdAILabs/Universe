@@ -211,7 +211,7 @@ class EmbeddingStateMachineTest final : public NodeStateMachineTest {
 TEST(NodeStateMachineTest, EmbeddingStateMachine) {
   auto embedding_node = std::make_shared<EmbeddingNode>(
       /* num_embedding_lookups= */ 10, /* lookup_size= */ 8,
-      /* log_embedding_block_size= */ 5);
+      /* log_embedding_block_size= */ 5, EmbeddingReductionType::SUM);
 
   EmbeddingStateMachineTest test(embedding_node);
 
