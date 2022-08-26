@@ -74,14 +74,6 @@ MetricData BoltGraph::train(
       train_config.getReconstructHashFunctionsBatchInterval(
           train_context.batchSize(), train_context.len());
 
-  /*
-    Because of how the datasets are read we know that all batches will not have
-    a batch size larger than the first batch_size. We will be using the same
-    datastructures to store the activations for every batch during training so
-    we need this to be able to support the largest batch size.
-   */
-  prepareToProcessBatches(train_context.batchSize(), /* use_sparsity=*/true);
-
   std::vector<double> time_per_epoch;
 
   MetricAggregator metrics = train_config.getMetricAggregator();
@@ -95,6 +87,15 @@ MetricData BoltGraph::train(
   // automatically delete the training state
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+      /*
+        Because of how the datasets are read we know that all batches will not
+        have a batch size larger than the first batch_size. We will be using the
+        same datastructures to store the activations for every batch during
+        training so we need this to be able to support the largest batch size.
+      */
+      prepareToProcessBatches(train_context.batchSize(),
+                              /* use_sparsity=*/true);
+
       callbacks->onEpochBegin();
 
       if (train_config.verbose()) {
@@ -116,6 +117,8 @@ MetricData BoltGraph::train(
                                     reconstruct_hash_functions_batch);
 
         bar.increment();
+
+        cleanupAfterBatchProcessing();
 
         callbacks->onBatchEnd();
       }

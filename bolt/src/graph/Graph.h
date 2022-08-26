@@ -30,7 +30,6 @@ using GraphCallback = std::function<void()>;
 
 class BoltGraph {
   friend class DistributedTrainingContext;
-  friend class EarlyStopValidation;
 
  public:
   /*
