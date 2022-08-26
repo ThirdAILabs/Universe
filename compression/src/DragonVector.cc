@@ -85,16 +85,6 @@ void DragonVector<T>::sketchVector(const T* values, T threshold, uint32_t size,
  */
 template <class T>
 T DragonVector<T>::get(uint32_t index) const {
-  if (_indices.empty()) {
-    throw std::logic_error(
-        "Accessing elements from an empty compressed vector");
-  }
-
-  if (index >= _original_size) {
-    throw std::out_of_range(
-        "Index out of range for the compressed vector of size " +
-        std::to_string(_original_size));
-  }
   uint32_t sketch_size = _indices.size();
   UniversalHash hash_function = UniversalHash(_seed_for_hashing);
   uint32_t hash = hash_function.gethash(index) % sketch_size;
@@ -105,16 +95,6 @@ T DragonVector<T>::get(uint32_t index) const {
 
 template <class T>
 void DragonVector<T>::set(uint32_t index, T value) {
-  if (_indices.empty()) {
-    throw std::logic_error(
-        "Incorrectly setting the index of an empty compressed vector");
-  }
-
-  if (index >= _original_size) {
-    throw std::out_of_range(
-        "Index out of range for the compressed vector of size " +
-        std::to_string(_original_size));
-  }
   uint32_t sketch_size = _indices.size();
   UniversalHash hash_function = UniversalHash(_seed_for_hashing);
   uint32_t hash = hash_function.gethash(index) % sketch_size;
@@ -170,16 +150,6 @@ DragonVector<T>& DragonVector<T>::operator+=(const DragonVector<T>& vec) {
         "Seeds for hashing of the two Dragon Sketches are different. Try "
         "concatenating the sketches");
   }
-  if (_indices.size() != vec._indices.size()) {
-    throw std::length_error(
-        "Cannot add two Dragon Sketches of different sizes");
-  }
-
-  if (_original_size != vec._original_size) {
-    throw std::length_error(
-        "Cannot add two Dragon Sketches with original vectors of different "
-        "sizes");
-  }
 
 #pragma omp parallel for default(none) shared(vec, _values, _indices)
 
@@ -217,13 +187,6 @@ void DragonVector<T>::extend(const DragonVector<T>& vec) {
    * Dragon vectors. We will directly append the indices and values of given
    * vector to the current one but leave all other parameters intact
    */
-
-  if (_original_size != vec._original_size) {
-    throw std::length_error(
-        "Cannot extend a Dragon Sketch by another one with original vectors of "
-        "different "
-        "sizes");
-  }
   _indices.insert(std::end(_indices), std::begin(vec._indices),
                   std::end(vec._indices));
   _values.insert(std::end(_values), std::begin(vec._values),
@@ -247,22 +210,7 @@ std::vector<DragonVector<T>> DragonVector<T>::split(
 
   std::vector<DragonVector<T>> split_dragon;
 
-  if (split_indices.size() != number_chunks) {
-    throw std::length_error(
-        "Number of vectors received after splitting is not the same as the "
-        "number of chunks");
-  }
-
-  if (split_indices.size() != split_values.size()) {
-    throw std::length_error(
-        "Indices and Values have not been split into equal chunks");
-  }
-
   for (size_t i = 0; i < split_indices.size(); i++) {
-    if (split_indices[i].size() != split_values[i].size()) {
-      throw std::length_error(
-          "Size of indices and values array are not the same");
-    }
     split_dragon.push_back(DragonVector(split_indices[i], split_values[i],
                                         _original_size, _seed_for_hashing));
   }
