@@ -1,1 +1,1 @@
-from .distributed_fully_connected import *
+from .distributed_fully_connected import FullyConnectedNetwork
