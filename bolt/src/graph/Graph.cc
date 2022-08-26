@@ -96,7 +96,7 @@ MetricData BoltGraph::train(
       prepareToProcessBatches(train_context.batchSize(),
                               /* use_sparsity=*/true);
 
-      callbacks->onEpochBegin();
+      callbacks.onEpochBegin();
 
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
@@ -120,7 +120,7 @@ MetricData BoltGraph::train(
 
         cleanupAfterBatchProcessing();
 
-        callbacks->onBatchEnd();
+        callbacks.onBatchEnd();
       }
 
       callbacks.onEpochEnd();
@@ -148,8 +148,6 @@ MetricData BoltGraph::train(
     cleanupAfterBatchProcessing();
     throw;
   }
-
-  cleanupAfterBatchProcessing();
 
   callbacks.onTrainEnd();
 
@@ -476,14 +474,12 @@ void BoltGraph::prepareToProcessBatches(uint32_t batch_size,
   for (auto& node : _nodes) {
     node->prepareForBatchProcessing(batch_size, use_sparsity);
   }
-  _batch_size = batch_size;
 }
 
 void BoltGraph::cleanupAfterBatchProcessing() {
   for (auto& node : _nodes) {
     node->cleanupAfterBatchProcessing();
   }
-  _batch_size = std::nullopt;
 }
 
 void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {

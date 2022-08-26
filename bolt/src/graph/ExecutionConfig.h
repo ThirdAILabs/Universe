@@ -153,8 +153,6 @@ class PredictConfig {
     return MetricAggregator(_metric_names, _verbose);
   }
 
-  uint32_t getNumMetricsTracked() const { return _metric_names.size(); }
-
   std::vector<std::string> getMetricNames() const { return _metric_names; }
 
   constexpr bool verbose() const { return _verbose; }

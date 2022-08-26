@@ -288,6 +288,8 @@ class RecallAtK : public Metric {
 
   std::string getName() final { return "recall@" + std::to_string(_k); }
 
+  bool smallerIsBetter() const final { return false; }
+
   static inline bool isRecallAtK(const std::string& name) {
     return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
   }

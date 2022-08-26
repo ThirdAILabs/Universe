@@ -34,9 +34,9 @@ class BoltGraph {
  public:
   /*
     The graph is constructed with a list of input layers, the order of these
-    input layers is used to define how training/test inputs are mapped to
-    the specific layers. Using the output node the graph can be traversed
-    backwards to discover a reverse ordering in which to execute the layers.
+    input layers is used to define how training/test inputs are mapped to the
+    specific layers. Using the output node the graph can be traversed backwards
+    to discover a reverse ordering in which to execute the layers.
    */
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
       : BoltGraph(std::move(inputs), /* token-inputs= */ {},
@@ -187,8 +187,6 @@ class BoltGraph {
     return (_batch_cnt % num_batches) == (num_batches - 1);
   }
 
-  std::optional<uint32_t> getBatchSize() const { return _batch_size; }
-
   void rebuildHashTables();
 
   void reconstructHashFunctions();
@@ -243,10 +241,6 @@ class BoltGraph {
 
   std::optional<GraphCallback> _per_batch_callback;
   std::optional<GraphCallback> _per_epoch_callback;
-
-  // stores the models batch size while nodes are prepared for batch processing,
-  // otherwise returns nullopt
-  std::optional<uint32_t> _batch_size = std::nullopt;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

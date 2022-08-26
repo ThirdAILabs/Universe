@@ -33,7 +33,7 @@ class EarlyStopValidation : public Callback {
         _best_validation_metric(0),
         _last_validation_metric(0),
         _should_stop_training(false) {
-    uint32_t num_metrics = _predict_config.getNumMetricsTracked();
+    uint32_t num_metrics = _predict_config.getMetricNames().size();
     if (num_metrics != 1) {
       throw std::invalid_argument(
           "Validation-based early stopping only supports the use of one "
