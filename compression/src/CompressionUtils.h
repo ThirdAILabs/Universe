@@ -57,9 +57,9 @@ inline T getThresholdForTopK(const T* values, uint32_t size,
   std::vector<T> sampled_gradients(num_samples, 0);
 
   std::mt19937 gen(seed_for_sampling);
-  std::uniform_int_distribution<> distrib(0, size - 1);
+  std::uniform_int_distribution<> distribution(0, size - 1);
   for (uint32_t i = 0; i < num_samples; i++) {
-    sampled_gradients[i] = std::abs(values[distrib(gen)]);
+    sampled_gradients[i] = std::abs(values[distribution(gen)]);
   }
 
   std::nth_element(sampled_gradients.begin(),
