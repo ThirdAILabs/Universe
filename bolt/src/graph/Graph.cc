@@ -79,6 +79,10 @@ MetricData BoltGraph::train(
   MetricAggregator metrics = train_config.getMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
+  // TODO(nick, david): ideally we pass in  shared_from_this() in the BoltGraph
+  // class to fix this but this requires a shared_ptr to the object to already
+  // exist when using it, thus we'd have to refactor all instances of BoltGraph
+  // to BoltGraphPtr which is another PR
   callbacks.setModel(this);
   callbacks.onTrainBegin();
 
@@ -150,6 +154,9 @@ MetricData BoltGraph::train(
   }
 
   callbacks.onTrainEnd();
+  // this will be removed when we refactor BoltGraph to use shared_from_this()
+  // see the comment before the initial setModel() above
+  callbacks.setModel(nullptr);
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
