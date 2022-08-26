@@ -8,9 +8,6 @@ __pycache__
 build
 thirdai.egg-info
 
-#custom build stuff
-./bin/build.py
-
 # Mac stuff
 .DS_Store
 
@@ -71,9 +68,5 @@ Testing
 tags
 # Persistent undo
 [._]*.un~
-
-#notebooks in compression library
-compression/python_tests/*.ipynb
-compression/python_tests/utils.py
 
 # -- End vim .gitignore
