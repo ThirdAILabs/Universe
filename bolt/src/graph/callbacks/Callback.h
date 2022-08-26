@@ -20,8 +20,6 @@ using BoltGraphPtr = std::shared_ptr<BoltGraph>;
  */
 class Callback {
  public:
-  Callback() {}
-
   void setModel(BoltGraph* model) {
     if (_model != nullptr) {
       throw std::invalid_argument(
@@ -44,6 +42,8 @@ class Callback {
   virtual void onBatchEnd(){};
 
   virtual bool shouldStopTraining() { return false; }
+
+  virtual CallbackPtr makeCopy();
 
   virtual ~Callback() = default;
 
@@ -118,7 +118,5 @@ class CallbackList {
  private:
   std::vector<CallbackPtr> _callbacks;
 };
-
-using CallbackListPtr = std::shared_ptr<CallbackList>;
 
 }  // namespace thirdai::bolt
