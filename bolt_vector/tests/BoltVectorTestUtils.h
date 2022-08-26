@@ -1,9 +1,9 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 
-namespace thirdai::bolt::tests {
+namespace thirdai::tests {
 
 struct BoltVectorTestUtils {
   static void assertBoltVectorsAreEqual(const BoltVector& a,
@@ -24,4 +24,4 @@ struct BoltVectorTestUtils {
   }
 };
 
-}  // namespace thirdai::bolt::tests
+}  // namespace thirdai::tests

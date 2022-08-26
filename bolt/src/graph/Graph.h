@@ -12,10 +12,10 @@
 #include "Node.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <memory>
 #include <optional>

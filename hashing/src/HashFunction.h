@@ -2,7 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include "HashUtils.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 
 namespace thirdai::hashing {
 
@@ -22,13 +22,13 @@ class HashFunction {
    * the hashes from the first vector, all of the hashes from the second, and
    * so on.
    */
-  std::vector<uint32_t> hashBatchParallel(const bolt::BoltBatch& batch) const {
+  std::vector<uint32_t> hashBatchParallel(const BoltBatch& batch) const {
     std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
     hashBatchParallel(batch, result.data());
     return result;
   }
 
-  void hashBatchParallel(const bolt::BoltBatch& batch, uint32_t* output) const {
+  void hashBatchParallel(const BoltBatch& batch, uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       if (batch[v].isDense()) {

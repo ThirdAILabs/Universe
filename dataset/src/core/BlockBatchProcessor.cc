@@ -1,5 +1,5 @@
 #include "BlockBatchProcessor.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -40,7 +40,7 @@ BlockBatchProcessor::BlockBatchProcessor(
       _target_blocks(std::move(target_blocks)) {
   _input_vectors.reserve(est_num_elems);
   if (!_target_blocks.empty()) {
-    _target_vectors = std::vector<bolt::BoltVector>();
+    _target_vectors = std::vector<BoltVector>();
     _target_vectors->reserve(est_num_elems);
   }
 }
@@ -92,10 +92,10 @@ BlockBatchProcessor::exportInMemoryDataset(bool shuffle,
   auto positions = makeFinalPositions(n_exported, shuffle, shuffle_seed);
   size_t n_batches = (n_exported + _batch_size - 1) / _batch_size;
 
-  std::vector<bolt::BoltBatch> input_batches(n_batches);
-  std::optional<std::vector<bolt::BoltBatch>> target_batches;
+  std::vector<BoltBatch> input_batches(n_batches);
+  std::optional<std::vector<BoltBatch>> target_batches;
   if (_target_vectors) {
-    target_batches = std::vector<bolt::BoltBatch>(n_batches);
+    target_batches = std::vector<BoltBatch>(n_batches);
   }
 
   // For each batch
@@ -106,10 +106,10 @@ BlockBatchProcessor::exportInMemoryDataset(bool shuffle,
 
     // Vectors that hold the batch's input and target vectors.
     size_t cur_batch_size = std::min(_batch_size, n_exported - batch_start_idx);
-    std::vector<bolt::BoltVector> batch_inputs(cur_batch_size);
-    std::optional<std::vector<bolt::BoltVector>> batch_targets;
+    std::vector<BoltVector> batch_inputs(cur_batch_size);
+    std::optional<std::vector<BoltVector>> batch_targets;
     if (_target_vectors) {
-      batch_targets = std::vector<bolt::BoltVector>(cur_batch_size);
+      batch_targets = std::vector<BoltVector>(cur_batch_size);
     }
 
     // For each vector in the batch
@@ -123,17 +123,17 @@ BlockBatchProcessor::exportInMemoryDataset(bool shuffle,
       }
     }
 
-    input_batches[batch_idx] = bolt::BoltBatch(std::move(batch_inputs));
+    input_batches[batch_idx] = BoltBatch(std::move(batch_inputs));
     if (target_batches) {
       target_batches->at(batch_idx) =
-          bolt::BoltBatch(std::move(batch_targets.value()));
+          BoltBatch(std::move(batch_targets.value()));
     }
   }
 
   // Replenish after moves.
-  _input_vectors = std::vector<bolt::BoltVector>();
+  _input_vectors = std::vector<BoltVector>();
   if (_target_vectors) {
-    _target_vectors = std::vector<bolt::BoltVector>();
+    _target_vectors = std::vector<BoltVector>();
   }
 
   return {std::make_shared<BoltDataset>(std::move(input_batches)),
@@ -159,7 +159,7 @@ std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(
 }
 
 std::exception_ptr BlockBatchProcessor::makeVector(
-    std::vector<std::string>& sample, bolt::BoltVector& vector,
+    std::vector<std::string>& sample, BoltVector& vector,
     std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
   std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
