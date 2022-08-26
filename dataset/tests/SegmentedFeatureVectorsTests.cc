@@ -1,4 +1,4 @@
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
@@ -145,7 +145,7 @@ class SegmentedFeatureVectorTest : public testing::Test {
    * expected to have, ensure that the segmented feature vector has the
    * correctelements.
    */
-  static void checkBoltVectorHasSegments(bolt::BoltVector& vec,
+  static void checkBoltVectorHasSegments(BoltVector& vec,
                                          std::vector<VectorSegment>& segments) {
     auto expected_idx_vals = getExpectedIdxVals(segments);
 

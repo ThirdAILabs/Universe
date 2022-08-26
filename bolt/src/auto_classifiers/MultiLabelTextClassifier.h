@@ -6,8 +6,8 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>

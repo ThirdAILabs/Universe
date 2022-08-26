@@ -7,7 +7,6 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -257,4 +256,5 @@ void createBoltSubmodule(py::module_& module) {
 
   createBoltGraphSubmodule(bolt_submodule);
 }
+
 }  // namespace thirdai::bolt::python

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 
 namespace thirdai::dataset {
@@ -14,8 +14,7 @@ class SvmBatchProcessor final : public UnaryBoltBatchProcessor {
 
   void processHeader(const std::string& header) final { (void)header; }
 
-  std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
-      const std::string& line) final {
+  std::pair<BoltVector, BoltVector> processRow(const std::string& line) final {
     const char* start = line.c_str();
     const char* const line_end = line.c_str() + line.size();
     char* end;
@@ -30,7 +29,7 @@ class SvmBatchProcessor final : public UnaryBoltBatchProcessor {
     } while ((*start++) == ',');
 
     float label_val = _softmax_for_multiclass ? 1.0 / labels.size() : 1.0;
-    bolt::BoltVector labels_vec = bolt::BoltVector::makeSparseVector(
+    BoltVector labels_vec = BoltVector::makeSparseVector(
         labels, std::vector<float>(labels.size(), label_val));
 
     // Parse the vector itself. The elements are given in <index>:<value>
@@ -51,8 +50,7 @@ class SvmBatchProcessor final : public UnaryBoltBatchProcessor {
       }
     } while (*start != '\n' && start < line_end);
 
-    bolt::BoltVector data_vec =
-        bolt::BoltVector::makeSparseVector(indices, values);
+    BoltVector data_vec = BoltVector::makeSparseVector(indices, values);
 
     return std::make_pair(std::move(data_vec), std::move(labels_vec));
   }

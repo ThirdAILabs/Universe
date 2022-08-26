@@ -1,5 +1,5 @@
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <random>
 #include <vector>
