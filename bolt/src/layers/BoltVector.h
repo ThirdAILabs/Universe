@@ -11,6 +11,7 @@
 #include <limits>
 #include <numeric>
 #include <optional>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -21,6 +22,13 @@ namespace thirdai::bolt {
 constexpr float BETA1 = 0.9;
 constexpr float BETA2 = 0.999;
 constexpr float EPS = 0.0000001;
+
+using ValueIndexPair = std::pair<float, uint32_t>;
+
+// This compares the first element in the pair, then the second element.
+using TopKActivationsQueue =
+    std::priority_queue<ValueIndexPair, std::vector<ValueIndexPair>,
+                        std::greater<ValueIndexPair>>;
 
 struct FoundActiveNeuron {
   std::optional<size_t> pos;
@@ -225,6 +233,11 @@ struct BoltVector {
     }
   }
 
+  void zeroOutGradients() {  // NOLINT clang-tidy thinks this should be const.
+    assert(hasGradients());
+    std::fill_n(gradients, len, 0.0);
+  }
+
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& state) {
     bool dense = state.active_neurons == nullptr;
     for (uint32_t i = 0; i < state.len; i++) {
@@ -293,6 +306,23 @@ struct BoltVector {
     }
 
     return thresholded;
+  }
+
+  inline TopKActivationsQueue findKLargestActivationsK(uint32_t k) const {
+    TopKActivationsQueue top_k;
+    for (uint32_t pos = 0; pos < std::min(k, len); pos++) {
+      uint32_t idx = isDense() ? pos : active_neurons[pos];
+      top_k.push({activations[pos], idx});
+    }
+    for (uint32_t pos = k; pos < len; pos++) {
+      uint32_t idx = isDense() ? pos : active_neurons[pos];
+      ValueIndexPair val_idx_pair = {activations[pos], idx};
+      if (val_idx_pair > top_k.top()) {
+        top_k.pop();
+        top_k.push(val_idx_pair);
+      }
+    }
+    return top_k;
   }
 
   constexpr bool hasGradients() const { return gradients != nullptr; }

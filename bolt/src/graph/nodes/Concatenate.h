@@ -112,7 +112,6 @@ class ConcatenateNode final
     (void)labels;
 
     const BoltVector& output_vector = getOutputVectorImpl(vec_index);
-    std::fill_n(output_vector.gradients, output_vector.len, 0);
 
     const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
