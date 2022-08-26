@@ -6,7 +6,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "utils/SafeFileIO.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <memory>
 #include <optional>

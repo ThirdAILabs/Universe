@@ -2,7 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include "HashUtils.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 
 namespace thirdai::hashing {
 

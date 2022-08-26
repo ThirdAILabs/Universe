@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>

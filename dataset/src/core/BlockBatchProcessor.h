@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <cstdlib>

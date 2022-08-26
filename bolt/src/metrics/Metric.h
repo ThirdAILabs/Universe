@@ -1,6 +1,6 @@
 #pragma once
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/MetricHelpers.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <atomic>

@@ -1,7 +1,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/details/helpers.hpp>
 #include "BoltVectorTestUtils.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <sstream>

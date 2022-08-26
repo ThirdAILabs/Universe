@@ -4,7 +4,7 @@
 #include "Datasets.h"
 #include "InMemoryDataset.h"
 #include "StreamingDataset.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/ClickThroughBatchProcessor.h>
 #include <dataset/src/batch_processors/SvmBatchProcessor.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>

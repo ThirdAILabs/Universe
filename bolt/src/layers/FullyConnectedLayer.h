@@ -3,7 +3,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include "BoltVector.h"
+#include <bolt_vector/src/BoltVector.h>
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include "SequentialLayer.h"

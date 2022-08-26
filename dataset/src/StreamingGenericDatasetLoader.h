@@ -3,7 +3,7 @@
 #include "DataLoader.h"
 #include "ShuffleBatchBuffer.h"
 #include "StreamingDataset.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <chrono>

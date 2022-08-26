@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <string_view>
 #include <unordered_map>

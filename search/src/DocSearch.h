@@ -8,7 +8,7 @@
 #include <cereal/types/vector.hpp>
 #include "MaxFlashArray.h"
 #include "Utils.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/FastSRP.h>
 #include <Eigen/src/Core/util/Constants.h>
 #include <exceptions/src/Exceptions.h>

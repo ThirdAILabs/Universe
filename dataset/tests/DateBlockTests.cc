@@ -1,4 +1,4 @@
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Date.h>

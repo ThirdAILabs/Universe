@@ -1,5 +1,5 @@
 #include <cereal/archives/binary.hpp>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/FastSRP.h>
 #include <gtest/gtest.h>
 #include <search/src/MaxFlashArray.h>

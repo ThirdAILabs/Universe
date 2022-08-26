@@ -1,5 +1,5 @@
 #include "BlockBatchProcessor.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <algorithm>

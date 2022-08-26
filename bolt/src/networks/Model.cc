@@ -1,7 +1,7 @@
 #include "Model.h"
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <algorithm>
 #include <cctype>
 #include <chrono>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "InMemoryDataset.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <pybind11/buffer_info.h>

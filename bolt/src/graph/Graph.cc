@@ -7,10 +7,10 @@
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>

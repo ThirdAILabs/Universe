@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ProcessorUtils.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <stdexcept>

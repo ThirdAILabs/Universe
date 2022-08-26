@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 
 namespace thirdai::bolt::tests {

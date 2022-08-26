@@ -4,7 +4,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>

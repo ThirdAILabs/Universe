@@ -3,13 +3,13 @@
 #include <wrappers/src/LicenseWrapper.h>
 #include <cereal/types/vector.hpp>
 #include "Model.h"
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/Datasets.h>
 #include <exceptions/src/Exceptions.h>

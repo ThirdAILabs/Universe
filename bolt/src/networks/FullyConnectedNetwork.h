@@ -3,9 +3,9 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "Model.h"
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <cmath>
 #include <iostream>
 #include <limits>
