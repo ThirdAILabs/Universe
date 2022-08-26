@@ -10,7 +10,7 @@
 
 namespace thirdai::bolt {
 
-template class Model<bolt::BoltBatch>;
+template class Model<BoltBatch>;
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(
@@ -244,7 +244,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
     const std::shared_ptr<dataset::StreamingDataset<BATCH_T, BoltBatch>>&
         test_data,
     bool use_sparse_inference, const std::vector<std::string>& metric_names,
-    std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
+    std::optional<std::function<void(const BoltBatch&, uint32_t)>>
         batch_callback,
     bool verbose) {
   MetricAggregator metrics(metric_names, verbose);

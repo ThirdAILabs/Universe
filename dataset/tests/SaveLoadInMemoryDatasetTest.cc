@@ -22,9 +22,9 @@ class SaveLoadInMemoryDatasetTestFixture : public testing::Test {
 
   BoltDatasetPtr generateRandomDataset(uint64_t n_batches,
                                        uint64_t batch_size) {
-    std::vector<bolt::BoltBatch> batches;
+    std::vector<BoltBatch> batches;
     for (uint64_t batch_idx = 0; batch_idx < n_batches; batch_idx++) {
-      std::vector<bolt::BoltVector> vectors;
+      std::vector<BoltVector> vectors;
 
       for (uint64_t vec_idx = 0; vec_idx < batch_size; vec_idx++) {
         uint64_t overall_index = batch_idx * batch_size + vec_idx;
@@ -44,9 +44,8 @@ class SaveLoadInMemoryDatasetTestFixture : public testing::Test {
   std::string _save_filename = "./dataset_serialized";
 
  private:
-  bolt::BoltVector generateVector(uint32_t len, bool is_dense,
-                                  bool has_gradient) {
-    bolt::BoltVector vector(len, is_dense, has_gradient);
+  BoltVector generateVector(uint32_t len, bool is_dense, bool has_gradient) {
+    BoltVector vector(len, is_dense, has_gradient);
 
     if (!is_dense) {
       std::generate(vector.active_neurons, vector.active_neurons + len,
@@ -87,7 +86,7 @@ TEST_F(SaveLoadInMemoryDatasetTestFixture, SaveLoadBoltDataset) {
               reloaded_dataset->batchSize(batch_idx));
     for (uint64_t vec_idx = 0; vec_idx < dataset->batchSize(batch_idx);
          vec_idx++) {
-      bolt::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
+      tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
           dataset->at(batch_idx)[vec_idx],
           reloaded_dataset->at(batch_idx)[vec_idx]);
     }

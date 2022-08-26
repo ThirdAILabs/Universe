@@ -27,7 +27,7 @@ struct DatasetShuffleConfig {
 };
 
 class StreamingGenericDatasetLoader
-    : public StreamingDataset<bolt::BoltBatch, bolt::BoltBatch> {
+    : public StreamingDataset<BoltBatch, BoltBatch> {
  public:
   /**
    * This constructor accepts a pointer to any data loader.
@@ -71,8 +71,7 @@ class StreamingGenericDatasetLoader
             std::move(input_blocks), std::move(label_blocks), shuffle, config,
             has_header, delimiter) {}
 
-  std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> nextBatchTuple()
-      final {
+  std::optional<std::tuple<BoltBatch, BoltBatch>> nextBatchTuple() final {
     if (_buffer.empty()) {
       prefillShuffleBuffer();
     }
@@ -133,8 +132,7 @@ class StreamingGenericDatasetLoader
   }
 
   bool addNextBatchToBuffer() {
-    auto batch =
-        StreamingDataset<bolt::BoltBatch, bolt::BoltBatch>::nextBatchTuple();
+    auto batch = StreamingDataset<BoltBatch, BoltBatch>::nextBatchTuple();
     if (batch) {
       _buffer.insertBatch(std::move(batch.value()), _shuffle);
       return true;

@@ -11,6 +11,10 @@
 
 namespace thirdai::bolt {
 
+constexpr float BETA1 = 0.9;
+constexpr float BETA2 = 0.999;
+constexpr float EPS = 0.0000001;
+
 enum class ActivationFunction { ReLU, Softmax, Linear, Tanh, Sigmoid };
 
 static std::string activationFunctionToStr(ActivationFunction act_func) {

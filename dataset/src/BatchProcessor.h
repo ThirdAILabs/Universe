@@ -32,15 +32,12 @@ class BatchProcessor {
   }
 };
 
-class UnaryBoltBatchProcessor
-    : public BatchProcessor<bolt::BoltBatch, bolt::BoltBatch> {
+class UnaryBoltBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
  public:
-  std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
+  std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
-    std::vector<bolt::BoltVector> _data_vecs =
-        std::vector<bolt::BoltVector>(rows.size());
-    std::vector<bolt::BoltVector> _label_vecs =
-        std::vector<bolt::BoltVector>(rows.size());
+    std::vector<BoltVector> _data_vecs = std::vector<BoltVector>(rows.size());
+    std::vector<BoltVector> _label_vecs = std::vector<BoltVector>(rows.size());
 
     // #pragma omp parallel for default(none) shared(rows)
     for (uint32_t row_id = 0; row_id < rows.size(); row_id++) {
@@ -50,12 +47,12 @@ class UnaryBoltBatchProcessor
       _label_vecs[row_id] = std::move(p.second);
     }
 
-    return std::make_tuple(bolt::BoltBatch(std::move(_data_vecs)),
-                           bolt::BoltBatch(std::move(_label_vecs)));
+    return std::make_tuple(BoltBatch(std::move(_data_vecs)),
+                           BoltBatch(std::move(_label_vecs)));
   }
 
  protected:
-  virtual std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
+  virtual std::pair<BoltVector, BoltVector> processRow(
       const std::string& row) = 0;
 
   // Default constructor for cereal.
@@ -75,10 +72,9 @@ class UnaryBoltBatchProcessor
  * This BatchProcessor provides an interface to compute metadata about a dataset
  * in a streaming fashion without creating BoltVectors
  */
-class ComputeBatchProcessor
-    : public BatchProcessor<bolt::BoltBatch, bolt::BoltBatch> {
+class ComputeBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
  public:
-  std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
+  std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     // TODO(david) enable parallel by making metadata calculation thread safe
     // #pragma omp parallel for default(none) shared(rows)
@@ -86,7 +82,7 @@ class ComputeBatchProcessor
       processRow(row);
     }
 
-    return std::make_tuple(bolt::BoltBatch(), bolt::BoltBatch());
+    return std::make_tuple(BoltBatch(), BoltBatch());
   }
 
  protected:
@@ -107,6 +103,6 @@ class ComputeBatchProcessor
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::BatchProcessor<thirdai::bolt::BoltBatch>)
+CEREAL_REGISTER_TYPE(thirdai::dataset::BatchProcessor<thirdai::BoltBatch>)
 CEREAL_REGISTER_TYPE(thirdai::dataset::UnaryBoltBatchProcessor)
 CEREAL_REGISTER_TYPE(thirdai::dataset::ComputeBatchProcessor)

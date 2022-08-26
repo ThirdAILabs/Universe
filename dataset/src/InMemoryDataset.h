@@ -141,5 +141,4 @@ class InMemoryDataset : public DatasetBase {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(
-    thirdai::dataset::InMemoryDataset<thirdai::bolt::BoltBatch>)
+CEREAL_REGISTER_TYPE(thirdai::dataset::InMemoryDataset<thirdai::BoltBatch>)

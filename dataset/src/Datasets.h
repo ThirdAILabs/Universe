@@ -9,7 +9,7 @@
 namespace thirdai::dataset {
 
 // TODO(Nicholas, Josh): Rename to just Dataset?
-using BoltDataset = InMemoryDataset<bolt::BoltBatch>;
+using BoltDataset = InMemoryDataset<BoltBatch>;
 using BoltDatasetPtr = std::shared_ptr<BoltDataset>;
 using BoltDatasetList = std::vector<BoltDatasetPtr>;
 

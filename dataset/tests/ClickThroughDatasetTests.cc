@@ -103,7 +103,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
   std::uniform_int_distribution<uint32_t> _dense_feature_dist;
   std::uniform_int_distribution<uint32_t> _categorical_feature_dist;
 
-  void verifySparseLabelBatch(const bolt::BoltBatch& labels,
+  void verifySparseLabelBatch(const BoltBatch& labels,
                               uint32_t label_count_base) {
     ASSERT_TRUE(labels.getBatchSize() == _batch_size ||
                 labels.getBatchSize() == _num_vectors % _batch_size);
@@ -116,7 +116,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     }
   }
 
-  void verifyDenseInputBatch(const bolt::BoltBatch& dense_inputs,
+  void verifyDenseInputBatch(const BoltBatch& dense_inputs,
                              uint32_t vec_count_base) {
     ASSERT_TRUE(dense_inputs.getBatchSize() == _batch_size ||
                 dense_inputs.getBatchSize() == _num_vectors % _batch_size);

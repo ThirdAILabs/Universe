@@ -37,8 +37,6 @@
 
 namespace thirdai::dataset::python {
 
-using bolt::BoltVector;
-
 void createDatasetSubmodule(py::module_& module) {
   // Separate submodule for bindings that we don't want to expose to users.
   auto internal_dataset_submodule = module.def_submodule("dataset_internal");
@@ -317,11 +315,11 @@ void createDatasetSubmodule(py::module_& module) {
       // We need to explicitly static cast these methods because there are
       // multiple candidate "at" methods (one const and one not const)
       .def("get",
-           static_cast<bolt::BoltBatch& (BoltDataset::*)(uint64_t i)>(
+           static_cast<BoltBatch& (BoltDataset::*)(uint64_t i)>(
                &BoltDataset::at),
            py::arg("i"), py::return_value_policy::reference)
       .def("__getitem__",
-           static_cast<bolt::BoltBatch& (BoltDataset::*)(uint64_t i)>(
+           static_cast<BoltBatch& (BoltDataset::*)(uint64_t i)>(
                &BoltDataset::at),
            py::arg("i"), py::return_value_policy::reference)
       .def("__len__", &BoltDataset::numBatches)
@@ -340,19 +338,19 @@ void createDatasetSubmodule(py::module_& module) {
 
   // TODO(josh): Add __iter__ method so we can do foreach loops in pthon and c++
   // TODO(josh): This segfaults if the user passes in an index that is too large
-  py::class_<bolt::BoltBatch>(dataset_submodule, "BoltBatch")
-      .def("batch_size", &bolt::BoltBatch::getBatchSize)
+  py::class_<BoltBatch>(dataset_submodule, "BoltBatch")
+      .def("batch_size", &BoltBatch::getBatchSize)
       // We need to explicitly static cast these methods because there are
       // multiple candidate "[]" methods (one const and one not const)
       .def("get",
-           static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
-               &bolt::BoltBatch::operator[]),
+           static_cast<BoltVector& (BoltBatch::*)(size_t i)>(
+               &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
       .def("__getitem__",
-           static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
-               &bolt::BoltBatch::operator[]),
+           static_cast<BoltVector& (BoltBatch::*)(size_t i)>(
+               &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
-      .def("__len__", &bolt::BoltBatch::getBatchSize);
+      .def("__len__", &BoltBatch::getBatchSize);
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),

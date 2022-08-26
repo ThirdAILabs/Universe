@@ -12,34 +12,34 @@ namespace thirdai::search {
 /** Creates a vector of Batches with size batch_size that point to the
  * input_vectors */
 //  TODO(Josh): Move to util
-std::vector<bolt::BoltBatch> createBatches(
-    std::vector<bolt::BoltVector>& input_vectors, uint32_t batch_size) {
-  std::vector<bolt::BoltBatch> result;
+std::vector<BoltBatch> createBatches(std::vector<BoltVector>& input_vectors,
+                                     uint32_t batch_size) {
+  std::vector<BoltBatch> result;
   uint32_t current_vector_index = 0;
   while (current_vector_index < input_vectors.size()) {
     uint32_t next_batch_size = std::min(
         static_cast<uint32_t>(input_vectors.size() - current_vector_index),
         batch_size);
 
-    std::vector<bolt::BoltVector> batch_vecs;
+    std::vector<BoltVector> batch_vecs;
     for (uint32_t i = 0; i < next_batch_size; i++) {
       batch_vecs.push_back(
           std::move(input_vectors.at(current_vector_index + i)));
     }
-    result.push_back(bolt::BoltBatch(std::move(batch_vecs)));
+    result.push_back(BoltBatch(std::move(batch_vecs)));
     current_vector_index += next_batch_size;
   }
   return result;
 }
 
-std::vector<bolt::BoltVector> createRandomVectors(
+std::vector<BoltVector> createRandomVectors(
     uint32_t dim, uint32_t num_vectors,
     std::normal_distribution<float> distribution) {
-  std::vector<bolt::BoltVector> result;
+  std::vector<BoltVector> result;
   std::default_random_engine generator;
   for (uint32_t i = 0; i < num_vectors; i++) {
-    bolt::BoltVector vec(/* l = */ dim, /* is_dense = */ true,
-                         /* has_gradient = */ false);
+    BoltVector vec(/* l = */ dim, /* is_dense = */ true,
+                   /* has_gradient = */ false);
     std::generate(vec.activations, vec.activations + dim,
                   [&]() { return distribution(generator); });
     result.push_back(std::move(vec));

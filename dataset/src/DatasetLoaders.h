@@ -18,9 +18,8 @@ struct SvmDatasetLoader {
     auto batch_processor =
         std::make_shared<SvmBatchProcessor>(softmax_for_multiclass);
 
-    auto dataset =
-        StreamingDataset<bolt::BoltBatch, bolt::BoltBatch>::loadDatasetFromFile(
-            filename, batch_size, batch_processor);
+    auto dataset = StreamingDataset<BoltBatch, BoltBatch>::loadDatasetFromFile(
+        filename, batch_size, batch_processor);
 
     return dataset->loadInMemory();
   }
@@ -35,10 +34,9 @@ struct ClickThroughDatasetLoader {
         num_dense_features, max_num_categorical_features, delimiter);
 
     auto dataset =
-        StreamingDataset<bolt::BoltBatch, BoltTokenBatch,
-                         bolt::BoltBatch>::loadDatasetFromFile(filename,
-                                                               batch_size,
-                                                               batch_processor);
+        StreamingDataset<BoltBatch, BoltTokenBatch,
+                         BoltBatch>::loadDatasetFromFile(filename, batch_size,
+                                                         batch_processor);
 
     return dataset->loadInMemory();
   }

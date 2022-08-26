@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <functional>
 
-namespace thirdai::bolt::tests {
+namespace thirdai::tests {
 
 constexpr uint32_t VEC_LEN = 100;
 
@@ -151,4 +151,4 @@ TEST(BoltVectorTests, MoveConstructor) { runTest(testMove); }
 
 TEST(BoltVectorTests, MoveAssignment) { runTest(testMoveAssign); }
 
-}  // namespace thirdai::bolt::tests
+}  // namespace thirdai::tests

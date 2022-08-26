@@ -47,14 +47,14 @@ class BlockBatchProcessor {
    * Encodes a sample as a BoltVector according to the given blocks.
    */
   static std::exception_ptr makeVector(
-      std::vector<std::string>& sample, bolt::BoltVector& vector,
+      std::vector<std::string>& sample, BoltVector& vector,
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense);
 
   uint32_t _batch_size;
   bool _input_blocks_dense;
   bool _target_blocks_dense;
-  std::vector<bolt::BoltVector> _input_vectors;
-  std::optional<std::vector<bolt::BoltVector>> _target_vectors;
+  std::vector<BoltVector> _input_vectors;
+  std::optional<std::vector<BoltVector>> _target_vectors;
   /**
    * We save a copy of these vectors instead of just references
    * because using references will cause errors when given Python

@@ -34,7 +34,7 @@ class DistributedModel : public FullyConnectedNetwork {
 
   // Distributed Functions
   uint32_t prepareNodeForDistributedTraining(
-      std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
+      std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& train_data,
       const dataset::BoltDatasetPtr& train_labels, uint32_t rehash,
       uint32_t rebuild, bool verbose);
 
@@ -85,7 +85,7 @@ class DistributedModel : public FullyConnectedNetwork {
 
   uint32_t _rebuild_batch;
   uint32_t _rehash_batch;
-  std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>> _train_data;
+  std::shared_ptr<dataset::InMemoryDataset<BoltBatch>> _train_data;
   dataset::BoltDatasetPtr _train_labels;
 };
 

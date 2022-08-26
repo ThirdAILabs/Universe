@@ -39,7 +39,7 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
 }
 
 template <typename LABEL_T>
-uint64_t MaxFlashArray<LABEL_T>::addDocument(const bolt::BoltBatch& batch) {
+uint64_t MaxFlashArray<LABEL_T>::addDocument(const BoltBatch& batch) {
   LABEL_T num_elements =
       std::min<uint64_t>(batch.getBatchSize(), _max_allowable_doc_size);
   const std::vector<uint32_t> hashes = hash(batch);
@@ -50,18 +50,18 @@ uint64_t MaxFlashArray<LABEL_T>::addDocument(const bolt::BoltBatch& batch) {
 }
 
 template std::vector<float> MaxFlashArray<uint8_t>::getDocumentScores(
-    const bolt::BoltBatch& query,
+    const BoltBatch& query,
     const std::vector<uint32_t>& documents_to_query) const;
 template std::vector<float> MaxFlashArray<uint16_t>::getDocumentScores(
-    const bolt::BoltBatch& query,
+    const BoltBatch& query,
     const std::vector<uint32_t>& documents_to_query) const;
 template std::vector<float> MaxFlashArray<uint32_t>::getDocumentScores(
-    const bolt::BoltBatch& query,
+    const BoltBatch& query,
     const std::vector<uint32_t>& documents_to_query) const;
 
 template <typename LABEL_T>
 std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
-    const bolt::BoltBatch& query,
+    const BoltBatch& query,
     const std::vector<uint32_t>& documents_to_query) const {
   const std::vector<uint32_t> hashes = hash(query);
 

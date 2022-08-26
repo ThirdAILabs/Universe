@@ -35,11 +35,11 @@ std::vector<std::vector<std::string>> makeMatrixOfStringNumbers(
  * Helper function to convert a dense matrix into the
  * corresponding dense bolt vector representations
  */
-std::vector<bolt::BoltVector> makeDenseBoltVectors(
+std::vector<BoltVector> makeDenseBoltVectors(
     std::vector<std::vector<float>>& matrix) {
-  std::vector<bolt::BoltVector> vectors(matrix.size());
+  std::vector<BoltVector> vectors(matrix.size());
   for (size_t i = 0; i < matrix.size(); i++) {
-    vectors[i] = bolt::BoltVector::makeDenseVector(matrix[i]);
+    vectors[i] = BoltVector::makeDenseVector(matrix[i]);
   }
   return vectors;
 }
@@ -48,19 +48,19 @@ std::vector<bolt::BoltVector> makeDenseBoltVectors(
  * Helper function to convert a dense matrix into the
  * corresponding sparse bolt vector representations
  */
-std::vector<bolt::BoltVector> makeSparseBoltVectors(
+std::vector<BoltVector> makeSparseBoltVectors(
     std::vector<std::vector<float>>& matrix) {
   // Make indices for sparse vector (same for every row)
   std::vector<uint32_t> indices(matrix.front().size());
   std::iota(indices.begin(), indices.end(), 0);
 
   // Make the bolt vectors.
-  std::vector<bolt::BoltVector> vectors;
+  std::vector<BoltVector> vectors;
   // The reserve below is an unnecessary optimization given that this is just a
   // test but linter gets angry otherwise
   vectors.reserve(matrix.size());
   for (const auto& row : matrix) {
-    vectors.push_back(bolt::BoltVector::makeSparseVector(indices, row));
+    vectors.push_back(BoltVector::makeSparseVector(indices, row));
   }
   return vectors;
 }
@@ -72,8 +72,8 @@ std::vector<bolt::BoltVector> makeSparseBoltVectors(
  * If check_labels = true, check the labels of the dataset. Otherwise, check the
  * inputs.
  */
-void assertSameVectorsSameOrder(std::vector<bolt::BoltVector> bolt_vecs_1,
-                                std::vector<bolt::BoltVector> bolt_vecs_2,
+void assertSameVectorsSameOrder(std::vector<BoltVector> bolt_vecs_1,
+                                std::vector<BoltVector> bolt_vecs_2,
                                 BoltDataset& dataset) {
   uint32_t batch_size = dataset.at(0).getBatchSize();
   for (size_t batch_i = 0; batch_i < dataset.numBatches(); batch_i++) {
@@ -82,9 +82,9 @@ void assertSameVectorsSameOrder(std::vector<bolt::BoltVector> bolt_vecs_1,
       const auto& dataset_vec = dataset.at(batch_i)[vec_i];
 
       size_t idx = batch_i * batch_size + vec_i;
-      const bolt::BoltVector& vec = idx < bolt_vecs_1.size()
-                                        ? bolt_vecs_1[idx]
-                                        : bolt_vecs_2[idx - bolt_vecs_1.size()];
+      const BoltVector& vec = idx < bolt_vecs_1.size()
+                                  ? bolt_vecs_1[idx]
+                                  : bolt_vecs_2[idx - bolt_vecs_1.size()];
 
       // Assert same length
       ASSERT_EQ(dataset_vec.len, vec.len);

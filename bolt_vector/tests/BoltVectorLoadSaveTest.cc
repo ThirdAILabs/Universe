@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <sstream>
 
-namespace thirdai::bolt::tests {
+namespace thirdai::tests {
 
 std::stringstream serializeBoltVector(BoltVector& vector) {
   std::stringstream output_stream;
@@ -119,4 +119,4 @@ TEST(BoltVectorSerialization, SaveLoadDenseBoltVectorWithoutGradients) {
   testDataNonOwningBoltVector(active_neurons, activations, gradients);
 }
 
-}  // namespace thirdai::bolt::tests
+}  // namespace thirdai::tests
