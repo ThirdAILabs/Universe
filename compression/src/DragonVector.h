@@ -125,11 +125,11 @@ class DragonVector final : public CompressedVector<T> {
 
   static DragonVector<T> addVectors(
       const std::vector<std::unique_ptr<DragonVector<T>>>& vec) {
-    DragonVector<T> return_vec = *vec[0].get();
+    DragonVector<T> result_vec = *vec[0].get();
     for (size_t i = 1; i < vec.size(); i++) {
-      return_vec = *vec[i].get() + return_vec;
+      result_vec = *vec[i].get() + result_vec;
     }
-    return return_vec;
+    return result_vec;
   }
 
   static DragonVector<T> addVectors(
