@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <ctime>
 #include <deque>
@@ -19,8 +19,7 @@ class ShuffleBatchBuffer {
         _reached_end_of_dataset(false),
         _batch_size(batch_size) {}
 
-  void insertBatch(std::tuple<bolt::BoltBatch, bolt::BoltBatch>&& batch,
-                   bool shuffle) {
+  void insertBatch(std::tuple<BoltBatch, BoltBatch>&& batch, bool shuffle) {
     checkConsistentBatchSize(std::get<0>(batch).getBatchSize(),
                              std::get<1>(batch).getBatchSize());
 
@@ -32,7 +31,7 @@ class ShuffleBatchBuffer {
     }
   }
 
-  std::optional<std::pair<bolt::BoltBatch, bolt::BoltBatch>> popBatch() {
+  std::optional<std::pair<BoltBatch, BoltBatch>> popBatch() {
     assert(_input_batches.empty() == _label_batches.empty());
     if (_input_batches.empty()) {
       return {};
@@ -45,18 +44,17 @@ class ShuffleBatchBuffer {
     return {{std::move(input_batch), std::move(label_batch)}};
   }
 
-  std::pair<std::vector<bolt::BoltBatch>, std::vector<bolt::BoltBatch>>
-  exportBuffer() {
+  std::pair<std::vector<BoltBatch>, std::vector<BoltBatch>> exportBuffer() {
     /*
       This doesn't double our memory footprint since the
       batches are moved;
       the amount of memory allocated to the underlying
       vectors remains the same.
     */
-    std::vector<bolt::BoltBatch> input_batch_vector(
+    std::vector<BoltBatch> input_batch_vector(
         std::make_move_iterator(_input_batches.begin()),
         std::make_move_iterator(_input_batches.end()));
-    std::vector<bolt::BoltBatch> label_batch_vector(
+    std::vector<BoltBatch> label_batch_vector(
         std::make_move_iterator(_label_batches.begin()),
         std::make_move_iterator(_label_batches.end()));
 
@@ -100,8 +98,8 @@ class ShuffleBatchBuffer {
     }
   }
 
-  static inline void swapShuffle(std::deque<bolt::BoltBatch>& input_batches,
-                                 std::deque<bolt::BoltBatch>& label_batches,
+  static inline void swapShuffle(std::deque<BoltBatch>& input_batches,
+                                 std::deque<BoltBatch>& label_batches,
                                  size_t expected_batch_size,
                                  std::mt19937& gen) {
     assert(input_batches.size() > 0);
@@ -136,8 +134,8 @@ class ShuffleBatchBuffer {
   bool _reached_end_of_dataset;
   size_t _batch_size;
 
-  std::deque<bolt::BoltBatch> _input_batches;
-  std::deque<bolt::BoltBatch> _label_batches;
+  std::deque<BoltBatch> _input_batches;
+  std::deque<BoltBatch> _label_batches;
 };
 
 }  // namespace thirdai::dataset

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <numeric>
 #include <stdexcept>
 #include <string>

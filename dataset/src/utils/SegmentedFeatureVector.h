@@ -60,8 +60,8 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
     _n_dense_added++;
   }
 
-  bolt::BoltVector toBoltVector() final {
-    return bolt::BoltVector::makeSparseVector(_indices, _values);
+  BoltVector toBoltVector() final {
+    return BoltVector::makeSparseVector(_indices, _values);
   }
 
  protected:
@@ -116,8 +116,8 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
     _n_dense_added++;
   }
 
-  bolt::BoltVector toBoltVector() final {
-    return bolt::BoltVector::makeDenseVector(_values);
+  BoltVector toBoltVector() final {
+    return BoltVector::makeDenseVector(_values);
   };
 
  protected:

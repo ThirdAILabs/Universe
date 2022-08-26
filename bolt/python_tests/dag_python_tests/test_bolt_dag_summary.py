@@ -36,7 +36,7 @@ def test_simple_bolt_dag_summary():
 
     expected_normal = """
       ======================= Bolt Model =======================
-      input_1 (Input) : dim=10
+      input_1 (Input): dim=10
       input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=ReLU
       fc_1 -> fc_2 (FullyConnected): dim=10, sparsity=0.01, act_func=ReLU
       (fc_1, fc_2) -> concat_1 (Concatenate)
@@ -47,7 +47,7 @@ def test_simple_bolt_dag_summary():
 
     expected_detailed = """
       ======================= Bolt Model =======================
-      input_1 (Input) : dim=10
+      input_1 (Input): dim=10
       input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=ReLU
       fc_1 -> fc_2 (FullyConnected): dim=10, sparsity=0.01, act_func=ReLU (hash_function=DWTA, num_tables=328, range=32768, reservoir_size=4)
       (fc_1, fc_2) -> concat_1 (Concatenate)
