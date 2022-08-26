@@ -178,7 +178,8 @@ class DocSearch {
     for (uint32_t i = 0; i < embeddings.getBatchSize(); i++) {
       if (embeddings[i].len != _dense_dim) {
         throw std::invalid_argument("Embedding " + std::to_string(i) +
-                                    " has dimension " + std::to_string(embeddings[i].len) +
+                                    " has dimension " +
+                                    std::to_string(embeddings[i].len) +
                                     " but should have dimension equal to the "
                                     "original passed in dense dimension, " +
                                     std::to_string(_dense_dim));

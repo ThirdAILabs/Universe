@@ -261,8 +261,7 @@ class ConcatenateNode final
         uint32_t end_position = positional_offsets.at(input_node_id + 1);
         uint32_t neuron_index_offset = neuron_index_offsets.at(input_node_id);
         std::iota(vec.active_neurons + start_position,
-                  vec.active_neurons + end_position,
-                  neuron_index_offset);
+                  vec.active_neurons + end_position, neuron_index_offset);
       }
     }
   }
