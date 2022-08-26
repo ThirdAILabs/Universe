@@ -8,6 +8,7 @@ pytestmark = [pytest.mark.integration]
 
 LEARNING_RATE = 0.0001
 
+
 def load_mnist():
     train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
     test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
