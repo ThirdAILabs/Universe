@@ -22,7 +22,14 @@ class Callback {
  public:
   Callback() {}
 
-  void setModel(BoltGraphPtr model) { _model = model; }
+  void setModel(BoltGraph* model) {
+    if (_model != nullptr) {
+      throw std::invalid_argument(
+          "Setting model twice in a callback is not allowed");
+    }
+
+    _model = model;
+  }
 
   virtual void onTrainBegin(){};
 
@@ -41,21 +48,25 @@ class Callback {
   virtual ~Callback() = default;
 
  protected:
-  BoltGraphPtr _model;
+  // TODO(nick, david): ideally this is a shared_ptr. We can pass in
+  // shared_from_this() in the BoltGraph class to fix this but this requires a
+  // shared_ptr to the object to already exist when using it, thus we'd have to
+  // refactor all instances of BoltGraph to BoltGraphPtr which is another PR
+  BoltGraph* _model = nullptr;
 };
 
 using CallbackPtr = std::shared_ptr<Callback>;
 
 /**
  * This class serves as a helpful intermediary between models and callbacks by
- * dispatching calls to the stored callback list.
+ * dispatching calls to the stored callbacks.
  */
 class CallbackList {
  public:
   explicit CallbackList(std::vector<CallbackPtr> callbacks)
       : _callbacks(std::move(callbacks)) {}
 
-  void setModel(BoltGraphPtr model) {
+  void setModel(BoltGraph* model) {
     for (const auto& callback : _callbacks) {
       callback->setModel(model);
     }
@@ -107,5 +118,7 @@ class CallbackList {
  private:
   std::vector<CallbackPtr> _callbacks;
 };
+
+using CallbackListPtr = std::shared_ptr<CallbackList>;
 
 }  // namespace thirdai::bolt
