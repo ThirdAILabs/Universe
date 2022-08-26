@@ -1,5 +1,5 @@
-#include <bolt_vector/tests/BoltVectorTestUtils.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <bolt_vector/tests/BoltVectorTestUtils.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
