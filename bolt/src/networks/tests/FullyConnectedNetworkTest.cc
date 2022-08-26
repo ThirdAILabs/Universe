@@ -1,8 +1,8 @@
 #include <bolt/src/graph/tests/TestDatasetGenerators.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <optional>

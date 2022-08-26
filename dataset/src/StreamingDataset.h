@@ -2,7 +2,7 @@
 
 #include "BatchProcessor.h"
 #include "DataLoader.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <chrono>
 #include <memory>

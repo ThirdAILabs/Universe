@@ -15,11 +15,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::bolt {
-
-constexpr float BETA1 = 0.9;
-constexpr float BETA2 = 0.999;
-constexpr float EPS = 0.0000001;
+namespace thirdai {
 
 using ValueIndexPair = std::pair<float, uint32_t>;
 
@@ -229,6 +225,11 @@ struct BoltVector {
     } else {
       return active_neurons[index];
     }
+  }
+
+  void zeroOutGradients() {  // NOLINT clang-tidy thinks this should be const.
+    assert(hasGradients());
+    std::fill_n(gradients, len, 0.0);
   }
 
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& state) {
@@ -493,4 +494,4 @@ class BoltBatch {
   BoltBatch& operator=(BoltBatch&& other) = default;
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai
