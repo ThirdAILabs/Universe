@@ -36,9 +36,7 @@ class Worker:
 
     """
 
-    def __init__(
-        self, layer_dims: List, config: Dict, total_nodes: int, id: int, primary_worker
-    ):
+    def __init__(self, total_nodes: int, id: int, primary_worker):
         """Initializes the model to run
 
         Args:
@@ -48,8 +46,9 @@ class Worker:
             id (int): id of this particular worker
         """
 
-        # Setting up Model
-        self.model = FullyConnectedNetworkModel(config, total_nodes, layer_dims, id)
+        self.model = (
+            None  # this model must be assigned in make_<MODEL_TYPE>_model function
+        )
 
         # Set up variables
         self.total_nodes = total_nodes
@@ -63,6 +62,12 @@ class Worker:
         self.friend_bias_gradient_list = []
         self.friend_weight_gradient_list = []
 
+    def make_fully_connected_model(self, config, layer_dims):
+        self.model = FullyConnectedNetworkModel(
+            config, self.total_nodes, layer_dims, self.id
+        )
+        return True
+
     def set_friend(self, friend):
         """This function is only needed for circular way of communication.
         This function assigns each of the worker their friend to which
@@ -75,12 +80,14 @@ class Worker:
         self.friend = friend
 
     def calculate_gradients_partitions(self):
+        """Calculate the partitions for distributed training called only
+        in case of circular communication
+        """
         for w_layers in self.w_gradients:
             self.w_partitions.append(int(len(w_layers) / self.total_nodes))
 
         for b_layers in self.b_gradients:
             self.b_partitions.append(int(len(b_layers) / self.total_nodes))
-
 
     def calculate_gradients_circular(self, batch_no: int):
         """This function is called only when the mode of
@@ -212,6 +219,14 @@ class Worker:
         reduce,
         avg_gradients,
     ):
+        """Update the partitions with the partitioned array received from its friend
+
+        Args:
+            partition_id (int): Partition index for partition to be updated
+            reduce (Optional[bool], optional): This bool determines whether we need
+            to reduce or gather, True: reduce, False: Gather. Defaults to True.
+            avg_gradients (Optional[bool], optional): _description_. Defaults to False.
+        """
         for i in range(len(self.friend_weight_gradient_list)):
 
             # Getting the indices of the partition to work on

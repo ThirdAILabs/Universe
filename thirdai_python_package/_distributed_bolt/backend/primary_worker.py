@@ -23,7 +23,6 @@ class PrimaryWorker(Worker):
     def __init__(
         self,
         layer_dims: List[int],
-        config: Dict,
         no_of_workers: int,
     ):
         """Initializes the Primary Worker Class
@@ -38,7 +37,7 @@ class PrimaryWorker(Worker):
         # set up in add workers
         self.workers = None
 
-        super().__init__(self.layer_dims, config, no_of_workers, 0, self)
+        super().__init__(no_of_workers, 0, self)
 
     def add_workers(self, workers):
         """Adds the list of workers to the Primary Worker
@@ -48,7 +47,7 @@ class PrimaryWorker(Worker):
         """
         self.workers = workers
 
-    def subwork_circular_communication(self, batch_no: int):
+    def subwork_circular_communication(self):
         """This function first call the workers to compute the gradients on their network
         and then implements Baidu's All Ring All Reduce algorithm for communication.
         Read more about that here:
@@ -127,7 +126,7 @@ class PrimaryWorker(Worker):
             )
             update_id -= 1
 
-    def subwork_linear_communication(self, batch_no: int):
+    def subwork_linear_communication(self):
         """This function implements the linear way of communicating between the node.
         In this way of communication, each of the worker calculates their gradients,
         send their gradients to the supervisor and the supervisor sums the gradients,

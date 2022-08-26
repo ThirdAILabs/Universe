@@ -21,8 +21,6 @@ class ReplicaWorker(Worker):
 
     def __init__(
         self,
-        layer_dims: List[int],
-        config: Dict,
         no_of_workers: int,
         id: int,
         primary_worker,
@@ -35,4 +33,4 @@ class ReplicaWorker(Worker):
             no_of_workers (int): number of workers in training
             id (int): id of this particular replica worker
         """
-        super().__init__(layer_dims, config, no_of_workers, id, primary_worker)
+        super().__init__(no_of_workers, id, primary_worker)

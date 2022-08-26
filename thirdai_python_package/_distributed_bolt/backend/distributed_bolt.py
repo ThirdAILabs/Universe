@@ -26,7 +26,6 @@ class DistributedBolt:
         self.num_of_batches = num_of_batches
         self.primary_worker = primary_worker
 
-
     def train(self, circular: Optional[bool] = True) -> None:
         """Trains the network using the communication type choosen.
 
@@ -34,17 +33,25 @@ class DistributedBolt:
             circular (Optional[bool], optional): True, if circular communication is required.
                     False, if linear communication is required.. Defaults to True.
         """
-        self.comm = communication.CircularCommunication(self.workers, self.primary_worker, self.logging) if circular else communication.LinearCommunication(self.workers, self.primary_worker, self.logging)
+        self.comm = (
+            communication.CircularCommunication(
+                self.workers, self.primary_worker, self.logging
+            )
+            if circular
+            else communication.LinearCommunication(
+                self.workers, self.primary_worker, self.logging
+            )
+        )
 
         for epoch in range(self.epochs):
-            for batch_no in range(self.num_of_batches):
-                
+            for batch_id in range(self.num_of_batches):
+
                 # Here we are asking every worker to calculate their gradients and return
                 # once they all calculate their gradients
-                self.comm.calculate_gradients(batch_no)
-                self.comm.communicate(batch_no)
+                self.comm.calculate_gradients(batch_id)
+                self.comm.communicate()
                 self.comm.update_parameters(self.learning_rate)
-                self.comm.log_training(batch_no, epoch)
+                self.comm.log_training(batch_id, epoch)
 
     def predict(self):
         """Calls network.predict() on worker of head node and returns the predictions.

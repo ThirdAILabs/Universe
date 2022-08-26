@@ -87,18 +87,16 @@ class FullyConnectedNetwork(DistributedBolt):
         if num_cpus_per_node is not -1:
             num_cpus = num_cpus_per_node
 
-        # max_concurrency here, indicates the number of threads 
+        # max_concurrency here, indicates the number of threads
         # that this particular worker can run.
         self.primary_worker = PrimaryWorker.options(
             num_cpus=num_cpus, max_concurrency=100
-        ).remote(self.layer_dims, config, self.num_workers)
+        ).remote(self.layer_dims, self.num_workers)
 
         # max_conxurrenxy here, indicates the number of threads
         # this particular worker can run
         self.replica_workers = [
             ReplicaWorker.options(num_cpus=num_cpus, max_concurrency=100).remote(
-                self.layer_dims,
-                config,
                 self.num_workers,
                 worker_id + 1,
                 self.primary_worker,
@@ -108,6 +106,14 @@ class FullyConnectedNetwork(DistributedBolt):
 
         self.workers = [self.primary_worker]
         self.workers.extend(self.replica_workers)
+
+        # Initilizing the model type here
+        ray.get(
+            [
+                worker.make_fully_connected_model.remote(config, self.layer_dims)
+                for worker in self.workers
+            ]
+        )
 
         self.primary_worker.add_workers.remote(self.workers)
 
