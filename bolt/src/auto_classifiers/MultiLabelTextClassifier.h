@@ -154,7 +154,9 @@ class MultiLabelTextClassifier {
     return deserialize_into;
   }
 
- protected:
+  uint32_t numClasses() const { return _n_classes; }
+
+ private:
   static float getOutputSparsity(uint32_t output_dim) {
     /*
       For smaller output layers, we return a sparsity
