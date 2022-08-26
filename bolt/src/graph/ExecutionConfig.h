@@ -45,11 +45,11 @@ class TrainConfig {
   }
 
   TrainConfig& withCallbacks(const std::vector<CallbackPtr>& callbacks) {
-    _callbacks = CallbackList(callbacks);
+    _callbacks = std::make_shared<CallbackList>(callbacks);
     return *this;
   }
 
-  CallbackList getCallbacks() const { return _callbacks; }
+  CallbackListPtr getCallbacks() const { return _callbacks; }
 
   constexpr uint32_t epochs() const { return _epochs; }
 
@@ -103,7 +103,8 @@ class TrainConfig {
         _batch_size({}),
         _rebuild_hash_tables(std::nullopt),
         _reconstruct_hash_functions(std::nullopt),
-        _callbacks({}) {}
+        _callbacks(
+            std::make_shared<CallbackList>(std::vector<CallbackPtr>({}))) {}
 
   uint32_t _epochs;
   float _learning_rate;
@@ -114,7 +115,7 @@ class TrainConfig {
   std::optional<uint32_t> _rebuild_hash_tables;
   std::optional<uint32_t> _reconstruct_hash_functions;
 
-  CallbackList _callbacks;
+  CallbackListPtr _callbacks;
 };
 
 class PredictConfig {
