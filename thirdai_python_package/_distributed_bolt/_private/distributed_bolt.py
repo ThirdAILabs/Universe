@@ -132,12 +132,6 @@ class DistributedBolt:
                     + str(self.averaging_and_communication_time)
                 )
 
-            for id, worker in enumerate(self.workers):
-                acc, _ = ray.get(worker.predict.remote())
-                self.logging.info(
-                    "Accuracy on workers %d: %lf", id, acc["categorical_accuracy"]
-                )
-
     def predict(self):
         """Calls network.predict() on worker of head node and returns the predictions.
 
