@@ -27,6 +27,26 @@ static std::string LPNormToStr(LPNorm norm) {
   throw std::logic_error("Invalid norm passed to the call to LPNormToStr");
 }
 
+static LPNorm getNorm(const std::string& norm_order) {
+  std::string lower_case_norm_order;
+  for (char c : norm_order) {
+    lower_case_norm_order.push_back(std::tolower(c));
+  }
+
+  if (lower_case_norm_order == "l-1") {
+    return LPNorm::L1;
+  }
+  if (lower_case_norm_order == "euclidean") {
+    return LPNorm::Euclidean;
+  }
+  if (lower_case_norm_order == "l-infinity") {
+    return LPNorm::LInfinity;
+  }
+  throw std::invalid_argument("" + norm_order +
+                              " is not a valid Norm. Valid LP norms include "
+                              "l-1, euclidean norm and l-infinity.");
+}
+
 class VectorNorm {
  public:
   static double norm(const BoltVector& bolt_vector, const LPNorm norm_order) {
