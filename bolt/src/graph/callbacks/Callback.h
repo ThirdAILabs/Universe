@@ -8,6 +8,9 @@ namespace thirdai::bolt {
 class BoltGraph;
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;
 
+class Callback;
+using CallbackPtr = std::shared_ptr<Callback>;
+
 /**
  * This class represents a generic Callback interface. Implementing this
  * interface allows you to call various methods at different steps during the
@@ -47,8 +50,6 @@ class Callback {
   // refactor all instances of BoltGraph to BoltGraphPtr which is another PR
   BoltGraph* _model = nullptr;
 };
-
-using CallbackPtr = std::shared_ptr<Callback>;
 
 /**
  * This class serves as a helpful intermediary between models and callbacks by
