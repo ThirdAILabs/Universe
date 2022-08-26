@@ -1,10 +1,10 @@
-from thirdai._distributed_bolt._private.distributed_bolt import DistributedBolt
+from thirdai._distributed_bolt.backend.distributed_bolt import DistributedBolt
 import ray
 import os
 import toml
 import textwrap
-from thirdai._distributed_bolt._private.primary_worker import PrimaryWorker
-from thirdai._distributed_bolt._private.replica_worker import ReplicaWorker
+from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
+from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from .utils import get_num_cpus, init_logging
 from typing import Tuple, Any, Optional, Dict, List
 
@@ -18,12 +18,12 @@ class FullyConnectedNetwork(DistributedBolt):
         Public Facing APIs which includes functions like train, predict
     """
 
-    def __init__(self, no_of_workers, config_filename, num_cpus_per_node):
+    def __init__(self, num_workers, config_filename, num_cpus_per_node):
         """This function initializes this class, which provides wrapper over DistributedBolt and
         implements the user facing FullyConnectedNetwork API.
 
         Args:
-            no_of_workers (int): number of workers
+            num_workers (int): number of workers
             config_filename (dict): configuration file for FullyConnectedNetwork
             num_cpus_per_node (int): Number of CPUs per node
 
@@ -44,16 +44,16 @@ class FullyConnectedNetwork(DistributedBolt):
                 + config_filename
             )
 
-        if len(config["dataset"]["train_data"]) != no_of_workers:
+        if len(config["dataset"]["train_data"]) != num_workers:
             raise ValueError(
                 "Received ",
                 str(len(config["dataset"]["train_data"])),
                 " training datasets. Expected ",
-                no_of_workers,
+                num_workers,
                 " datasets, one for each node.",
             )
 
-        self.no_of_workers = no_of_workers
+        self.num_workers = num_workers
 
         # setting OMP_NUM_THREADS to number of num_cpus
         # Ray expicitly forces the OMP_NUM_THREADS in environment to 1.
@@ -91,7 +91,7 @@ class FullyConnectedNetwork(DistributedBolt):
         # that this particular worker can run.
         self.primary_worker = PrimaryWorker.options(
             num_cpus=num_cpus, max_concurrency=100
-        ).remote(self.layer_dims, config, self.no_of_workers)
+        ).remote(self.layer_dims, config, self.num_workers)
 
         # max_conxurrenxy here, indicates the number of threads
         # this particular worker can run
@@ -99,11 +99,11 @@ class FullyConnectedNetwork(DistributedBolt):
             ReplicaWorker.options(num_cpus=num_cpus, max_concurrency=100).remote(
                 self.layer_dims,
                 config,
-                self.no_of_workers,
+                self.num_workers,
                 worker_id + 1,
                 self.primary_worker,
             )
-            for worker_id in range(self.no_of_workers - 1)
+            for worker_id in range(self.num_workers - 1)
         ]
 
         self.workers = [self.primary_worker]

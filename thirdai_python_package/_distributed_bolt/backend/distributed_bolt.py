@@ -1,0 +1,57 @@
+import ray
+from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
+from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
+import thirdai._distributed_bolt.backend.communication as communication
+import time as time
+from typing import Tuple, Any, Optional, Dict, List
+
+
+class DistributedBolt:
+    """Implements all the user level Distributed Bolt APIs."""
+
+    def __init__(self, workers, logger, epochs, primary_worker, num_of_batches):
+        """Initializes the DistributeBolt class.
+
+        Args:
+            workers (List[Ray Actor]): Store all the workers including primary
+            logger (Logging): gives the Logger
+            epochs (int): number of epochs
+            primary_worker (Ray Actor): Primary Worker
+            num_of_batches (int): number of training batches
+        """
+
+        self.logger = logger
+        self.workers = workers
+        self.epochs = epochs
+        self.num_of_batches = num_of_batches
+        self.primary_worker = primary_worker
+
+
+    def train(self, circular: Optional[bool] = True) -> None:
+        """Trains the network using the communication type choosen.
+
+        Args:
+            circular (Optional[bool], optional): True, if circular communication is required.
+                    False, if linear communication is required.. Defaults to True.
+        """
+        self.comm = communication.CircularCommunication(self.workers, self.primary_worker, self.logging) if circular else communication.LinearCommunication(self.workers, self.primary_worker, self.logging)
+
+        for epoch in range(self.epochs):
+            for batch_no in range(self.num_of_batches):
+                
+                # Here we are asking every worker to calculate their gradients and return
+                # once they all calculate their gradients
+                self.comm.calculate_gradients(batch_no)
+                self.comm.communicate(batch_no)
+                self.comm.update_parameters(self.learning_rate)
+                self.comm.log_training(batch_no, epoch)
+
+    def predict(self):
+        """Calls network.predict() on worker of head node and returns the predictions.
+
+        Returns:
+            InferenceMetricData: Tuples of metrics and activations
+        """
+
+        assert len(self.workers) > 0, "No workers are initialized now."
+        return ray.get(self.workers[0].predict.remote())
