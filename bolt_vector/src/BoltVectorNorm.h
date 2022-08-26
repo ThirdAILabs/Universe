@@ -1,12 +1,12 @@
 #pragma once
 
-#include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <cmath>
 #include <numeric>
 #include <stdexcept>
 #include <string>
 
-namespace thirdai::bolt {
+namespace thirdai {
 
 enum class LPNorm {
   L1,
@@ -22,8 +22,9 @@ static std::string LPNormToStr(LPNorm norm) {
       return "euclidean";
     case LPNorm::LInfinity:
       return "l-infinity";
+    default:
+      throw std::logic_error("Invalid norm passed to the call to LPNormToStr");
   }
-  throw std::logic_error("Invalid norm passed to the call to LPNormToStr");
 }
 
 static LPNorm getNorm(const std::string& norm_order) {
@@ -46,7 +47,7 @@ static LPNorm getNorm(const std::string& norm_order) {
                               "l-1, euclidean norm and l-infinity.");
 }
 
-class VectorNorm {
+class BoltVectorNorm {
  public:
   static double norm(const BoltVector& bolt_vector, const LPNorm norm_order) {
     return computeNorm(/* activations= */ bolt_vector.activations,
@@ -119,12 +120,14 @@ class VectorNorm {
 
         return norm;
       }
+      default: {
+        throw std::invalid_argument(
+            "" + LPNormToStr(norm_order) +
+            " is not a valid LP Norm. Valid norms include l-1, "
+            "euclidean and l-infinity.");
+      }
     }
-    throw std::invalid_argument(
-        "" + LPNormToStr(norm_order) +
-        " is not a valid LP Norm. Valid norms include l-1, "
-        "euclidean and l-infinity.");
   }
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai
