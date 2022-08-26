@@ -1,8 +1,6 @@
 from thirdai import bolt, dataset
 import pytest
-import numpy as np
-
-from ..utils import (
+from utils import (
     assert_activation_difference_and_gradients_in_same_order,
     gen_numpy_training_data,
     gen_random_weights_simple_network,

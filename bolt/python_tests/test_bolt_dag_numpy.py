@@ -1,8 +1,7 @@
 from thirdai import bolt, dataset
 import numpy as np
 import pytest
-
-from ..utils import gen_numpy_training_data
+from utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
 

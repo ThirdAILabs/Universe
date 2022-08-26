@@ -1,5 +1,4 @@
-from ..test_mnist import load_mnist
-from thirdai import bolt
+from thirdai import bolt, dataset
 import os
 import pytest
 
@@ -8,6 +7,11 @@ pytestmark = [pytest.mark.integration]
 
 
 LEARNING_RATE = 0.0001
+
+def load_mnist():
+    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
+    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
+    return train_x, train_y, test_x, test_y
 
 
 def setup_module():

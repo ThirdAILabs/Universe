@@ -1,12 +1,10 @@
 #pragma once
 
 #include <cereal/types/memory.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "BoltVector.h"
 #include "LayerConfig.h"
 #include "LayerUtils.h"
-#include "SequentialLayer.h"
 #include <bolt/src/layers/Optimizer.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
@@ -26,7 +24,7 @@ enum class LSHSamplingMode {
   FreezeHashTablesWithInsertions
 };
 
-class FullyConnectedLayer final : public SequentialLayer {
+class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
@@ -41,19 +39,18 @@ class FullyConnectedLayer final : public SequentialLayer {
                       uint64_t prev_dim, bool is_distributed = false);
 
   void forward(const BoltVector& input, BoltVector& output,
-               const BoltVector* labels) final;
+               const BoltVector* labels);
 
-  void backpropagate(BoltVector& input, BoltVector& output) final;
+  void backpropagate(BoltVector& input, BoltVector& output);
 
-  void backpropagateInputLayer(BoltVector& input, BoltVector& output) final;
+  void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2,
-                        float eps) final;
+  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
   void enableDistributedTraining() { _is_distributed = true; };
 
   BoltBatch createBatchState(const uint32_t batch_size,
-                             bool use_sparsity) const final {
+                             bool use_sparsity) const {
     bool is_sparse = (_sparsity < 1.0) && use_sparsity;
 
     uint32_t curr_dim = is_sparse ? _sparse_dim : _dim;
@@ -62,7 +59,7 @@ class FullyConnectedLayer final : public SequentialLayer {
                      /* is_dense= */ !is_sparse);
   }
 
-  void freezeHashTables(bool insert_labels_if_not_found) final {
+  void freezeHashTables(bool insert_labels_if_not_found) {
     if (insert_labels_if_not_found) {
       _sampling_mode = LSHSamplingMode::FreezeHashTablesWithInsertions;
     } else {
@@ -75,15 +72,15 @@ class FullyConnectedLayer final : public SequentialLayer {
            _sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions;
   }
 
-  void buildHashTables() final;
+  void buildHashTables();
 
-  void reBuildHashFunction() final;
+  void reBuildHashFunction();
 
-  uint32_t getDim() const final { return _dim; }
+  uint32_t getDim() const { return _dim; }
 
-  uint32_t getInputDim() const final { return _prev_dim; }
+  uint32_t getInputDim() const { return _prev_dim; }
 
-  uint32_t getSparseDim() const final { return _sparse_dim; }
+  uint32_t getSparseDim() const { return _sparse_dim; }
 
   float* getWeightsPtr() { return _weights.data(); }
 
@@ -93,36 +90,35 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getBiasGradientsPtr() { return _bias_optimizer->gradients.data(); }
 
-  float* getWeights() const final;
+  float* getWeights() const;
 
-  float* getBiases() const final;
+  float* getBiases() const;
 
-  void setTrainable(bool trainable) final;
+  void setTrainable(bool trainable);
 
-  bool getTrainable() const final;
+  bool getTrainable() const;
 
-  void setWeights(const float* new_weights) final;
+  void setWeights(const float* new_weights);
 
-  void setBiases(const float* new_biases) final;
+  void setBiases(const float* new_biases);
 
-  void setWeightGradients(const float* update_weight_gradient) final;
+  void setWeightGradients(const float* update_weight_gradient);
 
-  void setBiasesGradients(const float* update_bias_gradient) final;
+  void setBiasesGradients(const float* update_bias_gradient);
 
-  float* getBiasesGradient() final;
+  float* getBiasesGradient();
 
-  float* getWeightsGradient() final;
+  float* getWeightsGradient();
 
-  float getSparsity() const final { return _sparsity; }
+  float getSparsity() const { return _sparsity; }
 
-  void setSparsity(float sparsity) final;
+  void setSparsity(float sparsity);
 
   ActivationFunction getActivationFunction() const { return _act_func; }
 
-  void buildLayerSummary(std::stringstream& summary,
-                         bool detailed) const override;
+  void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 
-  void initOptimizer() final;
+  void initOptimizer();
 
   ~FullyConnectedLayer() = default;
 
@@ -266,7 +262,3 @@ class FullyConnectedLayer final : public SequentialLayer {
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayer)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::SequentialLayer,
-                                     thirdai::bolt::FullyConnectedLayer)
