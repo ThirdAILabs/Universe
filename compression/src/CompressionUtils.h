@@ -51,12 +51,8 @@ inline T getThresholdForTopK(const T* values, uint32_t size,
     num_samples = static_cast<uint32_t>(std::min(min_samples, size));
   }
 
-  /*
-   * sketch_size and size are both uint32_t and hence, we multiply by 1.0 to
-   * upcast the division.
-   */
-
-  uint32_t topK = static_cast<uint32_t>(1.0 * num_samples * sketch_size / size);
+  float compression_vector = static_cast<float>(sketch_size) / size;
+  uint32_t topK = static_cast<uint32_t>(num_samples * compression_vector);
 
   std::vector<T> sampled_gradients(num_samples, 0);
 
