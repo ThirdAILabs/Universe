@@ -231,6 +231,11 @@ struct BoltVector {
     }
   }
 
+  void zeroOutGradients() {  // NOLINT clang-tidy thinks this should be const.
+    assert(hasGradients());
+    std::fill_n(gradients, len, 0.0);
+  }
+
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& state) {
     bool dense = state.active_neurons == nullptr;
     for (uint32_t i = 0; i < state.len; i++) {

@@ -152,6 +152,8 @@ class BoltGraph {
 
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
+  void resetOutputGradients(uint32_t vec_index);
+
   void updateParametersAndSampling(float learning_rate,
                                    uint32_t rebuild_hash_tables_batch,
                                    uint32_t reconstruct_hash_functions_batch);
