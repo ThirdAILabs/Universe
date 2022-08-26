@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <numeric>
 #include <random>
+#include <unordered_set>
 
 namespace thirdai::bolt::tests {
 
@@ -115,6 +116,63 @@ struct TestDatasetGenerators {
         categorical_features.push_back(
             {categorical_features_are_noise ? label_dist(gen) : label});
         labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
+      }
+      data_batches.emplace_back(std::move(dense_features));
+      token_batches.emplace_back(std::move(categorical_features));
+      label_batches.emplace_back(std::move(labels));
+    }
+
+    return {
+        std::make_shared<dataset::BoltDataset>(std::move(data_batches)),
+        std::make_shared<dataset::BoltTokenDataset>(std::move(token_batches)),
+        std::make_shared<dataset::BoltDataset>(std::move(label_batches))};
+  }
+
+  static std::tuple<dataset::BoltDatasetPtr, dataset::BoltTokenDatasetPtr,
+                    dataset::BoltDatasetPtr>
+  generateDlrmAttentionDataset(uint32_t n_ids, uint32_t n_tokens,
+                               uint32_t n_batches, uint32_t batch_size,
+                               uint32_t seed) {
+    std::mt19937 gen(seed);
+    std::uniform_int_distribution<uint32_t> id_dist(0, n_ids - 1);
+    std::normal_distribution<float> data_dist(0, 0.1);
+
+    std::vector<BoltBatch> data_batches;
+    std::vector<dataset::BoltTokenBatch> token_batches;
+    std::vector<BoltBatch> label_batches;
+    for (uint32_t batch_id = 0; batch_id < n_batches; batch_id++) {
+      std::vector<BoltVector> dense_features;
+      std::vector<std::vector<uint32_t>> categorical_features;
+      std::vector<BoltVector> labels;
+      for (uint32_t vec_id = 0; vec_id < batch_size; vec_id++) {
+        uint32_t id = id_dist(gen);
+
+        BoltVector dense_input(n_ids, /* is_dense= */ true,
+                               /* has_gradient= */ false);
+        std::generate(dense_input.activations, dense_input.activations + n_ids,
+                      [&]() { return data_dist(gen); });
+        dense_input.activations[id] += 1.0;
+
+        uint32_t id_in_tokens = id_dist(gen) % 2;
+        std::unordered_set<uint32_t> tokens;
+        if (id_in_tokens) {
+          tokens.insert(id);
+        }
+
+        while (tokens.size() < n_tokens) {
+          uint32_t random_token = id_dist(gen);
+          if (random_token != id) {
+            tokens.insert(random_token);
+          }
+        }
+
+        BoltVector label_vec(/* l= */ 1, /* is_dense= */ false);
+        label_vec.active_neurons[0] = id_in_tokens;
+        label_vec.activations[0] = 1.0;
+
+        dense_features.push_back(std::move(dense_input));
+        categorical_features.emplace_back(tokens.begin(), tokens.end());
+        labels.push_back(std::move(label_vec));
       }
       data_batches.emplace_back(std::move(dense_features));
       token_batches.emplace_back(std::move(categorical_features));

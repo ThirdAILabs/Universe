@@ -7,6 +7,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <Eigen/src/Core/Map.h>
 #include <exceptions/src/Exceptions.h>
+#include <memory>
 #include <optional>
 
 namespace thirdai::bolt {
@@ -14,15 +15,17 @@ namespace thirdai::bolt {
 using EigenRowMajorMatrix =
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-class DLRMFeatureInteractionNode final : public Node {
+class DlrmAttentionNode final
+    : public Node,
+      public std::enable_shared_from_this<DlrmAttentionNode> {
  public:
-  DLRMFeatureInteractionNode() : _compiled_state(std::nullopt) {}
+  DlrmAttentionNode() : _compiled_state(std::nullopt) {}
 
   uint32_t outputDim() const final {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "Cannot get the output dimension of DLRMFeatureInteractionNode "
-          "before the predecessors are set.");
+          "Cannot get the output dimension of DlrmAttentionNode before "
+          "compilation.");
     }
 
     return _compiled_state->_output_dim;
@@ -30,8 +33,9 @@ class DLRMFeatureInteractionNode final : public Node {
 
   bool isInputNode() const final { return false; }
 
-  void setPredecessors(FullyConnectedNodePtr fully_connected_node,
-                       EmbeddingNodePtr embedding_node) {
+  std::shared_ptr<DlrmAttentionNode> setPredecessors(
+      FullyConnectedNodePtr fully_connected_node,
+      EmbeddingNodePtr embedding_node) {
     _fully_connected_node = std::move(fully_connected_node);
     _embedding_node = std::move(embedding_node);
 
@@ -41,6 +45,8 @@ class DLRMFeatureInteractionNode final : public Node {
           "Output dimension of EmbeddingNode must be a multiple of the output "
           "dimension of FullyConnectedNode in DLRMFeatureInteractionNode");
     }
+
+    return shared_from_this();
   }
 
  protected:
@@ -63,7 +69,9 @@ class DLRMFeatureInteractionNode final : public Node {
      */
     uint32_t output_dim = (num_embedding_chunks + 1) * num_embedding_chunks / 2;
 
-    _compiled_state = {num_embedding_chunks, output_dim};
+    _compiled_state = CompiledState(
+        /* num_embedding_chunks= */ num_embedding_chunks,
+        /* output_dim= */ output_dim);
   }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -74,8 +82,9 @@ class DLRMFeatureInteractionNode final : public Node {
   void prepareForBatchProcessingImpl(uint32_t batch_size,
                                      bool use_sparsity) final {
     (void)use_sparsity;
-    _outputs = BoltBatch(batch_size, _compiled_state->_output_dim,
-                         /* is_dense= */ false);
+    _outputs = BoltBatch(/* dim= */ _compiled_state->_output_dim,
+                         /* batch_size= */ batch_size,
+                         /* is_dense= */ true);
   }
 
   uint32_t numNonzerosInOutputImpl() const final { return outputDim(); }
@@ -281,6 +290,10 @@ class DLRMFeatureInteractionNode final : public Node {
   EmbeddingNodePtr _embedding_node;
 
   struct CompiledState {
+    explicit CompiledState(uint32_t num_embedding_chunks, uint32_t output_dim)
+        : _num_embedding_chunks(num_embedding_chunks),
+          _output_dim(output_dim) {}
+
     uint32_t _num_embedding_chunks;
     uint32_t _output_dim;
   };
