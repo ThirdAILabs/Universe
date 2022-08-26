@@ -504,8 +504,8 @@ bool denseBoltDatasetIsPermutationOfDenseMatrix(
   std::unordered_map<float, uint32_t> actual_values;
   for (uint32_t batch_idx = 0; batch_idx < dataset.numBatches(); batch_idx++) {
     auto& batch = dataset[batch_idx];
-    for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      actual_values[batch[vec_idx].activations[0]]++;
+    for (const auto& vec : batch) {
+      actual_values[vec.activations[0]]++;
     }
   }
 
