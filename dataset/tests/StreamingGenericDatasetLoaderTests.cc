@@ -1,5 +1,5 @@
 #include "MockBlock.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -38,8 +38,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
   static std::tuple<BoltDatasetPtr, BoltDatasetPtr> streamToInMemoryDataset(
       StreamingGenericDatasetLoader&& pipeline) {
-    std::vector<bolt::BoltBatch> input_batches;
-    std::vector<bolt::BoltBatch> label_batches;
+    std::vector<BoltBatch> input_batches;
+    std::vector<BoltBatch> label_batches;
     while (auto batch = pipeline.nextBatchTuple()) {
       auto [input_batch, label_batch] = std::move(batch.value());
       input_batches.push_back(std::move(input_batch));
@@ -172,8 +172,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     file.close();
   }
 
-  static size_t countOriginalVectors(bolt::BoltBatch& batch,
-                                     uint32_t batch_idx) {
+  static size_t countOriginalVectors(BoltBatch& batch, uint32_t batch_idx) {
     float original_value_range_start = batch_idx * batch_size;
     float original_value_range_end =
         original_value_range_start + batch.getBatchSize();
@@ -189,7 +188,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     return count;
   }
 
-  static bool containsVectorsFromEarlierBatch(bolt::BoltBatch& batch,
+  static bool containsVectorsFromEarlierBatch(BoltBatch& batch,
                                               uint32_t batch_idx) {
     float original_value_range_start = batch_idx * batch_size;
     return std::any_of(batch.begin(), batch.end(), [&](const auto& vec) {
@@ -197,7 +196,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     });
   }
 
-  static bool containsVectorsFromLaterBatch(bolt::BoltBatch& batch,
+  static bool containsVectorsFromLaterBatch(BoltBatch& batch,
                                             uint32_t batch_idx) {
     float original_value_range_end =
         batch_idx * batch_size + batch.getBatchSize();
@@ -206,7 +205,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     });
   }
 
-  static uint32_t maxVectorDisplacement(bolt::BoltBatch& batch, int batch_idx) {
+  static uint32_t maxVectorDisplacement(BoltBatch& batch, int batch_idx) {
     // Defined as the number of batches between a vector's
     // original batch and its final batch.
     uint32_t max_displacement = 0;

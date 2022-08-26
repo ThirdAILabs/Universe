@@ -3,11 +3,11 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include "BoltVector.h"
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include "SequentialLayer.h"
 #include <bolt/src/layers/Optimizer.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>

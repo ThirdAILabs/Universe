@@ -1,12 +1,12 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/details/helpers.hpp>
 #include "BoltVectorTestUtils.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <sstream>
 
-namespace thirdai::bolt::tests {
+namespace thirdai::tests {
 
 std::stringstream serializeBoltVector(BoltVector& vector) {
   std::stringstream output_stream;
@@ -119,4 +119,4 @@ TEST(BoltVectorSerialization, SaveLoadDenseBoltVectorWithoutGradients) {
   testDataNonOwningBoltVector(active_neurons, activations, gradients);
 }
 
-}  // namespace thirdai::bolt::tests
+}  // namespace thirdai::tests

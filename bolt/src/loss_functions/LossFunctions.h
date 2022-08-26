@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cereal/types/polymorphic.hpp>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <algorithm>
 #include <memory>
 #include <stdexcept>

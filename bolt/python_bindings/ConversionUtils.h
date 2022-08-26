@@ -9,6 +9,15 @@
 
 namespace thirdai::bolt::python {
 
+inline void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
+  std::cout << "Memory Error: Cannot allocate (" << num_samples << " x "
+            << inference_dim
+            << ") array for activations. Predict will return None for "
+               "activations. Please breakup your test set into smaller pieces "
+               "if you would like to have activations returned."
+            << std::endl;
+}
+
 inline void printCopyWarning(const std::string& array_name,
                              const py::str& dtype_recv,
                              const std::string& dtype_expected) {
@@ -94,6 +103,27 @@ inline void checkNumpyArrayDimensions(
   }
 }
 
+inline void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
+                                uint32_t** active_neurons, float** activations,
+                                bool output_sparse) {
+  // We use a uint64_t here in case there is overflow when we multiply the two
+  // quantities. If it's larger than a uint32_t then we skip allocating since
+  // this would be a 16Gb array, and could potentially mess up indexing in other
+  // parts of the code.
+  uint64_t total_size = num_samples * inference_dim;
+  if (total_size > std::numeric_limits<uint32_t>::max()) {
+    printMemoryWarning(num_samples, inference_dim);
+  }
+  try {
+    if (output_sparse) {
+      *active_neurons = new uint32_t[total_size];
+    }
+    *activations = new float[total_size];
+  } catch (std::bad_alloc& e) {
+    printMemoryWarning(num_samples, inference_dim);
+  }
+}
+
 // Takes in the activations arrays (if they were allocated) and returns the
 // python tuple containing the metrics computed, along with the activations
 // and active neurons if those are not nullptrs. Note that just the
@@ -165,8 +195,13 @@ inline py::tuple constructPythonInferenceTuple(py::dict&& py_metric_data,
 }
 
 inline static py::array_t<float, py::array::c_style | py::array::forcecast>
-denseBoltVectorToNumpy(const BoltVector& output, float* activations) {
+denseBoltVectorToNumpy(const BoltVector& output) {
   assert(output.isDense());
+
+  float* activations;
+  allocateActivations(/* num_samples= */ 1, output.len,
+                      /* active_neurons= */ nullptr, &activations,
+                      /* output_sparse= */ false);
 
   const float* start = output.activations;
   std::copy(start, start + output.len, activations);

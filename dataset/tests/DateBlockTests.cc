@@ -1,4 +1,4 @@
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Date.h>
@@ -15,7 +15,7 @@ class DateBlockTests : public testing::Test {
     return std::get<0>(processor.createBatch(input_rows));
   }
 
-  static std::optional<uint32_t> dayOfWeek(const bolt::BoltVector& vector) {
+  static std::optional<uint32_t> dayOfWeek(const BoltVector& vector) {
     for (size_t act_idx = 0; act_idx < vector.len; act_idx++) {
       auto active_neuron = vector.active_neurons[act_idx];
       if (active_neuron >= dayOfWeekOffset() &&
@@ -26,7 +26,7 @@ class DateBlockTests : public testing::Test {
     return {};
   }
 
-  static std::optional<uint32_t> monthOfYear(const bolt::BoltVector& vector) {
+  static std::optional<uint32_t> monthOfYear(const BoltVector& vector) {
     for (size_t act_idx = 0; act_idx < vector.len; act_idx++) {
       auto active_neuron = vector.active_neurons[act_idx];
       if (active_neuron >= monthOfYearOffset() &&
@@ -37,7 +37,7 @@ class DateBlockTests : public testing::Test {
     return {};
   }
 
-  static std::optional<uint32_t> weekOfMonth(const bolt::BoltVector& vector) {
+  static std::optional<uint32_t> weekOfMonth(const BoltVector& vector) {
     for (size_t act_idx = 0; act_idx < vector.len; act_idx++) {
       auto active_neuron = vector.active_neurons[act_idx];
       if (active_neuron >= weekOfMonthOffset() &&
@@ -48,7 +48,7 @@ class DateBlockTests : public testing::Test {
     return {};
   }
 
-  static std::optional<uint32_t> weekOfYear(const bolt::BoltVector& vector) {
+  static std::optional<uint32_t> weekOfYear(const BoltVector& vector) {
     for (size_t act_idx = 0; act_idx < vector.len; act_idx++) {
       auto active_neuron = vector.active_neurons[act_idx];
       if (active_neuron >= weekOfYearOffset() &&

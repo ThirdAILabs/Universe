@@ -3,9 +3,9 @@
 #include <cereal/archives/binary.hpp>
 #include "AutoClassifierBase.h"
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
