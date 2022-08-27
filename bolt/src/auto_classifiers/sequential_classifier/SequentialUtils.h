@@ -8,8 +8,8 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserItemHistory.h>
-#include <dataset/src/encodings/categorical/StreamingStringCategoricalEncoding.h>
-#include <dataset/src/encodings/categorical/StreamingStringLookup.h>
+#include <dataset/src/encodings/categorical/StringLookup.h>
+#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
 #include <memory>
 #include <sstream>
 #include <stdexcept>

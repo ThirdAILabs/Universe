@@ -27,8 +27,6 @@ class MetricAggregator {
             std::make_shared<WeightedMeanAbsolutePercentageError>());
       } else if (name == MeanSquaredErrorMetric::name) {
         _metrics.push_back(std::make_shared<MeanSquaredErrorMetric>());
-      } else if (RecallAt::isRecallAtK(name)) {
-        _metrics.push_back(std::make_shared<RecallAt>(RecallAt::getK(name)));
       } else if (FMeasure::isFMeasure(name)) {
         _metrics.push_back(FMeasure::make(name));
       } else if (RecallAtK::isRecallAtK(name)) {
