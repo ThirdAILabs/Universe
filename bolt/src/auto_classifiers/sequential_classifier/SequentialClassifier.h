@@ -167,4 +167,4 @@ namespace thirdai::bolt {
 
 using SequentialClassifier = classifiers::sequential::SequentialClassifier;
 
-} // namespace thirdai::bolt
+}  // namespace thirdai::bolt

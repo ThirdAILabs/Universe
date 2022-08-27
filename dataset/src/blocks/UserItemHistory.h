@@ -1,9 +1,9 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/deque.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include <cereal/types/deque.hpp>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
