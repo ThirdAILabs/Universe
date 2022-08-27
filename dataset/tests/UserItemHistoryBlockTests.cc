@@ -113,12 +113,12 @@ void assertItemHistoryNotEmpty(std::vector<std::vector<uint32_t>>& batch) {
 std::vector<std::vector<uint32_t>> processSamples(
     std::vector<std::string>& samples, uint32_t n_users,
     uint32_t n_items_per_user, uint32_t track_last_n) {
-  
   auto user_id_lookup = std::make_shared<StreamingStringLookup>(n_users);
   auto item_id_lookup =
       std::make_shared<StreamingStringLookup>(n_users * n_items_per_user);
-  
-  auto records = ItemHistoryCollection::make(user_id_lookup->vocabSize(), track_last_n);
+
+  auto records =
+      ItemHistoryCollection::make(user_id_lookup->vocabSize(), track_last_n);
 
   auto user_item_history_block = UserItemHistoryBlock::make(
       /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2,

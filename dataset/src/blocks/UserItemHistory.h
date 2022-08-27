@@ -24,7 +24,8 @@ struct ItemRecord {
 class ItemHistoryCollection {
  public:
   ItemHistoryCollection(uint32_t n_histories, uint32_t max_items_per_history)
-    : _max_items_per_history(max_items_per_history), _histories(n_histories) {}
+      : _max_items_per_history(max_items_per_history),
+        _histories(n_histories) {}
 
   void add(uint32_t history_id, uint32_t item_id, uint32_t timestamp) {
     _histories.at(history_id).push_back({item_id, timestamp});
@@ -33,22 +34,18 @@ class ItemHistoryCollection {
     }
   }
 
-  uint32_t numHistories() const {
-    return _histories.size();
+  uint32_t numHistories() const { return _histories.size(); }
+
+  uint32_t maxItemsPerHistory() const { return _max_items_per_history; }
+
+  const auto& at(uint32_t history_id) { return _histories.at(history_id); }
+
+  static std::shared_ptr<ItemHistoryCollection> make(
+      uint32_t n_histories, uint32_t max_items_per_history) {
+    return std::make_shared<ItemHistoryCollection>(n_histories,
+                                                   max_items_per_history);
   }
 
-  uint32_t maxItemsPerHistory() const {
-    return _max_items_per_history;
-  }
-
-  const auto& at(uint32_t history_id) {
-    return _histories.at(history_id);
-  }
-
-  static std::shared_ptr<ItemHistoryCollection> make(uint32_t n_histories, uint32_t max_items_per_history) {
-    return std::make_shared<ItemHistoryCollection>(n_histories, max_items_per_history);
-  }
-  
  private:
   const uint32_t _max_items_per_history;
   std::vector<std::deque<ItemRecord>> _histories;
@@ -73,17 +70,17 @@ class UserItemHistoryBlock final : public Block {
         _user_id_lookup(std::move(user_id_map)),
         _item_id_lookup(std::move(item_id_map)),
         _records(std::move(item_history_collection)) {
-    
     if (_user_id_lookup->vocabSize() > _records->numHistories()) {
       std::stringstream error_ss;
       error_ss << "[UserItemHistoryBlock] Invoked with incompatible "
                   "user_id_map and item_history_collection. There are "
-               << _user_id_lookup->vocabSize() << " users in user_id_map "
+               << _user_id_lookup->vocabSize()
+               << " users in user_id_map "
                   "but item_history_collection only has enough space for "
                << _records->numHistories() << " users.";
       throw std::invalid_argument(error_ss.str());
     }
-    
+
     if (_records->maxItemsPerHistory() != track_last_n) {
       std::stringstream error_ss;
       error_ss << "[UserItemHistoryBlock] Invoked with track_last_n = "
@@ -92,7 +89,7 @@ class UserItemHistoryBlock final : public Block {
       throw std::invalid_argument(error_ss.str());
     }
   }
-  
+
   UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
                        uint32_t timestamp_col, uint32_t track_last_n,
                        uint32_t n_unique_users, uint32_t n_unique_items)
@@ -115,17 +112,24 @@ class UserItemHistoryBlock final : public Block {
   }
 
   static std::shared_ptr<Block> make(uint32_t user_col, uint32_t item_col,
-                       uint32_t timestamp_col, uint32_t track_last_n,
-                       ThreadSafeVocabularyPtr user_id_map,
-                       ThreadSafeVocabularyPtr item_id_map,
-                       ItemHistoryCollectionPtr records) {
-    return std::make_shared<UserItemHistoryBlock>(user_col, item_col, timestamp_col, track_last_n, std::move(user_id_map), std::move(item_id_map), std::move(records));
+                                     uint32_t timestamp_col,
+                                     uint32_t track_last_n,
+                                     ThreadSafeVocabularyPtr user_id_map,
+                                     ThreadSafeVocabularyPtr item_id_map,
+                                     ItemHistoryCollectionPtr records) {
+    return std::make_shared<UserItemHistoryBlock>(
+        user_col, item_col, timestamp_col, track_last_n, std::move(user_id_map),
+        std::move(item_id_map), std::move(records));
   }
 
   static std::shared_ptr<Block> make(uint32_t user_col, uint32_t item_col,
-                       uint32_t timestamp_col, uint32_t track_last_n,
-                       uint32_t n_unique_users, uint32_t n_unique_items) {
-    return std::make_shared<UserItemHistoryBlock>(user_col, item_col, timestamp_col, track_last_n, n_unique_users, n_unique_items);
+                                     uint32_t timestamp_col,
+                                     uint32_t track_last_n,
+                                     uint32_t n_unique_users,
+                                     uint32_t n_unique_items) {
+    return std::make_shared<UserItemHistoryBlock>(
+        user_col, item_col, timestamp_col, track_last_n, n_unique_users,
+        n_unique_items);
   }
 
  protected:
@@ -137,10 +141,10 @@ class UserItemHistoryBlock final : public Block {
       auto item_str = std::string(input_row.at(_item_col));
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
-      uint32_t user_id = _user_id_lookup->lookup(user_str);
+      uint32_t user_id = _user_id_lookup->getUid(user_str);
       int64_t epoch_timestamp = TimeObject(timestamp_str).secondsSinceEpoch();
-      
-      auto item_id = _item_id_lookup->lookup(item_str);
+
+      auto item_id = _item_id_lookup->getUid(item_str);
 
 #pragma omp critical(user_item_history_block)
       {
