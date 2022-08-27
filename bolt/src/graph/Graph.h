@@ -12,10 +12,10 @@
 #include "Node.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <memory>
 #include <optional>
@@ -151,6 +151,8 @@ class BoltGraph {
   void cleanupAfterBatchProcessing();
 
   void updateParameters(float learning_rate, uint32_t batch_cnt);
+
+  void resetOutputGradients(uint32_t vec_index);
 
   void updateParametersAndSampling(float learning_rate,
                                    uint32_t rebuild_hash_tables_batch,
