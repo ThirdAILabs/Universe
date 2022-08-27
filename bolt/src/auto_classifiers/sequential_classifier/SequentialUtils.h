@@ -25,12 +25,22 @@ struct CategoricalFeat {
   std::string col_name;
   uint32_t vocab_size;
 
+  CategoricalFeat() {}
+
   CategoricalFeat(std::string col_name, uint32_t vocab_size)
       : col_name(std::move(col_name)), vocab_size(vocab_size) {}
 
   static CategoricalFeat fromPair(const CategoricalPair& cat_pair) {
     const auto& [col_name, vocab_size] = cat_pair;
     return {col_name, vocab_size};
+  }
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(col_name, vocab_size);
   }
 };
 
@@ -39,6 +49,15 @@ struct SequentialFeat {
   CategoricalFeat item;
   std::string timestamp_col_name;
   uint32_t track_last_n;
+
+  SequentialFeat() {}
+
+  SequentialFeat(CategoricalFeat&& user, CategoricalFeat&& item,
+                 std::string timestamp_col_name, uint32_t track_last_n)
+      : user(user),
+        item(item),
+        timestamp_col_name(std::move(timestamp_col_name)),
+        track_last_n(track_last_n) {}
 
   static SequentialFeat fromPrimitives(
       const CategoricalPair& user_cat_pair,
@@ -49,39 +68,50 @@ struct SequentialFeat {
     auto item = CategoricalFeat(col_name, vocab_size);
     return {std::move(user), std::move(item), timestamp_col_name, track_last_n};
   }
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(user, item, timestamp_col_name, track_last_n);
+  }
 };
 
 struct Schema {
-  Schema(const CategoricalPair& user, const CategoricalPair& target,
-         const std::string& timestamp,
-         std::vector<std::string> static_text = {},
-         const std::vector<CategoricalPair>& static_categorical = {},
-         const std::vector<SequentialTriplet>& sequential = {})
-      : user(CategoricalFeat::fromPair(user)),
-        target(CategoricalFeat::fromPair(target)),
-        timestamp_col_name(timestamp),
-        static_text_attrs(std::move(static_text)) {
-    for (const auto& cat : static_categorical) {
-      static_categorical_attrs.push_back(CategoricalFeat::fromPair(cat));
-    }
-    for (const auto& seq : sequential) {
-      sequential_attrs.push_back(
-          SequentialFeat::fromPrimitives(user, seq, timestamp));
-    }
-  }
-
   CategoricalFeat user;
   CategoricalFeat target;
   std::string timestamp_col_name;
   std::vector<std::string> static_text_attrs;
   std::vector<CategoricalFeat> static_categorical_attrs;
   std::vector<SequentialFeat> sequential_attrs;
+
+  Schema() {}
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(user, target, timestamp_col_name, static_text_attrs,
+            static_categorical_attrs, sequential_attrs);
+  }
 };
 
 struct DataState {
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> vocabs;
   std::unordered_map<std::string, dataset::ItemHistoryCollectionPtr>
       history_collections;
+
+  DataState() {}
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(vocabs, history_collections);
+  }
 };
 
 class ColumnNumberMap {

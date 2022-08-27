@@ -19,14 +19,23 @@ class SequentialClassifier {
       const std::string& timestamp,
       const std::vector<std::string>& static_text = {},
       const std::vector<CategoricalPair>& static_categorical = {},
-      const std::vector<SequentialTriplet>& sequential = {},
-      std::vector<std::string> metrics = {"recall@1"})
-      : _metrics(std::move(metrics)),
-        _schema(user, target, timestamp, static_text, static_categorical,
-                sequential) {}
+      const std::vector<SequentialTriplet>& sequential = {}) {
+    _schema.user = CategoricalFeat::fromPair(user);
+    _schema.target = CategoricalFeat::fromPair(target);
+    _schema.timestamp_col_name = timestamp;
+    _schema.static_text_attrs = static_text;
+    for (const auto& cat : static_categorical) {
+      _schema.static_categorical_attrs.push_back(
+          CategoricalFeat::fromPair(cat));
+    }
+    for (const auto& seq : sequential) {
+      _schema.sequential_attrs.push_back(
+          SequentialFeat::fromPrimitives(user, seq, timestamp));
+    }
+  }
 
-  void train(const std::string& filename, uint32_t epochs,
-             float learning_rate) {
+  void train(const std::string& filename, uint32_t epochs, float learning_rate,
+             std::vector<std::string> metrics = {"recall@1"}) {
     auto pipeline =
         Pipeline::buildForFile(_schema, _state, filename, /* delimiter = */ ',',
                                /* for_training = */ true);
@@ -49,13 +58,15 @@ class SequentialClassifier {
     TrainConfig train_config =
         TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
                                 /* epochs= */ epochs)
-            .withMetrics(_metrics);
+            .withMetrics(std::move(metrics));
 
     _model->train({train_data}, {}, train_labels, train_config);
   }
 
-  void predict(const std::string& filename,
-               const std::optional<std::string>& output_filename) {
+  void predict(
+      const std::string& filename,
+      std::vector<std::string> metrics = {"recall@1"},
+      const std::optional<std::string>& output_filename = std::nullopt) {
     if (!_model) {
       throw std::runtime_error("Called predict() before training.");
     }
@@ -83,15 +94,33 @@ class SequentialClassifier {
 
     auto [test_data, test_labels] = pipeline.loadInMemory();
 
-    PredictConfig config =
-        PredictConfig::makeConfig().withMetrics(_metrics).withOutputCallback(
-            print_predictions_callback);
+    PredictConfig config = PredictConfig::makeConfig()
+                               .withMetrics(std::move(metrics))
+                               .withOutputCallback(print_predictions_callback);
 
     _model->predict({test_data}, {}, test_labels, config);
 
     if (output_file) {
       output_file->close();
     }
+  }
+
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<SequentialClassifier> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<SequentialClassifier> deserialize_into(
+        new SequentialClassifier());
+    iarchive(*deserialize_into);
+    return deserialize_into;
   }
 
  private:
@@ -117,10 +146,19 @@ class SequentialClassifier {
     return 0.005;
   }
 
-  std::vector<std::string> _metrics;
   Schema _schema;
   DataState _state;
   BoltGraphPtr _model;
+
+  // Private constructor for cereal
+  SequentialClassifier() {}
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_schema, _state, _model);
+  }
 };
 
 }  // namespace thirdai::bolt::classifiers::sequential
