@@ -113,12 +113,14 @@ void assertItemHistoryNotEmpty(std::vector<std::vector<uint32_t>>& batch) {
 std::vector<std::vector<uint32_t>> processSamples(
     std::vector<std::string>& samples, uint32_t n_users,
     uint32_t n_items_per_user, uint32_t track_last_n) {
+  
   auto user_id_lookup = std::make_shared<StreamingStringLookup>(n_users);
   auto item_id_lookup =
       std::make_shared<StreamingStringLookup>(n_users * n_items_per_user);
-  auto records = UserItemHistoryBlock::makeEmptyRecord(n_users, track_last_n);
+  
+  auto records = ItemHistoryCollection::make(user_id_lookup->vocabSize(), track_last_n);
 
-  auto user_item_history_block = std::make_shared<UserItemHistoryBlock>(
+  auto user_item_history_block = UserItemHistoryBlock::make(
       /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2,
       track_last_n, user_id_lookup, item_id_lookup, records);
 
@@ -129,10 +131,10 @@ std::vector<std::vector<uint32_t>> processSamples(
   auto [batch, _] = processor.createBatch(samples);
 
   std::vector<std::vector<uint32_t>> histories;
-  for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+  for (const auto& vec : batch) {
     std::vector<uint32_t> items;
-    for (uint32_t pos = 0; pos < batch[vec_idx].len; pos++) {
-      auto encoded_item = batch[vec_idx].active_neurons[pos];
+    for (uint32_t pos = 0; pos < vec.len; pos++) {
+      auto encoded_item = vec.active_neurons[pos];
       auto original_item_id_str = item_id_lookup->originalString(encoded_item);
       items.push_back(std::stoull(original_item_id_str));
     }
