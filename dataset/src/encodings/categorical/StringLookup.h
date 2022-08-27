@@ -18,10 +18,10 @@ class StringLookup final : public CategoricalEncoding {
  public:
   StringLookup(uint32_t n_classes, ThreadSafeVocabularyPtr vocab)
       : _vocab(std::move(vocab)), _n_classes(n_classes) {
-    if (_vocab->maxVocabSize() > n_classes) {
+    if (_vocab->vocabSize() > n_classes) {
       std::stringstream error_ss;
       error_ss << "[StringLookup] Received vocab with max size > n_classes ("
-               << _vocab->maxVocabSize() << " vs. " << n_classes << ").";
+               << _vocab->vocabSize() << " vs. " << n_classes << ").";
       throw std::invalid_argument(error_ss.str());
     }
   }

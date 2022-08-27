@@ -85,7 +85,7 @@ class ThreadSafeVocabulary {
     return _uid_to_string.at(uid);
   }
 
-  uint32_t maxVocabSize() const { return _vocab_size; }
+  uint32_t vocabSize() const { return _vocab_size; }
 
   void fix() { _fixed = true; };
 
