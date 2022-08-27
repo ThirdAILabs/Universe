@@ -3,15 +3,11 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include <fstream>
-#include <iostream>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -148,7 +144,7 @@ class ThreadSafeVocabulary {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_string_to_uid, _uid_to_string, _fixed);
+    archive(_string_to_uid, _uid_to_string, _fixed, _vocab_size);
   }
 };
 
