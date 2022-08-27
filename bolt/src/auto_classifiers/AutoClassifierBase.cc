@@ -1,5 +1,5 @@
 #include "AutoClassifierBase.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 
 #if defined __linux
 #include <sys/sysinfo.h>

@@ -2,9 +2,9 @@
 
 #include <wrappers/src/LicenseWrapper.h>
 #include <cereal/types/vector.hpp>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <algorithm>
 #include <limits>
@@ -119,7 +119,7 @@ class Model {
       // activation is not possible and the size of the dataset is not known at
       // the beginning, so instead we provide the ability to have a callback
       // which is called with the output activations after every batch.
-      std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
+      std::optional<std::function<void(const BoltBatch&, uint32_t)>>
           batch_callback = std::nullopt,
       // Restrict printouts
       bool verbose = true);

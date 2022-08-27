@@ -17,14 +17,14 @@ struct TestDatasetGenerators {
     std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
     std::normal_distribution<float> data_dist(0, noisy_dataset ? 1.0 : 0.1);
 
-    std::vector<bolt::BoltBatch> data_batches;
-    std::vector<bolt::BoltBatch> label_batches;
+    std::vector<BoltBatch> data_batches;
+    std::vector<BoltBatch> label_batches;
     for (uint32_t b = 0; b < n_batches; b++) {
-      std::vector<bolt::BoltVector> labels;
-      std::vector<bolt::BoltVector> vectors;
+      std::vector<BoltVector> labels;
+      std::vector<BoltVector> vectors;
       for (uint32_t i = 0; i < batch_size; i++) {
         uint32_t label = label_dist(gen);
-        bolt::BoltVector v(n_classes, true, false);
+        BoltVector v(n_classes, true, false);
         std::generate(v.activations, v.activations + n_classes,
                       [&]() { return data_dist(gen); });
         if (!noisy_dataset) {
@@ -33,8 +33,8 @@ struct TestDatasetGenerators {
         vectors.push_back(std::move(v));
         labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
       }
-      data_batches.push_back(bolt::BoltBatch(std::move(vectors)));
-      label_batches.push_back(bolt::BoltBatch(std::move(labels)));
+      data_batches.push_back(BoltBatch(std::move(vectors)));
+      label_batches.push_back(BoltBatch(std::move(labels)));
     }
 
     return std::make_tuple(

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <memory>
 #include <string_view>
@@ -81,7 +81,7 @@ class SegmentedFeatureVector {
   /**
    * Converts this vector to a BoltVector.
    */
-  virtual bolt::BoltVector toBoltVector() = 0;
+  virtual BoltVector toBoltVector() = 0;
 };
 
 /**

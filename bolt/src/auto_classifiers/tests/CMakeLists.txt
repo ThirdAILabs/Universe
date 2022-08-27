@@ -28,6 +28,13 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(bolt_tabular_classifier_test)
-gtest_discover_tests(bolt_text_classifier_test)
-gtest_discover_tests(bolt_multi_label_text_classifier_test)
+
+set(AUTO_CLASSIFIER_TESTS
+  bolt_tabular_classifier_test
+  bolt_text_classifier_test
+  bolt_multi_label_text_classifier_test
+)
+
+foreach(AUTO_CLASSIFIER_TEST IN LISTS AUTO_CLASSIFIER_TESTS)
+  gtest_discover_tests(${AUTO_CLASSIFIER_TEST} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+endforeach()

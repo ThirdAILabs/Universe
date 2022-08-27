@@ -1,5 +1,6 @@
 #include "BoltPython.h"
 #include "BoltGraphPython.h"
+#include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/auto_classifiers/TabularClassifier.h>
 #include <bolt/src/auto_classifiers/TextClassifier.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
@@ -7,11 +8,11 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -504,15 +505,15 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
-  py::class_<PyMultiLabelTextClassifier>(bolt_submodule,
-                                         "MultiLabelTextClassifier")
+  py::class_<MultiLabelTextClassifier>(bolt_submodule,
+                                       "MultiLabelTextClassifier")
       .def(py::init<uint32_t>(), py::arg("n_classes"),
            "Constructs a MultiLabelTextClassifier with autotuning.\n"
            "Arguments:\n"
            " * n_classes: int - How many classes or categories are in the "
            "labels of the dataset.\n")
       .def(
-          "train", &PyMultiLabelTextClassifier::train, py::arg("train_file"),
+          "train", &MultiLabelTextClassifier::train, py::arg("train_file"),
           py::arg("epochs"), py::arg("learning_rate"),
           py::arg("metrics") = std::vector<std::string>(),
           "Trains the classifier on the given dataset.\n"
@@ -524,22 +525,36 @@ void createBoltSubmodule(py::module_& module) {
           " * epochs: Int - How many epochs to train for.\n"
           " * learning_rate: Float - The learning rate to use for training.\n"
           " * metrics: List[string] - Metrics to use during training.\n")
-      .def("predict_single_from_sentence",
-           &PyMultiLabelTextClassifier::predictSingleFromSentence,
-           py::arg("sentence"), py::arg("activation_threshold") = 0.95,
-           "Given a sentence, predict the likelihood of each output "
-           "class. \n"
-           "Arguments:\n"
-           " * sentence: string - The input sentence.\n")
-      .def("predict_single_from_tokens",
-           &PyMultiLabelTextClassifier::predictSingleFromTokens,
-           py::arg("tokens"), py::arg("activation_threshold") = 0.95,
-           "Given a list of tokens, predict the likelihood of each output "
-           "class. \n"
-           "Arguments:\n"
-           " * tokens: List[Int] - A list of integer tokens.\n")
-      .def("predict", &PyMultiLabelTextClassifier::predict,
-           py::arg("test_file"),
+      .def(
+          "predict_single_from_sentence",
+          [](MultiLabelTextClassifier& model, std::string sentence,
+             float activation_threshold = 0.95) {
+            auto output = model.predictSingleFromSentence(std::move(sentence),
+                                                          activation_threshold);
+
+            return denseBoltVectorToNumpy(output);
+          },
+          py::arg("sentence"), py::arg("activation_threshold") = 0.95,
+          "Given a sentence, predict the likelihood of each output "
+          "class. \n"
+          "Arguments:\n"
+          " * sentence: string - The input sentence.\n")
+      .def(
+          "predict_single_from_tokens",
+          [](MultiLabelTextClassifier& model,
+             const std::vector<uint32_t>& tokens,
+             float activation_threshold = 0.95) {
+            auto output =
+                model.predictSingleFromTokens(tokens, activation_threshold);
+
+            return denseBoltVectorToNumpy(output);
+          },
+          py::arg("tokens"), py::arg("activation_threshold") = 0.95,
+          "Given a list of tokens, predict the likelihood of each output "
+          "class. \n"
+          "Arguments:\n"
+          " * tokens: List[Int] - A list of integer tokens.\n")
+      .def("predict", &MultiLabelTextClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>(),
            "Runs the classifier on the specified test dataset and optionally "
            "logs the prediction to a file.\n"
@@ -549,14 +564,14 @@ void createBoltSubmodule(py::module_& module) {
            "then the classifier will output the name of the class/category of "
            "each prediction this file with one prediction result on each "
            "line.\n")
-      .def("save", &PyMultiLabelTextClassifier::save, py::arg("filename"),
+      .def("save", &MultiLabelTextClassifier::save, py::arg("filename"),
            "Saves the classifier to a file. The file path must not require any "
            "folders to be created\n"
            "Arguments:\n"
            " * filename: string - The path to the save location of the "
            "classifier.\n")
       .def_static(
-          "load", &PyMultiLabelTextClassifier::load, py::arg("filename"),
+          "load", &MultiLabelTextClassifier::load, py::arg("filename"),
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
@@ -781,35 +796,4 @@ void createBoltSubmodule(py::module_& module) {
 
   createBoltGraphSubmodule(bolt_submodule);
 }
-
-void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
-  std::cout << "Memory Error: Cannot allocate (" << num_samples << " x "
-            << inference_dim
-            << ") array for activations. Predict will return None for "
-               "activations. Please breakup your test set into smaller pieces "
-               "if you would like to have activations returned."
-            << std::endl;
-}
-
-void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
-                         uint32_t** active_neurons, float** activations,
-                         bool output_sparse) {
-  // We use a uint64_t here in case there is overflow when we multiply the two
-  // quantities. If it's larger than a uint32_t then we skip allocating since
-  // this would be a 16Gb array, and could potentially mess up indexing in other
-  // parts of the code.
-  uint64_t total_size = num_samples * inference_dim;
-  if (total_size > std::numeric_limits<uint32_t>::max()) {
-    printMemoryWarning(num_samples, inference_dim);
-  }
-  try {
-    if (output_sparse) {
-      *active_neurons = new uint32_t[total_size];
-    }
-    *activations = new float[total_size];
-  } catch (std::bad_alloc& e) {
-    printMemoryWarning(num_samples, inference_dim);
-  }
-}
-
 }  // namespace thirdai::bolt::python

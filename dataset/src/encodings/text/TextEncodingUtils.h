@@ -48,8 +48,8 @@ class TextEncodingUtils {
   /**
    * Unigrams in a BoltVector with possible repeated indices summed up
    */
-  static bolt::BoltVector computeUnigrams(const std::string_view sentence,
-                                          uint32_t output_range) {
+  static BoltVector computeUnigrams(const std::string_view sentence,
+                                    uint32_t output_range) {
     std::vector<uint32_t> unigrams =
         computeRawUnigramsWithRange(sentence, output_range);
 
@@ -62,7 +62,7 @@ class TextEncodingUtils {
                          values.push_back(value);
                        });
 
-    return bolt::BoltVector::makeSparseVector(indices, values);
+    return BoltVector::makeSparseVector(indices, values);
   }
 
   /**
@@ -97,8 +97,8 @@ class TextEncodingUtils {
   /**
    * Pairgrams in a BoltVector with possible repeated indices summed up
    */
-  static bolt::BoltVector computePairgrams(std::string_view sentence,
-                                           uint32_t output_range) {
+  static BoltVector computePairgrams(std::string_view sentence,
+                                     uint32_t output_range) {
     std::vector<uint32_t> pairgrams =
         computeRawPairgrams(sentence, output_range);
 
@@ -111,13 +111,13 @@ class TextEncodingUtils {
                          values.push_back(value);
                        });
 
-    return bolt::BoltVector::makeSparseVector(indices, values);
+    return BoltVector::makeSparseVector(indices, values);
   }
 
   /**
    * Pairgrams in a BoltVector with possible repeated indices summed up
    */
-  static bolt::BoltVector computePairgramsFromUnigrams(
+  static BoltVector computePairgramsFromUnigrams(
       std::vector<uint32_t>& unigrams, uint32_t output_range) {
     std::vector<uint32_t> pairgrams =
         computeRawPairgramsFromUnigrams(unigrams, output_range);
@@ -131,7 +131,7 @@ class TextEncodingUtils {
                          values.push_back(value);
                        });
 
-    return bolt::BoltVector::makeSparseVector(indices, values);
+    return BoltVector::makeSparseVector(indices, values);
   }
 
   /**

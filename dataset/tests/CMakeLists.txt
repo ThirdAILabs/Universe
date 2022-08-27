@@ -68,12 +68,12 @@ target_link_libraries(
 )
 
 add_executable(
-  streaming_string_lookup_tests
-  StreamingStringLookupTests.cc
+  thread_safe_vocabulary_tests
+  ThreadSafeVocabularyTests.cc
 )
 
 target_link_libraries(
-  streaming_string_lookup_tests
+  thread_safe_vocabulary_tests
   PRIVATE
   gtest_main
 )
@@ -159,17 +159,24 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(svm_dataset_test)
-gtest_discover_tests(click_through_dataset_test)
-gtest_discover_tests(segmented_feature_vectors_test)
-gtest_discover_tests(categorical_block_test)
-gtest_discover_tests(date_block_test)
-gtest_discover_tests(text_block_test)
-gtest_discover_tests(user_item_history_block_tests)
-gtest_discover_tests(streaming_string_lookup_tests)
-gtest_discover_tests(block_batch_processor_test)
-gtest_discover_tests(generic_batch_processor_test)
-gtest_discover_tests(categorical_multi_label_test)
-gtest_discover_tests(text_processing_tests)
-gtest_discover_tests(save_load_dataset_test)
-gtest_discover_tests(streaming_generic_dataset_loader_tests)
+
+set(DATASET_TESTS
+  svm_dataset_test
+  click_through_dataset_test
+  segmented_feature_vectors_test
+  categorical_block_test
+  date_block_test
+  text_block_test
+  thread_safe_vocabulary_tests
+  user_item_history_block_tests
+  block_batch_processor_test
+  generic_batch_processor_test
+  categorical_multi_label_test
+  text_processing_tests
+  save_load_dataset_test
+  streaming_generic_dataset_loader_tests
+)
+
+foreach(DATASET_TEST in ${DATASET_TESTS})
+  gtest_discover_tests(${DATASET_TESTS} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+endforeach()

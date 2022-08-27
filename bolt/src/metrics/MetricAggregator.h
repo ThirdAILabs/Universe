@@ -31,6 +31,8 @@ class MetricAggregator {
         _metrics.push_back(std::make_shared<RecallAt>(RecallAt::getK(name)));
       } else if (FMeasure::isFMeasure(name)) {
         _metrics.push_back(FMeasure::make(name));
+      } else if (RecallAtK::isRecallAtK(name)) {
+        _metrics.push_back(RecallAtK::make(name));
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }

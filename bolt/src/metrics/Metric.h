@@ -1,6 +1,6 @@
 #pragma once
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/MetricHelpers.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <atomic>
@@ -11,8 +11,8 @@
 #include <limits>
 #include <memory>
 #include <queue>
-#include <sstream>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -244,21 +244,25 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::atomic<float> _sum_of_truths;
 };
 
-class RecallAt : public Metric {
+class RecallAtK : public Metric {
  public:
-  explicit RecallAt(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
+  explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    auto top_k = output.isDense() ? topK</* DENSE= */ true>(output, _k)
-                                  : topK</* DENSE= */ false>(output, _k);
+    auto top_k = output.findKLargestActivationsK(_k);
 
-    auto matches =
-        labels.isDense()
-            ? countMatchesInTopK</* DENSE= */ true>(std::move(top_k), labels)
-            : countMatchesInTopK</* DENSE= */ false>(std::move(top_k), labels);
+    uint32_t matches = 0;
+    while (!top_k.empty()) {
+      if (labels
+              .findActiveNeuronNoTemplate(
+                  /* active_neuron= */ top_k.top().second)
+              .activation > 0) {
+        matches++;
+      }
+      top_k.pop();
+    }
 
     _matches.fetch_add(matches);
-
     _label_count.fetch_add(countLabels(labels));
   }
 
@@ -273,61 +277,34 @@ class RecallAt : public Metric {
     return metric;
   }
 
-  static constexpr const char* name = "recall@";
+  std::string getName() final { return "recall@" + std::to_string(_k); }
 
-  std::string getName() final {
-    std::stringstream name_ss;
-    name_ss << name << _k;
-    return name_ss.str();
+  static inline bool isRecallAtK(const std::string& name) {
+    return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
   }
 
-  static inline bool isRecallAtK(const std::string& metric_name) {
-    return metric_name.substr(0, 7) == name;
-  }
+  static std::shared_ptr<Metric> make(const std::string& name) {
+    if (!isRecallAtK(name)) {
+      std::stringstream error_ss;
+      error_ss << "Invoked RecallAtK::make with invalid string '" << name
+               << "'. RecallAtK::make should be invoked with a string in "
+                  "the format 'recall@k', where k is a positive integer.";
+      throw std::invalid_argument(error_ss.str());
+    }
 
-  static inline uint32_t getK(const std::string& metric_name) {
-    auto k = metric_name.substr(7);
     char* end_ptr;
-    return std::strtol(k.data(), &end_ptr, 10);
+    auto k = std::strtol(name.data() + 7, &end_ptr, 10);
+    if (k <= 0) {
+      std::stringstream error_ss;
+      error_ss << "RecallAtK invoked with k = " << k
+               << ". k should be greater than 0.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
+    return std::make_shared<RecallAtK>(k);
   }
 
  private:
-  using val_idx_pair_t = std::pair<float, uint32_t>;
-  using top_k_t =
-      std::priority_queue<val_idx_pair_t, std::vector<val_idx_pair_t>,
-                          std::greater<val_idx_pair_t>>;
-
-  template <bool DENSE>
-  static inline top_k_t topK(const BoltVector& output, uint32_t k) {
-    top_k_t top_k;
-    for (uint32_t pos = 0; pos < std::min(k, output.len); pos++) {
-      top_k.push(std::move(valueIndexPair<DENSE>(output, pos)));
-    }
-    for (uint32_t pos = k; pos < output.len; pos++) {
-      auto val_idx_pair = valueIndexPair<DENSE>(output, pos);
-      if (val_idx_pair > top_k.top()) {
-        top_k.pop();
-        top_k.push(std::move(val_idx_pair));
-      }
-    }
-    return top_k;
-  }
-
-  template <bool DENSE>
-  static inline uint32_t countMatchesInTopK(top_k_t&& top_k,
-                                            const BoltVector& labels) {
-    uint32_t correct = 0;
-    for (uint32_t i = 0; i < top_k.size(); i++) {
-      if (labels
-              .findActiveNeuron<DENSE>(/* active_neuron= */ top_k.top().second)
-              .activation > 0) {
-        correct++;
-      }
-      top_k.pop();
-    }
-    return correct;
-  }
-
   static uint32_t countLabels(const BoltVector& labels) {
     uint32_t correct_labels = 0;
     for (uint32_t i = 0; i < labels.len; i++) {
@@ -338,22 +315,10 @@ class RecallAt : public Metric {
     return correct_labels;
   }
 
-  template <bool DENSE>
-  static inline val_idx_pair_t valueIndexPair(const BoltVector& output,
-                                              uint32_t pos) {
-    if (DENSE) {
-      return {output.activations[pos], pos};
-    }
-    return {output.activations[pos], output.active_neurons[pos]};
-  }
-
   uint32_t _k;
   std::atomic_uint64_t _matches;
   std::atomic_uint64_t _label_count;
 };
-
-using MetricData = std::unordered_map<std::string, std::vector<double>>;
-using InferenceMetricData = std::unordered_map<std::string, double>;
 
 /**
  * The F-Measure is a metric that takes into account both precision and recall.
@@ -433,9 +398,26 @@ class FMeasure final : public Metric {
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
+    if (!isFMeasure(name)) {
+      std::stringstream error_ss;
+      error_ss << "Invoked FMeasure::make with invalid string '" << name
+               << "'. FMeasure::make should be invoked with a string "
+                  "in the format 'f_measure(threshold)', where "
+                  "threshold is a positive floating point number.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
     std::string token = name.substr(name.find('('));  // token = (X.XXX)
     token = token.substr(1, token.length() - 2);      // token = X.XXX
     float threshold = std::stof(token);
+
+    if (threshold <= 0) {
+      std::stringstream error_ss;
+      error_ss << "FMeasure invoked with threshold = " << threshold
+               << ". The threshold should be greater than 0.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
     return std::make_shared<FMeasure>(threshold);
   }
 
@@ -445,5 +427,8 @@ class FMeasure final : public Metric {
   std::atomic<uint64_t> _false_positive;
   std::atomic<uint64_t> _false_negative;
 };
+
+using MetricData = std::unordered_map<std::string, std::vector<double>>;
+using InferenceMetricData = std::unordered_map<std::string, double>;
 
 }  // namespace thirdai::bolt
