@@ -1,4 +1,4 @@
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -82,7 +82,7 @@ void assertStringsEqual(std::vector<std::string>& strings_1,
   }
 }
 
-std::vector<uint32_t> getUidsFromBatch(bolt::BoltBatch& batch,
+std::vector<uint32_t> getUidsFromBatch(BoltBatch& batch,
                                        uint32_t block_idx = 0,
                                        uint32_t block_dim = 0) {
   std::vector<uint32_t> uids;
