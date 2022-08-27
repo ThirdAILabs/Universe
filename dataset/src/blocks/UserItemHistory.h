@@ -19,6 +19,14 @@ namespace thirdai::dataset {
 struct ItemRecord {
   uint32_t item;
   int64_t timestamp;
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(item, timestamp);
+  }
 };
 
 class ItemHistoryCollection {
