@@ -198,9 +198,9 @@ class Pipeline {
           dataset::ThreadSafeVocabulary::make(sequential.item.vocab_size);
     }
 
-    std::stringstream history_name_ss;
-    history_name_ss << sequential.item.col_name << sequential.track_last_n;
-    auto& user_item_history = state.history_collections[history_name_ss.str()];
+    auto collection_name =
+        sequential.item.col_name + std::to_string(sequential.track_last_n);
+    auto& user_item_history = state.history_collections[collection_name];
     if (!user_item_history) {
       user_item_history = dataset::ItemHistoryCollection::make(
           sequential.user.vocab_size, sequential.track_last_n);
