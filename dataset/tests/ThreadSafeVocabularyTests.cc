@@ -101,19 +101,21 @@ uint32_t time(LAMBDA_T function) {
 }
 
 TEST(ThreadSafeVocabularyTests, Standalone) {
-  auto strings = generateRandomStrings(
-      /* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-  ThreadSafeVocabulary vocab;
+  uint32_t n_unique = 1000;
+  auto strings =
+      generateRandomStrings(n_unique, /* repetitions = */ 1000, /* len = */ 10);
+  ThreadSafeVocabulary vocab(n_unique);
   auto uids = getUids(vocab, strings);
   auto reverted_strings = backToStrings(vocab, uids);
   assertStringsEqual(strings, reverted_strings);
 }
 
 TEST(ThreadSafeVocabularyTests, InBlock) {
+  uint32_t n_classes = 1000;
   auto strings = generateRandomStrings(
-      /* n_unique = */ 1000, /* repetitions = */ 1000, /* len = */ 10);
-  auto vocab = ThreadSafeVocabulary::make();
-  auto lookup_encoding = StringLookup::make(/* n_classes= */ 1000, vocab);
+      /* n_unique = */ n_classes, /* repetitions = */ 1000, /* len = */ 10);
+  auto vocab = ThreadSafeVocabulary::make(n_classes);
+  auto lookup_encoding = StringLookup::make(n_classes, vocab);
   auto lookup_block = std::make_shared<CategoricalBlock>(
       /* col = */ 0, /* encoding = */ lookup_encoding);
 
@@ -130,7 +132,7 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
   uint32_t n_unique = 1000;
   auto strings =
       generateRandomStrings(n_unique, /* repetitions = */ 1000, /* len = */ 10);
-  auto vocab = ThreadSafeVocabulary::make();
+  auto vocab = ThreadSafeVocabulary::make(n_unique);
   auto lookup_encoding = StringLookup::make(n_unique, vocab);
   auto lookup_block_1 = std::make_shared<CategoricalBlock>(
       /* col = */ 0, /* encoding = */ lookup_encoding);

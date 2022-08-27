@@ -18,18 +18,16 @@ class StringLookup final : public CategoricalEncoding {
  public:
   StringLookup(uint32_t n_classes, ThreadSafeVocabularyPtr vocab)
       : _vocab(std::move(vocab)), _n_classes(n_classes) {
-    if (_vocab->size() > n_classes) {
+    if (_vocab->maxVocabSize() > n_classes) {
       std::stringstream error_ss;
-      error_ss << "[StringLookup] Received vocab with size > n_classes ("
-               << _vocab->size() << " vs. " << n_classes << ").";
+      error_ss << "[StringLookup] Received vocab with max size > n_classes ("
+               << _vocab->maxVocabSize() << " vs. " << n_classes << ").";
       throw std::invalid_argument(error_ss.str());
     }
-
-    _vocab->reserve(n_classes);
   }
 
   explicit StringLookup(uint32_t n_classes)
-      : StringLookup(n_classes, ThreadSafeVocabulary::make()) {}
+      : StringLookup(n_classes, ThreadSafeVocabulary::make(n_classes)) {}
 
   std::exception_ptr encodeCategory(std::string_view id,
                                     SegmentedFeatureVector& vec) final {
@@ -40,13 +38,6 @@ class StringLookup final : public CategoricalEncoding {
       uid = _vocab->getUid(id_str);
     } catch (...) {
       return std::current_exception();
-    }
-
-    if (uid >= _n_classes) {
-      std::stringstream error_ss;
-      error_ss << "[StringLookup] Expected " << _n_classes
-               << " unique strings but found more.";
-      return std::make_exception_ptr(std::runtime_error(error_ss.str()));
     }
 
     vec.addSparseFeatureToSegment(/* index= */ uid, /* value= */ 1.0);
