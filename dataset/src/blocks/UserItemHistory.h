@@ -59,14 +59,14 @@ using ItemHistoryCollectionPtr = std::shared_ptr<ItemHistoryCollection>;
 class UserItemHistoryBlock final : public Block {
  public:
   UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
-                       uint32_t timestamp_col, uint32_t track_last_n,
+                       uint32_t timestamp_col,
                        ThreadSafeVocabularyPtr user_id_map,
                        ThreadSafeVocabularyPtr item_id_map,
                        ItemHistoryCollectionPtr item_history_collection)
       : _user_col(user_col),
         _item_col(item_col),
         _timestamp_col(timestamp_col),
-        _track_last_n(track_last_n),
+        _track_last_n(item_history_collection->maxItemsPerHistory()),
         _user_id_lookup(std::move(user_id_map)),
         _item_id_lookup(std::move(item_id_map)),
         _records(std::move(item_history_collection)) {
@@ -78,14 +78,6 @@ class UserItemHistoryBlock final : public Block {
                << " users in user_id_map "
                   "but item_history_collection only has enough space for "
                << _records->numHistories() << " users.";
-      throw std::invalid_argument(error_ss.str());
-    }
-
-    if (_records->maxItemsPerHistory() != track_last_n) {
-      std::stringstream error_ss;
-      error_ss << "[UserItemHistoryBlock] Invoked with track_last_n = "
-               << track_last_n << " but item_history_collection tracks "
-               << _records->maxItemsPerHistory() << '.';
       throw std::invalid_argument(error_ss.str());
     }
   }
@@ -113,12 +105,11 @@ class UserItemHistoryBlock final : public Block {
 
   static std::shared_ptr<Block> make(uint32_t user_col, uint32_t item_col,
                                      uint32_t timestamp_col,
-                                     uint32_t track_last_n,
                                      ThreadSafeVocabularyPtr user_id_map,
                                      ThreadSafeVocabularyPtr item_id_map,
                                      ItemHistoryCollectionPtr records) {
     return std::make_shared<UserItemHistoryBlock>(
-        user_col, item_col, timestamp_col, track_last_n, std::move(user_id_map),
+        user_col, item_col, timestamp_col, std::move(user_id_map),
         std::move(item_id_map), std::move(records));
   }
 

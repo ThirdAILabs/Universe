@@ -1,8 +1,8 @@
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/UserItemHistory.h>
-#include <dataset/src/encodings/categorical/StreamingStringLookup.h>
+#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cstddef>
@@ -113,16 +113,15 @@ void assertItemHistoryNotEmpty(std::vector<std::vector<uint32_t>>& batch) {
 std::vector<std::vector<uint32_t>> processSamples(
     std::vector<std::string>& samples, uint32_t n_users,
     uint32_t n_items_per_user, uint32_t track_last_n) {
-  auto user_id_lookup = std::make_shared<StreamingStringLookup>(n_users);
-  auto item_id_lookup =
-      std::make_shared<StreamingStringLookup>(n_users * n_items_per_user);
+  auto user_id_lookup = ThreadSafeVocabulary::make(n_users);
+  auto item_id_lookup = ThreadSafeVocabulary::make(n_users * n_items_per_user);
 
   auto records =
       ItemHistoryCollection::make(user_id_lookup->vocabSize(), track_last_n);
 
   auto user_item_history_block = UserItemHistoryBlock::make(
       /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2,
-      track_last_n, user_id_lookup, item_id_lookup, records);
+      user_id_lookup, item_id_lookup, records);
 
   GenericBatchProcessor processor(
       /* input_blocks = */ {user_item_history_block},
@@ -135,7 +134,8 @@ std::vector<std::vector<uint32_t>> processSamples(
     std::vector<uint32_t> items;
     for (uint32_t pos = 0; pos < vec.len; pos++) {
       auto encoded_item = vec.active_neurons[pos];
-      auto original_item_id_str = item_id_lookup->originalString(encoded_item);
+      auto original_item_id_str =
+          item_id_lookup->getString(encoded_item).value();
       items.push_back(std::stoull(original_item_id_str));
     }
     histories.push_back(items);
