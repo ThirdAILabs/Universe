@@ -37,6 +37,13 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(vector_hash_table_test)
-gtest_discover_tests(sampled_hash_table_test)
-gtest_discover_tests(tiny_table_test)
+
+set(HASH_TABLE_TESTS
+ vector_hash_table_test
+ sampled_hash_table_test
+ tiny_table_test
+)
+
+foreach(HASH_TABLE_TEST IN LISTS HASH_TABLE_TESTS)
+  gtest_discover_tests(${HASH_TABLE_TEST} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+endforeach()

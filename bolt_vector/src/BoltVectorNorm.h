@@ -1,12 +1,12 @@
 #pragma once
 
-#include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
+#include <cmath>
 #include <numeric>
 #include <stdexcept>
 #include <string>
 
-namespace thirdai::bolt {
+namespace thirdai {
 
 enum class LPNorm {
   L1,
@@ -22,8 +22,9 @@ static std::string LPNormToStr(LPNorm norm) {
       return "euclidean";
     case LPNorm::LInfinity:
       return "l-infinity";
+    default:
+      throw std::logic_error("Invalid norm passed to the call to LPNormToStr");
   }
-  throw std::logic_error("Invalid norm passed to the call to LPNormToStr");
 }
 
 static LPNorm getNorm(const std::string& norm_order) {
@@ -46,13 +47,12 @@ static LPNorm getNorm(const std::string& norm_order) {
                               "l-1, euclidean norm and l-infinity.");
 }
 
-class VectorNorm {
+class BoltVectorNorm {
  public:
-  static double norm(const BoltVector& bolt_vector,
-                     const std::string& norm_order) {
-    LPNorm norm = getNorm(norm_order);
+  static double norm(const BoltVector& bolt_vector, const LPNorm norm_order) {
     return computeNorm(/* activations= */ bolt_vector.activations,
-                       /* len= */ bolt_vector.len, /* norm= */ norm);
+                       /* len= */ bolt_vector.len,
+                       /* norm_order= */ norm_order);
   }
 
   // We still need to determine the best way to compute the norm of the
@@ -62,8 +62,7 @@ class VectorNorm {
   // we expect both vectors to be dense.
   template <bool FIRST_DENSE, bool SECOND_DENSE>
   static double norm(const BoltVector& first_vector,
-                     const BoltVector& second_vector,
-                     const std::string& norm_order) {
+                     const BoltVector& second_vector, const LPNorm norm_order) {
     if (first_vector.len != second_vector.len) {
       throw std::invalid_argument(
           "Invalid arguments for the call to VectorNorm::norm. BoltVectors "
@@ -79,7 +78,6 @@ class VectorNorm {
           " vectors is currently not supported.");
     }
 
-    LPNorm norm = getNorm(norm_order);
     std::vector<float> vec_difference = {};
 
     for (uint32_t activation_index = 0; activation_index < first_vector.len;
@@ -88,49 +86,48 @@ class VectorNorm {
                                second_vector.activations[activation_index]);
     }
 
-    return computeNorm(/* activations= */ &vec_difference[0],
-                       /* len= */ first_vector.len, /*norm= */ norm);
+    return computeNorm(/* activations= */ vec_difference.data(),
+                       /* len= */ first_vector.len,
+                       /*norm_order= */ norm_order);
   }
 
  private:
-  VectorNorm() {}
-
   static double computeNorm(const float* activations, uint32_t len,
-                            LPNorm norm) {
-    double accumulator = 0.0;
-    switch (norm) {
+                            LPNorm norm_order) {
+    double norm = 0.0;
+    switch (norm_order) {
       case LPNorm::L1: {
-        for (uint32_t activation_index = 0; activation_index < len;
-             activation_index++) {
-          accumulator += fabs(activations[activation_index]);
-        }
-        return accumulator;
+        std::for_each(activations, activations + len,
+                      [&norm](float activation) { norm += fabs(activation); });
+
+        return norm;
       }
       case LPNorm::Euclidean: {
-        for (uint32_t activation_index = 0; activation_index < len;
-             activation_index++) {
-          accumulator +=
-              activations[activation_index] * activations[activation_index];
-        }
-        return sqrt(accumulator);
+        std::for_each(
+            activations, activations + len,
+            [&norm](float activation) { norm += (activation * activation); });
+
+        return sqrt(norm);
       }
       case LPNorm::LInfinity: {
         assert(activations != nullptr);
-        accumulator = static_cast<double>(abs(*activations));
-        for (uint32_t activation_index = 0; activation_index < len;
-             activation_index++) {
-          accumulator = std::max<double>(
-              accumulator,
-              fabs(static_cast<double>(activations[activation_index])));
-        }
-        return accumulator;
+        norm = static_cast<double>(abs(*activations));
+        std::for_each(
+            activations, activations + len, [&norm](float activation) {
+              norm =
+                  std::max<double>(norm, fabs(static_cast<double>(activation)));
+            });
+
+        return norm;
+      }
+      default: {
+        throw std::invalid_argument(
+            "" + LPNormToStr(norm_order) +
+            " is not a valid LP Norm. Valid norms include l-1, "
+            "euclidean and l-infinity.");
       }
     }
-    throw std::invalid_argument(
-        "" + LPNormToStr(norm) +
-        " is not a valid LP Norm. Valid norms include l-1, "
-        "euclidean and l-infinity.");
   }
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai

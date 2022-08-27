@@ -41,7 +41,7 @@ std::unordered_map<uint32_t, uint32_t> pairgram_hashes_as_map(
   return pairgrams;
 }
 
-void checkPairgramVector(const bolt::BoltVector& vector,
+void checkPairgramVector(const BoltVector& vector,
                          const std::vector<std::string>& words) {
   auto unigrams = unigram_hashes_from_words(words);
   auto pairgrams = pairgram_hashes_as_map(unigrams, RANGE);
@@ -58,7 +58,7 @@ void checkPairgramVector(const bolt::BoltVector& vector,
   ASSERT_EQ(pairgrams.size(), 0);
 }
 
-void checkPairgramVector(const bolt::BoltVector& vector,
+void checkPairgramVector(const BoltVector& vector,
                          std::unordered_map<uint32_t, uint32_t> pairgrams) {
   ASSERT_EQ(vector.len, pairgrams.size());
 

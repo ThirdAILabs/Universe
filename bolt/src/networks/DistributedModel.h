@@ -3,13 +3,13 @@
 #include <wrappers/src/LicenseWrapper.h>
 #include <cereal/types/vector.hpp>
 #include "Model.h"
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/Datasets.h>
 #include <exceptions/src/Exceptions.h>
@@ -34,7 +34,7 @@ class DistributedModel : public FullyConnectedNetwork {
 
   // Distributed Functions
   uint32_t prepareNodeForDistributedTraining(
-      std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
+      std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& train_data,
       const dataset::BoltDatasetPtr& train_labels, uint32_t rehash,
       uint32_t rebuild, bool verbose);
 
@@ -85,7 +85,7 @@ class DistributedModel : public FullyConnectedNetwork {
 
   uint32_t _rebuild_batch;
   uint32_t _rehash_batch;
-  std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>> _train_data;
+  std::shared_ptr<dataset::InMemoryDataset<BoltBatch>> _train_data;
   dataset::BoltDatasetPtr _train_labels;
 };
 
