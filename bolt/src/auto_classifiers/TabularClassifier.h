@@ -146,8 +146,7 @@ class TabularClassifier {
 
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
         std::make_shared<dataset::CategoricalBlock>(
-            _metadata->getLabelCol(),
-            dataset::StringLookup::make(vocab->size(), vocab))};
+            _metadata->getLabelCol(), dataset::StringLookup::make(vocab))};
 
     return std::make_shared<dataset::GenericBatchProcessor>(
         /* input_blocks = */ input_blocks,

@@ -16,18 +16,11 @@ namespace thirdai::dataset {
  */
 class StringLookup final : public CategoricalEncoding {
  public:
-  StringLookup(uint32_t n_classes, ThreadSafeVocabularyPtr vocab)
-      : _vocab(std::move(vocab)), _n_classes(n_classes) {
-    if (_vocab->vocabSize() > n_classes) {
-      std::stringstream error_ss;
-      error_ss << "[StringLookup] Received vocab with max size > n_classes ("
-               << _vocab->vocabSize() << " vs. " << n_classes << ").";
-      throw std::invalid_argument(error_ss.str());
-    }
-  }
+  explicit StringLookup(ThreadSafeVocabularyPtr vocab)
+      : _vocab(std::move(vocab)) {}
 
   explicit StringLookup(uint32_t n_classes)
-      : StringLookup(n_classes, ThreadSafeVocabulary::make(n_classes)) {}
+      : StringLookup(ThreadSafeVocabulary::make(n_classes)) {}
 
   std::exception_ptr encodeCategory(std::string_view id,
                                     SegmentedFeatureVector& vec) final {
@@ -46,13 +39,12 @@ class StringLookup final : public CategoricalEncoding {
 
   bool isDense() const final { return false; }
 
-  uint32_t featureDim() const final { return _n_classes; }
+  uint32_t featureDim() const final { return _vocab->vocabSize(); }
 
   ThreadSafeVocabularyPtr getVocabulary() const { return _vocab; }
 
-  static CategoricalEncodingPtr make(uint32_t n_classes,
-                                     ThreadSafeVocabularyPtr vocab) {
-    return std::make_shared<StringLookup>(n_classes, std::move(vocab));
+  static CategoricalEncodingPtr make(ThreadSafeVocabularyPtr vocab) {
+    return std::make_shared<StringLookup>(std::move(vocab));
   }
 
   static CategoricalEncodingPtr make(uint32_t n_classes) {
@@ -61,7 +53,6 @@ class StringLookup final : public CategoricalEncoding {
 
  private:
   ThreadSafeVocabularyPtr _vocab;
-  uint32_t _n_classes;
 };
 
 using StringLookupPtr = std::shared_ptr<StringLookup>;
