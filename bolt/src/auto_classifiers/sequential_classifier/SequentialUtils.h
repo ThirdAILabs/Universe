@@ -16,49 +16,75 @@
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::classifiers::sequential {
 
-struct Sequential {
-  struct Schema;
-  struct State;
-  class ColumnNumberMap;
-  class Pipeline;
+using CategoricalPair = std::pair<std::string, uint32_t>;
+using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
+
+struct CategoricalFeat {
+  std::string col_name;
+  uint32_t vocab_size;
+
+  CategoricalFeat(std::string col_name, uint32_t vocab_size)
+      : col_name(std::move(col_name)), vocab_size(vocab_size) {}
+
+  static CategoricalFeat fromPair(const CategoricalPair& cat_pair) {
+    const auto& [col_name, vocab_size] = cat_pair;
+    return {col_name, vocab_size};
+  }
 };
 
-struct Sequential::Schema {
-  struct Categorical {
-    std::string col_name;
-    uint32_t vocab_size;
-    std::optional<char> delimiter;
-  };
+struct SequentialFeat {
+  CategoricalFeat user;
+  CategoricalFeat item;
+  std::string timestamp_col_name;
+  uint32_t track_last_n;
 
-  struct Sequential {
-    Categorical user;
-    Categorical item;
-    std::string timestamp_col_name;
-    uint32_t track_last_n;
-  };
+  static SequentialFeat fromPrimitives(
+      const CategoricalPair& user_cat_pair,
+      const SequentialTriplet& item_seq_triplet,
+      const std::string& timestamp_col_name) {
+    auto user = CategoricalFeat::fromPair(user_cat_pair);
+    const auto& [col_name, vocab_size, track_last_n] = item_seq_triplet;
+    auto item = CategoricalFeat(col_name, vocab_size);
+    return {std::move(user), std::move(item), timestamp_col_name, track_last_n};
+  }
+};
 
-  Categorical user;
-  Categorical target;
+struct Schema {
+  Schema(const CategoricalPair& user, const CategoricalPair& target,
+         const std::string& timestamp,
+         std::vector<std::string> static_text = {},
+         const std::vector<CategoricalPair>& static_categorical = {},
+         const std::vector<SequentialTriplet>& sequential = {})
+      : user(CategoricalFeat::fromPair(user)),
+        target(CategoricalFeat::fromPair(target)),
+        timestamp_col_name(timestamp),
+        static_text_attrs(std::move(static_text)) {
+    for (const auto& cat : static_categorical) {
+      static_categorical_attrs.push_back(CategoricalFeat::fromPair(cat));
+    }
+    for (const auto& seq : sequential) {
+      sequential_attrs.push_back(
+          SequentialFeat::fromPrimitives(user, seq, timestamp));
+    }
+  }
+
+  CategoricalFeat user;
+  CategoricalFeat target;
   std::string timestamp_col_name;
   std::vector<std::string> static_text_attrs;
-  std::vector<Categorical> static_categorical_attrs;
-  std::vector<Sequential> sequential_attrs;
+  std::vector<CategoricalFeat> static_categorical_attrs;
+  std::vector<SequentialFeat> sequential_attrs;
 };
 
-struct Sequential::State {
-  using StringLookups =
-      std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr>;
-
-  using UserItemHistories =
-      std::unordered_map<std::string, dataset::ItemHistoryCollectionPtr>;
-
-  StringLookups lookups;
-  UserItemHistories histories;
+struct DataState {
+  std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> vocabs;
+  std::unordered_map<std::string, dataset::ItemHistoryCollectionPtr>
+      history_collections;
 };
 
-class Sequential::ColumnNumberMap {
+class ColumnNumberMap {
  public:
   ColumnNumberMap(const std::string& header, char delimiter) {
     auto header_columns =
@@ -83,12 +109,12 @@ class Sequential::ColumnNumberMap {
   std::unordered_map<std::string, uint32_t> _name_to_num;
 };
 
-class Sequential::Pipeline {
+class Pipeline {
  public:
   static constexpr uint32_t BATCH_SIZE = 2048;
 
   static dataset::StreamingGenericDatasetLoader buildForFile(
-      const Schema& schema, State& state, const std::string& filename,
+      const Schema& schema, DataState& state, const std::string& filename,
       char delimiter, bool for_training) {
     auto file_reader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
@@ -104,7 +130,7 @@ class Sequential::Pipeline {
 
     std::vector<dataset::BlockPtr> label_blocks;
     label_blocks.push_back(
-        makeCategoricalBlock(schema.target, state.lookups, col_nums));
+        makeCategoricalBlock(schema.target, state, col_nums));
 
     return {file_reader,
             input_blocks,
@@ -120,10 +146,9 @@ class Sequential::Pipeline {
 
  private:
   static std::vector<dataset::BlockPtr> buildInputBlocks(
-      const Schema& schema, State& state, const ColumnNumberMap& col_nums) {
+      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums) {
     std::vector<dataset::BlockPtr> input_blocks;
-    input_blocks.push_back(
-        makeCategoricalBlock(schema.user, state.lookups, col_nums));
+    input_blocks.push_back(makeCategoricalBlock(schema.user, state, col_nums));
 
     input_blocks.push_back(std::make_shared<dataset::DateBlock>(
         col_nums.at(schema.timestamp_col_name)));
@@ -135,21 +160,20 @@ class Sequential::Pipeline {
 
     for (const auto& categorical : schema.static_categorical_attrs) {
       input_blocks.push_back(
-          makeCategoricalBlock(categorical, state.lookups, col_nums));
+          makeCategoricalBlock(categorical, state, col_nums));
     }
 
     for (const auto& sequential : schema.sequential_attrs) {
-      input_blocks.push_back(makeSequentialBlock(sequential, state.lookups,
-                                                 state.histories, col_nums));
+      input_blocks.push_back(makeSequentialBlock(sequential, state, col_nums));
     }
 
     return input_blocks;
   }
 
   static dataset::BlockPtr makeCategoricalBlock(
-      const Schema::Categorical& categorical, State::StringLookups& lookups,
+      const CategoricalFeat& categorical, DataState& state,
       const ColumnNumberMap& col_nums) {
-    auto& string_lookup = lookups[categorical.col_name];
+    auto& string_lookup = state.vocabs[categorical.col_name];
     if (!string_lookup) {
       string_lookup =
           dataset::ThreadSafeVocabulary::make(categorical.vocab_size);
@@ -160,15 +184,15 @@ class Sequential::Pipeline {
   }
 
   static dataset::BlockPtr makeSequentialBlock(
-      const Schema::Sequential& sequential, State::StringLookups& lookups,
-      State::UserItemHistories& histories, const ColumnNumberMap& col_nums) {
-    auto& user_lookup = lookups[sequential.user.col_name];
+      const SequentialFeat& sequential, DataState& state,
+      const ColumnNumberMap& col_nums) {
+    auto& user_lookup = state.vocabs[sequential.user.col_name];
     if (!user_lookup) {
       user_lookup =
           dataset::ThreadSafeVocabulary::make(sequential.user.vocab_size);
     }
 
-    auto& item_lookup = lookups[sequential.item.col_name];
+    auto& item_lookup = state.vocabs[sequential.item.col_name];
     if (!item_lookup) {
       item_lookup =
           dataset::ThreadSafeVocabulary::make(sequential.item.vocab_size);
@@ -176,7 +200,7 @@ class Sequential::Pipeline {
 
     std::stringstream history_name_ss;
     history_name_ss << sequential.item.col_name << sequential.track_last_n;
-    auto& user_item_history = histories[history_name_ss.str()];
+    auto& user_item_history = state.history_collections[history_name_ss.str()];
     if (!user_item_history) {
       user_item_history = dataset::ItemHistoryCollection::make(
           sequential.user.vocab_size, sequential.track_last_n);
@@ -190,4 +214,4 @@ class Sequential::Pipeline {
   }
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::classifiers::sequential

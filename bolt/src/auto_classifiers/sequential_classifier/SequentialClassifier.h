@@ -1,7 +1,6 @@
 #pragma once
 
 #include "SequentialUtils.h"
-#include <bolt/src/auto_classifiers/AutoClassifierBase.h>
 #include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -11,46 +10,26 @@
 #include <string>
 #include <tuple>
 #include <utility>
-namespace thirdai::bolt {
-
-using CategoricalTuple = std::tuple<std::string, uint32_t>;
-using SequentialTuple = std::tuple<std::string, uint32_t, uint32_t>;
+namespace thirdai::bolt::classifiers::sequential {
 
 class SequentialClassifier {
  public:
   SequentialClassifier(
-      const CategoricalTuple& user, const CategoricalTuple& target,
+      const CategoricalPair& user, const CategoricalPair& target,
       const std::string& timestamp,
       const std::vector<std::string>& static_text = {},
-      const std::vector<CategoricalTuple>& static_categorical = {},
-      const std::vector<SequentialTuple>& sequential = {},
-      std::vector<std::string> metrics = {})
-      : _metrics(std::move(metrics)) {
-    _metrics.push_back("categorical_accuracy");
-    _schema.user = {std::get<0>(user), std::get<1>(user), std::nullopt};
-    _schema.target = {std::get<0>(target), std::get<1>(target), std::nullopt};
-    _schema.timestamp_col_name = timestamp;
-    for (const auto& text : static_text) {
-      _schema.static_text_attrs.push_back({text});
-    }
-    for (const auto& cat : static_categorical) {
-      _schema.static_categorical_attrs.push_back(
-          {std::get<0>(cat), std::get<1>(cat), std::nullopt});
-    }
-    for (const auto& seq : sequential) {
-      _schema.sequential_attrs.push_back(
-          {/* user = */ {std::get<0>(user), std::get<1>(user), std::nullopt},
-           /* item = */ {std::get<0>(seq), std::get<1>(seq), std::nullopt},
-           /* timestamp_col_name = */ timestamp,
-           /* track_last_n = */ std::get<2>(seq)});
-    }
-  }
+      const std::vector<CategoricalPair>& static_categorical = {},
+      const std::vector<SequentialTriplet>& sequential = {},
+      std::vector<std::string> metrics = {"recall@1"})
+      : _metrics(std::move(metrics)),
+        _schema(user, target, timestamp, static_text, static_categorical,
+                sequential) {}
 
   void train(const std::string& filename, uint32_t epochs,
              float learning_rate) {
-    auto pipeline = Sequential::Pipeline::buildForFile(
-        _schema, _state, filename, /* delimiter = */ ',',
-        /* for_training = */ true);
+    auto pipeline =
+        Pipeline::buildForFile(_schema, _state, filename, /* delimiter = */ ',',
+                               /* for_training = */ true);
 
     auto output_sparsity = getLayerSparsity(pipeline.getLabelDim());
 
@@ -77,9 +56,13 @@ class SequentialClassifier {
 
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename) {
-    auto pipeline = Sequential::Pipeline::buildForFile(
-        _schema, _state, filename, /* delimiter = */ ',',
-        /* for_training = */ false);
+    if (!_model) {
+      throw std::runtime_error("Called predict() before training.");
+    }
+
+    auto pipeline =
+        Pipeline::buildForFile(_schema, _state, filename, /* delimiter = */ ',',
+                               /* for_training = */ false);
 
     std::optional<std::ofstream> output_file;
     if (output_filename) {
@@ -91,22 +74,18 @@ class SequentialClassifier {
         return;
       }
       uint32_t class_id = output.getHighestActivationId();
-      auto target_lookup = _state.lookups[_schema.target.col_name];
+      auto target_lookup = _state.vocabs[_schema.target.col_name];
       auto predicted_class = target_lookup->getString(class_id);
       (*output_file) << (predicted_class ? predicted_class.value()
                                          : "[Unknown]")
                      << std::endl;
     };
 
+    auto [test_data, test_labels] = pipeline.loadInMemory();
+
     PredictConfig config =
         PredictConfig::makeConfig().withMetrics(_metrics).withOutputCallback(
             print_predictions_callback);
-
-    if (!_model) {
-      throw std::runtime_error("Called predict() before training.");
-    }
-
-    auto [test_data, test_labels] = pipeline.loadInMemory();
 
     _model->predict({test_data}, {}, test_labels, config);
 
@@ -139,9 +118,9 @@ class SequentialClassifier {
   }
 
   std::vector<std::string> _metrics;
-  Sequential::Schema _schema;
-  Sequential::State _state;
+  Schema _schema;
+  DataState _state;
   BoltGraphPtr _model;
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::classifiers::sequential
