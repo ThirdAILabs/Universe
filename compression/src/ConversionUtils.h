@@ -1,3 +1,6 @@
+// To-DO(Shubh): Remove this class, we probably won't need this once we have a
+// custom serializer working.
+
 #pragma once
 
 #include <pybind11/cast.h>
@@ -41,19 +44,6 @@ inline bool checkNumpyDtypeAnyInt(const py::object& obj) {
 inline bool checkNumpyDtypeUint32(const py::object& obj) {
   return checkNumpyDtype(obj, "uint32");
 }
-
-// // // template <class T>
-// inline std::vector<uint32_t> make_vector_from_1d_numpy_array(
-//     const py::array_t<uint32_t>& py_array) {
-//   return std::vector<uint32_t>(py_array.data(),
-//                                py_array.data() + py_array.size());
-// }
-
-// inline std::vector<float> make_vector_from_1d_numpy_array(
-//     const py::array_t<float>& py_array) {
-//   return std::vector<float>(py_array.data(), py_array.data() +
-//   py_array.size());
-// }
 
 template <class T>
 inline std::vector<T> make_vector_from_1d_numpy_array(

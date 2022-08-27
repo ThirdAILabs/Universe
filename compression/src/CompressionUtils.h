@@ -76,8 +76,8 @@ inline T getThresholdForTopK(const T* values, uint32_t size,
  * Given the number of chunks, we split a vector into n almost equal chunks
  */
 template <class T>
-std::vector<std::vector<T>> splitVector(const std::vector<T>& vec, size_t n) {
-  std::vector<std::vector<T>> out_vec;
+std::vector<std::vector<T>> split(const std::vector<T>& vec, size_t n) {
+  std::vector<std::vector<T>> split_vector;
 
   size_t length = vec.size() / n;
   size_t remain = vec.size() % n;
@@ -87,13 +87,13 @@ std::vector<std::vector<T>> splitVector(const std::vector<T>& vec, size_t n) {
     size_t begin = i * length + std::min(i, remain);
     size_t end = (i < remain) ? begin + length + 1 : begin + length;
 
-    out_vec.emplace_back(
+    split_vector.emplace_back(
         std::vector<T>(vec.begin() + begin, vec.begin() + end));
   }
-  while (out_vec.size() < n) {
-    out_vec.push_back(std::vector<T>());
+  while (split_vector.size() < n) {
+    split_vector.push_back(std::vector<T>());
   }
-  return out_vec;
+  return split_vector;
 }
 
 }  // namespace thirdai::compression

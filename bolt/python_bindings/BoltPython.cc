@@ -702,17 +702,37 @@ void createBoltSubmodule(py::module_& module) {
            "inference, you may get a significant performance improvement if "
            "you call this one or two epochs before you finish training. "
            "Otherwise you should not call this method.")
-      .def("get_compressed_gradients",
-           &DistributedPyNetwork::getCompressedGradients,
+      .def("get_compressed_weight_gradients",
+           &DistributedPyNetwork::getCompressedWeightGradients,
            py::arg("compression_scheme"), py::arg("layer_index"),
-           py::arg("compression_density") = 1, py::arg("sketch_biases"),
-           py::arg("seed_for_hashing"),
+           py::arg("compression_density") = 1, py::arg("seed_for_hashing"),
            "Sketches the top-k gradients into an array of values and returns a "
            "tuple of (sketched_indices,sketched_gradients)")
-      .def("set_compressed_gradients",
-           &DistributedPyNetwork::setCompressedGradients,
-           py::arg("layer_index"), py::arg("set_biases"),
-           py::arg("compressed_vector"),
+      .def("get_compressed_biases_gradients",
+           &DistributedPyNetwork::getCompressedBiasesGradients,
+           py::arg("compression_scheme"), py::arg("layer_index"),
+           py::arg("compression_density") = 1, py::arg("seed_for_hashing"),
+           "Sketches the top-k gradients into an array of values and returns a "
+           "tuple of (sketched_indices,sketched_gradients)")
+      .def("set_compressed_weight_gradients",
+           &DistributedPyNetwork::setCompressedWeightGradients,
+           py::arg("layer_index"), py::arg("compressed_vector"),
+           "Resets the gradient matrix to zero and then sets the index of the "
+           "gradient matrix from the indices in the indices array with their "
+           "corresponding value in the values array")
+      .def("add_compressed_vectors",
+           &DistributedPyNetwork::addCompressedVectors,
+           py::arg("compressed_vectors"),
+           "Accepts a python list of compressed vectors as input and "
+           "adds the compressed vectors into one")
+      .def("concat_compressed_vectors",
+           &DistributedPyNetwork::concatCompressedVectors,
+           py::arg("compressed_vectors"),
+           "Accepts a list of compressed vectors as inputs and concatenates "
+           "them into one compressed vector and returns it")
+      .def("set_compressed_biases_gradients",
+           &DistributedPyNetwork::setCompressedBiasesGradients,
+           py::arg("layer_index"), py::arg("compressed_vector"),
            "Resets the gradient matrix to zero and then sets the index of the "
            "gradient matrix from the indices in the indices array with their "
            "corresponding value in the values array");

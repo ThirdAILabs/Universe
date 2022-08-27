@@ -28,26 +28,6 @@ class DragonVector final : public CompressedVector<T> {
   DragonVector(const T* values_to_compress, uint32_t size,
                float compression_density, int seed_for_hashing);
 
-  DragonVector(const DragonVector<T>& vector_to_copy) = default;
-
-  // using "copy-swap idiom" for = operator. This implementation makes sure that
-  // we do not have to check for self-reference.
-  DragonVector& operator=(DragonVector<T> vec) {
-    swap(*this, vec);
-    return *this;
-  }
-
-  DragonVector(DragonVector<T>&& vec) : DragonVector<T>() { swap(*this, vec); }
-
-  friend void swap(DragonVector<T>& first, DragonVector<T>& second) {
-    std::swap(first._indices, second._indices);
-    std::swap(first._values, second._values);
-    std::swap(first._min_sketch_size, second._min_sketch_size);
-    std::swap(first._original_size, second._original_size);
-    std::swap(first._compression_density, second._compression_density);
-    std::swap(first._seed_for_hashing, second._seed_for_hashing);
-  }
-
   /*
    * Implementing std::vector's standard methods for the class
    */
@@ -79,13 +59,6 @@ class DragonVector final : public CompressedVector<T> {
   DragonVector<T> operator+(DragonVector<T> const& vec) const;
 
   DragonVector<T>& operator+=(DragonVector<T> const& vec);
-  /*
-   * To-Do(Shubh):
-   * This method should return a reference to the element at the index so that
-   * we can do things like vector[i]=a.
-   */
-
-  T operator[](uint32_t index) const final;
 
   /*
    * Implementing utility methods for the class
@@ -123,43 +96,24 @@ class DragonVector final : public CompressedVector<T> {
 
   std::string getCompressionScheme() const final;
 
-  static DragonVector<T> addVectors(
-      const std::vector<std::unique_ptr<DragonVector<T>>>& vec) {
-    DragonVector<T> result_vec = *vec[0].get();
-    for (size_t i = 1; i < vec.size(); i++) {
-      result_vec = *vec[i].get() + result_vec;
-    }
-    return result_vec;
-  }
+  // This is a dangerous generic add. It expects that the client only passes
+  // homogenous CompressedVectors for addition.
+  std::unique_ptr<CompressedVector<T>> add(
+      const std::unique_ptr<CompressedVector<T>>& other) {
+    CompressedVector<T>* other_ptr = other.get();
 
-  static DragonVector<T> addVectors(
-      const std::vector<std::unique_ptr<CompressedVector<T>>>& vec) {
-    return addVectors(castToDragonVector(vec));
-  }
+    // The following is dangerous. But we will do this anyway.
+    // We will blame the users when this code segfaults.
 
-  static DragonVector<T> concatVectors(
-      const std::vector<std::unique_ptr<CompressedVector<T>>>& vec) {
-    return concatVectors(castToDragonVector(vec));
-  }
+    DragonVector<T>* upcast = dynamic_cast<DragonVector<T>*>(other_ptr);
+    assert(!upcast);
 
-  static DragonVector<T> concatVectors(
-      const std::vector<std::unique_ptr<DragonVector<T>>>& vec) {
-    DragonVector<T> return_vec = *vec[0].get();
-    for (size_t i = 1; i < vec.size(); i++) {
-      return_vec.extend(*vec[i].get());
-    }
-    return return_vec;
-  }
+    // We know this is a DragonVector, because we're inside this function.
+    std::unique_ptr<DragonVector<T>> result =
+        std::make_unique<DragonVector<T>>(*this);
+    *result += *upcast;
 
-  static std::vector<std::unique_ptr<DragonVector<T>>> castToDragonVector(
-      const std::vector<std::unique_ptr<CompressedVector<T>>>& vec) {
-    std::vector<std::unique_ptr<DragonVector<T>>> final_vec;
-    final_vec.reserve(vec.size());
-    for (const auto& i : vec) {
-      final_vec.push_back(std::make_unique<DragonVector<T>>(
-          *dynamic_cast<DragonVector<T>*>(i.get())));
-    }
-    return final_vec;
+    return result;
   }
 
   /*
