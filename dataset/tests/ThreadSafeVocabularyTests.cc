@@ -82,8 +82,7 @@ void assertStringsEqual(std::vector<std::string>& strings_1,
   }
 }
 
-std::vector<uint32_t> getUidsFromBatch(BoltBatch& batch,
-                                       uint32_t block_idx = 0,
+std::vector<uint32_t> getUidsFromBatch(BoltBatch& batch, uint32_t block_idx = 0,
                                        uint32_t block_dim = 0) {
   std::vector<uint32_t> uids;
   for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
@@ -170,7 +169,7 @@ TEST(ThreadSafeVocabularyTests, SeenAllStringsBehavior) {
   auto before_seen_strings_duration =
       time([&]() { getUids(vocab, seen_strings); });
 
-  vocab.declareSeenAllStrings();
+  vocab.fix();
 
   std::vector<uint32_t> uids;
   auto after_seen_strings_duration =

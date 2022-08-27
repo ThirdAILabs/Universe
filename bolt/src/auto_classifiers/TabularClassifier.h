@@ -142,7 +142,7 @@ class TabularClassifier {
         std::make_shared<dataset::TabularPairGram>(_metadata, _input_dim)};
 
     auto vocab = dataset::ThreadSafeVocabulary::make(
-        _metadata->getClassToIdMap(), /* seen_all_strings= */ true);
+        _metadata->getClassToIdMap(), /* fixed= */ true);
 
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
         std::make_shared<dataset::CategoricalBlock>(

@@ -36,13 +36,12 @@ namespace thirdai::dataset {
  */
 class ThreadSafeVocabulary {
  public:
-  ThreadSafeVocabulary() : _seen_all_strings(false) {}
+  ThreadSafeVocabulary() : _fixed(false) {}
 
   explicit ThreadSafeVocabulary(
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map,
-      bool seen_all_strings = false)
-      : _string_to_uid(std::move(string_to_uid_map)),
-        _seen_all_strings(seen_all_strings) {
+      bool fixed = false)
+      : _string_to_uid(std::move(string_to_uid_map)), _fixed(fixed) {
     _uid_to_string.resize(_string_to_uid.size());
     for (auto& [string, uid] : _string_to_uid) {
       _uid_to_string[uid] = string;
@@ -50,7 +49,7 @@ class ThreadSafeVocabulary {
   }
 
   uint32_t getUid(const std::string& string) {
-    if (_seen_all_strings) {
+    if (_fixed) {
       return getExistingUid(string);
     }
     return getUidInCriticalSection(string);
@@ -66,9 +65,9 @@ class ThreadSafeVocabulary {
 
   uint32_t size() const { return _string_to_uid.size(); }
 
-  void declareSeenAllStrings() { _seen_all_strings = true; };
+  void fix() { _fixed = true; };
 
-  bool hasSeenAllStrings() const { return _seen_all_strings; }
+  bool isFixed() const { return _fixed; }
 
   void reserve(size_t n_unique) {
     _string_to_uid.reserve(n_unique);
@@ -81,14 +80,14 @@ class ThreadSafeVocabulary {
 
   static std::shared_ptr<ThreadSafeVocabulary> make(
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map,
-      bool seen_all_strings = false) {
+      bool fixed = false) {
     return std::make_shared<ThreadSafeVocabulary>(std::move(string_to_uid_map),
-                                                  seen_all_strings);
+                                                  fixed);
   }
 
  private:
   uint32_t getExistingUid(const std::string& string) {
-    assert(_seen_all_strings);
+    assert(_fixed);
     if (!_string_to_uid.count(string)) {
       std::stringstream error_ss;
       error_ss << "[ThreadSafeVocabulary] Seeing a new string '" << string
@@ -99,7 +98,7 @@ class ThreadSafeVocabulary {
   }
 
   uint32_t getUidInCriticalSection(const std::string& string) {
-    assert(!_seen_all_strings);
+    assert(!_fixed);
     uint32_t uid;
 #pragma omp critical(streaming_string_lookup)
     {
@@ -117,13 +116,13 @@ class ThreadSafeVocabulary {
 
   std::unordered_map<std::string, uint32_t> _string_to_uid;
   std::vector<std::string> _uid_to_string;
-  bool _seen_all_strings;
+  bool _fixed;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_string_to_uid, _uid_to_string, _seen_all_strings);
+    archive(_string_to_uid, _uid_to_string, _fixed);
   }
 };
 
