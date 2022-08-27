@@ -3,7 +3,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt_vector/src/BoltVector.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <sys/stat.h>
 #include <fstream>
