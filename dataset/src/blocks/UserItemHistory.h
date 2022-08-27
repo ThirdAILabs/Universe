@@ -47,8 +47,18 @@ class ItemHistoryCollection {
   }
 
  private:
-  const uint32_t _max_items_per_history;
+  uint32_t _max_items_per_history;
   std::vector<std::deque<ItemRecord>> _histories;
+
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  ItemHistoryCollection() {}
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_max_items_per_history, _histories);
+  }
 };
 
 using ItemHistoryCollectionPtr = std::shared_ptr<ItemHistoryCollection>;
