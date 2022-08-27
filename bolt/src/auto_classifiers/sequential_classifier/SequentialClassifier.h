@@ -162,3 +162,9 @@ class SequentialClassifier {
 };
 
 }  // namespace thirdai::bolt::classifiers::sequential
+
+namespace thirdai::bolt {
+
+using SequentialClassifier = classifiers::sequential::SequentialClassifier;
+
+} // namespace thirdai::bolt
