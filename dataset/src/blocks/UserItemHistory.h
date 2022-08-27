@@ -2,7 +2,7 @@
 
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/encodings/categorical/StreamingStringLookup.h>
+#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <algorithm>
 #include <atomic>
@@ -63,8 +63,8 @@ class UserItemHistoryBlock final : public Block {
  public:
   UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
                        uint32_t timestamp_col, uint32_t track_last_n,
-                       std::shared_ptr<StreamingStringLookup> user_id_map,
-                       std::shared_ptr<StreamingStringLookup> item_id_map,
+                       ThreadSafeVocabularyPtr user_id_map,
+                       ThreadSafeVocabularyPtr item_id_map,
                        ItemHistoryCollectionPtr item_history_collection)
       : _user_col(user_col),
         _item_col(item_col),
@@ -100,8 +100,8 @@ class UserItemHistoryBlock final : public Block {
         _item_col(item_col),
         _timestamp_col(timestamp_col),
         _track_last_n(track_last_n),
-        _user_id_lookup(StreamingStringLookup::make(n_unique_users)),
-        _item_id_lookup(StreamingStringLookup::make(n_unique_items)),
+        _user_id_lookup(ThreadSafeVocabulary::make(n_unique_users)),
+        _item_id_lookup(ThreadSafeVocabulary::make(n_unique_items)),
         _records(ItemHistoryCollection::make(n_unique_users, track_last_n)) {}
 
   uint32_t featureDim() const final { return _item_id_lookup->vocabSize(); }
@@ -116,8 +116,8 @@ class UserItemHistoryBlock final : public Block {
 
   static std::shared_ptr<Block> make(uint32_t user_col, uint32_t item_col,
                        uint32_t timestamp_col, uint32_t track_last_n,
-                       std::shared_ptr<StreamingStringLookup> user_id_map,
-                       std::shared_ptr<StreamingStringLookup> item_id_map,
+                       ThreadSafeVocabularyPtr user_id_map,
+                       ThreadSafeVocabularyPtr item_id_map,
                        ItemHistoryCollectionPtr records) {
     return std::make_shared<UserItemHistoryBlock>(user_col, item_col, timestamp_col, track_last_n, std::move(user_id_map), std::move(item_id_map), std::move(records));
   }
@@ -176,8 +176,8 @@ class UserItemHistoryBlock final : public Block {
   uint32_t _timestamp_col;
   uint32_t _track_last_n;
 
-  std::shared_ptr<StreamingStringLookup> _user_id_lookup;
-  std::shared_ptr<StreamingStringLookup> _item_id_lookup;
+  ThreadSafeVocabularyPtr _user_id_lookup;
+  ThreadSafeVocabularyPtr _item_id_lookup;
 
   std::shared_ptr<ItemHistoryCollection> _records;
 };
