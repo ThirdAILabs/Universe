@@ -49,10 +49,10 @@ struct Sequential::Schema {
 
 struct Sequential::State {
   using StringLookups =
-      std::unordered_map<std::string, dataset::StreamingStringLookupPtr>;
+      std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr>;
 
   using UserItemHistories =
-      std::unordered_map<std::string, dataset::UserItemHistoryRecordsPtr>;
+      std::unordered_map<std::string, dataset::ItemHistoryCollectionPtr>;
 
   StringLookups lookups;
   UserItemHistories histories;
@@ -151,13 +151,12 @@ class Sequential::Pipeline {
       const ColumnNumberMap& col_nums) {
     auto& string_lookup = lookups[categorical.col_name];
     if (!string_lookup) {
-      string_lookup = std::make_shared<dataset::StreamingStringLookup>(
-          categorical.vocab_size);
+      string_lookup =
+          dataset::ThreadSafeVocabulary::make(categorical.vocab_size);
     }
-    return std::make_shared<dataset::CategoricalBlock>(
+    return dataset::CategoricalBlock::make(
         col_nums.at(categorical.col_name),
-        std::make_shared<dataset::StreamingStringCategoricalEncoding>(
-            string_lookup), categorical.delimiter);
+        dataset::StringLookup::make(string_lookup));
   }
 
   static dataset::BlockPtr makeSequentialBlock(
@@ -165,29 +164,29 @@ class Sequential::Pipeline {
       State::UserItemHistories& histories, const ColumnNumberMap& col_nums) {
     auto& user_lookup = lookups[sequential.user.col_name];
     if (!user_lookup) {
-      user_lookup = std::make_shared<dataset::StreamingStringLookup>(
-          sequential.user.vocab_size);
+      user_lookup =
+          dataset::ThreadSafeVocabulary::make(sequential.user.vocab_size);
     }
 
     auto& item_lookup = lookups[sequential.item.col_name];
     if (!item_lookup) {
-      item_lookup = std::make_shared<dataset::StreamingStringLookup>(
-          sequential.item.vocab_size);
+      item_lookup =
+          dataset::ThreadSafeVocabulary::make(sequential.item.vocab_size);
     }
 
     std::stringstream history_name_ss;
     history_name_ss << sequential.item.col_name << sequential.track_last_n;
     auto& user_item_history = histories[history_name_ss.str()];
     if (!user_item_history) {
-      user_item_history = dataset::UserItemHistoryBlock::makeEmptyRecord(
+      user_item_history = dataset::ItemHistoryCollection::make(
           sequential.user.vocab_size, sequential.track_last_n);
     }
 
-    return std::make_shared<dataset::UserItemHistoryBlock>(
+    return dataset::UserItemHistoryBlock::make(
         col_nums.at(sequential.user.col_name),
         col_nums.at(sequential.item.col_name),
-        col_nums.at(sequential.timestamp_col_name), sequential.track_last_n,
-        user_lookup, item_lookup, user_item_history, sequential.item.delimiter);
+        col_nums.at(sequential.timestamp_col_name), user_lookup, item_lookup,
+        user_item_history);
   }
 };
 

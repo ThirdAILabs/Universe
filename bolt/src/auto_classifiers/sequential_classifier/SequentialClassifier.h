@@ -2,7 +2,9 @@
 
 #include "SequentialUtils.h"
 #include <bolt/src/auto_classifiers/AutoClassifierBase.h>
+#include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -11,21 +13,19 @@
 #include <utility>
 namespace thirdai::bolt {
 
-// using CategoricalTuple = std::tuple<std::string, uint32_t, std::optional<char>>;
-// using SequentialTuple = std::tuple<std::string, uint32_t, std::optional<char>, uint32_t>;
 using CategoricalTuple = std::tuple<std::string, uint32_t>;
 using SequentialTuple = std::tuple<std::string, uint32_t, uint32_t>;
 
 class SequentialClassifier {
  public:
   SequentialClassifier(
-      std::string model_size, const CategoricalTuple& user,
-      const CategoricalTuple& target, const std::string& timestamp,
+      const CategoricalTuple& user, const CategoricalTuple& target,
+      const std::string& timestamp,
       const std::vector<std::string>& static_text = {},
       const std::vector<CategoricalTuple>& static_categorical = {},
       const std::vector<SequentialTuple>& sequential = {},
       std::vector<std::string> metrics = {})
-      : _model_size(std::move(model_size)), _metrics(std::move(metrics)) {
+      : _metrics(std::move(metrics)) {
     _metrics.push_back("categorical_accuracy");
     _schema.user = {std::get<0>(user), std::get<1>(user), std::nullopt};
     _schema.target = {std::get<0>(target), std::get<1>(target), std::nullopt};
@@ -34,7 +34,8 @@ class SequentialClassifier {
       _schema.static_text_attrs.push_back({text});
     }
     for (const auto& cat : static_categorical) {
-      _schema.static_categorical_attrs.push_back({std::get<0>(cat), std::get<1>(cat), std::nullopt});
+      _schema.static_categorical_attrs.push_back(
+          {std::get<0>(cat), std::get<1>(cat), std::nullopt});
     }
     for (const auto& seq : sequential) {
       _schema.sequential_attrs.push_back(
@@ -51,19 +52,20 @@ class SequentialClassifier {
         _schema, _state, filename, /* delimiter = */ ',',
         /* for_training = */ true);
 
+    auto output_sparsity = getLayerSparsity(pipeline.getLabelDim());
+
     if (!_model) {
-      _model = buildModel(pipeline.getInputDim(), pipeline.getLabelDim(),
-                          _model_size);
+      _model = CommonNetworks::FullyConnected(
+          pipeline.getInputDim(),
+          {FullyConnectedNode::make(/* dim= */ 512, /* activation= */ "relu"),
+           FullyConnectedNode::make(pipeline.getLabelDim(), output_sparsity,
+                                    /* activation= */ "softmax",
+                                    /* num_tables= */ 64,
+                                    /* hashes_per_table= */ 4,
+                                    /* reservoir_size= */ 64)});
     }
 
-    if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
-      throw std::invalid_argument("Cannot load dataset in memory.");
-    }
-    auto load_start = std::chrono::high_resolution_clock::now();
     auto [train_data, train_labels] = pipeline.loadInMemory();
-    auto load_end = std::chrono::high_resolution_clock::now();
-    uint32_t duration = std::chrono::duration_cast<std::chrono::seconds>(load_end - load_start).count();
-    std::cout << "Loaded training data in " << duration << " seconds." << std::endl;
 
     TrainConfig train_config =
         TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
@@ -88,9 +90,12 @@ class SequentialClassifier {
       if (!output_file) {
         return;
       }
-      uint32_t class_id = output.getIdWithHighestActivation();
+      uint32_t class_id = output.getHighestActivationId();
       auto target_lookup = _state.lookups[_schema.target.col_name];
-      (*output_file) << target_lookup->originalString(class_id) << std::endl;
+      auto predicted_class = target_lookup->getString(class_id);
+      (*output_file) << (predicted_class ? predicted_class.value()
+                                         : "[Unknown]")
+                     << std::endl;
     };
 
     PredictConfig config =
@@ -101,15 +106,7 @@ class SequentialClassifier {
       throw std::runtime_error("Called predict() before training.");
     }
 
-    if (!AutoClassifierBase::canLoadDatasetInMemory(filename)) {
-      throw std::invalid_argument("Cannot load dataset in memory.");
-    }
-
-    auto load_start = std::chrono::high_resolution_clock::now();
     auto [test_data, test_labels] = pipeline.loadInMemory();
-    auto load_end = std::chrono::high_resolution_clock::now();
-    uint32_t duration = std::chrono::duration_cast<std::chrono::seconds>(load_end - load_start).count();
-    std::cout << "Loaded training data in " << duration << " seconds." << std::endl;
 
     _model->predict({test_data}, {}, test_labels, config);
 
@@ -119,25 +116,6 @@ class SequentialClassifier {
   }
 
  private:
-  static BoltGraphPtr buildModel(uint32_t input_dim, uint32_t n_classes,
-                                 const std::string& model_size) {
-    uint32_t hidden_layer_size = AutoClassifierBase::getHiddenLayerSize(
-        model_size, n_classes, input_dim);
-
-    float output_layer_sparsity = getLayerSparsity(n_classes);
-
-    float hidden_layer_sparsity;
-    if (output_layer_sparsity < 1.0) {
-      hidden_layer_sparsity = 1.0;  // avoid sparse-sparse layers
-    } else {
-      hidden_layer_sparsity = getLayerSparsity(hidden_layer_size);
-    }
-
-    return AutoClassifierBase::buildModel(input_dim, hidden_layer_size,
-                                          hidden_layer_sparsity, n_classes,
-                                          output_layer_sparsity);
-  }
-
   static float getLayerSparsity(uint32_t layer_size) {
     if (layer_size < 500) {
       return 1.0;
@@ -160,7 +138,6 @@ class SequentialClassifier {
     return 0.005;
   }
 
-  std::string _model_size;
   std::vector<std::string> _metrics;
   Sequential::Schema _schema;
   Sequential::State _state;
