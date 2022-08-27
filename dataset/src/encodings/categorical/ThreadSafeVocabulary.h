@@ -41,13 +41,11 @@ class ThreadSafeVocabulary {
   explicit ThreadSafeVocabulary(
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map,
       bool seen_all_strings = false)
-      : _string_to_uid(std::move(string_to_uid_map)), _seen_all_strings(false) {
+      : _string_to_uid(std::move(string_to_uid_map)),
+        _seen_all_strings(seen_all_strings) {
     _uid_to_string.resize(_string_to_uid.size());
     for (auto& [string, uid] : _string_to_uid) {
       _uid_to_string[uid] = string;
-    }
-    if (seen_all_strings) {
-      declareSeenAllStrings();
     }
   }
 

@@ -11,13 +11,8 @@
 namespace thirdai::dataset {
 
 /**
- * Maps string values to sparse ids as specified by the input map
- *
- * You can declare that all strings have been seen by calling the
- * declareSeenAllStrings() method. Doing so will make this
- * encoding more efficient in parallel settings but it will throw
- * an error when given an unseen string. declareSeenAllStrings()
- * cannot be undone.
+ * Maps string values to sparse ids as specified by a vocabulary,
+ * either given or instantiated by the constructor.
  */
 class StringLookup final : public CategoricalEncoding {
  public:
@@ -35,14 +30,6 @@ class StringLookup final : public CategoricalEncoding {
 
   explicit StringLookup(uint32_t n_classes)
       : StringLookup(n_classes, ThreadSafeVocabulary::make()) {}
-
-  explicit StringLookup(
-      std::unordered_map<std::string, uint32_t>&& string_to_uid_map,
-      bool seen_all_strings)
-      : _n_classes(string_to_uid_map.size()) {
-    _vocab = ThreadSafeVocabulary::make(std::move(string_to_uid_map),
-                                        seen_all_strings);
-  }
 
   std::exception_ptr encodeCategory(std::string_view id,
                                     SegmentedFeatureVector& vec) final {
@@ -70,10 +57,6 @@ class StringLookup final : public CategoricalEncoding {
 
   uint32_t featureDim() const final { return _n_classes; }
 
-  bool hasSeenAllStrings() { return _vocab->hasSeenAllStrings(); }
-
-  void declareSeenAllStrings() { _vocab->declareSeenAllStrings(); }
-
   ThreadSafeVocabularyPtr getVocabulary() const { return _vocab; }
 
   static CategoricalEncodingPtr make(uint32_t n_classes,
@@ -83,13 +66,6 @@ class StringLookup final : public CategoricalEncoding {
 
   static CategoricalEncodingPtr make(uint32_t n_classes) {
     return std::make_shared<StringLookup>(n_classes);
-  }
-
-  static CategoricalEncodingPtr make(
-      std::unordered_map<std::string, uint32_t>&& string_to_uid_map,
-      bool seen_all_strings = false) {
-    return std::make_shared<StringLookup>(std::move(string_to_uid_map),
-                                          seen_all_strings);
   }
 
  private:
