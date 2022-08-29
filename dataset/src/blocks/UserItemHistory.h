@@ -75,6 +75,10 @@ class ItemHistoryCollection {
 
 using ItemHistoryCollectionPtr = std::shared_ptr<ItemHistoryCollection>;
 
+class UserItemHistoryBlock;
+
+using UserItemHistoryBlockPtr = std::shared_ptr<UserItemHistoryBlock>;
+
 /**
  * Tracks up to the last N items associated with each user.
  */
@@ -125,21 +129,21 @@ class UserItemHistoryBlock final : public Block {
     return max_col_idx + 1;
   }
 
-  static std::shared_ptr<Block> make(uint32_t user_col, uint32_t item_col,
-                                     uint32_t timestamp_col,
-                                     ThreadSafeVocabularyPtr user_id_map,
-                                     ThreadSafeVocabularyPtr item_id_map,
-                                     ItemHistoryCollectionPtr records) {
+  static UserItemHistoryBlockPtr make(uint32_t user_col, uint32_t item_col,
+                                      uint32_t timestamp_col,
+                                      ThreadSafeVocabularyPtr user_id_map,
+                                      ThreadSafeVocabularyPtr item_id_map,
+                                      ItemHistoryCollectionPtr records) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, std::move(user_id_map),
         std::move(item_id_map), std::move(records));
   }
 
-  static std::shared_ptr<Block> make(uint32_t user_col, uint32_t item_col,
-                                     uint32_t timestamp_col,
-                                     uint32_t track_last_n,
-                                     uint32_t n_unique_users,
-                                     uint32_t n_unique_items) {
+  static UserItemHistoryBlockPtr make(uint32_t user_col, uint32_t item_col,
+                                      uint32_t timestamp_col,
+                                      uint32_t track_last_n,
+                                      uint32_t n_unique_users,
+                                      uint32_t n_unique_items) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, track_last_n, n_unique_users,
         n_unique_items);
