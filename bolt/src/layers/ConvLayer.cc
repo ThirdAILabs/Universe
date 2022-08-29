@@ -369,17 +369,6 @@ float* ConvLayer::getBiases() const {
   return biases_copy;
 }
 
-void ConvLayer::setTrainable(bool trainable) {
-  (void)trainable;
-  throw thirdai::exceptions::NotImplemented(
-      "setTrainable not implemented for ConvLayer");
-}
-
-bool ConvLayer::getTrainable() const {
-  throw thirdai::exceptions::NotImplemented(
-      "getTrainable not implemented for ConvLayer");
-}
-
 void ConvLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 }

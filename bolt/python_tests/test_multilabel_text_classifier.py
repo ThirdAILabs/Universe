@@ -1,7 +1,6 @@
 from thirdai import bolt
 import pytest
 import os
-import time
 import numpy as np
 
 

@@ -6,10 +6,10 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
+
 namespace thirdai::bolt {
 
 class CommonNetworks {

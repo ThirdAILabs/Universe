@@ -1,7 +1,6 @@
 import pytest
-from thirdai import bolt, dataset
-from ..utils import gen_numpy_training_data
-import math
+from thirdai import bolt
+from utils import gen_numpy_training_data
 import numpy as np
 
 
