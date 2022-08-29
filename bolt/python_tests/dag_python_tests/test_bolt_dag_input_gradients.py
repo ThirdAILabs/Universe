@@ -70,7 +70,7 @@ def get_perturbed_dataset_and_assert(
     _, perturbed_activations = model.predict(
         perturbed_dataset, None, predict_config=predict_config
     )
-    assert_activation_difference_and_gradients_in_same_order(
+    return assert_activation_difference_and_gradients_in_same_order(
         perturbed_activations,
         numpy_label,
         gradients,
@@ -96,18 +96,21 @@ def test_bolt_dag_single_input_node_gradients_single():
     input_data, act, predict_config = model_train_and_predict(
         model, numpy_inputs, numpy_labels, batch_size=1
     )
-    for i in range(len(numpy_inputs)):
-        gradients = model.get_input_gradients_single(
-            input_data[i], neuron_to_explain=numpy_labels[i]
-        )
-        """
-        For every vector in input,we modify the vector at every position(by adding EPS), and we check assertion discussed at start of the function.
-        """
-        get_perturbed_dataset_and_assert(
-            model,
-            numpy_inputs[i],
-            predict_config,
-            numpy_labels[i],
-            gradients,
-            act[i],
-        )
+    total_sum = 0
+    for k in range(100):
+        for i in range(len(numpy_inputs)):
+            gradients = model.get_input_gradients_single(
+                input_data[i], neuron_to_explain=numpy_labels[i]
+            )
+            """
+            For every vector in input,we modify the vector at every position(by adding EPS), and we check assertion discussed at start of the function.
+            """
+            total_sum += get_perturbed_dataset_and_assert(
+                model,
+                numpy_inputs[i],
+                predict_config,
+                numpy_labels[i],
+                gradients,
+                act[i],
+            )
+    assert total_sum/10000 > 0.93

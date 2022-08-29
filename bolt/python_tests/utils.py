@@ -220,7 +220,8 @@ def assert_activation_difference_and_gradients_in_same_order(
         perturbed_act[numpy_label] - normal_activation[numpy_label]
         for perturbed_act in perturbed_activations
     ]
-    assert np.array_equal(
-        np.argsort(act_difference_at_required_label),
-        np.argsort(gradient_vector),
-    )
+    if np.array_equal(
+        np.argsort(act_difference_at_required_label), np.argsort(gradient_vector)
+    ):
+        return 1
+    return 0
