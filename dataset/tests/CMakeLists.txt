@@ -153,6 +153,6 @@ set(DATASET_TESTS
   streaming_generic_dataset_loader_tests
 )
 
-foreach(DATASET_TEST in ${DATASET_TESTS})
-  gtest_discover_tests(${DATASET_TESTS} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+foreach(DATASET_TEST IN LISTS DATASET_TESTS)
+  gtest_discover_tests(${DATASET_TEST} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
 endforeach()
