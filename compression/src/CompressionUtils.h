@@ -8,17 +8,6 @@
 
 namespace thirdai::compression {
 
-// To-Do:
-// Remove printVector function before merging the PR
-template <class T>
-inline void printVector(std::vector<T> vec, const std::string& name) {
-  std::cout << "Printing the vector " << name << std::endl;
-  for (auto x : vec) {
-    std::cout << x << " ";
-  }
-  std::cout << std::endl;
-}
-
 // an approximation for top-k threshold by random sampling
 template <class T>
 inline T getThresholdForTopK(const std::vector<T>& values, uint32_t sketch_size,
@@ -70,30 +59,6 @@ inline T getThresholdForTopK(const T* values, uint32_t size,
   // matrix
   T threshold = sampled_gradients[num_samples - topK];
   return threshold;
-}
-
-/*
- * Given the number of chunks, we split a vector into n almost equal chunks
- */
-template <class T>
-std::vector<std::vector<T>> split(const std::vector<T>& vec, size_t n) {
-  std::vector<std::vector<T>> split_vector;
-
-  size_t length = vec.size() / n;
-  size_t remain = vec.size() % n;
-
-  size_t loop_size = std::min(n, vec.size());
-  for (size_t i = 0; i < loop_size; ++i) {
-    size_t begin = i * length + std::min(i, remain);
-    size_t end = (i < remain) ? begin + length + 1 : begin + length;
-
-    split_vector.emplace_back(
-        std::vector<T>(vec.begin() + begin, vec.begin() + end));
-  }
-  while (split_vector.size() < n) {
-    split_vector.push_back(std::vector<T>());
-  }
-  return split_vector;
 }
 
 }  // namespace thirdai::compression
