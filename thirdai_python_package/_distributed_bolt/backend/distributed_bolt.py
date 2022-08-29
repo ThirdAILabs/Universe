@@ -9,7 +9,7 @@ from typing import Tuple, Any, Optional, Dict, List
 class DistributedBolt:
     """Implements all the user level Distributed Bolt APIs."""
 
-    def __init__(self, workers, logger, epochs, primary_worker, num_of_batches):
+    def __init__(self, workers, logger, epochs, primary_worker, num_of_batches, communication_type):
         """Initializes the DistributeBolt class.
 
         Args:
@@ -25,8 +25,9 @@ class DistributedBolt:
         self.epochs = epochs
         self.num_of_batches = num_of_batches
         self.primary_worker = primary_worker
+        self.communication_type = communication_type
 
-    def train(self, circular: Optional[bool] = True) -> None:
+    def train(self) -> None:
         """Trains the network using the communication type choosen.
 
         Args:
@@ -37,7 +38,7 @@ class DistributedBolt:
             communication.CircularCommunication(
                 self.workers, self.primary_worker, self.logging
             )
-            if circular
+            if self.communication_type == "circular"
             else communication.LinearCommunication(
                 self.workers, self.primary_worker, self.logging
             )

@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from thirdai._thirdai import bolt, dataset
 from thirdai._distributed_bolt.utils import load_dataset, make_layers_from_config
 
