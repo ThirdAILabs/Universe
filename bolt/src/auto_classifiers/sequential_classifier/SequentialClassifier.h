@@ -14,24 +14,40 @@ namespace thirdai::bolt::classifiers::sequential {
 
 class SequentialClassifier {
  public:
+  /**
+   * @brief Construct a new Sequential Classifier object
+   * 
+   * @param user A (string, unsigned integer) pair cantaining
+   * the user column name and the number of unique users 
+   * respectively.
+   * @param target A (string, unsigned integer) pair cantaining
+   * the target column name and the number of unique target 
+   * classes respectively.
+   * @param timestamp The name of the column that contains 
+   * timestamps
+   * @param static_text A vector of names of columns that 
+   * contain static textual information.
+   * @param static_categorical A vector of 
+   * (string, unsigned integer) pairs containing static 
+   * categorical column name and the number of unique classes 
+   * respectively.
+   * @param sequential A vector of 
+   * (string, unsigned integer, unsigned integer) tuples containing
+   * sequential column name, the number of unique classes, and
+   * the number of previous values to track.
+   */
   SequentialClassifier(
       const CategoricalPair& user, const CategoricalPair& target,
       const std::string& timestamp,
       const std::vector<std::string>& static_text = {},
       const std::vector<CategoricalPair>& static_categorical = {},
       const std::vector<SequentialTriplet>& sequential = {}) {
-    _schema.user = CategoricalFeat::fromPair(user);
-    _schema.target = CategoricalFeat::fromPair(target);
+    _schema.user = user;
+    _schema.target = target;
     _schema.timestamp_col_name = timestamp;
-    _schema.static_text_attrs = static_text;
-    for (const auto& cat : static_categorical) {
-      _schema.static_categorical_attrs.push_back(
-          CategoricalFeat::fromPair(cat));
-    }
-    for (const auto& seq : sequential) {
-      _schema.sequential_attrs.push_back(
-          SequentialFeat::fromPrimitives(user, seq, timestamp));
-    }
+    _schema.static_text_col_names = static_text;
+    _schema.static_categorical = static_categorical;
+    _schema.sequential = sequential;
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
@@ -85,7 +101,7 @@ class SequentialClassifier {
         return;
       }
       uint32_t class_id = output.getHighestActivationId();
-      auto target_lookup = _state.vocabs[_schema.target.col_name];
+      auto target_lookup = _state.vocabs[_schema.target.first];
       auto predicted_class = target_lookup->getString(class_id);
       (*output_file) << (predicted_class ? predicted_class.value()
                                          : "[Unknown]")
