@@ -23,9 +23,7 @@ def get_sum_model(input_dim):
         concat_layer
     )
 
-    model = bolt.graph.Model(
-        inputs=[input_1, input_2], output=output_layer
-    )
+    model = bolt.graph.Model(inputs=[input_1, input_2], output=output_layer)
 
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
