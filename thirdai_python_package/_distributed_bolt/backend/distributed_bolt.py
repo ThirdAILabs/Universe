@@ -4,6 +4,7 @@ from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 import thirdai._distributed_bolt.backend.communication as communication
 import time as time
 from typing import Tuple, Any, Optional, Dict, List
+import textwrap
 
 
 class DistributedBolt:
@@ -26,6 +27,14 @@ class DistributedBolt:
         self.num_of_batches = num_of_batches
         self.primary_worker = primary_worker
         self.communication_type = communication_type
+        if self.communication_type not in communication.AVAILABLE_METHODS:
+            raise ValueError(
+                textwrap.dedent(
+                    """
+                        Currently only two modes of communication is supported.
+                        Use: "circular" or "linear". 
+                    """
+                ))
 
     def train(self) -> None:
         """Trains the network using the communication type choosen.
@@ -35,11 +44,11 @@ class DistributedBolt:
                     False, if linear communication is required.. Defaults to True.
         """
         self.comm = (
-            communication.CircularCommunication(
+            communication.Circular(
                 self.workers, self.primary_worker, self.logging
             )
             if self.communication_type == "circular"
-            else communication.LinearCommunication(
+            else communication.Linear(
                 self.workers, self.primary_worker, self.logging
             )
         )
