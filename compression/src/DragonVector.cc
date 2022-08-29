@@ -134,45 +134,6 @@ void DragonVector<T>::clear() {
 }
 
 /*
- * Implementing Operator methods for the class
- */
-
-template <class T>
-DragonVector<T> DragonVector<T>::operator+(const DragonVector<T>& vec) const {
-  DragonVector<T> return_vec = DragonVector(*this);
-  return_vec += vec;
-  return return_vec;
-}
-
-template <class T>
-DragonVector<T>& DragonVector<T>::operator+=(const DragonVector<T>& vec) {
-  if (_seed_for_hashing != vec._seed_for_hashing) {
-    throw std::invalid_argument(
-        "Seeds for hashing of the two Dragon Sketches are different. Try "
-        "concatenating the sketches");
-  }
-
-#pragma omp parallel for default(none) shared(vec, _values, _indices)
-
-  for (uint32_t i = 0; i < _indices.size(); i++) {
-    /*
-     * s=s1+s2
-     * If s1[index] is non-zero, we use value and index from s1, otherwise use
-     * sketch 2. Should not use if-else because of branching overheads.
-     */
-
-    _indices[i] = _indices[i] + (_indices[i] == 0) * vec._indices[i];
-    _values[i] = _values[i] + (_indices[i] == 0) * vec._values[i];
-  }
-  return *this;
-}
-
-template <class T>
-T DragonVector<T>::operator[](uint32_t index) const {
-  return DragonVector<T>::get(index);
-}
-
-/*
  * Implementing utility methods for the class
  */
 
@@ -193,29 +154,6 @@ void DragonVector<T>::extend(const DragonVector<T>& vec) {
   _values.insert(std::end(_values), std::begin(vec._values),
                  std::end(vec._values));
   //_original_size remains the same
-}
-
-template <class T>
-std::vector<DragonVector<T>> DragonVector<T>::split(
-    size_t number_chunks) const {
-  if (uint32_t(number_chunks) > _indices.size()) {
-    std::cout
-        << "Warning: The number of chunks to split the vector is more "
-           "than the size of the Dragon vector. Some chunks will be empty";
-  }
-
-  std::vector<std::vector<uint32_t>> split_indices =
-      thirdai::compression::split(_indices, number_chunks);
-  std::vector<std::vector<T>> split_values =
-      thirdai::compression::split(_values, number_chunks);
-
-  std::vector<DragonVector<T>> split_dragon;
-
-  for (size_t i = 0; i < split_indices.size(); i++) {
-    split_dragon.push_back(DragonVector(split_indices[i], split_values[i],
-                                        _original_size, _seed_for_hashing));
-  }
-  return split_dragon;
 }
 
 template <class T>

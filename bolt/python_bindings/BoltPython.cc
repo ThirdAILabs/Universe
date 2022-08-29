@@ -12,7 +12,6 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <compression/src/CompressedVector.h>
-#include <compression/src/ConversionUtils.h>
 #include <compression/src/DragonVector.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
@@ -720,16 +719,6 @@ void createBoltSubmodule(py::module_& module) {
            "Resets the gradient matrix to zero and then sets the index of the "
            "gradient matrix from the indices in the indices array with their "
            "corresponding value in the values array")
-      .def("add_compressed_vectors",
-           &DistributedPyNetwork::addCompressedVectors,
-           py::arg("compressed_vectors"),
-           "Accepts a python list of compressed vectors as input and "
-           "adds the compressed vectors into one")
-      .def("concat_compressed_vectors",
-           &DistributedPyNetwork::concatCompressedVectors,
-           py::arg("compressed_vectors"),
-           "Accepts a list of compressed vectors as inputs and concatenates "
-           "them into one compressed vector and returns it")
       .def("set_compressed_biases_gradients",
            &DistributedPyNetwork::setCompressedBiasesGradients,
            py::arg("layer_index"), py::arg("compressed_vector"),

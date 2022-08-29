@@ -28,27 +28,6 @@ class DragonVectorTest : public testing::Test {
 
   int _seed_for_hashing = 5;
 
-  // To-DO: the below two functions are just for self-testing, remove them from
-  // the code while merging
-  std::vector<std::unique_ptr<CompressedVector<float>>> trial() {
-    std::vector<std::unique_ptr<CompressedVector<float>>> dragonvec;
-    dragonvec.reserve(3);
-    for (int i = 0; i < 3; i++) {
-      dragonvec.push_back(std::make_unique<DragonVector<float>>(_vec));
-    }
-    return dragonvec;
-  }
-
-  static std::unique_ptr<CompressedVector<float>> add(
-      const std::vector<std::unique_ptr<CompressedVector<float>>>& vec) {
-    if (vec.empty()) {
-      throw std::logic_error("Cannot aggregate empty vectors");
-    }
-    std::string compression_scheme = vec[0]->getCompressionScheme();
-    return std::make_unique<DragonVector<float>>(
-        DragonVector<float>::concatVectors(vec));
-  }
-
   DragonVectorTest() {
     std::uniform_int_distribution<int> dist(-100, 100);
     for (uint32_t i = 0; i < _original_size; i++) {
@@ -60,20 +39,6 @@ class DragonVectorTest : public testing::Test {
     _vec_from_array =
         DragonVector<float>(_original_vec.data(), _original_size,
                             _compression_density, _seed_for_hashing);
-
-    std::unique_ptr<CompressedVector<float>> ptr =
-        std::make_unique<DragonVector<float>>(_vec);
-
-    DragonVector<float>* _new_vec =
-        dynamic_cast<DragonVector<float>*>(ptr.get());
-
-    (void)_new_vec;
-
-    std::unique_ptr<CompressedVector<float>> ptr2 = add(trial());
-
-    std::unique_ptr<DragonVector<float>> myvec =
-        std::make_unique<DragonVector<float>>(
-            *dynamic_cast<DragonVector<float>*>(ptr2.get()));
   }
 };
 
@@ -121,7 +86,6 @@ TEST_F(DragonVectorTest, GetSetDragonVectorTest) {
   for (uint32_t i = 0; i < _sketch_size; i++) {
     if (indices_vec[i] != 0) {
       ASSERT_EQ(_vec.get(indices_vec[i]), _original_vec[indices_vec[i]]);
-      ASSERT_EQ(_vec[indices_vec[i]], _original_vec[indices_vec[i]]);
     }
   }
 
@@ -151,25 +115,6 @@ TEST_F(DragonVectorTest, ExtendDragonVectorTest) {
   }
 
   ASSERT_EQ(_vec.getOriginalSize(), _original_size);
-}
-
-TEST_F(DragonVectorTest, SplitTest) {
-  size_t number_chunks = 3;
-
-  std::vector<DragonVector<float>> splitVector = _vec.split(number_chunks);
-  uint32_t curr_vec = 0;
-  uint32_t curr_index = 0;
-
-  for (uint32_t i = 0; i < _sketch_size; i++, curr_index++) {
-    if (curr_index == splitVector[curr_vec].size()) {
-      curr_vec++;
-      curr_index = 0;
-    }
-    ASSERT_EQ(_vec.getIndices()[i],
-              splitVector[curr_vec].getIndices()[curr_index]);
-    ASSERT_EQ(_vec.getValues()[i],
-              splitVector[curr_vec].getValues()[curr_index]);
-  }
 }
 
 }  // namespace thirdai::compression::tests

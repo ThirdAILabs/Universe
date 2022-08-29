@@ -1,10 +1,10 @@
 #pragma once
 
 #include "CompressionUtils.h"
+#include <compression/src/CompressionUtils.h>
 #include <cstdint>
 #include <memory>
 #include <random>
-
 namespace thirdai::compression {
 
 // a generic compressed vector class
@@ -22,27 +22,6 @@ class CompressedVector {
   void assign(uint32_t size, T value);
 
   virtual void clear() = 0;
-
-  /*
-   * Addition operator for adding two sketches. We will have a check to make
-   * sure that we only call this method on compressed vectors which are additive
-   * such as count sketches.
-   */
-
-  /*
-   * CompressedVector is an abstract class hence, we cannot instantiate objects.
-   * We should return a shared pointer to the derived class objects in this +
-   * operator.
-   * Should we even have this method in the compressed vector class?
-   */
-  // CompressedVector<T> operator+(CompressedVector<T> const& vec);
-
-  /*
-   * To-Do(Shubh):
-   * This method should return a reference to the element at the index so that
-   * we can do things like vector[i]=a.
-   */
-  virtual T operator[](uint32_t index) const = 0;
 
   // methods for the compressed_vector class
 

@@ -31,27 +31,6 @@ std::unique_ptr<CompressedVector<T>> compress(
   throw std::logic_error("Compression Scheme is invalid");
 }
 
-std::unique_ptr<CompressedVector> add(
-    const std::vector<std::unique_ptr<Vector>>& compressed_vectors) {}
-
-template <class Vector>
-Vector add(const std::vector<std::unique_ptr<Vector>>& compressed_vectors) {
-  Vector result = *(compressed_vectors[0].get());
-  for (size_t i = 0; i < compressed_vectors.size(); i++) {
-    result = result.add(compressed_vectors[i]);
-  }
-  return result;
-}
-
-template <class Vector>
-Vector extend(const std::vector<std::unique_ptr<Vector>>& compressed_vectors) {
-  Vector result = *(compressed_vectors[0].get());
-  for (size_t i = 0; i < compressed_vectors.size(); i++) {
-    result = result.extend(compressed_vectors[i]);
-  }
-  return result;
-}
-
 template <class T>
 std::vector<T> decompress(const CompressedVector<T>& compressed_vector) {
   return compressed_vector.decompress();

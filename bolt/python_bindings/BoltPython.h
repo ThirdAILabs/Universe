@@ -16,7 +16,6 @@
 #include <compression/python_bindings/ConversionUtils.h>
 #include <compression/src/CompressedVector.h>
 #include <compression/src/CompressionFactory.h>
-#include <compression/src/ConversionUtils.h>
 #include <compression/src/DragonVector.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
@@ -464,19 +463,6 @@ class DistributedPyNetwork final : public DistributedModel {
     std::vector<float> full_gradients = compressed_vector->decompress();
     DistributedModel::setBiasesGradients(layer_index, full_gradients.data());
   }
-
-  // py::dict addCompressedVectors(const py::object& list_compressed_vectors) {
-  //   using CompressedVector = thirdai::compression::CompressedVector<float>;
-  //   std::vector<std::unique_ptr<CompressedVector>> compressed_vectors =
-  //       thirdai::compression::python::convertPyListToCompressedVectors(
-  //           list_compressed_vectors);
-
-  //   std::unique_ptr<CompressedVector> aggregated_vector =
-  //       std::make_unique<CompressedVector>(thirdai::compression::add(compressed_vectors));
-  // }
-
-  // py::dict concatCompressedVectors(const py::object& list_compressed_vectors)
-  // {}
 };
 
 class SentimentClassifier {
