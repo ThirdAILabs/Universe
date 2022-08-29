@@ -27,7 +27,9 @@ def test_get_input_gradients():
 
     train_x, train_y = gen_numpy_training_data(n_classes=n_classes, n_samples=2000)
 
-    test_x_np, test_y_np = gen_numpy_training_data(n_classes=n_classes, convert_to_bolt_dataset=False)
+    test_x_np, test_y_np = gen_numpy_training_data(
+        n_classes=n_classes, convert_to_bolt_dataset=False
+    )
     test_x = dataset.from_numpy(test_x_np, batch_size=batch_size)
     test_y = dataset.from_numpy(test_y_np, batch_size=batch_size)
 
