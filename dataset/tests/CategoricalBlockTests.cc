@@ -20,12 +20,12 @@ class CategoricalBlockTest : public testing::Test {
    * of vectors of integers.
    */
   static std::vector<std::vector<uint32_t>> generate_int_matrix(
-      uint32_t n_rows, uint32_t n_cols) {
+      uint32_t n_rows, const std::vector<uint32_t>& dims) {
     std::vector<std::vector<uint32_t>> matrix;
     for (uint32_t row_idx = 0; row_idx < n_rows; row_idx++) {
       std::vector<uint32_t> row;
-      for (uint32_t col = 0; col < n_cols; col++) {
-        row.push_back(std::rand());
+      for (auto dim : dims) {
+        row.push_back(std::rand() % dim);
       }
       matrix.push_back(row);
     }
@@ -95,7 +95,7 @@ TEST_F(CategoricalBlockTest, ProducesCorrectVectorsDifferentColumns) {
       NumericalCategoricalBlock::make(/* col=*/1, dims[1]),
       NumericalCategoricalBlock::make(/* col= */ 2, dims[2])};
 
-  auto int_matrix = generate_int_matrix(1000, 3);
+  auto int_matrix = generate_int_matrix(1000, dims);
   auto input_matrix = generate_input_matrix(int_matrix);
 
   // Encode the input matrix
@@ -135,7 +135,7 @@ TEST_F(CategoricalBlockTest, ProducesCorrectVectorsDifferentColumns) {
   }
 }
 
-TEST(CategoricalBlockTest, TestMultiLabelParsing) {
+TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
   std::vector<std::shared_ptr<Block>> multi_label_blocks = {
       NumericalCategoricalBlock::make(/* col= */ 0,
                                       /* n_classes= */ 100,

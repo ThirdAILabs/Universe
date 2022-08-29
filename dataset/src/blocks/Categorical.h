@@ -70,7 +70,8 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
   static CategoricalBlockPtr make(
       uint32_t col, uint32_t n_classes,
       std::optional<char> delimiter = std::nullopt) {
-    return std::make_shared<NumericalCategoricalBlock>(col, n_classes, delimiter);
+    return std::make_shared<NumericalCategoricalBlock>(col, n_classes,
+                                                       delimiter);
   }
 
  protected:
@@ -138,6 +139,7 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
   ThreadSafeVocabularyPtr _vocab;
 };
 
-using StringLookupCategoricalBlockPtr = std::shared_ptr<StringLookupCategoricalBlock>;
+using StringLookupCategoricalBlockPtr =
+    std::shared_ptr<StringLookupCategoricalBlock>;
 
 }  // namespace thirdai::dataset

@@ -38,7 +38,7 @@ void createDatasetSubmodule(py::module_& module) {
   // Everything in this submodule is exposed to users.
   auto dataset_submodule = module.def_submodule("dataset");
   auto block_submodule = dataset_submodule.def_submodule("blocks");
-  
+
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
@@ -115,21 +115,25 @@ void createDatasetSubmodule(py::module_& module) {
       "A block that encodes categorical features (e.g. a numerical ID or an "
       "identification string).")
       .def("is_dense", &CategoricalBlock::isDense,
-           "Returns false since categorical blocks always produce sparse features.")
+           "Returns false since categorical blocks always produce sparse "
+           "features.")
       .def("feature_dim", &CategoricalBlock::featureDim,
            "The dimension of the vector encoding.");
 
-  py::class_<NumericalCategoricalBlock, CategoricalBlock, NumericalCategoricalBlockPtr>(
+  py::class_<NumericalCategoricalBlock, CategoricalBlock,
+             NumericalCategoricalBlockPtr>(
       block_submodule, "NumericalId",
       "A block that encodes categories represented as numerical IDs.")
       .def(py::init<uint32_t, uint32_t, std::optional<char>>(), py::arg("col"),
-           py::arg("n_classes"), py::arg("delimiter")=std::nullopt,
+           py::arg("n_classes"), py::arg("delimiter") = std::nullopt,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the categorical information to be encoded.\n"
            " * n_classes: Int - Number of unique categories.\n"
-           " * delimiter: Char (Optional) - A character that separates different categories in the column. If not supplied, it is assumed that the column only contains a single class.")
+           " * delimiter: Char (Optional) - A character that separates "
+           "different categories in the column. If not supplied, it is assumed "
+           "that the column only contains a single class.")
       .def("feature_dim", &NumericalCategoricalBlock::featureDim,
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &NumericalCategoricalBlock::isDense,
