@@ -25,14 +25,16 @@ TEST(MetricTest, CategoricalAccuracy) {
         BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(a, l_a);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 1.0);
-    single.computeMetric(b, l_b);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.0);
+    single.record(a, l_a);
+    ASSERT_DOUBLE_EQ(single.value(), 1.0);
+    single.reset();
+    single.record(b, l_b);
+    ASSERT_DOUBLE_EQ(single.value(), 0.0);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(a, l_a);
-    metric.computeMetric(b, l_b);
+    metric.record(a, l_a);
+    metric.record(b, l_b);
   }
 
   {  // Dense outputs, sparse labels
@@ -46,14 +48,16 @@ TEST(MetricTest, CategoricalAccuracy) {
         BoltVector::makeSparseVector({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(a, l_a);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 1.0);
-    single.computeMetric(b, l_b);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.0);
+    single.record(a, l_a);
+    ASSERT_DOUBLE_EQ(single.value(), 1.0);
+    single.reset();
+    single.record(b, l_b);
+    ASSERT_DOUBLE_EQ(single.value(), 0.0);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(a, l_a);
-    metric.computeMetric(b, l_b);
+    metric.record(a, l_a);
+    metric.record(b, l_b);
   }
 
   {  // Sparse outputs, dense labels
@@ -69,14 +73,17 @@ TEST(MetricTest, CategoricalAccuracy) {
         BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(a, l_a);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 1.0);
-    single.computeMetric(b, l_b);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.0);
+    single.record(a, l_a);
+    ASSERT_DOUBLE_EQ(single.value(), 1.0);
+    single.reset();
+
+    single.record(b, l_b);
+    ASSERT_DOUBLE_EQ(single.value(), 0.0);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(a, l_a);
-    metric.computeMetric(b, l_b);
+    metric.record(a, l_a);
+    metric.record(b, l_b);
   }
 
   {  // Sparse outputs, sparse labels
@@ -92,17 +99,19 @@ TEST(MetricTest, CategoricalAccuracy) {
         BoltVector::makeSparseVector({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(a, l_a);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 1.0);
-    single.computeMetric(b, l_b);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.0);
+    single.record(a, l_a);
+    ASSERT_DOUBLE_EQ(single.value(), 1.0);
+    single.reset();
+    single.record(b, l_b);
+    ASSERT_DOUBLE_EQ(single.value(), 0.0);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(a, l_a);
-    metric.computeMetric(b, l_b);
+    metric.record(a, l_a);
+    metric.record(b, l_b);
   }
 
-  ASSERT_DOUBLE_EQ(metric.getMetricAndReset(), 0.5);
+  ASSERT_DOUBLE_EQ(metric.value(), 0.5);
 }
 
 /**
@@ -135,14 +144,17 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
         BoltVector::makeDenseVector({4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(dense_pred_1, dense_truth);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.5);
-    single.computeMetric(dense_pred_2, dense_truth);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.5);
+    single.record(dense_pred_1, dense_truth);
+    ASSERT_DOUBLE_EQ(single.value(), 0.5);
+    single.reset();
+
+    single.record(dense_pred_2, dense_truth);
+    ASSERT_DOUBLE_EQ(single.value(), 0.5);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(dense_pred_1, dense_truth);
-    metric.computeMetric(dense_pred_2, dense_truth);
+    metric.record(dense_pred_1, dense_truth);
+    metric.record(dense_pred_2, dense_truth);
   }
 
   {  // Dense outputs, sparse labels
@@ -162,14 +174,17 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
                                      {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(dense_pred_1, sparse_truth_same_nonzero_neurons);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.5);
-    single.computeMetric(dense_pred_2, sparse_truth_different_nonzero_neurons);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.5);
+    single.record(dense_pred_1, sparse_truth_same_nonzero_neurons);
+    ASSERT_DOUBLE_EQ(single.value(), 0.5);
+    single.reset();
+
+    single.record(dense_pred_2, sparse_truth_different_nonzero_neurons);
+    ASSERT_DOUBLE_EQ(single.value(), 0.5);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(dense_pred_1, sparse_truth_same_nonzero_neurons);
-    metric.computeMetric(dense_pred_2, sparse_truth_different_nonzero_neurons);
+    metric.record(dense_pred_1, sparse_truth_same_nonzero_neurons);
+    metric.record(dense_pred_2, sparse_truth_different_nonzero_neurons);
   }
 
   {  // Sparse outputs, dense labels
@@ -189,14 +204,17 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
             {4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(sparse_pred_1, dense_truth_same_nonzero_neurons);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.5);
-    single.computeMetric(sparse_pred_2, dense_truth_different_nonzero_neurons);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.5);
+    single.record(sparse_pred_1, dense_truth_same_nonzero_neurons);
+    ASSERT_DOUBLE_EQ(single.value(), 0.5);
+    single.reset();
+
+    single.record(sparse_pred_2, dense_truth_different_nonzero_neurons);
+    ASSERT_DOUBLE_EQ(single.value(), 0.5);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(sparse_pred_1, dense_truth_same_nonzero_neurons);
-    metric.computeMetric(sparse_pred_2, dense_truth_different_nonzero_neurons);
+    metric.record(sparse_pred_1, dense_truth_same_nonzero_neurons);
+    metric.record(sparse_pred_2, dense_truth_different_nonzero_neurons);
   }
 
   {  // Sparse outputs, sparse labels
@@ -216,17 +234,20 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
                                      {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(sparse_pred_1, sparse_truth_same_nonzero_neurons);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.5);
-    single.computeMetric(sparse_pred_2, sparse_truth_different_nonzero_neurons);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.5);
+    single.record(sparse_pred_1, sparse_truth_same_nonzero_neurons);
+    ASSERT_DOUBLE_EQ(single.value(), 0.5);
+    single.reset();
+
+    single.record(sparse_pred_2, sparse_truth_different_nonzero_neurons);
+    ASSERT_DOUBLE_EQ(single.value(), 0.5);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(sparse_pred_1, sparse_truth_same_nonzero_neurons);
-    metric.computeMetric(sparse_pred_2, sparse_truth_different_nonzero_neurons);
+    metric.record(sparse_pred_1, sparse_truth_same_nonzero_neurons);
+    metric.record(sparse_pred_2, sparse_truth_different_nonzero_neurons);
   }
 
-  ASSERT_DOUBLE_EQ(metric.getMetricAndReset(), 0.5);
+  ASSERT_DOUBLE_EQ(metric.value(), 0.5);
 }
 
 TEST(MetricTest, FMeasure) {
@@ -253,14 +274,17 @@ TEST(MetricTest, FMeasure) {
         BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(dense_pred_1, dense_label_1);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.4);
-    single.computeMetric(dense_pred_2, dense_label_2);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 2.0 / 3);
+    single.record(dense_pred_1, dense_label_1);
+    ASSERT_DOUBLE_EQ(single.value(), 0.4);
+    single.reset();
+
+    single.record(dense_pred_2, dense_label_2);
+    ASSERT_DOUBLE_EQ(single.value(), 2.0 / 3);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(dense_pred_1, dense_label_1);
-    metric.computeMetric(dense_pred_2, dense_label_2);
+    metric.record(dense_pred_1, dense_label_1);
+    metric.record(dense_pred_2, dense_label_2);
   }
 
   {  // Dense outputs, sparse labels
@@ -275,14 +299,16 @@ TEST(MetricTest, FMeasure) {
         BoltVector::makeSparseVector({3, 5}, {1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(dense_pred_1, sparse_label_1);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.4);
-    single.computeMetric(dense_pred_2, sparse_label_2);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 1.0);
+    single.record(dense_pred_1, sparse_label_1);
+    ASSERT_DOUBLE_EQ(single.value(), 0.4);
+    single.reset();
+    single.record(dense_pred_2, sparse_label_2);
+    ASSERT_DOUBLE_EQ(single.value(), 1.0);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(dense_pred_1, sparse_label_1);
-    metric.computeMetric(dense_pred_2, sparse_label_2);
+    metric.record(dense_pred_1, sparse_label_1);
+    metric.record(dense_pred_2, sparse_label_2);
   }
 
   {  // Sparse outputs, dense labels
@@ -297,14 +323,17 @@ TEST(MetricTest, FMeasure) {
         BoltVector::makeDenseVector({0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(sparse_pred_1, dense_label_1);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.4);
-    single.computeMetric(sparse_pred_2, dense_label_2);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 1.0);
+    single.record(sparse_pred_1, dense_label_1);
+    ASSERT_DOUBLE_EQ(single.value(), 0.4);
+    single.reset();
+
+    single.record(sparse_pred_2, dense_label_2);
+    ASSERT_DOUBLE_EQ(single.value(), 1.0);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(sparse_pred_1, dense_label_1);
-    metric.computeMetric(sparse_pred_2, dense_label_2);
+    metric.record(sparse_pred_1, dense_label_1);
+    metric.record(sparse_pred_2, dense_label_2);
   }
 
   {  // Sparse outputs, sparse labels
@@ -319,17 +348,20 @@ TEST(MetricTest, FMeasure) {
         BoltVector::makeSparseVector({0, 4, 6}, {1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.computeMetric(sparse_pred_1, sparse_label_1);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 0.4);
-    single.computeMetric(sparse_pred_2, sparse_label_2);
-    ASSERT_DOUBLE_EQ(single.getMetricAndReset(), 2.0 / 3);
+    single.record(sparse_pred_1, sparse_label_1);
+    ASSERT_DOUBLE_EQ(single.value(), 0.4);
+    single.reset();
+
+    single.record(sparse_pred_2, sparse_label_2);
+    ASSERT_DOUBLE_EQ(single.value(), 2.0 / 3);
+    single.reset();
 
     // Accumulate in overall metric
-    metric.computeMetric(sparse_pred_1, sparse_label_1);
-    metric.computeMetric(sparse_pred_2, sparse_label_2);
+    metric.record(sparse_pred_1, sparse_label_1);
+    metric.record(sparse_pred_2, sparse_label_2);
   }
 
-  ASSERT_DOUBLE_EQ(metric.getMetricAndReset(), 0.6);
+  ASSERT_DOUBLE_EQ(metric.value(), 0.6);
 }
 
 /**
@@ -366,14 +398,14 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorParallel) {
     BoltVector pred = BoltVector::makeDenseVector({predictions[i]});
     BoltVector truth = BoltVector::makeDenseVector({truths[i]});
 
-    metric.computeMetric(pred, truth);
+    metric.record(pred, truth);
   }
 
   // When aggregating in parallel, the summing order is different
   // so the final answer will be different as well due to the
   // nature of floating point arithmetic. So we just make sure that
   // they are close enough.
-  ASSERT_LT(std::abs(metric.getMetricAndReset() - expected_wmape), 0.00001);
+  ASSERT_LT(std::abs(metric.value() - expected_wmape), 0.00001);
 }
 
 TEST(MetricTest, Recall) {
@@ -412,83 +444,96 @@ TEST(MetricTest, Recall) {
 
   {
     RecallAtK metric(3);
-    metric.computeMetric(good_dense_output, dense_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(good_dense_output, dense_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 1.0);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(ok_dense_output, dense_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(ok_dense_output, dense_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 0.5);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(bad_dense_output, dense_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(bad_dense_output, dense_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 0.0);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(good_sparse_output, dense_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(good_sparse_output, dense_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 1.0);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(ok_sparse_output, dense_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(ok_sparse_output, dense_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 0.5);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(bad_sparse_output, dense_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(bad_sparse_output, dense_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 0.0);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(good_dense_output, sparse_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(good_dense_output, sparse_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 1.0);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(ok_dense_output, sparse_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(ok_dense_output, sparse_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 0.5);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(bad_dense_output, sparse_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(bad_dense_output, sparse_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 0.0);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(good_sparse_output, sparse_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(good_sparse_output, sparse_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 1.0);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(ok_sparse_output, sparse_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(ok_sparse_output, sparse_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 0.5);
   }
   {
     RecallAtK metric(3);
-    metric.computeMetric(bad_sparse_output, sparse_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(bad_sparse_output, sparse_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 0.0);
   }
 
   {
     RecallAtK metric(3);
-    metric.computeMetric(good_sparse_output, sparse_label);
-    metric.computeMetric(ok_sparse_output, sparse_label);
-    metric.computeMetric(bad_sparse_output, sparse_label);
-    auto result = metric.getMetricAndReset();
+    metric.record(good_sparse_output, sparse_label);
+    metric.record(ok_sparse_output, sparse_label);
+    metric.record(bad_sparse_output, sparse_label);
+    auto result = metric.value();
+    metric.reset();
     ASSERT_EQ(result, 0.5);
   }
 }

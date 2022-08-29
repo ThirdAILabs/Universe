@@ -15,9 +15,9 @@ float getFMeasure(std::vector<BoltVector> outputs,
                   std::vector<BoltVector> labels, float threshold) {
   FMeasure metric(threshold);
   for (uint32_t vec_idx = 0; vec_idx < outputs.size(); vec_idx++) {
-    metric.computeMetric(outputs[vec_idx], labels[vec_idx]);
+    metric.record(outputs[vec_idx], labels[vec_idx]);
   }
-  return metric.getMetricAndReset();
+  return metric.value();
 }
 
 TEST(MultiLabelTextClassifierTest, TestLoadSave) {
