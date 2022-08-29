@@ -32,17 +32,21 @@ TEST(LossFunctionMetrics, MeanSquaredErrorMetric) {
 
   float expected_error = meanSquaredError(dense_output_vec, dense_labels_vec);
 
-  mse.computeMetric(dense_output, dense_labels);
-  ASSERT_FLOAT_EQ(mse.getMetricAndReset(false), expected_error);
+  mse.record(dense_output, dense_labels);
+  ASSERT_FLOAT_EQ(mse.value(), expected_error);
+  mse.reset();
 
-  mse.computeMetric(sparse_output, dense_labels);
-  ASSERT_FLOAT_EQ(mse.getMetricAndReset(false), expected_error);
+  mse.record(sparse_output, dense_labels);
+  ASSERT_FLOAT_EQ(mse.value(), expected_error);
+  mse.reset();
 
-  mse.computeMetric(dense_output, sparse_labels);
-  ASSERT_FLOAT_EQ(mse.getMetricAndReset(false), expected_error);
+  mse.record(dense_output, sparse_labels);
+  ASSERT_FLOAT_EQ(mse.value(), expected_error);
+  mse.reset();
 
-  mse.computeMetric(sparse_output, sparse_labels);
-  ASSERT_FLOAT_EQ(mse.getMetricAndReset(false), expected_error);
+  mse.record(sparse_output, sparse_labels);
+  ASSERT_FLOAT_EQ(mse.value(), expected_error);
+  mse.reset();
 }
 
 }  // namespace thirdai::bolt::tests
