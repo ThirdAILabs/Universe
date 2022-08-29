@@ -2,6 +2,7 @@
 
 #include "CompressionUtils.h"
 #include <compression/src/CompressionUtils.h>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <random>
@@ -49,18 +50,118 @@ class CompressedVector {
 
   virtual ~CompressedVector() = default;
 };
+
+// DragonVector class
+template <class T>
+class DragonVector final : public CompressedVector<T> {
+ public:
+  // defining the constructors for the class
+  DragonVector<T>() {}
+
+  /*
+   * If we are constructing a dragon vector from (indices,values) then we need
+   * to know the size of the original vector. Keeping track of the original size
+   * is important when we want to decompress a vector.
+   */
+  DragonVector(const std::vector<T>& vector_to_compress,
+               float compression_density, int seed_for_hashing);
+
+  DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
+               uint32_t original_size, int seed_for_hashing);
+
+  DragonVector(const T* values_to_compress, uint32_t size,
+               float compression_density, int seed_for_hashing);
+
+  /*
+   * Implementing std::vector's standard methods for the class
+   */
+
+  T get(uint32_t index) const final;
+
+  void set(uint32_t index, T value) final;
+
+  // we are only writing for a simple assign now, later expand to iterators and
+  // array as well?
+  void assign(uint32_t size, T value);
+
+  void assign(uint32_t size, uint32_t index, T value,
+              uint32_t original_size = 0);
+
+  void clear() final;
+
+  /*
+   * Implementing utility methods for the class
+   */
+
+  void extend(const DragonVector<T>& vec);
+
+  /*
+   * Dragon vectors are not additive by default. But we can still define schemes
+   * to add them up.
+   */
+
+  bool isAdditive() const final;
+
+  std::vector<uint32_t> getIndices() { return _indices; }
+
+  std::vector<T> getValues() { return _values; }
+
+  int getSeedForHashing() const { return _seed_for_hashing; }
+
+  uint32_t getOriginalSize() const { return _original_size; }
+
+  float getCompressionDensity() const { return _compression_density; }
+
+  uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
+
+  std::string getCompressionScheme() const final;
+
+  /*
+   * We are storing indices,values tuple hence, decompressing is just
+   * putting corresponding values for the stored indices
+   */
+  std::vector<T> decompress() const final;
+
+ private:
+  /*
+   * If we add a lot of compression schemes, we should have a sparse vector
+   * object rather than indices, values, size parameters. A lot of compression
+   * schemes such as topk, randomk, dragon, dgc uses a sparse vector
+   */
+
+  std::vector<uint32_t> _indices;
+  std::vector<T> _values;
+  uint32_t _min_sketch_size = 10;
+  uint32_t _original_size = 0;
+  float _compression_density = 1;
+  int _seed_for_hashing;
+
+  void sketchVector(const T* values, T threshold, uint32_t size,
+                    uint32_t sketch_size);
+};
+
+template <class T>
+std::unique_ptr<CompressedVector<T>> compress(
+    const std::vector<T>& values, const std::string& compression_scheme = "",
+    float compression_density = 1, int seed_for_hashing = 0) {
+  return compress(values.data(), static_cast<uint32_t>(values.size()),
+                  compression_scheme, compression_density, seed_for_hashing);
+}
+
+template <class T>
+std::unique_ptr<CompressedVector<T>> compress(
+    const T* values, uint32_t size, const std::string& compression_scheme = "",
+    float compression_density = 1, int seed_for_hashing = 0) {
+  if (compression_scheme == "dragon") {
+    return std::make_unique<DragonVector<T>>(values, size, compression_density,
+                                             seed_for_hashing);
+  }
+  throw std::logic_error("Compression Scheme is invalid");
+}
+
+template <class T>
+std::vector<T> decompress(const CompressedVector<T>& compressed_vector) {
+  return compressed_vector.decompress();
+}
+
 }  // namespace thirdai::compression
-
-/*
- * We should also create a default compressed vector class that is exactly like
- * std::vector but has other functionalities like extend, split, concat etc.
- * We will have scenarios where we only want to compress gradients or parameters
- * for certain layers and not the other ones, but at the same time, we do not
- * want distributed bolt to be bothered with what vectors are compressed and
- * what are normal. Hence, should be some default compressed vector inheriting
- * from the vector class. And implementing all these functions.
- */
-
-/*
- * We will also need to have objects like sparse vector, dense vector.
- */

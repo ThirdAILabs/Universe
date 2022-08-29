@@ -15,8 +15,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <compression/python_bindings/ConversionUtils.h>
 #include <compression/src/CompressedVector.h>
-#include <compression/src/CompressionFactory.h>
-#include <compression/src/DragonVector.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/utils/SafeFileIO.h>

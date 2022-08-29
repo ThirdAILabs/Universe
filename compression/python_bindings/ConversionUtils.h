@@ -1,6 +1,5 @@
 #pragma once
 #include <compression/src/CompressedVector.h>
-#include <compression/src/DragonVector.h>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
