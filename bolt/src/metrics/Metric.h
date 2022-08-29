@@ -35,9 +35,10 @@ class Metric {
   // Resets the metric.
   virtual void reset() = 0;
 
-  // Provide an informative log-line
-  // virtual std::string log() = 0;
+  // Summarizes the metric as a string
+  virtual std::string summary() = 0;
 
+  // Returns the name of the metric
   virtual std::string name() = 0;
 
   virtual ~Metric() = default;
@@ -103,6 +104,12 @@ class CategoricalAccuracy final : public Metric {
 
   std::string name() final { return kName; }
 
+  std::string summary() final {
+    std::stringstream stream;
+    stream << kName << ": " << value();
+    return stream.str();
+  }
+
  private:
   std::atomic<uint32_t> _correct;
   std::atomic<uint32_t> _num_samples;
@@ -146,6 +153,12 @@ class MeanSquaredErrorMetric final : public Metric {
   static constexpr const char* kName = "mean_squared_error";
 
   std::string name() final { return kName; }
+
+  std::string summary() final {
+    std::stringstream stream;
+    stream << kName << ": " << value();
+    return stream.str();
+  }
 
  private:
   template <bool DENSE, bool LABEL_DENSE>
@@ -241,6 +254,12 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 
   std::string name() final { return kName; }
 
+  std::string summary() final {
+    std::stringstream stream;
+    stream << kName << ": " << value();
+    return stream.str();
+  }
+
  private:
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
@@ -270,11 +289,6 @@ class RecallAtK : public Metric {
 
   double value() final {
     double metric = static_cast<double>(_matches) / _label_count;
-    // TODO(jerin-thirdai): Needs merge
-    // if (verbose) {
-    //   std::cout << "Recall@" << _k << ": " << std::setprecision(3) << metric
-    //             << std::endl;
-    // }
     return metric;
   }
 
@@ -284,6 +298,12 @@ class RecallAtK : public Metric {
   }
 
   std::string name() final { return "recall@" + std::to_string(_k); }
+
+  std::string summary() final {
+    std::stringstream stream;
+    stream << "Recall@" << _k << ": " << std::setprecision(3) << value();
+    return stream.str();
+  }
 
   static inline bool isRecallAtK(const std::string& name) {
     return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
@@ -367,6 +387,11 @@ class FMeasure final : public Metric {
   }
 
   double value() final {
+    auto [precision, recall, f_measure] = metrics();
+    return f_measure;
+  }
+
+  std::tuple<double, double, double> metrics() {
     double prec = static_cast<double>(_true_positive) /
                   (_true_positive + _false_positive);
     double recall = static_cast<double>(_true_positive) /
@@ -379,15 +404,7 @@ class FMeasure final : public Metric {
       f_measure = (2 * prec * recall) / (prec + recall);
     }
 
-    // TODO(jerin-thirdai): Needs merge
-    // if (verbose) {
-    //   std::cout << "Precision (t=" << _threshold << "): " << prec <<
-    //   std::endl; std::cout << "Recall (t=" << _threshold << "): " << recall
-    //   << std::endl; std::cout << "F-Measure (t=" << _threshold << "): " <<
-    //   f_measure
-    //             << std::endl;
-    // }
-    return f_measure;
+    return {prec, recall, f_measure};
   }
 
   void reset() final {
@@ -402,6 +419,17 @@ class FMeasure final : public Metric {
     std::stringstream name_ss;
     name_ss << kName << '(' << _threshold << ')';
     return name_ss.str();
+  }
+
+  std::string summary() final {
+    auto [precision, recall, f_measure] = metrics();
+    std::stringstream stream;
+    stream << "precision(t=" << _threshold << "): " << precision;
+    stream << ", "
+           << "recall(t=" << _threshold << "): " << recall;
+    stream << ", "
+           << "f-measure (t=" << _threshold << "): " << f_measure << std::endl;
+    return stream.str();
   }
 
   static bool isFMeasure(const std::string& name) {
