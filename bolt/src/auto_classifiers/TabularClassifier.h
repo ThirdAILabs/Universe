@@ -8,6 +8,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 
 namespace thirdai::bolt {
 

@@ -105,18 +105,18 @@ void createDatasetSubmodule(py::module_& module) {
            "the text to be encoded.\n"
            " * k: Int - Number of characters in each character k-gram token.\n"
            " * dim: Int - Dimension of the encoding")
-      .def("feature_dim", &UniGramTextBlock::featureDim,
+      .def("feature_dim", &CharKGramTextBlock::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &UniGramTextBlock::isDense,
+      .def("is_dense", &CharKGramTextBlock::isDense,
            "Returns false since text blocks always produce sparse features.");
 
   py::class_<CategoricalBlock, Block, CategoricalBlockPtr>(
       internal_dataset_submodule, "AbstractCategoricalBlock",
       "A block that encodes categorical features (e.g. a numerical ID or an "
       "identification string).")
-      .def("is_dense", &TextBlock::isDense,
+      .def("is_dense", &CategoricalBlock::isDense,
            "Returns false since categorical blocks always produce sparse features.")
-      .def("feature_dim", &TextBlock::featureDim,
+      .def("feature_dim", &CategoricalBlock::featureDim,
            "The dimension of the vector encoding.");
 
   py::class_<NumericalCategoricalBlock, CategoricalBlock, NumericalCategoricalBlockPtr>(
@@ -130,9 +130,9 @@ void createDatasetSubmodule(py::module_& module) {
            "the categorical information to be encoded.\n"
            " * n_classes: Int - Number of unique categories.\n"
            " * delimiter: Char (Optional) - A character that separates different categories in the column. If not supplied, it is assumed that the column only contains a single class.")
-      .def("feature_dim", &UniGramTextBlock::featureDim,
+      .def("feature_dim", &NumericalCategoricalBlock::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &UniGramTextBlock::isDense,
+      .def("is_dense", &NumericalCategoricalBlock::isDense,
            "Returns false since text blocks always produce sparse features.");
 
   py::class_<DateBlock, Block, std::shared_ptr<DateBlock>>(

@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cstddef>

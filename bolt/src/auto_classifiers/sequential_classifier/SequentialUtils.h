@@ -8,6 +8,7 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <memory>
 #include <sstream>
 #include <stdexcept>

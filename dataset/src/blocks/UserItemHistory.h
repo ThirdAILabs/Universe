@@ -7,6 +7,7 @@
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
 #include <atomic>
 #include <deque>
