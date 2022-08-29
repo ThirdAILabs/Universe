@@ -167,6 +167,7 @@ include_directories(".")
 
 # Our source directories
 add_subdirectory(bolt)
+add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
 add_subdirectory(exceptions)
 add_subdirectory(search)

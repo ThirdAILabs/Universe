@@ -49,6 +49,11 @@ FullyConnectedLayer::FullyConnectedLayer(
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
+  // TODO(Nicholas): This can be removed when we deprecate the old bolt api.
+  if (input.hasGradients()) {
+    const_cast<BoltVector&>(input).zeroOutGradients();
+  }
+
   if (output.isDense()) {
     if (input.isDense()) {
       eigenDenseDenseForward(input, output);
@@ -81,7 +86,6 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 
   float max_act = 0;
   uint32_t len_out = nonzerosInOutput<DENSE>();
-  std::fill_n(output.gradients, len_out, 0);
 
   _prev_is_dense = PREV_DENSE;
   _this_is_dense = DENSE;
@@ -183,7 +187,6 @@ void FullyConnectedLayer::eigenDenseDenseForward(const BoltVector& input,
                                                  BoltVector& output) {
   _prev_is_dense = true;
   _this_is_dense = true;
-  std::fill_n(output.gradients, output.len, 0);
 
   Eigen::Map<
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
