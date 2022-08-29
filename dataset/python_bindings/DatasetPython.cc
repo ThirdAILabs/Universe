@@ -12,9 +12,7 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
-#include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
-#include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
-#include <dataset/src/encodings/categorical/ContiguousNumericId.h>
+#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -22,6 +20,7 @@
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
+#include <optional>
 #include <type_traits>
 #include <unordered_map>
 
@@ -40,42 +39,11 @@ void createDatasetSubmodule(py::module_& module) {
   // Everything in this submodule is exposed to users.
   auto dataset_submodule = module.def_submodule("dataset");
   auto block_submodule = dataset_submodule.def_submodule("blocks");
-  auto categorical_encoding_submodule =
-      dataset_submodule.def_submodule("categorical_encodings");
-
+  
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
-
-  py::class_<CategoricalEncoding, std::shared_ptr<CategoricalEncoding>>(
-      internal_dataset_submodule, "CategoricalEncoding",
-      "Interface for categorical feature encoders.")
-      .def("feature_dim", &CategoricalEncoding::featureDim,
-           "True if the encoder produces dense features, False otherwise.")
-      .def("is_dense", &CategoricalEncoding::isDense,
-           "The dimension of the encoding.");
-
-  py::class_<ContiguousNumericId, CategoricalEncoding,
-             std::shared_ptr<ContiguousNumericId>>(
-      categorical_encoding_submodule, "ContiguousNumericId",
-      "Expects a number and treats it as an ID in a contiguous set of "
-      "numeric IDs in a given range (0-indexed, excludes end of range). "
-      "If the ID is beyond the given range, it performs a modulo operation. "
-      "To illustrate, if dim = 10, then 0 through 9 map to themselves, "
-      "and any number n >= 10 maps to n % 10.")
-      .def(py::init<uint32_t>(), py::arg("dim"),
-           "Constructor. Accepts the desired dimension of the encoding.")
-      .def("feature_dim", &ContiguousNumericId::featureDim,
-           "Returns False since this is a sparse encoding.")
-      .def("is_dense", &ContiguousNumericId::isDense,
-           "The dimension of the encoding.");
-
-  py::class_<CategoricalMultiLabel, CategoricalEncoding,
-             std::shared_ptr<CategoricalMultiLabel>>(
-      block_submodule, "CategoricalMultiLabelBlock")
-      .def(py::init<uint32_t, char>(), py::arg("n_classes"),
-           py::arg("delimiter") = ',');
 
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",
@@ -143,28 +111,30 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &UniGramTextBlock::isDense,
            "Returns false since text blocks always produce sparse features.");
 
-  py::class_<CategoricalBlock, Block, std::shared_ptr<CategoricalBlock>>(
-      block_submodule, "Categorical",
+  py::class_<CategoricalBlock, Block, CategoricalBlockPtr>(
+      internal_dataset_submodule, "AbstractCategoricalBlock",
       "A block that encodes categorical features (e.g. a numerical ID or an "
       "identification string).")
-      .def(py::init<uint32_t, std::shared_ptr<CategoricalEncoding>>(),
-           py::arg("col"), py::arg("encoding"),
+      .def("is_dense", &TextBlock::isDense,
+           "Returns false since categorical blocks always produce sparse features.")
+      .def("feature_dim", &TextBlock::featureDim,
+           "The dimension of the vector encoding.");
+
+  py::class_<NumericalCategoricalBlock, CategoricalBlock, NumericalCategoricalBlockPtr>(
+      block_submodule, "NumericalId",
+      "A block that encodes categories represented as numerical IDs.")
+      .def(py::init<uint32_t, uint32_t, std::optional<char>>(), py::arg("col"),
+           py::arg("n_classes"), py::arg("delimiter")=std::nullopt,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
-           "the categorical feature to be encoded.\n"
-           " * encoding: CategoricalEncoding - Categorical feature encoding "
-           "model")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"),
-           "Constructor with default encoder.\n\n"
-           "Arguments:\n"
-           " * col: Int - Column number of the input row containing "
-           "the categorical feature to be encoded.\n"
-           " * dim: Int - Dimension of the encoding")
-      .def("feature_dim", &CategoricalBlock::featureDim,
+           "the categorical information to be encoded.\n"
+           " * n_classes: Int - Number of unique categories.\n"
+           " * delimiter: Char (Optional) - A character that separates different categories in the column. If not supplied, it is assumed that the column only contains a single class.")
+      .def("feature_dim", &UniGramTextBlock::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &CategoricalBlock::isDense,
-           "True if the block produces dense features, False otherwise.");
+      .def("is_dense", &UniGramTextBlock::isDense,
+           "Returns false since text blocks always produce sparse features.");
 
   py::class_<DateBlock, Block, std::shared_ptr<DateBlock>>(
       block_submodule, "Date",

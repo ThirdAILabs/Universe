@@ -13,8 +13,6 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
-#include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
-#include <dataset/src/encodings/text/PairGram.h>
 #include <chrono>
 #include <cstdint>
 #include <exception>
@@ -190,29 +188,15 @@ class MultiLabelTextClassifier {
   void buildBatchProcessors(uint32_t n_classes) {
     _labeled_processor = dataset::GenericBatchProcessor::make(
         /* input_blocks= */ {dataset::PairGramTextBlock::make(/* col= */ 1)},
-        buildLabelBlocks(/* no_label= */ false, n_classes),
+        /* label_blocks= */
+        {dataset::NumericalCategoricalBlock::make(
+            /* col= */ 0, /* n_classes= */ n_classes, /* delimiter= */ ',')},
         /* has_header= */ false, /* delimiter= */ '\t');
 
     _unlabeled_processor = dataset::GenericBatchProcessor::make(
         /* input_blocks= */ {dataset::PairGramTextBlock::make(/* col= */ 0)},
-        buildLabelBlocks(/* no_label= */ true),
+        /* label_blocks= */ {},
         /* has_header= */ false, /* delimiter= */ '\t');
-  }
-
-  static std::vector<dataset::BlockPtr> buildLabelBlocks(
-      bool no_label, uint32_t n_classes = 0) {
-    if (!no_label && n_classes == 0) {
-      throw std::invalid_argument(
-          "buildLabelBlocks: Must pass n_classes if not for single inference.");
-    }
-    if (no_label) {
-      return {};
-    }
-    auto multi_label_encoding =
-        std::make_shared<dataset::CategoricalMultiLabel>(
-            /* n_classes= */ n_classes, /* delimiter= */ ',');
-    return {std::make_shared<dataset::CategoricalBlock>(
-        /* col= */ 0, /* encoding= */ multi_label_encoding)};
   }
 
   static std::string tokensToSentence(const std::vector<uint32_t>& tokens) {

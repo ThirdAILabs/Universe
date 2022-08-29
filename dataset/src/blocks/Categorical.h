@@ -18,7 +18,8 @@ class CategoricalBlock : public Block {
   // Declaration included from BlockInterface.h
   friend CategoricalBlockTest;
 
-  CategoricalBlock(uint32_t col, uint32_t n_classes, std::optional<char> delimiter)
+  CategoricalBlock(uint32_t col, uint32_t n_classes,
+                   std::optional<char> delimiter)
       : _n_classes(n_classes), _col(col), _delimiter(delimiter) {}
 
   uint32_t featureDim() const final { return _n_classes; };
@@ -31,13 +32,13 @@ class CategoricalBlock : public Block {
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec) final {
-
     if (!_delimiter) {
       return encodeCategory(input_row.at(_col), vec);
     }
-    
+
     auto csv_category_set = std::string(input_row[_col]);
-    auto categories = ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
+    auto categories =
+        ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
     for (auto category : categories) {
       auto exception = encodeCategory(category, vec);
       if (exception) {
@@ -48,8 +49,9 @@ class CategoricalBlock : public Block {
     return nullptr;
   }
 
-  virtual std::exception_ptr encodeCategory(std::string_view category, SegmentedFeatureVector& vec) = 0;
-  
+  virtual std::exception_ptr encodeCategory(std::string_view category,
+                                            SegmentedFeatureVector& vec) = 0;
+
   uint32_t _n_classes;
 
  private:
@@ -61,14 +63,19 @@ using CategoricalBlockPtr = std::shared_ptr<CategoricalBlock>;
 
 class NumericalCategoricalBlock final : public CategoricalBlock {
  public:
-  NumericalCategoricalBlock(uint32_t col, uint32_t n_classes, std::optional<char> delimiter = std::nullopt) : CategoricalBlock(col, n_classes, delimiter) {}
+  NumericalCategoricalBlock(uint32_t col, uint32_t n_classes,
+                            std::optional<char> delimiter = std::nullopt)
+      : CategoricalBlock(col, n_classes, delimiter) {}
 
-  static CategoricalBlockPtr make(uint32_t col, uint32_t n_classes, std::optional<char> delimiter = std::nullopt) {
+  static CategoricalBlockPtr make(
+      uint32_t col, uint32_t n_classes,
+      std::optional<char> delimiter = std::nullopt) {
     return std::make_shared<CategoricalBlock>(col, n_classes, delimiter);
   }
 
  protected:
-  std::exception_ptr encodeCategory(std::string_view category, SegmentedFeatureVector &vec) final {
+  std::exception_ptr encodeCategory(std::string_view category,
+                                    SegmentedFeatureVector& vec) final {
     char* end;
     uint32_t id = std::strtoul(category.data(), &end, 10);
     if (id >= _n_classes) {
@@ -84,25 +91,36 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
 using NumericalCategoricalBlockPtr = std::shared_ptr<NumericalCategoricalBlock>;
 
 class StringLookupCategoricalBlock final : public CategoricalBlock {
- public: 
-  StringLookupCategoricalBlock(uint32_t col, ThreadSafeVocabularyPtr vocab, std::optional<char> delimiter = std::nullopt)
-    : CategoricalBlock(col, vocab->vocabSize(), delimiter), _vocab(std::move(vocab)) {}
-  
-  StringLookupCategoricalBlock(uint32_t col, uint32_t n_classes, std::optional<char> delimiter = std::nullopt)
-    : StringLookupCategoricalBlock(col, ThreadSafeVocabulary::make(n_classes), delimiter) {}
-  
-  static CategoricalBlockPtr make(uint32_t col, ThreadSafeVocabularyPtr vocab, std::optional<char> delimiter = std::nullopt) {
-    return std::make_shared<StringLookupCategoricalBlock>(col, std::move(vocab), delimiter);
+ public:
+  StringLookupCategoricalBlock(uint32_t col, ThreadSafeVocabularyPtr vocab,
+                               std::optional<char> delimiter = std::nullopt)
+      : CategoricalBlock(col, vocab->vocabSize(), delimiter),
+        _vocab(std::move(vocab)) {}
+
+  StringLookupCategoricalBlock(uint32_t col, uint32_t n_classes,
+                               std::optional<char> delimiter = std::nullopt)
+      : StringLookupCategoricalBlock(col, ThreadSafeVocabulary::make(n_classes),
+                                     delimiter) {}
+
+  static CategoricalBlockPtr make(
+      uint32_t col, ThreadSafeVocabularyPtr vocab,
+      std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<StringLookupCategoricalBlock>(col, std::move(vocab),
+                                                          delimiter);
   }
 
-  static CategoricalBlockPtr make(uint32_t col, uint32_t n_classes, std::optional<char> delimiter = std::nullopt) {
-    return std::make_shared<StringLookupCategoricalBlock>(col, n_classes, delimiter);
+  static CategoricalBlockPtr make(
+      uint32_t col, uint32_t n_classes,
+      std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<StringLookupCategoricalBlock>(col, n_classes,
+                                                          delimiter);
   }
 
   ThreadSafeVocabularyPtr getVocabulary() const { return _vocab; }
 
  protected:
-  std::exception_ptr encodeCategory(std::string_view category, SegmentedFeatureVector &vec) final {
+  std::exception_ptr encodeCategory(std::string_view category,
+                                    SegmentedFeatureVector& vec) final {
     auto id_str = std::string(category);
 
     uint32_t uid;
@@ -119,5 +137,7 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
  private:
   ThreadSafeVocabularyPtr _vocab;
 };
+
+using StringLookupCategoricalBlockPtr = std::shared_ptr<StringLookupCategoricalBlock>;
 
 }  // namespace thirdai::dataset

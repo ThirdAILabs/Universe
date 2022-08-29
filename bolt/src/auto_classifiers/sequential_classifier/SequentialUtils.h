@@ -8,8 +8,6 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserItemHistory.h>
-#include <dataset/src/encodings/categorical/StringLookup.h>
-#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -208,9 +206,8 @@ class Pipeline {
       string_lookup =
           dataset::ThreadSafeVocabulary::make(categorical.vocab_size);
     }
-    return dataset::CategoricalBlock::make(
-        col_nums.at(categorical.col_name),
-        dataset::StringLookup::make(string_lookup));
+    return dataset::StringLookupCategoricalBlock::make(
+        col_nums.at(categorical.col_name), string_lookup);
   }
 
   static dataset::BlockPtr makeSequentialBlock(
