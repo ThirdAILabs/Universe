@@ -37,7 +37,10 @@ std::string logline_metrics(const MetricData& output) {
     if (!first) {
       stream << " | ";
     }
-    stream << p.first << ":" << p.second[0];
+
+    auto& key = p.first;
+    auto& value = p.second.back();
+    stream << key << ":" << value;
     first = false;
   }
   return stream.str();
