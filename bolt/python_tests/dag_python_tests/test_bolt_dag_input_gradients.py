@@ -113,4 +113,4 @@ def test_bolt_dag_single_input_node_gradients_single():
                 gradients,
                 act[i],
             )
-    assert total_sum/10000 > 0.93
+    assert total_sum / 10000 > 0.93
