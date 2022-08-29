@@ -40,8 +40,6 @@ void createDatasetSubmodule(py::module_& module) {
   // Everything in this submodule is exposed to users.
   auto dataset_submodule = module.def_submodule("dataset");
   auto block_submodule = dataset_submodule.def_submodule("blocks");
-  auto text_encoding_submodule =
-      dataset_submodule.def_submodule("text_encodings");
   auto categorical_encoding_submodule =
       dataset_submodule.def_submodule("categorical_encodings");
 
@@ -98,10 +96,11 @@ void createDatasetSubmodule(py::module_& module) {
            "The dimension of the vector encoding.");
 
   py::class_<PairGramTextBlock, TextBlock, PairGramTextBlockPtr>(
-      block_submodule, "TextPairGrams",
+      block_submodule, "TextPairGram",
       "A block that encodes text as a weighted set of ordered pairs of "
       "space-separated words.")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"),
+      .def(py::init<uint32_t, uint32_t>(), py::arg("col"),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -113,9 +112,10 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns false since text blocks always produce sparse features.");
 
   py::class_<UniGramTextBlock, TextBlock, UniGramTextBlockPtr>(
-      block_submodule, "TextUniGrams",
+      block_submodule, "TextUniGram",
       "A block that encodes text as a weighted set of space-separated words.")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"),
+      .def(py::init<uint32_t, uint32_t>(), py::arg("col"),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -127,10 +127,11 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns false since text blocks always produce sparse features.");
 
   py::class_<CharKGramTextBlock, TextBlock, CharKGramTextBlockPtr>(
-      block_submodule, "TextCharKGrams",
+      block_submodule, "TextCharKGram",
       "A block that encodes text as a weighted set of character trigrams.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("col"),
-           py::arg("k"), py::arg("dim"),
+           py::arg("k"),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "

@@ -2,7 +2,6 @@ import pytest
 import os
 from thirdai.dataset import DataPipeline
 from thirdai.dataset import blocks
-from thirdai.dataset import text_encodings
 from thirdai import bolt, dataset
 import numpy as np
 
@@ -19,13 +18,13 @@ def generate_text_classification_dataset(filename, delim):
                 f.write(f"2{delim}neutral stuff\n")
 
 
-def helper_for_text_classification_data_pipeline(text_encoding, delim):
+def helper_for_text_classification_data_pipeline(text_block, delim):
     file = "test_text_classification.csv"
     generate_text_classification_dataset(file, delim)
     pipeline = DataPipeline(
         file,
         batch_size=256,
-        input_blocks=[blocks.Text(1, text_encoding)],
+        input_blocks=[text_block],
         label_blocks=[blocks.Categorical(0, 3)],
         delimiter=delim,
     )
@@ -66,21 +65,17 @@ def helper_for_text_classification_data_pipeline(text_encoding, delim):
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_unigrams():
-    helper_for_text_classification_data_pipeline(text_encodings.UniGram(100_000), ",")
-    helper_for_text_classification_data_pipeline(text_encodings.UniGram(100_000), "\t")
+    helper_for_text_classification_data_pipeline(blocks.TextUniGram(col=1), ",")
+    helper_for_text_classification_data_pipeline(blocks.TextUniGram(col=1), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_pairgrams():
-    helper_for_text_classification_data_pipeline(text_encodings.PairGram(100_000), ",")
-    helper_for_text_classification_data_pipeline(text_encodings.PairGram(100_000), "\t")
+    helper_for_text_classification_data_pipeline(blocks.TextPairGram(col=1), ",")
+    helper_for_text_classification_data_pipeline(blocks.TextPairGram(col=1), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_chartrigrams():
-    helper_for_text_classification_data_pipeline(
-        text_encodings.CharKGram(3, 100_000), ","
-    )
-    helper_for_text_classification_data_pipeline(
-        text_encodings.CharKGram(3, 100_000), "\t"
-    )
+    helper_for_text_classification_data_pipeline(blocks.TextCharKGram(col=1, k=3), ",")
+    helper_for_text_classification_data_pipeline(blocks.CharKGram(col=1, k=3), "\t")

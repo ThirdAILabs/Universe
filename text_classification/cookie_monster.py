@@ -71,7 +71,7 @@ class CookieMonster:
                 file,
                 batch_size=batch_size,
                 input_blocks=[
-                    blocks.Text(1, text_encodings.PairGram(self.input_dimension))
+                    blocks.TextPairGram(col=1, dim=self.input_dimension)
                 ],
                 label_blocks=[blocks.Categorical(0, label_dim)],
                 delimiter=",",
