@@ -6,6 +6,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <cstddef>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -20,10 +21,12 @@ namespace thirdai::bolt {
 // the outputs of a previous layer.
 class Input final : public Node {
  public:
-  explicit Input(uint32_t expected_input_dim)
+  explicit Input(uint32_t expected_input_dim,
+                 std::optional<uint32_t> expected_num_nonzeros = std::nullopt)
       : _compiled(false),
         _input_batch(nullptr),
-        _expected_input_dim(expected_input_dim) {}
+        _expected_input_dim(expected_input_dim),
+        _expected_num_nonzeros(expected_num_nonzeros) {}
 
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. It is
@@ -32,6 +35,7 @@ class Input final : public Node {
     assert(inputs != nullptr);
     inputs->verifyExpectedDimension(
         /* expected_dimension = */ _expected_input_dim,
+        /* expected_num_nonzeros = */ _expected_num_nonzeros,
         /* origin_string = */
         "We found an Input BoltVector larger than the expected input dim");
     _input_batch = inputs;
@@ -151,6 +155,7 @@ class Input final : public Node {
   bool _compiled;
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
+  std::optional<uint32_t> _expected_num_nonzeros;
 };
 
 using InputPtr = std::shared_ptr<Input>;

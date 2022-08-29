@@ -183,7 +183,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Tells the graph which token input to use for this Embedding Node.");
 
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
-      .def(py::init<uint32_t>(), py::arg("dim"),
+      .def(py::init<uint32_t, std::optional<uint32_t>>(), py::arg("dim"),
+           py::arg("expected_num_nonzeros") = std::nullopt,
            "Constructs an input layer node for the graph.");
 
   py::class_<NormalizationLayerConfig>(graph_submodule, "LayerNormConfig")

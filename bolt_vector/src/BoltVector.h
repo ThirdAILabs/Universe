@@ -11,6 +11,7 @@
 #include <optional>
 #include <queue>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -474,6 +475,7 @@ class BoltBatch {
    * something like "Passed in BoltVector too large for Input".
    */
   void verifyExpectedDimension(uint32_t expected_dimension,
+                               std::optional<uint32_t> expected_num_nonzeros,
                                const std::string& origin_string) const {
     for (const BoltVector& vec : _vectors) {
       if (vec.isDense()) {
@@ -495,6 +497,12 @@ class BoltBatch {
                 std::to_string(expected_dimension));
           }
         }
+      }
+      if (expected_num_nonzeros && vec.len != expected_num_nonzeros.value()) {
+        throw std::invalid_argument(
+            origin_string + ": Received BoltVector with len " +
+            std::to_string(vec.len) + " but was expected to have " +
+            std::to_string(expected_num_nonzeros.value()) + " nonzeros.");
       }
     }
   }

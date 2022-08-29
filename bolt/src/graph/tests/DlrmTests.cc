@@ -44,7 +44,8 @@ BoltGraph getModel() {
                                            /* activation= */ "relu");
   hidden_layer->addPredecessor(input);
 
-  auto token_input = std::make_shared<Input>(/* dim= */ n_classes);
+  auto token_input = std::make_shared<Input>(/* dim= */ n_classes,
+                                             /* expected_num_nonzeros= */ 1);
   auto embedding = std::make_shared<EmbeddingNode>(
       /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
       /* log_embedding_block_size= */ 12);

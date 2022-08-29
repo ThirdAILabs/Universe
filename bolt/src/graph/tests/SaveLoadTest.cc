@@ -143,8 +143,8 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
       /* n_batches= */ n_batches, /* batch_size= */ batch_size,
       /* seed= */ 29042);
 
-  auto token_input =
-      std::make_shared<Input>(/* dim= */ n_batches * batch_size + 1);
+  auto token_input = std::make_shared<Input>(
+      /* dim= */ n_batches * batch_size + 1, /* expected_num_nonzeros= */ 1);
 
   auto embedding_layer = std::make_shared<EmbeddingNode>(
       /* num_embedding_lookups= */ 4, /* lookup_size= */ 8,
