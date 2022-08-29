@@ -15,11 +15,7 @@
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
-#include <dataset/src/encodings/text/CharKGram.h>
-#include <dataset/src/encodings/text/PairGram.h>
-#include <dataset/src/encodings/text/TextEncodingInterface.h>
-#include <dataset/src/encodings/text/TextEncodingUtils.h>
-#include <dataset/src/encodings/text/UniGram.h>
+#include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
@@ -53,54 +49,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
-
-  py::class_<TextEncoding, std::shared_ptr<TextEncoding>>(
-      internal_dataset_submodule, "TextEncoding",
-      "Interface for text encoders.")
-      .def("is_dense", &TextEncoding::isDense,
-           "True if the encoder produces dense features, False otherwise.")
-      .def("feature_dim", &TextEncoding::featureDim,
-           "The dimension of the encoding.");
-
-  py::class_<PairGram, TextEncoding, std::shared_ptr<PairGram>>(
-      text_encoding_submodule, "PairGram",
-      "Encodes a sentence as a weighted set of ordered pairs of "
-      "whitespace-delimited words. Self-pairs are included. "
-      "Expects a textual string, e.g. A good good model, which is then "
-      "encoded as 'A A': 1, 'A good': 2, 'A model': 1, 'good good': 3, 'good "
-      "model': 2, 'model model': 1.")
-      .def(py::init<uint32_t>(),
-           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
-           "Constructor. Accepts the desired dimension of the encoding.")
-      .def("is_dense", &PairGram::isDense,
-           "Returns False since this is a sparse encoding.")
-      .def("feature_dim", &PairGram::featureDim,
-           "The dimension of the encoding.");
-
-  py::class_<UniGram, TextEncoding, std::shared_ptr<UniGram>>(
-      text_encoding_submodule, "UniGram",
-      "Encodes a sentence as a weighted set of whitespace-delimited words. "
-      "Expects a textual string, e.g. A good good model, which is then "
-      "encoded as 'A': 1, 'good': 2, 'model': 1.")
-      .def(py::init<uint32_t>(),
-           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
-           "Constructor. Accepts the desired dimension of the encoding.")
-      .def("is_dense", &UniGram::isDense,
-           "Returns False since this is a sparse encoding.")
-      .def("feature_dim", &UniGram::featureDim,
-           "The dimension of the encoding.");
-
-  py::class_<CharKGram, TextEncoding, std::shared_ptr<CharKGram>>(
-      text_encoding_submodule, "CharKGram",
-      "Encodes a sentence as a weighted set of character trigrams.")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("k"),
-           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
-           "Constructor. Accepts k (the number of characters in each token) "
-           "and dimension of the encoding.")
-      .def("is_dense", &CharKGram::isDense,
-           "Returns False since this is a sparse encoding.")
-      .def("feature_dim", &CharKGram::featureDim,
-           "The dimension of the encoding.");
 
   py::class_<CategoricalEncoding, std::shared_ptr<CategoricalEncoding>>(
       internal_dataset_submodule, "CategoricalEncoding",
@@ -141,26 +89,58 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &Block::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  py::class_<TextBlock, Block, std::shared_ptr<TextBlock>>(
-      block_submodule, "Text",
-      "A block that encodes text (e.g. sentences / paragraphs).")
-      .def(py::init<uint32_t, std::shared_ptr<TextEncoding>>(), py::arg("col"),
-           py::arg("encoding"),
+  py::class_<TextBlock, Block, TextBlockPtr>(
+      internal_dataset_submodule, "AbstractTextBlock",
+      "Abstract block for processing text (e.g. sentences / paragraphs).")
+      .def("is_dense", &TextBlock::isDense,
+           "Returns false since text blocks always produce sparse features.")
+      .def("feature_dim", &TextBlock::featureDim,
+           "The dimension of the vector encoding.");
+
+  py::class_<PairGramTextBlock, TextBlock, PairGramTextBlockPtr>(
+      block_submodule, "TextPairGrams",
+      "A block that encodes text as a weighted set of ordered pairs of "
+      "space-separated words.")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"),
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the text to be encoded.\n"
-           " * encoding: TextEncoding - Text encoding model.")
+           " * dim: Int - Dimension of the encoding")
+      .def("feature_dim", &PairGramTextBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &PairGramTextBlock::isDense,
+           "Returns false since text blocks always produce sparse features.");
+
+  py::class_<UniGramTextBlock, TextBlock, UniGramTextBlockPtr>(
+      block_submodule, "TextUniGrams",
+      "A block that encodes text as a weighted set of space-separated words.")
       .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"),
-           "Constructor with default encoder.\n\n"
+           "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the text to be encoded.\n"
            " * dim: Int - Dimension of the encoding")
-      .def("feature_dim", &TextBlock::featureDim,
+      .def("feature_dim", &UniGramTextBlock::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &TextBlock::isDense,
-           "True if the block produces dense features, False otherwise.");
+      .def("is_dense", &UniGramTextBlock::isDense,
+           "Returns false since text blocks always produce sparse features.");
+
+  py::class_<CharKGramTextBlock, TextBlock, CharKGramTextBlockPtr>(
+      block_submodule, "TextCharKGrams",
+      "A block that encodes text as a weighted set of character trigrams.")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("col"),
+           py::arg("k"), py::arg("dim"),
+           "Constructor.\n\n"
+           "Arguments:\n"
+           " * col: Int - Column number of the input row containing "
+           "the text to be encoded.\n"
+           " * k: Int - Number of characters in each character k-gram token.\n"
+           " * dim: Int - Dimension of the encoding")
+      .def("feature_dim", &UniGramTextBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &UniGramTextBlock::isDense,
+           "Returns false since text blocks always produce sparse features.");
 
   py::class_<CategoricalBlock, Block, std::shared_ptr<CategoricalBlock>>(
       block_submodule, "Categorical",

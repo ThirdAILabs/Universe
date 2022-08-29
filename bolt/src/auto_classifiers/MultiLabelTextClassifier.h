@@ -188,23 +188,15 @@ class MultiLabelTextClassifier {
   }
 
   void buildBatchProcessors(uint32_t n_classes) {
-    _labeled_processor = std::make_shared<dataset::GenericBatchProcessor>(
-        buildInputBlocks(/* no_label= */ false),
+    _labeled_processor = dataset::GenericBatchProcessor::make(
+        /* input_blocks= */ {dataset::PairGramTextBlock::make(/* col= */ 1)},
         buildLabelBlocks(/* no_label= */ false, n_classes),
         /* has_header= */ false, /* delimiter= */ '\t');
 
-    _unlabeled_processor = std::make_shared<dataset::GenericBatchProcessor>(
-        buildInputBlocks(/* no_label= */ true),
+    _unlabeled_processor = dataset::GenericBatchProcessor::make(
+        /* input_blocks= */ {dataset::PairGramTextBlock::make(/* col= */ 0)},
         buildLabelBlocks(/* no_label= */ true),
         /* has_header= */ false, /* delimiter= */ '\t');
-  }
-
-  static std::vector<dataset::BlockPtr> buildInputBlocks(bool no_label) {
-    uint32_t column = no_label ? 0 : 1;
-    return dataset::PairGramTextBlock::make()
-    auto pairgram_encoding =
-        std::make_shared<dataset::PairGram>(/* dim= */ 100000);
-    return {std::make_shared<dataset::TextBlock>(column, pairgram_encoding)};
   }
 
   static std::vector<dataset::BlockPtr> buildLabelBlocks(

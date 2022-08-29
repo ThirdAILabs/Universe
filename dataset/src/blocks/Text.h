@@ -37,13 +37,19 @@ class TextBlock : public Block {
 
 using TextBlockPtr = std::shared_ptr<TextBlock>;
 
+/**
+ * A block that encodes text as a weighted set of ordered pairs of
+ * space-separated words.
+ */
 class PairGramTextBlock final : public TextBlock {
  public:
   explicit PairGramTextBlock(
       uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(col, dim) {}
 
-  static BlockPtr make(uint32_t col, uint32_t dim) {
+  static TextBlockPtr make(
+      uint32_t col,
+      uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<PairGramTextBlock>(col, dim);
   }
 
@@ -62,13 +68,20 @@ class PairGramTextBlock final : public TextBlock {
   }
 };
 
+using PairGramTextBlockPtr = std::shared_ptr<PairGramTextBlock>;
+
+/**
+ * A block that encodes text as a weighted set of space-separated words.
+ */
 class UniGramTextBlock final : public TextBlock {
  public:
   explicit UniGramTextBlock(
       uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(col, dim) {}
 
-  static BlockPtr make(uint32_t col, uint32_t dim) {
+  static TextBlockPtr make(
+      uint32_t col,
+      uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<UniGramTextBlock>(col, dim);
   }
 
@@ -87,6 +100,11 @@ class UniGramTextBlock final : public TextBlock {
   }
 };
 
+using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;
+
+/**
+ * A block that encodes text as a weighted set of character k-grams.
+ */
 class CharKGramTextBlock final : public TextBlock {
  public:
   CharKGramTextBlock(
@@ -94,8 +112,10 @@ class CharKGramTextBlock final : public TextBlock {
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(col, dim), _k(k) {}
 
-  static BlockPtr make(uint32_t col, uint32_t dim) {
-    return std::make_shared<CharKGramTextBlock>(col, dim);
+  static TextBlockPtr make(
+      uint32_t col, uint32_t k,
+      uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
+    return std::make_shared<CharKGramTextBlock>(col, k, dim);
   }
 
  protected:
@@ -131,5 +151,7 @@ class CharKGramTextBlock final : public TextBlock {
  private:
   uint32_t _k;
 };
+
+using CharKGramTextBlockPtr = std::shared_ptr<CharKGramTextBlock>;
 
 }  // namespace thirdai::dataset

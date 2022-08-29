@@ -184,8 +184,8 @@ class Pipeline {
         col_nums.at(schema.timestamp_col_name)));
 
     for (const auto& text_col_name : schema.static_text_attrs) {
-      input_blocks.push_back(std::make_shared<dataset::TextBlock>(
-          col_nums.at(text_col_name), /* dim = */ 100000));
+      input_blocks.push_back(
+          dataset::UniGramTextBlock::make(col_nums.at(text_col_name)));
     }
 
     for (const auto& categorical : schema.static_categorical_attrs) {
