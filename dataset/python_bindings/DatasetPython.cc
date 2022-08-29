@@ -12,7 +12,6 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
-#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
