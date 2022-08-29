@@ -46,7 +46,7 @@ class CompressedVector {
    */
   virtual std::vector<T> decompress() const = 0;
 
-  virtual std::string getCompressionScheme() const = 0;
+  virtual std::string type() const = 0;
 
   virtual ~CompressedVector() = default;
 };
@@ -114,7 +114,7 @@ class DragonVector final : public CompressedVector<T> {
 
   uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
 
-  std::string getCompressionScheme() const final;
+  std::string type() const final;
 
   /*
    * We are storing indices,values tuple hence, decompressing is just

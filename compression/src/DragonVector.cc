@@ -167,7 +167,7 @@ std::vector<T> DragonVector<T>::decompress() const {
 }
 
 template <class T>
-std::string DragonVector<T>::getCompressionScheme() const {
+std::string DragonVector<T>::type() const {
   return "dragon";
 }
 

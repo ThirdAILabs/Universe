@@ -60,9 +60,8 @@ inline py::dict convertCompressedVectorToPyDict(
     const std::unique_ptr<CompressedVector<float>>& compressed_vector) {
   py::dict py_compressed_vector;
 
-  py_compressed_vector["compression_scheme"] =
-      compressed_vector->getCompressionScheme();
-  if (compressed_vector->getCompressionScheme() == "dragon") {
+  py_compressed_vector["compression_scheme"] = compressed_vector->type();
+  if (compressed_vector->type() == "dragon") {
     // dynamic casting a compressed vector to a dragon vector
     DragonVector<float> dragon_sketch =
         *dynamic_cast<DragonVector<float>*>(compressed_vector.get());
