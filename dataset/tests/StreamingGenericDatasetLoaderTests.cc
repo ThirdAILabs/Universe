@@ -178,8 +178,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
         original_value_range_start + batch.getBatchSize();
     size_t count = 0;
 
-    for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      auto value = batch[vec_idx].activations[0];
+    for (const auto& vec : batch) {
+      auto value = vec.activations[0];
       if (value >= original_value_range_start &&
           value < original_value_range_end) {
         count++;
@@ -191,26 +191,18 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
   static bool containsVectorsFromEarlierBatch(BoltBatch& batch,
                                               uint32_t batch_idx) {
     float original_value_range_start = batch_idx * batch_size;
-    for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      auto value = batch[vec_idx].activations[0];
-      if (value < original_value_range_start) {
-        return true;
-      }
-    }
-    return false;
+    return std::any_of(batch.begin(), batch.end(), [&](const auto& vec) {
+      return vec.activations[0] < original_value_range_start;
+    });
   }
 
   static bool containsVectorsFromLaterBatch(BoltBatch& batch,
                                             uint32_t batch_idx) {
     float original_value_range_end =
         batch_idx * batch_size + batch.getBatchSize();
-    for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      auto value = batch[vec_idx].activations[0];
-      if (value >= original_value_range_end) {
-        return true;
-      }
-    }
-    return false;
+    return std::any_of(batch.begin(), batch.end(), [&](const auto& vec) {
+      return vec.activations[0] >= original_value_range_end;
+    });
   }
 
   static uint32_t maxVectorDisplacement(BoltBatch& batch, int batch_idx) {
@@ -218,8 +210,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     // original batch and its final batch.
     uint32_t max_displacement = 0;
 
-    for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      auto value = batch[vec_idx].activations[0];
+    for (const auto& vec : batch) {
+      auto value = vec.activations[0];
       int origin_batch_idx = value / batch_size;
       uint32_t displacement = std::abs(origin_batch_idx - batch_idx);
       max_displacement = std::max(displacement, max_displacement);
