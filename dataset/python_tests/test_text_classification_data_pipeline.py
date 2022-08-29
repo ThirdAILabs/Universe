@@ -25,7 +25,7 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
         file,
         batch_size=256,
         input_blocks=[text_block],
-        label_blocks=[blocks.Categorical(0, 3)],
+        label_blocks=[blocks.NumericalId(col=0, n_classes=3)],
         delimiter=delim,
     )
     [data, labels] = pipeline.load_in_memory()

@@ -73,7 +73,7 @@ class CookieMonster:
                 input_blocks=[
                     blocks.TextPairGram(col=1, dim=self.input_dimension)
                 ],
-                label_blocks=[blocks.Categorical(0, label_dim)],
+                label_blocks=[blocks.NumericalId(col=0, n_classes=label_dim)],
                 delimiter=",",
             )
             data, label = pipeline.load_in_memory()
