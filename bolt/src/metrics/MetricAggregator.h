@@ -18,12 +18,12 @@ class MetricAggregator {
   // that it is not avilable.
   explicit MetricAggregator(const std::vector<std::string>& metrics) {
     for (const auto& name : metrics) {
-      if (name == CategoricalAccuracy::name) {
+      if (name == CategoricalAccuracy::kName) {
         _metrics.push_back(std::make_shared<CategoricalAccuracy>());
-      } else if (name == WeightedMeanAbsolutePercentageError::name) {
+      } else if (name == WeightedMeanAbsolutePercentageError::kName) {
         _metrics.push_back(
             std::make_shared<WeightedMeanAbsolutePercentageError>());
-      } else if (name == MeanSquaredErrorMetric::name) {
+      } else if (name == MeanSquaredErrorMetric::kName) {
         _metrics.push_back(std::make_shared<MeanSquaredErrorMetric>());
       } else if (FMeasure::isFMeasure(name)) {
         _metrics.push_back(FMeasure::make(name));
@@ -36,21 +36,22 @@ class MetricAggregator {
   }
 
   void processSample(const BoltVector& output, const BoltVector& labels) {
-    for (auto& m : _metrics) {
-      m->computeMetric(output, labels);
+    for (auto& metric : _metrics) {
+      metric->record(output, labels);
     }
   }
 
   void logAndReset() {
-    for (auto& m : _metrics) {
-      _output[m->getName()].push_back(m->getMetricAndReset());
+    for (auto& metric : _metrics) {
+      _output[metric->name()].push_back(metric->value());
+      metric->reset();
     }
   }
 
   MetricData getMetrics() {
     MetricData output;
-    for (auto& m : _metrics) {
-      output[m->getName()].push_back(m->getMetric());
+    for (auto& metric : _metrics) {
+      output[metric->name()].push_back(metric->value());
     }
     return output;
   }
