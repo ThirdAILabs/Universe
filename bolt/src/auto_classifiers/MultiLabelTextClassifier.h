@@ -200,9 +200,10 @@ class MultiLabelTextClassifier {
   }
 
   static std::vector<dataset::BlockPtr> buildInputBlocks(bool no_label) {
+    uint32_t column = no_label ? 0 : 1;
+    return dataset::PairGramTextBlock::make()
     auto pairgram_encoding =
         std::make_shared<dataset::PairGram>(/* dim= */ 100000);
-    uint32_t column = no_label ? 0 : 1;
     return {std::make_shared<dataset::TextBlock>(column, pairgram_encoding)};
   }
 
