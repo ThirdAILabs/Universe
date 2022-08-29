@@ -43,6 +43,10 @@ class Input final : public Node {
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }
 
+  std::optional<uint32_t> expectedNumNonzeros() const {
+    return _expected_num_nonzeros;
+  }
+
   uint32_t outputDim() const final { return _expected_input_dim; }
 
   bool isInputNode() const final { return true; }

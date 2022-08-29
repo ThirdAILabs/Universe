@@ -66,7 +66,16 @@ class SwitchNode final : public Node,
     if (token_input->outputDim() != _layers.size()) {
       throw exceptions::GraphCompilationFailure(
           "Switch requires an Input with dimension the same as the number of "
-          "switch layers.");
+          "switch layers but received Input with dimension " +
+          std::to_string(token_input->outputDim()) + ".");
+    }
+
+    auto expected_num_nonzeros = token_input->expectedNumNonzeros();
+    if (!expected_num_nonzeros || expected_num_nonzeros.value() != 1) {
+      throw exceptions::GraphCompilationFailure(
+          "Switch requires an Input with a single nonzero to indicate which "
+          "layer to use, but received Input with " +
+          std::to_string(expected_num_nonzeros.value()) + " nonzeros.");
     }
 
     for (auto& layer : _layers) {
