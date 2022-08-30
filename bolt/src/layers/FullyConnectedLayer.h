@@ -173,13 +173,14 @@ class FullyConnectedLayer final {
   // --------------- Within-batch variables ------------------------------
   // These variables are set while we are processing a batch (usually during
   // calls to forward) and are used later, usually while in updateParameters.
-  // Even though these are temporary within batch variables, we still
-  // serialize them so that they have the correct size upon deserialization.
+  // Since these are temporary within batch variables, we do NOT
+  // serialize them, and we reinitialize them upon deserialization (so they
+  // have the correct size).
   // Overall, these variables are
   //  - initialized during the constructor/deserialization
   //  - populated during forward
   //  - used during updateParameters
-  //  - cleaned up during updateParameters
+  //  - cleaned up/zero'd during updateParameters
 
   // These track whether the current/previous layer was dense (using whether
   // the BoltVectors in forward are dense).
@@ -189,11 +190,12 @@ class FullyConnectedLayer final {
   // The following variables track which neurons were active during batch
   // training.
 
-  // _prev_is_active is only used if _prev_is_dense == false.
+  // _prev_is_active is only used if _prev_is_dense == false and _cur_is_dense
+  // is true.
   // It tracks the neurons in the previous layer which are active.
   std::vector<bool> _prev_is_active;
 
-  // _is_active is only used if _this_is_dense == false.
+  // _is_active is used if _this_is_dense == false.
   // It tracks the neurons in the current layer which are active.
   std::vector<bool> _is_active;
 
@@ -288,9 +290,7 @@ class FullyConnectedLayer final {
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _is_distributed, _sampling_mode, _prev_is_dense, _this_is_dense,
-            _prev_is_active, _is_active, _active_pairs_array,
-            _use_sparse_sparse_optimization, _active_pairs_raw);
+            _is_distributed, _sampling_mode, _use_sparse_sparse_optimization);
   }
 
   /**
@@ -312,9 +312,7 @@ class FullyConnectedLayer final {
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _is_distributed, _sampling_mode, _prev_is_dense, _this_is_dense,
-            _prev_is_active, _is_active, _active_pairs_array,
-            _use_sparse_sparse_optimization, _active_pairs_raw);
+            _is_distributed, _sampling_mode, _use_sparse_sparse_optimization);
 
     /**
      * Here we init the optimizer so that any calls to train in the network

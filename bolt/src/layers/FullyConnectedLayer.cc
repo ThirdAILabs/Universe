@@ -552,31 +552,6 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   }
 }
 
-inline void FullyConnectedLayer::updateSparseSparseParametersNormal(
-    float lr, float B1, float B2, float eps, float B1_bias_corrected,
-    float B2_bias_corrected) {
-#pragma omp parallel for default(none) \
-    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if (!_is_active[cur_neuron]) {
-      continue;
-    }
-    _is_active[cur_neuron] = false;
-    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
-                               B2_bias_corrected);
-
-    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-      uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
-      // TODO(David): could use bloom filter here also?
-      if (_active_pairs_array[active_pair_index]) {
-        _active_pairs_array[active_pair_index] = false;
-        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
-                                     B1_bias_corrected, B2_bias_corrected);
-      }
-    }
-  }
-}
-
 inline void FullyConnectedLayer::updateSparseSparseParametersOptimized(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
@@ -601,7 +576,44 @@ inline void FullyConnectedLayer::updateSparseSparseParametersOptimized(
       }
     }
   }
+
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    if (!_is_active[cur_neuron]) {
+      continue;
+    }
+    _is_active[cur_neuron] = false;
+    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
+                               B2_bias_corrected);
+  }
+
   _active_pairs_raw.clear();
+}
+
+inline void FullyConnectedLayer::updateSparseSparseParametersNormal(
+    float lr, float B1, float B2, float eps, float B1_bias_corrected,
+    float B2_bias_corrected) {
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    if (!_is_active[cur_neuron]) {
+      continue;
+    }
+    _is_active[cur_neuron] = false;
+    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
+                               B2_bias_corrected);
+
+    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+      uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
+      // TODO(David): could use bloom filter here also?
+      if (_active_pairs_array[active_pair_index]) {
+        _active_pairs_array[active_pair_index] = false;
+        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
+                                     B1_bias_corrected, B2_bias_corrected);
+      }
+    }
+  }
 }
 
 inline void FullyConnectedLayer::updateSparseDenseParameters(
@@ -854,6 +866,7 @@ void FullyConnectedLayer::initActiveNeuronsTrackers() {
   _active_pairs_array.assign(_dim * _prev_dim, false);
   _prev_is_active.assign(_prev_dim, false);
   _is_active.assign(_dim, false);
+  _active_pairs_raw = {};
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
