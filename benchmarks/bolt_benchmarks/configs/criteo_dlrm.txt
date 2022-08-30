@@ -13,16 +13,16 @@ test_metrics = ["categorical_accuracy"]
 
 [[datasets]]
 format = "click"
-type_list = ["train_data", "train_tokens", "train_labels"]
+type_list = ["train_data", "train_data", "train_labels"]
 path = "criteo-small/train_shuf.txt"
 batch_size = 256
 max_num_numerical_features = 15
-max_categorical_features = 23
+max_categorical_features = 24
 delimiter = " "
 
 [[datasets]]
 format = "click"
-type_list = ["test_data", "test_tokens", "test_labels"]
+type_list = ["test_data", "test_data", "test_labels"]
 path = "criteo-small/test_shuf.txt"
 batch_size = 256
 max_num_numerical_features = 15
@@ -52,8 +52,11 @@ dim = 100
 activation = "relu"
 
 [[nodes]] 
-type = "TokenInput"
+type = "Input"
 name = "categorical_input"
+dim = 4294967295
+min_num_nonzeros = 0
+max_num_nonzeros = 24
 
 [[nodes]]
 type = "Embedding"

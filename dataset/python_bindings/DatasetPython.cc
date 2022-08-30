@@ -326,15 +326,9 @@ void createDatasetSubmodule(py::module_& module) {
       .def("save", &BoltDataset::save, py::arg("filename"))
       .def_static("load", &BoltDataset::load, py::arg("filename"));
 
-  py::class_<BoltTokenDataset, BoltTokenDatasetPtr>(  // NOLINT
-      dataset_submodule, "BoltTokenDataset");
-
   py::class_<numpy::WrappedNumpyVectors,  // NOLINT
              std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
       dataset_submodule, "WrappedNumpyVectors");
-  py::class_<numpy::WrappedNumpyTokens,  // NOLINT
-             std::shared_ptr<numpy::WrappedNumpyTokens>, BoltTokenDataset>(
-      dataset_submodule, "WrappedNumpyTokens");
 
   // TODO(josh): Add __iter__ method so we can do foreach loops in pthon and c++
   // TODO(josh): This segfaults if the user passes in an index that is too large
@@ -379,9 +373,6 @@ void createDatasetSubmodule(py::module_& module) {
       "a BoltDataset storing the labels.");
 
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
-                        py::arg("data"), py::arg("batch_size") = std::nullopt);
-
-  dataset_submodule.def("tokens_from_numpy", &numpy::numpyToBoltTokenDataset,
                         py::arg("data"), py::arg("batch_size") = std::nullopt);
 
   dataset_submodule.def(
