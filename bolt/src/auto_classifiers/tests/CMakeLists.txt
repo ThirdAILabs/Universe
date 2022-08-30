@@ -5,7 +5,6 @@ target_link_libraries(
   bolt_tabular_classifier_test
   PRIVATE
   auto_classifier_lib
-  bolt_network_lib
   gtest_main
 )
 
@@ -14,7 +13,6 @@ target_link_libraries(
   bolt_text_classifier_test
   PRIVATE
   auto_classifier_lib
-  bolt_network_lib
   gtest_main
 )
 
@@ -23,11 +21,17 @@ target_link_libraries(
   bolt_multi_label_text_classifier_test
   PRIVATE
   auto_classifier_lib
-  bolt_network_lib
   gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(bolt_tabular_classifier_test)
-gtest_discover_tests(bolt_text_classifier_test)
-gtest_discover_tests(bolt_multi_label_text_classifier_test)
+
+set(AUTO_CLASSIFIER_TESTS
+  bolt_tabular_classifier_test
+  bolt_text_classifier_test
+  bolt_multi_label_text_classifier_test
+)
+
+foreach(AUTO_CLASSIFIER_TEST IN LISTS AUTO_CLASSIFIER_TESTS)
+  gtest_discover_tests(${AUTO_CLASSIFIER_TEST} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+endforeach()

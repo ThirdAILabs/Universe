@@ -47,7 +47,9 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
   float* getEmbeddingBlock() const { return _layer->_embedding_block.data(); }
 
-  float* getEmbeddingGradients() const { return _layer->_gradients.data(); }
+  float* getEmbeddingGradients() const {
+    return _layer->_optimizer->gradients.data();
+  }
 
   uint32_t _lookup_size = 20, _num_lookups = 50, _log_block_size = 10;
   std::unique_ptr<EmbeddingLayer> _layer;
@@ -70,7 +72,8 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, {tokens[i]}, output[i]);
+    _layer->forward(i, BoltVector::singleElementSparseVector(tokens.at(i)),
+                    output[i]);
   }
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
@@ -96,7 +99,11 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i], output[i]);
+    _layer->forward(
+        i,
+        BoltVector::makeSparseVector(
+            tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
+        output[i]);
   }
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
@@ -124,7 +131,11 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i], output[i]);
+    _layer->forward(
+        i,
+        BoltVector::makeSparseVector(
+            tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
+        output[i]);
   }
 
   std::unordered_map<uint32_t, float> deltas;

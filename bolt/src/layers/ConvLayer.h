@@ -1,34 +1,33 @@
 #pragma once
 
-#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
 #include "LayerUtils.h"
-#include "SequentialLayer.h"
+#include <bolt/src/layers/Optimizer.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <exceptions/src/Exceptions.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::bolt {
-class ConvLayer final : public SequentialLayer {
+class ConvLayer final {
  public:
   ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
             uint32_t prev_num_filters, uint32_t prev_num_sparse_filters,
             std::pair<uint32_t, uint32_t> next_kernel_size);
 
   void forward(const BoltVector& input, BoltVector& output,
-               const BoltVector* labels) final;
+               const BoltVector* labels);
 
-  void backpropagate(BoltVector& input, BoltVector& output) final;
+  void backpropagate(BoltVector& input, BoltVector& output);
 
-  void backpropagateInputLayer(BoltVector& input, BoltVector& output) final;
+  void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2,
-                        float eps) override;
+  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
   BoltBatch createBatchState(const uint32_t batch_size,
-                             bool use_sparsity) const final {
+                             bool use_sparsity) const {
     bool is_sparse = (_sparsity < 1.0) && use_sparsity;
 
     uint32_t curr_dim = is_sparse ? _sparse_dim : _dim;
@@ -37,54 +36,39 @@ class ConvLayer final : public SequentialLayer {
                      /* is_dense= */ !is_sparse);
   }
 
-  void freezeHashTables(bool insert_labels_if_not_found) final {
-    (void)insert_labels_if_not_found;
-    throw exceptions::NotImplemented(
-        "Freeze hash tables is not supported in Conv layer.");
-  }
+  void buildHashTables();
 
-  void buildHashTables() final;
+  void reBuildHashFunction();
 
-  void reBuildHashFunction() final;
+  uint32_t getDim() const { return _dim; }
 
-  uint32_t getDim() const final { return _dim; }
+  uint32_t getInputDim() const { return _prev_dim; }
 
-  uint32_t getInputDim() const final { return _prev_dim; }
+  uint32_t getSparseDim() const { return _sparse_dim; }
 
-  uint32_t getSparseDim() const final { return _sparse_dim; }
+  float* getWeights() const;
 
-  float* getWeights() const final;
+  float* getBiases() const;
 
-  float* getBiases() const final;
+  void setTrainable(bool trainable);
 
-  void setTrainable(bool trainable) final;
+  bool getTrainable() const;
 
-  bool getTrainable() const final;
+  void setWeights(const float* new_weights);
 
-  void setWeights(const float* new_weights) final;
+  void setBiases(const float* new_biases);
 
-  void setBiases(const float* new_biases) final;
+  void setWeightGradients(const float* update_weight_gradient);
 
-  void setWeightGradients(const float* update_weight_gradient) final;
+  void setBiasesGradients(const float* update_bias_gradient);
 
-  void setBiasesGradients(const float* update_bias_gradient) final;
+  float* getBiasesGradient();
 
-  float* getBiasesGradient() final;
+  float* getWeightsGradient();
 
-  float* getWeightsGradient() final;
+  float getSparsity() const { return _sparsity; }
 
-  float getSparsity() const final { return _sparsity; }
-
-  void setSparsity(float sparsity) final {
-    (void)sparsity;
-    // This is currently unimplemented because it would duplicate code from
-    // FullyConnectedLayer, and instead of duplicating code we should come up
-    // with a better design. Perhaps FullyConnectedLayer and ConvLayer can
-    // subclass SparseLayer.
-    // TODO(josh)
-    throw thirdai::exceptions::NotImplemented(
-        "Cannot currently set the sparsity of a convolutional layer.");
-  }
+  void initOptimizer();
 
  private:
   template <bool DENSE, bool PREV_DENSE>
@@ -112,14 +96,10 @@ class ConvLayer final : public SequentialLayer {
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
-  std::vector<float> _w_gradient;
-  std::vector<float> _w_momentum;
-  std::vector<float> _w_velocity;
-
   std::vector<float> _biases;
-  std::vector<float> _b_gradient;
-  std::vector<float> _b_momentum;
-  std::vector<float> _b_velocity;
+
+  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
+  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
 
   std::vector<bool> _is_active;
 
@@ -137,16 +117,29 @@ class ConvLayer final : public SequentialLayer {
   uint32_t _kernel_size;
   std::vector<uint32_t> _in_to_out, _out_to_in;  // patch mappings
 
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  /**
+   * Training data-structures (like the optimizer and the active neurons
+   * trackers) are not loaded in by default. If we want to continue training
+   * after a load, the expectation is that the higher level Graph/Network API
+   * will handle this initialization with the initOptimizer() method.
+   *
+   * Doing this means our load API is as simple as possible for both
+   * training and inference purposes. It doesn't make sense to load these
+   * data-structures by default then remove them with another function since
+   * users may be memory constrained during deployment.
+   *
+   * We don't know yet if its worth it to save the optimizer for
+   * retraining/finetuning purposes. If in the future we figure out this has
+   * some benefit we can adjust this method accordingly.
+   */
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-            _b_momentum, _b_velocity, _is_active, _hasher, _hash_table,
-            _rand_neurons, _patch_dim, _sparse_patch_dim, _num_patches,
-            _num_filters, _num_sparse_filters, _prev_num_filters,
-            _prev_num_sparse_filters, _kernel_size, _in_to_out, _out_to_in);
+            _biases, _is_active, _hasher, _hash_table, _rand_neurons,
+            _patch_dim, _sparse_patch_dim, _num_patches, _num_filters,
+            _num_sparse_filters, _prev_num_filters, _prev_num_sparse_filters,
+            _kernel_size, _in_to_out, _out_to_in);
   }
 
  protected:
@@ -154,7 +147,3 @@ class ConvLayer final : public SequentialLayer {
   ConvLayer() {}
 };
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::ConvLayer)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::SequentialLayer,
-                                     thirdai::bolt::ConvLayer)

@@ -6,7 +6,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "utils/SafeFileIO.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -143,5 +143,4 @@ class InMemoryDataset : public DatasetBase {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(
-    thirdai::dataset::InMemoryDataset<thirdai::bolt::BoltBatch>)
+CEREAL_REGISTER_TYPE(thirdai::dataset::InMemoryDataset<thirdai::BoltBatch>)

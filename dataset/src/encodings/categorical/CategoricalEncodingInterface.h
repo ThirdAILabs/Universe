@@ -2,6 +2,7 @@
 
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <memory>
 
 namespace thirdai::dataset {
 
@@ -29,5 +30,7 @@ class CategoricalEncoding {
 
   virtual ~CategoricalEncoding() = default;
 };
+
+using CategoricalEncodingPtr = std::shared_ptr<CategoricalEncoding>;
 
 }  // namespace thirdai::dataset

@@ -13,4 +13,4 @@ target_link_libraries(
     OpenMP::OpenMP_CXX)
 
 include(GoogleTest)
-gtest_discover_tests(metric_test)
+gtest_discover_tests(metric_test DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})

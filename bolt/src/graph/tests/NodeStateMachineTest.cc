@@ -5,9 +5,8 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/graph/nodes/TokenInput.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <memory>
@@ -202,7 +201,7 @@ class EmbeddingStateMachineTest final : public NodeStateMachineTest {
     EmbeddingNode* embedding_node = dynamic_cast<EmbeddingNode*>(_node.get());
     ASSERT_NE(embedding_node, nullptr);
 
-    TokenInputPtr input = std::make_shared<TokenInput>();
+    InputPtr input = std::make_shared<Input>(/* dim= */ 1);
 
     embedding_node->addInput(input);
   }

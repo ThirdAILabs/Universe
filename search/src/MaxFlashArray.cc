@@ -1,5 +1,5 @@
 #include "MaxFlashArray.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>
 #include <cmath>
@@ -35,7 +35,7 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
 }
 
 template <typename LABEL_T>
-uint64_t MaxFlashArray<LABEL_T>::addDocument(const bolt::BoltBatch& batch) {
+uint64_t MaxFlashArray<LABEL_T>::addDocument(const BoltBatch& batch) {
   LABEL_T num_elements =
       std::min<uint64_t>(batch.getBatchSize(), _max_allowable_doc_size);
   const std::vector<uint32_t> hashes = hash(batch);
@@ -47,7 +47,7 @@ uint64_t MaxFlashArray<LABEL_T>::addDocument(const bolt::BoltBatch& batch) {
 
 template <typename LABEL_T>
 std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
-    const bolt::BoltBatch& query,
+    const BoltBatch& query,
     const std::vector<uint32_t>& documents_to_query) const {
   const std::vector<uint32_t> hashes = hash(query);
 

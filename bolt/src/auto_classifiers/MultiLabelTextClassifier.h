@@ -6,8 +6,8 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -72,7 +72,7 @@ class MultiLabelTextClassifier {
                       .withRebuildHashTables(10000)
                       .withReconstructHashFunctions(50000);
 
-    _classifier->train({train_data}, {}, train_labels, config);
+    _classifier->train({train_data}, train_labels, config);
   }
 
   InferenceResult predict(const std::string& filename,
@@ -88,7 +88,7 @@ class MultiLabelTextClassifier {
 
     auto config = PredictConfig::makeConfig().withMetrics(metrics);
 
-    return _classifier->predict({pred_data}, {}, pred_labels, config);
+    return _classifier->predict({pred_data}, pred_labels, config);
   }
 
   BoltVector predictSingleFromSentence(std::string sentence,
@@ -107,7 +107,7 @@ class MultiLabelTextClassifier {
     }
 
     BoltVector output =
-        _classifier->predictSingle({input_vector}, {},
+        _classifier->predictSingle({input_vector},
                                    /* use_sparse_inference = */ false);
 
     assert(output.isDense());
@@ -154,7 +154,9 @@ class MultiLabelTextClassifier {
     return deserialize_into;
   }
 
- protected:
+  uint32_t numClasses() const { return _n_classes; }
+
+ private:
   static float getOutputSparsity(uint32_t output_dim) {
     /*
       For smaller output layers, we return a sparsity

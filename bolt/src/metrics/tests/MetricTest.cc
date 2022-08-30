@@ -1,5 +1,5 @@
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <random>
 #include <vector>
@@ -375,6 +375,123 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorParallel) {
   // they are close enough.
   ASSERT_LT(std::abs(metric.getMetricAndReset(false) - expected_wmape),
             0.00001);
+}
+
+TEST(MetricTest, Recall) {
+  std::vector<float> dense_label_activations = {1.0, 0, 0, 0, 1.0, 0};
+  std::vector<uint32_t> sparse_label_active_neurons = {0, 4};
+  std::vector<float> sparse_label_activations = {1.0, 1.0};
+
+  std::vector<float> good_dense_output_activations = {1.0, 0, 0, 0, 0.8, 0.9};
+  std::vector<uint32_t> good_sparse_output_active_neurons = {0, 4, 5};
+  std::vector<float> good_sparse_output_activations = {1.0, 0.8, 0.9};
+
+  std::vector<float> ok_dense_output_activations = {0, 0, 0, 0.9, 0.4, 0.8};
+  std::vector<uint32_t> ok_sparse_output_active_neurons = {3, 4, 5};
+  std::vector<float> ok_sparse_output_activations = {0.9, 0.4, 0.8};
+
+  std::vector<float> bad_dense_output_activations = {0.0, 0.8, 0.4, 0, 0, 0.9};
+  std::vector<uint32_t> bad_sparse_output_active_neurons = {5, 1, 2};
+  std::vector<float> bad_sparse_output_activations = {0.9, 0.8, 0.4};
+
+  auto dense_label = BoltVector::makeDenseVector(dense_label_activations);
+  auto good_dense_output =
+      BoltVector::makeDenseVector(good_dense_output_activations);
+  auto ok_dense_output =
+      BoltVector::makeDenseVector(ok_dense_output_activations);
+  auto bad_dense_output =
+      BoltVector::makeDenseVector(bad_dense_output_activations);
+
+  auto sparse_label = BoltVector::makeSparseVector(sparse_label_active_neurons,
+                                                   sparse_label_activations);
+  auto good_sparse_output = BoltVector::makeSparseVector(
+      good_sparse_output_active_neurons, good_sparse_output_activations);
+  auto ok_sparse_output = BoltVector::makeSparseVector(
+      ok_sparse_output_active_neurons, ok_sparse_output_activations);
+  auto bad_sparse_output = BoltVector::makeSparseVector(
+      bad_sparse_output_active_neurons, bad_sparse_output_activations);
+
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(good_dense_output, dense_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 1.0);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(ok_dense_output, dense_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 0.5);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(bad_dense_output, dense_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 0.0);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(good_sparse_output, dense_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 1.0);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(ok_sparse_output, dense_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 0.5);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(bad_sparse_output, dense_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 0.0);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(good_dense_output, sparse_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 1.0);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(ok_dense_output, sparse_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 0.5);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(bad_dense_output, sparse_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 0.0);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(good_sparse_output, sparse_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 1.0);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(ok_sparse_output, sparse_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 0.5);
+  }
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(bad_sparse_output, sparse_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 0.0);
+  }
+
+  {
+    RecallAtK metric(3);
+    metric.computeMetric(good_sparse_output, sparse_label);
+    metric.computeMetric(ok_sparse_output, sparse_label);
+    metric.computeMetric(bad_sparse_output, sparse_label);
+    auto result = metric.getMetricAndReset(/* verbose = */ false);
+    ASSERT_EQ(result, 0.5);
+  }
 }
 
 }  // namespace thirdai::bolt::tests

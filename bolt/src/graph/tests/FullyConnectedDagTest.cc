@@ -55,12 +55,11 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
       /* n_classes= */ n_classes, /* n_batches= */ n_batches,
       /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
-  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+  model.train(/* train_data= */ {data}, labels,
               getTrainConfig(/* epochs= */ 5));
 
   auto test_metrics =
-      model.predict(/* test_data= */ {data}, /* test_tokens= */ {}, labels,
-                    getPredictConfig());
+      model.predict(/* test_data= */ {data}, labels, getPredictConfig());
 
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.98);
 }
@@ -72,12 +71,11 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
       /* n_classes= */ n_classes, /* n_batches= */ n_batches,
       /* batch_size= */ batch_size, /* noisy_dataset= */ true);
 
-  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+  model.train(/* train_data= */ {data}, labels,
               getTrainConfig(/* epochs= */ 5));
 
   auto test_metrics =
-      model.predict(/* test_data= */ {data}, /* test_tokens= */ {}, labels,
-                    getPredictConfig());
+      model.predict(/* test_data= */ {data}, labels, getPredictConfig());
 
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
@@ -93,14 +91,13 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
       /* n_classes= */ n_classes, /* n_batches= */ n_batches,
       /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
-  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+  model.train(/* train_data= */ {data}, labels,
               getTrainConfig(/* epochs= */ 5));
 
   PredictConfig config = getPredictConfig().returnActivations();
 
   auto [_, all_inference_output] =
-      model.predict(/* test_data= */ {data},
-                    /* test_tokens= */ {}, labels, config);
+      model.predict(/* test_data= */ {data}, labels, config);
 
   ASSERT_EQ(all_inference_output.numSamples(), data->len());
 
@@ -112,7 +109,7 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
     BoltBatch& batch = data->at(batch_idx);
     for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       BoltVector output_vec = model.predictSingle(
-          {std::move(batch[vec_idx])}, {}, config.sparseInferenceEnabled());
+          {std::move(batch[vec_idx])}, config.sparseInferenceEnabled());
 
       ASSERT_EQ(output_vec.len, n_classes);
       for (uint32_t i = 0; i < n_classes; i++) {
@@ -162,15 +159,13 @@ static void testSimpleDatasetMultiLayerModel(
       /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   auto train_metrics =
-      model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
-                  getTrainConfig(epochs));
+      model.train(/* train_data= */ {data}, labels, getTrainConfig(epochs));
 
   ASSERT_LT(train_metrics.at("mean_squared_error").back(),
             train_metrics.at("mean_squared_error").front());
 
   auto test_metrics =
-      model.predict(/* test_data= */ {data}, /* test_tokens= */ {}, labels,
-                    getPredictConfig());
+      model.predict(/* test_data= */ {data}, labels, getPredictConfig());
 
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.99);
 }
@@ -194,12 +189,11 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
       /* n_classes= */ n_classes, /* n_batches= */ n_batches,
       /* batch_size= */ batch_size, /* noisy_dataset= */ true);
 
-  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+  model.train(/* train_data= */ {data}, labels,
               getTrainConfig(/* epochs= */ 2));
 
   auto test_metrics =
-      model.predict(/* test_data= */ {data}, /* test_tokens= */ {}, labels,
-                    getPredictConfig());
+      model.predict(/* test_data= */ {data}, labels, getPredictConfig());
 
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }

@@ -1,5 +1,5 @@
 #include "DatasetPython.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
@@ -13,6 +13,7 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
+#include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
@@ -35,8 +36,6 @@
 //                              py::module_& internal_dataset_submodule);
 
 namespace thirdai::dataset::python {
-
-using bolt::BoltVector;
 
 void createDatasetSubmodule(py::module_& module) {
   // Separate submodule for bindings that we don't want to expose to users.
@@ -125,6 +124,12 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns False since this is a sparse encoding.")
       .def("is_dense", &ContiguousNumericId::isDense,
            "The dimension of the encoding.");
+
+  py::class_<CategoricalMultiLabel, CategoricalEncoding,
+             std::shared_ptr<CategoricalMultiLabel>>(
+      block_submodule, "CategoricalMultiLabelBlock")
+      .def(py::init<uint32_t, char>(), py::arg("n_classes"),
+           py::arg("delimiter") = ',');
 
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",
@@ -310,42 +315,36 @@ void createDatasetSubmodule(py::module_& module) {
       // We need to explicitly static cast these methods because there are
       // multiple candidate "at" methods (one const and one not const)
       .def("get",
-           static_cast<bolt::BoltBatch& (BoltDataset::*)(uint64_t i)>(
+           static_cast<BoltBatch& (BoltDataset::*)(uint64_t i)>(
                &BoltDataset::at),
            py::arg("i"), py::return_value_policy::reference)
       .def("__getitem__",
-           static_cast<bolt::BoltBatch& (BoltDataset::*)(uint64_t i)>(
+           static_cast<BoltBatch& (BoltDataset::*)(uint64_t i)>(
                &BoltDataset::at),
            py::arg("i"), py::return_value_policy::reference)
       .def("__len__", &BoltDataset::numBatches)
       .def("save", &BoltDataset::save, py::arg("filename"))
       .def_static("load", &BoltDataset::load, py::arg("filename"));
 
-  py::class_<BoltTokenDataset, BoltTokenDatasetPtr>(  // NOLINT
-      dataset_submodule, "BoltTokenDataset");
-
   py::class_<numpy::WrappedNumpyVectors,  // NOLINT
              std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
       dataset_submodule, "WrappedNumpyVectors");
-  py::class_<numpy::WrappedNumpyTokens,  // NOLINT
-             std::shared_ptr<numpy::WrappedNumpyTokens>, BoltTokenDataset>(
-      dataset_submodule, "WrappedNumpyTokens");
 
   // TODO(josh): Add __iter__ method so we can do foreach loops in pthon and c++
   // TODO(josh): This segfaults if the user passes in an index that is too large
-  py::class_<bolt::BoltBatch>(dataset_submodule, "BoltBatch")
-      .def("batch_size", &bolt::BoltBatch::getBatchSize)
+  py::class_<BoltBatch>(dataset_submodule, "BoltBatch")
+      .def("batch_size", &BoltBatch::getBatchSize)
       // We need to explicitly static cast these methods because there are
       // multiple candidate "[]" methods (one const and one not const)
       .def("get",
-           static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
-               &bolt::BoltBatch::operator[]),
+           static_cast<BoltVector& (BoltBatch::*)(size_t i)>(
+               &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
       .def("__getitem__",
-           static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
-               &bolt::BoltBatch::operator[]),
+           static_cast<BoltVector& (BoltBatch::*)(size_t i)>(
+               &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
-      .def("__len__", &bolt::BoltBatch::getBatchSize);
+      .def("__len__", &BoltBatch::getBatchSize);
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
@@ -374,9 +373,6 @@ void createDatasetSubmodule(py::module_& module) {
       "a BoltDataset storing the labels.");
 
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
-                        py::arg("data"), py::arg("batch_size") = std::nullopt);
-
-  dataset_submodule.def("tokens_from_numpy", &numpy::numpyToBoltTokenDataset,
                         py::arg("data"), py::arg("batch_size") = std::nullopt);
 
   dataset_submodule.def(
@@ -499,8 +495,8 @@ bool denseBoltDatasetIsPermutationOfDenseMatrix(
   std::unordered_map<float, uint32_t> actual_values;
   for (uint32_t batch_idx = 0; batch_idx < dataset.numBatches(); batch_idx++) {
     auto& batch = dataset[batch_idx];
-    for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      actual_values[batch[vec_idx].activations[0]]++;
+    for (const auto& vec : batch) {
+      actual_values[vec.activations[0]]++;
     }
   }
 

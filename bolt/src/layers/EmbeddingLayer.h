@@ -2,11 +2,13 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/vector.hpp>
-#include "BoltVector.h"
 #include "LayerConfig.h"
+#include <bolt/src/layers/Optimizer.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
 #include <cmath>
 #include <ctime>
+#include <optional>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -22,7 +24,7 @@ class EmbeddingLayer {
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = time(nullptr));
 
-  void forward(uint32_t vec_index, const std::vector<uint32_t>& tokens,
+  void forward(uint32_t vec_index, const BoltVector& tokens,
                BoltVector& output);
 
   void backpropagate(uint32_t vec_index, const BoltVector& output);
@@ -38,6 +40,12 @@ class EmbeddingLayer {
   }
 
   void buildLayerSummary(std::stringstream& summary) const;
+
+  void initOptimizer() {
+    if (!_optimizer) {
+      _optimizer = AdamOptimizer(_embedding_block_size);
+    }
+  }
 
   EmbeddingLayer(const EmbeddingLayer&) = delete;
   EmbeddingLayer(EmbeddingLayer&&) = delete;
@@ -85,12 +93,27 @@ class EmbeddingLayer {
   // Private constructor for cereal.
   EmbeddingLayer() : _hash_fn(0) {}
 
+  /**
+   * Training data-structures (like the optimizer and the active neurons
+   * trackers) are not loaded in by default. If we want to continue training
+   * after a load, the expectation is that the higher level Graph/Network API
+   * will handle this initialization with the initOptimizer() method.
+   *
+   * Doing this means our load API is as simple as possible for both
+   * training and inference purposes. It doesn't make sense to load these
+   * data-structures by default then remove them with another function since
+   * users may be memory constrained during deployment.
+   *
+   * We don't know yet if its worth it to save the optimizer for
+   * retraining/finetuning purposes. If in the future we figure out this has
+   * some benefit we can adjust this method accordingly.
+   */
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
             _log_embedding_block_size, _embedding_block_size, _hash_fn,
-            _embedding_block, _gradients, _momentum, _velocity);
+            _embedding_block);
   }
 
   uint32_t _num_lookups_per_token, _lookup_size, _total_embedding_dim,
@@ -100,9 +123,8 @@ class EmbeddingLayer {
   hashing::UniversalHash _hash_fn;
 
   std::vector<float> _embedding_block;
-  std::vector<float> _gradients;
-  std::vector<float> _momentum;
-  std::vector<float> _velocity;
+
+  std::optional<AdamOptimizer> _optimizer = std::nullopt;
 
   // This structure stores the embedding block offset for each token in each
   // input. This is used for backpropagation and for update paramters to know

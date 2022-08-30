@@ -3,7 +3,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <sys/stat.h>
 #include <fstream>
@@ -33,7 +33,6 @@ class AutoClassifierBase {
       const std::vector<std::string>& class_id_to_class_name);
 
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
-                           std::vector<std::vector<uint32_t>>&& test_tokens,
                            bool use_sparse_inference);
 
   static bool canLoadDatasetInMemory(const std::string& filename);

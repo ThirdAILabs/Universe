@@ -18,10 +18,7 @@ def this_should_require_a_license_bolt():
 
     from thirdai import bolt
 
-    bolt.Network(
-        layers=[bolt.FullyConnected(dim=256, activation_function="relu")],
-        input_dim=10,
-    )
+    bolt.graph.Model(inputs=[], output=None)
 
 
 from pathlib import Path
