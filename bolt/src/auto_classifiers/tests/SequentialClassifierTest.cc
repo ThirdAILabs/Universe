@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::bolt::classifiers::sequential::tests {
+namespace thirdai::bolt::sequential_classifier::tests {
 
 void writeMockSequentialDataToFile(const std::string& train_file_name,
                                    const std::string& test_file_name) {
@@ -67,4 +67,4 @@ TEST(SequentialClassifierTest, TestLoadSave) {
   std::remove(model_save_file_name);
 }
 
-}  // namespace thirdai::bolt::classifiers::sequential::tests
+}  // namespace thirdai::bolt::sequential_classifier::tests
