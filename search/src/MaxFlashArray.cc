@@ -84,7 +84,7 @@ std::vector<uint32_t> MaxFlashArray<LABEL_T>::hash(const BATCH_T& batch) const {
   return _hash_function->hashBatchParallel(batch);
 }
 
-template std::vector<uint32_t> MaxFlashArray<bolt::BoltBatch>::hash(
-    const bolt::BoltBatch& batch) const;
+template std::vector<uint32_t> MaxFlashArray<thirdai::BoltBatch>::hash(
+    const thirdai::BoltBatch& batch) const;
 
 }  // namespace thirdai::search
