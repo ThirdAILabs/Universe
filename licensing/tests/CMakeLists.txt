@@ -13,4 +13,4 @@ target_link_libraries(
   ${CRYPTOPP_LIB}
 )
 
-gtest_discover_tests(license_test)
+gtest_discover_tests(license_test DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})

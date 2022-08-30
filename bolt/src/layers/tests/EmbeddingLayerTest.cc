@@ -72,7 +72,8 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, {tokens[i]}, output[i]);
+    _layer->forward(i, BoltVector::singleElementSparseVector(tokens.at(i)),
+                    output[i]);
   }
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
@@ -98,7 +99,11 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i], output[i]);
+    _layer->forward(
+        i,
+        BoltVector::makeSparseVector(
+            tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
+        output[i]);
   }
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
@@ -126,7 +131,11 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i], output[i]);
+    _layer->forward(
+        i,
+        BoltVector::makeSparseVector(
+            tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
+        output[i]);
   }
 
   std::unordered_map<uint32_t, float> deltas;

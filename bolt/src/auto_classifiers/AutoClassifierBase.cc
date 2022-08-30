@@ -1,5 +1,5 @@
 #include "AutoClassifierBase.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 
 #if defined __linux
 #include <sys/sysinfo.h>
@@ -67,7 +67,7 @@ void AutoClassifierBase::train(
   // TODO(david) verify freezing hash tables is good for autoclassifier
   // training. The only way we can really test this is when we have a validation
   // based early stop callback already implemented.
-  _model->train({train_data}, {}, train_labels, first_epoch_config);
+  _model->train({train_data}, train_labels, first_epoch_config);
   _model->freezeHashTables(/* insert_labels_if_not_found */ true);
 
   TrainConfig remaining_epochs_config =
@@ -76,7 +76,7 @@ void AutoClassifierBase::train(
                               /* epochs= */ epochs - 1)
           .withMetrics({"categorical_accuracy"});
 
-  _model->train({train_data}, {}, train_labels, remaining_epochs_config);
+  _model->train({train_data}, train_labels, remaining_epochs_config);
 }
 
 void AutoClassifierBase::predict(
@@ -112,7 +112,7 @@ void AutoClassifierBase::predict(
                              .withOutputCallback(print_predictions_callback)
                              .silence();
 
-  _model->predict({test_data}, {}, test_labels, config);
+  _model->predict({test_data}, test_labels, config);
 
   if (output_file) {
     output_file->close();
@@ -120,11 +120,8 @@ void AutoClassifierBase::predict(
 }
 
 BoltVector AutoClassifierBase::predictSingle(
-    std::vector<BoltVector>&& test_data,
-    std::vector<std::vector<uint32_t>>&& test_tokens,
-    bool use_sparse_inference) {
-  return _model->predictSingle(std::move(test_data), std::move(test_tokens),
-                               use_sparse_inference);
+    std::vector<BoltVector>&& test_data, bool use_sparse_inference) {
+  return _model->predictSingle(std::move(test_data), use_sparse_inference);
 }
 
 std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>

@@ -4,7 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <cstdint>
@@ -112,7 +112,6 @@ class ConcatenateNode final
     (void)labels;
 
     const BoltVector& output_vector = getOutputVectorImpl(vec_index);
-    std::fill_n(output_vector.gradients, output_vector.len, 0);
 
     const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
@@ -254,15 +253,14 @@ class ConcatenateNode final
   static void fillSparseBatchWithConsecutiveIndices(
       BoltBatch& batch, const std::vector<uint32_t>& positional_offsets,
       const std::vector<uint32_t>& neuron_index_offsets) {
-    for (uint32_t vec_id = 0; vec_id < batch.getBatchSize(); vec_id++) {
+    for (const auto& vec : batch) {
       for (uint32_t input_node_id = 0;
            input_node_id < positional_offsets.size() - 1; input_node_id++) {
         uint32_t start_position = positional_offsets.at(input_node_id);
         uint32_t end_position = positional_offsets.at(input_node_id + 1);
         uint32_t neuron_index_offset = neuron_index_offsets.at(input_node_id);
-        std::iota(batch[vec_id].active_neurons + start_position,
-                  batch[vec_id].active_neurons + end_position,
-                  neuron_index_offset);
+        std::iota(vec.active_neurons + start_position,
+                  vec.active_neurons + end_position, neuron_index_offset);
       }
     }
   }

@@ -1,8 +1,9 @@
 #pragma once
 
 #include "FullyConnected.h"
-#include "TokenInput.h"
+#include "Input.h"
 #include <bolt/src/graph/Node.h>
+#include <exceptions/src/Exceptions.h>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -61,7 +62,26 @@ class SwitchNode final : public Node,
   }
 
   std::shared_ptr<SwitchNode> addPredecessors(NodePtr predecessor,  // NOLINT
-                                              TokenInputPtr token_input) {
+                                              InputPtr token_input) {
+    if (token_input->outputDim() != _layers.size()) {
+      throw exceptions::GraphCompilationFailure(
+          "Switch requires an Input with dimension the same as the number of "
+          "switch layers but received Input with dimension " +
+          std::to_string(token_input->outputDim()) + ".");
+    }
+
+    auto num_nonzeros_range = token_input->numNonZerosRange();
+    if (!num_nonzeros_range || num_nonzeros_range.value().first != 1 ||
+        num_nonzeros_range.value().second != 1) {
+      std::stringstream ss;
+      ss << "Switch requires an Input with a single nonzero to indicate which "
+            "layer to use, but received Input with between "
+         << num_nonzeros_range.value().first << " and "
+         << num_nonzeros_range.value().second << " nonzeros.";
+
+      throw exceptions::GraphCompilationFailure(ss.str());
+    }
+
     for (auto& layer : _layers) {
       layer->addPredecessor(predecessor);
     }
@@ -159,8 +179,8 @@ class SwitchNode final : public Node,
 
   uint32_t getActiveLayer(uint32_t vec_index) {
     // There will only be one token indicating which layer to use.
-    assert(_token_input->getTokens(vec_index).size() == 1);
-    return _token_input->getTokens(vec_index).at(0);
+    assert(_token_input->getOutputVector(vec_index).len == 1);
+    return _token_input->getOutputVector(vec_index).active_neurons[0];
   }
 
   friend class cereal::access;
@@ -172,7 +192,7 @@ class SwitchNode final : public Node,
 
   std::vector<std::shared_ptr<FullyConnectedNode>> _layers;
   std::vector<bool> _layers_used;
-  TokenInputPtr _token_input;
+  InputPtr _token_input;
 };
 
 }  // namespace thirdai::bolt
