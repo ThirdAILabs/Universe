@@ -79,6 +79,17 @@ target_link_libraries(
 )
 
 add_executable(
+  user_item_history_block_tests
+  UserItemHistoryBlockTests.cc
+)
+
+target_link_libraries(
+  user_item_history_block_tests
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
   block_batch_processor_test
   BlockBatchProcessorTests.cc
 )
@@ -157,6 +168,7 @@ set(DATASET_TESTS
   date_block_test
   text_block_test
   thread_safe_vocabulary_tests
+  user_item_history_block_tests
   block_batch_processor_test
   generic_batch_processor_test
   categorical_multi_label_test

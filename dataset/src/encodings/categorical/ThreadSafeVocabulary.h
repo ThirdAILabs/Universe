@@ -149,6 +149,9 @@ class ThreadSafeVocabulary {
   std::unordered_map<std::string, uint32_t> _string_to_uid;
   std::vector<std::string> _uid_to_string;
 
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  ThreadSafeVocabulary() {}
+
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
