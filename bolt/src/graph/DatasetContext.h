@@ -1,7 +1,6 @@
 #pragma once
 
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <algorithm>
@@ -18,12 +17,9 @@ namespace thirdai::bolt {
 class DatasetContextBase {
  public:
   virtual void setInputs(uint64_t batch_idx,
-                         const std::vector<InputPtr>& inputs,
-                         const std::vector<TokenInputPtr>& token_inputs) = 0;
+                         const std::vector<InputPtr>& inputs) = 0;
 
   virtual uint64_t numVectorDatasets() const = 0;
-
-  virtual uint64_t numTokenDatasets() const = 0;
 
   virtual ~DatasetContextBase() = default;
 };
@@ -38,15 +34,11 @@ class DatasetContextBase {
 class DatasetContext final : public DatasetContextBase {
  public:
   DatasetContext(std::vector<dataset::BoltDatasetPtr> data,
-                 std::vector<dataset::BoltTokenDatasetPtr> tokens,
                  dataset::BoltDatasetPtr labels)
-      : _data(std::move(data)),
-        _tokens(std::move(tokens)),
-        _labels(std::move(labels)) {
+      : _data(std::move(data)), _labels(std::move(labels)) {
     _all_dag_datasets.insert(_all_dag_datasets.end(), _data.begin(),
                              _data.end());
-    _all_dag_datasets.insert(_all_dag_datasets.end(), _tokens.begin(),
-                             _tokens.end());
+
     if (_labels) {
       _all_dag_datasets.push_back(_labels);
     }
@@ -59,13 +51,10 @@ class DatasetContext final : public DatasetContextBase {
     verifyBatchSizes(_all_dag_datasets);
   }
 
-  void setInputs(uint64_t batch_idx, const std::vector<InputPtr>& inputs,
-                 const std::vector<TokenInputPtr>& token_inputs) override {
+  void setInputs(uint64_t batch_idx,
+                 const std::vector<InputPtr>& inputs) override {
     for (uint32_t i = 0; i < inputs.size(); i++) {
       inputs[i]->setInputs(&_data[i]->at(batch_idx));
-    }
-    for (uint32_t i = 0; i < token_inputs.size(); i++) {
-      token_inputs[i]->setTokenInputs(&_tokens[i]->at(batch_idx));
     }
   }
 
@@ -82,8 +71,6 @@ class DatasetContext final : public DatasetContextBase {
   }
 
   uint64_t numVectorDatasets() const override { return _data.size(); }
-
-  uint64_t numTokenDatasets() const override { return _tokens.size(); }
 
   const dataset::BoltDatasetPtr& labels() const { return _labels; }
 
@@ -117,7 +104,6 @@ class DatasetContext final : public DatasetContextBase {
   }
 
   std::vector<dataset::BoltDatasetPtr> _data;
-  std::vector<dataset::BoltTokenDatasetPtr> _tokens;
   dataset::BoltDatasetPtr _labels;
   std::vector<dataset::DatasetBasePtr> _all_dag_datasets;
 };
@@ -128,39 +114,23 @@ class DatasetContext final : public DatasetContextBase {
  */
 class SingleUnitDatasetContext final : public DatasetContextBase {
  public:
-  SingleUnitDatasetContext(std::vector<BoltVector>&& data,
-                           std::vector<std::vector<uint32_t>>&& tokens) {
+  explicit SingleUnitDatasetContext(std::vector<BoltVector>&& data) {
     for (auto vector : data) {
       _data.push_back(BoltBatch({std::move(vector)}));
     }
-
-    for (auto vector : tokens) {
-      _tokens.push_back(dataset::BoltTokenBatch({std::move(vector)}));
-    }
-
-    if (_data.empty() && _tokens.empty()) {
-      throw std::invalid_argument(
-          "Must pass in at least one dataset, but found 0.");
-    }
   }
 
-  void setInputs(uint64_t batch_idx, const std::vector<InputPtr>& inputs,
-                 const std::vector<TokenInputPtr>& token_inputs) override {
+  void setInputs(uint64_t batch_idx,
+                 const std::vector<InputPtr>& inputs) override {
     (void)batch_idx;
     for (uint32_t i = 0; i < inputs.size(); i++) {
       inputs[i]->setInputs(&_data[i]);
-    }
-    for (uint32_t i = 0; i < token_inputs.size(); i++) {
-      token_inputs[i]->setTokenInputs(&_tokens[i]);
     }
   }
 
   uint64_t numVectorDatasets() const override { return _data.size(); }
 
-  uint64_t numTokenDatasets() const override { return _tokens.size(); }
-
   std::vector<BoltBatch> _data;
-  std::vector<dataset::BoltTokenBatch> _tokens;
 };
 
 }  // namespace thirdai::bolt

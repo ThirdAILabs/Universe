@@ -5,16 +5,16 @@ import numpy as np
 
 def get_sum_model(input_dim):
 
-    input_1 = bolt.graph.TokenInput()
+    input_1 = bolt.graph.Input(dim=input_dim, num_nonzeros_range=(1, 1))
 
-    input_2 = bolt.graph.TokenInput()
+    input_2 = bolt.graph.Input(dim=input_dim, num_nonzeros_range=(1, 1))
 
     embedding_bottom = bolt.graph.Embedding(
-        num_embedding_lookups=input_dim, lookup_size=16, log_embedding_block_size=10
+        num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10
     )(input_1)
 
     embedding_top = bolt.graph.Embedding(
-        num_embedding_lookups=input_dim, lookup_size=16, log_embedding_block_size=10
+        num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10
     )(input_2)
 
     concat_layer = bolt.graph.Concatenate()([embedding_bottom, embedding_top])
@@ -23,9 +23,7 @@ def get_sum_model(input_dim):
         concat_layer
     )
 
-    model = bolt.graph.Model(
-        token_inputs=[input_1, input_2], inputs=[], output=output_layer
-    )
+    model = bolt.graph.Model(inputs=[input_1, input_2], output=output_layer)
 
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
@@ -36,8 +34,8 @@ def generate_sum_datasets_and_labels(input_dim, num_examples):
     data_1 = np.random.randint(0, input_dim, size=num_examples, dtype="uint32")
     data_2 = np.random.randint(0, input_dim, size=num_examples, dtype="uint32")
     labels = dataset.from_numpy(data_1 + data_2, batch_size=64)
-    data_1 = dataset.tokens_from_numpy(data_1, batch_size=64)
-    data_2 = dataset.tokens_from_numpy(data_2, batch_size=64)
+    data_1 = dataset.from_numpy(data_1, batch_size=64)
+    data_2 = dataset.from_numpy(data_2, batch_size=64)
     return data_1, data_2, labels
 
 
@@ -60,8 +58,7 @@ def test_token_sum():
         learning_rate=0.01, epochs=num_epochs
     ).silence()
     model.train(
-        train_data=[],
-        train_tokens=[train_1, train_2],
+        train_data=[train_1, train_2],
         train_labels=train_labels,
         train_config=train_config,
     )
@@ -73,8 +70,7 @@ def test_token_sum():
         bolt.graph.PredictConfig.make().silence().with_metrics(["categorical_accuracy"])
     )
     metrics = model.predict(
-        test_data=[],
-        test_tokens=[test_1, test_2],
+        test_data=[test_1, test_2],
         test_labels=test_labels,
         predict_config=predict_config,
     )

@@ -91,7 +91,7 @@ class TabularClassifier {
     }
 
     BoltVector output =
-        _classifier->predictSingle({input}, {},
+        _classifier->predictSingle({input},
                                    /* use_sparse_inference = */ true);
 
     return _metadata->getClassIdToNames()[output.getHighestActivationId()];
