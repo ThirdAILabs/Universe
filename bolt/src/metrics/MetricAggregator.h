@@ -48,12 +48,17 @@ class MetricAggregator {
     }
   }
 
-  MetricData getMetrics() {
-    MetricData output;
-    for (auto& metric : _metrics) {
-      output[metric->name()].push_back(metric->value());
+  std::string summary() {
+    std::stringstream stream;
+    stream << "{";
+    for (size_t i = 0; i < _metrics.size(); i++) {
+      if (i != 0) {
+        stream << ", ";
+      }
+      stream << _metrics[i]->summary();
     }
-    return output;
+    stream << "}";
+    return stream.str();
   }
 
   MetricData getOutput() { return _output; }

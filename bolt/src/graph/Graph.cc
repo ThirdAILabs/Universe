@@ -28,26 +28,6 @@
 
 namespace thirdai::bolt {
 
-namespace {
-
-std::string logline_metrics(const MetricData& output) {
-  std::stringstream stream;
-  bool first = true;
-  for (auto& p : output) {
-    if (!first) {
-      stream << " | ";
-    }
-
-    auto& key = p.first;
-    auto& value = p.second.back();
-    stream << key << ":" << value;
-    first = false;
-  }
-  return stream.str();
-}
-
-}  // namespace
-
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
                         bool print_when_done) {
   if (_output == nullptr) {
@@ -128,10 +108,9 @@ MetricData BoltGraph::train(
                                     reconstruct_hash_functions_batch);
 
         // bar.increment();
-        auto output = metrics.getMetrics();
 
         log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
-                  logline_metrics(output));
+                  metrics.summary());
       }
 
       perEpochCallback();
@@ -143,8 +122,7 @@ MetricData BoltGraph::train(
 
       time_per_epoch.push_back(static_cast<double>(epoch_time));
       log::info("epoch {} | full |  batches {} | time {}s | {}", _epoch_count,
-                train_context.numBatches(), epoch_time,
-                logline_metrics(metrics.getMetrics()));
+                train_context.numBatches(), epoch_time, metrics.summary());
       _epoch_count++;
       metrics.logAndReset();
     }
@@ -379,8 +357,7 @@ InferenceResult BoltGraph::predict(
                           .count();
 
   log::info("test | full |  batches {} | time {}s | {}", _epoch_count,
-            predict_context.numBatches(), test_time,
-            logline_metrics(metrics.getMetrics()));
+            predict_context.numBatches(), test_time, metrics.summary());
 
   metrics.logAndReset();
   auto metric_vals = metrics.getOutputFromInference();
