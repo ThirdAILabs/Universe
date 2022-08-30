@@ -7,7 +7,8 @@
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
-#include <dataset/src/encodings/categorical/StringCategoricalEncoding.h>
+#include <dataset/src/encodings/categorical/StringLookup.h>
+#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
 namespace thirdai::bolt {
@@ -90,7 +91,7 @@ class TabularClassifier {
     }
 
     BoltVector output =
-        _classifier->predictSingle({input}, {},
+        _classifier->predictSingle({input},
                                    /* use_sparse_inference = */ true);
 
     return _metadata->getClassIdToNames()[output.getHighestActivationId()];
@@ -139,11 +140,13 @@ class TabularClassifier {
   std::shared_ptr<dataset::GenericBatchProcessor> makeTabularBatchProcessor() {
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
         std::make_shared<dataset::TabularPairGram>(_metadata, _input_dim)};
+
+    auto vocab = dataset::ThreadSafeVocabulary::make(
+        _metadata->getClassToIdMap(), /* fixed= */ true);
+
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
         std::make_shared<dataset::CategoricalBlock>(
-            _metadata->getLabelCol(),
-            std::make_shared<dataset::StringCategoricalEncoding>(
-                _metadata->getClassToIdMap()))};
+            _metadata->getLabelCol(), dataset::StringLookup::make(vocab))};
 
     return std::make_shared<dataset::GenericBatchProcessor>(
         /* input_blocks = */ input_blocks,

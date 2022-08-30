@@ -6,12 +6,9 @@
 
 namespace thirdai::hashing {
 
-UniversalHash::UniversalHash(uint32_t seed) {
+UniversalHash::UniversalHash(uint32_t seed) : _seed(seed) {
   // We can decide to pass in a generator instead, if needed.
-  _seed = seed;
-  srand(seed);
-  std::random_device rd;
-  std::mt19937_64 gen(rd());
+  std::mt19937_64 gen(_seed);
   std::uniform_int_distribution<uint64_t> dis;
   for (auto& i : T) {
     for (auto& j : i) {

@@ -5,7 +5,6 @@ target_link_libraries(
   bolt_tabular_classifier_test
   PRIVATE
   auto_classifier_lib
-  bolt_network_lib
   gtest_main
 )
 
@@ -14,7 +13,6 @@ target_link_libraries(
   bolt_text_classifier_test
   PRIVATE
   auto_classifier_lib
-  bolt_network_lib
   gtest_main
 )
 
@@ -23,7 +21,6 @@ target_link_libraries(
   bolt_multi_label_text_classifier_test
   PRIVATE
   auto_classifier_lib
-  bolt_network_lib
   gtest_main
 )
 

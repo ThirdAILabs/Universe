@@ -11,12 +11,10 @@
 #include "InferenceOutputTracker.h"
 #include "Node.h"
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -39,16 +37,8 @@ class BoltGraph {
     to discover a reverse ordering in which to execute the layers.
    */
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
-      : BoltGraph(std::move(inputs), /* token-inputs= */ {},
-                  std::move(output)) {
-    thirdai::licensing::LicenseWrapper::checkLicense();
-  }
-
-  BoltGraph(std::vector<InputPtr> inputs,
-            std::vector<TokenInputPtr> token_inputs, NodePtr output)
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
-        _token_inputs(std::move(token_inputs)),
         _epoch_count(0),
         _batch_cnt(0),
         _per_batch_callback(std::nullopt),
@@ -67,16 +57,13 @@ class BoltGraph {
   */
   void compile(std::shared_ptr<LossFunction> loss, bool print_when_done = true);
 
-  MetricData train(
-      const std::vector<dataset::BoltDatasetPtr>& train_data,
-      const std::vector<dataset::BoltTokenDatasetPtr>& train_tokens,
-      const dataset::BoltDatasetPtr& train_labels, TrainConfig train_config);
+  MetricData train(const std::vector<dataset::BoltDatasetPtr>& train_data,
+                   const dataset::BoltDatasetPtr& train_labels,
+                   TrainConfig train_config);
 
-  InferenceResult predict(
-      const std::vector<dataset::BoltDatasetPtr>& test_data,
-      const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
-      const dataset::BoltDatasetPtr& test_labels,
-      const PredictConfig& predict_config);
+  InferenceResult predict(const std::vector<dataset::BoltDatasetPtr>& test_data,
+                          const dataset::BoltDatasetPtr& test_labels,
+                          const PredictConfig& predict_config);
 
   std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
   getInputGradientSingle(
@@ -85,7 +72,6 @@ class BoltGraph {
       std::optional<uint32_t> neuron_to_explain = std::nullopt);
 
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
-                           std::vector<std::vector<uint32_t>>&& test_tokens,
                            bool use_sparse_inference);
 
   BoltVector getLabelVectorExplainPrediction(
@@ -97,7 +83,6 @@ class BoltGraph {
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
     nodes.insert(nodes.end(), _inputs.begin(), _inputs.end());
-    nodes.insert(nodes.end(), _token_inputs.begin(), _token_inputs.end());
     nodes.insert(nodes.end(), _nodes.begin(), _nodes.end());
 
     return nodes;
@@ -218,10 +203,6 @@ class BoltGraph {
   // Input layers. When train is called, the ith input is fed into the ith input
   // layer.
   std::vector<InputPtr> _inputs;
-
-  // Token input layers. Function similarly to the input layers but are specific
-  // to nodes that require token inputs like the Embedding layer.
-  std::vector<TokenInputPtr> _token_inputs;
 
   // List of the sparse layers in the graph. This is so that we can do
   // things like enable sparse inference, update hash tables, or update hash
