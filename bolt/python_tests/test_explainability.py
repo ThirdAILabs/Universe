@@ -1,14 +1,7 @@
 from thirdai import bolt, dataset
 import pytest
 import numpy as np
-
-from ..utils import (
-    assert_activation_difference_and_gradients_in_same_order,
-    gen_numpy_training_data,
-    gen_random_weights_simple_network,
-    gen_random_bias_simple_network,
-    get_perturbed_dataset,
-)
+from utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
 
@@ -31,20 +24,14 @@ def test_get_input_gradients():
         n_classes=n_classes, convert_to_bolt_dataset=False
     )
     test_x = dataset.from_numpy(test_x_np, batch_size=batch_size)
-    test_y = dataset.from_numpy(test_y_np, batch_size=batch_size)
 
-    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=1)
-    predict_cfg = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
+    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
 
-    for _ in range(10):
-        model.train(
-            train_x,
-            train_y,
-            train_cfg,
-        )
-
-        model.predict(train_x, train_y, predict_cfg)
-        model.predict(test_x, test_y, predict_cfg)
+    model.train(
+        train_x,
+        train_y,
+        train_cfg,
+    )
 
     correct_explainations = 0
     total = 0
@@ -58,5 +45,4 @@ def test_get_input_gradients():
                 correct_explainations += 1
             total += 1
 
-    print(f"{correct_explainations}/{total}")
     assert correct_explainations >= 0.8 * total
