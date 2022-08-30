@@ -38,7 +38,6 @@ namespace thirdai::bolt::python {
 
 void createBoltSubmodule(py::module_& module);
 
-<<<<<<< HEAD
 class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
@@ -428,6 +427,4 @@ class SentimentClassifier {
   BoltVector _output;
 };
 
-=======
->>>>>>> callback-interface
 }  // namespace thirdai::bolt::python

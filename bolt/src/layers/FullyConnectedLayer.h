@@ -116,15 +116,11 @@ class FullyConnectedLayer final {
 
   float* getWeightsGradient();
 
-<<<<<<< HEAD
   void checkpointInMemory();
 
   void loadCheckpointFromMemory();
 
-  float getSparsity() const final { return _sparsity; }
-=======
   float getSparsity() const { return _sparsity; }
->>>>>>> callback-interface
 
   void setSparsity(float sparsity);
 
@@ -134,7 +130,7 @@ class FullyConnectedLayer final {
 
   void initOptimizer();
 
-  ~FullyConnectedLayer() final = default;
+  ~FullyConnectedLayer() = default;
 
  private:
   template <bool DENSE>
@@ -146,37 +142,6 @@ class FullyConnectedLayer final {
     }
   }
 
-<<<<<<< HEAD
-=======
-  using ActiveNeuronsPair =
-      std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
-
-  // This set of variables are only used within a batch, so we do not use
-  // _this_is_dense to check if the layer is sparse, we instead check if
-  // _sparsity is less than 1.
-  bool _prev_is_dense;
-  bool _this_is_dense;
-
-  // This is only used if _prev_is_dense == false and _this_is_dense == false
-  // This is a vector of unique_ptr so that the push_back in the critical
-  // region is just a pointer move and can be very fast
-  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs;
-  // This is only used if _prev_is_dense == false
-  std::vector<bool> _prev_is_active;
-  // This is only used if _this_is_dense == false
-  std::vector<bool> _is_active;
-
-  // A flag to check whether the current network is running in the normal
-  // settings and distributed settings
-  bool _is_distributed;
-
-  BoltSamplingMode _sampling_mode;
-
-  bool useRandomSampling() const {
-    return _sampling_mode == BoltSamplingMode::RandomSampling;
-  }
-
->>>>>>> callback-interface
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
                                                  float B1_bias_corrected,
@@ -225,7 +190,6 @@ class FullyConnectedLayer final {
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
                            const BoltVector* labels);
 
-<<<<<<< HEAD
   /**
    * If force_build=true build hash tables, return if false.
    * For non-trainable layers, buildHashTablesImpl is called with
@@ -234,14 +198,17 @@ class FullyConnectedLayer final {
    * force_build=true.
    */
   void buildHashTablesImpl(bool force_build);
-=======
+
   void randomNeuronSampling(const BoltVector& input, const BoltVector& output,
                             const BoltVector* labels);
 
   template <bool PREV_DENSE>
   void lshNeuronSampling(const BoltVector& input, BoltVector& output,
                          const BoltVector* labels);
->>>>>>> callback-interface
+
+  bool useRandomSampling() const {
+    return _sampling_mode == BoltSamplingMode::RandomSampling;
+  }
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
@@ -323,7 +290,7 @@ class FullyConnectedLayer final {
   // settings and distributed settings
   bool _is_distributed;
 
-  LSHSamplingMode _sampling_mode;
+  BoltSamplingMode _sampling_mode;
 };
 
 }  // namespace thirdai::bolt

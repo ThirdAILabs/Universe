@@ -2,11 +2,7 @@ import math
 import numpy as np
 import pytest
 from thirdai import bolt
-<<<<<<< HEAD:bolt/python_tests/dag_python_tests/test_bolt_dag_set_get_weights.py
-from ..utils import gen_numpy_training_data, get_simple_dag_model
-=======
 from utils import gen_numpy_training_data
->>>>>>> callback-interface:bolt/python_tests/test_set_get_weights.py
 
 
 LEARNING_RATE = 0.001

@@ -1,9 +1,5 @@
 from thirdai import bolt
-<<<<<<< HEAD:bolt/python_tests/dag_python_tests/test_bolt_dag_freeze_hash_tables.py
-from ..utils import gen_numpy_training_data, get_simple_dag_model
-=======
 from utils import gen_numpy_training_data
->>>>>>> callback-interface:bolt/python_tests/test_freeze_hash_tables.py
 import pytest
 
 pytestmark = [pytest.mark.unit]
