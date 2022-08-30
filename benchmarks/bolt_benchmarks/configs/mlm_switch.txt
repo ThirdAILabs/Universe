@@ -14,7 +14,7 @@ test_metrics = ["categorical_accuracy"]
 
 [[datasets]]
 format = "mlm_with_tokens"
-type_list = ["train_data", "train_tokens", "train_labels", "test_data", "test_tokens", "test_labels"]
+type_list = ["train_data", "train_data", "train_labels", "test_data", "test_data", "test_labels"]
 train_path = "BERT/sentences_tokenized_shuffled_trimmed_10M.txt"
 test_path = "BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
 pairgram_range = 100000
@@ -27,8 +27,11 @@ name = "input"
 dim = 100000
 
 [[nodes]]
-type = "TokenInput"
+type = "Input"
 name = "token_input"
+dim = 100
+min_num_nonzeros = 1
+max_num_nonzeros = 1
 
 [[nodes]]
 type = "Switch"

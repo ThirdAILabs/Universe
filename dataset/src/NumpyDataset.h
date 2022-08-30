@@ -3,7 +3,6 @@
 #include "InMemoryDataset.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
@@ -22,7 +21,6 @@ template <typename BATCH_T>
 class NumpyDataset;
 
 using WrappedNumpyVectors = NumpyDataset<BoltBatch>;
-using WrappedNumpyTokens = NumpyDataset<BoltTokenBatch>;
 
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
@@ -114,27 +112,8 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
       std::move(batches), std::move(objects_to_keep_alive));
 }
 
-/**
- * This is some C++ magic. Basically we want two slightly different methods
- * that do basically the same thing: convert a numpy array of uint32 to an
- * InMemoryDataset. The difference is that sometimes we want a BoltDatasetPtr
- * and the activations to be filled with 1s, and sometimes we want a
- * BoltTokenDatasetPtr (which doesn't have activations). There is only a few
- * lines different in each case, but it proved difficult to factor out into
- * helper methods. Instead, what we've done is add a CONVERT_TO_VECTORS template
- * arg, and depending on whether this is true or false we do slightly different
- * things in the method. We use 2 c++ magic template metaprogramming tricks for
- * this: constexpr, which allows us to evaluate branches of an if at compile
- * time (so each side of the if can have code that only works with 1 value of
- * CONVERT_TO_VECTORS), and std::conditional_t, which allows us to have a
- * variable with a type dependent on the value of CONVERT_TO_VECTORS.
- *
- */
-template <bool CONVERT_TO_VECTORS>
-inline std::conditional_t<CONVERT_TO_VECTORS, BoltDatasetPtr,
-                          BoltTokenDatasetPtr>
-numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
-                         uint64_t batch_size) {
+inline BoltDatasetPtr numpyTokensToBoltDataset(
+    const NumpyArray<uint32_t>& tokens, uint64_t batch_size) {
   const py::buffer_info tokens_buf = tokens.request();
 
   auto shape = tokens_buf.shape;
@@ -150,13 +129,10 @@ numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
 
   const uint32_t* token_raw_data = static_cast<const uint32_t*>(tokens_buf.ptr);
 
-  std::vector<std::conditional_t<CONVERT_TO_VECTORS, BoltBatch, BoltTokenBatch>>
-      batches;
+  std::vector<BoltBatch> batches;
 
   for (uint64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-    std::vector<std::conditional_t<CONVERT_TO_VECTORS, BoltVector,
-                                   std::vector<uint32_t>>>
-        current_token_batch;
+    std::vector<BoltVector> current_token_batch;
 
     uint64_t start_vector = batch_idx * batch_size;
     uint64_t end_vector =
@@ -168,13 +144,9 @@ numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
           &token_raw_data[vector_id * tokens_per_vector],
           &token_raw_data[(vector_id + 1) * tokens_per_vector]);
 
-      if constexpr (CONVERT_TO_VECTORS) {
-        std::vector<float> vec_activations(tokens_per_vector, 1.0);
-        current_token_batch.push_back(
-            BoltVector::makeSparseVector(vec_tokens, vec_activations));
-      } else {
-        current_token_batch.push_back(std::move(vec_tokens));
-      }
+      std::vector<float> vec_activations(tokens_per_vector, 1.0);
+      current_token_batch.push_back(
+          BoltVector::makeSparseVector(vec_tokens, vec_activations));
     }
 
     batches.emplace_back(std::move(current_token_batch));
@@ -183,13 +155,8 @@ numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
   // Since we only do copies we don't need to worry about owning objects
   std::vector<py::object> objects_to_keep_alive = {};
 
-  if constexpr (CONVERT_TO_VECTORS) {
-    return std::make_shared<WrappedNumpyVectors>(
-        std::move(batches), std::move(objects_to_keep_alive));
-  } else {
-    return std::make_shared<WrappedNumpyTokens>(
-        std::move(batches), std::move(objects_to_keep_alive));
-  }
+  return std::make_shared<WrappedNumpyVectors>(
+      std::move(batches), std::move(objects_to_keep_alive));
 }
 
 inline void verifySparseNumpyTuple(const py::tuple& tup) {
@@ -204,8 +171,8 @@ inline void verifySparseNumpyTuple(const py::tuple& tup) {
   if (!isNumpyArray(tup[0]) || !isNumpyArray(tup[1]) || !isNumpyArray(tup[2])) {
     throw std::invalid_argument(
         "If passing in a tuple to specify a sparse dataset, the tuple must be "
-        "of 3 numpy arrays (indices, values, offsets), but you passed in a "
-        "non numpy array for one of the tuple elements.");
+        "of 3 numpy arrays (indices, values, offsets), but you passed in a non "
+        "numpy array for one of the tuple elements.");
   }
 
   if (!isNumpyUint32(tup[0])) {
@@ -291,12 +258,13 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
                                            batch_size);
     }
     if (isNumpyUint32(data)) {
-      return numpyTokensToBoltDataset<true>(data.cast<NumpyArray<uint32_t>>(),
-                                            batch_size);
+      return numpyTokensToBoltDataset(data.cast<NumpyArray<uint32_t>>(),
+                                      batch_size);
     }
 
     throw std::invalid_argument(
-        "Expected a numpy array of type uint32 or float32 but instead recieved "
+        "Expected a numpy array of type uint32 or float32 but instead "
+        "recieved "
         "a numpy array of type " +
         getNumpyDtype(data).cast<std::string>());
   }
@@ -306,27 +274,9 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
   }
 
   throw std::invalid_argument(
-      "Expected a numpy array or a tuple of numpy arrays, but instead received "
+      "Expected a numpy array or a tuple of numpy arrays, but instead "
+      "received "
       "an object of type " +
-      py::str(data.get_type()).cast<std::string>());
-}
-
-inline BoltTokenDatasetPtr numpyToBoltTokenDataset(const py::object& data,
-                                                   uint64_t batch_size) {
-  verifyBatchSize(batch_size);
-  if (isNumpyArray(data)) {
-    if (isNumpyUint32(data)) {
-      return numpyTokensToBoltDataset<false>(data.cast<NumpyArray<uint32_t>>(),
-                                             batch_size);
-    }
-    throw std::invalid_argument(
-        "Expected a numpy array of type uint32 but instead recieved a numpy "
-        "array of type " +
-        getNumpyDtype(data).cast<std::string>());
-  }
-
-  throw std::invalid_argument(
-      "Expected a numpy array, but instead received an object of type " +
       py::str(data.get_type()).cast<std::string>());
 }
 

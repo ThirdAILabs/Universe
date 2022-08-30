@@ -11,6 +11,7 @@
 #include <optional>
 #include <queue>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -63,6 +64,16 @@ struct BoltVector {
     } else {
       gradients = nullptr;
     }
+  }
+
+  static BoltVector singleElementSparseVector(uint32_t active_neuron,
+                                              float activation = 1.0) {
+    BoltVector vec(/* l= */ 1, /* is_dense= */ false,
+                   /* has_gradient= */ false);
+    vec.active_neurons[0] = active_neuron;
+    vec.activations[0] = activation;
+
+    return vec;
   }
 
   uint32_t getHighestActivationId() const {
@@ -463,8 +474,10 @@ class BoltBatch {
    * string that tells the user where the error comes from if it is thrown, e.g.
    * something like "Passed in BoltVector too large for Input".
    */
-  void verifyExpectedDimension(uint32_t expected_dimension,
-                               const std::string& origin_string) const {
+  void verifyExpectedDimension(
+      uint32_t expected_dimension,
+      std::optional<std::pair<uint32_t, uint32_t>> num_nonzeros_range,
+      const std::string& origin_string) const {
     for (const BoltVector& vec : _vectors) {
       if (vec.isDense()) {
         if (vec.len != expected_dimension) {
@@ -485,6 +498,17 @@ class BoltBatch {
                 std::to_string(expected_dimension));
           }
         }
+      }
+
+      if (num_nonzeros_range && (vec.len > num_nonzeros_range.value().second ||
+                                 vec.len < num_nonzeros_range.value().first)) {
+        std::stringstream ss;
+        ss << origin_string << ": Received BoltVector with len "
+           << std::to_string(vec.len) + " but was expected to have between "
+           << num_nonzeros_range.value().first << " and "
+           << num_nonzeros_range.value().second << " nonzeros.";
+
+        throw std::invalid_argument(ss.str());
       }
     }
   }

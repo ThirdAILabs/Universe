@@ -41,6 +41,10 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "FastSRPSamplingConfig")
       .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("reservoir_size"));
+
+  py::class_<RandomSamplingConfig, std::shared_ptr<RandomSamplingConfig>,
+             SamplingConfig>(bolt_submodule, "RandomSamplingConfig")
+      .def(py::init<>());
 #endif
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
