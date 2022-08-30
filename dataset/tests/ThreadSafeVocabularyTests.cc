@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <fstream>
 #include <random>
@@ -30,8 +31,9 @@ static std::vector<std::string> generateRandomStrings(size_t n_unique,
     std::string random_string;
     random_string.reserve(len);
 
+    std::srand(0);
     for (uint32_t i = 0; i < len; ++i) {
-      random_string += alphanum[std::rand() % (sizeof(alphanum) - 1)];
+      random_string += alphanum[std::rand() % strlen(alphanum)];
     }
 
     for (uint32_t rep = 0; rep < repetitions; rep++) {
@@ -53,6 +55,7 @@ std::vector<uint32_t> getUids(ThreadSafeVocabulary& lookup,
     try {
       uids[idx] = lookup.getUid(strings[idx]);
     } catch (...) {
+#pragma omp critical
       exception = std::current_exception();
     }
   }
@@ -67,7 +70,7 @@ std::vector<std::string> backToStrings(ThreadSafeVocabulary& lookup,
   std::vector<std::string> strings;
   strings.reserve(uids.size());
   for (auto uid : uids) {
-    strings.push_back(*lookup.getString(uid));
+    strings.push_back(lookup.getString(uid));
   }
 
   return strings;
@@ -89,15 +92,6 @@ std::vector<uint32_t> getUidsFromBatch(BoltBatch& batch, uint32_t block_idx = 0,
     uids.push_back(batch[i].active_neurons[block_idx] - block_idx * block_dim);
   }
   return uids;
-}
-
-template <typename LAMBDA_T>
-uint32_t time(LAMBDA_T function) {
-  auto start = std::chrono::high_resolution_clock::now();
-  function();
-  auto end = std::chrono::high_resolution_clock::now();
-  return std::chrono::duration_cast<std::chrono::microseconds>(end - start)
-      .count();
 }
 
 TEST(ThreadSafeVocabularyTests, Standalone) {
@@ -169,16 +163,11 @@ TEST(ThreadSafeVocabularyTests, SeenAllStringsBehavior) {
       generateRandomStrings(n_unique, /* repetitions = */ 1000, /* len = */ 10);
   ThreadSafeVocabulary vocab(n_unique);
 
-  auto before_seen_strings_duration =
-      time([&]() { getUids(vocab, seen_strings); });
+  getUids(vocab, seen_strings);  // Build vocabulary.
 
-  vocab.fix();
+  vocab.fixVocab();
 
-  std::vector<uint32_t> uids;
-  auto after_seen_strings_duration =
-      time([&]() { uids = getUids(vocab, seen_strings); });
-
-  ASSERT_LT(after_seen_strings_duration, before_seen_strings_duration);
+  std::vector<uint32_t> uids = getUids(vocab, seen_strings);
 
   auto reverted_strings = backToStrings(vocab, uids);
   assertStringsEqual(seen_strings, reverted_strings);
