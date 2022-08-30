@@ -2,6 +2,7 @@ from thirdai._thirdai import bolt, dataset
 from typing import Tuple, Any, Optional, Dict, List
 import logging
 
+
 def load_dataset(config: Dict[str, Any], total_nodes, training_partition_data_id):
     """
     Returns datasets as boltdatasets
@@ -52,8 +53,9 @@ def construct_fully_connected_node(fc_config):
     return bolt.graph.FullyConnected(
         dim=config_get(fc_config, "dim"),
         sparsity=sparsity,
-        activation_function=config_get(fc_config, "activation")
+        activation_function=config_get(fc_config, "activation"),
     )
+
 
 def construct_node(node_config):
     node_type = config_get(node_config, "type")
@@ -62,6 +64,7 @@ def construct_node(node_config):
     if node_type == "FullyConnected":
         return construct_fully_connected_node(node_config)
     raise ValueError(f"{node_type} is not a valid node type.")
+
 
 def contruct_dag_model(config):
     name_to_node = {}

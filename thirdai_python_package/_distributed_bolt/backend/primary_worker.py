@@ -190,7 +190,6 @@ class PrimaryWorker(Worker):
         )
         return True
 
-
     def get_weights_biases(self):
         """This function is called by all the workers(other than worker with id = 0), here
             all the workers get the same initialized weights and bias as that of worker with id 0

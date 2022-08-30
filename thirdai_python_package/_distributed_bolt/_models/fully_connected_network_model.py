@@ -31,7 +31,6 @@ class FullyConnectedNetworkModel:
             raise ValueError("Unable to load a dataset. Please check the config")
 
         self.train_data, self.train_label, self.test_data, self.test_label = data
-        
 
         # get variables for initializing training
         self.rehash = config["params"]["rehash"]
@@ -47,9 +46,11 @@ class FullyConnectedNetworkModel:
             print(
                 "'{}' is not a valid loss function".format(config["params"]["loss_fn"])
             )
-        
+
         train_config = (
-            bolt.graph.TrainConfig.make(learning_rate=self.learning_rate, epochs=self.epochs)
+            bolt.graph.TrainConfig.make(
+                learning_rate=self.learning_rate, epochs=self.epochs
+            )
             .silence()
             .with_rebuild_hash_tables(self.rehash)
             .with_reconstruct_hash_functions(self.rebuild)
@@ -57,18 +58,17 @@ class FullyConnectedNetworkModel:
 
         inputs, output_node = contruct_dag_model(config)
         self.network = bolt.graph.DistributedModel(
-            inputs = inputs,
-            output = output_node,
-            train_data = [self.train_data],
-            train_labels = self.train_label,
-            train_config = train_config,
-            loss = self.loss
+            inputs=inputs,
+            output=output_node,
+            train_data=[self.train_data],
+            train_labels=self.train_label,
+            train_config=train_config,
+            loss=self.loss,
         )
         self.test_metrics = config["params"]["test_metrics"]
         self.node_name_list = []
-        for i in range(len(self.layer_dims)-1):
-            self.node_name_list.append("fc_"  +str(i+1))
-
+        for i in range(len(self.layer_dims) - 1):
+            self.node_name_list.append("fc_" + str(i + 1))
 
     def calculate_gradients(self, batch_no: int):
         """This function trains the network and calculate gradients for the
@@ -89,8 +89,12 @@ class FullyConnectedNetworkModel:
         w_gradients = []
         b_gradients = []
         for node_id in range(len(self.node_name_list)):
-            x = self.network.get_layer(self.node_name_list[node_id]).weight_gradients.copy()
-            y = self.network.get_layer(self.node_name_list[node_id]).bias_gradients.copy()
+            x = self.network.get_layer(
+                self.node_name_list[node_id]
+            ).weight_gradients.copy()
+            y = self.network.get_layer(
+                self.node_name_list[node_id]
+            ).bias_gradients.copy()
             w_gradients.append(x)
             b_gradients.append(y)
         return (w_gradients, b_gradients)
@@ -104,8 +108,12 @@ class FullyConnectedNetworkModel:
             b_gradients __type__: bias gradients to update the network with
         """
         for layer in range(len(w_gradients)):
-            self.network.get_layer(self.node_name_list[layer]).weight_gradients.set(w_gradients[layer])
-            self.network.get_layer(self.node_name_list[layer]).bias_gradients.set(b_gradients[layer])
+            self.network.get_layer(self.node_name_list[layer]).weight_gradients.set(
+                w_gradients[layer]
+            )
+            self.network.get_layer(self.node_name_list[layer]).bias_gradients.set(
+                b_gradients[layer]
+            )
 
     def get_parameters(self):
         """This function returns the weight and bias parameters from the network
@@ -131,7 +139,9 @@ class FullyConnectedNetworkModel:
             biases: bias parameter to update the gradient with
         """
         for layer in range(len(weights)):
-            self.network.get_layer(self.node_name_list[layer]).weights.set(weights[layer])
+            self.network.get_layer(self.node_name_list[layer]).weights.set(
+                weights[layer]
+            )
             self.network.get_layer(self.node_name_list[layer]).biases.set(biases[layer])
 
     def update_parameters(self, learning_rate: float):
@@ -154,7 +164,6 @@ class FullyConnectedNetworkModel:
     def finish_training(self):
         self.network.finishTraining()
 
-
     def predict(self):
         """return the prediction for this particular network
 
@@ -165,7 +174,7 @@ class FullyConnectedNetworkModel:
             bolt.graph.PredictConfig.make().with_metrics(self.test_metrics).silence()
         )
         return self.network.predict(
-            test_data = self.test_data,
-            test_labels = self.test_label,
-            predict_config = predict_config,
+            test_data=self.test_data,
+            test_labels=self.test_label,
+            predict_config=predict_config,
         )

@@ -10,7 +10,15 @@ import textwrap
 class DistributedBolt:
     """Implements all the user level Distributed Bolt APIs."""
 
-    def __init__(self, workers, logger, epochs, primary_worker, num_of_batches, communication_type):
+    def __init__(
+        self,
+        workers,
+        logger,
+        epochs,
+        primary_worker,
+        num_of_batches,
+        communication_type,
+    ):
         """Initializes the DistributeBolt class.
 
         Args:
@@ -34,7 +42,8 @@ class DistributedBolt:
                         Currently only two modes of communication is supported.
                         Use: "circular" or "linear". 
                     """
-                ))
+                )
+            )
 
     def train(self) -> None:
         """Trains the network using the communication type choosen.
@@ -44,13 +53,9 @@ class DistributedBolt:
                     False, if linear communication is required.. Defaults to True.
         """
         self.comm = (
-            communication.Circular(
-                self.workers, self.primary_worker, self.logging
-            )
+            communication.Circular(self.workers, self.primary_worker, self.logging)
             if self.communication_type == "circular"
-            else communication.Linear(
-                self.workers, self.primary_worker, self.logging
-            )
+            else communication.Linear(self.workers, self.primary_worker, self.logging)
         )
 
         for epoch in range(self.epochs):
@@ -62,7 +67,7 @@ class DistributedBolt:
                 self.comm.communicate()
                 self.comm.update_parameters(self.learning_rate)
                 self.comm.log_training(batch_id, epoch)
-        
+
         ray.get([worker.finish_training.remote() for worker in self.workers])
 
     def predict(self):

@@ -19,7 +19,13 @@ class FullyConnectedNetwork(DistributedBolt):
         Public Facing APIs which includes functions like train, predict
     """
 
-    def __init__(self, num_workers, config_filename, num_cpus_per_node, communication_type: Optional[str] = "circular"):
+    def __init__(
+        self,
+        num_workers,
+        config_filename,
+        num_cpus_per_node,
+        communication_type: Optional[str] = "circular",
+    ):
         """This function initializes this class, which provides wrapper over DistributedBolt and
         implements the user facing FullyConnectedNetwork API.
 
