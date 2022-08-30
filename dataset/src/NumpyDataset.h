@@ -170,10 +170,9 @@ inline void verifySparseNumpyTuple(const py::tuple& tup) {
 
   if (!isNumpyArray(tup[0]) || !isNumpyArray(tup[1]) || !isNumpyArray(tup[2])) {
     throw std::invalid_argument(
-        "If passing in a tuple to specify a sparse dataset, the tuple must "
-        "be "
-        "of 3 numpy arrays (indices, values, offsets), but you passed in a "
-        "non numpy array for one of the tuple elements.");
+        "If passing in a tuple to specify a sparse dataset, the tuple must be "
+        "of 3 numpy arrays (indices, values, offsets), but you passed in a non "
+        "numpy array for one of the tuple elements.");
   }
 
   if (!isNumpyUint32(tup[0])) {
@@ -183,8 +182,7 @@ inline void verifySparseNumpyTuple(const py::tuple& tup) {
   }
   if (!isNumpyFloat32(tup[1])) {
     throw std::invalid_argument(
-        "The second element of a tuple for conversion must be a float32 "
-        "numpy "
+        "The second element of a tuple for conversion must be a float32 numpy "
         "array");
   }
   if (!isNumpyUint32(tup[2])) {

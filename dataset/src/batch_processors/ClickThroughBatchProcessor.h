@@ -68,6 +68,7 @@ class ClickThroughBatchProcessor final
       dense_features.push_back(val);
     }
 
+    // Its _num_dense_features + 1 because the label is the first column.
     uint32_t index_of_first_categorical_feature = _num_dense_features + 1;
     BoltVector categorical_features(
         cols.size() - index_of_first_categorical_feature,

@@ -72,9 +72,7 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i,
-                    BoltVector::makeSparseVector({tokens.at(i)},
-                                                 std::vector<float>(1, 1.0)),
+    _layer->forward(i, BoltVector::singleElementSparseVector(tokens.at(i)),
                     output[i]);
   }
 
