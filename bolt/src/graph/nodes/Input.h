@@ -6,6 +6,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <cstddef>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -23,7 +24,8 @@ class Input final : public Node {
   explicit Input(uint32_t expected_input_dim)
       : _compiled(false),
         _input_batch(nullptr),
-        _expected_input_dim(expected_input_dim) {}
+        _expected_input_dim(expected_input_dim),
+        _average_batch_sparsity(std::nullopt) {}
 
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. It is
@@ -35,6 +37,7 @@ class Input final : public Node {
         /* origin_string = */
         "We found an Input BoltVector larger than the expected input dim");
     _input_batch = inputs;
+    cacheAverageBatchSparsity();
   }
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }
@@ -76,6 +79,22 @@ class Input final : public Node {
         "in the output of an Input layer.");
   }
 
+  float averageBatchSparsityImpl() const final {
+    assert(_average_batch_sparsity);
+    return _average_batch_sparsity.value();
+  }
+
+  void cacheAverageBatchSparsity() {
+    uint64_t total_num_nonzeros = 0;
+    for (uint64_t vec_id = 0; vec_id < _input_batch->getBatchSize(); vec_id++) {
+      total_num_nonzeros += (*_input_batch)[vec_id].len;
+    }
+    uint64_t total_dimension =
+        _expected_input_dim * _input_batch->getBatchSize();
+    _average_batch_sparsity =
+        total_num_nonzeros / static_cast<float>(total_dimension);
+  }
+
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     (void)labels;
     (void)vec_index;
@@ -92,7 +111,10 @@ class Input final : public Node {
     return (*_input_batch)[vec_index];
   }
 
-  void cleanupAfterBatchProcessingImpl() final { _input_batch = nullptr; }
+  void cleanupAfterBatchProcessingImpl() final {
+    _input_batch = nullptr;
+    _average_batch_sparsity = std::nullopt;
+  }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
@@ -151,6 +173,7 @@ class Input final : public Node {
   bool _compiled;
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
+  std::optional<float> _average_batch_sparsity;
 };
 
 using InputPtr = std::shared_ptr<Input>;

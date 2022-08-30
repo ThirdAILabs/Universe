@@ -136,6 +136,25 @@ class Node {
   }
 
   /*
+   * Returns the average sparsity of the output for the current batch. For
+   * the nodes where the output has a constant number of nonzeros for each input
+   * vector, this will always be the value numNonzerosInOutputImpl() /
+   * static_cast<float>(outputDim()) (and averageBatchSparsityImpl has a
+   * default implementation to that effect). For nodes where the output has
+   * a variable number of nonzeros for each input vector (currently only the
+   * Input node), this can be overridden with the calculated value.
+   */
+  float averageBatchSparsity() const {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "Must call prepareForBatchProcessing before calling "
+          "averageBatchSparsity.");
+    }
+
+    return averageBatchSparsityImpl();
+  }
+
+  /*
     Initializes any state that the node must store for computations that is not
     part of the nodes parameters. For instance this could be the
     activations/gradients for a batch, or some other internal state that must
@@ -243,6 +262,10 @@ class Node {
                                              bool use_sparsity) = 0;
 
   virtual uint32_t numNonzerosInOutputImpl() const = 0;
+
+  virtual float averageBatchSparsityImpl() const {
+    return numNonzerosInOutputImpl() / static_cast<float>(outputDim());
+  }
 
   virtual void forwardImpl(uint32_t vec_index, const BoltVector* labels) = 0;
 
