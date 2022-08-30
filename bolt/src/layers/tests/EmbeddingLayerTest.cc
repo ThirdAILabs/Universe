@@ -29,13 +29,29 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     _layer->initializeLayer(/* new_batch_size= */ 4);
   }
 
-  void testEmbeddingBackpropagation(const std::vector<BoltVector>& tokens,
-                                    bool sum_reduction) const {
+  BoltBatch doForwardPass(
+      const std::vector<std::vector<uint32_t>>& tokens) const {
     BoltBatch output = _layer->createBatchState(tokens.size());
 
     for (uint32_t i = 0; i < tokens.size(); i++) {
-      _layer->forward(i, tokens[i], output[i]);
+      _layer->forward(
+          i,
+          BoltVector::makeSparseVector(
+              tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
+          output[i]);
     }
+
+    return output;
+  }
+
+  void testEmbeddingBackpropagation(
+      const std::vector<std::vector<uint32_t>>& tokens,
+      bool use_sum_reduction) const {
+    if (use_sum_reduction) {
+      makeConcatReduction();
+    }
+
+    BoltBatch output = doForwardPass(tokens);
 
     std::unordered_map<uint32_t, float> deltas;
 
@@ -48,16 +64,16 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
       _layer->backpropagate(batch_index, output[batch_index]);
 
-      for (uint32_t token_idx = 0; token_idx < tokens[batch_index].len;
+      for (uint32_t token_idx = 0; token_idx < tokens[batch_index].size();
            token_idx++) {
         for (uint32_t lookup_index = 0; lookup_index < _num_lookups;
              lookup_index++) {
-          uint64_t loc = getHashLocFromLayer(
-              tokens[batch_index].active_neurons[token_idx], lookup_index);
+          uint64_t loc =
+              getHashLocFromLayer(tokens[batch_index][token_idx], lookup_index);
 
           for (uint32_t i = 0; i < _lookup_size; i++) {
             uint32_t gradient_offset = lookup_index * _lookup_size + i;
-            if (!sum_reduction) {
+            if (!use_sum_reduction) {
               gradient_offset += token_idx * _num_lookups * _lookup_size;
             }
 
@@ -118,22 +134,18 @@ TEST_F(EmbeddingLayerTestFixture, TestEmbeddingBlockOffsetUniqueness) {
 
 // Check that for a single token the embeddings contain the data at the correct
 // index in the embedding block.
-TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
-  std::vector<uint32_t> tokens = {6, 18, 3};
+TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbeddingMatches) {
+  std::vector<std::vector<uint32_t>> tokens = {{6}, {18}, {3}};
 
-  BoltBatch output = _layer->createBatchState(tokens.size());
-
-  for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, BoltVector::singleElementSparseVector(tokens.at(i)),
-                    output[i]);
-  }
+  BoltBatch output = doForwardPass(tokens);
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     const float* embedding = output[batch_index].activations;
 
     for (uint32_t lookup_index = 0; lookup_index < _num_lookups;
          lookup_index++) {
-      uint64_t start = getHashLocFromLayer(tokens[batch_index], lookup_index);
+      uint64_t start =
+          getHashLocFromLayer(tokens.at(batch_index).at(0), lookup_index);
 
       for (uint32_t j = 0; j < _lookup_size; j++) {
         ASSERT_EQ(embedding[lookup_index * _lookup_size + j], start + j + 1);
@@ -148,15 +160,7 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingSumReduction) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
-  BoltBatch output = _layer->createBatchState(tokens.size());
-
-  for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(
-        i,
-        BoltVector::makeSparseVector(
-            tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
-        output[i]);
-  }
+  BoltBatch output = doForwardPass(tokens);
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     const float* embedding = output[batch_index].activations;
@@ -184,15 +188,7 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingConcatReduction) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55}, {9, 2, 24}, {61, 75, 11}};
 
-  BoltBatch output = _layer->createBatchState(tokens.size());
-
-  for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(
-        i,
-        BoltVector::makeSparseVector(
-            tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
-        output[i]);
-  }
+  BoltBatch output = doForwardPass(tokens);
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     ASSERT_EQ(output[batch_index].len,
@@ -215,23 +211,15 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingConcatReduction) {
 }
 
 TEST_F(EmbeddingLayerTestFixture, BackpropagationSumReduction) {
-  std::vector<BoltVector> tokens = {
-      BoltVector::makeSparseVector({7, 4, 18}, {1.0, 1.0, 1.0}),
-      BoltVector::makeSparseVector({98, 34, 55, 2}, {1.0, 1.0, 1.0, 1.0}),
-      BoltVector::makeSparseVector({9, 24}, {1.0, 1.0}),
-      BoltVector::makeSparseVector({61, 75, 11}, {1.0, 1.0, 1.0})};
+  std::vector<std::vector<uint32_t>> tokens = {
+      {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
   testEmbeddingBackpropagation(tokens, true);
 }
 
 TEST_F(EmbeddingLayerTestFixture, BackpropagationConcatReduction) {
-  makeConcatReduction();
-
-  std::vector<BoltVector> tokens = {
-      BoltVector::makeSparseVector({7, 4, 18}, {1.0, 1.0, 1.0}),
-      BoltVector::makeSparseVector({98, 34, 55}, {1.0, 1.0, 1.0}),
-      BoltVector::makeSparseVector({9, 2, 24}, {1.0, 1.0, 1.0}),
-      BoltVector::makeSparseVector({61, 75, 11}, {1.0, 1.0, 1.0})};
+  std::vector<std::vector<uint32_t>> tokens = {
+      {7, 4, 18}, {98, 34, 55}, {9, 2, 24}, {61, 75, 11}};
 
   testEmbeddingBackpropagation(tokens, false);
 }
