@@ -68,19 +68,24 @@ class ClickThroughBatchProcessor final
       dense_features.push_back(val);
     }
 
-    BoltVector categorical_features(cols.size() - (_num_dense_features + 1),
-                                    /* is_dense= */ false,
-                                    /* has_gradient= */ false);
-    for (uint32_t feature_idx = _num_dense_features + 1;
-         feature_idx < cols.size(); feature_idx++) {
-      if (cols[feature_idx].empty()) {
+    uint32_t index_of_first_categorical_feature = _num_dense_features + 1;
+    BoltVector categorical_features(
+        cols.size() - index_of_first_categorical_feature,
+        /* is_dense= */ false,
+        /* has_gradient= */ false);
+
+    for (uint32_t feature_idx = 0;
+         feature_idx < cols.size() - index_of_first_categorical_feature;
+         feature_idx++) {
+      if (cols[index_of_first_categorical_feature + feature_idx].empty()) {
         categorical_features.active_neurons[feature_idx] = 0;
         categorical_features.activations[feature_idx] = 0;
         continue;
       }
       char* end;
-      uint32_t val =
-          std::strtoul(cols[feature_idx].data(), &end, /* base= */ 10);
+      uint32_t val = std::strtoul(
+          cols[index_of_first_categorical_feature + feature_idx].data(), &end,
+          /* base= */ 10);
       categorical_features.active_neurons[feature_idx] = val;
       categorical_features.activations[feature_idx] = 1.0;
     }
