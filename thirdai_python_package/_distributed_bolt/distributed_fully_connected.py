@@ -120,7 +120,7 @@ class FullyConnectedNetwork(DistributedBolt):
             ]
         )
 
-        self.primary_worker.add_workers.remote(self.workers)
+        self.primary_worker.set_workers.remote(self.workers)
 
         self.num_of_batches = min(
             ray.get([worker.num_of_batches.remote() for worker in self.workers])

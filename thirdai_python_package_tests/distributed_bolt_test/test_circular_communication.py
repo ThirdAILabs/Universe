@@ -7,26 +7,26 @@ pytestmark = [pytest.mark.unit]
 
 
 def test_all_reduce_circular_communication():
-    num_workers = 5
+    num_workers = 20
     workers = [Worker(num_workers, i, None) for i in range(num_workers)]
 
     for i in range(num_workers):
-        workers[i].set_friend(workers[(i + 1) % num_workers])
+        workers[i].set_friend(workers[(i - 1) % num_workers])
 
-    weight_matrix_shape = (250, 250)
-    bias_matrix_shape = (250, 250)
+    weight_matrix_shape = (3, 60)
+    bias_matrix_shape = (3, 60)
 
     weight_all_reduced = np.zeros(weight_matrix_shape)
     bias_all_reduced = np.zeros(bias_matrix_shape)
     # setting up gradients for each worker
     for i in range(num_workers):
-        workers[i].w_gradients = (i + 1) * np.ones(weight_matrix_shape)
-        workers[i].b_gradients = (i + 1) * np.ones(bias_matrix_shape)
+        workers[i].w_gradients = [(i + 1) * np.ones(weight_matrix_shape)]
+        workers[i].b_gradients = [(i + 1) * np.ones(bias_matrix_shape)]
         workers[i].calculate_gradients_partitions()
 
         # summing the gradients
-        weight_all_reduced += workers[i].w_gradients
-        bias_all_reduced += workers[i].b_gradients
+        weight_all_reduced += workers[i].w_gradients[0]
+        bias_all_reduced += workers[i].b_gradients[0]
 
     weight_all_reduced /= num_workers
     bias_all_reduced /= num_workers

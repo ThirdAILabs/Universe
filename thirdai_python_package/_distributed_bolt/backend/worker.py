@@ -1,3 +1,4 @@
+from numpy import partition
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
@@ -84,10 +85,34 @@ class Worker:
         in case of circular communication
         """
         for w_layers in self.w_gradients:
-            self.w_partitions.append(int(len(w_layers) / self.total_nodes))
+            partition_length = int(len(w_layers) / self.total_nodes)
+            remaining_length = len(w_layers)%self.total_nodes
+            partition_start_end_list = []
+            current_index = 0
+            for i in range(self.total_nodes):
+                if i < remaining_length:
+                    partition_start_end_list.append((current_index, current_index+partition_length+1))
+                    current_index += partition_length+1
+                else:
+                    partition_start_end_list.append((current_index, current_index+partition_length))
+                    current_index += partition_length
+                    
+            self.w_partitions.append(partition_start_end_list)
 
         for b_layers in self.b_gradients:
-            self.b_partitions.append(int(len(b_layers) / self.total_nodes))
+            partition_length = int(len(b_layers) / self.total_nodes)
+            remaining_length = len(b_layers)%self.total_nodes
+            partition_start_end_list = []
+            current_index = 0
+            for i in range(self.total_nodes):
+                if i < remaining_length:
+                    partition_start_end_list.append((current_index, current_index+partition_length+1))
+                    current_index += partition_length+1
+                else:
+                    partition_start_end_list.append((current_index, current_index+partition_length))
+                    current_index += partition_length
+                    
+            self.b_partitions.append(partition_start_end_list)
 
     def calculate_gradients_circular(self, batch_no: int):
         """This function is called only when the mode of
@@ -230,53 +255,34 @@ class Worker:
         for i in range(len(self.friend_weight_gradient_list)):
 
             # Getting the indices of the partition to work on
-            l_weight_idx, r_weight_idx = calculate_partitions(
-                partition_length=self.w_partitions[i],
-                partition_id=partition_id,
-                total_length=len(self.w_gradients[i]),
-            )
-            l_bias_idx, r_bias_idx = calculate_partitions(
-                partition_length=self.b_partitions[i],
-                partition_id=partition_id,
-                total_length=len(self.b_gradients[i]),
-            )
+            l_weight_idx, r_weight_idx = self.w_partitions[i][partition_id]
+            l_bias_idx, r_bias_idx = self.b_partitions[i][partition_id]
 
-            assert (
-                self.w_partitions[i] > 0
-            ), f"weight partions has value {self.w_partitions[i]}"
-            assert (
-                self.b_partitions[i] > 0
-            ), f"bias partions has value {self.b_partitions[i]}"
-            assert (
-                r_weight_idx - l_weight_idx >= self.w_partitions[i]
-            ), f"weight update index range are less than {self.w_partitions[i]}"
-            assert (
-                r_bias_idx - l_bias_idx >= self.b_partitions[i]
-            ), f"bias update index range are less than {self.b_partitions[i]}"
+            if r_weight_idx > l_weight_idx:
 
-            # arrays should be numpy arrays for the following operation, otherwise it will just get appened to the list
-            if reduce:
-                self.w_gradients[i][
-                    l_weight_idx:r_weight_idx
-                ] += self.friend_weight_gradient_list[i]
-                self.b_gradients[i][
-                    l_bias_idx:r_bias_idx
-                ] += self.friend_bias_gradient_list[i]
-                if avg_gradients:
-                    self.w_gradients[i][l_weight_idx:r_weight_idx] = (
-                        self.w_gradients[i][l_weight_idx:r_weight_idx]
-                        / self.total_nodes
-                    )
-                    self.b_gradients[i][l_bias_idx:r_bias_idx] = (
-                        self.b_gradients[i][l_bias_idx:r_bias_idx] / self.total_nodes
-                    )
-            else:
-                self.w_gradients[i][
-                    l_weight_idx:r_weight_idx
-                ] = self.friend_weight_gradient_list[i]
-                self.b_gradients[i][
-                    l_bias_idx:r_bias_idx
-                ] = self.friend_bias_gradient_list[i]
+                # arrays should be numpy arrays for the following operation, otherwise it will just get appened to the list
+                if reduce:
+                    self.w_gradients[i][
+                        l_weight_idx:r_weight_idx
+                    ] += self.friend_weight_gradient_list[i]
+                    self.b_gradients[i][
+                        l_bias_idx:r_bias_idx
+                    ] += self.friend_bias_gradient_list[i]
+                    if avg_gradients:
+                        self.w_gradients[i][l_weight_idx:r_weight_idx] = (
+                            self.w_gradients[i][l_weight_idx:r_weight_idx]
+                            / self.total_nodes
+                        )
+                        self.b_gradients[i][l_bias_idx:r_bias_idx] = (
+                            self.b_gradients[i][l_bias_idx:r_bias_idx] / self.total_nodes
+                        )
+                else:
+                    self.w_gradients[i][
+                        l_weight_idx:r_weight_idx
+                    ] = self.friend_weight_gradient_list[i]
+                    self.b_gradients[i][
+                        l_bias_idx:r_bias_idx
+                    ] = self.friend_bias_gradient_list[i]
 
     def process_ring(
         self,
@@ -333,32 +339,12 @@ class Worker:
         for i in range(len(self.w_partitions)):
 
             # Getting the indices of the partition to work on
-            l_weight_idx, r_weight_idx = calculate_partitions(
-                partition_length=self.w_partitions[i],
-                partition_id=partition_id,
-                total_length=len(self.w_gradients[i]),
-            )
-            l_bias_idx, r_bias_idx = calculate_partitions(
-                partition_length=self.b_partitions[i],
-                partition_id=partition_id,
-                total_length=len(self.b_gradients[i]),
-            )
+            l_weight_idx, r_weight_idx = self.w_partitions[i][partition_id]
+            l_bias_idx, r_bias_idx = self.b_partitions[i][partition_id]
 
-            assert (
-                self.w_partitions[i] > 0
-            ), f"weight partions has value {self.w_partitions[i]}"
-            assert (
-                self.b_partitions[i] > 0
-            ), f"bias partions has value {self.b_partitions[i]}"
-            assert (
-                r_weight_idx - l_weight_idx >= self.w_partitions[i]
-            ), f"weight update index range are less than {self.w_partitions[i]}"
-            assert (
-                r_bias_idx - l_bias_idx >= self.b_partitions[i]
-            ), f"bias update index range are less than {self.b_partitions[i]}"
-
-            w_gradient_subarray.append(self.w_gradients[i][l_weight_idx:r_weight_idx])
-            b_gradient_subarray.append(self.b_gradients[i][l_bias_idx:r_bias_idx])
+            if r_weight_idx > l_weight_idx:
+                w_gradient_subarray.append(self.w_gradients[i][l_weight_idx:r_weight_idx])
+                b_gradient_subarray.append(self.b_gradients[i][l_bias_idx:r_bias_idx])
 
         return w_gradient_subarray, b_gradient_subarray
 
