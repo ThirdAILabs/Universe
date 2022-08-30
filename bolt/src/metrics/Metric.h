@@ -164,26 +164,41 @@ class MeanSquaredErrorMetric final : public Metric {
 
     // Both are sparse, we advance indices based on which is positionally ahead.
     float error = 0.0;
-    size_t output_idx = 0, label_idx = 0;
-    while (output_idx < output.len && label_idx < labels.len) {
-      uint32_t output_i = output.active_neurons[output_idx];
-      uint32_t label_i = labels.active_neurons[label_idx];
-      if (output_i < label_i) {
-        float act = output.activations[output_idx];
+    size_t sparse_output_index = 0, sparse_label_index = 0;
+
+    while (sparse_output_index < output.len &&
+           sparse_label_index < labels.len) {
+      uint32_t output_index = output.active_neurons[sparse_output_index];
+      uint32_t label_index = labels.active_neurons[sparse_label_index];
+      if (output_index < label_index) {
+        float act = output.activations[sparse_output_index];
         error += act * act;
-        ++output_idx;
-      } else if (label_i < output_i) {
-        float act = labels.activations[output_idx];
+        ++sparse_output_index;
+      } else if (label_index < output_index) {
+        float act = labels.activations[sparse_label_index];
         error += act * act;
-        ++label_idx;
+        ++sparse_label_index;
       } else {
-        float lact = labels.activations[label_idx];
-        float oact = output.activations[output_idx];
-        float diff = lact - oact;
+        float diff = labels.activations[sparse_label_index] -
+                     output.activations[sparse_output_index];
         error += diff * diff;
-        ++output_idx;
-        ++label_idx;
+        ++sparse_output_index;
+        ++sparse_label_index;
       }
+    }
+
+    // Overhang in output.
+    while (sparse_output_index < output.len) {
+      float act = output.activations[sparse_output_index];
+      error += act * act;
+      ++sparse_output_index;
+    }
+
+    // Overhang in labels.
+    while (sparse_label_index < labels.len) {
+      float act = labels.activations[sparse_label_index];
+      error += act * act;
+      ++sparse_label_index;
     }
 
     return error;
@@ -195,10 +210,10 @@ class MeanSquaredErrorMetric final : public Metric {
 
 /**
  * The weighted mean absolute percentage error is a regression error that
- * measures the absolute deviation of predictions from the true values, weighted
- * in proportion to the true values. WMAPE = sum(|actual - prediction|) /
- * sum(|actual|) Here, the actual value is assumed to be non-negative. The
- * returned metric is in absolute terms; 1.0 is 100%.
+ * measures the absolute deviation of predictions from the true values,
+ * weighted in proportion to the true values. WMAPE = sum(|actual -
+ * prediction|) / sum(|actual|) Here, the actual value is assumed to be
+ * non-negative. The returned metric is in absolute terms; 1.0 is 100%.
  */
 class WeightedMeanAbsolutePercentageError final : public Metric {
  public:
@@ -323,9 +338,9 @@ class RecallAtK : public Metric {
 };
 
 /**
- * The F-Measure is a metric that takes into account both precision and recall.
- * It is defined as the harmonic mean of precision and recall. The returned
- * metric is in absolute terms; 1.0 is 100%.
+ * The F-Measure is a metric that takes into account both precision and
+ * recall. It is defined as the harmonic mean of precision and recall. The
+ * returned metric is in absolute terms; 1.0 is 100%.
  */
 class FMeasure final : public Metric {
  public:
