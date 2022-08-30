@@ -70,8 +70,7 @@ class BoltGraph {
   MetricData train(
       const std::vector<dataset::BoltDatasetPtr>& train_data,
       const std::vector<dataset::BoltTokenDatasetPtr>& train_tokens,
-      const dataset::BoltDatasetPtr& train_labels,
-      const TrainConfig& train_config);
+      const dataset::BoltDatasetPtr& train_labels, TrainConfig train_config);
 
   InferenceResult predict(
       const std::vector<dataset::BoltDatasetPtr>& test_data,

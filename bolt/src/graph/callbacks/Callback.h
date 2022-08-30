@@ -22,17 +22,17 @@ using CallbackPtr = std::shared_ptr<Callback>;
  */
 class Callback {
  public:
-  virtual void onTrainBegin(BoltGraph& model, TrainConfig& train_config){};
+  virtual void onTrainBegin(BoltGraph&, TrainConfig&){};
 
-  virtual void onTrainEnd(BoltGraph& model, TrainConfig& train_config){};
+  virtual void onTrainEnd(BoltGraph&, TrainConfig&){};
 
-  virtual void onEpochBegin(BoltGraph& model, TrainConfig& train_config){};
+  virtual void onEpochBegin(BoltGraph&, TrainConfig&){};
 
-  virtual void onEpochEnd(BoltGraph& model, TrainConfig& train_config){};
+  virtual void onEpochEnd(BoltGraph&, TrainConfig&){};
 
-  virtual void onBatchBegin(BoltGraph& model, TrainConfig& train_config){};
+  virtual void onBatchBegin(BoltGraph&, TrainConfig&){};
 
-  virtual void onBatchEnd(BoltGraph& model, TrainConfig& train_config){};
+  virtual void onBatchEnd(BoltGraph&, TrainConfig&){};
 
   virtual bool shouldStopTraining() { return false; }
 
