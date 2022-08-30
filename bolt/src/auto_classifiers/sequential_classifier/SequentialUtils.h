@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/types/string.hpp>
+#include <cereal/types/tuple.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
