@@ -3,7 +3,9 @@ from typing import Tuple, Any, Optional, Dict, List
 import logging
 
 
-def load_train_test_data(config: Dict[str, Any], total_nodes, training_partition_data_id):
+def load_train_test_data(
+    config: Dict[str, Any], total_nodes, training_partition_data_id
+):
     """
     Returns datasets as boltdatasets
     Arguments:

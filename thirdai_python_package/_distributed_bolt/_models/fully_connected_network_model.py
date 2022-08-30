@@ -25,7 +25,12 @@ class FullyConnectedNetworkModel:
         """
         self.layer_dims = layer_dims
 
-        self.train_data, self.train_label, self.test_data, self.test_label = load_train_test_data(config, total_nodes, id)
+        (
+            self.train_data,
+            self.train_label,
+            self.test_data,
+            self.test_label,
+        ) = load_train_test_data(config, total_nodes, id)
 
         self.rehash = config["params"]["rehash"]
         self.rebuild = config["params"]["rebuild"]
