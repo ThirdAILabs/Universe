@@ -10,9 +10,6 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
-#include <bolt/src/networks/DistributedModel.h>
-#include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <bolt_vector/src/BoltVector.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -41,6 +38,7 @@ namespace thirdai::bolt::python {
 
 void createBoltSubmodule(py::module_& module);
 
+<<<<<<< HEAD
 class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
@@ -430,6 +428,6 @@ class SentimentClassifier {
   BoltVector _output;
 };
 
+=======
+>>>>>>> callback-interface
 }  // namespace thirdai::bolt::python
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::python::PyNetwork)

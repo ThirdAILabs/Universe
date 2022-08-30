@@ -14,7 +14,6 @@ class TrainConfig {
     construct the training config. The remaining parameters can be set using a
     builder pattern.
   */
-
   static TrainConfig makeConfig(float learning_rate, uint32_t epochs) {
     return TrainConfig(learning_rate, epochs);
   }
@@ -54,6 +53,8 @@ class TrainConfig {
   constexpr uint32_t epochs() const { return _epochs; }
 
   constexpr float learningRate() const { return _learning_rate; }
+
+  void setLearningRate(float learning_rate) { _learning_rate = learning_rate; }
 
   MetricAggregator getMetricAggregator() const {
     return MetricAggregator(_metric_names, _verbose);

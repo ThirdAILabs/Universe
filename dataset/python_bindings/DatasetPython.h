@@ -84,8 +84,8 @@ class MLMDatasetLoader {
     auto data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
-    auto dataset = std::make_shared<dataset::StreamingDataset<
-        BoltBatch, thirdai::dataset::BoltTokenBatch, BoltBatch>>(
+    auto dataset = std::make_shared<
+        dataset::StreamingDataset<BoltBatch, BoltBatch, BoltBatch>>(
         data_loader, _batch_processor);
 
     auto [data, masked_indices, labels] = dataset->loadInMemory();

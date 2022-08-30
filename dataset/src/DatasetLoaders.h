@@ -7,7 +7,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/ClickThroughBatchProcessor.h>
 #include <dataset/src/batch_processors/SvmBatchProcessor.h>
-#include <dataset/src/batch_types/BoltTokenBatch.h>
 
 namespace thirdai::dataset {
 
@@ -26,17 +25,16 @@ struct SvmDatasetLoader {
 };
 
 struct ClickThroughDatasetLoader {
-  static std::tuple<BoltDatasetPtr, BoltTokenDatasetPtr, BoltDatasetPtr>
-  loadDataset(const std::string& filename, uint32_t batch_size,
-              uint32_t num_dense_features,
-              uint32_t max_num_categorical_features, char delimiter) {
+  static std::tuple<BoltDatasetPtr, BoltDatasetPtr, BoltDatasetPtr> loadDataset(
+      const std::string& filename, uint32_t batch_size,
+      uint32_t num_dense_features, uint32_t max_num_categorical_features,
+      char delimiter) {
     auto batch_processor = std::make_shared<ClickThroughBatchProcessor>(
         num_dense_features, max_num_categorical_features, delimiter);
 
     auto dataset =
-        StreamingDataset<BoltBatch, BoltTokenBatch,
-                         BoltBatch>::loadDatasetFromFile(filename, batch_size,
-                                                         batch_processor);
+        StreamingDataset<BoltBatch, BoltBatch, BoltBatch>::loadDatasetFromFile(
+            filename, batch_size, batch_processor);
 
     return dataset->loadInMemory();
   }
