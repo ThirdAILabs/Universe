@@ -3,7 +3,9 @@
 #include "SequentialUtils.h"
 #include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/loss_functions/LossFunctions.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -67,6 +69,8 @@ class SequentialClassifier {
                                     /* num_tables= */ 64,
                                     /* hashes_per_table= */ 4,
                                     /* reservoir_size= */ 64)});
+      _model->compile(
+          CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
     }
 
     auto [train_data, train_labels] = pipeline.loadInMemory();
@@ -79,7 +83,7 @@ class SequentialClassifier {
     _model->train({train_data}, {}, train_labels, train_config);
   }
 
-  void predict(
+  InferenceResult predict(
       const std::string& filename,
       std::vector<std::string> metrics = {"recall@1"},
       const std::optional<std::string>& output_filename = std::nullopt) {
@@ -111,11 +115,13 @@ class SequentialClassifier {
                                .withMetrics(std::move(metrics))
                                .withOutputCallback(print_predictions_callback);
 
-    _model->predict({test_data}, {}, test_labels, config);
+    auto results = _model->predict({test_data}, {}, test_labels, config);
 
     if (output_file) {
       output_file->close();
     }
+
+    return results;
   }
 
   void save(const std::string& filename) {
