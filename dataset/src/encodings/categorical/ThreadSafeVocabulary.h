@@ -34,18 +34,18 @@ class ThreadSafeVocabulary {
 
   explicit ThreadSafeVocabulary(
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map, bool fixed,
-      uint32_t vocab_size = 0)
-      : _fixed(fixed),
-        _vocab_size(vocab_size),
-        _string_to_uid(std::move(string_to_uid_map)) {
-    if (!_fixed && vocab_size == 0) {
+      std::optional<uint32_t> max_vocab_size = std::nullopt)
+      : _fixed(fixed), _string_to_uid(std::move(string_to_uid_map)) {
+    if (!_fixed && !max_vocab_size) {
       throw std::invalid_argument(
-          "[ThreadSafeVocabulary] vocab size cannot be 0 or not given "
+          "[ThreadSafeVocabulary] max_vocab_size must be supplied "
           "if fixed = false.");
     }
 
     if (_fixed) {
       _vocab_size = _string_to_uid.size();
+    } else {
+      _vocab_size = max_vocab_size.value();
     }
 
     if (_vocab_size < _string_to_uid.size()) {
@@ -73,9 +73,18 @@ class ThreadSafeVocabulary {
     return getUidInCriticalSection(string);
   }
 
-  std::optional<std::string> getString(uint32_t uid) {
+  std::string getString(uint32_t uid,
+                        const std::string& unseen_string = "[UNSEEN CLASS]") {
+    if (uid >= _vocab_size) {
+      std::stringstream error_ss;
+      error_ss << "[ThreadSafeVocabulary] getString() is called with an "
+                  "invalid uid '"
+               << uid << "'; uid >= vocab_size (" << _vocab_size << ").";
+      throw std::invalid_argument(error_ss.str());
+    }
+
     if (uid >= _uid_to_string.size()) {
-      return std::nullopt;
+      return unseen_string;
     }
 
     return _uid_to_string.at(uid);
@@ -83,9 +92,9 @@ class ThreadSafeVocabulary {
 
   uint32_t vocabSize() const { return _vocab_size; }
 
-  void fix() { _fixed = true; };
+  void fixVocab() { _fixed = true; };
 
-  bool isFixed() const { return _fixed; }
+  bool isVocabFixed() const { return _fixed; }
 
   static std::shared_ptr<ThreadSafeVocabulary> make(uint32_t vocab_size) {
     return std::make_shared<ThreadSafeVocabulary>(vocab_size);
