@@ -144,7 +144,7 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
   assert(graphCompiled());
   batch_labels.verifyExpectedDimension(
       /* expected_dimension = */ _output->outputDim(),
-      /* expected_num_nonzeros = */ std::nullopt,
+      /* num_nonzeros_range = */ std::nullopt,
       /* origin_string = */
       "Passed in label BoltVector is larger than the output dim");
 
