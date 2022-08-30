@@ -5,9 +5,9 @@
 #include <cereal/types/memory.hpp>
 #include "TokenInput.h"
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <optional>
 #include <stdexcept>
@@ -49,6 +49,8 @@ class EmbeddingNode final : public Node,
   }
 
   bool isInputNode() const final { return false; }
+
+  void initOptimizer() final { _embedding_layer->initOptimizer(); }
 
   std::string type() const final { return "embedding"; }
 
