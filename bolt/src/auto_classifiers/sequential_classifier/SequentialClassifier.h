@@ -82,7 +82,7 @@ class SequentialClassifier {
                                 /* epochs= */ epochs)
             .withMetrics(std::move(metrics));
 
-    _model->train({train_data}, {}, train_labels, train_config);
+    _model->train({train_data}, train_labels, train_config);
   }
 
   InferenceResult predict(
@@ -117,7 +117,7 @@ class SequentialClassifier {
                                .withMetrics(std::move(metrics))
                                .withOutputCallback(print_predictions_callback);
 
-    auto results = _model->predict({test_data}, {}, test_labels, config);
+    auto results = _model->predict({test_data}, test_labels, config);
 
     if (output_file) {
       output_file->close();
