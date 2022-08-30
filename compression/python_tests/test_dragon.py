@@ -30,7 +30,7 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
     layer2 = model.get_layer("fc_2")
 
     compressed_weight_grads.append(
-        layer1.weights.compress(
+        layer1.weight_gradients.compress(
             compression_scheme="dragon",
             compression_density=compression_density,
             seed_for_hashing=seed_for_hashing,
@@ -38,7 +38,7 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
     )
 
     compressed_weight_grads.append(
-        layer2.weights.compress(
+        layer2.weight_gradients.compress(
             compression_scheme="dragon",
             compression_density=compression_density,
             seed_for_hashing=seed_for_hashing,
@@ -51,8 +51,8 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
 def set_compressed_dragon_gradients(model, compressed_weight_grads):
     layer1 = model.get_layer("fc_1")
     layer2 = model.get_layer("fc_2")
-    layer1.weights.set(compressed_weight_grads[0], compressed=True)
-    layer2.weights.set(compressed_weight_grads[1], compressed=True)
+    layer1.weight_gradients.set(compressed_weight_grads[0], compressed=True)
+    layer2.weight_gradients.set(compressed_weight_grads[1], compressed=True)
     return model
 
 
@@ -104,6 +104,8 @@ def test_get_gradients():
     )
 
 
+# Instead of the earlier set function, set currently accepts a compressed vector
+# if the compressed argument is True.
 def test_set_gradients():
     model = build_dag_network()
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
@@ -145,6 +147,8 @@ def test_set_gradients():
             )
 
 
+# We compress the weight gradients of the model, and then reconstruct the weight
+# gradients from the compressed dragon vector.
 def test_compressed_training():
 
     train_data, train_labels = gen_numpy_training_data(
@@ -158,24 +162,24 @@ def test_compressed_training():
         train_data=train_data, train_labels=train_labels, sparsity=1, num_classes=10
     )
 
-    batch_size = model.numTrainingBatch()
+    total_batches = model.numTrainingBatch()
 
     predict_config = (
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
 
-    for epochs in range(20):
-        for batch_num in range(batch_size):
+    for epochs in range(30):
+        for batch_num in range(total_batches):
             model.calculateGradientSingleNode(batch_num)
             compressed_weight_grads = get_compressed_dragon_gradients(
                 model,
-                compression_density=0.5,
+                compression_density=0.25,
                 seed_for_hashing=np.random.randint(100),
             )
-            network = set_compressed_dragon_gradients(
+            model = set_compressed_dragon_gradients(
                 model, compressed_weight_grads=compressed_weight_grads
             )
-            network.updateParametersSingleNode()
+            model.updateParametersSingleNode()
 
     model.finishTraining()
     acc = model.predict(
@@ -183,10 +187,4 @@ def test_compressed_training():
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
         predict_config=predict_config,
     )
-    print(acc[0]["categorical_accuracy"])
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
-
-
-# test_get_gradients()
-# test_set_gradients()
-# test_compressed_training()
