@@ -80,7 +80,7 @@ class SequentialClassifier {
                                 /* epochs= */ epochs)
             .withMetrics(std::move(metrics));
 
-    _model->train({train_data}, {}, train_labels, train_config);
+    _model->train({train_data}, train_labels, train_config);
   }
 
   InferenceResult predict(
