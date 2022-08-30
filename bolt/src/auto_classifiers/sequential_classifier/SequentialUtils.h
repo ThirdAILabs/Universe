@@ -143,7 +143,8 @@ class Pipeline {
     }
 
     for (const auto& sequential : schema.sequential) {
-      input_blocks.push_back(makeSequentialBlock(schema.user, sequential, schema.timestamp_col_name, state, col_nums));
+      input_blocks.push_back(makeSequentialBlock(
+          schema.user, sequential, schema.timestamp_col_name, state, col_nums));
     }
 
     return input_blocks;
@@ -155,45 +156,37 @@ class Pipeline {
     const auto& [cat_col_name, n_classes] = categorical;
     auto& string_vocab = state.vocabs[cat_col_name];
     if (!string_vocab) {
-      string_vocab =
-          dataset::ThreadSafeVocabulary::make(n_classes);
+      string_vocab = dataset::ThreadSafeVocabulary::make(n_classes);
     }
     return dataset::CategoricalBlock::make(
-        col_nums.at(cat_col_name),
-        dataset::StringLookup::make(string_vocab));
+        col_nums.at(cat_col_name), dataset::StringLookup::make(string_vocab));
   }
 
   static dataset::BlockPtr makeSequentialBlock(
-      const CategoricalPair& user,
-      const SequentialTriplet& sequential, 
-      const std::string& timestamp_col_name,
-      DataState& state,
+      const CategoricalPair& user, const SequentialTriplet& sequential,
+      const std::string& timestamp_col_name, DataState& state,
       const ColumnNumberMap& col_nums) {
     const auto& [user_col_name, n_unique_users] = user;
     auto& user_vocab = state.vocabs[user_col_name];
     if (!user_vocab) {
-      user_vocab =
-          dataset::ThreadSafeVocabulary::make(n_unique_users);
+      user_vocab = dataset::ThreadSafeVocabulary::make(n_unique_users);
     }
 
     const auto& [item_col_name, n_unique_items, track_last_n] = sequential;
     auto& item_vocab = state.vocabs[item_col_name];
     if (!item_vocab) {
-      item_vocab =
-          dataset::ThreadSafeVocabulary::make(n_unique_items);
+      item_vocab = dataset::ThreadSafeVocabulary::make(n_unique_items);
     }
 
-    auto collection_name =
-        item_col_name + std::to_string(track_last_n);
+    auto collection_name = item_col_name + std::to_string(track_last_n);
     auto& user_item_history = state.history_collections[collection_name];
     if (!user_item_history) {
-      user_item_history = dataset::ItemHistoryCollection::make(
-          n_unique_users, track_last_n);
+      user_item_history =
+          dataset::ItemHistoryCollection::make(n_unique_users, track_last_n);
     }
 
     return dataset::UserItemHistoryBlock::make(
-        col_nums.at(user_col_name),
-        col_nums.at(item_col_name),
+        col_nums.at(user_col_name), col_nums.at(item_col_name),
         col_nums.at(timestamp_col_name), user_vocab, item_vocab,
         user_item_history);
   }

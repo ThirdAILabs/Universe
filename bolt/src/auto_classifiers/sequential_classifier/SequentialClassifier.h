@@ -16,22 +16,22 @@ class SequentialClassifier {
  public:
   /**
    * @brief Construct a new Sequential Classifier object
-   * 
+   *
    * @param user A (string, unsigned integer) pair cantaining
-   * the user column name and the number of unique users 
+   * the user column name and the number of unique users
    * respectively.
    * @param target A (string, unsigned integer) pair cantaining
-   * the target column name and the number of unique target 
+   * the target column name and the number of unique target
    * classes respectively.
-   * @param timestamp The name of the column that contains 
+   * @param timestamp The name of the column that contains
    * timestamps
-   * @param static_text A vector of names of columns that 
+   * @param static_text A vector of names of columns that
    * contain static textual information.
-   * @param static_categorical A vector of 
-   * (string, unsigned integer) pairs containing static 
-   * categorical column name and the number of unique classes 
+   * @param static_categorical A vector of
+   * (string, unsigned integer) pairs containing static
+   * categorical column name and the number of unique classes
    * respectively.
-   * @param sequential A vector of 
+   * @param sequential A vector of
    * (string, unsigned integer, unsigned integer) tuples containing
    * sequential column name, the number of unique classes, and
    * the number of previous values to track.
@@ -102,10 +102,7 @@ class SequentialClassifier {
       }
       uint32_t class_id = output.getHighestActivationId();
       auto target_lookup = _state.vocabs[_schema.target.first];
-      auto predicted_class = target_lookup->getString(class_id);
-      (*output_file) << (predicted_class ? predicted_class.value()
-                                         : "[Unknown]")
-                     << std::endl;
+      (*output_file) << target_lookup->getString(class_id) << std::endl;
     };
 
     auto [test_data, test_labels] = pipeline.loadInMemory();
