@@ -9,10 +9,6 @@
 
 namespace thirdai::dataset {
 
-namespace special_tokens {
-constexpr std::string_view UNK = "[UNK]";
-}
-
 /**
  * This class should be the source of all text encodings in the codebase to
  * ensure no mismatches in hashes or implementations.
