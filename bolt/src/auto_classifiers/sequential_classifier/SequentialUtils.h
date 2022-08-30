@@ -1,0 +1,199 @@
+#pragma once
+
+#include <cereal/types/string.hpp>
+#include <cereal/types/tuple.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
+#include <dataset/src/DataLoader.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Date.h>
+#include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/encodings/categorical/StringLookup.h>
+#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+
+namespace thirdai::bolt::classifiers::sequential {
+
+using CategoricalPair = std::pair<std::string, uint32_t>;
+using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
+
+/**
+ * Stores the dataset configuration.
+ */
+struct Schema {
+  CategoricalPair user;
+  CategoricalPair target;
+  std::string timestamp_col_name;
+  std::vector<std::string> static_text_col_names;
+  std::vector<CategoricalPair> static_categorical;
+  std::vector<SequentialTriplet> sequential;
+
+  Schema() {}
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(user, target, timestamp_col_name, static_text_col_names,
+            static_categorical, sequential);
+  }
+};
+
+/**
+ * Stores persistent states for data preprocessing.
+ */
+struct DataState {
+  std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> vocabs;
+  std::unordered_map<std::string, dataset::ItemHistoryCollectionPtr>
+      history_collections;
+
+  DataState() {}
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(vocabs, history_collections);
+  }
+};
+
+class ColumnNumberMap {
+ public:
+  ColumnNumberMap(const std::string& header, char delimiter) {
+    auto header_columns =
+        dataset::ProcessorUtils::parseCsvRow(header, delimiter);
+    for (uint32_t col_num = 0; col_num < header_columns.size(); col_num++) {
+      std::string col_name(header_columns[col_num]);
+      _name_to_num[col_name] = col_num;
+    }
+  }
+
+  uint32_t at(const std::string& col_name) const {
+    if (_name_to_num.count(col_name) == 0) {
+      std::stringstream error_ss;
+      error_ss << "Expected a column named '" << col_name
+               << "' in header but could not find it.";
+      throw std::runtime_error(error_ss.str());
+    }
+    return _name_to_num.at(col_name);
+  }
+
+ private:
+  std::unordered_map<std::string, uint32_t> _name_to_num;
+};
+
+class Pipeline {
+ public:
+  static constexpr uint32_t BATCH_SIZE = 2048;
+
+  static dataset::StreamingGenericDatasetLoader buildForFile(
+      const Schema& schema, DataState& state, const std::string& filename,
+      char delimiter, bool for_training) {
+    auto file_reader =
+        std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
+
+    auto header = file_reader->getHeader();
+    if (!header) {
+      throw std::runtime_error("File header not found.");
+    }
+
+    ColumnNumberMap col_nums(*header, delimiter);
+
+    auto input_blocks = buildInputBlocks(schema, state, col_nums);
+
+    std::vector<dataset::BlockPtr> label_blocks;
+    label_blocks.push_back(
+        makeCategoricalBlock(schema.target, state, col_nums));
+
+    return {file_reader,
+            input_blocks,
+            label_blocks,
+            /* shuffle = */ for_training,
+            /* config = */ {},
+            /* has_header = */ false,  // since we already took the header.
+            delimiter,
+            /* parallel = */ false};  // We cannot properly capture sequences
+                                      // in the dataset if we process it in
+                                      // parallel.
+  }
+
+ private:
+  static std::vector<dataset::BlockPtr> buildInputBlocks(
+      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums) {
+    std::vector<dataset::BlockPtr> input_blocks;
+    input_blocks.push_back(makeCategoricalBlock(schema.user, state, col_nums));
+
+    input_blocks.push_back(std::make_shared<dataset::DateBlock>(
+        col_nums.at(schema.timestamp_col_name)));
+
+    for (const auto& text_col_name : schema.static_text_col_names) {
+      input_blocks.push_back(std::make_shared<dataset::TextBlock>(
+          col_nums.at(text_col_name), /* dim = */ 100000));
+    }
+
+    for (const auto& categorical : schema.static_categorical) {
+      input_blocks.push_back(
+          makeCategoricalBlock(categorical, state, col_nums));
+    }
+
+    for (const auto& sequential : schema.sequential) {
+      input_blocks.push_back(makeSequentialBlock(
+          schema.user, sequential, schema.timestamp_col_name, state, col_nums));
+    }
+
+    return input_blocks;
+  }
+
+  static dataset::BlockPtr makeCategoricalBlock(
+      const CategoricalPair& categorical, DataState& state,
+      const ColumnNumberMap& col_nums) {
+    const auto& [cat_col_name, n_classes] = categorical;
+    auto& string_vocab = state.vocabs[cat_col_name];
+    if (!string_vocab) {
+      string_vocab = dataset::ThreadSafeVocabulary::make(n_classes);
+    }
+    return dataset::CategoricalBlock::make(
+        col_nums.at(cat_col_name), dataset::StringLookup::make(string_vocab));
+  }
+
+  static dataset::BlockPtr makeSequentialBlock(
+      const CategoricalPair& user, const SequentialTriplet& sequential,
+      const std::string& timestamp_col_name, DataState& state,
+      const ColumnNumberMap& col_nums) {
+    const auto& [user_col_name, n_unique_users] = user;
+    auto& user_vocab = state.vocabs[user_col_name];
+    if (!user_vocab) {
+      user_vocab = dataset::ThreadSafeVocabulary::make(n_unique_users);
+    }
+
+    const auto& [item_col_name, n_unique_items, track_last_n] = sequential;
+    auto& item_vocab = state.vocabs[item_col_name];
+    if (!item_vocab) {
+      item_vocab = dataset::ThreadSafeVocabulary::make(n_unique_items);
+    }
+
+    auto collection_name = item_col_name + std::to_string(track_last_n);
+    auto& user_item_history = state.history_collections[collection_name];
+    if (!user_item_history) {
+      user_item_history =
+          dataset::ItemHistoryCollection::make(n_unique_users, track_last_n);
+    }
+
+    return dataset::UserItemHistoryBlock::make(
+        col_nums.at(user_col_name), col_nums.at(item_col_name),
+        col_nums.at(timestamp_col_name), user_vocab, item_vocab,
+        user_item_history);
+  }
+};
+
+}  // namespace thirdai::bolt::classifiers::sequential
