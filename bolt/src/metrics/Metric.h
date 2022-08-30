@@ -162,28 +162,30 @@ class MeanSquaredErrorMetric final : public Metric {
       return error;
     }
 
-    // If both are sparse then we need to iterate over the nonzeros from both
-    // vectors. To avoid double counting the overlapping neurons we avoid
-    // computing the error while iterating over the output active_neurons, if
-    // the labels also contain the same active_neuron.
-
+    // Both are sparse, we advance indices based on which is positionally ahead.
     float error = 0.0;
-    for (uint32_t i = 0; i < output.len; i++) {
-      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-      if (label > 0.0) {
-        continue;
+    size_t output_idx = 0, label_idx = 0;
+    while (output_idx < output.len && label_idx < labels.len) {
+      uint32_t output_i = output.active_neurons[output_idx];
+      uint32_t label_i = labels.active_neurons[label_idx];
+      if (output_i < label_i) {
+        float act = output.activations[output_idx];
+        error += act * act;
+        ++output_idx;
+      } else if (label_i < output_i) {
+        float act = labels.activations[output_idx];
+        error += act * act;
+        ++label_idx;
+      } else {
+        float lact = labels.activations[label_idx];
+        float oact = output.activations[output_idx];
+        float diff = lact - oact;
+        error += diff * diff;
+        ++output_idx;
+        ++label_idx;
       }
-      float act = output.findActiveNeuron<DENSE>(i).activation;
-      float delta = label - act;
-      error += delta * delta;
     }
 
-    for (uint32_t i = 0; i < labels.len; i++) {
-      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-      float act = output.findActiveNeuron<DENSE>(i).activation;
-      float delta = label - act;
-      error += delta * delta;
-    }
     return error;
   }
 
