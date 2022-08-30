@@ -82,6 +82,7 @@ target_link_libraries(
   thread_safe_vocabulary_tests
   PRIVATE
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
@@ -93,6 +94,7 @@ target_link_libraries(
   user_item_history_block_tests
   PRIVATE
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
