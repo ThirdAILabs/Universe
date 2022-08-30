@@ -210,10 +210,10 @@ class MeanSquaredErrorMetric final : public Metric {
 
 /**
  * The weighted mean absolute percentage error is a regression error that
- * measures the absolute deviation of predictions from the true values,
- * weighted in proportion to the true values. WMAPE = sum(|actual -
- * prediction|) / sum(|actual|) Here, the actual value is assumed to be
- * non-negative. The returned metric is in absolute terms; 1.0 is 100%.
+ * measures the absolute deviation of predictions from the true values, weighted
+ * in proportion to the true values. WMAPE = sum(|actual - prediction|) /
+ * sum(|actual|) Here, the actual value is assumed to be non-negative. The
+ * returned metric is in absolute terms; 1.0 is 100%.
  */
 class WeightedMeanAbsolutePercentageError final : public Metric {
  public:
@@ -338,9 +338,9 @@ class RecallAtK : public Metric {
 };
 
 /**
- * The F-Measure is a metric that takes into account both precision and
- * recall. It is defined as the harmonic mean of precision and recall. The
- * returned metric is in absolute terms; 1.0 is 100%.
+ * The F-Measure is a metric that takes into account both precision and recall.
+ * It is defined as the harmonic mean of precision and recall. The returned
+ * metric is in absolute terms; 1.0 is 100%.
  */
 class FMeasure final : public Metric {
  public:
