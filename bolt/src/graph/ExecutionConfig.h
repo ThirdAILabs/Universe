@@ -14,7 +14,6 @@ class TrainConfig {
     construct the training config. The remaining parameters can be set using a
     builder pattern.
   */
-
   static TrainConfig makeConfig(float learning_rate, uint32_t epochs) {
     return TrainConfig(learning_rate, epochs);
   }
