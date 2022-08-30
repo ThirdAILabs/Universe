@@ -1,7 +1,5 @@
 import pytest
 
-from compression.python_tests.utils import build_dag_network
-
 pytestmark = [pytest.mark.unit, pytest.mark.integration]
 
 import numpy as np
@@ -159,7 +157,7 @@ def test_compressed_training():
     )
 
     model = build_single_node_bolt_dag_model(
-        train_data=train_data, train_labels=train_labels, sparsity=1, num_classes=10
+        train_data=train_data, train_labels=train_labels, sparsity=0.2, num_classes=10
     )
 
     total_batches = model.numTrainingBatch()
@@ -168,7 +166,7 @@ def test_compressed_training():
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
 
-    for epochs in range(30):
+    for epochs in range(25):
         for batch_num in range(total_batches):
             model.calculateGradientSingleNode(batch_num)
             compressed_weight_grads = get_compressed_dragon_gradients(
@@ -187,4 +185,8 @@ def test_compressed_training():
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
         predict_config=predict_config,
     )
+    print(acc[0]["categorical_accuracy"])
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
+
+
+test_compressed_training()

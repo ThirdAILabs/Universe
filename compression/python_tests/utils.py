@@ -52,7 +52,7 @@ def build_single_node_bolt_dag_model(train_data, train_labels, sparsity, num_cla
 
     input_layer = bolt.graph.Input(dim=num_classes)
     hidden_layer = bolt.graph.FullyConnected(
-        dim=2000,
+        dim=30,
         sparsity=sparsity,
         activation="relu",
     )(input_layer)
@@ -61,7 +61,7 @@ def build_single_node_bolt_dag_model(train_data, train_labels, sparsity, num_cla
     )
 
     train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.002, epochs=20)
+        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=1)
         .silence()
         .with_rebuild_hash_tables(3000)
         .with_reconstruct_hash_functions(10000)
