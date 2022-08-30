@@ -67,6 +67,8 @@ class FullyConnectedNode final
 
   bool isInputNode() const final { return false; }
 
+  void initOptimizer() final { _layer->initOptimizer(); }
+
   ActivationFunction getActivationFunction() const {
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
@@ -182,6 +184,28 @@ class FullyConnectedNode final
           "getBiasGradientsPtr.");
     }
     return _layer->getBiasGradientsPtr();
+  }
+
+  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim,
+                                                  std::string activation) {
+    return std::make_shared<FullyConnectedNode>(dim, std::move(activation));
+  }
+
+  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim, float sparsity,
+                                                  std::string activation) {
+    return std::make_shared<FullyConnectedNode>(dim, sparsity,
+                                                std::move(activation));
+  }
+
+  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim, float sparsity,
+                                                  std::string activation,
+                                                  uint32_t num_tables,
+                                                  uint32_t hashes_per_table,
+                                                  uint32_t reservoir_size) {
+    auto sampling_config = std::make_shared<DWTASamplingConfig>(
+        num_tables, hashes_per_table, reservoir_size);
+    return std::make_shared<FullyConnectedNode>(dim, sparsity, activation,
+                                                sampling_config);
   }
 
  private:

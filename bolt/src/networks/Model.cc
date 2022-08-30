@@ -1,7 +1,7 @@
 #include "Model.h"
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -10,7 +10,7 @@
 
 namespace thirdai::bolt {
 
-template class Model<bolt::BoltBatch>;
+template class Model<BoltBatch>;
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(
@@ -26,6 +26,8 @@ MetricData Model<BATCH_T>::train(
       getRebuildBatch(rebuild, batch_size, train_data->len());
   uint32_t rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
   uint64_t num_train_batches = train_data->numBatches();
+
+  initOptimizer();
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
@@ -242,7 +244,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
     const std::shared_ptr<dataset::StreamingDataset<BATCH_T, BoltBatch>>&
         test_data,
     bool use_sparse_inference, const std::vector<std::string>& metric_names,
-    std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
+    std::optional<std::function<void(const BoltBatch&, uint32_t)>>
         batch_callback,
     bool verbose) {
   MetricAggregator metrics(metric_names, verbose);

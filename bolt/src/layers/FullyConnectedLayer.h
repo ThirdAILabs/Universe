@@ -3,13 +3,15 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include "BoltVector.h"
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include "SequentialLayer.h"
+#include <bolt/src/layers/Optimizer.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
+#include <optional>
 #include <random>
 
 namespace thirdai::bolt {
@@ -87,9 +89,9 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getBiasesPtr() { return _biases.data(); }
 
-  float* getWeightGradientsPtr() { return _w_gradient.data(); }
+  float* getWeightGradientsPtr() { return _weight_optimizer->gradients.data(); }
 
-  float* getBiasGradientsPtr() { return _b_gradient.data(); }
+  float* getBiasGradientsPtr() { return _bias_optimizer->gradients.data(); }
 
   float* getWeights() const final;
 
@@ -120,6 +122,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   void buildLayerSummary(std::stringstream& summary,
                          bool detailed) const override;
 
+  void initOptimizer() final;
+
   ~FullyConnectedLayer() = default;
 
  private:
@@ -129,14 +133,10 @@ class FullyConnectedLayer final : public SequentialLayer {
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
-  std::vector<float> _w_gradient;
-  std::vector<float> _w_momentum;
-  std::vector<float> _w_velocity;
-
   std::vector<float> _biases;
-  std::vector<float> _b_gradient;
-  std::vector<float> _b_momentum;
-  std::vector<float> _b_velocity;
+
+  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
+  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
@@ -169,10 +169,6 @@ class FullyConnectedLayer final : public SequentialLayer {
   bool _is_distributed;
 
   LSHSamplingMode _sampling_mode;
-
-  void initOptimizer();
-
-  void removeOptimizer();
 
   void initActiveNeuronsTrackers();
 
@@ -232,6 +228,21 @@ class FullyConnectedLayer final : public SequentialLayer {
             _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode);
   }
 
+  /**
+   * Training data-structures (like the optimizer and the active neurons
+   * trackers) are not loaded in by default. If we want to continue training
+   * after a load, the expectation is that the higher level Graph/Network API
+   * will handle this initialization with the initOptimizer() method.
+   *
+   * Doing this means our load API is as simple as possible for both
+   * training and inference purposes. It doesn't make sense to load these
+   * data-structures by default then remove them with another function since
+   * users may be memory constrained during deployment.
+   *
+   * We don't know yet if its worth it to save the optimizer for
+   * retraining/finetuning purposes. If in the future we figure out this has
+   * some benefit we can adjust this method accordingly.
+   */
   template <class Archive>
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,

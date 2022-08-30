@@ -5,12 +5,14 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
+#include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DistributedModel.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -38,11 +40,6 @@ namespace py = pybind11;
 namespace thirdai::bolt::python {
 
 void createBoltSubmodule(py::module_& module);
-
-// Returns true on success and false on allocation failure.
-void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
-                         uint32_t** active_neurons, float** activations,
-                         bool output_sparse);
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:

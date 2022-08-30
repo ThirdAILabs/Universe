@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <string_view>
 #include <unordered_map>
@@ -16,6 +16,8 @@ class Block;
 class SegmentedFeatureVectorTest;
 class CategoricalBlockTest;
 class TextBlockTest;
+
+using BlockPtr = std::shared_ptr<Block>;
 
 /**
  * Segmented feature vector abstract class.
@@ -78,7 +80,7 @@ class SegmentedFeatureVector {
   /**
    * Converts this vector to a BoltVector.
    */
-  virtual bolt::BoltVector toBoltVector() = 0;
+  virtual BoltVector toBoltVector() = 0;
 };
 
 /**

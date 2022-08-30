@@ -7,17 +7,22 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <numeric>
 #include <optional>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-namespace thirdai::bolt {
+namespace thirdai {
 
-constexpr float BETA1 = 0.9;
-constexpr float BETA2 = 0.999;
-constexpr float EPS = 0.0000001;
+using ValueIndexPair = std::pair<float, uint32_t>;
+
+// This compares the first element in the pair, then the second element.
+using TopKActivationsQueue =
+    std::priority_queue<ValueIndexPair, std::vector<ValueIndexPair>,
+                        std::greater<ValueIndexPair>>;
 
 struct FoundActiveNeuron {
   std::optional<size_t> pos;
@@ -222,6 +227,11 @@ struct BoltVector {
     }
   }
 
+  void zeroOutGradients() {  // NOLINT clang-tidy thinks this should be const.
+    assert(hasGradients());
+    std::fill_n(gradients, len, 0.0);
+  }
+
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& state) {
     bool dense = state.active_neurons == nullptr;
     for (uint32_t i = 0; i < state.len; i++) {
@@ -255,6 +265,59 @@ struct BoltVector {
   }
 
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
+
+  // Returns the active neuron ID's that are greater than activation_threshold.
+  // Returns at most max_count_to_return (if number of neurons exceeds
+  // max_count_to_return, returns those with highest activations). If
+  // return_at_least_one is true, returns the neuron with the highest activation
+  // even if no neurons otherwise exceeded activation_threshold.
+  std::vector<uint32_t> getThresholdedNeurons(
+      float activation_threshold, bool return_at_least_one,
+      uint32_t max_count_to_return) const {
+    std::vector<uint32_t> thresholded;
+    std::vector<uint32_t> ids(len);
+    std::iota(ids.begin(), ids.end(), 0);
+    std::stable_sort(ids.begin(), ids.end(), [this](uint32_t i1, uint32_t i2) {
+      return activations[i1] > activations[i2];
+    });
+
+    for (unsigned int& id : ids) {
+      if (activations[id] < activation_threshold) {
+        break;
+      }
+      if (thresholded.size() == max_count_to_return) {
+        return thresholded;
+      }
+
+      uint32_t neuron = this->isDense() ? id : active_neurons[id];
+      thresholded.push_back(neuron);
+    }
+
+    if (return_at_least_one && thresholded.empty()) {
+      uint32_t max_act_neuron =
+          this->isDense() ? ids[0] : active_neurons[ids[0]];
+      thresholded.push_back(max_act_neuron);
+    }
+
+    return thresholded;
+  }
+
+  inline TopKActivationsQueue findKLargestActivationsK(uint32_t k) const {
+    TopKActivationsQueue top_k;
+    for (uint32_t pos = 0; pos < std::min(k, len); pos++) {
+      uint32_t idx = isDense() ? pos : active_neurons[pos];
+      top_k.push({activations[pos], idx});
+    }
+    for (uint32_t pos = k; pos < len; pos++) {
+      uint32_t idx = isDense() ? pos : active_neurons[pos];
+      ValueIndexPair val_idx_pair = {activations[pos], idx};
+      if (val_idx_pair > top_k.top()) {
+        top_k.pop();
+        top_k.push(val_idx_pair);
+      }
+    }
+    return top_k;
+  }
 
   constexpr bool hasGradients() const { return gradients != nullptr; }
 
@@ -387,6 +450,10 @@ class BoltBatch {
     return _vectors[i];
   }
 
+  auto begin() const { return _vectors.begin(); }
+
+  auto end() const { return _vectors.end(); }
+
   uint32_t getBatchSize() const { return _vectors.size(); }
 
   /*
@@ -431,4 +498,4 @@ class BoltBatch {
   BoltBatch& operator=(BoltBatch&& other) = default;
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai

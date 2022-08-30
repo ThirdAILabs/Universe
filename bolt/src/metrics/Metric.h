@@ -1,15 +1,23 @@
 #pragma once
-
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/MetricHelpers.h>
+#include <bolt_vector/src/BoltVector.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <atomic>
+#include <cstdlib>
+#include <functional>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <memory>
+#include <queue>
+#include <regex>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -22,7 +30,7 @@ class Metric {
                              const BoltVector& labels) = 0;
 
   // Returns the value of the metric and resets it. For instance this would be
-  // called ad the end of each epoch.
+  // called at the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
 
   // Returns the name of the metric.
@@ -52,7 +60,7 @@ class CategoricalAccuracy final : public Metric {
     if (!max_act_index) {
       throw std::runtime_error(
           "Unable to find a output activation larger than the minimum "
-          "representable float. This is likely do to a Nan or incorrect "
+          "representable float. This is likely due to a Nan or incorrect "
           "activation function in the final layer.");
     }
 
@@ -61,7 +69,7 @@ class CategoricalAccuracy final : public Metric {
                                      : output.active_neurons[*max_act_index];
 
     if (labels.isDense()) {
-      // If labels are dense we check if the predection has a non-zero label.
+      // If labels are dense we check if the prediction has a non-zero label.
       if (labels.activations[pred] > 0) {
         _correct++;
       }
@@ -235,5 +243,192 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
 };
+
+class RecallAtK : public Metric {
+ public:
+  explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    auto top_k = output.findKLargestActivationsK(_k);
+
+    uint32_t matches = 0;
+    while (!top_k.empty()) {
+      if (labels
+              .findActiveNeuronNoTemplate(
+                  /* active_neuron= */ top_k.top().second)
+              .activation > 0) {
+        matches++;
+      }
+      top_k.pop();
+    }
+
+    _matches.fetch_add(matches);
+    _label_count.fetch_add(countLabels(labels));
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double metric = static_cast<double>(_matches) / _label_count;
+    if (verbose) {
+      std::cout << "Recall@" << _k << ": " << std::setprecision(3) << metric
+                << std::endl;
+    }
+    _matches = 0;
+    _label_count = 0;
+    return metric;
+  }
+
+  std::string getName() final { return "recall@" + std::to_string(_k); }
+
+  static inline bool isRecallAtK(const std::string& name) {
+    return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
+  }
+
+  static std::shared_ptr<Metric> make(const std::string& name) {
+    if (!isRecallAtK(name)) {
+      std::stringstream error_ss;
+      error_ss << "Invoked RecallAtK::make with invalid string '" << name
+               << "'. RecallAtK::make should be invoked with a string in "
+                  "the format 'recall@k', where k is a positive integer.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
+    char* end_ptr;
+    auto k = std::strtol(name.data() + 7, &end_ptr, 10);
+    if (k <= 0) {
+      std::stringstream error_ss;
+      error_ss << "RecallAtK invoked with k = " << k
+               << ". k should be greater than 0.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
+    return std::make_shared<RecallAtK>(k);
+  }
+
+ private:
+  static uint32_t countLabels(const BoltVector& labels) {
+    uint32_t correct_labels = 0;
+    for (uint32_t i = 0; i < labels.len; i++) {
+      if (labels.activations[i] > 0) {
+        correct_labels++;
+      }
+    }
+    return correct_labels;
+  }
+
+  uint32_t _k;
+  std::atomic_uint64_t _matches;
+  std::atomic_uint64_t _label_count;
+};
+
+/**
+ * The F-Measure is a metric that takes into account both precision and recall.
+ * It is defined as the harmonic mean of precision and recall. The returned
+ * metric is in absolute terms; 1.0 is 100%.
+ */
+class FMeasure final : public Metric {
+ public:
+  explicit FMeasure(float threshold)
+      : _threshold(threshold),
+        _true_positive(0),
+        _false_positive(0),
+        _false_negative(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    auto predictions = output.getThresholdedNeurons(
+        /* activation_threshold = */ _threshold,
+        /* return_at_least_one = */ true,
+        /* max_count_to_return = */ std::numeric_limits<uint32_t>::max());
+
+    for (uint32_t pred : predictions) {
+      if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
+        _true_positive++;
+      } else {
+        _false_positive++;
+      }
+    }
+
+    for (uint32_t pos = 0; pos < labels.len; pos++) {
+      uint32_t label_active_neuron =
+          labels.isDense() ? pos : labels.active_neurons[pos];
+      if (labels.findActiveNeuronNoTemplate(label_active_neuron).activation >
+          0) {
+        if (std::find(predictions.begin(), predictions.end(),
+                      label_active_neuron) == predictions.end()) {
+          _false_negative++;
+        }
+      }
+    }
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double prec = static_cast<double>(_true_positive) /
+                  (_true_positive + _false_positive);
+    double recall = static_cast<double>(_true_positive) /
+                    (_true_positive + _false_negative);
+    double f_measure;
+
+    if (prec == 0 && recall == 0) {
+      f_measure = 0;
+    } else {
+      f_measure = (2 * prec * recall) / (prec + recall);
+    }
+
+    if (verbose) {
+      std::cout << "Precision (t=" << _threshold << "): " << prec << std::endl;
+      std::cout << "Recall (t=" << _threshold << "): " << recall << std::endl;
+      std::cout << "F-Measure (t=" << _threshold << "): " << f_measure
+                << std::endl;
+    }
+    _true_positive = 0;
+    _false_positive = 0;
+    _false_negative = 0;
+    return f_measure;
+  }
+
+  static constexpr const char* name = "f_measure";
+
+  std::string getName() final {
+    std::stringstream name_ss;
+    name_ss << name << '(' << _threshold << ')';
+    return name_ss.str();
+  }
+
+  static bool isFMeasure(const std::string& name) {
+    return std::regex_match(name, std::regex("f_measure\\(0\\.\\d+\\)"));
+  }
+
+  static std::shared_ptr<Metric> make(const std::string& name) {
+    if (!isFMeasure(name)) {
+      std::stringstream error_ss;
+      error_ss << "Invoked FMeasure::make with invalid string '" << name
+               << "'. FMeasure::make should be invoked with a string "
+                  "in the format 'f_measure(threshold)', where "
+                  "threshold is a positive floating point number.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
+    std::string token = name.substr(name.find('('));  // token = (X.XXX)
+    token = token.substr(1, token.length() - 2);      // token = X.XXX
+    float threshold = std::stof(token);
+
+    if (threshold <= 0) {
+      std::stringstream error_ss;
+      error_ss << "FMeasure invoked with threshold = " << threshold
+               << ". The threshold should be greater than 0.";
+      throw std::invalid_argument(error_ss.str());
+    }
+
+    return std::make_shared<FMeasure>(threshold);
+  }
+
+ private:
+  float _threshold;
+  std::atomic<uint64_t> _true_positive;
+  std::atomic<uint64_t> _false_positive;
+  std::atomic<uint64_t> _false_negative;
+};
+
+using MetricData = std::unordered_map<std::string, std::vector<double>>;
+using InferenceMetricData = std::unordered_map<std::string, double>;
 
 }  // namespace thirdai::bolt

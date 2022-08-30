@@ -17,7 +17,7 @@ namespace thirdai::bolt {
  * number of batches available for training.
  */
 uint32_t DistributedModel::prepareNodeForDistributedTraining(
-    std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
+    std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& train_data,
     const dataset::BoltDatasetPtr& train_labels, uint32_t rehash,
     uint32_t rebuild, bool verbose) {
   _train_data = train_data;
@@ -25,6 +25,8 @@ uint32_t DistributedModel::prepareNodeForDistributedTraining(
   uint32_t batch_size = _train_data->at(0).getBatchSize();
   _rebuild_batch = getRebuildBatch(rebuild, batch_size, train_data->len());
   _rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
+
+  initOptimizer();
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
@@ -40,7 +42,7 @@ uint32_t DistributedModel::prepareNodeForDistributedTraining(
 
 void DistributedModel::calculateGradientSingleNode(
     uint32_t batch_idx, const LossFunction& loss_fn) {
-  bolt::BoltBatch& batch_inputs = _train_data->at(batch_idx);
+  BoltBatch& batch_inputs = _train_data->at(batch_idx);
 
   const BoltBatch& batch_labels = _train_labels->at(batch_idx);
 

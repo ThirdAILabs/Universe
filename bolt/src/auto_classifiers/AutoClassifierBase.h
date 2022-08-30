@@ -3,7 +3,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <sys/stat.h>
 #include <fstream>
@@ -36,6 +36,8 @@ class AutoClassifierBase {
                            std::vector<std::vector<uint32_t>>&& test_tokens,
                            bool use_sparse_inference);
 
+  static bool canLoadDatasetInMemory(const std::string& filename);
+
  private:
   static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   loadStreamingDataset(
@@ -52,8 +54,6 @@ class AutoClassifierBase {
   static uint64_t getMemoryBudget(const std::string& model_size);
 
   static std::optional<uint64_t> getSystemRam();
-
-  static bool canLoadDatasetInMemory(const std::string& filename);
 
   // Private constructor for cereal
   AutoClassifierBase() {}

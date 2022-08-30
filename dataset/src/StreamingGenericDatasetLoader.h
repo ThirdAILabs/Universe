@@ -3,11 +3,13 @@
 #include "DataLoader.h"
 #include "ShuffleBatchBuffer.h"
 #include "StreamingDataset.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <chrono>
 #include <cstddef>
 #include <memory>
+#include <tuple>
 
 namespace thirdai::dataset {
 
@@ -25,7 +27,7 @@ struct DatasetShuffleConfig {
 };
 
 class StreamingGenericDatasetLoader
-    : public StreamingDataset<bolt::BoltBatch, bolt::BoltBatch> {
+    : public StreamingDataset<BoltBatch, BoltBatch> {
  public:
   /**
    * This constructor accepts a pointer to any data loader.
@@ -44,6 +46,17 @@ class StreamingGenericDatasetLoader
             shuffle, config) {}
 
   /**
+   * This constructor accepts a generic batch processor instead of blocks.
+   */
+  StreamingGenericDatasetLoader(
+      std::string filename, std::shared_ptr<GenericBatchProcessor> processor,
+      uint32_t batch_size, bool shuffle = false,
+      DatasetShuffleConfig config = DatasetShuffleConfig())
+      : StreamingGenericDatasetLoader(
+            std::make_shared<SimpleFileDataLoader>(filename, batch_size),
+            std::move(processor), shuffle, config) {}
+
+  /**
    * This constructor does not accept a data loader and
    * defaults to a simple file loader.
    */
@@ -58,8 +71,7 @@ class StreamingGenericDatasetLoader
             std::move(input_blocks), std::move(label_blocks), shuffle, config,
             has_header, delimiter) {}
 
-  std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> nextBatchTuple()
-      final {
+  std::optional<std::tuple<BoltBatch, BoltBatch>> nextBatchTuple() final {
     if (_buffer.empty()) {
       prefillShuffleBuffer();
     }
@@ -69,11 +81,25 @@ class StreamingGenericDatasetLoader
   }
 
   std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadInMemory() final {
+    std::cout << "Loading vectors from '" + _data_loader->resourceName() + "'"
+              << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
     while (addNextBatchToBuffer()) {
     }
     auto [input_batches, label_batches] = _buffer.exportBuffer();
-    return {std::make_shared<BoltDataset>(std::move(input_batches)),
-            std::make_shared<BoltDataset>(std::move(label_batches))};
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration =
+        std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+    auto dataset = std::make_tuple(
+        std::make_shared<BoltDataset>(std::move(input_batches)),
+        std::make_shared<BoltDataset>(std::move(label_batches)));
+
+    std::cout << "Loaded " << std::get<0>(dataset)->len()
+              << " vectors from '" + _data_loader->resourceName() + "'"
+              << " in " << duration << " seconds." << std::endl;
+
+    return dataset;
   }
 
   uint32_t getInputDim() { return _processor->getInputDim(); }
@@ -106,8 +132,7 @@ class StreamingGenericDatasetLoader
   }
 
   bool addNextBatchToBuffer() {
-    auto batch =
-        StreamingDataset<bolt::BoltBatch, bolt::BoltBatch>::nextBatchTuple();
+    auto batch = StreamingDataset<BoltBatch, BoltBatch>::nextBatchTuple();
     if (batch) {
       _buffer.insertBatch(std::move(batch.value()), _shuffle);
       return true;

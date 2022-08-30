@@ -1,18 +1,18 @@
 #pragma once
 
 #include "ProcessorUtils.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 
 namespace thirdai::dataset {
 
-class GenericBatchProcessor
-    : public BatchProcessor<bolt::BoltBatch, bolt::BoltBatch> {
+class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
  public:
   GenericBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                         std::vector<std::shared_ptr<Block>> label_blocks,
@@ -51,10 +51,10 @@ class GenericBatchProcessor
     }
   }
 
-  std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
+  std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
-    std::vector<bolt::BoltVector> batch_inputs(rows.size());
-    std::vector<bolt::BoltVector> batch_labels(rows.size());
+    std::vector<BoltVector> batch_inputs(rows.size());
+    std::vector<BoltVector> batch_labels(rows.size());
 
     /*
       These variables keep track of the presence of an erroneous input line.
@@ -98,8 +98,8 @@ class GenericBatchProcessor
       std::rethrow_exception(num_columns_error);
     }
 
-    return std::make_tuple(bolt::BoltBatch(std::move(batch_inputs)),
-                           bolt::BoltBatch(std::move(batch_labels)));
+    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
+                           BoltBatch(std::move(batch_labels)));
   }
 
   bool expectsHeader() const final { return _expects_header; }
@@ -111,12 +111,12 @@ class GenericBatchProcessor
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
   std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
-                                     bolt::BoltVector& vector) {
+                                     BoltVector& vector) {
     return makeVector(sample, vector, _input_blocks, _input_blocks_dense);
   }
 
   std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
-                                     bolt::BoltVector& vector) {
+                                     BoltVector& vector) {
     return makeVector(sample, vector, _label_blocks, _label_blocks_dense);
   }
 
@@ -125,7 +125,7 @@ class GenericBatchProcessor
    * Encodes a sample as a BoltVector according to the given blocks.
    */
   static std::exception_ptr makeVector(
-      std::vector<std::string_view>& sample, bolt::BoltVector& vector,
+      std::vector<std::string_view>& sample, BoltVector& vector,
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
     std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
@@ -187,6 +187,8 @@ class GenericBatchProcessor
   std::vector<std::shared_ptr<Block>> _input_blocks;
   std::vector<std::shared_ptr<Block>> _label_blocks;
 };
+
+using GenericBatchProcessorPtr = std::shared_ptr<GenericBatchProcessor>;
 
 }  // namespace thirdai::dataset
 

@@ -3,9 +3,9 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "Model.h"
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -16,14 +16,11 @@
 
 namespace thirdai::bolt {
 
-class DLRM;
-
 namespace python {
 class SentimentClassifier;
 }  // namespace python
 
-class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
-  friend class DLRM;
+class FullyConnectedNetwork : public Model<BoltBatch> {
   friend class TextClassifier;
   friend class python::SentimentClassifier;
 
@@ -33,18 +30,17 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final;
 
-  void forward(uint32_t batch_index, const bolt::BoltBatch& inputs,
+  void forward(uint32_t batch_index, const BoltBatch& inputs,
                BoltVector& output, const BoltVector* labels) final {
     forward(batch_index, inputs[batch_index], output, labels);
   }
 
-  void backpropagate(uint32_t batch_index, bolt::BoltBatch& inputs,
+  void backpropagate(uint32_t batch_index, BoltBatch& inputs,
                      BoltVector& output) final {
     backpropagate<true>(batch_index, inputs[batch_index], output);
   }
 
-  void backpropagateInputForGradients(uint32_t batch_index,
-                                      bolt::BoltBatch& input,
+  void backpropagateInputForGradients(uint32_t batch_index, BoltBatch& input,
                                       BoltVector& output) {
     backpropagate<false>(batch_index, input[batch_index], output);
   };
@@ -127,6 +123,12 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     return _layers.at(layer_index)->getSparsity();
   }
 
+  void initOptimizer() final {
+    for (auto& layer : _layers) {
+      layer->initOptimizer();
+    }
+  }
+
  private:
   void forward(uint32_t batch_index, const BoltVector& input,
                BoltVector& output, const BoltVector* labels);
@@ -155,8 +157,8 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Model<bolt::BoltBatch>>(this), _input_dim,
-            _layers, _num_layers);
+    archive(cereal::base_class<Model<BoltBatch>>(this), _input_dim, _layers,
+            _num_layers);
   }
 
  protected:
