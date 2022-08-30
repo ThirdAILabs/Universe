@@ -1,19 +1,18 @@
 enable_testing()
 
 add_executable(metric_test MetricTest.cc)
-target_link_libraries(
-  metric_test
-  PRIVATE 
-  gtest_main
-)
-
 add_executable(mean_squared_error_test MeanSquaredErrorMetricTest.cc)
-target_link_libraries(
+
+set(METRIC_TESTS
+  metric_test
   mean_squared_error_test
-  PRIVATE
-  gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(metric_test DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
-gtest_discover_tests(mean_squared_error_test DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+
+foreach (METRIC_TEST IN LISTS METRIC_TESTS)
+  target_link_libraries(${METRIC_TEST} PRIVATE gtest_main)
+  gtest_discover_tests(${METRIC_TEST} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+endforeach()
+
+
