@@ -252,8 +252,10 @@ class FullyConnectedNode final
     float indicator_value = _outputs->getBatchSize() * _layer->getSparsity() *
                             _predecessor->averageBatchSparsity();
     if (indicator_value < 0.01) {
+      std::cout << "Enabling sparse sparse optimization for " << name() << " with indicator value " << indicator_value << std::endl;
       _layer->enableSparseSparseOptimization();
     } else {
+      std::cout << "Disabling sparse sparse optimization for " << name() << " with indicator value " << indicator_value << std::endl;
       _layer->disableSparseSparseOptimization();
     }
   }
