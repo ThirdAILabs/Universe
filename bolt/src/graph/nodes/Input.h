@@ -29,6 +29,15 @@ class Input final : public Node {
         _expected_input_dim(expected_input_dim),
         _num_nonzeros_range(std::move(num_nonzeros_range)) {}
 
+  static std::shared_ptr<Input> make(uint32_t expected_dim) {
+    return std::make_shared<Input>(expected_dim);
+  }
+
+  static std::shared_ptr<Input> makeTokenInput(
+      uint32_t expected_dim, std::pair<uint32_t, uint32_t> num_nonzeros_range) {
+    return std::make_shared<Input>(expected_dim, num_nonzeros_range);
+  }
+
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. It is
   // only valid until the next time cleanupAfterBatchProcessing is called.

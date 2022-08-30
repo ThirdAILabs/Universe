@@ -46,6 +46,15 @@ class LayerNormNode final : public Node,
         _node_to_normalize(nullptr),
         _compiled(false) {}
 
+  static std::shared_ptr<LayerNormNode> make() {
+    return std::make_shared<LayerNormNode>();
+  }
+
+  static std::shared_ptr<LayerNormNode> make(
+      const NormalizationLayerConfig& config) {
+    return std::make_shared<LayerNormNode>(config);
+  }
+
   std::shared_ptr<LayerNormNode> addPredecessor(NodePtr node) {
     if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(

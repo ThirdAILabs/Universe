@@ -23,6 +23,10 @@ class ConcatenateNode final
  public:
   ConcatenateNode() : _compiled(false){};
 
+  static std::shared_ptr<ConcatenateNode> make() {
+    return std::make_shared<ConcatenateNode>();
+  }
+
   std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
       const std::vector<NodePtr>& nodes) {
     if (getState() != NodeState::Constructed) {

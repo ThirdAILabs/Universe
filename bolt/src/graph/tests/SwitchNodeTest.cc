@@ -48,17 +48,17 @@ auto generateSwitchDataset() {
 TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
   auto [train_data, train_tokens, train_labels] = generateSwitchDataset();
 
-  auto input = std::make_shared<Input>(/* dim= */ n_classes);
-  auto token_input = std::make_shared<Input>(
-      /* dim= */ n_switch_layers,
+  auto input = Input::make(/* expected_dim= */ n_classes);
+  auto token_input = Input::makeTokenInput(
+      /* expected_dim= */ n_switch_layers,
       /* num_nonzeros_range = */ std::pair<uint32_t, uint32_t>(1, 1));
 
-  auto switch_layer = std::make_shared<SwitchNode>(
+  auto switch_layer = SwitchNode::make(
       /* dim= */ 100, /* activation= */ "relu",
       /* n_layers= */ n_switch_layers);
   switch_layer->addPredecessors(input, token_input);
 
-  auto output = std::make_shared<FullyConnectedNode>(
+  auto output = FullyConnectedNode::make(
       /* dim= */ n_classes, /* activation= */ "softmax");
   output->addPredecessor(switch_layer);
 

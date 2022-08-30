@@ -22,15 +22,15 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
-  auto input_layer = std::make_shared<Input>(input_dim);
+  auto input_layer = Input::make(input_dim);
 
-  auto hidden_layer = std::make_shared<FullyConnectedNode>(
+  auto hidden_layer = FullyConnectedNode::make(
       /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
       /* activation= */ "relu");
 
   hidden_layer->addPredecessor(input_layer);
 
-  auto output_layer = std::make_shared<FullyConnectedNode>(
+  auto output_layer = FullyConnectedNode::make(
       /* dim= */ n_classes, /* activation= */ "softmax");
 
   output_layer->addPredecessor(hidden_layer);

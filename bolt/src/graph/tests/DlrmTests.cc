@@ -38,26 +38,24 @@ static constexpr uint32_t n_batches = 100;
 static constexpr uint32_t batch_size = 100;
 
 BoltGraph getModel() {
-  auto input = std::make_shared<Input>(/* dim= */ n_classes);
-  auto hidden_layer =
-      std::make_shared<FullyConnectedNode>(/* dim= */ 200,
-                                           /* activation= */ "relu");
+  auto input = Input::make(/* expected_dim= */ n_classes);
+  auto hidden_layer = FullyConnectedNode::make(/* dim= */ 200,
+                                               /* activation= */ "relu");
   hidden_layer->addPredecessor(input);
 
-  auto token_input = std::make_shared<Input>(
-      /* dim= */ n_classes,
+  auto token_input = Input::makeTokenInput(
+      /* expected_dim= */ n_classes,
       /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(1, 1));
-  auto embedding = std::make_shared<EmbeddingNode>(
+  auto embedding = EmbeddingNode::make(
       /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
       /* log_embedding_block_size= */ 12);
   embedding->addInput(token_input);
 
-  auto concat = std::make_shared<ConcatenateNode>();
+  auto concat = ConcatenateNode::make();
   concat->setConcatenatedNodes({hidden_layer, embedding});
 
-  auto output =
-      std::make_shared<FullyConnectedNode>(/* dim= */ n_classes,
-                                           /* activation= */ "softmax");
+  auto output = FullyConnectedNode::make(/* dim= */ n_classes,
+                                         /* activation= */ "softmax");
   output->addPredecessor(concat);
 
   BoltGraph model(/* inputs= */ {input, token_input},

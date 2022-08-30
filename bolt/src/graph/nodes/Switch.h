@@ -48,6 +48,26 @@ class SwitchNode final : public Node,
     }
   }
 
+  static std::shared_ptr<SwitchNode> make(uint32_t dim,
+                                          const std::string& activation,
+                                          uint32_t n_layers) {
+    return std::make_shared<SwitchNode>(dim, activation, n_layers);
+  }
+
+  static std::shared_ptr<SwitchNode> make(uint32_t dim, float sparsity,
+                                          const std::string& activation,
+                                          uint32_t n_layers) {
+    return std::make_shared<SwitchNode>(dim, sparsity, activation, n_layers);
+  }
+
+  static std::shared_ptr<SwitchNode> make(uint32_t dim, float sparsity,
+                                          const std::string& activation,
+                                          SamplingConfigPtr sampling_config,
+                                          uint32_t n_layers) {
+    return std::make_shared<SwitchNode>(dim, sparsity, activation,
+                                        sampling_config, n_layers);
+  }
+
   uint32_t outputDim() const final {
     // All layers are constructed identically so we can use _layers[0] here.
     return _layers.at(0)->outputDim();

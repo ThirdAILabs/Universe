@@ -9,6 +9,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 
@@ -26,6 +27,13 @@ class EmbeddingNode final : public Node,
             /* log_embedding_block_size= */ log_embedding_block_size)),
         _outputs(std::nullopt),
         _token_input(nullptr) {}
+
+  static std::shared_ptr<EmbeddingNode> make(
+      uint32_t num_embedding_lookups, uint32_t lookup_size,
+      uint32_t log_embedding_block_size) {
+    return std::make_shared<EmbeddingNode>(num_embedding_lookups, lookup_size,
+                                           log_embedding_block_size);
+  }
 
   uint32_t outputDim() const final {
     NodeState node_state = getState();

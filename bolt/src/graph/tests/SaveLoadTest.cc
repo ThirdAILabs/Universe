@@ -19,24 +19,24 @@ static constexpr uint32_t batch_size = 100;
 class ModelWithLayers {
  public:
   ModelWithLayers() {
-    input = std::make_shared<Input>(n_classes);
+    input = Input::make(n_classes);
 
-    hidden1 = std::make_shared<FullyConnectedNode>(2000, "relu");
+    hidden1 = FullyConnectedNode::make(2000, "relu");
     hidden1->addPredecessor(input);
 
-    normalized_hidden1 = std::make_shared<LayerNormNode>();
+    normalized_hidden1 = LayerNormNode::make();
     normalized_hidden1->addPredecessor(hidden1);
 
-    hidden2 = std::make_shared<FullyConnectedNode>(2000, "relu");
+    hidden2 = FullyConnectedNode::make(2000, "relu");
     hidden2->addPredecessor(input);
 
-    normalized_hidden2 = std::make_shared<LayerNormNode>();
+    normalized_hidden2 = LayerNormNode::make();
     normalized_hidden2->addPredecessor(hidden2);
 
-    concat = std::make_shared<ConcatenateNode>();
+    concat = ConcatenateNode::make();
     concat->setConcatenatedNodes({normalized_hidden1, normalized_hidden2});
 
-    output = std::make_shared<FullyConnectedNode>(n_classes, "softmax");
+    output = FullyConnectedNode::make(n_classes, "softmax");
     output->addPredecessor(concat);
 
     model = std::make_unique<BoltGraph>(std::vector<InputPtr>{input}, output);
@@ -143,16 +143,16 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
       /* n_batches= */ n_batches, /* batch_size= */ batch_size,
       /* seed= */ 29042);
 
-  auto token_input = std::make_shared<Input>(
-      /* dim= */ n_batches * batch_size + 1,
+  auto token_input = Input::makeTokenInput(
+      /* expected_dim= */ n_batches * batch_size + 1,
       /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(1, 1));
 
-  auto embedding_layer = std::make_shared<EmbeddingNode>(
+  auto embedding_layer = EmbeddingNode::make(
       /* num_embedding_lookups= */ 4, /* lookup_size= */ 8,
       /* log_embedding_block_size= */ 14);
   embedding_layer->addInput(token_input);
 
-  auto fully_connected_layer = std::make_shared<FullyConnectedNode>(
+  auto fully_connected_layer = FullyConnectedNode::make(
       /* dim= */ 2,
       /* activation= */ "softmax");
   fully_connected_layer->addPredecessor(embedding_layer);
