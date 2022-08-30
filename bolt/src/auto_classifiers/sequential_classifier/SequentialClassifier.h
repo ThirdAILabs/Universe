@@ -12,7 +12,8 @@
 #include <string>
 #include <tuple>
 #include <utility>
-namespace thirdai::bolt::classifiers::sequential {
+
+namespace thirdai::bolt::sequential_classifier {
 
 class SequentialClassifier {
  public:
@@ -52,11 +53,12 @@ class SequentialClassifier {
     _schema.sequential = sequential;
   }
 
-  void train(const std::string& filename, uint32_t epochs, float learning_rate,
+  void train(const std::string& train_filename, uint32_t epochs,
+             float learning_rate,
              std::vector<std::string> metrics = {"recall@1"}) {
-    auto pipeline =
-        Pipeline::buildForFile(_schema, _state, filename, /* delimiter = */ ',',
-                               /* for_training = */ true);
+    auto pipeline = Pipeline::buildForFile(_schema, _state, train_filename,
+                                           /* delimiter = */ ',',
+                                           /* for_training = */ true);
 
     auto output_sparsity = getLayerSparsity(pipeline.getLabelDim());
 
@@ -84,16 +86,16 @@ class SequentialClassifier {
   }
 
   InferenceResult predict(
-      const std::string& filename,
+      const std::string& test_filename,
       std::vector<std::string> metrics = {"recall@1"},
       const std::optional<std::string>& output_filename = std::nullopt) {
     if (!_model) {
       throw std::runtime_error("Called predict() before training.");
     }
 
-    auto pipeline =
-        Pipeline::buildForFile(_schema, _state, filename, /* delimiter = */ ',',
-                               /* for_training = */ false);
+    auto pipeline = Pipeline::buildForFile(_schema, _state, test_filename,
+                                           /* delimiter = */ ',',
+                                           /* for_training = */ false);
 
     std::optional<std::ofstream> output_file;
     if (output_filename) {
@@ -105,7 +107,7 @@ class SequentialClassifier {
         return;
       }
       uint32_t class_id = output.getHighestActivationId();
-      auto target_lookup = _state.vocabs[_schema.target.first];
+      auto target_lookup = _state.vocabs_by_column[_schema.target.first];
       (*output_file) << target_lookup->getString(class_id) << std::endl;
     };
 
@@ -180,10 +182,10 @@ class SequentialClassifier {
   }
 };
 
-}  // namespace thirdai::bolt::classifiers::sequential
+}  // namespace thirdai::bolt::sequential_classifier
 
 namespace thirdai::bolt {
 
-using SequentialClassifier = classifiers::sequential::SequentialClassifier;
+using SequentialClassifier = sequential_classifier::SequentialClassifier;
 
 }  // namespace thirdai::bolt

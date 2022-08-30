@@ -14,15 +14,18 @@
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/encodings/categorical/StringLookup.h>
 #include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
+#include <sys/types.h>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::bolt::classifiers::sequential {
+namespace thirdai::bolt::sequential_classifier {
 
+// A pair of (column name, num unique classes)
 using CategoricalPair = std::pair<std::string, uint32_t>;
+// A tuple of (column name, num unique classes, track last N)
 using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
 
 /**
@@ -52,9 +55,10 @@ struct Schema {
  * Stores persistent states for data preprocessing.
  */
 struct DataState {
-  std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> vocabs;
-  std::unordered_map<std::string, dataset::ItemHistoryCollectionPtr>
-      history_collections;
+  std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr>
+      vocabs_by_column;
+  std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
+      history_collections_by_id;
 
   DataState() {}
 
@@ -63,7 +67,7 @@ struct DataState {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(vocabs, history_collections);
+    archive(vocabs_by_column, history_collections_by_id);
   }
 };
 
@@ -146,9 +150,10 @@ class Pipeline {
           makeCategoricalBlock(categorical, state, col_nums));
     }
 
-    for (const auto& sequential : schema.sequential) {
-      input_blocks.push_back(makeSequentialBlock(
-          schema.user, sequential, schema.timestamp_col_name, state, col_nums));
+    for (uint32_t seq_idx = 0; seq_idx < schema.sequential.size(); seq_idx++) {
+      input_blocks.push_back(
+          makeSequentialBlock(seq_idx, schema.user, schema.sequential[seq_idx],
+                              schema.timestamp_col_name, state, col_nums));
     }
 
     return input_blocks;
@@ -158,7 +163,7 @@ class Pipeline {
       const CategoricalPair& categorical, DataState& state,
       const ColumnNumberMap& col_nums) {
     const auto& [cat_col_name, n_classes] = categorical;
-    auto& string_vocab = state.vocabs[cat_col_name];
+    auto& string_vocab = state.vocabs_by_column[cat_col_name];
     if (!string_vocab) {
       string_vocab = dataset::ThreadSafeVocabulary::make(n_classes);
     }
@@ -166,24 +171,26 @@ class Pipeline {
         col_nums.at(cat_col_name), dataset::StringLookup::make(string_vocab));
   }
 
+  // We pass in an ID because sequential blocks can corrupt each other's states.
   static dataset::BlockPtr makeSequentialBlock(
-      const CategoricalPair& user, const SequentialTriplet& sequential,
+      uint32_t sequential_block_id, const CategoricalPair& user,
+      const SequentialTriplet& sequential,
       const std::string& timestamp_col_name, DataState& state,
       const ColumnNumberMap& col_nums) {
     const auto& [user_col_name, n_unique_users] = user;
-    auto& user_vocab = state.vocabs[user_col_name];
+    auto& user_vocab = state.vocabs_by_column[user_col_name];
     if (!user_vocab) {
       user_vocab = dataset::ThreadSafeVocabulary::make(n_unique_users);
     }
 
     const auto& [item_col_name, n_unique_items, track_last_n] = sequential;
-    auto& item_vocab = state.vocabs[item_col_name];
+    auto& item_vocab = state.vocabs_by_column[item_col_name];
     if (!item_vocab) {
       item_vocab = dataset::ThreadSafeVocabulary::make(n_unique_items);
     }
 
-    auto collection_name = item_col_name + std::to_string(track_last_n);
-    auto& user_item_history = state.history_collections[collection_name];
+    auto& user_item_history =
+        state.history_collections_by_id[sequential_block_id];
     if (!user_item_history) {
       user_item_history =
           dataset::ItemHistoryCollection::make(n_unique_users, track_last_n);
@@ -196,4 +203,4 @@ class Pipeline {
   }
 };
 
-}  // namespace thirdai::bolt::classifiers::sequential
+}  // namespace thirdai::bolt::sequential_classifier
