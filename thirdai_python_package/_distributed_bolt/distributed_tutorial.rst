@@ -18,7 +18,8 @@ Installations
 - Check if ray path is included in system path by printing (run 'echo $PATH' on the terminal)
 - Ray's default path is ``/home/$USER/.local/bin``
 - If not included, run the command: ``export PATH=$PATH:/home/$USER/.local/bin``
-                
+
+
 Automatic Cluster Initialization
 ----------------------------------
 - Fill in the cluster configuration YAML file(cluster_configuration.YAML in cluster_configuration_files): 
