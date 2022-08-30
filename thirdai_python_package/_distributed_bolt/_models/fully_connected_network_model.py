@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 from thirdai._thirdai import bolt, dataset
-from thirdai._distributed_bolt.utils import load_dataset
+from thirdai._distributed_bolt.utils import load_train_test_data
 from ..utils import contruct_dag_model
 
 
@@ -12,7 +12,7 @@ class FullyConnectedNetworkModel:
     """
 
     def __init__(self, config: Dict, total_nodes: int, layer_dims: List[int], id: int):
-        """Initailizes Model
+        """
 
         Args:
             config (Dict): Configuration File for the network
@@ -25,14 +25,8 @@ class FullyConnectedNetworkModel:
         """
         self.layer_dims = layer_dims
 
-        # getting training and testing data
-        data = load_dataset(config, total_nodes, id)
-        if data is None:
-            raise ValueError("Unable to load a dataset. Please check the config")
+        self.train_data, self.train_label, self.test_data, self.test_label = load_train_test_data(config, total_nodes, id)
 
-        self.train_data, self.train_label, self.test_data, self.test_label = data
-
-        # get variables for initializing training
         self.rehash = config["params"]["rehash"]
         self.rebuild = config["params"]["rebuild"]
         self.learning_rate = config["params"]["learning_rate"]

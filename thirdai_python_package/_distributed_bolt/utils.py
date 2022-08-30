@@ -3,11 +3,11 @@ from typing import Tuple, Any, Optional, Dict, List
 import logging
 
 
-def load_dataset(config: Dict[str, Any], total_nodes, training_partition_data_id):
+def load_train_test_data(config: Dict[str, Any], total_nodes, training_partition_data_id):
     """
     Returns datasets as boltdatasets
     Arguments:
-        config: Configuration file for the training
+        config: config dict for training
         total_nodes: Total number of nodes to train on.
         id: Id of the node, which want the dataset
     """
@@ -118,7 +118,6 @@ def init_logging(logger_file: str):
     """
     Returns logger from a logger file
     """
-    # Logger Init
     logger = logging.getLogger(logger_file)
     logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler(logger_file)
@@ -131,11 +130,6 @@ def init_logging(logger_file: str):
 
 
 def get_num_cpus():
-    """Returns the number of CPUs present on the machine
-
-    Returns:
-        _type_: None
-    """
     try:
         import multiprocessing
 

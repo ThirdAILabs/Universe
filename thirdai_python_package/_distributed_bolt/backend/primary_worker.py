@@ -40,11 +40,6 @@ class PrimaryWorker(Worker):
         super().__init__(no_of_workers, 0, self)
 
     def set_workers(self, workers):
-        """Sets the list of workers to the Primary Worker
-
-        Args:
-            workers: Worker List
-        """
         self.workers = workers
 
     def subwork_circular_communication(self):
