@@ -474,9 +474,10 @@ class BoltBatch {
    * string that tells the user where the error comes from if it is thrown, e.g.
    * something like "Passed in BoltVector too large for Input".
    */
-  void verifyExpectedDimension(uint32_t expected_dimension,
-                               std::optional<uint32_t> expected_num_nonzeros,
-                               const std::string& origin_string) const {
+  void verifyExpectedDimension(
+      uint32_t expected_dimension,
+      std::optional<std::pair<uint32_t, uint32_t>> num_nonzeros_range,
+      const std::string& origin_string) const {
     for (const BoltVector& vec : _vectors) {
       if (vec.isDense()) {
         if (vec.len != expected_dimension) {
@@ -498,11 +499,16 @@ class BoltBatch {
           }
         }
       }
-      if (expected_num_nonzeros && vec.len != expected_num_nonzeros.value()) {
-        throw std::invalid_argument(
-            origin_string + ": Received BoltVector with len " +
-            std::to_string(vec.len) + " but was expected to have " +
-            std::to_string(expected_num_nonzeros.value()) + " nonzeros.");
+
+      if (num_nonzeros_range && (vec.len > num_nonzeros_range.value().second ||
+                                 vec.len < num_nonzeros_range.value().first)) {
+        std::stringstream ss;
+        ss << origin_string << ": Received BoltVector with len "
+           << std::to_string(vec.len) + " but was expected to have between "
+           << num_nonzeros_range.value().first << " and "
+           << num_nonzeros_range.value().second << " nonzeros.";
+
+        throw std::invalid_argument(ss.str());
       }
     }
   }

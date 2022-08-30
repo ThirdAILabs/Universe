@@ -70,12 +70,16 @@ class SwitchNode final : public Node,
           std::to_string(token_input->outputDim()) + ".");
     }
 
-    auto expected_num_nonzeros = token_input->expectedNumNonzeros();
-    if (!expected_num_nonzeros || expected_num_nonzeros.value() != 1) {
-      throw exceptions::GraphCompilationFailure(
-          "Switch requires an Input with a single nonzero to indicate which "
-          "layer to use, but received Input with " +
-          std::to_string(expected_num_nonzeros.value()) + " nonzeros.");
+    auto num_nonzeros_range = token_input->numNonZerosRange();
+    if (!num_nonzeros_range || num_nonzeros_range.value().first != 1 ||
+        num_nonzeros_range.value().second != 1) {
+      std::stringstream ss;
+      ss << "Switch requires an Input with a single nonzero to indicate which "
+            "layer to use, but received Input with between "
+         << num_nonzeros_range.value().first << " and "
+         << num_nonzeros_range.value().second << " nonzeros.";
+
+      throw exceptions::GraphCompilationFailure(ss.str());
     }
 
     for (auto& layer : _layers) {

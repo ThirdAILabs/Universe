@@ -22,11 +22,12 @@ namespace thirdai::bolt {
 class Input final : public Node {
  public:
   explicit Input(uint32_t expected_input_dim,
-                 std::optional<uint32_t> expected_num_nonzeros = std::nullopt)
+                 std::optional<std::pair<uint32_t, uint32_t>>
+                     num_nonzeros_range = std::nullopt)
       : _compiled(false),
         _input_batch(nullptr),
         _expected_input_dim(expected_input_dim),
-        _expected_num_nonzeros(expected_num_nonzeros) {}
+        _num_nonzeros_range(std::move(num_nonzeros_range)) {}
 
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. It is
@@ -35,7 +36,7 @@ class Input final : public Node {
     assert(inputs != nullptr);
     inputs->verifyExpectedDimension(
         /* expected_dimension = */ _expected_input_dim,
-        /* expected_num_nonzeros = */ _expected_num_nonzeros,
+        /* num_nonzeros_range = */ _num_nonzeros_range,
         /* origin_string = */
         "We found an Input BoltVector larger than the expected input dim");
     _input_batch = inputs;
@@ -43,8 +44,8 @@ class Input final : public Node {
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }
 
-  std::optional<uint32_t> expectedNumNonzeros() const {
-    return _expected_num_nonzeros;
+  std::optional<std::pair<uint32_t, uint32_t>> numNonZerosRange() const {
+    return _num_nonzeros_range;
   }
 
   uint32_t outputDim() const final { return _expected_input_dim; }
@@ -148,7 +149,7 @@ class Input final : public Node {
   }
 
   // Private constructor for cereal.
-  Input() {}
+  Input() : _num_nonzeros_range(std::nullopt) {}
 
   friend class cereal::access;
   template <class Archive>
@@ -159,7 +160,7 @@ class Input final : public Node {
   bool _compiled;
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
-  std::optional<uint32_t> _expected_num_nonzeros;
+  std::optional<std::pair<uint32_t, uint32_t>> _num_nonzeros_range;
 };
 
 using InputPtr = std::shared_ptr<Input>;

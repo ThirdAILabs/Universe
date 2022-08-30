@@ -49,8 +49,9 @@ TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
   auto [train_data, train_tokens, train_labels] = generateSwitchDataset();
 
   auto input = std::make_shared<Input>(/* dim= */ n_classes);
-  auto token_input = std::make_shared<Input>(/* dim= */ n_switch_layers,
-                                             /* expected_num_nonzeros= */ 1);
+  auto token_input = std::make_shared<Input>(
+      /* dim= */ n_switch_layers,
+      /* num_nonzeros_range = */ std::pair<uint32_t, uint32_t>(1, 1));
 
   auto switch_layer = std::make_shared<SwitchNode>(
       /* dim= */ 100, /* activation= */ "relu",

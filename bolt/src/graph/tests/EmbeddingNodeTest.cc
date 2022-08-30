@@ -18,7 +18,8 @@ static constexpr uint32_t seed = 24902;
 
 TEST(EmbeddingNodeTest, SimpleTokenDataset) {
   auto token_input = std::make_shared<Input>(
-      /* dim= */ num_batches * batch_size + 1, /* expected_num_nonzeros= */ 1);
+      /* dim= */ num_batches * batch_size + 1,
+      /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(1, 1));
 
   auto embedding_layer = std::make_shared<EmbeddingNode>(
       /* num_embedding_lookups= */ 4, /* lookup_size= */ 8,
