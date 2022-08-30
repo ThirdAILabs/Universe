@@ -1,7 +1,6 @@
-from thirdai import bolt, dataset
-from ..utils import gen_numpy_training_data, get_simple_concat_model
+from thirdai import bolt
+from utils import gen_numpy_training_data, get_simple_concat_model
 import pytest
-import numpy
 
 
 # TODO(josh): Refactor this test once we have exposed support for multiple

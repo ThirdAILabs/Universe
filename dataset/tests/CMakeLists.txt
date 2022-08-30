@@ -68,6 +68,28 @@ target_link_libraries(
 )
 
 add_executable(
+  thread_safe_vocabulary_tests
+  ThreadSafeVocabularyTests.cc
+)
+
+target_link_libraries(
+  thread_safe_vocabulary_tests
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
+  user_item_history_block_tests
+  UserItemHistoryBlockTests.cc
+)
+
+target_link_libraries(
+  user_item_history_block_tests
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
   block_batch_processor_test
   BlockBatchProcessorTests.cc
 )
@@ -145,6 +167,8 @@ set(DATASET_TESTS
   categorical_block_test
   date_block_test
   text_block_test
+  thread_safe_vocabulary_tests
+  user_item_history_block_tests
   block_batch_processor_test
   generic_batch_processor_test
   categorical_multi_label_test
@@ -153,6 +177,6 @@ set(DATASET_TESTS
   streaming_generic_dataset_loader_tests
 )
 
-foreach(DATASET_TEST in ${DATASET_TESTS})
-  gtest_discover_tests(${DATASET_TESTS} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+foreach(DATASET_TEST IN LISTS DATASET_TESTS)
+  gtest_discover_tests(${DATASET_TEST} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
 endforeach()

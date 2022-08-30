@@ -1,10 +1,8 @@
 #pragma once
 
-#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
 #include "LayerUtils.h"
-#include "SequentialLayer.h"
 #include <bolt/src/layers/Optimizer.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
@@ -13,24 +11,23 @@
 #include <stdexcept>
 
 namespace thirdai::bolt {
-class ConvLayer final : public SequentialLayer {
+class ConvLayer final {
  public:
   ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
             uint32_t prev_num_filters, uint32_t prev_num_sparse_filters,
             std::pair<uint32_t, uint32_t> next_kernel_size);
 
   void forward(const BoltVector& input, BoltVector& output,
-               const BoltVector* labels) final;
+               const BoltVector* labels);
 
-  void backpropagate(BoltVector& input, BoltVector& output) final;
+  void backpropagate(BoltVector& input, BoltVector& output);
 
-  void backpropagateInputLayer(BoltVector& input, BoltVector& output) final;
+  void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2,
-                        float eps) override;
+  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
   BoltBatch createBatchState(const uint32_t batch_size,
-                             bool use_sparsity) const final {
+                             bool use_sparsity) const {
     bool is_sparse = (_sparsity < 1.0) && use_sparsity;
 
     uint32_t curr_dim = is_sparse ? _sparse_dim : _dim;
@@ -39,56 +36,39 @@ class ConvLayer final : public SequentialLayer {
                      /* is_dense= */ !is_sparse);
   }
 
-  void freezeHashTables(bool insert_labels_if_not_found) final {
-    (void)insert_labels_if_not_found;
-    throw exceptions::NotImplemented(
-        "Freeze hash tables is not supported in Conv layer.");
-  }
+  void buildHashTables();
 
-  void buildHashTables() final;
+  void reBuildHashFunction();
 
-  void reBuildHashFunction() final;
+  uint32_t getDim() const { return _dim; }
 
-  uint32_t getDim() const final { return _dim; }
+  uint32_t getInputDim() const { return _prev_dim; }
 
-  uint32_t getInputDim() const final { return _prev_dim; }
+  uint32_t getSparseDim() const { return _sparse_dim; }
 
-  uint32_t getSparseDim() const final { return _sparse_dim; }
+  float* getWeights() const;
 
-  float* getWeights() const final;
+  float* getBiases() const;
 
-  float* getBiases() const final;
+  void setTrainable(bool trainable);
 
-  void setTrainable(bool trainable) final;
+  bool getTrainable() const;
 
-  bool getTrainable() const final;
+  void setWeights(const float* new_weights);
 
-  void setWeights(const float* new_weights) final;
+  void setBiases(const float* new_biases);
 
-  void setBiases(const float* new_biases) final;
+  void setWeightGradients(const float* update_weight_gradient);
 
-  void setWeightGradients(const float* update_weight_gradient) final;
+  void setBiasesGradients(const float* update_bias_gradient);
 
-  void setBiasesGradients(const float* update_bias_gradient) final;
+  float* getBiasesGradient();
 
-  float* getBiasesGradient() final;
+  float* getWeightsGradient();
 
-  float* getWeightsGradient() final;
+  float getSparsity() const { return _sparsity; }
 
-  float getSparsity() const final { return _sparsity; }
-
-  void setSparsity(float sparsity) final {
-    (void)sparsity;
-    // This is currently unimplemented because it would duplicate code from
-    // FullyConnectedLayer, and instead of duplicating code we should come up
-    // with a better design. Perhaps FullyConnectedLayer and ConvLayer can
-    // subclass SparseLayer.
-    // TODO(josh)
-    throw thirdai::exceptions::NotImplemented(
-        "Cannot currently set the sparsity of a convolutional layer.");
-  }
-
-  void initOptimizer() final;
+  void initOptimizer();
 
  private:
   template <bool DENSE, bool PREV_DENSE>
@@ -167,7 +147,3 @@ class ConvLayer final : public SequentialLayer {
   ConvLayer() {}
 };
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::ConvLayer)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::SequentialLayer,
-                                     thirdai::bolt::ConvLayer)

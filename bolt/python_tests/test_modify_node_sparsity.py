@@ -1,7 +1,6 @@
-from ..utils import (
+from utils import (
     gen_numpy_training_data,
     get_simple_concat_model,
-    gen_single_sparse_node,
 )
 from thirdai import bolt
 import pytest
