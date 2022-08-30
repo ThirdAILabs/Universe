@@ -424,11 +424,11 @@ class FMeasure final : public Metric {
   std::string summary() final {
     auto [precision, recall, f_measure] = metrics();
     std::stringstream stream;
-    stream << "precision(t=" << _threshold << "): " << precision;
+    stream << "precision(t=" << _threshold << "):" << precision;
     stream << ", "
-           << "recall(t=" << _threshold << "): " << recall;
+           << "recall(t=" << _threshold << "):" << recall;
     stream << ", "
-           << "f-measure (t=" << _threshold << "): " << f_measure << std::endl;
+           << "f-measure(t=" << _threshold << "):" << f_measure;
     return stream.str();
   }
 
