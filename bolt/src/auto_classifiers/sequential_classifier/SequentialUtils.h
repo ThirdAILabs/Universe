@@ -57,6 +57,13 @@ struct Schema {
 struct DataState {
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr>
       vocabs_by_column;
+
+  /*
+    We can technically have a vector instead of a map, but that makes
+    the logic of buildPipeline a little harder to follow. Additionally,
+    since the container contains pointers instead of the actual object,
+    there is little benefit to having a vector instead.
+  */
   std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
       history_collections_by_id;
 
