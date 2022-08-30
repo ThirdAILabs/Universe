@@ -1,4 +1,4 @@
-from ..utils import gen_numpy_training_data
+from utils import gen_numpy_training_data
 import pytest
 from thirdai import bolt
 
@@ -25,10 +25,12 @@ def test_dropout_layer():
     train_x, train_y = gen_numpy_training_data(n_classes=n_classes, n_samples=2000)
     test_x, test_y = gen_numpy_training_data(n_classes=n_classes, n_samples=500)
 
-    train_cfg = bolt.graph.TrainConfig.make(epochs=3, learning_rate=0.001)
+    train_cfg = bolt.graph.TrainConfig.make(epochs=3, learning_rate=0.001).silence()
     model.train(train_x, train_y, train_cfg)
 
-    predict_cfg = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
+    predict_cfg = (
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+    )
     metrics = model.predict(test_x, test_y, predict_cfg)
 
     assert metrics[0]["categorical_accuracy"] >= 0.9
