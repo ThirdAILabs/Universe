@@ -145,9 +145,9 @@ class MeanSquaredErrorMetric final : public Metric {
   std::string getName() final { return name; }
 
  private:
-  template <bool DENSE, bool LABEL_DENSE>
+  template <bool OUTPUT_DENSE, bool LABEL_DENSE>
   float computeMSE(const BoltVector& output, const BoltVector& labels) {
-    if constexpr (DENSE || LABEL_DENSE) {
+    if constexpr (OUTPUT_DENSE || LABEL_DENSE) {
       // If either vector is dense then we need to iterate over the full
       // dimension from the layer.
       uint32_t dim = std::max(output.len, labels.len);
@@ -155,7 +155,7 @@ class MeanSquaredErrorMetric final : public Metric {
       float error = 0.0;
       for (uint32_t i = 0; i < dim; i++) {
         float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-        float act = output.findActiveNeuron<DENSE>(i).activation;
+        float act = output.findActiveNeuron<OUTPUT_DENSE>(i).activation;
         float delta = label - act;
         error += delta * delta;
       }
@@ -169,24 +169,26 @@ class MeanSquaredErrorMetric final : public Metric {
 
     float error = 0.0;
     for (uint32_t i = 0; i < output.len; i++) {
-      FoundActiveNeuron label =
-          labels.findActiveNeuron<LABEL_DENSE>(output.active_neurons[i]);
-      if (label.pos) {
-        // If the active neuron is in the labels we will compute the loss in the
-        // next loop over the labels.
-        continue;
-      }
+      float label =
+          labels.findActiveNeuron<LABEL_DENSE>(output.active_neurons[i])
+              .activation;
       float act = output.activations[i];
-      float delta = label.activation - act;
+      float delta = label - act;
       error += delta * delta;
     }
 
     for (uint32_t i = 0; i < labels.len; i++) {
       float label = labels.activations[i];
-      float act =
-          output.findActiveNeuron<DENSE>(labels.active_neurons[i]).activation;
-      float delta = label - act;
-      error += delta * delta;
+      auto output_neuron =
+          output.findActiveNeuron<OUTPUT_DENSE>(labels.active_neurons[i]);
+      if (output_neuron.pos) {
+        // Skip any neurons that where in the active neuron set since the loss
+        // was already computed for them.
+        continue;
+      }
+
+      // The activation is 0 since this isn't in the output active neurons.
+      error += label * label;
     }
     return error;
   }
