@@ -3,7 +3,7 @@
 import pytest
 from thirdai import bolt, dataset
 import numpy as np
-from ..utils import get_simple_concat_model
+from utils import get_simple_concat_model
 
 # Add a test here when you find a bug, to prevent the bug from recurring
 
