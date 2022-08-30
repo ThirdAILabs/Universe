@@ -10,9 +10,6 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
-#include <bolt_vector/src/BoltVector.h>
-#include <compression/python_bindings/ConversionUtils.h>
-#include <compression/src/CompressedVector.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -23,10 +20,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
-#include <sys/types.h>
 #include <algorithm>
 #include <csignal>
-#include <cstdint>
 #include <exception>
 #include <iostream>
 #include <limits>
