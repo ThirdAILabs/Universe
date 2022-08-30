@@ -187,6 +187,3 @@ def test_compressed_training():
     )
     print(acc[0]["categorical_accuracy"])
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
-
-
-test_compressed_training()
