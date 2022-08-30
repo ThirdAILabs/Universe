@@ -48,6 +48,8 @@ TEST(SequentialClassifierTest, TestLoadSave) {
 
   classifier.train(train_file_name, /* epochs= */ 5, /* learning_rate= */ 0.01);
 
+  // Save before making original prediction so both calls to predict() use the
+  // same starting data states (vocabulary and item history).
   classifier.save(model_save_file_name);
   auto new_classifier = SequentialClassifier::load(model_save_file_name);
 
