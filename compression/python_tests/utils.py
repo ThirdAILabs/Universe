@@ -2,20 +2,6 @@ from thirdai import bolt, dataset
 import numpy as np
 import os
 
-# Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
-def build_simple_distributed_bolt_network(input_dim, sparse_dim, output_dim, sparsity):
-    layers = [
-        bolt.FullyConnected(
-            dim=sparse_dim,
-            sparsity=sparsity,
-            activation_function="ReLU",
-        ),
-        bolt.FullyConnected(dim=output_dim, activation_function="Softmax"),
-    ]
-    network = bolt.DistributedNetwork(layers=layers, input_dim=input_dim)
-    return network
-
-
 # Generates easy training data: the ground truth function is f(x_i) = i, where
 # x_i is the one hot encoding of i. Thus the input and output dimension are both
 # n_classes. We randomize the order of the (x_i, i) example and label pairs
@@ -45,25 +31,47 @@ def get_categorical_acc(network, examples, labels, batch_size=64):
     return acc["categorical_accuracy"]
 
 
-def train_single_node_distributed_network(
-    network,
-    train_data,
-    train_labels,
-    epochs,
-    learning_rate=0.0005,
-    update_parameters=True,
-):
-    batch_size = network.prepareNodeForDistributedTraining(
-        train_data,
-        train_labels,
-        rehash=3000,
-        rebuild=10000,
-        verbose=True,
+def build_dag_network():
+    input_layer = bolt.graph.Input(dim=10)
+
+    hidden_layer = bolt.graph.FullyConnected(
+        dim=10,
+        activation="relu",
+    )(input_layer)
+
+    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(hidden_layer)
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+
+    return model
+
+
+def build_single_node_bolt_dag_model(train_data, train_labels, sparsity, num_classes):
+    data = dataset.from_numpy(train_data, batch_size=64)
+    labels = dataset.from_numpy(train_labels, batch_size=64)
+
+    input_layer = bolt.graph.Input(dim=num_classes)
+    hidden_layer = bolt.graph.FullyConnected(
+        dim=2000,
+        sparsity=sparsity,
+        activation="relu",
+    )(input_layer)
+    output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
+        hidden_layer
     )
-    for epoch_num in range(epochs):
-        for batch_num in range(batch_size):
-            network.calculateGradientSingleNode(
-                batch_num, bolt.CategoricalCrossEntropyLoss()
-            )
-            if update_parameters:
-                network.updateParametersSingleNode(learning_rate)
+
+    train_config = (
+        bolt.graph.TrainConfig.make(learning_rate=0.002, epochs=20)
+        .silence()
+        .with_rebuild_hash_tables(3000)
+        .with_reconstruct_hash_functions(10000)
+    )
+    model = bolt.graph.DistributedModel(
+        inputs=[input_layer],
+        output=output_layer,
+        train_data=[data],
+        train_labels=labels,
+        train_config=train_config,
+        loss=bolt.CategoricalCrossEntropyLoss(),
+    )
+    return model
