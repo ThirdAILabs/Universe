@@ -740,6 +740,9 @@ void FullyConnectedLayer::loadCheckpointFromMemory() {
   }
   _weights = _weight_bias_checkpoint->weights;
   _biases = _weight_bias_checkpoint->biases;
+
+  _weight_bias_checkpoint->weights.clear();
+  _weight_bias_checkpoint->biases.clear();
 }
 
 void FullyConnectedLayer::setSparsity(float sparsity) {

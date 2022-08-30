@@ -61,7 +61,7 @@ def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
 
 def test_early_stop_validation():
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=100, noise_std=0.3
+        n_classes=N_CLASSES, n_samples=50, noise_std=0.3
     )
     valid_data, valid_labels = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000, noise_std=0.3

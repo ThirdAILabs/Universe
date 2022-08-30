@@ -130,6 +130,8 @@ void EmbeddingLayer::loadCheckpointFromMemory() {
         "Error loading in memory checkpoint. No embedding block saved.");
   }
   _embedding_block = _embedding_block_checkpoint.value();
+
+  _embedding_block_checkpoint->clear();
 }
 
 void EmbeddingLayer::initializeLayer(uint32_t new_batch_size) {

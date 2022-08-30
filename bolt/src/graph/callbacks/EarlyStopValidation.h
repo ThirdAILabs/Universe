@@ -7,17 +7,13 @@
 namespace thirdai::bolt {
 
 /**
- * This class is intended to stop training early based on results from a given
- * validation set. After each epoch if the model performs worse on the
- * validation set than in the previous epoch, we decrement the "patience"
- * parameter by 1. When the patience value reaches 0 the model stops
- * training.
+ * This callback is intended to stop training early based on prediction results
+ * from a given validation set. We give this callback a "patience" argument,
+ * which tells us how many extra epochs we'll train for without beating our
+ * previous best validation metric.
  *
- * This class always resets the model to use its best checkpoint based on
- * validation performance. The purpose of this callback is to save potentially
- * harmful or unneeded training cycles, however one can always set patience
- * equal to the number of training epochs if the goal is to simply save and use
- * the best model from a training job.
+ * This callback always resets the model's weights at the end of training to use
+ * its best checkpoint based on validation performance.
  */
 class EarlyStopValidation : public Callback {
  public:
@@ -29,10 +25,7 @@ class EarlyStopValidation : public Callback {
         _validation_tokens(std::move(validation_tokens)),
         _validation_labels(std::move(validation_labels)),
         _patience(patience),
-        _predict_config(std::move(predict_config)),
-        _best_validation_metric(0),
-        _last_validation_metric(0),
-        _should_stop_training(false) {
+        _predict_config(std::move(predict_config)) {
     uint32_t num_metrics = _predict_config.getMetricNames().size();
     if (num_metrics != 1) {
       throw std::invalid_argument(
@@ -49,8 +42,14 @@ class EarlyStopValidation : public Callback {
                             std::move(validation_labels),
                             std::move(predict_config), patience) {}
 
+  void onTrainBegin() final {
+    // setting these here allows callback instances to be reused
+    _epochs_since_best = 0;
+    _best_validation_metric = 0;  // TODO SET TO A APPROPRIATE INF VALUE
+    _should_stop_training = false;
+  }
+
   void onEpochEnd() final {
-    // we can access element 0 since we previously asserted having one metric
     std::string metric_name = _predict_config.getMetricNames()[0];
 
     double metric_val = _model
@@ -65,16 +64,15 @@ class EarlyStopValidation : public Callback {
       metric_val = -metric_val;
     }
 
-    if (metric_val < _last_validation_metric) {
-      _patience--;
+    if (metric_val > _best_validation_metric) {
+      _best_validation_metric = metric_val;
+      _epochs_since_best = 0;
+      _model->checkpointInMemory();
+    } else {
       if (_patience == 0) {
         _should_stop_training = true;
       }
-    } else if (metric_val > _best_validation_metric) {
-      _best_validation_metric = metric_val;
-      _model->checkpointInMemory();
     }
-    _last_validation_metric = metric_val;
   }
 
   void onTrainEnd() final { _model->loadCheckpointFromMemory(); }
@@ -82,14 +80,16 @@ class EarlyStopValidation : public Callback {
   bool shouldStopTraining() final { return _should_stop_training; }
 
  private:
+  bool isImprovement(double metric_val) {}
+
   dataset::BoltDatasetList _validation_data;
   dataset::BoltTokenDatasetList _validation_tokens;
   dataset::BoltDatasetPtr _validation_labels;
   uint32_t _patience;
   PredictConfig _predict_config;
 
+  uint32_t _epochs_since_best;
   double _best_validation_metric;
-  double _last_validation_metric;
 
   bool _should_stop_training;
 };
