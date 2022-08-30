@@ -190,10 +190,6 @@ class PrimaryWorker(Worker):
         )
         return True
 
-    def check_weights(self):
-        """This is a debug function to see whether the parameters are set accurately or not."""
-        weights_0, biases_0 = ray.get(self.workers[0].return_params.remote())
-        weights_1, biases_1 = ray.get(self.workers[1].return_params.remote())
 
     def get_weights_biases(self):
         """This function is called by all the workers(other than worker with id = 0), here
