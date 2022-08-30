@@ -2,18 +2,14 @@ from thirdai._thirdai import bolt, dataset
 from typing import Tuple, Any, Optional, Dict, List
 import logging
 
-
 def load_dataset(config: Dict[str, Any], total_nodes, training_partition_data_id):
     """
     Returns datasets as boltdatasets
-
-
     Arguments:
         config: Configuration file for the training
         total_nodes: Total number of nodes to train on.
         id: Id of the node, which want the dataset
     """
-
     train_filename = config["dataset"]["train_data"][training_partition_data_id]
     test_filename = config["dataset"]["test_data"]
     batch_size = int(config["params"]["batch_size"] / total_nodes)
@@ -34,31 +30,85 @@ def load_dataset(config: Dict[str, Any], total_nodes, training_partition_data_id
         raise ValueError("Invalid dataset format specified")
 
 
-def make_layers_from_config(configs: List[Dict[str, Any]]) -> List[bolt.FullyConnected]:
-    """
-    Returns Bolt's Fully Connected Network
+def config_get(config, field):
+    if field not in config:
+        raise ValueError(
+            f'The field "{field}" was expected to be in "{config}" but was not found.'
+        )
+    return config[field]
 
-    Arguments:
-        configs: Configuration file for training
-    """
-    layers = []
-    for config in configs:
 
-        if config.get("use_default_sampling", False):
-            layer = bolt.FullyConnected(
-                dim=config.get("dim"),
-                sparsity=config.get("sparsity", 1.0),
-                activation_function=config.get("activation"),
-            )
+def construct_fully_connected_node(fc_config):
+    use_default_sampling = fc_config.get("use_default_sampling", False)
+    sparsity = fc_config.get("sparsity", 1)
+
+    if use_default_sampling or sparsity == 1:
+        return bolt.graph.FullyConnected(
+            dim=config_get(fc_config, "dim"),
+            sparsity=sparsity,
+            activation=config_get(fc_config, "activation"),
+        )
+
+    return bolt.graph.FullyConnected(
+        dim=config_get(fc_config, "dim"),
+        sparsity=sparsity,
+        activation_function=config_get(fc_config, "activation")
+    )
+
+def construct_node(node_config):
+    node_type = config_get(node_config, "type")
+    if node_type == "Input":
+        return bolt.graph.Input(dim=config_get(node_config, "dim"))
+    if node_type == "FullyConnected":
+        return construct_fully_connected_node(node_config)
+    raise ValueError(f"{node_type} is not a valid node type.")
+
+def contruct_dag_model(config):
+    name_to_node = {}
+
+    def get_node_by_name(node_name):
+        if node_name in name_to_node:
+            return name_to_node[node_name]
+        raise ValueError(f"{node_name} not found in previously defined nodes")
+
+    nodes_with_no_successor = set()
+    inputs = []
+    for node_config in config_get(config, "nodes"):
+        node = construct_node(node_config)
+        node_name = config_get(node_config, "name")
+        node_type = config_get(node_config, "type")
+        if node_type == "Input":
+            inputs.append(node)
+        elif "pred" in node_config:
+            pred_name = node_config["pred"]
+            pred_node = get_node_by_name(pred_name)
+            nodes_with_no_successor.remove(pred_name)
+            node(pred_node)
+        elif "preds" in node_config:
+            pred_names = node_config["preds"]
+            pred_nodes = [get_node_by_name(pred_name) for pred_name in pred_names]
+            for pred_name in pred_names:
+                nodes_with_no_successor.remove(pred_name)
+            if config_get(node_config, "type") == "Switch":
+                node(pred_nodes[0], pred_nodes[1])
+            else:
+                node(pred_nodes)
         else:
-            layer = bolt.FullyConnected(
-                dim=config.get("dim"),
-                sparsity=config.get("sparsity", 1.0),
-                activation_function=config.get("activation"),
+            raise ValueError(
+                "Node should either be an Input/TokenInput or specify pred/preds"
             )
 
-        layers.append(layer)
-    return layers
+        nodes_with_no_successor.add(node_name)
+        name_to_node[node_name] = node
+
+    if len(nodes_with_no_successor) != 1:
+        raise ValueError(
+            "There should only be one output node (nodes with no successors), "
+            + f"but found {len(nodes_with_no_successor)}"
+        )
+
+    output_node = name_to_node[list(nodes_with_no_successor)[0]]
+    return inputs, output_node
 
 
 def init_logging(logger_file: str):

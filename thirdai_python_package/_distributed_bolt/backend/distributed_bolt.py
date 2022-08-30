@@ -62,6 +62,8 @@ class DistributedBolt:
                 self.comm.communicate()
                 self.comm.update_parameters(self.learning_rate)
                 self.comm.log_training(batch_id, epoch)
+        
+        ray.get([worker.finish_training.remote() for worker in self.workers])
 
     def predict(self):
         """Calls network.predict() on worker of head node and returns the predictions.

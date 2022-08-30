@@ -385,6 +385,9 @@ class Worker:
         This function returns the total number of batches the workers have.
         """
         return self.model.num_of_batches()
+    
+    def finish_training(self):
+        self.model.finish_training()
 
     def predict(self):
         """This function calls the predict function(predictSingleNode) to return the

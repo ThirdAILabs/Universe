@@ -7,7 +7,8 @@ if __name__ == "__main__":
         num_workers=2,
         config_filename=config_filename,
         num_cpus_per_node=20,
+        communication_type="linear"
     )
-    head.train(circular=False)
-    metrics, _ = head.predict()
-    print(metrics["categorical_accuracy"])
+    head.train()
+    metrics = head.predict()
+    print(metrics[0]["categorical_accuracy"])

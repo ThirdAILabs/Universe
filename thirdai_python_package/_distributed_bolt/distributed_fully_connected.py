@@ -79,10 +79,10 @@ class FullyConnectedNetwork(DistributedBolt):
 
         self.epochs = config["params"]["epochs"]
         self.learning_rate = config["params"]["learning_rate"]
-        self.layer_dims = [config["dataset"]["input_dim"]]
+        self.layer_dims = []
 
-        for i in range(len(config["layers"])):
-            self.layer_dims.append(config["layers"][i]["dim"])
+        for i in range(len(config["nodes"])):
+            self.layer_dims.append(config["nodes"][i]["dim"])
 
         num_cpus = get_num_cpus()
         if num_cpus_per_node is not -1:

@@ -138,8 +138,8 @@ def test_distributed_training_with_bolt():
     epochs = 5
     for epoch in range(epochs):
         for batch_num in range(num_of_batches):
-            model_a.calculateGraidentSingleNode(batch_num)
-            model_b.calculateGraidentSingleNode(batch_num)
+            model_a.calculateGradientSingleNode(batch_num)
+            model_b.calculateGradientSingleNode(batch_num)
 
             (
                 avg_weight_gradients_fc_1,

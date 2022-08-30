@@ -4,8 +4,6 @@ job = "Amazon670k Product Recommendation Distributed Training"
 train_data = ["/share/pratik/mnist_a","/share/pratik/mnist_b"]
 test_data = "/share/pratik/mnist.t"
 format = "svm"
-input_dim = 784
-max_test_batches = 20
 
 [params]
 loss_fn = "CategoricalCrossEntropyLoss"
@@ -17,16 +15,24 @@ batch_size = 250
 rehash = 6400
 rebuild = 128000
 
-[[layers]]
-dim = 256
-activation = 'ReLU'
 
-[[layers]]
+[[nodes]]
+type = "Input"
+name = "first"
+dim = 784
+
+[[nodes]]
+type = "FullyConnected"
+name = "second"
+pred = "first"
+dim = 256
+activation = "ReLU"
+
+[[nodes]]
+type = "FullyConnected"
+name = "third"
+pred = "second"
 dim = 10
 activation = 'Softmax'
 sparsity = 1
 use_default_sampling = true
-# hashes_per_table = 5
-# num_tables = 128
-# reservoir_size = 128
-# range_pow = 15
