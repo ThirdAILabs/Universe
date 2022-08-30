@@ -3,9 +3,13 @@
 #include "ConversionUtils.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <compression/python_bindings/ConversionUtils.h>
+#include <compression/src/CompressedVector.h>
 #include <dataset/src/Datasets.h>
+#include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
 
 namespace py = pybind11;
 
@@ -28,9 +32,9 @@ using ParameterArray =
 class ParameterReference {
  public:
   ParameterReference(float* params, std::vector<uint32_t> dimensions)
-      : _params(params), _dimensions(std::move(dimensions)) {
-    _total_dim = dimensionProduct(_dimensions);
-  }
+      : _params(params),
+        _dimensions(std::move(dimensions)),
+        _total_dim(dimensionProduct(_dimensions)) {}
 
   ParameterArray copy() const {
     float* params_copy = new float[_total_dim];
@@ -44,10 +48,35 @@ class ParameterReference {
 
   ParameterArray get() const { return ParameterArray(_dimensions, _params); }
 
-  void set(const ParameterArray& new_params) {
-    checkNumpyArrayDimensions(_dimensions, new_params);
+  void set(const py::object& new_params, bool compressed) {
+    (void)compressed;
+    if (!compressed) {
+      ParameterArray new_array = py::cast<ParameterArray>(new_params);
+      checkNumpyArrayDimensions(_dimensions, new_params);
+      std::copy(new_array.data(), new_array.data() + _total_dim, _params);
+    } else {
+      using CompressedVector = thirdai::compression::CompressedVector<float>;
+      std::unique_ptr<CompressedVector> compressed_vector =
+          thirdai::compression::python::convertPyDictToCompressedVector(
+              new_params);
+      std::vector<float> full_gradients = compressed_vector->decompress();
+      std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
+                _params);
+    }
+  }
 
-    std::copy(new_params.data(), new_params.data() + _total_dim, _params);
+  py::dict compress(const std::string& compression_scheme,
+                    float compression_density, int seed_for_hashing) {
+    std::cout << "compression_scheme: " << compression_scheme
+              << " compression_density: " << compression_density
+              << " seed_for_hashing: " << seed_for_hashing << std::endl;
+    std::cout << "_total_dim: " << _total_dim << std::endl;
+    std::cout << "casted total dim: " << static_cast<uint32_t>(_total_dim)
+              << std::endl;
+    return thirdai::compression::python::convertCompressedVectorToPyDict(
+        thirdai::compression::compress(
+            _params, static_cast<uint32_t>(_total_dim), compression_scheme,
+            compression_density, seed_for_hashing));
   }
 
  private:

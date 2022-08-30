@@ -36,7 +36,17 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Returns a numpy array which shadows the parameters held in the "
            "ParameterReference and acts as a reference to them, modifying this "
            "array will modify the parameters.")
+
+      // To-Do(Shubh): Should work with a custom serializer rather than python
+      // dictionaries. Or we should make a Compressed vector module at python
+      // end to deal with this
+      .def("compress", &ParameterReference::compress,
+           py::arg("compression_scheme") = "dragon",
+           py::arg("compression_density") = 0.2,
+           py::arg("seed_for_hashing") = 0,
+           "Returns a python dictionary of compressed vectors")
       .def("set", &ParameterReference::set, py::arg("new_params"),
+           py::arg("compressed") = false,
            "Takes in a numpy array and copies its contents into the parameters "
            "held in the ParameterReference object.");
 
