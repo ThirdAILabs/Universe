@@ -60,28 +60,6 @@ class PrimaryWorker(Worker):
             _type_: _description_
         """
 
-        # The following code implements the two loops for Baidu's All-Reduce and All-Gather.
-        # In the first run, each of the worker passes their partition to next worker
-
-        # For update_id = 0 (offset)
-        # Before a reducing run                             After a reducing run
-        # [a1, b1, c1, d1, e1] -> node 1,   ---------->     [a1, b1, c1, d1, e1+e5] -> node 1,
-        # [a2, b2, c2, d2, e2] -> node 2,   ---------->     [a1+a2, b2, c2, d2, e2] -> node 2,
-        # [a3, b3, c3, d3, e3] -> node 3,   ---------->     [a3, b3+b2, c3, d3, e3] -> node 3,
-        # [a4, b4, c4, d4, e4] -> node 4,   ---------->     [a4, b4, c4+c3, d4, e4] -> node 4,
-        # [a5, b5, c5, d5, e5] -> node 5    ---------->     [a5, b5, c5, d5+d4, e5] -> node 5,
-        # Here, each of the a{i}'s is a partition of the array
-
-        # We do these runs n-1 times as a resule we get
-        # [a1, b1, c1, d1, e1] -> node 1,   ---------->     [a1,            b1+b2+b3+b4+b5, c1,             d1,             e1            ] -> node 1,
-        # [a2, b2, c2, d2, e2] -> node 2,   ---------->     [a1,            b2,             c1+c2+c3+c4+c5, d2,             e2            ] -> node 2,
-        # [a3, b3, c3, d3, e3] -> node 3,   ---------->     [a3,            b3,             c3,             d1+d2+d3+d4+d5, e3            ] -> node 3,
-        # [a4, b4, c4, d4, e4] -> node 4,   ---------->     [a4,            b4,             c4,             d4,             e1+e2+e3+e4+e5] -> node 4,
-        # [a5, b5, c5, d5, e5] -> node 5    ---------->     [a1+a2+a3+a4+a5,b5,             c5,             d5,             e5            ] -> node 5,
-
-        # avg_gradients flag also averages the gradient in the last run
-
-        # First Run
         update_id = 0
         for node in range(self.total_nodes - 1):
             if node == self.total_nodes - 2:
@@ -97,25 +75,6 @@ class PrimaryWorker(Worker):
                 )
             update_id -= 1
 
-        # In the Second run, each of the worker passes their partition to next worker
-
-        # For update_id = 1 (offset)
-        # Before a gathering run                            After a gathering run
-        # [a1, b1, c1, d1, e1] -> node 1,   ---------->     [a5, b1, c1, d1, e1] -> node 1,
-        # [a2, b2, c2, d2, e2] -> node 2,   ---------->     [a2, b1, c2, d2, e2] -> node 2,
-        # [a3, b3, c3, d3, e3] -> node 3,   ---------->     [a3, b3, c2, d3, e3] -> node 3,
-        # [a4, b4, c4, d4, e4] -> node 4,   ---------->     [a4, b4, c4, d3, e4] -> node 4,
-        # [a5, b5, c5, d5, e5] -> node 5    ---------->     [a5, b5, c5, d5, e4] -> node 5,
-        # Here, each of the a{i}'s is a partition of the array
-
-        # We do these runs n-1 times as a resule we get
-        # [a1,            b1+b2+b3+b4+b5, c1,             d1,             e1            ] -> node 1,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 1,
-        # [a1,            b2,             c1+c2+c3+c4+c5, d2,             e2            ] -> node 2,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 2,
-        # [a3,            b3,             c3,             d1+d2+d3+d4+d5, e3            ] -> node 3,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 3,
-        # [a4,            b4,             c4,             d4,             e1+e2+e3+e4+e5] -> node 4,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 4,
-        # [a1+a2+a3+a4+a5,b5,             c5,             d5,             e5            ] -> node 5,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 5,
-
-        # Second Run
         update_id = 1
         for node in range(self.total_nodes - 1):
             ray.get(
