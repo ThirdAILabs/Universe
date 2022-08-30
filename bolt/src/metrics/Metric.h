@@ -147,7 +147,7 @@ class MeanSquaredErrorMetric final : public Metric {
  private:
   template <bool DENSE, bool LABEL_DENSE>
   float computeMSE(const BoltVector& output, const BoltVector& labels) {
-    if (DENSE || LABEL_DENSE) {
+    if constexpr (DENSE || LABEL_DENSE) {
       // If either vector is dense then we need to iterate over the full
       // dimension from the layer.
       uint32_t dim = std::max(output.len, labels.len);
@@ -169,18 +169,24 @@ class MeanSquaredErrorMetric final : public Metric {
 
     float error = 0.0;
     for (uint32_t i = 0; i < output.len; i++) {
-      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-      if (label > 0.0) {
+      float label =
+          labels.findActiveNeuron<LABEL_DENSE>(output.active_neurons[i])
+              .activation;
+      if (label != 0.0) {
         continue;
       }
-      float act = output.findActiveNeuron<DENSE>(i).activation;
+      float act = output.activations[i];
       float delta = label - act;
       error += delta * delta;
     }
 
     for (uint32_t i = 0; i < labels.len; i++) {
-      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-      float act = output.findActiveNeuron<DENSE>(i).activation;
+      float label = labels.activations[i];
+      if (label == 0.0) {
+        continue;
+      }
+      float act =
+          output.findActiveNeuron<DENSE>(labels.active_neurons[i]).activation;
       float delta = label - act;
       error += delta * delta;
     }
@@ -394,7 +400,7 @@ class FMeasure final : public Metric {
   }
 
   static bool isFMeasure(const std::string& name) {
-    return std::regex_match(name, std::regex("f_measure\\(0\\.\\d+\\)"));
+    return std::regex_match(name, std::regex(R"(f_measure\(0\.\d+\))"));
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
