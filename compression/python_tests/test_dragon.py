@@ -177,12 +177,14 @@ def test_compressed_training():
             )
             network.updateParametersSingleNode()
 
-    acc, _ = model.predict(
+    model.finishTraining()
+    acc = model.predict(
         test_data=dataset.from_numpy(test_data, batch_size=64),
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
         predict_config=predict_config,
     )
-    assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
+    print(acc[0]["categorical_accuracy"])
+    assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
 
 # test_get_gradients()
