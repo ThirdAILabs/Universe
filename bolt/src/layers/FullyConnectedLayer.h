@@ -18,10 +18,11 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-enum class LSHSamplingMode {
-  Default,
+enum class BoltSamplingMode {
+  LSH,
   FreezeHashTables,
-  FreezeHashTablesWithInsertions
+  FreezeHashTablesWithInsertions,
+  RandomSampling
 };
 
 class FullyConnectedLayer final {
@@ -60,16 +61,20 @@ class FullyConnectedLayer final {
   }
 
   void freezeHashTables(bool insert_labels_if_not_found) {
+    if (useRandomSampling()) {
+      return;
+    }
+
     if (insert_labels_if_not_found) {
-      _sampling_mode = LSHSamplingMode::FreezeHashTablesWithInsertions;
+      _sampling_mode = BoltSamplingMode::FreezeHashTablesWithInsertions;
     } else {
-      _sampling_mode = LSHSamplingMode::FreezeHashTables;
+      _sampling_mode = BoltSamplingMode::FreezeHashTables;
     }
   }
 
   bool hashTablesFrozen() const {
-    return _sampling_mode == LSHSamplingMode::FreezeHashTables ||
-           _sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions;
+    return _sampling_mode == BoltSamplingMode::FreezeHashTables ||
+           _sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions;
   }
 
   void buildHashTables();
@@ -169,7 +174,11 @@ class FullyConnectedLayer final {
   // settings and distributed settings
   bool _is_distributed;
 
-  LSHSamplingMode _sampling_mode;
+  BoltSamplingMode _sampling_mode;
+
+  bool useRandomSampling() const {
+    return _sampling_mode == BoltSamplingMode::RandomSampling;
+  }
 
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
@@ -198,10 +207,10 @@ class FullyConnectedLayer final {
 
   inline void cleanupWithinBatchVars();
 
-  inline void initSparseDatastructures(const SamplingConfigPtr& sampling_config,
-                                       std::random_device& rd);
+  inline void initSamplingDatastructures(
+      const SamplingConfigPtr& sampling_config, std::random_device& rd);
 
-  inline void deinitSparseDatastructures();
+  inline void deinitSamplingDatastructures();
 
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
@@ -218,6 +227,13 @@ class FullyConnectedLayer final {
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
                            const BoltVector* labels);
+
+  void randomNeuronSampling(const BoltVector& input, const BoltVector& output,
+                            const BoltVector* labels);
+
+  template <bool PREV_DENSE>
+  void lshNeuronSampling(const BoltVector& input, BoltVector& output,
+                         const BoltVector* labels);
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
