@@ -29,11 +29,11 @@ FullyConnectedLayer::FullyConnectedLayer(
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
       _biases(config.getDim()),
-      _prev_is_active(_prev_dim, false),
-      _is_active(config.getDim(), false),
-      _use_sparse_sparse_optimization(false),
       _is_distributed(is_distributed),
-      _sampling_mode(LSHSamplingMode::Default) {
+      _sampling_mode(LSHSamplingMode::Default),
+      _use_sparse_sparse_optimization(false),
+      _prev_is_active(_prev_dim, false),
+      _is_active(config.getDim(), false) {
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -467,7 +467,6 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   // layer trainable in the future, but otherwise this should be fixed at some
   // point.
   if (!_trainable) {
-    cleanupWithinBatchVars();
     return;
   }
 
@@ -503,8 +502,6 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
     updateDenseDenseParameters(lr, B1, B2, eps, B1_bias_corrected,
                                B2_bias_corrected);
   }
-
-  cleanupWithinBatchVars();
 }
 
 inline void FullyConnectedLayer::updateSparseSparseParametersNormal(
@@ -513,11 +510,12 @@ inline void FullyConnectedLayer::updateSparseSparseParametersNormal(
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if (_is_active[cur_neuron]) {
-      _is_active[cur_neuron] = false;
-      updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
-                                 B2_bias_corrected);
+    if (!_is_active[cur_neuron]) {
+      continue;
     }
+    _is_active[cur_neuron] = false;
+    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
+                               B2_bias_corrected);
 
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
@@ -555,6 +553,7 @@ inline void FullyConnectedLayer::updateSparseSparseParametersOptimized(
       }
     }
   }
+  _active_pairs_raw.clear();
 }
 
 inline void FullyConnectedLayer::updateSparseDenseParameters(
@@ -576,9 +575,7 @@ inline void FullyConnectedLayer::updateSparseDenseParameters(
   // We update this outside because its faster to have cache efficient for
   // loops above. We also don't use pragma here because there's almost no
   // speedup over a regular loop and pragma comes with much more variability
-  for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-    _prev_is_active[prev_neuron] = false;
-  }
+  std::fill(_prev_is_active.begin(), _prev_is_active.end(), 0);
 }
 
 inline void FullyConnectedLayer::updateDenseSparseParameters(
@@ -587,14 +584,15 @@ inline void FullyConnectedLayer::updateDenseSparseParameters(
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if (_is_active[cur_neuron]) {
-      _is_active[cur_neuron] = false;
-      updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
-                                 B2_bias_corrected);
-      for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
-                                     B1_bias_corrected, B2_bias_corrected);
-      }
+    if (!_is_active[cur_neuron]) {
+      continue;
+    }
+    _is_active[cur_neuron] = false;
+    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
+                               B2_bias_corrected);
+    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+      updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
+                                   B1_bias_corrected, B2_bias_corrected);
     }
   }
 }
@@ -635,16 +633,6 @@ inline void FullyConnectedLayer::updateSingleBiasParameters(
   assert(!std::isnan(_biases[cur_neuron]));
 
   _bias_optimizer->gradients[cur_neuron] = 0;
-}
-
-inline void FullyConnectedLayer::cleanupWithinBatchVars() {
-  _active_pairs_raw.clear();
-  for (uint64_t i = 0; i < _prev_dim; i++) {
-    _prev_is_active[i] = false;
-  }
-  for (uint64_t n = 0; n < _dim; n++) {
-    _is_active[n] = false;
-  }
 }
 
 inline void FullyConnectedLayer::updateSingleWeightParameters(

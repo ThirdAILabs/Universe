@@ -160,16 +160,33 @@ class FullyConnectedLayer final : public SequentialLayer {
     }
   }
 
-  // These variables are set within a batch during the call to forward (we
-  // assume all input vectors will be sparse or all will be dense, and same for
-  // output vectors). This state is necessary during UpdateParameters. Since
-  // these are temporary within batch variables, we do not need to serialize
-  // them.
+  // A flag to check whether the current network is running in normal
+  // or distributed mode
+  bool _is_distributed;
+
+  LSHSamplingMode _sampling_mode;
+
+  // Whether to track ActivePairs in raw form (the sparse sparse "optimization")
+  bool _use_sparse_sparse_optimization;
+
+  // --------------- Within-batch variables ------------------------------
+  // These variables are set while we are processing a batch (usually during
+  // calls to forward) and are used later, usually while in updateParameters.
+  // Even though these are temporary within batch variables, we still
+  // serialize them so that they have the correct size upon deserialization.
+  // Overall, these variables are
+  //  - initialized during the constructor/deserialization
+  //  - populated during forward
+  //  - used during updateParameters
+  //  - cleaned up during updateParameters
+
+  // These track whether the current/previous layer was dense (using whether
+  // the BoltVectors in forward are dense).
   bool _prev_is_dense;
   bool _this_is_dense;
 
   // The following variables track which neurons were active during batch
-  // training. This allows UpdateParameters to be more effecient.
+  // training.
 
   // _prev_is_active is only used if _prev_is_dense == false.
   // It tracks the neurons in the previous layer which are active.
@@ -188,20 +205,15 @@ class FullyConnectedLayer final : public SequentialLayer {
    * contains all of the [prev_neurons] and [cur_neurons] that were active for
    * that example (the active pairs for that example are then a cartesian
    * product of those two lists).
-   * Important: we only use _active_pairs_raw when
+   * IMPORTANT: we only use _active_pairs_raw when
    * _use_sparse_sparse_optimization is true.
    */
   std::vector<bool> _active_pairs_array;
-  bool _use_sparse_sparse_optimization;
   using ActiveNeuronsPair =
       std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
   std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs_raw;
 
-  // A flag to check whether the current network is running in normal
-  // or distributed mode
-  bool _is_distributed;
-
-  LSHSamplingMode _sampling_mode;
+  // -------------------------------------------------------------------------
 
   void initActiveNeuronsTrackers();
 
@@ -222,7 +234,6 @@ class FullyConnectedLayer final : public SequentialLayer {
   inline void updateDenseDenseParameters(float lr, float B1, float B2,
                                          float eps, float B1_bias_corrected,
                                          float B2_bias_corrected);
-  inline void cleanupWithinBatchVars();
   inline void updateSingleWeightParameters(uint64_t prev_neuron,
                                            uint64_t cur_neuron, float lr,
                                            float B1, float B2, float eps,
@@ -265,9 +276,9 @@ class FullyConnectedLayer final : public SequentialLayer {
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _sampling_mode, _prev_is_active, _is_active, _active_pairs_array,
-            _use_sparse_sparse_optimization, _active_pairs_raw,
-            _is_distributed);
+            _is_distributed, _sampling_mode, _prev_is_dense, _this_is_dense,
+            _prev_is_active, _is_active, _active_pairs_array,
+            _use_sparse_sparse_optimization, _active_pairs_raw);
   }
 
   /**
@@ -289,9 +300,9 @@ class FullyConnectedLayer final : public SequentialLayer {
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _sampling_mode, _prev_is_active, _is_active, _active_pairs_array,
-            _use_sparse_sparse_optimization, _active_pairs_raw,
-            _is_distributed);
+            _is_distributed, _sampling_mode, _prev_is_dense, _this_is_dense,
+            _prev_is_active, _is_active, _active_pairs_array,
+            _use_sparse_sparse_optimization, _active_pairs_raw);
 
     /**
      * Here we init the optimizer so that any calls to train in the network
