@@ -3,11 +3,11 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
-#include "TokenInput.h"
+#include "Input.h"
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <optional>
 #include <stdexcept>
@@ -40,7 +40,7 @@ class EmbeddingNode final : public Node,
     return _embedding_layer->getEmbeddingDim();
   }
 
-  std::shared_ptr<EmbeddingNode> addInput(TokenInputPtr input) {
+  std::shared_ptr<EmbeddingNode> addInput(InputPtr input) {
     if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "EmbeddingNodes have exactly one TokenInput node as input and the "
@@ -99,7 +99,7 @@ class EmbeddingNode final : public Node,
 
     _embedding_layer->forward(
         /* vec_index= */ vec_index,
-        /* tokens= */ _token_input->getTokens(vec_index),
+        /* tokens= */ _token_input->getOutputVector(vec_index),
         /* output= */ (*_outputs)[vec_index]);
   }
 
@@ -162,7 +162,7 @@ class EmbeddingNode final : public Node,
   // PrepareForBatchProcessing state.
   std::optional<BoltBatch> _outputs;
 
-  TokenInputPtr _token_input;
+  InputPtr _token_input;
 };
 
 using EmbeddingNodePtr = std::shared_ptr<EmbeddingNode>;

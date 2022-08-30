@@ -3,9 +3,9 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
-#include "BoltVector.h"
 #include "LayerConfig.h"
 #include <bolt/src/layers/Optimizer.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
 #include <cmath>
 #include <ctime>
@@ -25,7 +25,7 @@ class EmbeddingLayer {
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = time(nullptr));
 
-  void forward(uint32_t vec_index, const std::vector<uint32_t>& tokens,
+  void forward(uint32_t vec_index, const BoltVector& tokens,
                BoltVector& output);
 
   void backpropagate(uint32_t vec_index, const BoltVector& output);

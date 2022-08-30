@@ -3,9 +3,9 @@
 #include <cereal/archives/binary.hpp>
 #include "AutoClassifierBase.h"
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
@@ -48,7 +48,7 @@ class TextClassifier {
         /* sentence = */ sentence, /* output_range = */ _input_dim);
 
     BoltVector output =
-        _classifier->predictSingle({input}, {},
+        _classifier->predictSingle({input},
                                    /* use_sparse_inference = */ true);
 
     return _batch_processor->getClassName(

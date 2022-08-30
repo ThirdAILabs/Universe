@@ -49,7 +49,7 @@ class ModelWithLayers {
     auto train_config = TrainConfig::makeConfig(/* learning_rate= */ 0.001,
                                                 /* epochs= */ epochs);
 
-    model->train({data}, {}, labels, train_config);
+    model->train({data}, labels, train_config);
   }
 
   InferenceMetricData predict(dataset::BoltDatasetPtr& data,
@@ -57,7 +57,7 @@ class ModelWithLayers {
     auto predict_config =
         PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-    return model->predict({data}, {}, labels, predict_config).first;
+    return model->predict({data}, labels, predict_config).first;
   }
 
   InputPtr input;
@@ -91,7 +91,7 @@ TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
 
   auto predict_config =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
-  auto test_metrics2 = new_model->predict({data}, {}, labels, predict_config);
+  auto test_metrics2 = new_model->predict({data}, labels, predict_config);
 
   ASSERT_GE(test_metrics2.first["categorical_accuracy"], 0.9);
 
@@ -143,7 +143,9 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
       /* n_batches= */ n_batches, /* batch_size= */ batch_size,
       /* seed= */ 29042);
 
-  auto token_input = std::make_shared<TokenInput>();
+  auto token_input = std::make_shared<Input>(
+      /* dim= */ n_batches * batch_size + 1,
+      /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(1, 1));
 
   auto embedding_layer = std::make_shared<EmbeddingNode>(
       /* num_embedding_lookups= */ 4, /* lookup_size= */ 8,
@@ -156,7 +158,7 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
       /* activation= */ "softmax");
   fully_connected_layer->addPredecessor(embedding_layer);
 
-  BoltGraph model(/* inputs= */ {}, /* token_inputs= */ {token_input},
+  BoltGraph model(/* inputs= */ {token_input},
                   /* output= */ fully_connected_layer);
   model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
 
@@ -169,10 +171,10 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
                                      .silence();
 
   model.train(
-      /* train_data= */ {}, /* train_tokens= */ {data}, labels, train_config);
+      /* train_data= */ {data}, labels, train_config);
 
   auto test_metrics = model.predict(
-      /* test_data= */ {}, /* test_tokens= */ {data}, labels, predict_config);
+      /* test_data= */ {data}, labels, predict_config);
 
   ASSERT_GT(test_metrics.first["categorical_accuracy"], 0.9);
 
@@ -182,16 +184,16 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
   auto loaded_model = BoltGraph::load(save_filename);
 
   auto new_test_metrics = loaded_model->predict(
-      /* test_data= */ {}, /* test_tokens= */ {data}, labels, predict_config);
+      /* test_data= */ {data}, labels, predict_config);
 
   ASSERT_EQ(new_test_metrics.first["categorical_accuracy"],
             test_metrics.first["categorical_accuracy"]);
 
   model.train(
-      /* train_data= */ {}, /* train_tokens= */ {data}, labels, train_config);
+      /* train_data= */ {data}, labels, train_config);
 
   auto new_trained_test_metrics = loaded_model->predict(
-      /* test_data= */ {}, /* test_tokens= */ {data}, labels, predict_config);
+      /* test_data= */ {data}, labels, predict_config);
 
   ASSERT_GT(new_trained_test_metrics.first["categorical_accuracy"], 0.9);
 }

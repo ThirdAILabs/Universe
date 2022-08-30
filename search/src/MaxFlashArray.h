@@ -39,10 +39,10 @@ class MaxFlashArray {
   // into.
   MaxFlashArray(){};
 
-  uint64_t addDocument(const bolt::BoltBatch& batch);
+  uint64_t addDocument(const BoltBatch& batch);
 
   std::vector<float> getDocumentScores(
-      const bolt::BoltBatch& query,
+      const BoltBatch& query,
       const std::vector<uint32_t>& documents_to_query) const;
 
   // Delete copy constructor and assignment

@@ -1,5 +1,6 @@
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <algorithm>
@@ -28,9 +29,8 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     _layer->initializeLayer(/* new_batch_size= */ 4);
   }
 
-  void testEmbeddingBackpropagation(
-      const std::vector<std::vector<uint32_t>>& tokens,
-      bool sum_reduction) const {
+  void testEmbeddingBackpropagation(const std::vector<BoltVector>& tokens,
+                                    bool sum_reduction) const {
     BoltBatch output = _layer->createBatchState(tokens.size());
 
     for (uint32_t i = 0; i < tokens.size(); i++) {
@@ -48,12 +48,12 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
       _layer->backpropagate(batch_index, output[batch_index]);
 
-      for (uint32_t token_idx = 0; token_idx < tokens[batch_index].size();
+      for (uint32_t token_idx = 0; token_idx < tokens[batch_index].len;
            token_idx++) {
         for (uint32_t lookup_index = 0; lookup_index < _num_lookups;
              lookup_index++) {
-          uint64_t loc =
-              getHashLocFromLayer(tokens[batch_index][token_idx], lookup_index);
+          uint64_t loc = getHashLocFromLayer(
+              tokens[batch_index].active_neurons[token_idx], lookup_index);
 
           for (uint32_t i = 0; i < _lookup_size; i++) {
             uint32_t gradient_offset = lookup_index * _lookup_size + i;
@@ -124,7 +124,8 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, {tokens[i]}, output[i]);
+    _layer->forward(i, BoltVector::singleElementSparseVector(tokens.at(i)),
+                    output[i]);
   }
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
@@ -150,7 +151,11 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingSumReduction) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i], output[i]);
+    _layer->forward(
+        i,
+        BoltVector::makeSparseVector(
+            tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
+        output[i]);
   }
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
@@ -182,7 +187,11 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingConcatReduction) {
   BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i], output[i]);
+    _layer->forward(
+        i,
+        BoltVector::makeSparseVector(
+            tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
+        output[i]);
   }
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
@@ -206,8 +215,11 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingConcatReduction) {
 }
 
 TEST_F(EmbeddingLayerTestFixture, BackpropagationSumReduction) {
-  std::vector<std::vector<uint32_t>> tokens = {
-      {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
+  std::vector<BoltVector> tokens = {
+      BoltVector::makeSparseVector({7, 4, 18}, {1.0, 1.0, 1.0}),
+      BoltVector::makeSparseVector({98, 34, 55, 2}, {1.0, 1.0, 1.0, 1.0}),
+      BoltVector::makeSparseVector({9, 24}, {1.0, 1.0}),
+      BoltVector::makeSparseVector({61, 75, 11}, {1.0, 1.0, 1.0})};
 
   testEmbeddingBackpropagation(tokens, true);
 }
@@ -215,8 +227,11 @@ TEST_F(EmbeddingLayerTestFixture, BackpropagationSumReduction) {
 TEST_F(EmbeddingLayerTestFixture, BackpropagationConcatReduction) {
   makeConcatReduction();
 
-  std::vector<std::vector<uint32_t>> tokens = {
-      {7, 4, 18}, {98, 34, 55}, {9, 2, 24}, {61, 75, 11}};
+  std::vector<BoltVector> tokens = {
+      BoltVector::makeSparseVector({7, 4, 18}, {1.0, 1.0, 1.0}),
+      BoltVector::makeSparseVector({98, 34, 55}, {1.0, 1.0, 1.0}),
+      BoltVector::makeSparseVector({9, 2, 24}, {1.0, 1.0, 1.0}),
+      BoltVector::makeSparseVector({61, 75, 11}, {1.0, 1.0, 1.0})};
 
   testEmbeddingBackpropagation(tokens, false);
 }

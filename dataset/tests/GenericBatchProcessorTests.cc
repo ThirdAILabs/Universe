@@ -24,8 +24,8 @@ std::vector<std::string> makeCsvRows(std::vector<std::vector<float>>& matrix) {
 
 void checkMatrixAndProcessedBatchEquality(
     std::vector<std::vector<float>>& matrix,
-    std::tuple<bolt::BoltBatch, bolt::BoltBatch>& processed,
-    bool expect_input_dense, bool expect_label_dense) {
+    std::tuple<BoltBatch, BoltBatch>& processed, bool expect_input_dense,
+    bool expect_label_dense) {
   for (uint32_t i = 0; i < matrix.size(); i++) {
     for (uint32_t j = 0; j < matrix[i].size(); j++) {
       ASSERT_EQ(expect_input_dense, std::get<0>(processed)[i].isDense());

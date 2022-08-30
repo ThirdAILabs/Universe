@@ -6,7 +6,6 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/graph/nodes/TokenInput.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 
@@ -21,7 +20,10 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
                        /* dim= */ 20, /* activation= */ "relu")
                        ->addPredecessor(dense_input);
 
-  auto token_input = std::make_shared<TokenInput>();
+  auto token_input = std::make_shared<Input>(
+      /* expected_dim= */ n_ids,
+      /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(n_tokens,
+                                                              n_tokens));
 
   auto embedding = std::make_shared<EmbeddingNode>(
                        /* num_embedding_lookups */ 4, /* lookup_size= */ 5,
@@ -37,8 +39,8 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
                     /* dim= */ 2, /* activation= */ "softmax")
                     ->addPredecessor(dlrm_attention);
 
-  BoltGraph model(/* inputs= */ {dense_input},
-                  /* token_inputs= */ {token_input}, /* output= */ output);
+  BoltGraph model(/* inputs= */ {dense_input, token_input},
+                  /* output= */ output);
 
   model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
 
@@ -50,8 +52,8 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
   auto predict_cfg =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-  model.train({data}, {tokens}, labels, train_cfg);
-  auto [metrics, _] = model.predict({data}, {tokens}, labels, predict_cfg);
+  model.train({data, tokens}, labels, train_cfg);
+  auto [metrics, _] = model.predict({data, tokens}, labels, predict_cfg);
 
   ASSERT_GE(metrics["categorical_accuracy"], 0.9);
 }

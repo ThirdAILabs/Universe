@@ -4,7 +4,6 @@
 #include "Embedding.h"
 #include "FullyConnected.h"
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <Eigen/src/Core/Map.h>
 #include <exceptions/src/Exceptions.h>
 #include <memory>

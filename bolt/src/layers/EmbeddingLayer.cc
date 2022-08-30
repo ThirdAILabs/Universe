@@ -43,8 +43,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                 [&]() { return dist(gen); });
 }
 
-void EmbeddingLayer::forward(uint32_t vec_index,
-                             const std::vector<uint32_t>& tokens,
+void EmbeddingLayer::forward(uint32_t vec_index, const BoltVector& tokens,
                              BoltVector& output) {
   assert(output.len == _total_embedding_dim);
   assert(_reduction == EmbeddingReductionType::SUM ||
@@ -54,10 +53,15 @@ void EmbeddingLayer::forward(uint32_t vec_index,
   if (_reduction == EmbeddingReductionType::SUM) {
     std::fill_n(output.activations, _total_embedding_dim, 0);
   }
+  if (tokens.isDense()) {
+    throw std::invalid_argument(
+        "Cannot pass dense BoltVector as tokens in EmbeddingLayer.");
+  }
+
   std::fill_n(output.gradients, _total_embedding_dim, 0);
 
   _embedding_block_offsets[vec_index].clear();
-  _embedding_block_offsets[vec_index].reserve(tokens.size() *
+  _embedding_block_offsets[vec_index].reserve(tokens.len *
                                               _num_lookups_per_token);
 
   for (uint32_t lookup_index = 0; lookup_index < _num_lookups_per_token;
@@ -65,7 +69,8 @@ void EmbeddingLayer::forward(uint32_t vec_index,
     float* output_start =
         output.activations + getOutputOffsetWithinEmbedding(lookup_index);
 
-    for (uint32_t token : tokens) {
+    for (uint32_t token_idx = 0; token_idx < tokens.len; token_idx++) {
+      uint32_t token = tokens.active_neurons[token_idx];
       uint64_t embedding_block_offset =
           getEmbeddingBlockOffset(token, lookup_index);
       recordEmbeddingBlockOffset(vec_index, embedding_block_offset);
