@@ -86,32 +86,40 @@ class Worker:
         """
         for w_layers in self.w_gradients:
             partition_length = int(len(w_layers) / self.total_nodes)
-            remaining_length = len(w_layers)%self.total_nodes
+            remaining_length = len(w_layers) % self.total_nodes
             partition_start_end_list = []
             current_index = 0
             for i in range(self.total_nodes):
                 if i < remaining_length:
-                    partition_start_end_list.append((current_index, current_index+partition_length+1))
-                    current_index += partition_length+1
+                    partition_start_end_list.append(
+                        (current_index, current_index + partition_length + 1)
+                    )
+                    current_index += partition_length + 1
                 else:
-                    partition_start_end_list.append((current_index, current_index+partition_length))
+                    partition_start_end_list.append(
+                        (current_index, current_index + partition_length)
+                    )
                     current_index += partition_length
-                    
+
             self.w_partitions.append(partition_start_end_list)
 
         for b_layers in self.b_gradients:
             partition_length = int(len(b_layers) / self.total_nodes)
-            remaining_length = len(b_layers)%self.total_nodes
+            remaining_length = len(b_layers) % self.total_nodes
             partition_start_end_list = []
             current_index = 0
             for i in range(self.total_nodes):
                 if i < remaining_length:
-                    partition_start_end_list.append((current_index, current_index+partition_length+1))
-                    current_index += partition_length+1
+                    partition_start_end_list.append(
+                        (current_index, current_index + partition_length + 1)
+                    )
+                    current_index += partition_length + 1
                 else:
-                    partition_start_end_list.append((current_index, current_index+partition_length))
+                    partition_start_end_list.append(
+                        (current_index, current_index + partition_length)
+                    )
                     current_index += partition_length
-                    
+
             self.b_partitions.append(partition_start_end_list)
 
     def calculate_gradients_circular(self, batch_no: int):
@@ -274,7 +282,8 @@ class Worker:
                             / self.total_nodes
                         )
                         self.b_gradients[i][l_bias_idx:r_bias_idx] = (
-                            self.b_gradients[i][l_bias_idx:r_bias_idx] / self.total_nodes
+                            self.b_gradients[i][l_bias_idx:r_bias_idx]
+                            / self.total_nodes
                         )
                 else:
                     self.w_gradients[i][
@@ -343,7 +352,9 @@ class Worker:
             l_bias_idx, r_bias_idx = self.b_partitions[i][partition_id]
 
             if r_weight_idx > l_weight_idx:
-                w_gradient_subarray.append(self.w_gradients[i][l_weight_idx:r_weight_idx])
+                w_gradient_subarray.append(
+                    self.w_gradients[i][l_weight_idx:r_weight_idx]
+                )
                 b_gradient_subarray.append(self.b_gradients[i][l_bias_idx:r_bias_idx])
 
         return w_gradient_subarray, b_gradient_subarray
