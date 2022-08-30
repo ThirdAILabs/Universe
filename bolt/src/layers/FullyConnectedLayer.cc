@@ -866,7 +866,7 @@ void FullyConnectedLayer::initActiveNeuronsTrackers() {
   _active_pairs_array.assign(_dim * _prev_dim, false);
   _prev_is_active.assign(_prev_dim, false);
   _is_active.assign(_dim, false);
-  _active_pairs_raw = {};
+  _active_pairs_raw.clear();
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,

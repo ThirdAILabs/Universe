@@ -226,14 +226,6 @@ class FullyConnectedNode final
     // TODO(Nicholas): rename createBatchState
     _outputs =
         _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
-
-    float indicator_value = batch_size * _layer->getSparsity() *
-                            _predecessor->averageBatchSparsity();
-    if (indicator_value < 0.01) {
-      _layer->enableSparseSparseOptimization();
-    } else {
-      _layer->disableSparseSparseOptimization();
-    }
   }
 
   uint32_t numNonzerosInOutputImpl() const final { return (*_outputs)[0].len; }
@@ -253,6 +245,16 @@ class FullyConnectedNode final
     } else {
       _layer->backpropagate(_predecessor->getOutputVector(vec_index),
                             this->getOutputVectorImpl(vec_index));
+    }
+  }
+
+  void interbatchUpdateImpl() final {
+    float indicator_value = _outputs->getBatchSize() * _layer->getSparsity() *
+                            _predecessor->averageBatchSparsity();
+    if (indicator_value < 0.01) {
+      _layer->enableSparseSparseOptimization();
+    } else {
+      _layer->disableSparseSparseOptimization();
     }
   }
 

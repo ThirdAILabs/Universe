@@ -148,6 +148,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
       /* origin_string = */
       "Passed in label BoltVector is larger than the output dim");
 
+  interbatchUpdate();
+
 #pragma omp parallel for default(none) shared(batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
@@ -443,6 +445,12 @@ void BoltGraph::backpropagate(uint32_t vec_index) {
   for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
     // std::cout << "NodeName = " << (*node_itr)->name() << std::endl;
     (*node_itr)->backpropagate(vec_index);
+  }
+}
+
+void BoltGraph::interbatchUpdate() {
+  for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
+    (*node_itr)->interbatchUpdate();
   }
 }
 

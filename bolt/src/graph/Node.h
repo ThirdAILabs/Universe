@@ -99,6 +99,14 @@ class Node {
     backpropagateImpl(vec_index);
   }
 
+  // Does any neccesary interbatch updates (currently only used in
+  // FullyConnectedLayer, thus there is a default implementation of a NOOP).
+  // This does not change the NodeState.
+  inline void interbatchUpdate() {
+    assert(getState() == NodeState::PreparedForBatchProcessing);
+    interbatchUpdateImpl();
+  }
+
   // Updates any trainable parameters
   inline void updateParameters(float learning_rate, uint32_t batch_cnt) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
@@ -270,6 +278,8 @@ class Node {
   virtual void forwardImpl(uint32_t vec_index, const BoltVector* labels) = 0;
 
   virtual void backpropagateImpl(uint32_t vec_index) = 0;
+
+  virtual void interbatchUpdateImpl(){};
 
   virtual void updateParametersImpl(float learning_rate,
                                     uint32_t batch_cnt) = 0;
