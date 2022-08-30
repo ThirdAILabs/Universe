@@ -115,7 +115,7 @@ class SequentialClassifier {
                                .withMetrics(std::move(metrics))
                                .withOutputCallback(print_predictions_callback);
 
-    auto results = _model->predict({test_data}, {}, test_labels, config);
+    auto results = _model->predict({test_data}, test_labels, config);
 
     if (output_file) {
       output_file->close();
