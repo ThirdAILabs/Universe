@@ -54,9 +54,11 @@ class ParameterReference {
       std::copy(new_array.data(), new_array.data() + _total_dim, _params);
     } else {
       using CompressedVector = thirdai::compression::CompressedVector<float>;
+
       std::unique_ptr<CompressedVector> compressed_vector =
           thirdai::compression::python::convertPyDictToCompressedVector(
               new_params);
+
       std::vector<float> full_gradients = compressed_vector->decompress();
       std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
                 _params);
@@ -64,11 +66,12 @@ class ParameterReference {
   }
 
   py::dict compress(const std::string& compression_scheme,
-                    float compression_density, uint32_t seed_for_hashing) {
+                    float compression_density, uint32_t seed_for_hashing,
+                    uint32_t sample_population_size) {
     return thirdai::compression::python::convertCompressedVectorToPyDict(
         thirdai::compression::compress(
             _params, static_cast<uint32_t>(_total_dim), compression_scheme,
-            compression_density, seed_for_hashing));
+            compression_density, seed_for_hashing, sample_population_size));
   }
 
  private:

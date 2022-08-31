@@ -39,10 +39,11 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       // dictionaries. Or we should make a Compressed vector module at python
       // end to deal with this
       .def("compress", &ParameterReference::compress,
-           py::arg("compression_scheme") = "dragon",
-           py::arg("compression_density") = 0.2,
-           py::arg("seed_for_hashing") = 0,
-           "Returns a python dictionary of compressed vectors")
+           py::arg("compression_scheme"), py::arg("compression_density"),
+           py::arg("seed_for_hashing"), py::arg("sample_population_size"),
+           "Returns a python dictionary of compressed vectors. num_samples is "
+           "the number of random samples you take for estimating a threshold "
+           "for dragon compression")
       .def("set", &ParameterReference::set, py::arg("new_params"),
            "Takes in a numpy array and copies its contents into the parameters "
            "held in the ParameterReference object.");

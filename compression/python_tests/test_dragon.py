@@ -31,6 +31,7 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
             compression_scheme="dragon",
             compression_density=compression_density,
             seed_for_hashing=seed_for_hashing,
+            sample_population_size=50,
         )
     )
 
@@ -39,6 +40,7 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
             compression_scheme="dragon",
             compression_density=compression_density,
             seed_for_hashing=seed_for_hashing,
+            sample_population_size=50,
         )
     )
 
@@ -68,12 +70,14 @@ def test_get_gradients():
         compression_scheme="dragon",
         compression_density=0.2,
         seed_for_hashing=1,
+        sample_population_size=50,
     )
 
     compressed_biases_gradients = first_layer.biases.compress(
         compression_scheme="dragon",
         compression_density=0.2,
         seed_for_hashing=1,
+        sample_population_size=10,
     )
 
     # checking whether the gradients are correct
@@ -114,12 +118,14 @@ def test_set_gradients():
         compression_scheme="dragon",
         compression_density=0.2,
         seed_for_hashing=1,
+        sample_population_size=50,
     )
 
     compressed_biases_gradients = first_layer.biases.compress(
         compression_scheme="dragon",
         compression_density=0.2,
         seed_for_hashing=1,
+        sample_population_size=5,
     )
 
     first_layer.weights.set(compressed_weight_gradients)

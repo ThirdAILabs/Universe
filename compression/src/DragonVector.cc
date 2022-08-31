@@ -1,5 +1,6 @@
 #include "CompressedVector.h"
 #include <hashing/src/UniversalHash.h>
+#include <_types/_uint32_t.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cmath>
@@ -17,10 +18,12 @@ namespace thirdai::compression {
 template <class T>
 DragonVector<T>::DragonVector(const std::vector<T>& vector_to_compress,
                               float compression_density,
-                              uint32_t seed_for_hashing)
+                              uint32_t seed_for_hashing,
+                              uint32_t sample_population_size)
     : DragonVector(vector_to_compress.data(),
                    static_cast<uint32_t>(vector_to_compress.size()),
-                   compression_density, seed_for_hashing) {}
+                   compression_density, seed_for_hashing,
+                   sample_population_size) {}
 
 template <class T>
 DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
@@ -34,25 +37,25 @@ DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
 template <class T>
 DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
                               float compression_density,
-                              uint32_t seed_for_hashing)
+                              uint32_t seed_for_hashing,
+                              uint32_t sample_population_size)
     : _original_size(size),
       _compression_density(compression_density),
       _seed_for_hashing(seed_for_hashing) {
   uint32_t sketch_size =
-      (std::max(static_cast<uint32_t>(compression_density * size),
-                std::min(size, _min_sketch_size)));
+      std::max(static_cast<uint32_t>(compression_density * size),
+               std::min(size, _min_sketch_size));
 
-  // should we move this to the initialization list?
   _indices.assign(sketch_size, 0);
   _values.assign(sketch_size, 0);
 
   // First calculate an approximate top-k threshold. Then, we sketch the
   // original vector to a smaller dragon vector
 
-  T threshold = thirdai::compression::getThresholdForTopK(
-      values_to_compress, size, sketch_size,
-      /*max_samples_for_random_sampling=*/100000, _seed_for_hashing);
-  sketchVector(values_to_compress, threshold, size, sketch_size);
+  T threshold = thresholdForTopK(values_to_compress, size, compression_density,
+                                 /*seed_for_sampling=*/seed_for_hashing,
+                                 sample_population_size);
+  sketch(values_to_compress, threshold, size, sketch_size);
 }
 
 /*
@@ -61,8 +64,8 @@ DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
  * store the elements in the _values array.
  */
 template <class T>
-void DragonVector<T>::sketchVector(const T* values, T threshold, uint32_t size,
-                                   uint32_t sketch_size) {
+void DragonVector<T>::sketch(const T* values, T threshold, uint32_t size,
+                             uint32_t sketch_size) {
   UniversalHash hash_function = UniversalHash(_seed_for_hashing);
 #pragma omp parallel for default(none)                              \
     shared(_indices, _values, values, sketch_size, threshold, size, \

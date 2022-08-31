@@ -6,9 +6,9 @@
 #include <cstdint>
 #include <memory>
 #include <random>
+
 namespace thirdai::compression {
 
-// a generic compressed vector class
 template <class T>
 class CompressedVector {
  public:
@@ -49,7 +49,6 @@ class CompressedVector {
   virtual ~CompressedVector() = default;
 };
 
-// DragonVector class
 template <class T>
 class DragonVector final : public CompressedVector<T> {
  public:
@@ -62,13 +61,15 @@ class DragonVector final : public CompressedVector<T> {
    * is important when we want to decompress a vector.
    */
   DragonVector(const std::vector<T>& vector_to_compress,
-               float compression_density, uint32_t seed_for_hashing);
+               float compression_density, uint32_t seed_for_hashing,
+               uint32_t sample_population_size);
 
   DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
                uint32_t original_size, uint32_t seed_for_hashing);
 
   DragonVector(const T* values_to_compress, uint32_t size,
-               float compression_density, uint32_t seed_for_hashing);
+               float compression_density, uint32_t seed_for_hashing,
+               uint32_t sample_population_size);
 
   /*
    * Implementing std::vector's standard methods for the class
@@ -130,25 +131,19 @@ class DragonVector final : public CompressedVector<T> {
   float _compression_density;
   int _seed_for_hashing;
 
-  void sketchVector(const T* values, T threshold, uint32_t size,
-                    uint32_t sketch_size);
+  void sketch(const T* values, T threshold, uint32_t size,
+              uint32_t sketch_size);
 };
 
 template <class T>
 inline std::unique_ptr<CompressedVector<T>> compress(
-    const std::vector<T>& values, const std::string& compression_scheme = "",
-    float compression_density = 1, uint32_t seed_for_hashing = 0) {
-  return compress(values.data(), static_cast<uint32_t>(values.size()),
-                  compression_scheme, compression_density, seed_for_hashing);
-}
-
-template <class T>
-inline std::unique_ptr<CompressedVector<T>> compress(
     const T* values, uint32_t size, const std::string& compression_scheme,
-    float compression_density, uint32_t seed_for_hashing) {
+    float compression_density, uint32_t seed_for_hashing,
+    uint32_t sample_population_size) {
   if (compression_scheme == "dragon") {
     return std::make_unique<DragonVector<T>>(values, size, compression_density,
-                                             seed_for_hashing);
+                                             seed_for_hashing,
+                                             sample_population_size);
   }
   throw std::logic_error("Compression Scheme is invalid");
 }

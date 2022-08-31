@@ -8,46 +8,37 @@
 
 namespace thirdai::compression {
 
-constexpr uint32_t min_samples = 20;
-
 /*
  * Rather than getting an exact threshold, we sample a number of points from the
  * values array and gets an estimate for topk.
+ * If top_k = 0.1 => threshold will return a value which is larger than 90% of
+ * the values.
  */
 template <class T>
-inline T getThresholdForTopK(const T* values, uint32_t size,
-                             uint32_t sketch_size,
-                             uint32_t max_samples_for_random_sampling,
-                             uint32_t seed_for_sampling) {
-  uint32_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
+inline T thresholdForTopK(const T* values, uint32_t size, float top_k,
+                          uint32_t seed_for_sampling,
+                          uint32_t sample_population_size) {
+  // sample_population_size is the total number of random samples we take for
+  // estimating a threshold for the values
 
-  /*
-   * There will be scenarios when num_samples takes very small values such as 1,
-   * hence, we ensure that we sample at least 20 points.
-   */
+  uint32_t top_k_index = static_cast<uint32_t>(sample_population_size * top_k);
 
-  if (num_samples < min_samples) {
-    num_samples = std::min(min_samples, size);
-  }
-
-  float compression_factor = static_cast<float>(sketch_size) / size;
-  uint32_t top_k = static_cast<uint32_t>(num_samples * compression_factor);
-
-  std::vector<T> sampled_gradients(num_samples, 0);
+  std::vector<T> sampled_values(sample_population_size, 0);
 
   std::mt19937 gen(seed_for_sampling);
   std::uniform_int_distribution<> distribution(0, size - 1);
-  for (uint32_t i = 0; i < num_samples; i++) {
-    sampled_gradients[i] = std::abs(values[distribution(gen)]);
+  for (uint32_t i = 0; i < sample_population_size; i++) {
+    sampled_values[i] = std::abs(values[distribution(gen)]);
   }
 
-  std::nth_element(sampled_gradients.begin(),
-                   sampled_gradients.begin() + num_samples - top_k,
-                   sampled_gradients.end());
+  std::nth_element(
+      sampled_values.begin(),
+      sampled_values.begin() + sample_population_size - top_k_index,
+      sampled_values.end());
 
   // threshold is an estimate for the kth largest element in the gradients
   // matrix
-  T threshold = sampled_gradients[num_samples - top_k];
+  T threshold = sampled_values[sample_population_size - top_k_index];
   return threshold;
 }
 

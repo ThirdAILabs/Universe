@@ -26,6 +26,7 @@ class DragonVectorTest : public testing::Test {
                std::min(uint32_t(_original_size), _min_sketch_size));
 
   int _seed_for_hashing = 5;
+  uint32_t sample_population_size = 20;
 
   DragonVectorTest() {
     std::uniform_int_distribution<int> dist(-100, 100);
@@ -34,10 +35,10 @@ class DragonVectorTest : public testing::Test {
     }
 
     _vec = DragonVector<float>(_original_vec, _compression_density,
-                               _seed_for_hashing);
-    _vec_from_array =
-        DragonVector<float>(_original_vec.data(), _original_size,
-                            _compression_density, _seed_for_hashing);
+                               _seed_for_hashing, sample_population_size);
+    _vec_from_array = DragonVector<float>(
+        _original_vec.data(), _original_size, _compression_density,
+        _seed_for_hashing, sample_population_size);
   }
 };
 
