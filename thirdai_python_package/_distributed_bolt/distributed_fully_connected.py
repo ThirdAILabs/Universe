@@ -19,7 +19,7 @@ class FullyConnectedNetwork(DistributedBolt):
         Public Facing APIs which includes functions like train, predict
     """
 
-    def __init__(self, no_of_workers, config_filename, num_cpus_per_node):
+    def __init__(self, no_of_workers, config_filename, num_cpus_per_node = -1, num_omp_threads_experiment=-1):
         """This function initializes this class, which provides wrapper over DistributedBolt and
         implements the user facing FullyConnectedNetwork API.
 
@@ -57,10 +57,12 @@ class FullyConnectedNetwork(DistributedBolt):
         self.no_of_workers = no_of_workers
 
         # setting OMP_NUM_THREADS to number of num_cpus
-        num_omp_threads = str(get_num_cpus())
-
+        if num_omp_threads_experiment is not -1:
+            num_omp_threads = str(num_omp_threads_experiment)
+        else:
+            num_omp_threads = get_num_cpus()
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
-        runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
+        runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(num_omp_threads)}}
 
         ray.init(address="auto", runtime_env=runtime_env)
         if not ray.is_initialized():

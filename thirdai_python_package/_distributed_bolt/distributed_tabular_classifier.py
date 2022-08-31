@@ -12,7 +12,7 @@ from typing import Tuple, Any, Optional, Dict, List
 
 class TabularClassifier(DistributedBolt):
     def __init__(
-        self, no_of_workers, config_filename, num_cpus_per_node, column_datatypes, n_classes
+        self, no_of_workers, config_filename, num_cpus_per_node, num_omp_threads_experiment, column_datatypes, n_classes
     ):
 
         self.logging = init_logging("tabular_classifier.log")
@@ -43,12 +43,13 @@ class TabularClassifier(DistributedBolt):
         self.no_of_workers = no_of_workers
 
         # check for whether OMP_NUM_THREADS already set by user
-        num_cpus = get_num_cpus()
-        if num_cpus_per_node is not -1:
-            num_cpus = num_cpus_per_node
+        
+        # setting OMP_NUM_THREADS to number of num_cpus
+        num_omp_threads = str(num_omp_threads_experiment)
+        
 
-        self.logging.info("Setting OMP_NUM_THREADS to " + str(num_cpus))
-        runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(num_cpus)}}
+        self.logging.info("Setting OMP_NUM_THREADS to " + str(num_omp_threads))
+        runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(num_omp_threads)}}
 
         ray.init(address="auto", runtime_env=runtime_env)
         if not ray.is_initialized():
@@ -69,6 +70,10 @@ class TabularClassifier(DistributedBolt):
         self.learning_rate = config["params"]["learning_rate"]
         self.num_layers = 3
 
+
+        num_cpus = get_num_cpus()
+        if num_cpus_per_node is not -1:
+            num_cpus = num_cpus_per_node
 
         self.primary_worker = PrimaryWorker.options(
             num_cpus=num_cpus, max_concurrency=100
