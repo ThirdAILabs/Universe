@@ -173,6 +173,16 @@ void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
   summary << " num_embedding_lookups=" << _num_lookups_per_token;
   summary << ", lookup_size=" << _lookup_size;
   summary << ", log_embedding_block_size=" << _log_embedding_block_size;
+  switch (_reduction) {
+    case EmbeddingReductionType::SUM:
+      summary << ", reduction=sum";
+      break;
+    case EmbeddingReductionType::CONCATENATION:
+      summary << ", reduction=concatenation";
+  }
+  if (_num_tokens_per_input) {
+    summary << ", num_tokens_per_input=" << _num_tokens_per_input.value();
+  }
   summary << "\n";
 }
 
