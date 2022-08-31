@@ -199,7 +199,9 @@ def construct_input_node(input_config):
 
 def construct_fully_connected_node(fc_config):
     use_default_sampling = fc_config.get("use_default_sampling", False)
-    use_sparse_sparse_optimization = fc_config.get("use_sparse_sparse_optimization", False)
+    use_sparse_sparse_optimization = fc_config.get(
+        "use_sparse_sparse_optimization", False
+    )
     sparsity = fc_config.get("sparsity", 1)
 
     if use_default_sampling or sparsity == 1:
@@ -218,6 +220,8 @@ def construct_fully_connected_node(fc_config):
 
     if use_sparse_sparse_optimization:
         layer.enable_sparse_sparse_optimization()
+
+    return layer
 
 
 def construct_embedding_node(embedding_config):
