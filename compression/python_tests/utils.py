@@ -1,6 +1,5 @@
 from thirdai import bolt, dataset
 import numpy as np
-import os
 
 # Generates easy training data: the ground truth function is f(x_i) = i, where
 # x_i is the one hot encoding of i. Thus the input and output dimension are both

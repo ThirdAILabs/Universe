@@ -44,7 +44,6 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("seed_for_hashing") = 0,
            "Returns a python dictionary of compressed vectors")
       .def("set", &ParameterReference::set, py::arg("new_params"),
-           py::arg("compressed") = false,
            "Takes in a numpy array and copies its contents into the parameters "
            "held in the ParameterReference object.");
 

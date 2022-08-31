@@ -11,7 +11,6 @@ from utils import (
     build_dag_network,
 )
 
-INPUT_DIM = 10
 HIDDEN_DIM = 10
 OUTPUT_DIM = 10
 LEARNING_RATE = 0.002
@@ -49,8 +48,8 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
 def set_compressed_dragon_gradients(model, compressed_weight_grads):
     layer1 = model.get_layer("fc_1")
     layer2 = model.get_layer("fc_2")
-    layer1.weight_gradients.set(compressed_weight_grads[0], compressed=True)
-    layer2.weight_gradients.set(compressed_weight_grads[1], compressed=True)
+    layer1.weight_gradients.set(compressed_weight_grads[0])
+    layer2.weight_gradients.set(compressed_weight_grads[1])
     return model
 
 
@@ -123,8 +122,8 @@ def test_set_gradients():
         seed_for_hashing=1,
     )
 
-    first_layer.weights.set(compressed_weight_gradients, compressed=True)
-    first_layer.biases.set(compressed_biases_gradients, compressed=True)
+    first_layer.weights.set(compressed_weight_gradients)
+    first_layer.biases.set(compressed_biases_gradients)
 
     reconstructed_biases_gradients = np.ravel(first_layer.biases.get())
     reconstructed_weight_gradients = np.ravel(first_layer.weights.get())
@@ -157,7 +156,12 @@ def test_compressed_training():
     )
 
     model = build_single_node_bolt_dag_model(
-        train_data=train_data, train_labels=train_labels, sparsity=0.2, num_classes=10
+        train_data=train_data,
+        train_labels=train_labels,
+        sparsity=0.2,
+        num_classes=10,
+        learning_rate=LEARNING_RATE,
+        hidden_layer_dim=30,
     )
 
     total_batches = model.numTrainingBatch()
@@ -185,5 +189,4 @@ def test_compressed_training():
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
         predict_config=predict_config,
     )
-    print(acc[0]["categorical_accuracy"])
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD

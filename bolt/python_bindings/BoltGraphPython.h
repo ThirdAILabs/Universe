@@ -47,9 +47,8 @@ class ParameterReference {
 
   ParameterArray get() const { return ParameterArray(_dimensions, _params); }
 
-  void set(const py::object& new_params, bool compressed) {
-    (void)compressed;
-    if (!compressed) {
+  void set(const py::object& new_params) {
+    if (py::isinstance<py::array>(new_params)) {
       ParameterArray new_array = py::cast<ParameterArray>(new_params);
       checkNumpyArrayDimensions(_dimensions, new_params);
       std::copy(new_array.data(), new_array.data() + _total_dim, _params);
