@@ -17,7 +17,7 @@ def train_overfitted_model(train_data, train_labels):
     )
 
     train_config = bolt.graph.TrainConfig.make(
-        learning_rate=0.001, epochs=20
+        learning_rate=0.001, epochs=50
     ).with_metrics(["categorical_accuracy"])
 
     model.train(train_data, train_labels, train_config)
@@ -40,7 +40,7 @@ def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
     )
 
     train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=50)
+        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=20)
         .with_metrics(["categorical_accuracy"])
         .with_callbacks(
             [
