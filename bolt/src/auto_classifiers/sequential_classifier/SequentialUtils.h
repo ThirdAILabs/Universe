@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/types/string.hpp>
+#include <cereal/types/tuple.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
@@ -9,81 +13,30 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <sys/types.h>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::bolt::classifiers::sequential {
+namespace thirdai::bolt::sequential_classifier {
 
+// A pair of (column name, num unique classes)
 using CategoricalPair = std::pair<std::string, uint32_t>;
+// A tuple of (column name, num unique classes, track last N)
 using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
 
-struct CategoricalFeat {
-  std::string col_name;
-  uint32_t vocab_size;
-
-  CategoricalFeat() {}
-
-  CategoricalFeat(std::string col_name, uint32_t vocab_size)
-      : col_name(std::move(col_name)), vocab_size(vocab_size) {}
-
-  static CategoricalFeat fromPair(const CategoricalPair& cat_pair) {
-    const auto& [col_name, vocab_size] = cat_pair;
-    return {col_name, vocab_size};
-  }
-
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(col_name, vocab_size);
-  }
-};
-
-struct SequentialFeat {
-  CategoricalFeat user;
-  CategoricalFeat item;
-  std::string timestamp_col_name;
-  uint32_t track_last_n;
-
-  SequentialFeat() {}
-
-  SequentialFeat(CategoricalFeat&& user, CategoricalFeat&& item,
-                 std::string timestamp_col_name, uint32_t track_last_n)
-      : user(user),
-        item(item),
-        timestamp_col_name(std::move(timestamp_col_name)),
-        track_last_n(track_last_n) {}
-
-  static SequentialFeat fromPrimitives(
-      const CategoricalPair& user_cat_pair,
-      const SequentialTriplet& item_seq_triplet,
-      const std::string& timestamp_col_name) {
-    auto user = CategoricalFeat::fromPair(user_cat_pair);
-    const auto& [col_name, vocab_size, track_last_n] = item_seq_triplet;
-    auto item = CategoricalFeat(col_name, vocab_size);
-    return {std::move(user), std::move(item), timestamp_col_name, track_last_n};
-  }
-
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(user, item, timestamp_col_name, track_last_n);
-  }
-};
-
+/**
+ * Stores the dataset configuration.
+ */
 struct Schema {
-  CategoricalFeat user;
-  CategoricalFeat target;
+  CategoricalPair user;
+  CategoricalPair target;
   std::string timestamp_col_name;
-  std::vector<std::string> static_text_attrs;
-  std::vector<CategoricalFeat> static_categorical_attrs;
-  std::vector<SequentialFeat> sequential_attrs;
+  std::vector<std::string> static_text_col_names;
+  std::vector<CategoricalPair> static_categorical;
+  std::vector<SequentialTriplet> sequential;
 
   Schema() {}
 
@@ -92,15 +45,26 @@ struct Schema {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(user, target, timestamp_col_name, static_text_attrs,
-            static_categorical_attrs, sequential_attrs);
+    archive(user, target, timestamp_col_name, static_text_col_names,
+            static_categorical, sequential);
   }
 };
 
+/**
+ * Stores persistent states for data preprocessing.
+ */
 struct DataState {
-  std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> vocabs;
-  std::unordered_map<std::string, dataset::ItemHistoryCollectionPtr>
-      history_collections;
+  std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr>
+      vocabs_by_column;
+
+  /*
+    We can technically have a vector instead of a map, but that makes
+    the logic of buildPipeline a little harder to follow. Additionally,
+    since the container contains pointers instead of the actual object,
+    there is little benefit to having a vector instead.
+  */
+  std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
+      history_collections_by_id;
 
   DataState() {}
 
@@ -109,7 +73,7 @@ struct DataState {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(vocabs, history_collections);
+    archive(vocabs_by_column, history_collections_by_id);
   }
 };
 
@@ -182,64 +146,67 @@ class Pipeline {
     input_blocks.push_back(std::make_shared<dataset::DateBlock>(
         col_nums.at(schema.timestamp_col_name)));
 
-    for (const auto& text_col_name : schema.static_text_attrs) {
+    for (const auto& text_col_name : schema.static_text_col_names) {
       input_blocks.push_back(
           dataset::UniGramTextBlock::make(col_nums.at(text_col_name)));
     }
 
-    for (const auto& categorical : schema.static_categorical_attrs) {
+    for (const auto& categorical : schema.static_categorical) {
       input_blocks.push_back(
           makeCategoricalBlock(categorical, state, col_nums));
     }
 
-    for (const auto& sequential : schema.sequential_attrs) {
-      input_blocks.push_back(makeSequentialBlock(sequential, state, col_nums));
+    for (uint32_t seq_idx = 0; seq_idx < schema.sequential.size(); seq_idx++) {
+      input_blocks.push_back(
+          makeSequentialBlock(seq_idx, schema.user, schema.sequential[seq_idx],
+                              schema.timestamp_col_name, state, col_nums));
     }
 
     return input_blocks;
   }
 
   static dataset::BlockPtr makeCategoricalBlock(
-      const CategoricalFeat& categorical, DataState& state,
+      const CategoricalPair& categorical, DataState& state,
       const ColumnNumberMap& col_nums) {
-    auto& string_lookup = state.vocabs[categorical.col_name];
-    if (!string_lookup) {
-      string_lookup =
-          dataset::ThreadSafeVocabulary::make(categorical.vocab_size);
+    const auto& [cat_col_name, n_classes] = categorical;
+    auto& string_vocab = state.vocabs_by_column[cat_col_name];
+    if (!string_vocab) {
+      string_vocab = dataset::ThreadSafeVocabulary::make(n_classes);
     }
     return dataset::StringLookupCategoricalBlock::make(
-        col_nums.at(categorical.col_name), string_lookup);
+        col_nums.at(cat_col_name), string_vocab);
   }
 
+  // We pass in an ID because sequential blocks can corrupt each other's states.
   static dataset::BlockPtr makeSequentialBlock(
-      const SequentialFeat& sequential, DataState& state,
+      uint32_t sequential_block_id, const CategoricalPair& user,
+      const SequentialTriplet& sequential,
+      const std::string& timestamp_col_name, DataState& state,
       const ColumnNumberMap& col_nums) {
-    auto& user_lookup = state.vocabs[sequential.user.col_name];
-    if (!user_lookup) {
-      user_lookup =
-          dataset::ThreadSafeVocabulary::make(sequential.user.vocab_size);
+    const auto& [user_col_name, n_unique_users] = user;
+    auto& user_vocab = state.vocabs_by_column[user_col_name];
+    if (!user_vocab) {
+      user_vocab = dataset::ThreadSafeVocabulary::make(n_unique_users);
     }
 
-    auto& item_lookup = state.vocabs[sequential.item.col_name];
-    if (!item_lookup) {
-      item_lookup =
-          dataset::ThreadSafeVocabulary::make(sequential.item.vocab_size);
+    const auto& [item_col_name, n_unique_items, track_last_n] = sequential;
+    auto& item_vocab = state.vocabs_by_column[item_col_name];
+    if (!item_vocab) {
+      item_vocab = dataset::ThreadSafeVocabulary::make(n_unique_items);
     }
 
-    auto collection_name =
-        sequential.item.col_name + std::to_string(sequential.track_last_n);
-    auto& user_item_history = state.history_collections[collection_name];
+    auto& user_item_history =
+        state.history_collections_by_id[sequential_block_id];
     if (!user_item_history) {
-      user_item_history = dataset::ItemHistoryCollection::make(
-          sequential.user.vocab_size, sequential.track_last_n);
+      user_item_history =
+          dataset::ItemHistoryCollection::make(n_unique_users, track_last_n);
     }
 
     return dataset::UserItemHistoryBlock::make(
-        col_nums.at(sequential.user.col_name),
-        col_nums.at(sequential.item.col_name),
-        col_nums.at(sequential.timestamp_col_name), user_lookup, item_lookup,
+        col_nums.at(user_col_name), col_nums.at(item_col_name),
+        col_nums.at(timestamp_col_name), user_vocab, item_vocab,
         user_item_history);
   }
 };
 
-}  // namespace thirdai::bolt::classifiers::sequential
+}  // namespace thirdai::bolt::sequential_classifier

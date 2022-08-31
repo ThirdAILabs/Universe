@@ -52,12 +52,12 @@ void testLayerNormNodeForwardAndBackwardPass() {
   auto train_config = TrainConfig::makeConfig(/* learning_rate= */ 0.001,
                                               /* epochs= */ epochs);
 
-  model.train({data}, {}, labels, train_config);
+  model.train({data}, labels, train_config);
 
   auto predict_config =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-  auto test_metrics = model.predict({data}, {}, labels, predict_config).first;
+  auto test_metrics = model.predict({data}, labels, predict_config).first;
 
   ASSERT_GE(test_metrics["categorical_accuracy"], accuracy_threshold);
 }

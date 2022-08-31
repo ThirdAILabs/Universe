@@ -156,7 +156,7 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
 
   for (uint32_t i = 0; i < 4; i++) {
     auto unigrams = unigram_hashes_from_words(words[i]);
-    uint32_t masked_index = masked_indices[i].at(0);
+    uint32_t masked_index = masked_indices[i].active_neurons[0];
     uint32_t masked_word_hash = unigrams[masked_index];
     unigrams[masked_index] = unknown_hash;
 

@@ -5,7 +5,6 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/graph/nodes/TokenInput.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 #include <tuple>
@@ -45,7 +44,9 @@ BoltGraph getModel() {
                                            /* activation= */ "relu");
   hidden_layer->addPredecessor(input);
 
-  auto token_input = std::make_shared<TokenInput>();
+  auto token_input = std::make_shared<Input>(
+      /* dim= */ n_classes,
+      /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(1, 1));
   auto embedding = std::make_shared<EmbeddingNode>(
       /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
       /* log_embedding_block_size= */ 12);
@@ -59,7 +60,7 @@ BoltGraph getModel() {
                                            /* activation= */ "softmax");
   output->addPredecessor(concat);
 
-  BoltGraph model(/* inputs= */ {input}, /* token_inputs= */ {token_input},
+  BoltGraph model(/* inputs= */ {input, token_input},
                   /* output= */ output);
   model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
 
@@ -79,7 +80,7 @@ float runDlrmTest(bool dense_features_are_noise,
   auto train_cfg =
       TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ 2);
 
-  model.train({train_data}, {train_tokens}, train_labels, train_cfg);
+  model.train({train_data, train_tokens}, train_labels, train_cfg);
 
   auto [test_data, test_tokens, test_labels] =
       TestDatasetGenerators::generateDlrmDataset(
@@ -91,7 +92,7 @@ float runDlrmTest(bool dense_features_are_noise,
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
   auto [test_metrics, _] =
-      model.predict({test_data}, {test_tokens}, test_labels, predict_cfg);
+      model.predict({test_data, test_tokens}, test_labels, predict_cfg);
 
   return test_metrics["categorical_accuracy"];
 }

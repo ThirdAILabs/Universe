@@ -2,8 +2,7 @@ from thirdai import bolt
 import pytest
 import datasets
 import random
-import os
-from .utils import remove_files, compute_accuracy_with_file
+from utils import remove_files, compute_accuracy_with_file
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 

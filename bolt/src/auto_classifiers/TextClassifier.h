@@ -48,7 +48,7 @@ class TextClassifier {
         /* sentence = */ sentence, /* output_range = */ _input_dim);
 
     BoltVector output =
-        _classifier->predictSingle({input}, {},
+        _classifier->predictSingle({input},
                                    /* use_sparse_inference = */ true);
 
     return _batch_processor->getClassName(

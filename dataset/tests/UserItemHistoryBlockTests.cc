@@ -134,8 +134,7 @@ std::vector<std::vector<uint32_t>> processSamples(
     std::vector<uint32_t> items;
     for (uint32_t pos = 0; pos < vec.len; pos++) {
       auto encoded_item = vec.active_neurons[pos];
-      auto original_item_id_str =
-          item_id_lookup->getString(encoded_item).value();
+      auto original_item_id_str = item_id_lookup->getString(encoded_item);
       items.push_back(std::stoull(original_item_id_str));
     }
     histories.push_back(items);
