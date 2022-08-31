@@ -93,7 +93,8 @@ MetricData BoltGraph::train(
   // automatically delete the training state
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
-      // ProgressBar bar(train_context.numBatches(), train_config.verbose());
+      ProgressBar bar(train_context.numBatches(),
+                      train_config.verbose() && !log::console_logging_enabled);
       auto train_start = std::chrono::high_resolution_clock::now();
 
       for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
@@ -106,8 +107,7 @@ MetricData BoltGraph::train(
                                     rebuild_hash_tables_batch,
                                     reconstruct_hash_functions_batch);
 
-        // bar.increment();
-
+        bar.increment();
         log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
                   metrics.summary());
       }
@@ -318,7 +318,8 @@ InferenceResult BoltGraph::predict(
       _output, predict_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
 
-  // ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
+  ProgressBar bar(predict_context.numBatches(),
+                  predict_config.verbose() && !log::console_logging_enabled);
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
@@ -336,7 +337,7 @@ InferenceResult BoltGraph::predict(
 
       processInferenceBatch(batch_size, batch_labels, metrics);
 
-      // bar.increment();
+      bar.increment();
 
       processOutputCallback(predict_config.outputCallback(), batch_size);
 
