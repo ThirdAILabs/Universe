@@ -178,17 +178,15 @@ class MeanSquaredErrorMetric final : public Metric {
     }
 
     for (uint32_t i = 0; i < labels.len; i++) {
-      float label = labels.activations[i];
       auto output_neuron =
           output.findActiveNeuron<OUTPUT_DENSE>(labels.active_neurons[i]);
-      if (output_neuron.pos) {
-        // Skip any neurons that where in the active neuron set since the loss
-        // was already computed for them.
-        continue;
+      // Skip any neurons that were in the active neuron set since the loss was
+      // already computed for them.
+      if (!output_neuron.pos) {
+        float label = labels.activations[i];
+        // The activation is 0 since this isn't in the output active neurons.
+        error += label * label;
       }
-
-      // The activation is 0 since this isn't in the output active neurons.
-      error += label * label;
     }
     return error;
   }
