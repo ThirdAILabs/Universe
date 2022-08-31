@@ -523,8 +523,8 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def(py::init<std::vector<dataset::BoltDatasetPtr>,
                     dataset::BoltDatasetPtr, PredictConfig, bool, uint32_t>(),
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("restore_best_weights"),
-           py::arg("patience"));
+           py::arg("predict_config"), py::arg("patience"),
+           py::arg("restore_best_weights"));
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,

@@ -45,10 +45,11 @@ def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
         .with_callbacks(
             [
                 bolt.graph.callbacks.EarlyStopValidation(
-                    validation_data=valid_data,
+                    validation_data=[valid_data],
                     validation_labels=valid_labels,
                     predict_config=predict_config,
                     patience=2,
+                    restore_best_weights=True,
                 )
             ]
         )

@@ -11,24 +11,28 @@ namespace thirdai::bolt {
 
 /**
  * This callback is intended to stop training early based on prediction results
- * from a given validation set. We give this callback a "patience" argument,
- * which tells us how many extra epochs we'll train for without beating our
- * previous best validation metric.
+ * from a given validation set.
  *
- * This callback always resets the model's weights at the end of training to use
- * its best checkpoint based on validation performance.
+ * To configure the stopping threshold we pass the "patience" argument which
+ * tells us how many extra epochs we'll train for without beating our previous
+ * best validation metric.
+ *
+ * This model will always save the best model checkpoint to a file on disk. If
+ * restore_best_weights is false it will also save the last model checkpoint.
+ * Otherwise it will reset the model to its best checkpoint. The default
+ * behavior is not to restore the best weights.
  */
 class EarlyStopValidation : public Callback {
  public:
   EarlyStopValidation(std::vector<dataset::BoltDatasetPtr> validation_data,
                       dataset::BoltDatasetPtr validation_labels,
-                      PredictConfig predict_config,
-                      bool restore_best_weights = false, uint32_t patience = 2)
+                      PredictConfig predict_config, uint32_t patience = 2,
+                      bool restore_best_weights = false)
       : _validation_data(std::move(validation_data)),
         _validation_labels(std::move(validation_labels)),
         _predict_config(std::move(predict_config)),
-        _restore_best_weights(restore_best_weights),
-        _patience(patience) {
+        _patience(patience),
+        _restore_best_weights(restore_best_weights) {
     uint32_t num_metrics = _predict_config.getMetricNames().size();
     if (num_metrics != 1) {
       throw std::invalid_argument(
@@ -96,8 +100,8 @@ class EarlyStopValidation : public Callback {
   std::vector<dataset::BoltDatasetPtr> _validation_data;
   dataset::BoltDatasetPtr _validation_labels;
   PredictConfig _predict_config;
-  bool _restore_best_weights;
   uint32_t _patience;
+  bool _restore_best_weights;
 
   bool _should_stop_training;
   uint32_t _epochs_since_best;
