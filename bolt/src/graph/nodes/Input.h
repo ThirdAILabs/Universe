@@ -3,6 +3,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/Datasets.h>
 #include <exceptions/src/Exceptions.h>
 #include <cstddef>
 #include <iomanip>
@@ -27,7 +28,7 @@ class Input final : public Node {
       : _compiled(false),
         _input_batch(nullptr),
         _expected_input_dim(expected_input_dim),
-        _average_batch_sparsity(std::nullopt),
+        _average_sparsity(1),
         _num_nonzeros_range(std::move(num_nonzeros_range)) {}
 
   // This class does not own this memory, but we pass it in as a pointer that
@@ -41,7 +42,6 @@ class Input final : public Node {
         /* origin_string = */
         "We found an Input BoltVector larger than the expected input dim");
     _input_batch = inputs;
-    cacheAverageBatchSparsity();
   }
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }
@@ -56,6 +56,13 @@ class Input final : public Node {
 
   void initOptimizer() final {
     throw std::logic_error("Should not call initOptimizer() on Input node");
+  }
+
+  float getAverageSparsity() const final { return _average_sparsity; }
+
+  void setAverageSparsity(const dataset::BoltDatasetPtr& input_dataset) {
+    _average_sparsity =
+        input_dataset->calculateAverageSparsity(_expected_input_dim);
   }
 
  private:
@@ -87,22 +94,6 @@ class Input final : public Node {
         "in the output of an Input layer.");
   }
 
-  float averageBatchSparsityImpl() const final {
-    assert(_average_batch_sparsity);
-    return _average_batch_sparsity.value();
-  }
-
-  void cacheAverageBatchSparsity() {
-    uint64_t total_num_nonzeros = 0;
-    for (uint64_t vec_id = 0; vec_id < _input_batch->getBatchSize(); vec_id++) {
-      total_num_nonzeros += (*_input_batch)[vec_id].len;
-    }
-    uint64_t total_dimension =
-        _expected_input_dim * _input_batch->getBatchSize();
-    _average_batch_sparsity =
-        total_num_nonzeros / static_cast<float>(total_dimension);
-  }
-
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     (void)labels;
     (void)vec_index;
@@ -119,10 +110,7 @@ class Input final : public Node {
     return (*_input_batch)[vec_index];
   }
 
-  void cleanupAfterBatchProcessingImpl() final {
-    _input_batch = nullptr;
-    _average_batch_sparsity = std::nullopt;
-  }
+  void cleanupAfterBatchProcessingImpl() final { _input_batch = nullptr; }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
@@ -181,7 +169,7 @@ class Input final : public Node {
   bool _compiled;
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
-  std::optional<float> _average_batch_sparsity;
+  float _average_sparsity = 1;
   std::optional<std::pair<uint32_t, uint32_t>> _num_nonzeros_range;
 };
 

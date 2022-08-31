@@ -123,6 +123,21 @@ class InMemoryDataset : public DatasetBase {
     oarchive(*this);
   }
 
+  // TODO(Nick): Calculate this and other statistics as we build the dataset
+  float calculateAverageSparsity(uint64_t data_dimension) {
+    uint64_t total_num_nonzeros = 0;
+    uint64_t total_dimension = 0;
+
+    for (const auto& batch : _batches) {
+      for (uint64_t vec_id = 0; vec_id < batch.getBatchSize(); vec_id++) {
+        total_num_nonzeros += batch[vec_id].len;
+      }
+      total_dimension += data_dimension * batch.getBatchSize();
+    }
+
+    return total_num_nonzeros / static_cast<float>(total_dimension);
+  }
+
   InMemoryDataset() : _len(0), _batch_size(0) {}
 
  private:

@@ -58,6 +58,14 @@ class DatasetContext final : public DatasetContextBase {
     }
   }
 
+  // We can have this just here and not DatasetContextBase since
+  // this is the only DatasetContext object used for training.
+  void setAverageSparsities(const std::vector<InputPtr>& inputs) {
+    for (uint32_t i = 0; i < inputs.size(); i++) {
+      inputs[i]->setAverageSparsity(_data[i]);
+    }
+  }
+
   uint64_t batchSize() const { return _all_dag_datasets.front()->batchSize(); }
 
   uint64_t batchSize(uint64_t batch_idx) const {

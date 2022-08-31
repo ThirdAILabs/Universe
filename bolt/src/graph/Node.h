@@ -99,14 +99,6 @@ class Node {
     backpropagateImpl(vec_index);
   }
 
-  // Does any neccesary interbatch updates (currently only used in
-  // FullyConnectedLayer, thus there is a default implementation of a NOOP).
-  // This does not change the NodeState.
-  inline void interbatchUpdate() {
-    assert(getState() == NodeState::PreparedForBatchProcessing);
-    interbatchUpdateImpl();
-  }
-
   // Updates any trainable parameters
   inline void updateParameters(float learning_rate, uint32_t batch_cnt) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
@@ -144,22 +136,15 @@ class Node {
   }
 
   /*
-   * Returns the average sparsity of the output for the current batch. For
+   * Returns the average sparsity of the output for the current dataset. For
    * the nodes where the output has a constant number of nonzeros for each input
    * vector, this will always be the value numNonzerosInOutputImpl() /
-   * static_cast<float>(outputDim()) (and averageBatchSparsityImpl has a
-   * default implementation to that effect). For nodes where the output has
+   * static_cast<float>(outputDim()). For nodes where the output has
    * a variable number of nonzeros for each input vector (currently only the
-   * Input node), this can be overridden with the calculated value.
+   * Input node), this method can be overridden with that calculated value.
    */
-  float averageBatchSparsity() const {
-    if (getState() != NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "Must call prepareForBatchProcessing before calling "
-          "averageBatchSparsity.");
-    }
-
-    return averageBatchSparsityImpl();
+  virtual float getAverageSparsity() const {
+    return numNonzerosInOutputImpl() / static_cast<float>(outputDim());
   }
 
   /*
@@ -271,15 +256,9 @@ class Node {
 
   virtual uint32_t numNonzerosInOutputImpl() const = 0;
 
-  virtual float averageBatchSparsityImpl() const {
-    return numNonzerosInOutputImpl() / static_cast<float>(outputDim());
-  }
-
   virtual void forwardImpl(uint32_t vec_index, const BoltVector* labels) = 0;
 
   virtual void backpropagateImpl(uint32_t vec_index) = 0;
-
-  virtual void interbatchUpdateImpl(){};
 
   virtual void updateParametersImpl(float learning_rate,
                                     uint32_t batch_cnt) = 0;

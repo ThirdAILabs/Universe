@@ -65,6 +65,8 @@ MetricData BoltGraph::train(
 
   verifyCanTrain(train_context);
 
+  train_context.setAverageSparsities(_inputs);
+
   uint32_t rebuild_hash_tables_batch =
       train_config.getRebuildHashTablesBatchInterval(train_context.batchSize(),
                                                      train_context.len());
@@ -147,8 +149,6 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
       /* num_nonzeros_range = */ std::nullopt,
       /* origin_string = */
       "Passed in label BoltVector is larger than the output dim");
-
-  interbatchUpdate();
 
 #pragma omp parallel for default(none) shared(batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
@@ -445,12 +445,6 @@ void BoltGraph::backpropagate(uint32_t vec_index) {
   for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
     // std::cout << "NodeName = " << (*node_itr)->name() << std::endl;
     (*node_itr)->backpropagate(vec_index);
-  }
-}
-
-void BoltGraph::interbatchUpdate() {
-  for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
-    (*node_itr)->interbatchUpdate();
   }
 }
 
