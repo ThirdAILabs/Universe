@@ -1,6 +1,5 @@
 #include "CompressedVector.h"
 #include <hashing/src/UniversalHash.h>
-#include <_types/_uint32_t.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cmath>
@@ -27,11 +26,11 @@ DragonVector<T>::DragonVector(const std::vector<T>& vector_to_compress,
 
 template <class T>
 DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
-                              std::vector<T> values, uint32_t original_size,
+                              std::vector<T> values, uint32_t uncompressed_size,
                               uint32_t seed_for_hashing)
     : _indices(std::move(indices)),
       _values(std::move(values)),
-      _original_size(original_size),
+      _uncompressed_size(uncompressed_size),
       _seed_for_hashing(seed_for_hashing) {}
 
 template <class T>
@@ -39,7 +38,7 @@ DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
                               float compression_density,
                               uint32_t seed_for_hashing,
                               uint32_t sample_population_size)
-    : _original_size(size),
+    : _uncompressed_size(size),
       _compression_density(compression_density),
       _seed_for_hashing(seed_for_hashing) {
   uint32_t sketch_size =
@@ -52,9 +51,9 @@ DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
   // First calculate an approximate top-k threshold. Then, we sketch the
   // original vector to a smaller dragon vector
 
-  T threshold = thresholdForTopK(values_to_compress, size, compression_density,
-                                 /*seed_for_sampling=*/seed_for_hashing,
-                                 sample_population_size);
+  T threshold = estimateTopKThreshold(
+      values_to_compress, size, compression_density,
+      /*seed_for_sampling=*/seed_for_hashing, sample_population_size);
   sketch(values_to_compress, threshold, size, sketch_size);
 }
 
@@ -105,7 +104,7 @@ void DragonVector<T>::set(uint32_t index, T value) {
 
 template <class T>
 void DragonVector<T>::clear() {
-  _original_size = 0;
+  _uncompressed_size = 0;
   _compression_density = 1;
   _values.clear();
   _indices.clear();
@@ -131,12 +130,12 @@ void DragonVector<T>::extend(const DragonVector<T>& vec) {
                   std::end(vec._indices));
   _values.insert(std::end(_values), std::begin(vec._values),
                  std::end(vec._values));
-  //_original_size remains the same
+  //_uncompressed_size remains the same
 }
 
 template <class T>
 std::vector<T> DragonVector<T>::decompress() const {
-  std::vector<T> decompressedVector(_original_size, 0);
+  std::vector<T> decompressedVector(_uncompressed_size, 0);
   uint32_t sketch_size = static_cast<uint32_t>(_indices.size());
   for (uint32_t i = 0; i < sketch_size; i++) {
     decompressedVector[_indices[i]] += _values[i];

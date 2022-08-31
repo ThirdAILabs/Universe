@@ -10,6 +10,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -52,9 +53,8 @@ class ParameterReference {
       ParameterArray new_array = py::cast<ParameterArray>(new_params);
       checkNumpyArrayDimensions(_dimensions, new_params);
       std::copy(new_array.data(), new_array.data() + _total_dim, _params);
-    } else {
+    } else if (py::isinstance<py::dict>(new_params)) {
       using CompressedVector = thirdai::compression::CompressedVector<float>;
-
       std::unique_ptr<CompressedVector> compressed_vector =
           thirdai::compression::python::convertPyDictToCompressedVector(
               new_params);
@@ -62,6 +62,9 @@ class ParameterReference {
       std::vector<float> full_gradients = compressed_vector->decompress();
       std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
                 _params);
+    } else {
+      throw std::invalid_argument(
+          "Cannot set parameters from an unsupported Python datatype");
     }
   }
 

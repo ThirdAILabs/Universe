@@ -11,17 +11,19 @@ namespace thirdai::compression {
 /*
  * Rather than getting an exact threshold, we sample a number of points from the
  * values array and gets an estimate for topk.
- * If top_k = 0.1 => threshold will return a value which is larger than 90% of
- * the values.
+ * If threshold_ratio = 0.1 => estimateTopKThreshold will return a value which
+ * is larger than 90% of the values.
  */
 template <class T>
-inline T thresholdForTopK(const T* values, uint32_t size, float top_k,
-                          uint32_t seed_for_sampling,
-                          uint32_t sample_population_size) {
+inline T estimateTopKThreshold(const T* values, uint32_t size,
+                               float threshold_ratio,
+                               uint32_t seed_for_sampling,
+                               uint32_t sample_population_size) {
   // sample_population_size is the total number of random samples we take for
   // estimating a threshold for the values
 
-  uint32_t top_k_index = static_cast<uint32_t>(sample_population_size * top_k);
+  uint32_t num_top_k =
+      static_cast<uint32_t>(sample_population_size * threshold_ratio);
 
   std::vector<T> sampled_values(sample_population_size, 0);
 
@@ -31,14 +33,15 @@ inline T thresholdForTopK(const T* values, uint32_t size, float top_k,
     sampled_values[i] = std::abs(values[distribution(gen)]);
   }
 
-  std::nth_element(
-      sampled_values.begin(),
-      sampled_values.begin() + sample_population_size - top_k_index,
-      sampled_values.end());
+  // This is Quickselect. We can find the i'th largest element using
+  // nth_element, which is exactly what we need to do now
+  std::nth_element(sampled_values.begin(),
+                   sampled_values.begin() + sample_population_size - num_top_k,
+                   sampled_values.end());
 
   // threshold is an estimate for the kth largest element in the gradients
   // matrix
-  T threshold = sampled_values[sample_population_size - top_k_index];
+  T threshold = sampled_values[sample_population_size - num_top_k];
   return threshold;
 }
 
