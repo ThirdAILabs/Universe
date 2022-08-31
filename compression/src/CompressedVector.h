@@ -62,13 +62,13 @@ class DragonVector final : public CompressedVector<T> {
    * is important when we want to decompress a vector.
    */
   DragonVector(const std::vector<T>& vector_to_compress,
-               float compression_density, int seed_for_hashing);
+               float compression_density, uint32_t seed_for_hashing);
 
   DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
-               uint32_t original_size, int seed_for_hashing);
+               uint32_t original_size, uint32_t seed_for_hashing);
 
   DragonVector(const T* values_to_compress, uint32_t size,
-               float compression_density, int seed_for_hashing);
+               float compression_density, uint32_t seed_for_hashing);
 
   /*
    * Implementing std::vector's standard methods for the class
@@ -134,15 +134,15 @@ class DragonVector final : public CompressedVector<T> {
 template <class T>
 inline std::unique_ptr<CompressedVector<T>> compress(
     const std::vector<T>& values, const std::string& compression_scheme = "",
-    float compression_density = 1, int seed_for_hashing = 0) {
+    float compression_density = 1, uint32_t seed_for_hashing = 0) {
   return compress(values.data(), static_cast<uint32_t>(values.size()),
                   compression_scheme, compression_density, seed_for_hashing);
 }
 
 template <class T>
 inline std::unique_ptr<CompressedVector<T>> compress(
-    const T* values, uint32_t size, const std::string& compression_scheme = "",
-    float compression_density = 1, int seed_for_hashing = 0) {
+    const T* values, uint32_t size, const std::string& compression_scheme,
+    float compression_density, uint32_t seed_for_hashing) {
   if (compression_scheme == "dragon") {
     return std::make_unique<DragonVector<T>>(values, size, compression_density,
                                              seed_for_hashing);

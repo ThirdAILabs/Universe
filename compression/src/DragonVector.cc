@@ -16,7 +16,8 @@ namespace thirdai::compression {
 
 template <class T>
 DragonVector<T>::DragonVector(const std::vector<T>& vector_to_compress,
-                              float compression_density, int seed_for_hashing)
+                              float compression_density,
+                              uint32_t seed_for_hashing)
     : DragonVector(vector_to_compress.data(),
                    static_cast<uint32_t>(vector_to_compress.size()),
                    compression_density, seed_for_hashing) {}
@@ -24,7 +25,7 @@ DragonVector<T>::DragonVector(const std::vector<T>& vector_to_compress,
 template <class T>
 DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
                               std::vector<T> values, uint32_t original_size,
-                              int seed_for_hashing)
+                              uint32_t seed_for_hashing)
     : _indices(std::move(indices)),
       _values(std::move(values)),
       _original_size(original_size),
@@ -32,7 +33,8 @@ DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
 
 template <class T>
 DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
-                              float compression_density, int seed_for_hashing)
+                              float compression_density,
+                              uint32_t seed_for_hashing)
     : _original_size(size),
       _compression_density(compression_density),
       _seed_for_hashing(seed_for_hashing) {
@@ -79,11 +81,6 @@ void DragonVector<T>::sketchVector(const T* values, T threshold, uint32_t size,
  * Implementing std::vector's standard methods for the class
  */
 
-/*
- * Both get and set methods should check that the dragon vector isn't empty,
- * index<_original_size. Errors thrown are similar to what std::vector would
- * thrown on incorrect accesses.
- */
 template <class T>
 T DragonVector<T>::get(uint32_t index) const {
   uint32_t sketch_size = _indices.size();
