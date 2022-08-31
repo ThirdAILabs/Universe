@@ -22,6 +22,10 @@ namespace thirdai::bolt {
  *       ...                                        X
  *      emb_n |
  *
+ * If the embedding layer uses concatenation then ideally the fully connected
+ * layer will have a dimension that is the same as the dimension of the
+ * embedding for each token.
+ *
  * The the number of pairwise combinations of interest is (n+1)n/2, meaning the
  * output of the layer is (n+1)n/2.
  */
