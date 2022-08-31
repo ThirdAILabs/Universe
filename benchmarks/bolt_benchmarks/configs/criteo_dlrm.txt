@@ -10,6 +10,7 @@ rebuild_hash_tables = 128000
 learning_rate = 0.0001
 loss_fn = "CategoricalCrossEntropyLoss"
 test_metrics = ["categorical_accuracy"]
+compute_roc_auc = true
 
 [[datasets]]
 format = "click"
@@ -29,6 +30,10 @@ max_num_numerical_features = 15
 max_categorical_features = 23
 delimiter = " "
 
+[[datasets]]
+format = "click_labels"
+type_list = ["test_labels_np"]
+path = "criteo-small/test_shuf.txt"
 
 [[nodes]]
 type = "Input"

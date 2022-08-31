@@ -11,6 +11,7 @@ from utils import (
     config_get,
 )
 from thirdai import bolt, dataset
+import numpy as np
 
 
 def main():
@@ -85,6 +86,7 @@ def load_all_datasets(dataset_config):
         "train_labels": [],
         "test_data": [],
         "test_labels": [],
+        "test_labels_np": []
     }
 
     all_dataset_configs = config_get(dataset_config, "datasets")
@@ -96,6 +98,8 @@ def load_all_datasets(dataset_config):
             loaded_datasets = load_svm_dataset(single_dataset_config)
         elif format == "click":
             loaded_datasets = load_click_through_dataset(single_dataset_config)
+        elif format == "click_labels":
+            loaded_datasets = load_click_through_labels(single_dataset_config)
         elif format == "mlm_with_tokens":
             loaded_datasets = load_mlm_datasets(
                 single_dataset_config, return_tokens=True
@@ -127,14 +131,8 @@ def load_all_datasets(dataset_config):
         )
     result["train_labels"] = result["train_labels"][0]
 
-    if len(result["test_labels"]) == 1:
-        result["test_labels"] = result["test_labels"][0]
-    elif len(result["test_labels"]) == 0:
-        result["test_labels"] = None
-    else:
-        raise ValueError(
-            f"Must have 0 or 1 test label datasets but found {len(result['test_labels'])} test_labels."
-        )
+    check_test_labels(result, "test_labels")
+    check_test_labels(result, "test_labels_np")
 
     return result
 
@@ -142,6 +140,8 @@ def load_all_datasets(dataset_config):
 def run_experiment(model, datasets, experiment_config, use_mlflow):
     num_epochs, train_config = load_train_config(experiment_config)
     predict_config = load_predict_config(experiment_config)
+    if should_compute_roc_auc(experiment_config):
+        predict_config.return_activations()
 
     for epoch_num in range(num_epochs):
 
@@ -158,21 +158,24 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         if use_mlflow:
             log_single_epoch_training_metrics(train_metrics)
 
-        predict_metrics = model.predict(
+        predict_output = model.predict(
             test_data=datasets["test_data"],
             test_labels=datasets["test_labels"],
             predict_config=predict_config,
         )
         if use_mlflow:
-            log_prediction_metrics(predict_metrics)
+            log_prediction_metrics(predict_output[0])
 
-        # TODO(Nick): Should we compute auc for criteo?
+        if should_compute_roc_auc(experiment_config):
+            compute_roc_auc(predict_output, datasets=datasets)
 
     if "save" in experiment_config.keys():
         model.save(config_get(experiment_config, "save"))
 
 
 def get_sampling_config(layer_config):
+    if layer_config.get("use_random_sampling", False):
+        return bolt.RandomSamplingConfig()
     return bolt.SamplingConfig(
         hashes_per_table=config_get(layer_config, "hashes_per_table"),
         num_tables=config_get(layer_config, "num_tables"),
@@ -276,6 +279,16 @@ def get_loss(model_config):
     raise ValueError(f"{loss_string} is not a valid loss function.")
 
 
+def check_test_labels(datasets_map, key):
+    if len(datasets_map[key]) == 1:
+        datasets_map[key] = datasets_map[key][0]
+    elif len(datasets_map[key]) == 0:
+        datasets_map[key] = None
+    else:
+        raise ValueError(
+            f"Must have 0 or 1 test label datasets but found {len(datasets_map[key])} test_labels."
+        )
+
 def load_svm_dataset(dataset_config):
     dataset_path = find_full_filepath(config_get(dataset_config, "path"))
     return dataset.load_bolt_svm_dataset(
@@ -294,6 +307,13 @@ def load_click_through_dataset(dataset_config):
         max_categorical_features=config_get(dataset_config, "max_categorical_features"),
         delimiter=config_get(dataset_config, "delimiter"),
     )
+
+def load_click_through_labels(dataset_config):
+    dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+    with open(dataset_path) as file:
+        return [np.array([
+            int(line[0]) for line in file.readlines()
+        ])]
 
 
 def load_mlm_datasets(dataset_config, return_tokens):
@@ -362,6 +382,36 @@ def switch_to_sparse_inference_if_needed(
         print(f"Switching to sparse inference on epoch {current_epoch}")
         predict_config.enable_sparse_inference()
 
+def should_compute_roc_auc(experiment_config):
+    return experiment_config.get("compute_roc_auc", False)
+
+def compute_roc_auc(predict_output, datasets):
+    if datasets["test_labels_np"] is None:
+        raise ValueError("Cannot compute roc_auc without test_labels_np specified.")
+
+    if len(predict_output) != 2:
+        raise ValueError("Cannot compute roc_auc without dense activations.")
+
+    labels = datasets["test_labels_np"]
+    activations = predict_output[1]
+
+    if len(activations) != len(labels):
+        raise ValueError(f"Length of activations must match length of test_labels_np to compute roc_auc.")
+    
+    if len(activations.shape) == 1:
+        scores = activations
+    elif len(activations.shape) == 2 and activations.shape[1] == 2:
+        scores = activations[:, 1]
+    elif len(activations.shape) == 2 and activations.shape[1] == 1:
+        scores = activations[:, 0]
+    else:
+        raise ValueError("Activations must have shape (n,), (n,1), or (n,2) to compute roc_auc.")
+
+    from sklearn.metrics import roc_auc_score
+
+    roc_auc = roc_auc_score(labels, scores)
+    print(f"roc_auc = {roc_auc}")
+    log_prediction_metrics({"roc_auc" : roc_auc})
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(
