@@ -10,6 +10,29 @@ import numpy as np
 from typing import Any, Dict
 from sklearn.datasets import load_svmlight_file
 
+def add_mlflow_args(parser):
+    parser.add_argument(
+        "config_path",
+        type=str,
+        help="Path to a config file containing the dataset, experiment, and model configs.",
+    )
+    parser.add_argument(
+        "--disable_mlflow",
+        action="store_true",
+        help="Disable mlflow logging for the current run.",
+    )
+    parser.add_argument(
+        "--disable_upload_artifacts",
+        action="store_true",
+        help="Disable the mlflow artifact file logging for the current run.",
+    )
+    parser.add_argument(
+        "--run_name",
+        default="",
+        type=str,
+        help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
+    )
+
 
 def start_mlflow(config, mlflow_args):
     if not mlflow_args.disable_mlflow:
@@ -56,12 +79,26 @@ def verify_mlflow_args(parser, mlflow_args):
         raise ValueError("Error: --run_name is required when using mlflow logging.")
 
 
+def load_config(args):
+    return toml.load(args.config_path)
+
+
+def mlflow_is_enabled(args):
+    return not args.disable_mlflow
+
+
 def config_get(config, field):
     if field not in config:
         raise ValueError(
             f'The field "{field}" was expected to be in "{config}" but was not found.'
         )
     return config[field]
+
+
+def config_get_or(config, field, default):
+    if field in config:
+        return config[field]
+    return default
 
 
 def log_machine_info():

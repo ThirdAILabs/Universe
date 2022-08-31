@@ -1,5 +1,6 @@
 #include "AutoClassifierBase.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <string>
 
 #if defined __linux
 #include <sys/sysinfo.h>
@@ -20,9 +21,16 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
   uint32_t hidden_layer_size =
       getHiddenLayerSize(model_size, n_classes, input_dim);
 
+  _hyper_parameters["hidden_layer_size"] = std::to_string(hidden_layer_size);
+
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
+  _hyper_parameters["hidden_layer_sparsity"] =
+      std::to_string(hidden_layer_sparsity);
+
   auto input_layer = std::make_shared<Input>(input_dim);
+
+  _hyper_parameters["input_dim"] = std::to_string(input_dim);
 
   auto hidden_layer = std::make_shared<FullyConnectedNode>(
       /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
@@ -33,12 +41,16 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
   auto output_layer = std::make_shared<FullyConnectedNode>(
       /* dim= */ n_classes, /* activation= */ "softmax");
 
+  _hyper_parameters["output_layer_size"] = std::to_string(n_classes);
+  _hyper_parameters["output_layer_activation"] = "softmax";
+
   output_layer->addPredecessor(hidden_layer);
 
   _model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
                                        output_layer);
 
   _model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
+  _hyper_parameters["loss"] = "categorical_cross_entropy_loss";
 }
 
 void AutoClassifierBase::train(
