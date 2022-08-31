@@ -187,23 +187,14 @@ class FullyConnectedNode final
   }
 
   void enableSparseSparseOptimization() {
-    if (getState() != NodeState::PreparedForBatchProcessing &&
-        getState() != NodeState::Compiled) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call enable_sparse_sparse_optimization before compiling this "
-          "node");
+    // Exactly one of _config and _layer is guarenteed to have a value.
+    // Implementing an enableSparseSparseOptimization method in both places
+    // allows us to set it at any time (even before compilation).
+    if (_config.has_value()) {
+      _config->enableSparseSparseOptimization();
+    } else {
+      _layer->enableSparseSparseOptimization();
     }
-    _layer->enableSparseSparseOptimization();
-  }
-
-  void disableSparseSparseOptimization() {
-    if (getState() != NodeState::PreparedForBatchProcessing &&
-        getState() != NodeState::Compiled) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call disable_sparse_sparse_optimization before compiling the "
-          "graph");
-    }
-    _layer->disableSparseSparseOptimization();
   }
 
   static std::shared_ptr<FullyConnectedNode> make(uint32_t dim,

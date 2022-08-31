@@ -31,7 +31,8 @@ FullyConnectedLayer::FullyConnectedLayer(
       _biases(config.getDim()),
       _is_distributed(is_distributed),
       _sampling_mode(BoltSamplingMode::LSH),
-      _use_sparse_sparse_optimization(false),
+      _use_sparse_sparse_optimization(
+          config.shouldUseSparseSparseOptimization()),
       _prev_is_active(_prev_dim, false),
       _is_active(config.getDim(), false) {
   std::random_device rd;
@@ -881,6 +882,10 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
       summary << " (hash_function=" << _hasher->getName() << ", ";
       _hash_table->summarize(summary);
       summary << ")";
+    }
+
+    if (_use_sparse_sparse_optimization) {
+      summary << ", sparse-sparse optimization enabled";
     }
   }
 

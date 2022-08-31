@@ -130,9 +130,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           py::return_value_policy::reference,
           "Returns a ParameterReference object to the bias gradients vector.")
       .def("enable_sparse_sparse_optimization",
-           &FullyConnectedNode::enableSparseSparseOptimization)
-      .def("disable_sparse_sparse_optimization",
-           &FullyConnectedNode::disableSparseSparseOptimization);
+           &FullyConnectedNode::enableSparseSparseOptimization);
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
