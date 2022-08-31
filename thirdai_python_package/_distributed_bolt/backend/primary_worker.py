@@ -151,8 +151,5 @@ class PrimaryWorker(Worker):
         Returns:
             __type__: return a list of weight and bias
         """
-
-        print("Updating weights & bias parameters across nodes")
-
         self.weights_biases = self.return_params()
         return self.weights_biases
