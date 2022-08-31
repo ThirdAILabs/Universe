@@ -47,7 +47,7 @@ void EmbeddingLayer::forward(uint32_t vec_index, const BoltVector& tokens,
                              BoltVector& output) {
   assert(output.len == _total_embedding_dim);
   assert(_reduction == EmbeddingReductionType::SUM ||
-         _num_tokens_per_input.value() == tokens.size());
+         _num_tokens_per_input.value() == tokens.len);
   assert(output.active_neurons == nullptr);
 
   if (_reduction == EmbeddingReductionType::SUM) {
