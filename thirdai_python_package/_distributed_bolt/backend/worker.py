@@ -7,7 +7,6 @@ from thirdai._distributed_bolt._models.fully_connected_network_model import (
 )
 
 
-
 class Worker:
     """This is a ray remote class(Actor). Read about them here.
     (https://docs.ray.io/en/latest/ray-core/actors.html)

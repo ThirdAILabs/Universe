@@ -95,7 +95,12 @@ class FullyConnectedNetwork(DistributedBolt):
             if num_cpus_per_node <= num_cpus:
                 num_cpus = num_cpus_per_node
             else:
-                raise ValueError("Argument num_cpus_per_node=",num_cpus_per_node, "could not be greater than number of cpus on machine, which is", num_cpus)
+                raise ValueError(
+                    "Argument num_cpus_per_node=",
+                    num_cpus_per_node,
+                    "could not be greater than number of cpus on machine, which is",
+                    num_cpus,
+                )
 
         # max_concurrency here, indicates the number of threads
         # that this particular worker can run. Setting it a large value like
