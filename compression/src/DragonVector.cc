@@ -115,11 +115,6 @@ void DragonVector<T>::clear() {
  */
 
 template <class T>
-bool DragonVector<T>::isAdditive() const {
-  return false;
-}
-
-template <class T>
 void DragonVector<T>::extend(const DragonVector<T>& vec) {
   /*
    * We should not check whether the seeds for hashing are the same for the two

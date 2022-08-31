@@ -25,16 +25,8 @@ class CompressedVector {
   // methods for the compressed_vector class
 
   /*
-   * Count sketches, count-min sketches are additive in nature. Others are not.
-   * All the derived compression schemes should implement this function so that
-   * we do not add two non-additive count sketches.
-   */
-  virtual bool isAdditive() const = 0;
-
-  /*
    * Extending a sketch is appending the given sketch to the current object.
-   * Similar to additiveness, not all sketches are extendible for e.g.,
-   * count-sketches.
+   * Each compressed vector type will have its own logic for extending
    */
   void extend(const CompressedVector<T>& vec);
 
@@ -75,6 +67,8 @@ class DragonVector final : public CompressedVector<T> {
    * Implementing std::vector's standard methods for the class
    */
 
+  // index refers to the index in the uncompressed_vector
+
   T get(uint32_t index) const final;
 
   void set(uint32_t index, T value) final;
@@ -85,24 +79,26 @@ class DragonVector final : public CompressedVector<T> {
    * Implementing utility methods for the class
    */
 
+  /*
+   * Extending a DragonVector by another is simply concatenating the indices and
+   * values vectors of the two. Extend is non-lossy in nature as all the hashed
+   * indices and values pairs are present. In contrast, add is lossy in nature
+   * but is all-reducible.
+   * Hence, there is a tradeoff:
+   *  extend: non-lossy but more memory
+   *  add: lossy but memory footprint does not change.
+   */
   void extend(const DragonVector<T>& vec);
 
-  /*
-   * Dragon vectors are not additive by default. But we can still define schemes
-   * to add them up.
-   */
+  std::vector<uint32_t> indices() { return _indices; }
 
-  bool isAdditive() const final;
+  std::vector<T> values() { return _values; }
 
-  std::vector<uint32_t> getIndices() { return _indices; }
+  int seedForHashing() const { return _seed_for_hashing; }
 
-  std::vector<T> getValues() { return _values; }
+  uint32_t uncompressedSize() const { return _uncompressed_size; }
 
-  int getSeedForHashing() const { return _seed_for_hashing; }
-
-  uint32_t getOriginalSize() const { return _uncompressed_size; }
-
-  float getCompressionDensity() const { return _compression_density; }
+  float compressionDensity() const { return _compression_density; }
 
   uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
 

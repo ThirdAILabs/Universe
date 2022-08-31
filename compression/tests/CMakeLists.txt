@@ -1,7 +1,6 @@
 enable_testing()
 
 add_executable(dragon_vector_test DragonVectorTest.cc)
-
 target_link_libraries(
 	dragon_vector_test
 	PRIVATE
@@ -10,4 +9,11 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(dragon_vector_test)
+
+set(COMPRESSION_TESTS
+	dragon_vector_test
+)
+
+foreach(COMPRESSION_TEST IN LISTS COMPRESSION_TESTS)
+	gtest_discover_tests(${COMPRESSION_TEST} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+endforeach()
