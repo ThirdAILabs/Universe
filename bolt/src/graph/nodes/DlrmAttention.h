@@ -70,9 +70,13 @@ class DlrmAttentionNode final
 
     uint32_t output_dim = (num_embedding_chunks + 1) * num_embedding_chunks / 2;
 
+    uint32_t embedding_chunk_size =
+        _embedding_node->outputDim() / num_embedding_chunks;
+
     _compiled_state = CompiledState(
         /* num_embedding_chunks= */ num_embedding_chunks,
-        /* output_dim= */ output_dim);
+        /* output_dim= */ output_dim,
+        /* embedding_chunk_size= */ embedding_chunk_size);
   }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -102,19 +106,20 @@ class DlrmAttentionNode final
     // Compute interactions between outputs of fully connected layer and
     // embeddings.
 
-    uint32_t embedding_chunk_size =
-        embedding_output.len / _compiled_state->_num_embedding_chunks;
+    uint32_t embedding_chunk_size = _compiled_state->_embedding_chunk_size;
 
     for (uint32_t emb_idx = 0; emb_idx < _compiled_state->_num_embedding_chunks;
          emb_idx++) {
       if (fc_output.isDense()) {
-        output_vector.activations[emb_idx] = fcOutputEmbeddingDotProduct<true>(
-            fc_output,
-            embedding_output.activations + emb_idx * embedding_chunk_size);
+        output_vector.activations[emb_idx] =
+            fcOutputEmbeddingDotProduct</* FC_OUTPUT_DENSE= */ true>(
+                fc_output,
+                embedding_output.activations + emb_idx * embedding_chunk_size);
       } else {
-        output_vector.activations[emb_idx] = fcOutputEmbeddingDotProduct<false>(
-            fc_output,
-            embedding_output.activations + emb_idx * embedding_chunk_size);
+        output_vector.activations[emb_idx] =
+            fcOutputEmbeddingDotProduct</* FC_OUTPUT_DENSE= */ false>(
+                fc_output,
+                embedding_output.activations + emb_idx * embedding_chunk_size);
       }
     }
 
@@ -144,8 +149,7 @@ class DlrmAttentionNode final
 
     BoltVector& output_vector = (*_outputs)[vec_index];
 
-    uint32_t embedding_chunk_size =
-        embedding_output.len / _compiled_state->_num_embedding_chunks;
+    uint32_t embedding_chunk_size = _compiled_state->_embedding_chunk_size;
 
     for (uint32_t emb_idx = 0; emb_idx < _compiled_state->_num_embedding_chunks;
          emb_idx++) {
@@ -156,10 +160,10 @@ class DlrmAttentionNode final
       float* embedding_grad = embedding_output.gradients + embedding_offset;
 
       if (fc_output.isDense()) {
-        fcOutputEmbeddingDotProductBackward<true>(
+        fcOutputEmbeddingDotProductBackward</* FC_OUTPUT_DENSE= */ true>(
             dot_product_gradient, fc_output, embedding, embedding_grad);
       } else {
-        fcOutputEmbeddingDotProductBackward<false>(
+        fcOutputEmbeddingDotProductBackward</* FC_OUTPUT_DENSE= */ false>(
             dot_product_gradient, fc_output, embedding, embedding_grad);
       }
     }
@@ -234,24 +238,25 @@ class DlrmAttentionNode final
   }
 
  private:
-  template <bool DENSE>
+  template <bool FC_OUTPUT_DENSE>
   static float fcOutputEmbeddingDotProduct(const BoltVector& fc_output,
                                            const float* const embedding) {
     float total = 0.0;
     for (uint32_t i = 0; i < fc_output.len; i++) {
       total += fc_output.activations[i] *
-               embedding[fc_output.activeNeuronAtIndex<DENSE>(i)];
+               embedding[fc_output.activeNeuronAtIndex<FC_OUTPUT_DENSE>(i)];
     }
     return total;
   }
 
-  template <bool DENSE>
+  template <bool FC_OUTPUT_DENSE>
   static void fcOutputEmbeddingDotProductBackward(float dot_product_gradient,
                                                   const BoltVector& fc_output,
                                                   const float* const embedding,
                                                   float* const emb_gradient) {
     for (uint32_t i = 0; i < fc_output.len; i++) {
-      uint32_t active_neuron = fc_output.activeNeuronAtIndex<DENSE>(i);
+      uint32_t active_neuron =
+          fc_output.activeNeuronAtIndex<FC_OUTPUT_DENSE>(i);
       fc_output.gradients[i] = dot_product_gradient * embedding[active_neuron];
       emb_gradient[active_neuron] =
           dot_product_gradient * fc_output.activations[i];
@@ -283,12 +288,15 @@ class DlrmAttentionNode final
   EmbeddingNodePtr _embedding_node;
 
   struct CompiledState {
-    explicit CompiledState(uint32_t num_embedding_chunks, uint32_t output_dim)
+    explicit CompiledState(uint32_t num_embedding_chunks, uint32_t output_dim,
+                           uint32_t embedding_chunk_size)
         : _num_embedding_chunks(num_embedding_chunks),
-          _output_dim(output_dim) {}
+          _output_dim(output_dim),
+          _embedding_chunk_size(embedding_chunk_size) {}
 
     uint32_t _num_embedding_chunks;
     uint32_t _output_dim;
+    uint32_t _embedding_chunk_size;
   };
   std::optional<CompiledState> _compiled_state;
 
