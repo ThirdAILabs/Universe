@@ -4,7 +4,6 @@
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <dataset/src/Datasets.h>
-#include <fstream>
 #include <functional>
 #include <limits>
 
@@ -76,7 +75,6 @@ class EarlyStopValidation : public Callback {
     (void)train_config;
     if (_restore_best_weights) {
       model = *BoltGraph::load(BEST_MODEL_SAVE_LOCATION);
-      std::remove(BEST_MODEL_SAVE_LOCATION);
     } else {
       model.save(LAST_MODEL_SAVE_LOCATION);
     }

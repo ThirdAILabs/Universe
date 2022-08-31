@@ -105,7 +105,7 @@ class DatasetContext final : public DatasetContextBase {
 
   std::vector<dataset::BoltDatasetPtr> _data;
   dataset::BoltDatasetPtr _labels;
-  dataset::DatasetBaseList _all_dag_datasets;
+  std::vector<dataset::DatasetBasePtr> _all_dag_datasets;
 };
 
 /**

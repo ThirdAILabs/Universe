@@ -521,20 +521,10 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
   py::class_<EarlyStopValidation, EarlyStopValidationPtr, Callback>(
       callbacks_submodule, "EarlyStopValidation")
       .def(py::init<std::vector<dataset::BoltDatasetPtr>,
-                    dataset::BoltDatasetPtr, PredictConfig, uint32_t>(),
+                    dataset::BoltDatasetPtr, PredictConfig, bool, uint32_t>(),
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("patience"))
-      // Helper method that covers the common case of training based off of a
-      // single BoltBatch dataset
-      .def(py::init([](dataset::BoltDatasetPtr validation_data,
-                       dataset::BoltDatasetPtr validation_labels,
-                       PredictConfig predict_config, uint32_t patience) {
-             return EarlyStopValidation({std::move(validation_data)},
-                                        std::move(validation_labels),
-                                        std::move(predict_config), patience);
-           }),
-           py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("patience"));
+           py::arg("predict_config"), py::arg("restore_best_weights"),
+           py::arg("patience"));
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
