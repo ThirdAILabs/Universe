@@ -128,10 +128,6 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
-  void checkpointInMemory() { _layer->checkpointInMemory(); }
-
-  void loadCheckpointFromMemory() { _layer->loadCheckpointFromMemory(); }
-
   float getSparsity() {
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||

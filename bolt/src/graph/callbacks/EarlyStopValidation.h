@@ -4,6 +4,7 @@
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <dataset/src/Datasets.h>
+#include <fstream>
 #include <functional>
 #include <limits>
 
@@ -22,11 +23,13 @@ class EarlyStopValidation : public Callback {
  public:
   EarlyStopValidation(std::vector<dataset::BoltDatasetPtr> validation_data,
                       dataset::BoltDatasetPtr validation_labels,
-                      PredictConfig predict_config, uint32_t patience = 2)
+                      PredictConfig predict_config,
+                      bool restore_best_weights = false, uint32_t patience = 2)
       : _validation_data(std::move(validation_data)),
         _validation_labels(std::move(validation_labels)),
-        _patience(patience),
-        _predict_config(std::move(predict_config)) {
+        _predict_config(std::move(predict_config)),
+        _restore_best_weights(restore_best_weights),
+        _patience(patience) {
     uint32_t num_metrics = _predict_config.getMetricNames().size();
     if (num_metrics != 1) {
       throw std::invalid_argument(
@@ -45,11 +48,10 @@ class EarlyStopValidation : public Callback {
     // setting these onTrainBegin allows callback instances to be reused
     _epochs_since_best = 0;
     _should_stop_training = false;
-    _should_minimize =
-        MetricUtils::getMetricByName(metric_name)->smallerIsBetter();
-    _best_validation_metric = _should_minimize
-                                  ? std::numeric_limits<double>::min()
-                                  : std::numeric_limits<double>::max();
+    _should_minimize = makeMetric(metric_name)->smallerIsBetter();
+    _best_validation_score = _should_minimize
+                                 ? std::numeric_limits<double>::min()
+                                 : std::numeric_limits<double>::max();
   }
 
   void onEpochEnd(BoltGraph& model, TrainConfig& train_config) final {
@@ -62,9 +64,9 @@ class EarlyStopValidation : public Callback {
 
     _epochs_since_best++;
     if (isImprovement(metric_val)) {
-      _best_validation_metric = metric_val;
+      _best_validation_score = metric_val;
       _epochs_since_best = 0;
-      model.checkpointInMemory();
+      model.save(BEST_MODEL_SAVE_LOCATION);
     } else if (_epochs_since_best == _patience) {
       _should_stop_training = true;
     }
@@ -72,7 +74,12 @@ class EarlyStopValidation : public Callback {
 
   void onTrainEnd(BoltGraph& model, TrainConfig& train_config) final {
     (void)train_config;
-    model.loadCheckpointFromMemory();
+    if (_restore_best_weights) {
+      model = *BoltGraph::load(BEST_MODEL_SAVE_LOCATION);
+      std::remove(BEST_MODEL_SAVE_LOCATION);
+    } else {
+      model.save(LAST_MODEL_SAVE_LOCATION);
+    }
   }
 
   bool shouldStopTraining() final { return _should_stop_training; }
@@ -80,20 +87,24 @@ class EarlyStopValidation : public Callback {
  private:
   bool isImprovement(double metric_val) const {
     if (_should_minimize) {
-      return metric_val < _best_validation_metric;
+      return metric_val < _best_validation_score;
     }
-    return metric_val > _best_validation_metric;
+    return metric_val > _best_validation_score;
   }
+
+  inline static std::string BEST_MODEL_SAVE_LOCATION = "checkpoint_best.model";
+  inline static std::string LAST_MODEL_SAVE_LOCATION = "checkpoint_last.model";
 
   std::vector<dataset::BoltDatasetPtr> _validation_data;
   dataset::BoltDatasetPtr _validation_labels;
-  uint32_t _patience;
   PredictConfig _predict_config;
+  bool _restore_best_weights;
+  uint32_t _patience;
 
   bool _should_stop_training;
   uint32_t _epochs_since_best;
   bool _should_minimize;
-  double _best_validation_metric;
+  double _best_validation_score;
 };
 
 using EarlyStopValidationPtr = std::shared_ptr<EarlyStopValidation>;

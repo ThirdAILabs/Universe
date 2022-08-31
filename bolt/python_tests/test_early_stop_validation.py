@@ -1,6 +1,6 @@
 from cgi import test
 from thirdai import bolt
-from ..utils import gen_numpy_training_data, get_simple_dag_model
+from utils import gen_numpy_training_data, get_simple_dag_model
 import pytest
 
 pytestmark = [pytest.mark.unit]
@@ -48,7 +48,7 @@ def train_early_stop_model(train_data, train_labels, valid_data, valid_labels):
                     validation_data=valid_data,
                     validation_labels=valid_labels,
                     predict_config=predict_config,
-                    patience=1,
+                    patience=2,
                 )
             ]
         )
@@ -81,6 +81,7 @@ def test_early_stop_validation():
         .enable_sparse_inference()
     )
 
+    print("starting predictions")
     overfitted_accuracy = overfitted_model.predict(
         test_data, test_labels, predict_config
     )[0]["categorical_accuracy"]

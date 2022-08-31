@@ -50,12 +50,6 @@ class EmbeddingNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  void checkpointInMemory() final { _embedding_layer->checkpointInMemory(); }
-
-  void loadCheckpointFromMemory() final {
-    _embedding_layer->loadCheckpointFromMemory();
-  }
-
   void initOptimizer() final { _embedding_layer->initOptimizer(); }
 
   std::string type() const final { return "embedding"; }

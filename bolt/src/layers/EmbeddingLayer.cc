@@ -126,20 +126,6 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
   }
 }
 
-void EmbeddingLayer::checkpointInMemory() {
-  _embedding_block_checkpoint = _embedding_block;
-}
-
-void EmbeddingLayer::loadCheckpointFromMemory() {
-  if (!_embedding_block_checkpoint) {
-    throw std::invalid_argument(
-        "Error loading in memory checkpoint. No embedding block saved.");
-  }
-  _embedding_block = _embedding_block_checkpoint.value();
-
-  _embedding_block_checkpoint->clear();
-}
-
 void EmbeddingLayer::initializeLayer(uint32_t new_batch_size) {
   _embedding_block_offsets = std::vector<std::vector<uint64_t>>(new_batch_size);
 }

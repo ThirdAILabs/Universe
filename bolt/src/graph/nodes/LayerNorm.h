@@ -66,11 +66,6 @@ class LayerNormNode final : public Node,
     return false;
   }
 
-  // this node doesn't need a stored state for checkpoints
-  void checkpointInMemory() {}
-
-  void loadCheckpointFromMemory() {}
-
   void initOptimizer() final {}
 
  private:

@@ -118,6 +118,8 @@ MetricData BoltGraph::train(
         callbacks.onBatchEnd(*this, train_config);
       }
 
+      cleanupAfterBatchProcessing();
+
       callbacks.onEpochEnd(*this, train_config);
       if (callbacks.shouldStopTraining()) {
         break;
@@ -138,8 +140,6 @@ MetricData BoltGraph::train(
       }
       _epoch_count++;
       metrics.logAndReset();
-
-      cleanupAfterBatchProcessing();
     }
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
@@ -700,24 +700,6 @@ std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {
   std::unique_ptr<BoltGraph> deserialize_into(new BoltGraph());
   iarchive(*deserialize_into);
   return deserialize_into;
-}
-
-/**
- * These checkpoint functions are used for the purposes of saving a "best
- * model's" state during training. Each node does this differently, thus we
- * dispatch to the nodes themselves to handle their own checkpoints. This allows
- * us to easily save and restore a model's state.
- */
-void BoltGraph::checkpointInMemory() {
-  for (auto& node : _nodes) {
-    node->checkpointInMemory();
-  }
-}
-
-void BoltGraph::loadCheckpointFromMemory() {
-  for (auto& node : _nodes) {
-    node->loadCheckpointFromMemory();
-  }
 }
 
 std::string BoltGraph::summarize(bool print, bool detailed) const {

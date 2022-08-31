@@ -52,16 +52,6 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void checkpointInMemory() {
-    throw std::invalid_argument(
-        "Should not call checkpointInMemory() in an Input node");
-  }
-
-  void loadCheckpointFromMemory() {
-    throw std::invalid_argument(
-        "Should not call loadCheckpointFromMemory() in an Input node");
-  }
-
   void initOptimizer() final {
     throw std::logic_error("Should not call initOptimizer() on Input node");
   }

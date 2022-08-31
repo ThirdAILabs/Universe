@@ -39,10 +39,6 @@ class EmbeddingLayer {
     return BoltBatch(_total_embedding_dim, batch_size, true);
   }
 
-  void checkpointInMemory();
-
-  void loadCheckpointFromMemory();
-
   void buildLayerSummary(std::stringstream& summary) const;
 
   void initOptimizer() {
@@ -129,8 +125,6 @@ class EmbeddingLayer {
   std::vector<float> _embedding_block;
 
   std::optional<AdamOptimizer> _optimizer = std::nullopt;
-
-  std::optional<std::vector<float>> _embedding_block_checkpoint;
 
   // This structure stores the embedding block offset for each token in each
   // input. This is used for backpropagation and for update paramters to know

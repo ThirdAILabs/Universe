@@ -63,11 +63,6 @@ class ConcatenateNode final
 
   bool isInputNode() const final { return false; }
 
-  // this node doesn't need a stored state for checkpoints
-  void checkpointInMemory() {}
-
-  void loadCheckpointFromMemory() {}
-
   void initOptimizer() final {}
 
  private:

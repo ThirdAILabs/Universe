@@ -441,22 +441,19 @@ class FMeasure final : public Metric {
   std::atomic<uint64_t> _false_negative;
 };
 
-class MetricUtils {
- public:
-  static std::shared_ptr<Metric> getMetricByName(const std::string& name) {
-    if (name == CategoricalAccuracy::name) {
-      return std::make_shared<CategoricalAccuracy>();
-    } else if (name == WeightedMeanAbsolutePercentageError::name) {
-      return std::make_shared<WeightedMeanAbsolutePercentageError>();
-    } else if (name == MeanSquaredErrorMetric::name) {
-      return std::make_shared<MeanSquaredErrorMetric>();
-    } else if (FMeasure::isFMeasure(name)) {
-      return FMeasure::make(name);
-    } else {
-      throw std::invalid_argument("'" + name + "' is not a valid metric.");
-    }
+static std::shared_ptr<Metric> makeMetric(const std::string& name) {
+  if (name == CategoricalAccuracy::name) {
+    return std::make_shared<CategoricalAccuracy>();
+  } else if (name == WeightedMeanAbsolutePercentageError::name) {
+    return std::make_shared<WeightedMeanAbsolutePercentageError>();
+  } else if (name == MeanSquaredErrorMetric::name) {
+    return std::make_shared<MeanSquaredErrorMetric>();
+  } else if (FMeasure::isFMeasure(name)) {
+    return FMeasure::make(name);
+  } else {
+    throw std::invalid_argument("'" + name + "' is not a valid metric.");
   }
-};
+}
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 using InferenceMetricData = std::unordered_map<std::string, double>;

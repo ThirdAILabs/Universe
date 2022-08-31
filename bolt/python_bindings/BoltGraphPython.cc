@@ -526,11 +526,12 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
            py::arg("predict_config"), py::arg("patience"))
       // Helper method that covers the common case of training based off of a
       // single BoltBatch dataset
-      .def(py::init([](std::vector<dataset::BoltDatasetPtr> validation_data,
+      .def(py::init([](dataset::BoltDatasetPtr validation_data,
                        dataset::BoltDatasetPtr validation_labels,
                        PredictConfig predict_config, uint32_t patience) {
-             return EarlyStopValidation({validation_data}, validation_labels,
-                                        predict_config, patience);
+             return EarlyStopValidation({std::move(validation_data)},
+                                        std::move(validation_labels),
+                                        std::move(predict_config), patience);
            }),
            py::arg("validation_data"), py::arg("validation_labels"),
            py::arg("predict_config"), py::arg("patience"));

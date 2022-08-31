@@ -116,10 +116,6 @@ class FullyConnectedLayer final {
 
   float* getWeightsGradient();
 
-  void checkpointInMemory();
-
-  void loadCheckpointFromMemory();
-
   float getSparsity() const { return _sparsity; }
 
   void setSparsity(float sparsity);
@@ -249,17 +245,6 @@ class FullyConnectedLayer final {
 
   std::vector<float> _weights;
   std::vector<float> _biases;
-
-  struct WeightBiasCheckpoint {
-    explicit WeightBiasCheckpoint(std::vector<float> _weights,
-                                  std::vector<float> _biases)
-        : weights(_weights), biases(_biases) {}
-
-    std::vector<float> weights;
-    std::vector<float> biases;
-  };
-
-  std::optional<WeightBiasCheckpoint> _weight_bias_checkpoint = std::nullopt;
 
   std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
   std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;

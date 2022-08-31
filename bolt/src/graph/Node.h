@@ -207,16 +207,6 @@ class Node {
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
 
-  /**
-   * These checkpoint functions are used for the purposes of saving a "best
-   * model's" state during training. Each node does this differently, thus each
-   * node handles their own checkpoints. This allows us to easily save and
-   * restore a model's state.
-   */
-  virtual void checkpointInMemory() = 0;
-
-  virtual void loadCheckpointFromMemory() = 0;
-
   virtual void initOptimizer() = 0;
 
   // Prints out a single line summary in the format

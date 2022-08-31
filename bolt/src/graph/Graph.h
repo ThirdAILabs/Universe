@@ -97,10 +97,6 @@ class BoltGraph {
 
   static std::unique_ptr<BoltGraph> load(const std::string& filename);
 
-  void checkpointInMemory();
-
-  void loadCheckpointFromMemory();
-
   std::string summarize(bool print, bool detailed) const;
 
   NodePtr getNodeByName(const std::string& node_name) const;
