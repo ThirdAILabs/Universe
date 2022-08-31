@@ -164,7 +164,7 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
             predict_config=predict_config,
         )
         if use_mlflow:
-            log_prediction_metrics(predict_output[0])
+            log_prediction_metrics(predict_output)
 
         if should_compute_roc_auc(experiment_config):
             compute_roc_auc(predict_output, datasets, use_mlflow)
@@ -412,7 +412,7 @@ def compute_roc_auc(predict_output, datasets, use_mlflow):
     roc_auc = roc_auc_score(labels, scores)
     print(f"ROC AUC = {roc_auc}")
     if use_mlflow:
-        log_prediction_metrics({"roc_auc" : roc_auc})
+        log_prediction_metrics([{"roc_auc" : roc_auc}])
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(

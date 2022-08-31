@@ -47,7 +47,7 @@ def log_single_epoch_training_metrics(train_output):
 
 def log_prediction_metrics(inference_output):
     # The metrics data is the first element of the inference output tuple
-    mlflow.log_metrics(inference_output)
+    mlflow.log_metrics(inference_output[0])
 
 
 def verify_mlflow_args(parser, mlflow_args):
