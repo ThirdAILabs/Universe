@@ -368,7 +368,7 @@ class Worker:
 
     def predict(self):
         """This function calls the predict function(predictSingleNode) to return the
-        prediction from the network manges by this single worker.
+        prediction from the network manages by this single worker.
 
         Returns:
             InferenceMetricData: Tuples for activations and metrics

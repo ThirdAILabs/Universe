@@ -106,12 +106,12 @@ class FullyConnectedNetworkModel:
             w_gradients __type__: weight gradients to update the network with
             b_gradients __type__: bias gradients to update the network with
         """
-        for layer in range(len(w_gradients)):
-            self.network.get_layer(self.node_name_list[layer]).weight_gradients.set(
-                w_gradients[layer]
+        for layer_num in range(len(w_gradients)):
+            self.network.get_layer(self.node_name_list[layer_num]).weight_gradients.set(
+                w_gradients[layer_num]
             )
-            self.network.get_layer(self.node_name_list[layer]).bias_gradients.set(
-                b_gradients[layer]
+            self.network.get_layer(self.node_name_list[layer_num]).bias_gradients.set(
+                b_gradients[layer_num]
             )
 
     def get_parameters(self):
@@ -137,11 +137,11 @@ class FullyConnectedNetworkModel:
             weights: weights parameter to update the network with
             biases: bias parameter to update the gradient with
         """
-        for layer in range(len(weights)):
-            self.network.get_layer(self.node_name_list[layer]).weights.set(
-                weights[layer]
+        for layer_num in range(len(weights)):
+            self.network.get_layer(self.node_name_list[layer_num]).weights.set(
+                weights[layer_num]
             )
-            self.network.get_layer(self.node_name_list[layer]).biases.set(biases[layer])
+            self.network.get_layer(self.node_name_list[layer_num]).biases.set(biases[layer_num])
 
     def update_parameters(self, learning_rate: float):
         """This function update the network parameters using the gradients stored and
