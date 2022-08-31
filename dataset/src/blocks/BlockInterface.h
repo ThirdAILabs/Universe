@@ -82,6 +82,8 @@ class SegmentedFeatureVector {
    * Converts this vector to a BoltVector.
    */
   virtual BoltVector toBoltVector() = 0;
+
+  virtual SegmentedFeatureVector() = default;
 };
 
 /**
