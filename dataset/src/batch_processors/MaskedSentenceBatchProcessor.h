@@ -113,12 +113,11 @@ class MaskedSentenceBatchProcessor final
     }
 
     const std::vector<float> values(masked_tokens_size, 1.0);
-
-    auto vector = BoltVector::makeSparseVector(masked_indices, values);
     auto pairgrams = TextEncodingUtils::computePairgramsFromUnigrams(
         unigrams, _output_range);
 
-    return {pairgrams, vector, std::move(label)};
+    return {pairgrams, BoltVector::makeSparseVector(masked_indices, values),
+            std::move(label)};
   }
 
   std::unordered_map<uint32_t, uint32_t> _word_hashes_to_ids;
