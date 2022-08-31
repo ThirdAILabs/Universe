@@ -80,6 +80,11 @@ class MLMDatasetLoader {
       : _batch_processor(
             std::make_shared<MaskedSentenceBatchProcessor>(pairgram_range)) {}
 
+  explicit MLMDatasetLoader(uint32_t pairgram_range,
+                            float masked_tokens_percentage)
+      : _batch_processor(std::make_shared<MaskedSentenceBatchProcessor>(
+            pairgram_range, masked_tokens_percentage)) {}
+
   py::tuple load(const std::string& filename, uint32_t batch_size) {
     auto data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
