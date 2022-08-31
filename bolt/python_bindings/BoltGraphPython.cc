@@ -35,7 +35,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "ParameterReference and acts as a reference to them, modifying this "
            "array will modify the parameters.")
 
-      // To-Do(Shubh): Should work with a custom serializer rather than python
+      // TODO(Shubh): Should work with a custom serializer rather than python
       // dictionaries. Or we should make a Compressed vector module at python
       // end to deal with this
       .def("compress", &ParameterReference::compress,

@@ -1,10 +1,5 @@
 #pragma once
 #include <compression/src/CompressedVector.h>
-#include <cstdint>
-#include <memory>
-#include <stdexcept>
-
-// To-Do: What headers do we actually need here?
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
 #include <pybind11/iostream.h>
@@ -12,13 +7,16 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
 
 namespace py = pybind11;
 
 namespace thirdai::compression::python {
 
 template <class T>
-inline std::vector<T> make_vector_from_1d_numpy_array(
+inline std::vector<T> makeVectorFrom1dNumpyArray(
     const py::array_t<T>& py_array) {
   return std::vector<T>(py_array.data(), py_array.data() + py_array.size());
 }
@@ -26,7 +24,7 @@ inline std::vector<T> make_vector_from_1d_numpy_array(
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-// To-Do(Shubh): We will have to remove this function and work directly with
+// TODO(Shubh): We will have to remove this function and work directly with
 // binary streams to serialize and deserialize objects
 inline std::unique_ptr<CompressedVector<float>> convertPyDictToCompressedVector(
     const py::object& pycompressed_vector) {
@@ -40,11 +38,11 @@ inline std::unique_ptr<CompressedVector<float>> convertPyDictToCompressedVector(
         pycompressed_vector["values"].cast<NumpyArray<float>>();
 
     std::vector<uint32_t> vector_indices =
-        thirdai::compression::python::make_vector_from_1d_numpy_array(
+        thirdai::compression::python::makeVectorFrom1dNumpyArray(
             py::cast<py::array_t<uint32_t>>(indices));
 
     std::vector<float> vector_values =
-        thirdai::compression::python::make_vector_from_1d_numpy_array(
+        thirdai::compression::python::makeVectorFrom1dNumpyArray(
             py::cast<py::array_t<float>>(values));
     DragonVector<float> dragon_sketch = compression::DragonVector<float>(
         std::move(vector_indices), std::move(vector_values),
