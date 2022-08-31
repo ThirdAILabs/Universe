@@ -63,7 +63,6 @@ MetricData BoltGraph::train(
     const std::vector<dataset::BoltDatasetPtr>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config) {
-  log::info("BoltGraph::train");
   DatasetContext train_context(train_data, train_labels);
 
   verifyCanTrain(train_context);
