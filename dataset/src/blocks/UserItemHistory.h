@@ -89,7 +89,7 @@ class UserItemHistoryBlock final : public Block {
                        ThreadSafeVocabularyPtr user_id_map,
                        ThreadSafeVocabularyPtr item_id_map,
                        ItemHistoryCollectionPtr item_history_collection,
-                       std::optional<char> item_col_delimiter=std::nullopt)
+                       std::optional<char> item_col_delimiter = std::nullopt)
       : _user_col(user_col),
         _item_col(item_col),
         _timestamp_col(timestamp_col),
@@ -113,7 +113,7 @@ class UserItemHistoryBlock final : public Block {
   UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
                        uint32_t timestamp_col, uint32_t track_last_n,
                        uint32_t n_unique_users, uint32_t n_unique_items,
-                       std::optional<char> item_col_delimiter=std::nullopt)
+                       std::optional<char> item_col_delimiter = std::nullopt)
       : _user_col(user_col),
         _item_col(item_col),
         _timestamp_col(timestamp_col),
@@ -133,23 +133,20 @@ class UserItemHistoryBlock final : public Block {
     return max_col_idx + 1;
   }
 
-  static UserItemHistoryBlockPtr make(uint32_t user_col, uint32_t item_col,
-                                      uint32_t timestamp_col,
-                                      ThreadSafeVocabularyPtr user_id_map,
-                                      ThreadSafeVocabularyPtr item_id_map,
-                                      ItemHistoryCollectionPtr records,
-                                      std::optional<char> item_col_delimiter=std::nullopt) {
+  static UserItemHistoryBlockPtr make(
+      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
+      ThreadSafeVocabularyPtr user_id_map, ThreadSafeVocabularyPtr item_id_map,
+      ItemHistoryCollectionPtr records,
+      std::optional<char> item_col_delimiter = std::nullopt) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, std::move(user_id_map),
         std::move(item_id_map), std::move(records), item_col_delimiter);
   }
 
-  static UserItemHistoryBlockPtr make(uint32_t user_col, uint32_t item_col,
-                                      uint32_t timestamp_col,
-                                      uint32_t track_last_n,
-                                      uint32_t n_unique_users,
-                                      uint32_t n_unique_items,
-                       std::optional<char> item_col_delimiter=std::nullopt) {
+  static UserItemHistoryBlockPtr make(
+      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
+      uint32_t track_last_n, uint32_t n_unique_users, uint32_t n_unique_items,
+      std::optional<char> item_col_delimiter = std::nullopt) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, track_last_n, n_unique_users,
         n_unique_items, item_col_delimiter);
@@ -168,8 +165,8 @@ class UserItemHistoryBlock final : public Block {
       int64_t epoch_timestamp = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_ids = getItemIds(item_str);
-  
-  #pragma omp critical(user_item_history_block)
+
+#pragma omp critical(user_item_history_block)
       {
         encodeTrackedItems(user_id, epoch_timestamp, vec);
         for (const auto& item_id : item_ids) {
@@ -187,7 +184,8 @@ class UserItemHistoryBlock final : public Block {
     if (!_item_col_delimiter) {
       return {_item_id_lookup->getUid(item_str)};
     }
-    auto item_id_views = ProcessorUtils::parseCsvRow(item_str, _item_col_delimiter.value());
+    auto item_id_views =
+        ProcessorUtils::parseCsvRow(item_str, _item_col_delimiter.value());
     std::vector<uint32_t> item_id_strs;
     item_id_strs.reserve(item_id_views.size());
     for (auto item_id_view : item_id_views) {

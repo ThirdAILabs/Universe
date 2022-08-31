@@ -32,9 +32,11 @@ SequentialClassifier makeSequentialClassifierForMockData() {
   CategoricalPair target = {"target", 5};
   std::string timestamp = "timestamp";
   std::vector<std::string> static_text = {"static_text"};
-  std::vector<CategoricalTuple> static_categorical = {CategoricalPair("static_categorical", 5)};
+  std::vector<CategoricalTuple> static_categorical = {
+      CategoricalPair("static_categorical", 5)};
   std::vector<SequentialTuple> sequential = {SequentialTriplet("target", 5, 3)};
-  return {user, std::move(target), timestamp, static_text, static_categorical, sequential};
+  return {user,        std::move(target),  timestamp,
+          static_text, static_categorical, sequential};
 }
 
 TEST(SequentialClassifierTest, TestLoadSave) {

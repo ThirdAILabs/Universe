@@ -28,14 +28,16 @@ namespace thirdai::bolt::sequential_classifier {
 // A pair of (column name, num unique classes)
 using CategoricalPair = std::pair<std::string, uint32_t>;
 // A tuple of (column name, num unique classes, delimiter)
-using CategoricalTriplet = std::tuple<std::string, uint32_t, std::optional<char>>;
+using CategoricalTriplet =
+    std::tuple<std::string, uint32_t, std::optional<char>>;
 
 using CategoricalTuple = std::variant<CategoricalPair, CategoricalTriplet>;
 
 // A tuple of (column name, num unique classes, track last N)
 using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
 // A tuple of (column name, num unique classes, delimiter, track last N)
-using SequentialQuadruplet = std::tuple<std::string, uint32_t, std::optional<char>, uint32_t>;
+using SequentialQuadruplet =
+    std::tuple<std::string, uint32_t, std::optional<char>, uint32_t>;
 
 using SequentialTuple = std::variant<SequentialTriplet, SequentialQuadruplet>;
 
@@ -51,19 +53,23 @@ inline SequentialQuadruplet toSeqQuadruplet(const SequentialTuple& tuple) {
   if (std::holds_alternative<SequentialQuadruplet>(tuple)) {
     return std::get<SequentialQuadruplet>(tuple);
   }
-  const auto& [col_name, n_classes, track_last_n] = std::get<SequentialTriplet>(tuple);
+  const auto& [col_name, n_classes, track_last_n] =
+      std::get<SequentialTriplet>(tuple);
   return {col_name, n_classes, std::nullopt, track_last_n};
 }
 
-inline std::vector<CategoricalTriplet> toCatTriplets(const std::vector<CategoricalTuple>& tuples) {
+inline std::vector<CategoricalTriplet> toCatTriplets(
+    const std::vector<CategoricalTuple>& tuples) {
   std::vector<CategoricalTriplet> triplets(tuples.size());
   std::transform(tuples.begin(), tuples.end(), triplets.begin(), toCatTriplet);
   return triplets;
 }
 
-inline std::vector<SequentialQuadruplet> toSeqQuadruplets(const std::vector<SequentialTuple>& tuples) {
+inline std::vector<SequentialQuadruplet> toSeqQuadruplets(
+    const std::vector<SequentialTuple>& tuples) {
   std::vector<SequentialQuadruplet> quadruplets(tuples.size());
-  std::transform(tuples.begin(), tuples.end(), quadruplets.begin(), toSeqQuadruplet);
+  std::transform(tuples.begin(), tuples.end(), quadruplets.begin(),
+                 toSeqQuadruplet);
   return quadruplets;
 }
 
@@ -229,7 +235,8 @@ class Pipeline {
       user_vocab = dataset::ThreadSafeVocabulary::make(n_unique_users);
     }
 
-    const auto& [item_col_name, n_unique_items, delimiter, track_last_n] = sequential;
+    const auto& [item_col_name, n_unique_items, delimiter, track_last_n] =
+        sequential;
     auto& item_vocab = state.vocabs_by_column[item_col_name];
     if (!item_vocab) {
       item_vocab = dataset::ThreadSafeVocabulary::make(n_unique_items);
