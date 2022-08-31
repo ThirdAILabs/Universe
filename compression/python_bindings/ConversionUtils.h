@@ -51,7 +51,10 @@ inline std::unique_ptr<CompressedVector<float>> convertPyDictToCompressedVector(
 
     return std::make_unique<DragonVector<float>>(dragon_sketch);
   }
-  throw std::logic_error("Only dragon vectors are supported as of now");
+  throw std::logic_error(
+      "Received unknown compression type " +
+      py::cast<std::string>(pycompressed_vector["compression_scheme"]) +
+      ". Currently only Dragon compression is supported.");
 }
 
 inline py::dict convertCompressedVectorToPyDict(
