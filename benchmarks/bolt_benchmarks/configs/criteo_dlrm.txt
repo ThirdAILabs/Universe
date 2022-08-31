@@ -47,7 +47,7 @@ pred = "numerical_input"
 dim = 1000
 sparsity = 0.2
 activation = "relu"
-use_default_sampling = true
+use_random_sampling = true
 
 [[nodes]]
 type = "FullyConnected"
@@ -83,7 +83,7 @@ pred = "concat"
 dim = 1000
 sparsity = 0.2
 activation = "relu"
-use_default_sampling = true
+use_random_sampling = true
 
 [[nodes]]
 type = "FullyConnected"

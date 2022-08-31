@@ -167,7 +167,7 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
             log_prediction_metrics(predict_output[0])
 
         if should_compute_roc_auc(experiment_config):
-            compute_roc_auc(predict_output, datasets=datasets)
+            compute_roc_auc(predict_output, datasets, use_mlflow)
 
     if "save" in experiment_config.keys():
         model.save(config_get(experiment_config, "save"))
@@ -213,7 +213,7 @@ def construct_fully_connected_node(fc_config):
     return bolt.graph.FullyConnected(
         dim=config_get(fc_config, "dim"),
         sparsity=sparsity,
-        activation_function=config_get(fc_config, "activation"),
+        activation=config_get(fc_config, "activation"),
         sampling_config=get_sampling_config(fc_config),
     )
 
@@ -385,7 +385,7 @@ def switch_to_sparse_inference_if_needed(
 def should_compute_roc_auc(experiment_config):
     return experiment_config.get("compute_roc_auc", False)
 
-def compute_roc_auc(predict_output, datasets):
+def compute_roc_auc(predict_output, datasets, use_mlflow):
     if datasets["test_labels_np"] is None:
         raise ValueError("Cannot compute roc_auc without test_labels_np specified.")
 
@@ -410,8 +410,9 @@ def compute_roc_auc(predict_output, datasets):
     from sklearn.metrics import roc_auc_score
 
     roc_auc = roc_auc_score(labels, scores)
-    print(f"roc_auc = {roc_auc}")
-    log_prediction_metrics({"roc_auc" : roc_auc})
+    print(f"ROC AUC = {roc_auc}")
+    if use_mlflow:
+        log_prediction_metrics({"roc_auc" : roc_auc})
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(
