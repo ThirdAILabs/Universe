@@ -10,9 +10,9 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <bolt/src/utils/logging.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <utils/Logging.h>
 #include <algorithm>
 #include <chrono>
 #include <csignal>

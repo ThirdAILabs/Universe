@@ -1,9 +1,9 @@
 // Code to create thirdai modules
 #include <bolt/python_bindings/BoltPython.h>
-#include <bolt/src/utils/logging.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <search/python_bindings/DocSearchPython.h>
+#include <utils/Logging.h>
 
 // Pybind11 library
 #include <pybind11/cast.h>
