@@ -44,7 +44,6 @@ def load_and_compile_model(model_config):
         raise ValueError(f"{node_name} not found in previously defined nodes")
 
     nodes_with_no_successor = set()
-    token_inputs = []
     inputs = []
     for node_config in config_get(model_config, "nodes"):
         node = construct_node(node_config)
@@ -53,8 +52,6 @@ def load_and_compile_model(model_config):
 
         if node_type == "Input":
             inputs.append(node)
-        elif node_type == "TokenInput":
-            token_inputs.append(node)
         elif "pred" in node_config:
             pred_name = node_config["pred"]
             pred_node = get_node_by_name(pred_name)
@@ -70,9 +67,7 @@ def load_and_compile_model(model_config):
             else:
                 node(pred_nodes)
         else:
-            raise ValueError(
-                "Node should either be an Input/TokenInput or specify pred/preds"
-            )
+            raise ValueError("Node should either be an Input or specify pred/preds")
 
         nodes_with_no_successor.add(node_name)
         name_to_node[node_name] = node
@@ -84,23 +79,19 @@ def load_and_compile_model(model_config):
         )
 
     output_node = name_to_node[list(nodes_with_no_successor)[0]]
-    model = bolt.graph.Model(
-        inputs=inputs, token_inputs=token_inputs, output=output_node
-    )
+    model = bolt.graph.Model(inputs=inputs, output=output_node)
     model.compile(loss=get_loss(model_config))
     return model
 
 
 # Returns a map from
-# ["train_data", "train_tokens", "train_labels", "test_data", "test_tokens", "test_labels"]
+# ["train_data", "train_labels", "test_data", "test_labels"]
 # to lists of datasets (except for the labels, which will either be a single dataset or None)
 def load_all_datasets(dataset_config):
     result = {
         "train_data": [],
-        "train_tokens": [],
         "train_labels": [],
         "test_data": [],
-        "test_tokens": [],
         "test_labels": [],
     }
 
@@ -169,7 +160,6 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
 
         train_metrics = model.train(
             train_data=datasets["train_data"],
-            train_tokens=datasets["train_tokens"],
             train_labels=datasets["train_labels"],
             train_config=train_config,
         )
@@ -178,7 +168,6 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
 
         predict_metrics = model.predict(
             test_data=datasets["test_data"],
-            test_tokens=datasets["test_tokens"],
             test_labels=datasets["test_labels"],
             predict_config=predict_config,
         )
@@ -199,6 +188,20 @@ def get_sampling_config(layer_config):
         reservoir_size=config_get(layer_config, "reservoir_size"),
         hash_function=layer_config.get("hash_function", "DWTA"),
     )
+
+
+def construct_input_node(input_config):
+    dim = config_get(input_config, "dim")
+    num_nonzeros_range = None
+    if (
+        "min_num_nonzeros" in input_config.keys()
+        and "max_num_nonzeros" in input_config.keys()
+    ):
+        num_nonzeros_range = (
+            config_get(input_config, "min_num_nonzeros"),
+            config_get(input_config, "max_num_nonzeros"),
+        )
+    return bolt.graph.Input(dim=dim, num_nonzeros_range=num_nonzeros_range)
 
 
 def construct_fully_connected_node(fc_config):
@@ -256,13 +259,11 @@ def construct_switch_node(switch_config):
 def construct_node(node_config):
     node_type = config_get(node_config, "type")
     if node_type == "Input":
-        return bolt.graph.Input(dim=config_get(node_config, "dim"))
+        return construct_input_node(node_config)
     if node_type == "Concatenate":
         return bolt.graph.Concatenate()
     if node_type == "FullyConnected":
         return construct_fully_connected_node(node_config)
-    if node_type == "TokenInput":
-        return bolt.graph.TokenInput()
     if node_type == "Embedding":
         return construct_embedding_node(node_config)
     if node_type == "Switch":

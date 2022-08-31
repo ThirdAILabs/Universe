@@ -1,7 +1,7 @@
 #pragma once
 
-#include "BoltVector.h"
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt_vector/src/BoltVector.h>
 
 namespace thirdai::bolt {
 
@@ -66,6 +66,8 @@ class SequentialLayer {
     (void)detailed;
     summary << "dim=" << getDim() << "\n";
   }
+
+  virtual void initOptimizer() = 0;
 
   virtual ~SequentialLayer() = default;
 };

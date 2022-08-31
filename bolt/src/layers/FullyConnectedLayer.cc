@@ -28,17 +28,10 @@ FullyConnectedLayer::FullyConnectedLayer(
 
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
-      _w_gradient(config.getDim() * prev_dim, 0),
-      _w_momentum(config.getDim() * prev_dim, 0),
-      _w_velocity(config.getDim() * prev_dim, 0),
       _biases(config.getDim()),
-      _b_gradient(config.getDim(), 0),
-      _b_momentum(config.getDim(), 0),
-      _b_velocity(config.getDim(), 0),
       _prev_is_active(_prev_dim, false),
       _is_active(config.getDim(), false),
-      _is_distributed(is_distributed),
-      _sampling_mode(LSHSamplingMode::Default) {
+      _is_distributed(is_distributed) {
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -47,12 +40,19 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    initSparseDatastructures(config.getSamplingConfig(), rd);
+    initSamplingDatastructures(config.getSamplingConfig(), rd);
   }
+
+  initOptimizer();
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
+  // TODO(Nicholas): This can be removed when we deprecate the old bolt api.
+  if (input.hasGradients()) {
+    const_cast<BoltVector&>(input).zeroOutGradients();
+  }
+
   if (output.isDense()) {
     if (input.isDense()) {
       eigenDenseDenseForward(input, output);
@@ -85,7 +85,6 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 
   float max_act = 0;
   uint32_t len_out = nonzerosInOutput<DENSE>();
-  std::fill_n(output.gradients, len_out, 0);
 
   _prev_is_dense = PREV_DENSE;
   _this_is_dense = DENSE;
@@ -187,7 +186,6 @@ void FullyConnectedLayer::eigenDenseDenseForward(const BoltVector& input,
                                                  BoltVector& output) {
   _prev_is_dense = true;
   _this_is_dense = true;
-  std::fill_n(output.gradients, output.len, 0);
 
   Eigen::Map<
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
@@ -281,6 +279,7 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
   assert((output.len <= _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
+  assert(_weight_optimizer.has_value() && _bias_optimizer.has_value());
 
   uint32_t len_out = nonzerosInOutput<DENSE>();
 
@@ -307,7 +306,7 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
       uint32_t prev_act_neuron = input.activeNeuronAtIndex<PREV_DENSE>(i);
       assert(prev_act_neuron < _prev_dim);
 
-      _w_gradient[act_neuron * _prev_dim + prev_act_neuron] +=
+      _weight_optimizer->gradients[act_neuron * _prev_dim + prev_act_neuron] +=
           output.gradients[n] * input.activations[i];
       if constexpr (!FIRST_LAYER) {
         input.gradients[i] +=
@@ -315,13 +314,15 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
             _weights[act_neuron * _prev_dim + prev_act_neuron];
       }
     }
-    _b_gradient[act_neuron] += output.gradients[n];
+    _bias_optimizer->gradients[act_neuron] += output.gradients[n];
   }
 }
 
 template <bool FIRST_LAYER>
 void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
                                                        BoltVector& output) {
+  assert(_weight_optimizer.has_value() && _bias_optimizer.has_value());
+
   for (uint32_t n = 0; n < output.len; n++) {
     output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
   }
@@ -331,9 +332,10 @@ void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
       eigen_weights(_weights.data(), _dim, _prev_dim);
   Eigen::Map<
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-      eigen_weight_grad(_w_gradient.data(), _dim, _prev_dim);
+      eigen_weight_grad(_weight_optimizer->gradients.data(), _dim, _prev_dim);
 
-  Eigen::Map<Eigen::VectorXf> eigen_bias_grad(_b_gradient.data(), _dim);
+  Eigen::Map<Eigen::VectorXf> eigen_bias_grad(_bias_optimizer->gradients.data(),
+                                              _dim);
 
   Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
   Eigen::Map<Eigen::VectorXf> eigen_output_grad(output.gradients, output.len);
@@ -360,6 +362,58 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     return;
   }
 
+  if (useRandomSampling()) {
+    randomNeuronSampling(input, output, labels);
+  } else {
+    lshNeuronSampling<PREV_DENSE>(input, output, labels);
+  }
+}
+
+static void wrapAroundCopy(const uint32_t* const src, uint64_t src_len,
+                           uint32_t* const dest, uint64_t copy_size,
+                           uint64_t starting_offset) {
+  assert(starting_offset < src_len);
+  assert(copy_size <= src_len);
+
+  uint64_t length_to_end = std::min(src_len - starting_offset, copy_size);
+  uint64_t length_of_remainder =
+      length_to_end < copy_size ? copy_size - length_to_end : 0;
+
+  std::copy(src + starting_offset, src + starting_offset + length_to_end, dest);
+  std::copy(src, src + length_of_remainder, dest + length_to_end);
+}
+
+void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
+                                               const BoltVector& output,
+                                               const BoltVector* labels) {
+  uint32_t label_len = 0;
+  if (labels) {
+    label_len = std::min<uint64_t>(labels->len, _sparse_dim);
+    std::copy(labels->active_neurons, labels->active_neurons + label_len,
+              output.active_neurons);
+  }
+
+  // This is because rand() is not threadsafe and because we want to make the
+  // output more deterministic.
+  uint64_t random_offset =
+      hashing::HashUtils::simpleIntegerHash(
+          // Hack to intepret the float as an integer without doing a
+          // conversion.
+          *reinterpret_cast<uint32_t*>(&input.activations[0])) %
+      _dim;
+
+  uint64_t neurons_to_sample = _sparse_dim - label_len;
+
+  wrapAroundCopy(/* src= */ _rand_neurons.data(), /* src_len= */ _dim,
+                 /* dest= */ output.active_neurons + label_len,
+                 /* copy_size= */ neurons_to_sample,
+                 /* starting_offset= */ random_offset);
+}
+
+template <bool PREV_DENSE>
+void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
+                                            BoltVector& output,
+                                            const BoltVector* labels) {
   std::unordered_set<uint32_t> active_set;
 
   uint32_t label_len = labels != nullptr ? labels->len : 0;
@@ -376,33 +430,29 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions) {
+  if (_sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions) {
     /**
-     * QueryBySet just returns a set of the elements in the given buckets of the
-     * hash table.
+     * QueryBySet just returns a set of the elements in the given buckets of
+     * the hash table.
      *
      * QueryAndInsertForInference returns the set of elements in the given
      * buckets but will also insert the labels (during training only) for the
      * vector into the buckets the vector maps to if they are not already
      * present in the buckets. The intuition is that during sparse inference
-     * this will help force the hash tables to map vectors towards buckets that
-     * contain their correct labels. This is specific to the output layer.
-     *
-     * We call QueryAndInsertForInference if the following conditions are met:
-     *   1. We have sparse inference enabled.
-     *   2. Activation = Softmax or Sigmoid, meaning it's a classification task,
-     *      and that the given layer is the last layer, as this is the only
-     *      place where we use these activation functions.
+     * this will help force the hash tables to map vectors towards buckets
+     * that contain their correct labels. This is specific to the output
+     * layer.
      */
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
   } else {
     _hash_table->queryBySet(hashes.data(), active_set);
   }
+
   if (active_set.size() < _sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
-    // safe and we want to have deterministic outcomes
-    uint32_t rand_offset = (hashes[0]) % _dim;
+    // safe and we want to have deterministic sampling.
+    uint32_t rand_offset = hashes.at(0) % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
       rand_offset = rand_offset % _dim;
@@ -480,7 +530,7 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
   // with the full gradient. Possible solutions include:
   // 1. Including the gradient in the active pair and doing an update multiple
   //    times with the smaller gradients. This is effectively equal to batch
-  //     size 1, but we basically already have batch size 1 with sparse sparse.
+  //    size 1, but we basically already have batch size 1 with sparse sparse.
   // 2. Having a bloom filter where we cheaply hash the active pairs to a bloom
   //    filter bit, and if it is already set in the bloom filter skip it,
   //    otherwise set the bit and do the gradient update.
@@ -549,6 +599,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                                                       float B2, float eps,
                                                       float B1_bias_corrected,
                                                       float B2_bias_corrected) {
+  assert(_bias_optimizer.has_value());
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
@@ -556,22 +607,24 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
       continue;
     }
 
-    float grad = _b_gradient[cur_neuron];
+    float grad = _bias_optimizer->gradients[cur_neuron];
     assert(!std::isnan(grad));
 
-    _b_momentum[cur_neuron] = B1 * _b_momentum[cur_neuron] + (1 - B1) * grad;
-    _b_velocity[cur_neuron] =
-        B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad;
+    _bias_optimizer->momentum[cur_neuron] =
+        B1 * _bias_optimizer->momentum[cur_neuron] + (1 - B1) * grad;
+    _bias_optimizer->velocity[cur_neuron] =
+        B2 * _bias_optimizer->velocity[cur_neuron] + (1 - B2) * grad * grad;
 
-    assert(!std::isnan(_b_momentum[cur_neuron]));
-    assert(!std::isnan(_b_velocity[cur_neuron]));
+    assert(!std::isnan(_bias_optimizer->momentum[cur_neuron]));
+    assert(!std::isnan(_bias_optimizer->velocity[cur_neuron]));
 
     _biases[cur_neuron] +=
-        lr * (_b_momentum[cur_neuron] / B1_bias_corrected) /
-        (std::sqrt(_b_velocity[cur_neuron] / B2_bias_corrected) + eps);
+        lr * (_bias_optimizer->momentum[cur_neuron] / B1_bias_corrected) /
+        (std::sqrt(_bias_optimizer->velocity[cur_neuron] / B2_bias_corrected) +
+         eps);
     assert(!std::isnan(_biases[cur_neuron]));
 
-    _b_gradient[cur_neuron] = 0;
+    _bias_optimizer->gradients[cur_neuron] = 0;
     _is_active[cur_neuron] = false;
   }
 }
@@ -589,24 +642,35 @@ inline void FullyConnectedLayer::cleanupWithinBatchVars() {
 inline void FullyConnectedLayer::updateSingleWeightParameters(
     uint64_t prev_neuron, uint64_t cur_neuron, float lr, float B1, float B2,
     float eps, float B1_bias_corrected, float B2_bias_corrected) {
+  assert(_weight_optimizer.has_value());
+
   auto indx = cur_neuron * _prev_dim + prev_neuron;
-  float grad = _w_gradient[indx];
+  float grad = _weight_optimizer->gradients[indx];
   assert(!std::isnan(grad));
 
-  _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
-  _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
-  assert(!std::isnan(_w_momentum[indx]));
-  assert(!std::isnan(_w_velocity[indx]));
+  _weight_optimizer->momentum[indx] =
+      B1 * _weight_optimizer->momentum[indx] + (1 - B1) * grad;
+  _weight_optimizer->velocity[indx] =
+      B2 * _weight_optimizer->velocity[indx] + (1 - B2) * grad * grad;
+  assert(!std::isnan(_weight_optimizer->momentum[indx]));
+  assert(!std::isnan(_weight_optimizer->velocity[indx]));
 
-  _weights[indx] += lr * (_w_momentum[indx] / B1_bias_corrected) /
-                    (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
+  _weights[indx] +=
+      lr * (_weight_optimizer->momentum[indx] / B1_bias_corrected) /
+      (std::sqrt(_weight_optimizer->velocity[indx] / B2_bias_corrected) + eps);
   assert(!std::isnan(_weights[indx]));
 
-  _w_gradient[indx] = 0;
+  _weight_optimizer->gradients[indx] = 0;
 }
 
-void FullyConnectedLayer::initSparseDatastructures(
+void FullyConnectedLayer::initSamplingDatastructures(
     const SamplingConfigPtr& sampling_config, std::random_device& rd) {
+  if (sampling_config->isRandomSampling()) {
+    _sampling_mode = BoltSamplingMode::RandomSampling;
+  } else {
+    _sampling_mode = BoltSamplingMode::LSH;
+  }
+
   _hasher = sampling_config->getHashFunction(_prev_dim);
 
   _hash_table = sampling_config->getHashTable();
@@ -622,14 +686,15 @@ void FullyConnectedLayer::initSparseDatastructures(
   std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
 }
 
-inline void FullyConnectedLayer::deinitSparseDatastructures() {
+inline void FullyConnectedLayer::deinitSamplingDatastructures() {
   _hasher = {};
   _hash_table = {};
   _rand_neurons = {};
 }
 
 void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
-  if ((!_trainable && !force_build) || _sparsity >= 1.0 || hashTablesFrozen()) {
+  if ((!_trainable && !force_build) || _sparsity >= 1.0 || hashTablesFrozen() ||
+      useRandomSampling()) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -652,7 +717,8 @@ void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
 void FullyConnectedLayer::buildHashTables() { buildHashTablesImpl(false); }
 
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen()) {
+  if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen() ||
+      useRandomSampling()) {
     return;
   }
 
@@ -694,22 +760,32 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
 
 void FullyConnectedLayer::setWeightGradients(
     const float* update_weight_gradient) {
+  assert(_weight_optimizer.has_value());
+
   std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
-            _w_gradient.begin());
+            _weight_optimizer->gradients.begin());
 }
 
 void FullyConnectedLayer::setBiasesGradients(
     const float* update_bias_gradient) {
+  assert(_bias_optimizer.has_value());
   std::copy(update_bias_gradient, update_bias_gradient + _dim,
-            _b_gradient.begin());
+            _bias_optimizer->gradients.begin());
 }
 
-float* FullyConnectedLayer::getBiasesGradient() { return _b_gradient.data(); }
+float* FullyConnectedLayer::getBiasesGradient() {
+  assert(_bias_optimizer.has_value());
+  return _bias_optimizer->gradients.data();
+}
 
-float* FullyConnectedLayer::getWeightsGradient() { return _w_gradient.data(); }
+float* FullyConnectedLayer::getWeightsGradient() {
+  assert(_weight_optimizer.has_value());
+
+  return _weight_optimizer->gradients.data();
+}
 
 void FullyConnectedLayer::setSparsity(float sparsity) {
-  deinitSparseDatastructures();
+  deinitSamplingDatastructures();
   _sparsity = sparsity;
 
   _sparse_dim = _sparsity * _dim;
@@ -719,28 +795,15 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
   if (_sparsity < 1.0) {
     auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
     std::random_device rd;
-    initSparseDatastructures(sampling_config, rd);
+    initSamplingDatastructures(sampling_config, rd);
   }
 }
 
 void FullyConnectedLayer::initOptimizer() {
-  _w_gradient.assign(_dim * _prev_dim, 0);
-  _w_momentum.assign(_dim * _prev_dim, 0);
-  _w_velocity.assign(_dim * _prev_dim, 0);
-
-  _b_gradient.assign(_dim, 0);
-  _b_momentum.assign(_dim, 0);
-  _b_velocity.assign(_dim, 0);
-}
-
-void FullyConnectedLayer::removeOptimizer() {
-  _w_gradient.clear();
-  _w_momentum.clear();
-  _w_velocity.clear();
-
-  _b_gradient.clear();
-  _b_momentum.clear();
-  _b_velocity.clear();
+  if (!_weight_optimizer || !_bias_optimizer) {
+    _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
+    _bias_optimizer = AdamOptimizer(_dim);
+  }
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
@@ -749,9 +812,13 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
   summary << activationFunctionToStr(_act_func);
 
   if (detailed && _sparsity < 1.0) {
-    summary << " (hash_function=" << _hasher->getName() << ", ";
-    _hash_table->summarize(summary);
-    summary << ")";
+    if (useRandomSampling()) {
+      summary << " (using random sampling)";
+    } else {
+      summary << " (hash_function=" << _hasher->getName() << ", ";
+      _hash_table->summarize(summary);
+      summary << ")";
+    }
   }
 
   summary << "\n";
