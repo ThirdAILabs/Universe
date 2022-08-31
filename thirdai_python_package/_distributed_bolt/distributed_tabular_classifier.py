@@ -43,18 +43,12 @@ class TabularClassifier(DistributedBolt):
         self.no_of_workers = no_of_workers
 
         # check for whether OMP_NUM_THREADS already set by user
-        num_omp_threads = str(get_num_cpus())
-        # if "OMP_NUM_THREADS" in os.environ:
-        #     num_omp_threads = os.environ["OMP_NUM_THREADS"]
-        #     self.logging.warning(
-        #         "Reading OMP_NUM_THREADS from environment to be " + num_omp_threads
-        #     )
-        #     self.logging.warning(
-        #         "To use default OMP_NUM_THREADS, try running the program in new shell, or update the OMP_NUM_THREADS in the current environment"
-        #     )
+        num_cpus = get_num_cpus()
+        if num_cpus_per_node is not -1:
+            num_cpus = num_cpus_per_node
 
-        self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
-        runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
+        self.logging.info("Setting OMP_NUM_THREADS to " + str(num_cpus))
+        runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(num_cpus)}}
 
         ray.init(address="auto", runtime_env=runtime_env)
         if not ray.is_initialized():
@@ -75,9 +69,6 @@ class TabularClassifier(DistributedBolt):
         self.learning_rate = config["params"]["learning_rate"]
         self.num_layers = 3
 
-        num_cpus = get_num_cpus()
-        if num_cpus_per_node is not -1:
-            num_cpus = num_cpus_per_node
 
         self.primary_worker = PrimaryWorker.options(
             num_cpus=num_cpus, max_concurrency=100

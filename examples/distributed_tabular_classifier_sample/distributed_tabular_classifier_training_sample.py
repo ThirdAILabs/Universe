@@ -17,7 +17,7 @@ if __name__ == "__main__":
     head = db.TabularClassifier(
         no_of_workers=2,
         config_filename=config_filename,
-        num_cpus_per_node=20,
+        num_cpus_per_node=10,
         column_datatypes=column_datatypes,
         n_classes = n_classes
     )
