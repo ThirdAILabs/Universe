@@ -104,28 +104,6 @@ void DragonVector<T>::set(uint32_t index, T value) {
 }
 
 template <class T>
-void DragonVector<T>::assign(uint32_t size, uint32_t index, T value,
-                             uint32_t original_size) {
-  if (original_size != 0) {
-    _original_size = original_size;
-  } else {
-    if (_original_size == 0) {
-      std::cout
-          << ("Unsafe: Do not call assign on an unintialized compressed vector "
-              "without specifying the value of "
-              "original vector. Original vector size is being set to size");
-      _original_size = size;
-    } else {
-      //_original_size remains the same
-      (void)1;
-    }
-  }
-
-  _values.assign(size, value);
-  _indices.assign(size, index);
-}
-
-template <class T>
 void DragonVector<T>::clear() {
   _original_size = 0;
   _compression_density = 1;

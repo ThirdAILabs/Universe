@@ -40,8 +40,8 @@ inline T getThresholdForTopK(const T* values, uint32_t size,
     num_samples = static_cast<uint32_t>(std::min(min_samples, size));
   }
 
-  float compression_vector = static_cast<float>(sketch_size) / size;
-  uint32_t topK = static_cast<uint32_t>(num_samples * compression_vector);
+  float compression_factor = static_cast<float>(sketch_size) / size;
+  uint32_t top_k = static_cast<uint32_t>(num_samples * compression_factor);
 
   std::vector<T> sampled_gradients(num_samples, 0);
 
@@ -52,12 +52,12 @@ inline T getThresholdForTopK(const T* values, uint32_t size,
   }
 
   std::nth_element(sampled_gradients.begin(),
-                   sampled_gradients.begin() + num_samples - topK,
+                   sampled_gradients.begin() + num_samples - top_k,
                    sampled_gradients.end());
 
   // threshold is an estimate for the kth largest element in the gradients
   // matrix
-  T threshold = sampled_gradients[num_samples - topK];
+  T threshold = sampled_gradients[num_samples - top_k];
   return threshold;
 }
 

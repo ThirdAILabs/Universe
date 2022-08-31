@@ -20,8 +20,6 @@ class CompressedVector {
 
   virtual void set(uint32_t index, T value) = 0;
 
-  void assign(uint32_t size, T value);
-
   virtual void clear() = 0;
 
   // methods for the compressed_vector class
@@ -80,13 +78,6 @@ class DragonVector final : public CompressedVector<T> {
 
   void set(uint32_t index, T value) final;
 
-  // we are only writing for a simple assign now, later expand to iterators and
-  // array as well?
-  void assign(uint32_t size, T value);
-
-  void assign(uint32_t size, uint32_t index, T value,
-              uint32_t original_size = 0);
-
   void clear() final;
 
   /*
@@ -141,7 +132,7 @@ class DragonVector final : public CompressedVector<T> {
 };
 
 template <class T>
-std::unique_ptr<CompressedVector<T>> compress(
+inline std::unique_ptr<CompressedVector<T>> compress(
     const std::vector<T>& values, const std::string& compression_scheme = "",
     float compression_density = 1, int seed_for_hashing = 0) {
   return compress(values.data(), static_cast<uint32_t>(values.size()),
@@ -149,7 +140,7 @@ std::unique_ptr<CompressedVector<T>> compress(
 }
 
 template <class T>
-std::unique_ptr<CompressedVector<T>> compress(
+inline std::unique_ptr<CompressedVector<T>> compress(
     const T* values, uint32_t size, const std::string& compression_scheme = "",
     float compression_density = 1, int seed_for_hashing = 0) {
   if (compression_scheme == "dragon") {
@@ -160,7 +151,7 @@ std::unique_ptr<CompressedVector<T>> compress(
 }
 
 template <class T>
-std::vector<T> decompress(const CompressedVector<T>& compressed_vector) {
+inline std::vector<T> decompress(const CompressedVector<T>& compressed_vector) {
   return compressed_vector.decompress();
 }
 
