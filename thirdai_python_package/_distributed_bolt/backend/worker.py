@@ -7,25 +7,6 @@ from thirdai._distributed_bolt._models.fully_connected_network_model import (
 )
 
 
-def calculate_partitions(partition_length: int, partition_id: int, total_length: int):
-    """This function returns the partitions for the work to work on,
-    during the circular communication.
-
-    Args:
-        partition_length (int): length of partition to return
-        partition_id (int): the partition id, which needed to be worked on
-        total_length (int): length of the array to be transferred using
-            circular communication
-
-    Returns:
-        Tuple[int,int]: Left Index and Right Index for a tuple
-    """
-    l_idx = partition_length * partition_id
-    r_idx = partition_length * (partition_id + 1)
-    if total_length - r_idx < partition_length:
-        r_idx = total_length
-    return l_idx, r_idx
-
 
 class Worker:
     """This is a ray remote class(Actor). Read about them here.
