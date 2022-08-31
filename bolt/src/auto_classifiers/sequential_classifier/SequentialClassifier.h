@@ -40,17 +40,17 @@ class SequentialClassifier {
    * the number of previous values to track.
    */
   SequentialClassifier(
-      const CategoricalPair& user, const CategoricalPair& target,
+      const CategoricalPair& user, const CategoricalTuple& target,
       const std::string& timestamp,
       const std::vector<std::string>& static_text = {},
-      const std::vector<CategoricalPair>& static_categorical = {},
-      const std::vector<SequentialTriplet>& sequential = {}) {
-    _schema.user = user;
-    _schema.target = target;
+      const std::vector<CategoricalTuple>& static_categorical = {},
+      const std::vector<SequentialTuple>& sequential = {}) {
+    _schema.user = toCatTriplet(user);
+    _schema.target = toCatTriplet(target);
     _schema.timestamp_col_name = timestamp;
     _schema.static_text_col_names = static_text;
-    _schema.static_categorical = static_categorical;
-    _schema.sequential = sequential;
+    _schema.static_categorical = toCatTriplets(static_categorical);
+    _schema.sequential = toSeqQuadruplets(sequential);
   }
 
   void train(const std::string& train_filename, uint32_t epochs,
@@ -107,7 +107,8 @@ class SequentialClassifier {
         return;
       }
       uint32_t class_id = output.getHighestActivationId();
-      auto target_lookup = _state.vocabs_by_column[_schema.target.first];
+      auto [target_col_name, _1, _2] = _schema.target;
+      auto target_lookup = _state.vocabs_by_column[target_col_name];
       (*output_file) << target_lookup->getString(class_id) << std::endl;
     };
 
@@ -187,5 +188,8 @@ class SequentialClassifier {
 namespace thirdai::bolt {
 
 using SequentialClassifier = sequential_classifier::SequentialClassifier;
+using SeqClassCategoricalPair = sequential_classifier::CategoricalPair;
+using SeqClassCategoricalTuple = sequential_classifier::CategoricalTuple;
+using SeqClassSequentialTuple = sequential_classifier::SequentialTuple;
 
 }  // namespace thirdai::bolt

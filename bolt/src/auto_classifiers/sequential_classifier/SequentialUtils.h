@@ -14,29 +14,69 @@
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
+#include <algorithm>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <variant>
 
 namespace thirdai::bolt::sequential_classifier {
 
 // A pair of (column name, num unique classes)
 using CategoricalPair = std::pair<std::string, uint32_t>;
+// A tuple of (column name, num unique classes, delimiter)
+using CategoricalTriplet = std::tuple<std::string, uint32_t, std::optional<char>>;
+
+using CategoricalTuple = std::variant<CategoricalPair, CategoricalTriplet>;
+
 // A tuple of (column name, num unique classes, track last N)
 using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
+// A tuple of (column name, num unique classes, delimiter, track last N)
+using SequentialQuadruplet = std::tuple<std::string, uint32_t, std::optional<char>, uint32_t>;
+
+using SequentialTuple = std::variant<SequentialTriplet, SequentialQuadruplet>;
+
+inline CategoricalTriplet toCatTriplet(const CategoricalTuple& tuple) {
+  if (std::holds_alternative<CategoricalTriplet>(tuple)) {
+    return std::get<CategoricalTriplet>(tuple);
+  }
+  const auto& [col_name, n_classes] = std::get<CategoricalPair>(tuple);
+  return {col_name, n_classes, std::nullopt};
+}
+
+inline SequentialQuadruplet toSeqQuadruplet(const SequentialTuple& tuple) {
+  if (std::holds_alternative<SequentialQuadruplet>(tuple)) {
+    return std::get<SequentialQuadruplet>(tuple);
+  }
+  const auto& [col_name, n_classes, track_last_n] = std::get<SequentialTriplet>(tuple);
+  return {col_name, n_classes, std::nullopt, track_last_n};
+}
+
+inline std::vector<CategoricalTriplet> toCatTriplets(const std::vector<CategoricalTuple>& tuples) {
+  std::vector<CategoricalTriplet> triplets(tuples.size());
+  std::transform(tuples.begin(), tuples.end(), triplets.begin(), toCatTriplet);
+  return triplets;
+}
+
+inline std::vector<SequentialQuadruplet> toSeqQuadruplets(const std::vector<SequentialTuple>& tuples) {
+  std::vector<SequentialQuadruplet> quadruplets(tuples.size());
+  std::transform(tuples.begin(), tuples.end(), quadruplets.begin(), toSeqQuadruplet);
+  return quadruplets;
+}
 
 /**
  * Stores the dataset configuration.
  */
 struct Schema {
-  CategoricalPair user;
-  CategoricalPair target;
+  CategoricalTriplet user;
+  CategoricalTriplet target;
   std::string timestamp_col_name;
   std::vector<std::string> static_text_col_names;
-  std::vector<CategoricalPair> static_categorical;
-  std::vector<SequentialTriplet> sequential;
+  std::vector<CategoricalTriplet> static_categorical;
+  std::vector<SequentialQuadruplet> sequential;
 
   Schema() {}
 
@@ -166,30 +206,30 @@ class Pipeline {
   }
 
   static dataset::BlockPtr makeCategoricalBlock(
-      const CategoricalPair& categorical, DataState& state,
+      const CategoricalTriplet& categorical, DataState& state,
       const ColumnNumberMap& col_nums) {
-    const auto& [cat_col_name, n_classes] = categorical;
+    const auto& [cat_col_name, n_classes, delimiter] = categorical;
     auto& string_vocab = state.vocabs_by_column[cat_col_name];
     if (!string_vocab) {
       string_vocab = dataset::ThreadSafeVocabulary::make(n_classes);
     }
     return dataset::StringLookupCategoricalBlock::make(
-        col_nums.at(cat_col_name), string_vocab);
+        col_nums.at(cat_col_name), string_vocab, delimiter);
   }
 
   // We pass in an ID because sequential blocks can corrupt each other's states.
   static dataset::BlockPtr makeSequentialBlock(
-      uint32_t sequential_block_id, const CategoricalPair& user,
-      const SequentialTriplet& sequential,
+      uint32_t sequential_block_id, const CategoricalTriplet& user,
+      const SequentialQuadruplet& sequential,
       const std::string& timestamp_col_name, DataState& state,
       const ColumnNumberMap& col_nums) {
-    const auto& [user_col_name, n_unique_users] = user;
+    const auto& [user_col_name, n_unique_users, _] = user;
     auto& user_vocab = state.vocabs_by_column[user_col_name];
     if (!user_vocab) {
       user_vocab = dataset::ThreadSafeVocabulary::make(n_unique_users);
     }
 
-    const auto& [item_col_name, n_unique_items, track_last_n] = sequential;
+    const auto& [item_col_name, n_unique_items, delimiter, track_last_n] = sequential;
     auto& item_vocab = state.vocabs_by_column[item_col_name];
     if (!item_vocab) {
       item_vocab = dataset::ThreadSafeVocabulary::make(n_unique_items);
@@ -205,7 +245,7 @@ class Pipeline {
     return dataset::UserItemHistoryBlock::make(
         col_nums.at(user_col_name), col_nums.at(item_col_name),
         col_nums.at(timestamp_col_name), user_vocab, item_vocab,
-        user_item_history);
+        user_item_history, delimiter);
   }
 };
 

@@ -209,12 +209,11 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
                                    "Autoclassifier for sequential predictions.")
-      .def(py::init<const std::pair<std::string, uint32_t>&,
-                    const std::pair<std::string, uint32_t>&, const std::string&,
+      .def(py::init<const SeqClassCategoricalPair&,
+                    const SeqClassCategoricalTuple&, const std::string&,
                     const std::vector<std::string>&,
-                    const std::vector<std::pair<std::string, uint32_t>>&,
-                    const std::vector<
-                        std::tuple<std::string, uint32_t, uint32_t>>&>(),
+                    const std::vector<SeqClassCategoricalTuple>&,
+                    const std::vector<SeqClassSequentialTuple>&>(),
            py::arg("user"), py::arg("target"), py::arg("timestamp"),
            py::arg("static_text") = std::vector<std::string>(),
            py::arg("static_categorical") =
