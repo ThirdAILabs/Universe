@@ -28,6 +28,15 @@ class CategoricalBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
+  static std::shared_ptr<Block> make(
+      uint32_t col, std::shared_ptr<CategoricalEncoding> encoding) {
+    return std::make_shared<CategoricalBlock>(col, encoding);
+  }
+
+  static std::shared_ptr<Block> make(uint32_t col, uint32_t dim) {
+    return std::make_shared<CategoricalBlock>(col, dim);
+  }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
