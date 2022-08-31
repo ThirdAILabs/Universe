@@ -521,11 +521,9 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
   py::class_<EarlyStopValidation, EarlyStopValidationPtr, Callback>(
       callbacks_submodule, "EarlyStopValidation")
       .def(py::init<std::vector<dataset::BoltDatasetPtr>,
-                    std::vector<dataset::BoltTokenDatasetPtr>,
                     dataset::BoltDatasetPtr, PredictConfig, uint32_t>(),
-           py::arg("validation_data"), py::arg("validation_tokens"),
-           py::arg("validation_labels"), py::arg("predict_config"),
-           py::arg("patience"))
+           py::arg("validation_data"), py::arg("validation_labels"),
+           py::arg("predict_config"), py::arg("patience"))
       .def(py::init<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr,
                     PredictConfig, uint32_t>(),
            py::arg("validation_data"), py::arg("validation_labels"),
