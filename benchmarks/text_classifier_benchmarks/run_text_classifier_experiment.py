@@ -5,6 +5,7 @@ import toml
 import pandas as pd
 
 from thirdai import bolt
+from benchmarks.text_classifier_benchmarks.utils import find_full_filepath
 from utils import log_machine_info, start_mlflow, config_get, config_get_or
 
 
@@ -95,7 +96,7 @@ def main():
         mlflow.log_params({"run_name": args.run_name, **vars(config)})
 
     classifier = train_classifier(
-        config_get(config, "train_dataset_path"),
+        find_full_filepath(config_get(config, "train_dataset_path")),
         config_get(config, "n_classes"),
         config_get_or(config, "model_size", default="small"),
         config_get_or(config, "epochs", default=5),
@@ -105,7 +106,7 @@ def main():
         mlflow.log_params(classifier.get_hyper_parameters())
     evaluate_classifier(
         classifier,
-        config_get(config, "test_dataset_path"),
+        find_full_filepath(config_get(config, "test_dataset_path")),
         output_file=config_get_or(
             config, "prediction_file_path", default="predictions.txt"
         ),
