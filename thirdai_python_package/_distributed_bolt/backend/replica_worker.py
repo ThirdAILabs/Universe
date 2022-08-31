@@ -15,6 +15,10 @@ class ReplicaWorker(Worker):
     worker and will be reproduced on all the node for parallel
     computations.
 
+    We are using a replica worker class in place of directly using
+    worker class, as Primary worker inherits Worker Class and A Ray
+    Actor Class can't be inherited.
+
     Args:
         Worker (Worker): Inherits the worker Class
     """

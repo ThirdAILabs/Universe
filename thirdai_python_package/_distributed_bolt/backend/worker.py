@@ -3,7 +3,7 @@ import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
 from thirdai._distributed_bolt._models.fully_connected_network_model import (
-    FullyConnectedNetworkModel,
+    FullyConnectedNetworkSingleNode,
 )
 
 
@@ -44,7 +44,7 @@ class Worker:
         self.friend_weight_gradient_list = []
 
     def make_fully_connected_model(self, config, layer_dims):
-        self.model = FullyConnectedNetworkModel(
+        self.model = FullyConnectedNetworkSingleNode(
             config, self.total_nodes, layer_dims, self.id
         )
         return True

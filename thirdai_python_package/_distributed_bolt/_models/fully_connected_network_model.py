@@ -4,7 +4,7 @@ from thirdai._distributed_bolt.utils import load_train_test_data
 from ..utils import contruct_dag_model
 
 
-class FullyConnectedNetworkModel:
+class FullyConnectedNetworkSingleNode:
     """This class implements the APIs to create, train and predict on a network
     which workers are running. Currently, It only supports FullyConnectedNetwork.
     However, It could easily be extended to other models too. The functions
@@ -141,7 +141,9 @@ class FullyConnectedNetworkModel:
             self.network.get_layer(self.node_name_list[layer_num]).weights.set(
                 weights[layer_num]
             )
-            self.network.get_layer(self.node_name_list[layer_num]).biases.set(biases[layer_num])
+            self.network.get_layer(self.node_name_list[layer_num]).biases.set(
+                biases[layer_num]
+            )
 
     def update_parameters(self, learning_rate: float):
         """This function update the network parameters using the gradients stored and

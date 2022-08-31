@@ -1,6 +1,4 @@
 import ray
-from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
-from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 import thirdai._distributed_bolt.backend.communication as communication
 import time as time
 from typing import Tuple, Any, Optional, Dict, List
@@ -52,7 +50,7 @@ class DistributedBolt:
             circular (Optional[bool], optional): True, if circular communication is required.
                     False, if linear communication is required.. Defaults to True.
         """
-        self.comm = (
+        comm = (
             communication.Circular(self.workers, self.primary_worker, self.logging)
             if self.communication_type == "circular"
             else communication.Linear(self.workers, self.primary_worker, self.logging)
@@ -63,10 +61,10 @@ class DistributedBolt:
 
                 # Here we are asking every worker to calculate their gradients and return
                 # once they all calculate their gradients
-                self.comm.calculate_gradients(batch_id)
-                self.comm.communicate()
-                self.comm.update_parameters(self.learning_rate)
-                self.comm.log_training(batch_id, epoch)
+                comm.calculate_gradients(batch_id)
+                comm.communicate()
+                comm.update_parameters(self.learning_rate)
+                comm.log_training(batch_id, epoch)
 
         ray.get([worker.finish_training.remote() for worker in self.workers])
 
