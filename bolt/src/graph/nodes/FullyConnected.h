@@ -186,6 +186,26 @@ class FullyConnectedNode final
     return _layer->getBiasGradientsPtr();
   }
 
+  void enableSparseSparseOptimization() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call enable_sparse_sparse_optimization before compiling this "
+          "node");
+    }
+    _layer->enableSparseSparseOptimization();
+  }
+
+  void disableSparseSparseOptimization() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call disable_sparse_sparse_optimization before compiling the "
+          "graph");
+    }
+    _layer->disableSparseSparseOptimization();
+  }
+
   static std::shared_ptr<FullyConnectedNode> make(uint32_t dim,
                                                   std::string activation) {
     return std::make_shared<FullyConnectedNode>(dim, std::move(activation));
@@ -209,8 +229,6 @@ class FullyConnectedNode final
   }
 
  private:
-  static constexpr float SPARSE_SPARSE_OPTIMIZATION_THRESHOLD = 0.05;
-
   void compileImpl() final {
     assert(_config.has_value());
     _layer = std::make_shared<FullyConnectedLayer>(_config.value(),
@@ -228,18 +246,6 @@ class FullyConnectedNode final
     // TODO(Nicholas): rename createBatchState
     _outputs =
         _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
-
-    float indicator_value = _outputs->getBatchSize() * _layer->getSparsity() *
-                            _predecessor->getAverageSparsity();
-    if (indicator_value < SPARSE_SPARSE_OPTIMIZATION_THRESHOLD) {
-      std::cout << "Enabling sparse sparse optimization for " << name()
-                << " with indicator value " << indicator_value << std::endl;
-      _layer->enableSparseSparseOptimization();
-    } else {
-      std::cout << "Disabling sparse sparse optimization for " << name()
-                << " with indicator value " << indicator_value << std::endl;
-      _layer->disableSparseSparseOptimization();
-    }
   }
 
   uint32_t numNonzerosInOutputImpl() const final { return (*_outputs)[0].len; }

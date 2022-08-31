@@ -65,8 +65,6 @@ MetricData BoltGraph::train(
 
   verifyCanTrain(train_context);
 
-  train_context.setAverageSparsities(_inputs);
-
   uint32_t rebuild_hash_tables_batch =
       train_config.getRebuildHashTablesBatchInterval(train_context.batchSize(),
                                                      train_context.len());

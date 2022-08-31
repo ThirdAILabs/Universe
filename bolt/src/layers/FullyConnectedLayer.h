@@ -168,6 +168,7 @@ class FullyConnectedLayer final {
   BoltSamplingMode _sampling_mode;
 
   // Whether to track ActivePairs in raw form (the sparse sparse "optimization")
+  // Default set in constructor is false
   bool _use_sparse_sparse_optimization;
 
   // --------------- Within-batch variables ------------------------------

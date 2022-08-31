@@ -136,18 +136,6 @@ class Node {
   }
 
   /*
-   * Returns the average sparsity of the output for the current dataset. For
-   * the nodes where the output has a constant number of nonzeros for each input
-   * vector, this will always be the value numNonzerosInOutputImpl() /
-   * static_cast<float>(outputDim()). For nodes where the output has
-   * a variable number of nonzeros for each input vector (currently only the
-   * Input node), this method can be overridden with that calculated value.
-   */
-  virtual float getAverageSparsity() const {
-    return numNonzerosInOutputImpl() / static_cast<float>(outputDim());
-  }
-
-  /*
     Initializes any state that the node must store for computations that is not
     part of the nodes parameters. For instance this could be the
     activations/gradients for a batch, or some other internal state that must

@@ -3,7 +3,6 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/Datasets.h>
 #include <exceptions/src/Exceptions.h>
 #include <cstddef>
 #include <iomanip>
@@ -28,7 +27,6 @@ class Input final : public Node {
       : _compiled(false),
         _input_batch(nullptr),
         _expected_input_dim(expected_input_dim),
-        _average_sparsity(1),
         _num_nonzeros_range(std::move(num_nonzeros_range)) {}
 
   // This class does not own this memory, but we pass it in as a pointer that
@@ -56,13 +54,6 @@ class Input final : public Node {
 
   void initOptimizer() final {
     throw std::logic_error("Should not call initOptimizer() on Input node");
-  }
-
-  float getAverageSparsity() const final { return _average_sparsity; }
-
-  void setAverageSparsity(const dataset::BoltDatasetPtr& input_dataset) {
-    _average_sparsity =
-        input_dataset->calculateAverageSparsity(_expected_input_dim);
   }
 
  private:
@@ -169,7 +160,6 @@ class Input final : public Node {
   bool _compiled;
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
-  float _average_sparsity = 1;
   std::optional<std::pair<uint32_t, uint32_t>> _num_nonzeros_range;
 };
 
