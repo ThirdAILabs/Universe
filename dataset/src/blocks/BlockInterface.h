@@ -83,7 +83,7 @@ class SegmentedFeatureVector {
    */
   virtual BoltVector toBoltVector() = 0;
 
-  virtual SegmentedFeatureVector() = default;
+  virtual ~SegmentedFeatureVector() = default;
 };
 
 /**
