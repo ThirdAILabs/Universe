@@ -8,24 +8,24 @@ namespace thirdai::bolt {
 
 EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                                uint32_t seed)
-    : _num_lookups_per_token(config.num_embedding_lookups),
-      _lookup_size(config.lookup_size),
-      _log_embedding_block_size(config.log_embedding_block_size),
-      _reduction(config.reduction),
-      _num_tokens_per_input(config.num_tokens_per_input),
+    : _num_lookups_per_token(config.numEmbeddingLookups()),
+      _lookup_size(config.lookupSize()),
+      _log_embedding_block_size(config.logEmbeddingBlockSize()),
+      _reduction(config.reduction()),
+      _num_tokens_per_input(config.numTokensPerInput()),
       _hash_fn(seed) {
-  _total_embedding_dim = config.lookup_size * config.num_embedding_lookups;
+  _total_embedding_dim = _lookup_size * _num_lookups_per_token;
 
-  switch (config.reduction) {
+  switch (_reduction) {
     case EmbeddingReductionType::SUM:
       break;
     case EmbeddingReductionType::CONCATENATION:
-      if (!config.num_tokens_per_input) {
+      if (!_num_tokens_per_input) {
         throw std::invalid_argument(
             "Must specify a number of tokens per input with a concatenation "
             "reduction.");
       }
-      _total_embedding_dim *= config.num_tokens_per_input.value();
+      _total_embedding_dim *= _num_tokens_per_input.value();
   }
 
   // We allocate the extra _lookup_size elements such that if a point hashes to

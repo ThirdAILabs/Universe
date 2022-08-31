@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include "LayerUtils.h"
 #include "SamplingConfig.h"
 #include <cmath>
@@ -161,32 +163,47 @@ enum class EmbeddingReductionType {
   CONCATENATION,
 };
 
-struct EmbeddingLayerConfig {
-  uint32_t num_embedding_lookups;
-  uint32_t lookup_size;
-  uint32_t log_embedding_block_size;
-
-  EmbeddingReductionType reduction;
-  std::optional<uint32_t> num_tokens_per_input;
-
+class EmbeddingLayerConfig {
+ public:
   // Public constructor, needed for cereal to construct optional, should not be
   // used otherwise.
   EmbeddingLayerConfig() {}
 
   EmbeddingLayerConfig(
-      uint32_t _num_embedding_lookups, uint32_t _lookup_size,
-      uint32_t _log_embedding_block_size, EmbeddingReductionType _reduction,
-      std::optional<uint32_t> _num_tokens_per_input = std::nullopt)
-      : num_embedding_lookups(_num_embedding_lookups),
-        lookup_size(_lookup_size),
-        log_embedding_block_size(_log_embedding_block_size),
-        reduction(_reduction),
-        num_tokens_per_input(_num_tokens_per_input) {}
+      uint32_t num_embedding_lookups, uint32_t lookup_size,
+      uint32_t log_embedding_block_size, EmbeddingReductionType reduction,
+      std::optional<uint32_t> num_tokens_per_input = std::nullopt)
+      : _num_embedding_lookups(num_embedding_lookups),
+        _lookup_size(lookup_size),
+        _log_embedding_block_size(log_embedding_block_size),
+        _reduction(reduction),
+        _num_tokens_per_input(num_tokens_per_input) {}
+
+  uint32_t numEmbeddingLookups() const { return _num_embedding_lookups; }
+
+  uint32_t lookupSize() const { return _lookup_size; }
+
+  uint32_t logEmbeddingBlockSize() const { return _log_embedding_block_size; }
+
+  EmbeddingReductionType reduction() const { return _reduction; }
+
+  std::optional<uint32_t> numTokensPerInput() const {
+    return _num_tokens_per_input;
+  }
+
+ private:
+  uint32_t _num_embedding_lookups;
+  uint32_t _lookup_size;
+  uint32_t _log_embedding_block_size;
+
+  EmbeddingReductionType _reduction;
+  std::optional<uint32_t> _num_tokens_per_input;
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(num_embedding_lookups, lookup_size, log_embedding_block_size);
+    archive(_num_embedding_lookups, _lookup_size, _log_embedding_block_size,
+            _reduction, _num_tokens_per_input);
   }
 };
 
