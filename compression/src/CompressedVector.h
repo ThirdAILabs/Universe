@@ -123,8 +123,11 @@ class DragonVector final : public CompressedVector<T> {
   std::vector<uint32_t> _indices;
   std::vector<T> _values;
   uint32_t _min_sketch_size = 10;
-  uint32_t _original_size = 0;
-  float _compression_density = 1;
+
+  // size of the original vector
+  uint32_t _original_size;
+
+  float _compression_density;
   int _seed_for_hashing;
 
   void sketchVector(const T* values, T threshold, uint32_t size,
