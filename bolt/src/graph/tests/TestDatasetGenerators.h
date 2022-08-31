@@ -125,6 +125,7 @@ struct TestDatasetGenerators {
             std::make_shared<dataset::BoltDataset>(std::move(label_batches))};
   }
 
+  // See comment in DlrmAttentionNodeTests.cc for use of this dataset.
   static std::tuple<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr,
                     dataset::BoltDatasetPtr>
   generateDlrmAttentionDataset(uint32_t n_ids, uint32_t n_tokens,

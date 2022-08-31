@@ -171,12 +171,12 @@ class EmbeddingLayerConfig {
 
   EmbeddingLayerConfig(
       uint32_t num_embedding_lookups, uint32_t lookup_size,
-      uint32_t log_embedding_block_size, EmbeddingReductionType reduction,
+      uint32_t log_embedding_block_size, const std::string& reduction,
       std::optional<uint32_t> num_tokens_per_input = std::nullopt)
       : _num_embedding_lookups(num_embedding_lookups),
         _lookup_size(lookup_size),
         _log_embedding_block_size(log_embedding_block_size),
-        _reduction(reduction),
+        _reduction(getReductionType(reduction)),
         _num_tokens_per_input(num_tokens_per_input) {}
 
   uint32_t numEmbeddingLookups() const { return _num_embedding_lookups; }
@@ -204,6 +204,23 @@ class EmbeddingLayerConfig {
   void serialize(Archive& archive) {
     archive(_num_embedding_lookups, _lookup_size, _log_embedding_block_size,
             _reduction, _num_tokens_per_input);
+  }
+
+  static EmbeddingReductionType getReductionType(
+      const std::string& reduction_name) {
+    std::string lower_name;
+    for (char c : reduction_name) {
+      lower_name.push_back(std::tolower(c));
+    }
+    if (lower_name == "sum") {
+      return EmbeddingReductionType::SUM;
+    }
+    if (lower_name == "concat" || lower_name == "concatenation") {
+      return EmbeddingReductionType::CONCATENATION;
+    }
+    throw std::invalid_argument(
+        "Invalid embedding reduction time '" + reduction_name +
+        "', supported options are 'sum' or 'concat'/'concatenation'");
   }
 };
 

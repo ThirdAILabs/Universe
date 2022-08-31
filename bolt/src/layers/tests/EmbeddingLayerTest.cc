@@ -17,8 +17,8 @@ constexpr uint32_t seed = 8274953;
 // at the hash of the token.
 class EmbeddingLayerTestFixture : public ::testing::Test {
  public:
-  static std::unique_ptr<EmbeddingLayer> getEmbeddingLayer(
-      EmbeddingReductionType reduction) {
+  static std::unique_ptr<EmbeddingLayer> createEmbeddingLayer(
+      const std::string& reduction) {
     EmbeddingLayerConfig config(NUM_LOOKUPS, LOOKUP_SIZE, LOG_BLOCK_SIZE,
                                 reduction, NUM_TOKENS_PER_INPUT);
 
@@ -57,7 +57,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     return layer->_optimizer->gradients.data();
   }
 
-  static BoltBatch doForwardPass(
+  static BoltBatch getEmbeddings(
       std::unique_ptr<EmbeddingLayer>& layer,
       const std::vector<std::vector<uint32_t>>& tokens) {
     BoltBatch output = layer->createBatchState(tokens.size());
@@ -76,7 +76,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   static void testEmbeddingBackpropagation(
       std::unique_ptr<EmbeddingLayer>& layer,
       const std::vector<std::vector<uint32_t>>& tokens) {
-    BoltBatch output = doForwardPass(layer, tokens);
+    BoltBatch output = getEmbeddings(layer, tokens);
 
     std::unordered_map<uint32_t, float> deltas;
 
@@ -124,7 +124,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 // Test that the hash locs computed are unique if the token or lookup_index
 // changes.
 TEST_F(EmbeddingLayerTestFixture, TestEmbeddingBlockOffsetUniqueness) {
-  auto layer = getEmbeddingLayer(EmbeddingReductionType::SUM);
+  auto layer = createEmbeddingLayer("sum");
 
   ASSERT_NE(getHashLocFromLayer(layer, /* token= */ 5, /* lookup_index= */ 17),
             getHashLocFromLayer(layer, /* token= */ 17, /* lookup_index= */ 5));
@@ -136,14 +136,13 @@ TEST_F(EmbeddingLayerTestFixture, TestEmbeddingBlockOffsetUniqueness) {
 // index in the embedding block.
 TEST_F(EmbeddingLayerTestFixture,
        SameOutputOfReductionsForSingleTokenEmbedding) {
-  auto sum_embedding_layer = getEmbeddingLayer(EmbeddingReductionType::SUM);
-  auto concat_embedding_layer =
-      getEmbeddingLayer(EmbeddingReductionType::CONCATENATION);
+  auto sum_embedding_layer = createEmbeddingLayer("sum");
+  auto concat_embedding_layer = createEmbeddingLayer("concatenation");
 
   std::vector<std::vector<uint32_t>> tokens = {{6}, {18}, {3}};
 
-  BoltBatch sum_output = doForwardPass(sum_embedding_layer, tokens);
-  BoltBatch concat_output = doForwardPass(sum_embedding_layer, tokens);
+  BoltBatch sum_output = getEmbeddings(sum_embedding_layer, tokens);
+  BoltBatch concat_output = getEmbeddings(sum_embedding_layer, tokens);
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     EXPECT_EQ(sum_output[batch_index].len, concat_output[batch_index].len);
@@ -162,9 +161,9 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingSumReduction) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
-  auto layer = getEmbeddingLayer(EmbeddingReductionType::SUM);
+  auto layer = createEmbeddingLayer("sum");
 
-  BoltBatch output = doForwardPass(layer, tokens);
+  BoltBatch output = getEmbeddings(layer, tokens);
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     const float* embedding = output[batch_index].activations;
@@ -190,9 +189,9 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingConcatReduction) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55}, {9, 2, 24}, {61, 75, 11}};
 
-  auto layer = getEmbeddingLayer(EmbeddingReductionType::CONCATENATION);
+  auto layer = createEmbeddingLayer("concatenation");
 
-  BoltBatch output = doForwardPass(layer, tokens);
+  BoltBatch output = getEmbeddings(layer, tokens);
 
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     ASSERT_EQ(output[batch_index].len,
@@ -218,7 +217,7 @@ TEST_F(EmbeddingLayerTestFixture, BackpropagationSumReduction) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
-  auto layer = getEmbeddingLayer(EmbeddingReductionType::SUM);
+  auto layer = createEmbeddingLayer("sum");
 
   testEmbeddingBackpropagation(layer, tokens);
 }
@@ -227,7 +226,7 @@ TEST_F(EmbeddingLayerTestFixture, BackpropagationConcatReduction) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55}, {9, 2, 24}, {61, 75, 11}};
 
-  auto layer = getEmbeddingLayer(EmbeddingReductionType::CONCATENATION);
+  auto layer = createEmbeddingLayer("concat");
 
   testEmbeddingBackpropagation(layer, tokens);
 }
@@ -241,7 +240,7 @@ TEST_F(EmbeddingLayerTestFixture, UpdateRangeCorrectness) {
   EmbeddingLayerConfig config(/* num_embedding_lookups= */ 4,
                               /* lookup_size= */ 5,
                               /* log_embedding_block_size= */ 7,
-                              EmbeddingReductionType::SUM);
+                              /* reduction= */ "sum");
   EmbeddingLayer layer(config);
 
   std::vector<std::pair<uint64_t, uint64_t>> ranges =

@@ -1,19 +1,30 @@
 #pragma once
 
-#include <wrappers/src/EigenDenseWrapper.h>
 #include "Embedding.h"
 #include "FullyConnected.h"
 #include <bolt/src/graph/Node.h>
-#include <Eigen/src/Core/Map.h>
 #include <exceptions/src/Exceptions.h>
 #include <memory>
 #include <optional>
 
 namespace thirdai::bolt {
 
-using EigenRowMajorMatrix =
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-
+/**
+ * This layer computes the pairwise dot products between the output of a fully
+ * connected layers and an embedding. The embedding is broken into chunks of
+ * dimension the same as the fuly connected output. Then the following dot
+ * products are computed.
+ *
+ *            | fc_output | emb_1 | emb_2 | ... | emb_n
+ *  fc_output |               X       X      X      X
+ *      emb_1 |                       X      X      X
+ *      emb_2 |                              X      X
+ *       ...                                        X
+ *      emb_n |
+ *
+ * The the number of pairwise combinations of interest is (n+1)n/2, meaning the
+ * output of the layer is (n+1)n/2.
+ */
 class DlrmAttentionNode final
     : public Node,
       public std::enable_shared_from_this<DlrmAttentionNode> {
@@ -53,19 +64,6 @@ class DlrmAttentionNode final
     uint32_t num_embedding_chunks =
         _embedding_node->outputDim() / _fully_connected_node->outputDim();
 
-    /**
-     * We want to compute the following pariwise dot products:
-     *
-     *            | fc_output | emb_1 | emb_2 | ... | emb_n
-     *  fc_output |               X       X      X      X
-     *      emb_1 |                       X      X      X
-     *      emb_2 |                              X      X
-     *       ...                                        X
-     *      emb_n |
-     *
-     * We know that n = _num_embedding_chunks. Thus the number of pairwise
-     * combinations of interest is (n+1)n/2.
-     */
     uint32_t output_dim = (num_embedding_chunks + 1) * num_embedding_chunks / 2;
 
     _compiled_state = CompiledState(
@@ -121,14 +119,6 @@ class DlrmAttentionNode final
     // TODO(Nicholas): is it faster to use eigen here since its more optimized
     // for dense computations, however it requires computing every pairwise dot
     // product twice?
-
-    /** Eigen dot product computation
-     * Eigen::Map<EigenRowMajorMatrix> eigen_embedding_chunks(
-     *   embedding_output.activations, {_num_chunks, embedding_chunk_size});
-     *
-     * auto pairwise_dot_products =
-     *    eigen_embedding_chunks * eigen_embedding_chunks.transpose();
-     */
 
     uint32_t output_idx = _compiled_state->_num_embedding_chunks;
     for (uint32_t emb_idx_1 = 0;
