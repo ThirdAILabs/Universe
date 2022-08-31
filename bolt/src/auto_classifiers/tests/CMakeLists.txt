@@ -24,12 +24,21 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(bolt_sequential_classifier_test SequentialClassifierTest.cc)
+target_link_libraries(
+  bolt_sequential_classifier_test
+  PRIVATE
+  auto_classifier_lib
+  gtest_main
+)
+
 include(GoogleTest)
 
 set(AUTO_CLASSIFIER_TESTS
   bolt_tabular_classifier_test
   bolt_text_classifier_test
   bolt_multi_label_text_classifier_test
+  bolt_sequential_classifier_test
 )
 
 foreach(AUTO_CLASSIFIER_TEST IN LISTS AUTO_CLASSIFIER_TESTS)

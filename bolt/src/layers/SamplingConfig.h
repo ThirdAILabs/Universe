@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
@@ -22,6 +23,7 @@ class SamplingConfig {
   virtual std::unique_ptr<hashtable::SampledHashTable<uint32_t>> getHashTable()
       const = 0;
 
+  virtual bool isRandomSampling() const { return false; }
   virtual ~SamplingConfig() = default;
 
  protected:
@@ -181,7 +183,33 @@ class FastSRPSamplingConfig final : public SamplingConfig {
   }
 };
 
+class RandomSamplingConfig final : public SamplingConfig {
+ public:
+  RandomSamplingConfig() {}
+
+  std::unique_ptr<hashing::HashFunction> getHashFunction(
+      uint32_t input_dim) const final {
+    (void)input_dim;
+    return nullptr;
+  }
+
+  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> getHashTable()
+      const final {
+    return nullptr;
+  }
+
+  bool isRandomSampling() const final { return true; }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<SamplingConfig>(this));
+  }
+};
+
 }  // namespace thirdai::bolt
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::DWTASamplingConfig)
 CEREAL_REGISTER_TYPE(thirdai::bolt::FastSRPSamplingConfig)
+CEREAL_REGISTER_TYPE(thirdai::bolt::RandomSamplingConfig)
