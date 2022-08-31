@@ -113,7 +113,6 @@ class MaskedSentenceBatchProcessor final
     }
 
     const std::vector<float> values(masked_tokens_size, 1.0);
-    // const std::vector<uint32_t> indices(masked_indices);
 
     auto vector = BoltVector::makeSparseVector(masked_indices, values);
     auto pairgrams = TextEncodingUtils::computePairgramsFromUnigrams(
