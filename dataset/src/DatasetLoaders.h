@@ -13,7 +13,7 @@
 namespace thirdai::dataset {
 
 struct SvmDatasetLoader {
-  static std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadDataset(
+  static std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadDatasetFromFile(
       const std::string& filename, uint32_t batch_size,
       bool softmax_for_multiclass = true) {
     auto data_loader =

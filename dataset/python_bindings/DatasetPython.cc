@@ -355,7 +355,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__len__", &BoltBatch::getBatchSize);
 
   dataset_submodule.def(
-      "load_bolt_svm_dataset", &loadSvmDatasetFromFilenameWrapper,
+      "load_bolt_svm_dataset", SvmDatasetLoader::loadDatasetFromFile,
       py::arg("filename"), py::arg("batch_size"),
       py::arg("softmax_for_multiclass") = true,
       "Loads a BoltDataset from an SVM file. Each line in the "
@@ -381,7 +381,7 @@ void createDatasetSubmodule(py::module_& module) {
       "Returns a tuple containing a BoltDataset to store the data itself, and "
       "a BoltDataset storing the labels.");
   dataset_submodule.def(
-      "load_bolt_svm_dataset", &loadSvmDatasetFromDataLoaderWrapper,
+      "load_bolt_svm_dataset", SvmDatasetLoader::loadDataset,
       py::arg("data_loader"), py::arg("softmax_for_multiclass") = true,
       "The same as the other implementation of this method, but takes in a "
       "custom data loader instead of a file name.");
@@ -426,22 +426,6 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
-}
-
-py::tuple loadSvmDatasetFromFilenameWrapper(const std::string& filename,
-                                            uint32_t batch_size,
-                                            bool softmax_for_multiclass) {
-  auto [data, labels] = SvmDatasetLoader::loadDataset(filename, batch_size,
-                                                      softmax_for_multiclass);
-  return py::make_tuple(std::move(data), std::move(labels));
-}
-
-py::tuple loadSvmDatasetFromDataLoaderWrapper(
-    const std::shared_ptr<DataLoader>& data_loader,
-    bool softmax_for_multiclass) {
-  auto [data, labels] =
-      SvmDatasetLoader::loadDataset(data_loader, softmax_for_multiclass);
-  return py::make_tuple(std::move(data), std::move(labels));
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
