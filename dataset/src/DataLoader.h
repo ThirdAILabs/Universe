@@ -15,7 +15,7 @@ class DataLoader {
 
   virtual std::optional<std::vector<std::string>> nextBatch() = 0;
 
-  virtual std::optional<std::string> getHeader() = 0;
+  virtual std::optional<std::string> getNextLine() = 0;
 
   virtual std::string resourceName() const = 0;
 
@@ -54,7 +54,7 @@ class SimpleFileDataLoader final : public DataLoader {
     return std::make_optional(std::move(lines));
   }
 
-  std::optional<std::string> getHeader() final {
+  std::optional<std::string> getNextLine() final {
     std::string line;
     if (std::getline(_file, line)) {
       return line;

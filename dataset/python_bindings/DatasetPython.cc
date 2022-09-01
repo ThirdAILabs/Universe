@@ -1,4 +1,5 @@
 #include "DatasetPython.h"
+#include "PyDataLoader.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/Datasets.h>
@@ -260,6 +261,13 @@ void createDatasetSubmodule(py::module_& module) {
            "shuffling the "
            "dataset.");
 
+  py::class_<DataLoader, PyDataLoader, std::shared_ptr<DataLoader>>(
+      dataset_submodule, "DataLoader")
+      .def(py::init<uint32_t>(), py::arg("target_batch_size"))
+      .def("next_batch", &DataLoader::nextBatch)
+      .def("get_next_line", &DataLoader::getNextLine)
+      .def("resource_name", &DataLoader::resourceName);
+
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleBufferConfig")
       .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
            py::arg("seed") = time(NULL));
@@ -287,9 +295,9 @@ void createDatasetSubmodule(py::module_& module) {
                         py::arg("values"));
 
   dataset_submodule.def(
-      "load_click_through_dataset", &ClickThroughDatasetLoader::loadDataset,
-      py::arg("filename"), py::arg("batch_size"),
-      py::arg("max_num_numerical_features"),
+      "load_click_through_dataset",
+      &ClickThroughDatasetLoader::loadDatasetFromFile, py::arg("filename"),
+      py::arg("batch_size"), py::arg("max_num_numerical_features"),
       py::arg("max_categorical_features"), py::arg("delimiter") = '\t',
       "Loads a Clickthrough dataset from a file. To be used with DLRM. \n"
       "Each line of the input file should follow this format:\n"
@@ -347,8 +355,9 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__len__", &BoltBatch::getBatchSize);
 
   dataset_submodule.def(
-      "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
-      py::arg("batch_size"), py::arg("softmax_for_multiclass") = true,
+      "load_bolt_svm_dataset", &loadSvmDatasetFromFilenameWrapper,
+      py::arg("filename"), py::arg("batch_size"),
+      py::arg("softmax_for_multiclass") = true,
       "Loads a BoltDataset from an SVM file. Each line in the "
       "input file represents a sparse input vector and should follow this "
       "format:\n"
@@ -371,6 +380,11 @@ void createDatasetSubmodule(py::module_& module) {
       "dataset is single label, then this argument has no effect.\n\n"
       "Returns a tuple containing a BoltDataset to store the data itself, and "
       "a BoltDataset storing the labels.");
+  dataset_submodule.def(
+      "load_bolt_svm_dataset", &loadSvmDatasetFromDataLoaderWrapper,
+      py::arg("data_loader"), py::arg("softmax_for_multiclass") = true,
+      "The same as the other implementation of this method, but takes in a "
+      "custom data loader instead of a file name.");
 
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
                         py::arg("data"), py::arg("batch_size") = std::nullopt);
@@ -414,11 +428,19 @@ void createDatasetSubmodule(py::module_& module) {
       "For testing purposes only.");
 }
 
-py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size,
-                                    bool softmax_for_multiclass) {
+py::tuple loadSvmDatasetFromFilenameWrapper(const std::string& filename,
+                                            uint32_t batch_size,
+                                            bool softmax_for_multiclass) {
   auto [data, labels] = SvmDatasetLoader::loadDataset(filename, batch_size,
                                                       softmax_for_multiclass);
+  return py::make_tuple(std::move(data), std::move(labels));
+}
+
+py::tuple loadSvmDatasetFromDataLoaderWrapper(
+    const std::shared_ptr<DataLoader>& data_loader,
+    bool softmax_for_multiclass) {
+  auto [data, labels] =
+      SvmDatasetLoader::loadDataset(data_loader, softmax_for_multiclass);
   return py::make_tuple(std::move(data), std::move(labels));
 }
 

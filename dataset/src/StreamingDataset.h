@@ -24,7 +24,7 @@ class StreamingDataset {
     // needed. The first row is interpreted as the header. The batch processor
     // is responsible for checking that the header is properly formatted.
     if (_batch_processor->expectsHeader()) {
-      auto header = _data_loader->getHeader();
+      auto header = _data_loader->getNextLine();
       if (!header) {
         throw std::invalid_argument("Cannot read empty file.");
       }
@@ -100,12 +100,9 @@ class StreamingDataset {
 
   uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
 
-  static std::shared_ptr<StreamingDataset<BATCH_Ts...>> loadDatasetFromFile(
-      const std::string& filename, uint32_t batch_size,
+  static std::shared_ptr<StreamingDataset<BATCH_Ts...>> loadDataset(
+      std::shared_ptr<DataLoader> data_loader,
       std::shared_ptr<BatchProcessor<BATCH_Ts...>> batch_processor) {
-    auto data_loader =
-        std::make_shared<SimpleFileDataLoader>(filename, batch_size);
-
     auto dataset = std::make_shared<StreamingDataset<BATCH_Ts...>>(
         std::move(data_loader), std::move(batch_processor));
 

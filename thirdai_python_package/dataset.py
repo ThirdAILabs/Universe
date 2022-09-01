@@ -52,5 +52,50 @@ def tokenize_to_svm(
 
             fw.write("\n")
 
+class S3DataLoader(DataLoader):
+
+    def __init__(self, s3_bucket, prefix_filter, batch_size, aws_access_key_id=None, aws_secret_access_key=None):
+        DataLoader.__init__(self, batch_size)
+        
+        import boto3
+        if aws_access_key_id:
+            session = boto3.Session(
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+            )
+            self.s3_client = session.resource('s3')
+        else:
+            self.s3_client = boto3.resource('s3')
+
+        self.batch_size = batch_size
+        self.bucket = self.s3_client.Bucket(s3_bucket)
+        self.prefix_filter = prefix_filter
+        self.objects_in_bucket = list(self.bucket.objects.filter(Prefix=prefix_filter))
+        self.line_iterator = self._get_line_iterator()
+
+    def _get_line_iterator(self):
+        for obj in self.objects_in_bucket:
+            key = obj.key
+            print("Now parsing object " + key)
+            body = obj.get()['Body']
+            for line in body.iter_lines():
+                yield line
+
+    def next_batch(self):
+        lines = []
+        while len(lines) < self.batch_size:
+            next_line = self.get_next_line()
+            if next_line == None:
+                break
+            lines.append(next_line)
+        return lines
+
+    def get_next_line(self):
+        return next(self.line_iterator, None)
+
+    def resource_name(self):
+        return self.bucket + "/" + self.prefix_filter
 
 __all__.append(tokenize_to_svm)
+__all__.append(S3DataLoader)
+
