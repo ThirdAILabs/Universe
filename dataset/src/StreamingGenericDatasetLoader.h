@@ -106,6 +106,10 @@ class StreamingGenericDatasetLoader
 
   uint32_t getLabelDim() { return _processor->getLabelDim(); }
 
+  std::vector<std::shared_ptr<Block>> getInputBlocks() {
+    return _processor->getInputBlocks();
+  }
+
  private:
   /**
    * Private constructor that takes in a pointer to

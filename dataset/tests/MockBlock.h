@@ -21,6 +21,8 @@ class MockBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _column + 1; };
 
+  uint32_t getColumnNum() const final { return _column; }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,

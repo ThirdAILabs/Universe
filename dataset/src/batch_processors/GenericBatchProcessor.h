@@ -105,6 +105,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                            BoltBatch(std::move(batch_labels)));
   }
 
+  std::vector<std::shared_ptr<Block>> getInputBlocks() const {
+    return _input_blocks;
+  }
+
   bool expectsHeader() const final { return _expects_header; }
 
   void processHeader(const std::string& header) final { (void)header; }

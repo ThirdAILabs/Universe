@@ -129,6 +129,9 @@ class UserItemHistoryBlock final : public Block {
     return max_col_idx + 1;
   }
 
+  // have to see which one to send in case of multiple columns.
+  uint32_t getColumnNum() const final { return _user_col; }
+
   static UserItemHistoryBlockPtr make(uint32_t user_col, uint32_t item_col,
                                       uint32_t timestamp_col,
                                       ThreadSafeVocabularyPtr user_id_map,
