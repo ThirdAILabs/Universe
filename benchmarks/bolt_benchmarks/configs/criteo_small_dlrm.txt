@@ -17,7 +17,7 @@ format = "click"
 type_list = ["train_data", "train_data", "train_labels"]
 path = "criteo-small/train_shuf.txt"
 batch_size = 512
-max_num_numerical_features = 15
+max_num_numerical_features = 13
 max_categorical_features = 24
 delimiter = " "
 
@@ -26,8 +26,8 @@ format = "click"
 type_list = ["test_data", "test_data", "test_labels"]
 path = "criteo-small/test_shuf.txt"
 batch_size = 256
-max_num_numerical_features = 15
-max_categorical_features = 23
+max_num_numerical_features = 13
+max_categorical_features = 24
 delimiter = " "
 
 [[datasets]]
@@ -38,7 +38,7 @@ path = "criteo-small/test_shuf.txt"
 [[nodes]]
 type = "Input"
 name = "numerical_input"
-dim = 15
+dim = 13
 
 [[nodes]]
 type = "FullyConnected"
