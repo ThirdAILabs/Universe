@@ -352,7 +352,7 @@ struct BoltVector {
       return sampled_vector;
     }
 
-    std::vector<uint32_t> positions;
+    std::vector<uint32_t> positions(len);
     // Hack to intepret the float as an integer without doing a
     // conversion.
     uint32_t seed = *reinterpret_cast<uint32_t*>(&activations[0]);
@@ -362,8 +362,9 @@ struct BoltVector {
     std::shuffle(positions.begin(), positions.end(), rd);
 
     for (auto pos : positions) {
-      if (!(labels->findActiveNeuronNoTemplate(active_neurons[pos]).activation)) {
-        sampled_vector.active_neurons[filled] = active_neurons[pos];
+      uint32_t active_neuron = isDense() ? pos : active_neurons[pos];
+      if (!(labels->findActiveNeuronNoTemplate(active_neuron).activation)) {
+        sampled_vector.active_neurons[filled] = active_neuron;
         sampled_vector.activations[filled] = activations[pos];
         filled++;  
         if (filled == n_neurons) {

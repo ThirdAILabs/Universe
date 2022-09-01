@@ -269,7 +269,7 @@ class RecallAtK : public Metric {
   double getMetricAndReset(bool verbose) final {
     double metric = static_cast<double>(_matches) / _label_count;
     if (verbose) {
-      std::cout << "Recall@" << _k << ": " << std::setprecision(3) << metric
+      std::cout << getName() << ": " << std::setprecision(3) << metric
                 << std::endl;
     }
     _matches = 0;
@@ -365,6 +365,8 @@ class SampledRecallAtK : public RecallAtK {
 
     return std::make_shared<SampledRecallAtK>(k, n_samples);
   }
+
+ private:
   uint32_t _n_samples;
 };
 
