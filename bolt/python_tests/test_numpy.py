@@ -1,4 +1,3 @@
-from thirdai import bolt, dataset
 import numpy as np
 import pytest
 from utils import gen_numpy_training_data, build_train_and_predict_single_hidden_layer
@@ -33,8 +32,8 @@ def test_sparse_numpy_output():
     data_np, labels_np = gen_numpy_training_data(
         n_classes=num_classes, n_samples=num_samples, convert_to_bolt_dataset=False
     )
-    metrics, activations, active_neurons = build_train_and_predict(
-        data_np, labels_np, num_classes, sparsity=sparsity
+    metrics, activations, active_neurons = build_train_and_predict_single_hidden_layer(
+        data_np, labels_np, num_classes, output_sparsity=sparsity
     )
 
     assert activations.shape == (num_samples, num_classes * sparsity)
