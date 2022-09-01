@@ -326,22 +326,28 @@ class SampledRecallAtK : public RecallAtK {
       : RecallAtK(k), _n_samples(n_samples) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    BoltVector sampled_output = output.sample(/* n_neurons= */ _n_samples, /* labels= */ &labels);
+    BoltVector sampled_output =
+        output.sample(/* n_neurons= */ _n_samples, /* labels= */ &labels);
     RecallAtK::computeMetric(sampled_output, labels);
   }
 
-  std::string getName() final { return "sampled@" + std::to_string(_n_samples) + "_" + RecallAtK::getName(); }
+  std::string getName() final {
+    return "sampled@" + std::to_string(_n_samples) + "_" + RecallAtK::getName();
+  }
 
   static inline bool isSampledRecallAtK(const std::string& name) {
-    return std::regex_match(name, std::regex("sampled@[1-9]\\d*_recall@[1-9]\\d*"));
+    return std::regex_match(name,
+                            std::regex("sampled@[1-9]\\d*_recall@[1-9]\\d*"));
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
     if (!isSampledRecallAtK(name)) {
       std::stringstream error_ss;
-      error_ss << "Invoked SampledRecallAtK::make with invalid string '" << name
-               << "'. SampledRecallAtK::make should be invoked with a string in "
-                  "the format 'sampled@n_recall@k', where n and k are positive integers.";
+      error_ss
+          << "Invoked SampledRecallAtK::make with invalid string '" << name
+          << "'. SampledRecallAtK::make should be invoked with a string in "
+             "the format 'sampled@n_recall@k', where n and k are positive "
+             "integers.";
       throw std::invalid_argument(error_ss.str());
     }
 
@@ -349,7 +355,7 @@ class SampledRecallAtK : public RecallAtK {
     auto n_samples = std::strtol(name.data() + 8, &end_ptr, 10);
     auto k_position = name.find("recall@") + 7;
     auto k = std::strtol(name.data() + k_position, &end_ptr, 10);
-    
+
     if (n_samples <= 0) {
       std::stringstream error_ss;
       error_ss << "SampledRecallAtK invoked with n = " << n_samples

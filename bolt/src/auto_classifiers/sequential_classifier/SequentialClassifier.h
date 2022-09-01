@@ -6,11 +6,14 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::bolt::sequential_classifier {
@@ -51,6 +54,11 @@ class SequentialClassifier {
     _schema.static_text_col_names = static_text;
     _schema.static_categorical = toCatTriplets(static_categorical);
     _schema.sequential = toSeqQuadruplets(sequential);
+
+    _single_inference_col_nums = ColumnNumberMap(_schema);
+    _single_inference_batch_processor =
+        Pipeline::buildSingleInferenceBatchProcessor(
+            _schema, _state, _single_inference_col_nums);
   }
 
   void train(const std::string& train_filename, uint32_t epochs,
@@ -138,6 +146,23 @@ class SequentialClassifier {
     return results;
   }
 
+  BoltVector predictSingle(
+      const std::unordered_map<std::string, std::string>& sample) {
+    std::vector<std::string_view> columnar_sample(
+        _single_inference_col_nums.size());
+    for (const auto& [col_name, col_value] : sample) {
+      uint32_t col_num = _single_inference_col_nums.at(col_name);
+      columnar_sample[col_num] = col_value.data();
+    }
+
+    BoltVector input_vector;
+    _single_inference_batch_processor->makeInputVector(columnar_sample,
+                                                       input_vector);
+
+    return _model->predictSingle({input_vector},
+                                 /* use_sparse_inference= */ false);
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -153,6 +178,10 @@ class SequentialClassifier {
     std::unique_ptr<SequentialClassifier> deserialize_into(
         new SequentialClassifier());
     iarchive(*deserialize_into);
+    deserialize_into->_single_inference_batch_processor =
+        Pipeline::buildSingleInferenceBatchProcessor(
+            deserialize_into->_schema, deserialize_into->_state,
+            deserialize_into->_single_inference_col_nums);
     return deserialize_into;
   }
 
@@ -183,6 +212,9 @@ class SequentialClassifier {
   DataState _state;
   BoltGraphPtr _model;
 
+  ColumnNumberMap _single_inference_col_nums;
+  dataset::GenericBatchProcessorPtr _single_inference_batch_processor;
+
   // Private constructor for cereal
   SequentialClassifier() {}
 
@@ -190,7 +222,7 @@ class SequentialClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_schema, _state, _model);
+    archive(_schema, _state, _model, _single_inference_col_nums);
   }
 };
 

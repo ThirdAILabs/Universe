@@ -6,6 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -15,13 +16,16 @@
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
+#include <vector>
 
 namespace thirdai::bolt::sequential_classifier {
 
@@ -86,6 +90,23 @@ struct Schema {
 
   Schema() {}
 
+  std::unordered_set<std::string> allColumnNames() const {
+    std::unordered_set<std::string> col_names;
+    col_names.insert(std::get<0>(user));
+    col_names.insert(std::get<0>(target));
+    col_names.insert(timestamp_col_name);
+    for (const auto& text_col_name : static_text_col_names) {
+      col_names.insert(text_col_name);
+    }
+    for (const auto& [cat_col_name, _1, _2] : static_categorical) {
+      col_names.insert(cat_col_name);
+    }
+    for (const auto& [seq_col_name, _1, _2, _3] : sequential) {
+      col_names.insert(seq_col_name);
+    }
+    return col_names;
+  }
+
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
@@ -134,6 +155,17 @@ class ColumnNumberMap {
     }
   }
 
+  ColumnNumberMap() {}
+
+  explicit ColumnNumberMap(const Schema& schema) {
+    auto columns = schema.allColumnNames();
+    uint32_t col_num = 0;
+    for (const auto& col_name : columns) {
+      _name_to_num[col_name] = col_num;
+      col_num++;
+    }
+  }
+
   uint32_t at(const std::string& col_name) const {
     if (_name_to_num.count(col_name) == 0) {
       std::stringstream error_ss;
@@ -144,8 +176,17 @@ class ColumnNumberMap {
     return _name_to_num.at(col_name);
   }
 
+  size_t size() const { return _name_to_num.size(); }
+
  private:
   std::unordered_map<std::string, uint32_t> _name_to_num;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_name_to_num);
+  }
 };
 
 class Pipeline {
@@ -181,6 +222,13 @@ class Pipeline {
             /* parallel = */ false};  // We cannot properly capture sequences
                                       // in the dataset if we process it in
                                       // parallel.
+  }
+
+  static dataset::GenericBatchProcessorPtr buildSingleInferenceBatchProcessor(
+      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums) {
+    auto input_blocks = buildInputBlocks(schema, state, col_nums);
+    return dataset::GenericBatchProcessor::make(
+        /* input_blocks= */ input_blocks, /* label_blocks= */ {});
   }
 
  private:

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <cstdio>
 #include <fstream>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -27,6 +28,15 @@ void writeMockSequentialDataToFile(const std::string& train_file_name,
   test_file << "0,1,2022-09-05,hello,3" << std::endl;
 }
 
+std::unordered_map<std::string, std::string>
+mockSequentialSampleForPredictSingle() {
+  return {{"user", "0"},
+          {"target", "0"},
+          {"timestamp", "2022-09-06"},
+          {"static_text", "hello"},
+          {"static_categorical", "0"}};
+}
+
 SequentialClassifier makeSequentialClassifierForMockData() {
   CategoricalPair user = {"user", 5};
   CategoricalPair target = {"target", 5};
@@ -45,6 +55,7 @@ TEST(SequentialClassifierTest, TestLoadSave) {
   const char* model_save_file_name = "seq_class_save";
 
   writeMockSequentialDataToFile(train_file_name, test_file_name);
+  auto predict_single_sample = mockSequentialSampleForPredictSingle();
 
   auto classifier = makeSequentialClassifierForMockData();
 
@@ -57,12 +68,25 @@ TEST(SequentialClassifierTest, TestLoadSave) {
 
   auto original_model_results =
       classifier.predict(test_file_name, /* metrics= */ {"recall@1"});
+  auto original_model_single_output =
+      classifier.predictSingle(predict_single_sample);
 
   auto loaded_model_results =
       new_classifier->predict(test_file_name, /* metrics= */ {"recall@1"});
+  auto loaded_model_single_output =
+      new_classifier->predictSingle(predict_single_sample);
 
   ASSERT_EQ(original_model_results.first["recall@1"],
             loaded_model_results.first["recall@1"]);
+
+  ASSERT_EQ(original_model_single_output.isDense(), true);
+  ASSERT_EQ(loaded_model_single_output.isDense(), true);
+  ASSERT_EQ(original_model_single_output.len, loaded_model_single_output.len);
+
+  for (uint32_t pos = 0; pos < original_model_single_output.len; pos++) {
+    ASSERT_EQ(original_model_single_output.activations[pos],
+              loaded_model_single_output.activations[pos]);
+  }
 
   std::remove(train_file_name);
   std::remove(test_file_name);
