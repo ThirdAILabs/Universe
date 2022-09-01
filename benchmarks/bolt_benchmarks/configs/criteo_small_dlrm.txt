@@ -1,6 +1,6 @@
-experiment_identifier = "Criteo 46M DLRM"
+experiment_identifier = "Criteo DLRM"
 model_identifier = "criteo_dlrm"
-dataset_identifier = "criteo_click_through_46M"
+dataset_identifier = "criteo_click_through_small"
 
 
 train_metrics = []
@@ -15,18 +15,18 @@ compute_roc_auc = true
 [[datasets]]
 format = "click"
 type_list = ["train_data", "train_data", "train_labels"]
-path = "criteo/train_shuf.txt"
+path = "criteo-small/train_shuf.txt"
 batch_size = 512
-max_num_numerical_features = 16
-max_categorical_features = 23
+max_num_numerical_features = 15
+max_categorical_features = 24
 delimiter = " "
 
 [[datasets]]
 format = "click"
 type_list = ["test_data", "test_data", "test_labels"]
-path = "criteo/test_shuf.txt"
+path = "criteo-small/test_shuf.txt"
 batch_size = 256
-max_num_numerical_features = 16
+max_num_numerical_features = 15
 max_categorical_features = 23
 delimiter = " "
 
@@ -38,7 +38,7 @@ path = "criteo-small/test_shuf.txt"
 [[nodes]]
 type = "Input"
 name = "numerical_input"
-dim = 16
+dim = 15
 
 [[nodes]]
 type = "FullyConnected"
@@ -60,8 +60,8 @@ activation = "relu"
 type = "Input"
 name = "categorical_input"
 dim = 4294967295
-min_num_nonzeros = 23
-max_num_nonzeros = 23
+min_num_nonzeros = 0
+max_num_nonzeros = 24
 
 [[nodes]]
 type = "Embedding"
