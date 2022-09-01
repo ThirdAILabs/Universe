@@ -49,7 +49,8 @@ BoltGraph getModel() {
       /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(1, 1));
   auto embedding = std::make_shared<EmbeddingNode>(
       /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
-      /* log_embedding_block_size= */ 12);
+      /* log_embedding_block_size= */ 12,
+      /* reduction= */ "sum");
   embedding->addInput(token_input);
 
   auto concat = std::make_shared<ConcatenateNode>();
