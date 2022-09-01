@@ -164,9 +164,8 @@ class MeanSquaredErrorMetric final : public Metric {
 
     // If both are sparse then we need to iterate over the nonzeros from both
     // vectors. To avoid double counting the overlapping neurons we avoid
-    // computing the error while iterating over the output active_neurons, if
-    // the labels also contain the same active_neuron.
-
+    // computing the error while iterating over the labels for neurons that are
+    // also in the output active neurons.
     float error = 0.0;
     for (uint32_t i = 0; i < output.len; i++) {
       float label =
