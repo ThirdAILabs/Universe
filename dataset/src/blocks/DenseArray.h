@@ -33,7 +33,6 @@ class DenseArrayBlock : public Block {
 
   uint32_t getColumnNum() const final { return _start_col; }
 
-
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,

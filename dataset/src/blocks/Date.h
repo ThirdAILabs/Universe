@@ -40,7 +40,6 @@ class DateBlock : public Block {
 
   uint32_t getColumnNum() const final { return _col; }
 
-
  protected:
   static constexpr uint32_t day_of_week_dim = 7;
   static constexpr uint32_t month_of_year_dim = 12;
