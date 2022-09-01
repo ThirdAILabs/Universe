@@ -33,7 +33,7 @@ delimiter = " "
 [[datasets]]
 format = "click_labels"
 type_list = ["test_labels_np"]
-path = "criteo-small/test_shuf.txt"
+path = "criteo/test_shuf.txt"
 
 [[nodes]]
 type = "Input"
