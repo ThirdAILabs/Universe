@@ -235,8 +235,8 @@ BoltGraph::getInputGradientSingle(
 
     std::vector<float> normalised_vec_grad(input_vector.len, 0.0);
 
-    // Assigning the normalised_vec_grad data() to gradients so that we dont have to
-    // worry about initializing and then freeing the memory.
+    // Assigning the normalised_vec_grad data() to gradients so that we dont
+    // have to worry about initializing and then freeing the memory.
 
     input_vector.gradients = normalised_vec_grad.data();
     std::vector<uint32_t> input_vector_indices;
@@ -281,7 +281,7 @@ BoltGraph::getInputGradientSingle(
     input_vector.gradients = nullptr;
     cleanupAfterBatchProcessing();
 
-    for(uint32_t i=0;i<input_vector.len;i++) {
+    for (uint32_t i = 0; i < input_vector.len; i++) {
       normalised_vec_grad[i] /= input_vector.activations[i];
     }
 
