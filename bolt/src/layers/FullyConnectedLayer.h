@@ -4,7 +4,6 @@
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
 #include "LayerUtils.h"
-#include "cereal/types/utility.hpp"
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
@@ -192,12 +191,12 @@ class FullyConnectedLayer final {
   // The following variables track which neurons were active during batch
   // training.
 
-  // _prev_is_active is used if _prev_is_dense == false
-  // It tracks the neurons in the previous layer which are active.
+  // _prev_is_active is used if _prev_is_dense == false. It tracks the neurons
+  // in the previous layer which are active at some point in the batch.
   std::vector<bool> _prev_is_active;
 
-  // _is_active is used if _this_is_dense == false.
-  // It tracks the neurons in the current layer which are active.
+  // _is_active is used if _this_is_dense == false. It tracks the neurons in the
+  // current layer which are active at some point in the batch.
   std::vector<bool> _is_active;
 
   /* The following two variables are only used if _prev_is_dense == false and
