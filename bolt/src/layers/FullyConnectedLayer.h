@@ -181,7 +181,8 @@ class FullyConnectedLayer final {
   //  - populated during forward
   //  - used during updateParameters
   //  - cleaned up/zero'd during updateParameters (with a call to
-  //    cleanupWithinBatchVariables)
+  //    cleanupWithinBatchVariables for everything except _active_pairs_array,
+  //    which we clean up while we update the weights.)
 
   // These track whether the current/previous layer was dense (using whether
   // the BoltVectors in forward are dense).
