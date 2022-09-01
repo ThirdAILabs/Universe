@@ -192,8 +192,7 @@ class FullyConnectedLayer final {
   // The following variables track which neurons were active during batch
   // training.
 
-  // _prev_is_active is only used if _prev_is_dense == false and _cur_is_dense
-  // is true.
+  // _prev_is_active is used if _prev_is_dense == false
   // It tracks the neurons in the previous layer which are active.
   std::vector<bool> _prev_is_active;
 

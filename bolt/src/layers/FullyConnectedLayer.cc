@@ -187,7 +187,6 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
     }
   }
 
-  // _is_active is used for biases as well so always set if !DENSE
   if constexpr (!DENSE) {
     for (uint64_t n = 0; n < len_out; n++) {
       uint64_t act_neuron = output.active_neurons[n];
@@ -195,8 +194,7 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
     }
   }
 
-  // we only use _prev_is_active in the sparse-dense case
-  if constexpr (!PREV_DENSE && DENSE) {
+  if constexpr (!PREV_DENSE) {
     for (uint64_t i = 0; i < input.len; i++) {
       uint64_t act_neuron = input.active_neurons[i];
       _prev_is_active[act_neuron] = true;
