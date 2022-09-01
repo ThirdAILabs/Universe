@@ -1,4 +1,4 @@
-experiment_identifier = "Criteo DLRM 46M "
+experiment_identifier = "Criteo DLRM 46M"
 model_identifier = "criteo_dlrm"
 dataset_identifier = "criteo_click_through_46M"
 
