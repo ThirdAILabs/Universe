@@ -233,12 +233,12 @@ BoltGraph::getInputGradientSingle(
 
     BoltVector& input_vector = _inputs[0]->getOutputVector(/*vec_index= */ 0);
 
-    std::vector<float> vec_grad(input_vector.len, 0.0);
+    std::vector<float> normalised_vec_grad(input_vector.len, 0.0);
 
-    // Assigning the vec_grad data() to gradients so that we dont have to
+    // Assigning the normalised_vec_grad data() to gradients so that we dont have to
     // worry about initializing and then freeing the memory.
 
-    input_vector.gradients = vec_grad.data();
+    input_vector.gradients = normalised_vec_grad.data();
     std::vector<uint32_t> input_vector_indices;
 
     /*
@@ -281,10 +281,14 @@ BoltGraph::getInputGradientSingle(
     input_vector.gradients = nullptr;
     cleanupAfterBatchProcessing();
 
-    if (input_vector_indices.empty()) {
-      return std::make_pair(std::nullopt, vec_grad);
+    for(uint32_t i=0;i<input_vector.len;i++) {
+      normalised_vec_grad[i] /= input_vector.activations[i];
     }
-    return std::make_pair(input_vector_indices, vec_grad);
+
+    if (input_vector_indices.empty()) {
+      return std::make_pair(std::nullopt, normalised_vec_grad);
+    }
+    return std::make_pair(input_vector_indices, normalised_vec_grad);
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;

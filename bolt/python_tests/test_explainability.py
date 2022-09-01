@@ -39,6 +39,7 @@ def test_get_input_gradients():
     for batch_idx in range(len(test_x)):
         for vec_idx in range(len(test_x[batch_idx])):
             explain = model.explain_prediction([test_x[batch_idx][vec_idx]])
+            explain = explain * test_x[batch_idx][vec_idx]
             explain_np = np.array(explain)
 
             if np.argmax(explain_np) == test_y_np[batch_idx * batch_size + vec_idx]:
