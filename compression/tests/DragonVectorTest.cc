@@ -15,7 +15,6 @@ class DragonVectorTest : public testing::Test {
 
  public:
   DragonVector<float> _vec;
-
   std::vector<float> _original_vec;
   uint32_t _uncompressed_size = 100;
   float _compression_density = 0.1;

@@ -32,17 +32,19 @@ inline T estimateTopKThreshold(const T* values, uint32_t size,
   for (uint32_t i = 0; i < sample_population_size; i++) {
     sampled_values[i] = std::abs(values[distribution(gen)]);
   }
-
-  // This is Quickselect. We can find the i'th largest element using
-  // nth_element, which is exactly what we need to do now
+  /*
+   * This is Quickselect. We can find the i'th largest element using
+   * nth_element, which is exactly what we need to do now. Works on unsorted
+   * arrays too.
+   */
   std::nth_element(sampled_values.begin(),
                    sampled_values.begin() + sample_population_size - num_top_k,
                    sampled_values.end());
 
   // threshold is an estimate for the kth largest element in the gradients
   // matrix
-  T threshold = sampled_values[sample_population_size - num_top_k];
-  return threshold;
+  T estimated_threshold = sampled_values[sample_population_size - num_top_k];
+  return estimated_threshold;
 }
 
 }  // namespace thirdai::compression

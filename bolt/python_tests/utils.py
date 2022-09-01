@@ -179,15 +179,21 @@ def compute_accuracy_with_file(test_labels, pred_file):
     ) / len(predictions)
 
 
-def build_dag_network():
-    input_layer = bolt.graph.Input(dim=10)
+def build_simple_hidden_layer_model(
+    input_dim=10,
+    hidden_dim=10,
+    output_dim=10,
+):
+    input_layer = bolt.graph.Input(dim=input_dim)
 
     hidden_layer = bolt.graph.FullyConnected(
-        dim=10,
+        dim=hidden_dim,
         activation="relu",
     )(input_layer)
 
-    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(hidden_layer)
+    output_layer = bolt.graph.FullyConnected(dim=output_dim, activation="softmax")(
+        hidden_layer
+    )
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
 

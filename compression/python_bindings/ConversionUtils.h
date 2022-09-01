@@ -15,6 +15,7 @@ namespace py = pybind11;
 
 namespace thirdai::compression::python {
 
+// TODO(Shubh): Profiling this function to see if copying is a bottleneck.
 template <class T>
 inline std::vector<T> makeVectorFrom1dNumpyArray(
     const py::array_t<T>& py_array) {

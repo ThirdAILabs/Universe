@@ -14,8 +14,11 @@ class CompressedVector {
  public:
   CompressedVector<T>() {}
 
-  // std::vector methods for compressed vector
-
+  /*
+   * Index refers to the index in the uncompressed_vector.
+   * Since, the vector is compressed, the returned value is just an estimate and
+   * not exact.
+   */
   virtual T get(uint32_t index) const = 0;
 
   virtual void set(uint32_t index, T value) = 0;
@@ -26,7 +29,13 @@ class CompressedVector {
 
   /*
    * Extending a sketch is appending the given sketch to the current object.
-   * Each compressed vector type will have its own logic for extending
+   * Each compressed vector type will have its own logic for extending.
+   * Extending a CompressedVector by another is supposed to be non-lossy in
+   * nature as all the data from the two vectors is simply concatenated. In
+   * contrast, add might be lossy in nature but is supposed to be all-reducible.
+   * Hence, there is a tradeoff:
+   *  extend: non-lossy but more memory
+   *  add: lossy but memory footprint does not change.
    */
   void extend(const CompressedVector<T>& vec);
 
@@ -63,12 +72,6 @@ class DragonVector final : public CompressedVector<T> {
                float compression_density, uint32_t seed_for_hashing,
                uint32_t sample_population_size);
 
-  /*
-   * Implementing std::vector's standard methods for the class
-   */
-
-  // index refers to the index in the uncompressed_vector
-
   T get(uint32_t index) const final;
 
   void set(uint32_t index, T value) final;
@@ -79,15 +82,6 @@ class DragonVector final : public CompressedVector<T> {
    * Implementing utility methods for the class
    */
 
-  /*
-   * Extending a DragonVector by another is simply concatenating the indices and
-   * values vectors of the two. Extend is non-lossy in nature as all the hashed
-   * indices and values pairs are present. In contrast, add is lossy in nature
-   * but is all-reducible.
-   * Hence, there is a tradeoff:
-   *  extend: non-lossy but more memory
-   *  add: lossy but memory footprint does not change.
-   */
   void extend(const DragonVector<T>& vec);
 
   std::vector<uint32_t> indices() { return _indices; }
@@ -104,10 +98,6 @@ class DragonVector final : public CompressedVector<T> {
 
   std::string type() const final;
 
-  /*
-   * We are storing indices,values tuple hence, decompressing is just
-   * putting corresponding values for the stored indices
-   */
   std::vector<T> decompress() const final;
 
  private:

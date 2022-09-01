@@ -48,19 +48,20 @@ DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
   _indices.assign(sketch_size, 0);
   _values.assign(sketch_size, 0);
 
-  // First calculate an approximate top-k threshold. Then, we sketch the
-  // original vector to a smaller dragon vector
-
-  T threshold = estimateTopKThreshold(
+  /*
+   * First calculate an approximate top-k threshold. Then, we sketch the
+   * original vector to a smaller dragon vector. We sketch only the values which
+   * are larger than the threshold.
+   */
+  T estimated_threshold = estimateTopKThreshold(
       values_to_compress, size, compression_density,
       /*seed_for_sampling=*/seed_for_hashing, sample_population_size);
-  sketch(values_to_compress, threshold, size, sketch_size);
+  sketch(values_to_compress, estimated_threshold, size, sketch_size);
 }
 
 /*
- * For elements in the values array with absolute value greater than the
- * threshold, we hash the corresponding indices to a smaller _indices array and
- * store the elements in the _values array.
+ * The methods hashes the (index, value) pair in the original array to the
+ * vectors (_indices, _values) if the value is larger than the threshold.
  */
 template <class T>
 void DragonVector<T>::sketch(const T* values, T threshold, uint32_t size,
@@ -80,16 +81,15 @@ void DragonVector<T>::sketch(const T* values, T threshold, uint32_t size,
 }
 
 /*
- * Implementing std::vector's standard methods for the class
+ * If the index at the hash position is equal to index, we return the value
+ * back, otherwise we return a zero because the index is not stored in the
+ * Dragon Vector
  */
-
 template <class T>
 T DragonVector<T>::get(uint32_t index) const {
   uint32_t sketch_size = _indices.size();
   UniversalHash hash_function = UniversalHash(_seed_for_hashing);
   uint32_t hash = hash_function.gethash(index) % sketch_size;
-  // If the index at the hash position is equal to index, we return the value
-  // back, otherwise we return a zero. This is no-branching if-else.
   return (_indices[hash] == index) * _values[hash];
 }
 
@@ -118,8 +118,10 @@ template <class T>
 void DragonVector<T>::extend(const DragonVector<T>& vec) {
   /*
    * We should not check whether the seeds for hashing are the same for the two
-   * Dragon vectors. We will directly append the indices and values of given
-   * vector to the current one but leave all other parameters intact
+   * Dragon vectors since we will directly append the indices and values of
+   * given vector to the current one and leave all other parameters intact.
+   * Extend is non-lossy, we do not lose any information about indices,values
+   * even when we add Dragon Vectors with different seeds.
    */
   _indices.insert(std::end(_indices), std::begin(vec._indices),
                   std::end(vec._indices));
@@ -128,6 +130,10 @@ void DragonVector<T>::extend(const DragonVector<T>& vec) {
   //_uncompressed_size remains the same
 }
 
+/*
+ * We are storing indices,values tuple hence, decompressing is just
+ * putting corresponding values for the stored indices
+ */
 template <class T>
 std::vector<T> DragonVector<T>::decompress() const {
   std::vector<T> decompressedVector(_uncompressed_size, 0);

@@ -8,7 +8,7 @@ from thirdai import bolt, dataset
 from utils import (
     gen_numpy_training_data,
     build_single_node_bolt_dag_model,
-    build_dag_network,
+    build_simple_hidden_layer_model,
 )
 
 HIDDEN_DIM = 10
@@ -57,7 +57,7 @@ def set_compressed_dragon_gradients(model, compressed_weight_grads):
 
 # We will get a compressed vector of gradients and then check whether the values are right
 def test_get_gradients():
-    model = build_dag_network()
+    model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     first_layer = model.get_layer("fc_1")
@@ -108,7 +108,7 @@ def test_get_gradients():
 # Instead of the earlier set function, set currently accepts a compressed vector
 # if the compressed argument is True.
 def test_set_gradients():
-    model = build_dag_network()
+    model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     first_layer = model.get_layer("fc_1")
