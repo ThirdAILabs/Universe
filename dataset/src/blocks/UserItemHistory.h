@@ -119,6 +119,9 @@ class UserItemHistoryBlock final : public Block {
 
   bool isDense() const final { return false; }
 
+  // have to see which one to send in case of multiple columns.
+  uint32_t getColumnNum() const final { return _user_col; }
+
   uint32_t expectedNumColumns() const final {
     uint32_t max_col_idx = std::max(_user_col, _item_col);
     max_col_idx = std::max(max_col_idx, _timestamp_col);

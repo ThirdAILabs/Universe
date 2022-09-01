@@ -70,9 +70,7 @@ class CookieMonster:
             pipeline = DataPipeline(
                 file,
                 batch_size=batch_size,
-                input_blocks=[
-                    blocks.TextPairGram(col=1, dim=self.input_dimension)
-                ],
+                input_blocks=[blocks.TextPairGram(col=1, dim=self.input_dimension)],
                 label_blocks=[blocks.NumericalId(col=0, n_classes=label_dim)],
                 delimiter=",",
             )

@@ -4,6 +4,7 @@
 #include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>

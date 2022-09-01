@@ -118,6 +118,8 @@ class Block {
    */
   virtual uint32_t featureDim() const = 0;
 
+  virtual uint32_t getColumnNum() const = 0;
+
   /**
    * True if the block produces dense features, False otherwise.
    */

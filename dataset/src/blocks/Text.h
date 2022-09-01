@@ -19,6 +19,8 @@ class TextBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
+  uint32_t getColumnNum() const final { return _col; }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,

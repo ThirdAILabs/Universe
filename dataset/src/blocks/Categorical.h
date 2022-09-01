@@ -24,6 +24,8 @@ class CategoricalBlock : public Block {
 
   uint32_t featureDim() const final { return _n_classes; };
 
+  uint32_t getColumnNum() const final { return _col; }
+
   bool isDense() const final { return false; };
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
