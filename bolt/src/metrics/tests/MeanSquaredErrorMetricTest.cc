@@ -21,7 +21,7 @@ TEST(LossFunctionMetrics, MeanSquaredErrorMetric) {
                                          0.0, 0.0, 0.0, 0.3};
   BoltVector dense_output = BoltVector::makeDenseVector(dense_output_vec);
   BoltVector sparse_output =
-      BoltVector::makeSparseVector({0, 1, 3, 7}, {0.2, 0.2, 0.3, 0.3});
+      BoltVector::makeSparseVector({0, 7, 1, 3}, {0.2, 0.3, 0.2, 0.3});
 
   std::vector<float> dense_labels_vec = {0.0, 0.0, 0.0, 0.6,
                                          0.0, 0.0, 0.0, 0.4};
