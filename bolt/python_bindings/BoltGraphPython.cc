@@ -6,7 +6,7 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/callbacks/Callback.h>
-#include <bolt/src/graph/callbacks/EarlyStopValidation.h>
+#include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -518,13 +518,14 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
 
   py::class_<Callback, CallbackPtr>(callbacks_submodule, "Callback");  // NOLINT
 
-  py::class_<EarlyStopValidation, EarlyStopValidationPtr, Callback>(
-      callbacks_submodule, "EarlyStopValidation")
+  py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
+      callbacks_submodule, "EarlyStopCheckpoint")
       .def(py::init<std::vector<dataset::BoltDatasetPtr>,
-                    dataset::BoltDatasetPtr, PredictConfig, bool, uint32_t>(),
+                    dataset::BoltDatasetPtr, PredictConfig, std::string,
+                    uint32_t, double>(),
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("patience"),
-           py::arg("restore_best_weights"));
+           py::arg("predict_config"), py::arg("best_model_save_location"),
+           py::arg("patience"), py::arg("min_delta"));
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,

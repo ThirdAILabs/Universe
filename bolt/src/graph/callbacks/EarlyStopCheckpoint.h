@@ -10,29 +10,40 @@
 namespace thirdai::bolt {
 
 /**
- * This callback is intended to stop training early based on prediction results
- * from a given validation set.
+ * @brief This callback is intended to stop training early based on prediction
+ * results from a given validation set. Saves the best model to
+ * best_model_save_location
  *
- * To configure the stopping threshold we pass the "patience" argument which
- * tells us how many extra epochs we'll train for without beating our previous
- * best validation metric.
+ * @param predict_config configurations for evaluation on the given validation
+ * data. must include metrics
+ * @param best_model_save_location where to save the model that scored the best
+ * on the validation set
+ * @param patience number of epochs with no improvement in validation score
+ * after which training will be stopped.
+ * @param min_delta minimum change in the monitored quantity to qualify as an
+ * improvement, i.e. an absolute change of less than min_delta, will count as no
+ * improvement.
  *
- * This model will always save the best model checkpoint to a file on disk. If
- * restore_best_weights is false it will also save the last model checkpoint.
- * Otherwise it will reset the model to its best checkpoint. The default
- * behavior is not to restore the best weights.
+ * Based on the keras design found here:
+ * https://keras.io/api/callbacks/early_stopping/
+ *
+ * TODO(david): Validation data should ideally be moved to the train level and
+ * this callback should only monitor changes in validation metrics. Let's
+ * refactor this when the validation data needs to be used elsewhere.
  */
-class EarlyStopValidation : public Callback {
+class EarlyStopCheckpoint : public Callback {
  public:
-  EarlyStopValidation(std::vector<dataset::BoltDatasetPtr> validation_data,
+  EarlyStopCheckpoint(std::vector<dataset::BoltDatasetPtr> validation_data,
                       dataset::BoltDatasetPtr validation_labels,
-                      PredictConfig predict_config, uint32_t patience = 2,
-                      bool restore_best_weights = false)
+                      PredictConfig predict_config,
+                      std::string best_model_save_location,
+                      uint32_t patience = 2, double min_delta = 0)
       : _validation_data(std::move(validation_data)),
         _validation_labels(std::move(validation_labels)),
         _predict_config(std::move(predict_config)),
+        _best_model_save_location(std::move(best_model_save_location)),
         _patience(patience),
-        _restore_best_weights(restore_best_weights) {
+        _min_delta(std::abs(min_delta)) {
     uint32_t num_metrics = _predict_config.getMetricNames().size();
     if (num_metrics != 1) {
       throw std::invalid_argument(
@@ -53,8 +64,8 @@ class EarlyStopValidation : public Callback {
     _should_stop_training = false;
     _should_minimize = makeMetric(metric_name)->smallerIsBetter();
     _best_validation_score = _should_minimize
-                                 ? std::numeric_limits<double>::min()
-                                 : std::numeric_limits<double>::max();
+                                 ? std::numeric_limits<double>::max()
+                                 : std::numeric_limits<double>::min();
   }
 
   void onEpochEnd(BoltGraph& model, TrainConfig& train_config) final {
@@ -69,7 +80,7 @@ class EarlyStopValidation : public Callback {
     if (isImprovement(metric_val)) {
       _best_validation_score = metric_val;
       _epochs_since_best = 0;
-      model.save(BEST_MODEL_SAVE_LOCATION);
+      model.save(_best_model_save_location);
     } else if (_epochs_since_best == _patience) {
       _should_stop_training = true;
     }
@@ -77,11 +88,7 @@ class EarlyStopValidation : public Callback {
 
   void onTrainEnd(BoltGraph& model, TrainConfig& train_config) final {
     (void)train_config;
-    if (_restore_best_weights) {
-      model = *BoltGraph::load(BEST_MODEL_SAVE_LOCATION);
-    } else {
-      model.save(LAST_MODEL_SAVE_LOCATION);
-    }
+    (void)model;
   }
 
   bool shouldStopTraining() final { return _should_stop_training; }
@@ -89,19 +96,17 @@ class EarlyStopValidation : public Callback {
  private:
   bool isImprovement(double metric_val) const {
     if (_should_minimize) {
-      return metric_val < _best_validation_score;
+      return metric_val + _min_delta < _best_validation_score;
     }
-    return metric_val > _best_validation_score;
+    return metric_val - _min_delta > _best_validation_score;
   }
-
-  inline static std::string BEST_MODEL_SAVE_LOCATION = "checkpoint_best.model";
-  inline static std::string LAST_MODEL_SAVE_LOCATION = "checkpoint_last.model";
 
   std::vector<dataset::BoltDatasetPtr> _validation_data;
   dataset::BoltDatasetPtr _validation_labels;
   PredictConfig _predict_config;
+  std::string _best_model_save_location;
   uint32_t _patience;
-  bool _restore_best_weights;
+  double _min_delta;
 
   bool _should_stop_training;
   uint32_t _epochs_since_best;
@@ -109,6 +114,6 @@ class EarlyStopValidation : public Callback {
   double _best_validation_score;
 };
 
-using EarlyStopValidationPtr = std::shared_ptr<EarlyStopValidation>;
+using EarlyStopCheckpointPtr = std::shared_ptr<EarlyStopCheckpoint>;
 
 }  // namespace thirdai::bolt
