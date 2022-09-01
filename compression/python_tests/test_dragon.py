@@ -56,24 +56,24 @@ def set_compressed_dragon_gradients(model, compressed_weight_grads):
 
 
 # We will get a compressed vector of gradients and then check whether the values are right
-def test_get_gradients():
+def test_get_values():
     model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     first_layer = model.get_layer("fc_1")
 
-    first_layer_biases_gradients = np.ravel(first_layer.biases.get())
-    first_layer_weight_gradients = np.ravel(first_layer.weights.get())
+    first_layer_biases = np.ravel(first_layer.biases.get())
+    first_layer_weights = np.ravel(first_layer.weights.get())
 
     # getting the compressed gradients
-    compressed_weight_gradients = first_layer.weights.compress(
+    compressed_weights = first_layer.weights.compress(
         compression_scheme="dragon",
         compression_density=0.2,
         seed_for_hashing=1,
         sample_population_size=50,
     )
 
-    compressed_biases_gradients = first_layer.biases.compress(
+    compressed_biases = first_layer.biases.compress(
         compression_scheme="dragon",
         compression_density=0.2,
         seed_for_hashing=1,
@@ -81,73 +81,55 @@ def test_get_gradients():
     )
 
     # checking whether the gradients are correct
-    for i, indices in enumerate(compressed_weight_gradients["indices"]):
+    for i, indices in enumerate(compressed_weights["indices"]):
         if indices != 0:
-            assert (
-                first_layer_weight_gradients[indices]
-                == compressed_weight_gradients["values"][i]
-            )
+            assert first_layer_weights[indices] == compressed_weights["values"][i]
 
-    for i, indices in enumerate(compressed_biases_gradients["indices"]):
+    for i, indices in enumerate(compressed_biases["indices"]):
         if indices != 0:
-            assert (
-                first_layer_biases_gradients[indices]
-                == compressed_biases_gradients["values"][i]
-            )
+            assert first_layer_biases[indices] == compressed_biases["values"][i]
 
-    assert (
-        compressed_weight_gradients["original_size"]
-        == first_layer_weight_gradients.shape[0]
-    )
-    assert (
-        compressed_biases_gradients["original_size"]
-        == first_layer_biases_gradients.shape[0]
-    )
+    assert compressed_weights["original_size"] == first_layer_weights.shape[0]
+    assert compressed_biases["original_size"] == first_layer_biases.shape[0]
 
 
 # Instead of the earlier set function, set currently accepts a compressed vector
 # if the compressed argument is True.
-def test_set_gradients():
+def test_set_values():
     model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     first_layer = model.get_layer("fc_1")
 
     # getting the compressed gradients
-    compressed_weight_gradients = first_layer.weights.compress(
+    compressed_weights = first_layer.weights.compress(
         compression_scheme="dragon",
         compression_density=0.2,
         seed_for_hashing=1,
         sample_population_size=50,
     )
 
-    compressed_biases_gradients = first_layer.biases.compress(
+    compressed_biases = first_layer.biases.compress(
         compression_scheme="dragon",
         compression_density=0.2,
         seed_for_hashing=1,
         sample_population_size=5,
     )
 
-    first_layer.weights.set(compressed_weight_gradients)
-    first_layer.biases.set(compressed_biases_gradients)
+    first_layer.weights.set(compressed_weights)
+    first_layer.biases.set(compressed_biases)
 
-    reconstructed_biases_gradients = np.ravel(first_layer.biases.get())
-    reconstructed_weight_gradients = np.ravel(first_layer.weights.get())
+    reconstructed_biases = np.ravel(first_layer.biases.get())
+    reconstructed_weights = np.ravel(first_layer.weights.get())
 
     # checking whether the gradients are correct
-    for i, indices in enumerate(compressed_weight_gradients["indices"]):
+    for i, indices in enumerate(compressed_weights["indices"]):
         if indices != 0:
-            assert (
-                reconstructed_weight_gradients[indices]
-                == compressed_weight_gradients["values"][i]
-            )
+            assert reconstructed_weights[indices] == compressed_weights["values"][i]
 
-    for i, indices in enumerate(compressed_biases_gradients["indices"]):
+    for i, indices in enumerate(compressed_biases["indices"]):
         if indices != 0:
-            assert (
-                reconstructed_biases_gradients[indices]
-                == compressed_biases_gradients["values"][i]
-            )
+            assert reconstructed_biases[indices] == compressed_biases["values"][i]
 
 
 # We compress the weight gradients of the model, and then reconstruct the weight
