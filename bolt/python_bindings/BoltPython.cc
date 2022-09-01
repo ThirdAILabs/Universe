@@ -1,5 +1,6 @@
 #include "BoltPython.h"
 #include "BoltGraphPython.h"
+#include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/auto_classifiers/TabularClassifier.h>
 #include <bolt/src/auto_classifiers/TextClassifier.h>
@@ -18,6 +19,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::bolt::python {
@@ -228,7 +230,13 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
-           py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1);
+           py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
+      .def("predict_single",
+           [](SequentialClassifier& model,
+              const std::unordered_map<std::string, std::string>& sample) {
+             auto output = model.predictSingle(sample);
+             return denseBoltVectorToNumpy(output);
+           });
 
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
