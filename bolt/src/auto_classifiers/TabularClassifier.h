@@ -3,6 +3,8 @@
 #include <cereal/archives/binary.hpp>
 #include "AutoClassifierBase.h"
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -10,8 +12,11 @@
 #include <dataset/src/encodings/categorical/StringLookup.h>
 #include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <memory>
 
 namespace thirdai::bolt {
+
+using Blocks = std::vector<std::shared_ptr<dataset::Block>>;
 
 class TabularClassifier {
  public:
@@ -61,34 +66,24 @@ class TabularClassifier {
         output_filename, _metadata->getClassIdToNames());
   }
 
+  std::tuple<std::vector<std::string>, std::vector<float>,
+             std::vector<uint32_t>>
+  explain(std::vector<std::string>& values) {
+    BoltVector input = makeInputVector(values);
+
+    auto [gradients_indices, gradients_ratios] =
+        _classifier->getInputGradientSingle({input});
+
+    RootCauseAnalysis explanation(getInputBlocks());
+
+    auto result = explanation.getPercentExplanationWithColumnNames(
+        gradients_ratios, *gradients_indices, _metadata->getColNumToColName());
+
+    return result;
+  }
+
   std::string predictSingle(std::vector<std::string>& values) {
-    if (values.size() != _metadata->numColumns() - 1) {
-      throw std::invalid_argument(
-          "Passed in an input of size " + std::to_string(values.size()) +
-          " but needed a vector of size " +
-          std::to_string(_metadata->numColumns() - 1) +
-          ". predict_single expects a vector of values in the same format as "
-          "the original csv but without the label present.");
-    }
-
-    std::vector<std::string_view> encodable_values(values.begin(),
-                                                   values.end());
-
-    /*
-      the batch processor fails if the number of columns mismatches with the
-      original format. since we are only creating an input vector here the
-      label is not relevant, thus we add some bogus here in the label's column
-    */
-    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
-                            /* value = */ " ");
-
-    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
-        makeTabularBatchProcessor();
-
-    BoltVector input;
-    if (auto err = batch_processor->makeInputVector(encodable_values, input)) {
-      std::rethrow_exception(err);
-    }
+    BoltVector input = makeInputVector(values);
 
     BoltVector output =
         _classifier->predictSingle({input},
@@ -151,6 +146,44 @@ class TabularClassifier {
     return std::make_shared<dataset::GenericBatchProcessor>(
         /* input_blocks = */ input_blocks,
         /* target_blocks = */ target_blocks, /* has_header = */ true);
+  }
+
+  Blocks getInputBlocks() {
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
+
+    return batch_processor->getInputBlocks();
+  }
+
+  BoltVector makeInputVector(std::vector<std::string>& values) {
+    if (values.size() != _metadata->numColumns() - 1) {
+      throw std::invalid_argument(
+          "Passed in an input of size " + std::to_string(values.size()) +
+          " but needed a vector of size " +
+          std::to_string(_metadata->numColumns() - 1) +
+          ". predict_single expects a vector of values in the same format as "
+          "the original csv but without the label present.");
+    }
+
+    std::vector<std::string_view> encodable_values(values.begin(),
+                                                   values.end());
+
+    /*
+      the batch processor fails if the number of columns mismatches with the
+      original format. since we are only creating an input vector here the
+      label is not relevant, thus we add some bogus here in the label's column
+    */
+    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
+                            /* value = */ " ");
+
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
+
+    BoltVector input;
+    if (auto err = batch_processor->makeInputVector(encodable_values, input)) {
+      std::rethrow_exception(err);
+    }
+    return input;
   }
 
   // Private constructor for cereal
