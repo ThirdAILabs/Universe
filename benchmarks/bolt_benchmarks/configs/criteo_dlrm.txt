@@ -16,7 +16,7 @@ compute_roc_auc = true
 format = "click"
 type_list = ["train_data", "train_data", "train_labels"]
 path = "criteo-small/train_shuf.txt"
-batch_size = 256
+batch_size = 512
 max_num_numerical_features = 15
 max_categorical_features = 24
 delimiter = " "
@@ -69,7 +69,7 @@ name = "embedding"
 pred = "categorical_input"
 num_embedding_lookups = 8
 lookup_size = 16
-log_embedding_block_size = 10
+log_embedding_block_size = 20
 
 [[nodes]]
 type = "Concatenate"

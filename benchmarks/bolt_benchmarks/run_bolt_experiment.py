@@ -86,7 +86,7 @@ def load_all_datasets(dataset_config):
         "train_labels": [],
         "test_data": [],
         "test_labels": [],
-        "test_labels_np": []
+        "test_labels_np": [],
     }
 
     all_dataset_configs = config_get(dataset_config, "datasets")
@@ -289,6 +289,7 @@ def check_test_labels(datasets_map, key):
             f"Must have 0 or 1 test label datasets but found {len(datasets_map[key])} test_labels."
         )
 
+
 def load_svm_dataset(dataset_config):
     dataset_path = find_full_filepath(config_get(dataset_config, "path"))
     return dataset.load_bolt_svm_dataset(
@@ -308,12 +309,11 @@ def load_click_through_dataset(dataset_config):
         delimiter=config_get(dataset_config, "delimiter"),
     )
 
+
 def load_click_through_labels(dataset_config):
     dataset_path = find_full_filepath(config_get(dataset_config, "path"))
     with open(dataset_path) as file:
-        return [np.array([
-            int(line[0]) for line in file.readlines()
-        ])]
+        return [np.array([int(line[0]) for line in file.readlines()])]
 
 
 def load_mlm_datasets(dataset_config, return_tokens):
@@ -382,8 +382,10 @@ def switch_to_sparse_inference_if_needed(
         print(f"Switching to sparse inference on epoch {current_epoch}")
         predict_config.enable_sparse_inference()
 
+
 def should_compute_roc_auc(experiment_config):
     return experiment_config.get("compute_roc_auc", False)
+
 
 def compute_roc_auc(predict_output, datasets, use_mlflow):
     if datasets["test_labels_np"] is None:
@@ -396,8 +398,10 @@ def compute_roc_auc(predict_output, datasets, use_mlflow):
     activations = predict_output[1]
 
     if len(activations) != len(labels):
-        raise ValueError(f"Length of activations must match length of test_labels_np to compute roc_auc.")
-    
+        raise ValueError(
+            f"Length of activations must match length of test_labels_np to compute roc_auc."
+        )
+
     if len(activations.shape) == 1:
         scores = activations
     elif len(activations.shape) == 2 and activations.shape[1] == 2:
@@ -405,14 +409,17 @@ def compute_roc_auc(predict_output, datasets, use_mlflow):
     elif len(activations.shape) == 2 and activations.shape[1] == 1:
         scores = activations[:, 0]
     else:
-        raise ValueError("Activations must have shape (n,), (n,1), or (n,2) to compute roc_auc.")
+        raise ValueError(
+            "Activations must have shape (n,), (n,1), or (n,2) to compute roc_auc."
+        )
 
     from sklearn.metrics import roc_auc_score
 
     roc_auc = roc_auc_score(labels, scores)
     print(f"ROC AUC = {roc_auc}")
     if use_mlflow:
-        log_prediction_metrics([{"roc_auc" : roc_auc}])
+        log_prediction_metrics([{"roc_auc": roc_auc}])
+
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(
