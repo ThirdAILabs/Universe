@@ -181,7 +181,8 @@ class FullyConnectedLayer final {
   //  - initialized during the constructor/deserialization
   //  - populated during forward
   //  - used during updateParameters
-  //  - cleaned up/zero'd during updateParameters
+  //  - cleaned up/zero'd during updateParameters (with a call to
+  //    cleanupWithinBatchVariables)
 
   // These track whether the current/previous layer was dense (using whether
   // the BoltVectors in forward are dense).
@@ -225,32 +226,35 @@ class FullyConnectedLayer final {
     return _sampling_mode == BoltSamplingMode::RandomSampling;
   }
 
-  inline void updateSparseSparseParametersNormal(float lr, float B1, float B2,
-                                                 float eps,
-                                                 float B1_bias_corrected,
-                                                 float B2_bias_corrected);
-  inline void updateSparseSparseParametersOptimized(float lr, float B1,
-                                                    float B2, float eps,
-                                                    float B1_bias_corrected,
-                                                    float B2_bias_corrected);
-  inline void updateSparseDenseParameters(float lr, float B1, float B2,
-                                          float eps, float B1_bias_corrected,
-                                          float B2_bias_corrected);
-  inline void updateDenseSparseParameters(float lr, float B1, float B2,
-                                          float eps, float B1_bias_corrected,
-                                          float B2_bias_corrected);
-  inline void updateDenseDenseParameters(float lr, float B1, float B2,
-                                         float eps, float B1_bias_corrected,
-                                         float B2_bias_corrected);
+  inline void updateSparseSparseWeightParametersNormal(float lr, float B1,
+                                                       float B2, float eps,
+                                                       float B1_bias_corrected,
+                                                       float B2_bias_corrected);
+  inline void updateSparseSparseWeightParametersOptimized(
+      float lr, float B1, float B2, float eps, float B1_bias_corrected,
+      float B2_bias_corrected);
+  inline void updateSparseDenseWeightParameters(float lr, float B1, float B2,
+                                                float eps,
+                                                float B1_bias_corrected,
+                                                float B2_bias_corrected);
+  inline void updateDenseSparseWeightParameters(float lr, float B1, float B2,
+                                                float eps,
+                                                float B1_bias_corrected,
+                                                float B2_bias_corrected);
+  inline void updateDenseDenseWeightParameters(float lr, float B1, float B2,
+                                               float eps,
+                                               float B1_bias_corrected,
+                                               float B2_bias_corrected);
   inline void updateSingleWeightParameters(uint64_t prev_neuron,
                                            uint64_t cur_neuron, float lr,
                                            float B1, float B2, float eps,
                                            float B1_bias_corrected,
                                            float B2_bias_corrected);
-  inline void updateSingleBiasParameters(uint64_t cur_neuron, float lr,
-                                         float B1, float B2, float eps,
-                                         float B1_bias_corrected,
-                                         float B2_bias_corrected);
+  inline void updateBiasParameters(float lr, float B1, float B2, float eps,
+                                   float B1_bias_corrected,
+                                   float B2_bias_corrected);
+
+  inline void cleanupWithinBatchVars();
 
   inline void initSamplingDatastructures(
       const SamplingConfigPtr& sampling_config, std::random_device& rd);

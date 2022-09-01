@@ -511,11 +511,8 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
-  // TODO(josh): If the layer isn't trainable, this will skip resetting
-  // active_pair_array to be zeros. That's fine as long as we don't make the
-  // layer trainable in the future, but otherwise this should be fixed at some
-  // point.
   if (!_trainable) {
+    cleanupWithinBatchVars();
     return;
   }
 
@@ -530,30 +527,34 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
    * more clear.
    */
   if (_is_distributed) {  // NOLINT
-    updateDenseDenseParameters(lr, B1, B2, eps, B1_bias_corrected,
-                               B2_bias_corrected);
+    updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                     B2_bias_corrected);
   } else if (!_prev_is_dense && !_this_is_dense) {
     if (_use_sparse_sparse_optimization) {
-      updateSparseSparseParametersOptimized(lr, B1, B2, eps, B1_bias_corrected,
-                                            B2_bias_corrected);
+      updateSparseSparseWeightParametersOptimized(
+          lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
     } else {
-      updateSparseSparseParametersNormal(lr, B1, B2, eps, B1_bias_corrected,
-                                         B2_bias_corrected);
+      updateSparseSparseWeightParametersNormal(
+          lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
     }
 
   } else if (!_prev_is_dense && _this_is_dense) {
-    updateSparseDenseParameters(lr, B1, B2, eps, B1_bias_corrected,
-                                B2_bias_corrected);
+    updateSparseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                      B2_bias_corrected);
   } else if (_prev_is_dense && !_this_is_dense) {
-    updateDenseSparseParameters(lr, B1, B2, eps, B1_bias_corrected,
-                                B2_bias_corrected);
+    updateDenseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                      B2_bias_corrected);
   } else {
-    updateDenseDenseParameters(lr, B1, B2, eps, B1_bias_corrected,
-                               B2_bias_corrected);
+    updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                     B2_bias_corrected);
   }
+
+  updateBiasParameters(lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
+
+  cleanupWithinBatchVars();
 }
 
-inline void FullyConnectedLayer::updateSparseSparseParametersOptimized(
+inline void FullyConnectedLayer::updateSparseSparseWeightParametersOptimized(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
 #pragma omp parallel for default(none) \
@@ -577,22 +578,9 @@ inline void FullyConnectedLayer::updateSparseSparseParametersOptimized(
       }
     }
   }
-
-#pragma omp parallel for default(none) \
-    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if (!_is_active[cur_neuron]) {
-      continue;
-    }
-    _is_active[cur_neuron] = false;
-    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
-                               B2_bias_corrected);
-  }
-
-  _active_pairs_raw.clear();
 }
 
-inline void FullyConnectedLayer::updateSparseSparseParametersNormal(
+inline void FullyConnectedLayer::updateSparseSparseWeightParametersNormal(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
 #pragma omp parallel for default(none) \
@@ -601,15 +589,10 @@ inline void FullyConnectedLayer::updateSparseSparseParametersNormal(
     if (!_is_active[cur_neuron]) {
       continue;
     }
-    _is_active[cur_neuron] = false;
-    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
-                               B2_bias_corrected);
-
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
       // TODO(David): could use bloom filter here also?
       if (_active_pairs_array[active_pair_index]) {
-        _active_pairs_array[active_pair_index] = false;
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
       }
@@ -617,14 +600,12 @@ inline void FullyConnectedLayer::updateSparseSparseParametersNormal(
   }
 }
 
-inline void FullyConnectedLayer::updateSparseDenseParameters(
+inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
-                               B2_bias_corrected);
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       if (_prev_is_active[prev_neuron]) {
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
@@ -632,14 +613,9 @@ inline void FullyConnectedLayer::updateSparseDenseParameters(
       }
     }
   }
-
-  // We update this outside because its faster to have cache efficient for
-  // loops above. We also don't use pragma here because there's almost no
-  // speedup over a regular loop and pragma comes with much more variability
-  std::fill(_prev_is_active.begin(), _prev_is_active.end(), 0);
 }
 
-inline void FullyConnectedLayer::updateDenseSparseParameters(
+inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
 #pragma omp parallel for default(none) \
@@ -648,9 +624,6 @@ inline void FullyConnectedLayer::updateDenseSparseParameters(
     if (!_is_active[cur_neuron]) {
       continue;
     }
-    _is_active[cur_neuron] = false;
-    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
-                               B2_bias_corrected);
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                    B1_bias_corrected, B2_bias_corrected);
@@ -658,14 +631,12 @@ inline void FullyConnectedLayer::updateDenseSparseParameters(
   }
 }
 
-inline void FullyConnectedLayer::updateDenseDenseParameters(
+inline void FullyConnectedLayer::updateDenseDenseWeightParameters(
     float lr, float B1, float B2, float eps, float B1_bias_corrected,
     float B2_bias_corrected) {
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    updateSingleBiasParameters(cur_neuron, lr, B1, B2, eps, B1_bias_corrected,
-                               B2_bias_corrected);
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                    B1_bias_corrected, B2_bias_corrected);
@@ -673,27 +644,46 @@ inline void FullyConnectedLayer::updateDenseDenseParameters(
   }
 }
 
-inline void FullyConnectedLayer::updateSingleBiasParameters(
-    uint64_t cur_neuron, float lr, float B1, float B2, float eps,
-    float B1_bias_corrected, float B2_bias_corrected) {
-  float grad = _bias_optimizer->gradients[cur_neuron];
-  assert(!std::isnan(grad));
+inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
+                                                      float B2, float eps,
+                                                      float B1_bias_corrected,
+                                                      float B2_bias_corrected) {
+  assert(_bias_optimizer.has_value());
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    if ((!_is_distributed) && (!_this_is_dense && !_is_active[cur_neuron])) {
+      continue;
+    }
 
-  _bias_optimizer->momentum[cur_neuron] =
-      B1 * _bias_optimizer->momentum[cur_neuron] + (1 - B1) * grad;
-  _bias_optimizer->velocity[cur_neuron] =
-      B2 * _bias_optimizer->velocity[cur_neuron] + (1 - B2) * grad * grad;
+    float grad = _bias_optimizer->gradients[cur_neuron];
+    assert(!std::isnan(grad));
 
-  assert(!std::isnan(_bias_optimizer->momentum[cur_neuron]));
-  assert(!std::isnan(_bias_optimizer->velocity[cur_neuron]));
+    _bias_optimizer->momentum[cur_neuron] =
+        B1 * _bias_optimizer->momentum[cur_neuron] + (1 - B1) * grad;
+    _bias_optimizer->velocity[cur_neuron] =
+        B2 * _bias_optimizer->velocity[cur_neuron] + (1 - B2) * grad * grad;
 
-  _biases[cur_neuron] +=
-      lr * (_bias_optimizer->momentum[cur_neuron] / B1_bias_corrected) /
-      (std::sqrt(_bias_optimizer->velocity[cur_neuron] / B2_bias_corrected) +
-       eps);
-  assert(!std::isnan(_biases[cur_neuron]));
+    assert(!std::isnan(_bias_optimizer->momentum[cur_neuron]));
+    assert(!std::isnan(_bias_optimizer->velocity[cur_neuron]));
 
-  _bias_optimizer->gradients[cur_neuron] = 0;
+    _biases[cur_neuron] +=
+        lr * (_bias_optimizer->momentum[cur_neuron] / B1_bias_corrected) /
+        (std::sqrt(_bias_optimizer->velocity[cur_neuron] / B2_bias_corrected) +
+         eps);
+    assert(!std::isnan(_biases[cur_neuron]));
+
+    _bias_optimizer->gradients[cur_neuron] = 0;
+  }
+}
+
+inline void FullyConnectedLayer::cleanupWithinBatchVars() {
+  if (!_this_is_dense && !_prev_is_dense) {
+    _active_pairs_raw.clear();
+    std::fill(_active_pairs_array.begin(), _active_pairs_array.end(), 0);
+  }
+  std::fill(_prev_is_active.begin(), _prev_is_active.end(), 0);
+  std::fill(_is_active.begin(), _is_active.end(), 0);
 }
 
 inline void FullyConnectedLayer::updateSingleWeightParameters(
