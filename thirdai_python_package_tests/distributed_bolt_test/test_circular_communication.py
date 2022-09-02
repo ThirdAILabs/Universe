@@ -2,7 +2,7 @@ try:
     from thirdai._distributed_bolt.backend.worker import Worker
 except ImportError:
     import warnings
-    warnings.warn("Error which importing thirdai.distributed_bolt."
+    warnings.warn("Error while importing thirdai.distributed_bolt."
             "You might be missing Ray")
     
 

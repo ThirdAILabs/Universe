@@ -33,7 +33,7 @@ try:
     import thirdai.distributed_bolt
 except ImportError:
     import warnings
-    warnings.warn("Error while importing ThirdAI Distributed."
+    warnings.warn("Error while importing thirdai_distributed."
             "You might be missing Ray.")
 
 
