@@ -37,6 +37,9 @@ class AutoClassifierBase {
 
   static bool canLoadDatasetInMemory(const std::string& filename);
 
+  std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
+  getInputGradientSingle(std::vector<BoltVector>&& input_data);
+
  private:
   static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   loadStreamingDataset(
