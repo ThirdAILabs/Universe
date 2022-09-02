@@ -1,13 +1,11 @@
-import sys
 try:
     from thirdai._distributed_bolt.backend.worker import Worker
 except ImportError:
     import warnings
-    warnings.warn("Import Error for This Test"
-                "Most likely, Ray is not supported on this hardware."
-                "Skipping test_all_reduce_circular_communication test.")
-    sys.exit()
+    warnings.warn("Error which importing thirdai.distributed_bolt."
+            "You might be missing Ray")
     
+
 import numpy as np
 
 import pytest

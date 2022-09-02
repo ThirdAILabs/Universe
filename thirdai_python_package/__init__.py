@@ -27,15 +27,14 @@ try:
 except ImportError:
     pass
 
-# ray have grpcio as its dependency, which doesnot have a trivial installation for 
-# Aple MAC M1, See https://github.com/grpc/grpc/issues/25082
+# ray have grpcio as its dependency, which doesn't have a trivial installation for 
+# Apple MAC M1, See https://github.com/grpc/grpc/issues/25082
 try:
     import thirdai.distributed_bolt
 except ImportError:
     import warnings
-    warnings.warn("ThirdAI Distributed Module can't be installed. "
-                   "It uses ray as its dependency. Ray is not installed "
-                   "on this device.")
+    warnings.warn("Error while importing ThirdAI Distributed."
+            "You might be missing Ray.")
 
 
 # Don't import this or include it in __all__ for now because it requires
