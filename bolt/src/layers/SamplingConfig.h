@@ -24,6 +24,7 @@ class SamplingConfig {
       const = 0;
 
   virtual bool isRandomSampling() const { return false; }
+
   virtual ~SamplingConfig() = default;
 
  protected:
