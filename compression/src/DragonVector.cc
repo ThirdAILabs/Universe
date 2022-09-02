@@ -49,9 +49,9 @@ DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
   _values.assign(sketch_size, 0);
 
   /*
-   * First calculate an approximate top-k threshold. Then, we sketch the
-   * original vector to a smaller dragon vector. We sketch only the values which
-   * are larger than the threshold.
+   * The routine first calculates an approximate top-k threshold. Then, it
+   * sketches the original vector to a smaller dragon vector. It sketches only
+   * the values which are larger than the threshold.
    */
   T estimated_threshold = estimateTopKThreshold(
       values_to_compress, size, compression_density,
@@ -117,8 +117,11 @@ void DragonVector<T>::clear() {
 template <class T>
 void DragonVector<T>::extend(const DragonVector<T>& vec) {
   /*
-   * We should not check whether the seeds for hashing are the same for the two
-   * Dragon vectors since we will directly append the indices and values of
+   * NOTE: Do not call get function on a Dragon Vector which has been extended
+   * by another one. On extending a Dragon Sketch, the sketch size changes which
+   * means that we cannot use get function on this modified sketch.
+   * We do not need to check whether the seeds for hashing are the same for the
+   * two Dragon vectors since we will directly append the indices and values of
    * given vector to the current one and leave all other parameters intact.
    * Extend is non-lossy, we do not lose any information about indices,values
    * even when we add Dragon Vectors with different seeds.
