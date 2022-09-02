@@ -28,10 +28,10 @@ except ImportError:
     pass
 
 # ray's grcpio dependency installation is not trivial on
-# Apple Mac M1 Silicon and requires conda. 
-# 
+# Apple Mac M1 Silicon and requires conda.
+#
 # See:
-# [1] https://github.com/grpc/grpc/issues/25082, 
+# [1] https://github.com/grpc/grpc/issues/25082,
 # [2] https://docs.ray.io/en/latest/ray-overview/installation.html#m1-mac-apple-silicon-support
 # For the time being users are expected to explictly import the package.
 #
