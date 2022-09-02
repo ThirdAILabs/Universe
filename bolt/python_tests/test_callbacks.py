@@ -87,9 +87,9 @@ class SaveOnFifthEpoch(bolt.graph.callbacks.Callback):
 
     def on_epoch_end(self, model):
         self.epoch_count += 1
-        if (self.epoch_count == 5):
+        if self.epoch_count == 5:
             model.save(SAVE_FILENAME)
-        
+
 
 def test_callbacks_call_cpp_functions():
     save_on_fifth_callback = SaveOnFifthEpoch()
@@ -98,7 +98,8 @@ def test_callbacks_call_cpp_functions():
 
     assert os.path.isfile(SAVE_FILENAME)
 
-    os.remove(SAVE_FILENAME) 
+    os.remove(SAVE_FILENAME)
+
 
 class StopOnFifthEpoch(bolt.graph.callbacks.Callback):
     def __init__(self):
@@ -107,10 +108,10 @@ class StopOnFifthEpoch(bolt.graph.callbacks.Callback):
 
     def on_epoch_end(self, model):
         self.epoch_count += 1
-    
+
     def should_stop_training(self, model):
         return True
-        if (self.epoch_count == 5):
+        if self.epoch_count == 5:
             return True
 
 
