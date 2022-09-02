@@ -60,6 +60,8 @@ class ParameterReference {
           thirdai::compression::python::convertPyDictToCompressedVector(
               new_params);
 
+      // std::cout << "inside boltgraphpython.h, got the compressed vector"
+      // << std::endl;
       std::vector<float> full_gradients = compressed_vector->decompress();
       std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
                 _params);

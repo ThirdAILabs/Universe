@@ -1,7 +1,8 @@
+#pragma once
+
 #include "CompressedVector.h"
 #include "CompressionUtils.h"
 #include <hashing/src/UniversalHash.h>
-#include <_types/_uint32_t.h>
 #include <compression/src/CompressionUtils.h>
 #include <cstddef>
 #include <cstdint>
@@ -29,6 +30,10 @@ class CountSketch final : public CompressedVector<T> {
               std::vector<uint32_t> seed_for_hashing_indices,
               std::vector<uint32_t> seed_for_sign);
 
+  CountSketch(std::vector<std::vector<T>> count_sketches,
+              std::vector<uint32_t> seed_for_hashing_indices,
+              std::vector<uint32_t> seed_for_sign, uint32_t _uncompressed_size);
+
   T get(uint32_t index) const final;
 
   void set(uint32_t index, T value) final;
@@ -44,6 +49,14 @@ class CountSketch final : public CompressedVector<T> {
   uint32_t size() const;
 
   std::string type() const final;
+
+  std::vector<std::vector<T>> sketches() const { return _count_sketches; }
+
+  std::vector<uint32_t> indexSeeds() const { return _seed_for_hashing_indices; }
+
+  std::vector<uint32_t> signSeeds() const { return _seed_for_sign; }
+
+  uint32_t uncompressedSize() const { return _uncompressed_size; }
 
   std::vector<T> decompress() const final;
 
