@@ -9,7 +9,7 @@ from utils import (
     log_single_epoch_training_metrics,
     log_prediction_metrics,
     config_get,
-    running_on_aws,
+    is_ec2_instance,
 )
 from thirdai import bolt, dataset
 
@@ -91,7 +91,7 @@ def load_all_datasets(dataset_config):
     all_dataset_configs = config_get(dataset_config, "datasets")
     for single_dataset_config in all_dataset_configs:
         format = config_get(single_dataset_config, "format")
-        use_s3 = single_dataset_config.get("use_s3_on_aws", False) and running_on_aws()
+        use_s3 = single_dataset_config.get("use_s3_on_aws", False) and is_ec2_instance()
         dataset_types = config_get(single_dataset_config, "type_list")
 
         if format == "svm":

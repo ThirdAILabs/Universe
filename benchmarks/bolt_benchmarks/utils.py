@@ -6,6 +6,7 @@ import psutil
 import socket
 import sys
 import numpy as np
+from urllib.request import urlopen
 
 from typing import Any, Dict
 from sklearn.datasets import load_svmlight_file
@@ -161,5 +162,15 @@ def load_svm_as_csr_numpy(path, use_softmax):
     return data_x, data_y, data[1]
 
 
-def running_on_aws():
-    return os.environ.get("AWS_DEFAULT_REGION") != None
+# See https://stackoverflow.com/questions/29573081/check-if-python-script-is-running-on-an-aws-instance
+# This also works in docker images running on aws.
+def is_ec2_instance():
+    """Check if an instance is running on EC2 by trying to retrieve ec2 metadata."""
+    result = False
+    # See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html
+    meta = "http://169.254.169.254/latest/meta-data/public-ipv4"
+    try:
+        result = urlopen(meta).status == 200
+    except ConnectionError:
+        return result
+    return result
