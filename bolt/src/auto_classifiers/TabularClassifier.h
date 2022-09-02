@@ -71,24 +71,10 @@ class TabularClassifier {
   explain(std::vector<std::string>& values) {
     BoltVector input = makeInputVector(values);
 
-    for (uint32_t i = 0; i < input.len; i++) {
-      std::cout << input.active_neurons[i] << " ";
-    }
-    std::cout << std::endl;
-
     auto [gradients_indices, gradients_ratios] =
         _classifier->getInputGradientSingle({input});
 
-    for (const auto& block : getInputBlocks()) {
-      std::cout << block->getColumnNum() << " ";
-    }
-    std::cout << std::endl;
-
     RootCauseAnalysis explanation(getInputBlocks());
-
-    for (auto i : _metadata->getColNumToColName()) {
-      std::cout << i.first << " " << i.second << std::endl;
-    }
 
     auto result = explanation.getPercentExplanationWithColumnNames(
         gradients_ratios, *gradients_indices, _metadata->getColNumToColName());
