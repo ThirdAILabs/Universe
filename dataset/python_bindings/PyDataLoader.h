@@ -1,3 +1,5 @@
+#pragma once
+
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 
