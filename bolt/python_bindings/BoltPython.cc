@@ -262,6 +262,7 @@ void createBoltSubmodule(py::module_& module) {
           "then the classifier will output the name of the class/category of "
           "each prediction this file with one prediction result on each "
           "line.\n")
+      .def("explain", &TabularClassifier::explain, py::arg("input_row"))
       .def("predict_single", &TabularClassifier::predictSingle,
            py::arg("input_row"),
            "Given a list of input values excluding the label column, predict "
