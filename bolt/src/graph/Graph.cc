@@ -86,6 +86,7 @@ MetricData BoltGraph::train(
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
       callbacks.onEpochBegin(*this);
+
       /*
         Because of how the datasets are read we know that all batches will not
         have a batch size larger than the first batch_size. We will be using the
