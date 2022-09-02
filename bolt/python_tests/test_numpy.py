@@ -33,7 +33,11 @@ def test_sparse_numpy_output():
         n_classes=num_classes, n_samples=num_samples, convert_to_bolt_dataset=False
     )
     metrics, activations, active_neurons = build_train_and_predict_single_hidden_layer(
-        data_np, labels_np, num_classes, output_sparsity=sparsity
+        data_np,
+        labels_np,
+        num_classes,
+        output_sparsity=sparsity,
+        enable_sparse_inference=True,
     )
 
     assert activations.shape == (num_samples, num_classes * sparsity)

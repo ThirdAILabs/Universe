@@ -159,6 +159,7 @@ def build_train_and_predict_single_hidden_layer(
     input_output_dim,
     output_sparsity,
     optimize_sparse_sparse=False,
+    enable_sparse_inference=False,
     batch_size=256,
     epochs=3,
     learning_rate=0.001,
@@ -193,4 +194,8 @@ def build_train_and_predict_single_hidden_layer(
         .return_activations()
         .silence()
     )
+
+    if enable_sparse_inference:
+        predict_config.enable_sparse_inference()
+
     return model.predict(data, labels, predict_config)
