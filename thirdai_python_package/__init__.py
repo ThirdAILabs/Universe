@@ -27,18 +27,16 @@ try:
 except ImportError:
     pass
 
-# ray have grpcio as its dependency, which doesn't have a trivial installation for
-# Apple MAC M1, See https://github.com/grpc/grpc/issues/25082
-try:
-    import thirdai.distributed_bolt
-except ImportError:
-    import warnings
-
-    warnings.warn(
-        "Error while importing thirdai.distributed_bolt. "
-        "You might be missing ray. "
-        "Try: python3 -m pip install 'ray[default]'"
-    )
+# ray's grcpio dependency installation is not trivial on
+# Apple Mac M1 Silicon and requires conda. 
+# 
+# See:
+# [1] https://github.com/grpc/grpc/issues/25082, 
+# [2] https://docs.ray.io/en/latest/ray-overview/installation.html#m1-mac-apple-silicon-support
+# For the time being users are expected to explictly import the package.
+#
+# TODO(pratkpranav): Uncomment the following when this issue is solved upstream.
+# import thirdai.distributed_bolt
 
 
 # Don't import this or include it in __all__ for now because it requires
