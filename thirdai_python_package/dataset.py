@@ -1,5 +1,6 @@
 import thirdai._thirdai.dataset
 from thirdai._thirdai.dataset import *
+import time
 
 __all__ = []
 __all__.extend(dir(thirdai._thirdai.dataset))
@@ -80,6 +81,7 @@ class S3DataLoader(DataLoader):
         self.prefix_filter = prefix_filter
         self.objects_in_bucket = list(self.bucket.objects.filter(Prefix=prefix_filter))
         self.line_iterator = self._get_line_iterator()
+        self.current_batch_id = 0
 
     def _get_line_iterator(self):
         for obj in self.objects_in_bucket:
@@ -90,12 +92,15 @@ class S3DataLoader(DataLoader):
                 yield line
 
     def next_batch(self):
+        print("Current batch: " + str(self.current_batch_id), time.time(), flush=True)
+        self.current_batch_id += 1
         lines = []
         while len(lines) < self.batch_size:
             next_line = self.get_next_line()
             if next_line == None:
                 break
             lines.append(next_line)
+        print("Batch created", time.time(), flush=True)
         return lines
 
     def get_next_line(self):
