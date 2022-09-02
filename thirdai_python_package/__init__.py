@@ -14,6 +14,7 @@ import thirdai.bolt
 import thirdai.search
 import thirdai.dataset
 import thirdai.hashing
+import thirdai.distributed_bolt
 
 # Import the top level methods so they are available directly from thirdai
 # If the import fails it means this build doesn't expose these methods, so we
@@ -26,17 +27,6 @@ try:
     from thirdai._thirdai import set_global_num_threads
 except ImportError:
     pass
-
-# ray have grpcio as its dependency, which doesnot have a trivial installation for 
-# Aple MAC M1, See https://github.com/grpc/grpc/issues/25082
-try:
-    import thirdai.distributed_bolt
-except ImportError:
-    import warnings
-    warnings.warn("ThirdAI Distributed Module can't be installed. "
-                   "It uses ray as its dependency. Ray is not supported "
-                   "for this device.")
-
 
 # Don't import this or include it in __all__ for now because it requires
 # pytorch + transformers.
