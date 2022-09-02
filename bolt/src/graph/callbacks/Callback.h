@@ -16,7 +16,7 @@ using CallbackPtr = std::shared_ptr<Callback>;
 /**
  * This class represents a generic Callback interface. Implementing this
  * interface allows you to call various methods at different steps during the
- * model training process. Functions may alter the model or train_config, state.
+ * model training process. Functions may alter the model state.
  *
  * Right now this callback is only used during training.
  */
@@ -52,37 +52,37 @@ class CallbackList {
   explicit CallbackList(std::vector<CallbackPtr> callbacks)
       : _callbacks(std::move(callbacks)) {}
 
-  void onTrainBegin(BoltGraph& model, TrainConfig& train_config) {
+  void onTrainBegin(BoltGraph& model) {
     for (const auto& callback : _callbacks) {
       callback->onTrainBegin(model);
     }
   }
 
-  void onTrainEnd(BoltGraph& model, TrainConfig& train_config) {
+  void onTrainEnd(BoltGraph& model) {
     for (const auto& callback : _callbacks) {
       callback->onTrainEnd(model);
     }
   }
 
-  void onEpochBegin(BoltGraph& model, TrainConfig& train_config) {
+  void onEpochBegin(BoltGraph& model) {
     for (const auto& callback : _callbacks) {
       callback->onEpochBegin(model);
     }
   }
 
-  void onEpochEnd(BoltGraph& model, TrainConfig& train_config) {
+  void onEpochEnd(BoltGraph& model) {
     for (const auto& callback : _callbacks) {
       callback->onEpochEnd(model);
     }
   }
 
-  void onBatchBegin(BoltGraph& model, TrainConfig& train_config) {
+  void onBatchBegin(BoltGraph& model) {
     for (const auto& callback : _callbacks) {
       callback->onBatchBegin(model);
     }
   }
 
-  void onBatchEnd(BoltGraph& model, TrainConfig& train_config) {
+  void onBatchEnd(BoltGraph& model) {
     for (const auto& callback : _callbacks) {
       callback->onBatchEnd(model);
     }
