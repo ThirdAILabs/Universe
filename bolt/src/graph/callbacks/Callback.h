@@ -22,6 +22,9 @@ using CallbackPtr = std::shared_ptr<Callback>;
  */
 class Callback {
  public:
+  // TODO(david): instead of passing in a model we could have a model be set in
+  // the constructor. This would require some sort of lambda/factory
+  // constructor. We can think about this later.
   virtual void onTrainBegin(BoltGraph& model){};
 
   virtual void onTrainEnd(BoltGraph& model){};
