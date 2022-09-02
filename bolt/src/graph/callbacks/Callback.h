@@ -22,18 +22,22 @@ using CallbackPtr = std::shared_ptr<Callback>;
  */
 class Callback {
  public:
-  virtual void onTrainBegin(BoltGraph&, TrainConfig&){};
+  virtual void onTrainBegin(BoltGraph& model){};
 
-  virtual void onTrainEnd(BoltGraph&, TrainConfig&){};
+  virtual void onTrainEnd(BoltGraph& model){};
 
-  virtual void onEpochBegin(BoltGraph&, TrainConfig&){};
+  virtual void onEpochBegin(BoltGraph& model){};
 
-  virtual void onEpochEnd(BoltGraph&, TrainConfig&){};
+  virtual void onEpochEnd(BoltGraph& model){};
 
-  virtual void onBatchBegin(BoltGraph&, TrainConfig&){};
+  virtual void onBatchBegin(BoltGraph& model){};
 
-  virtual void onBatchEnd(BoltGraph&, TrainConfig&){};
+  virtual void onBatchEnd(BoltGraph& model){};
 
+  // TODO(david): semantically this is a little odd here, ideally we don't add
+  // new functions every time we make a new callback. One alternative is to keep
+  // a "training state" struct that we pass in to the callbacks which can be
+  // changed/used during training.
   virtual bool shouldStopTraining() { return false; }
 
   virtual ~Callback() = default;
@@ -50,37 +54,37 @@ class CallbackList {
 
   void onTrainBegin(BoltGraph& model, TrainConfig& train_config) {
     for (const auto& callback : _callbacks) {
-      callback->onTrainBegin(model, train_config);
+      callback->onTrainBegin(model);
     }
   }
 
   void onTrainEnd(BoltGraph& model, TrainConfig& train_config) {
     for (const auto& callback : _callbacks) {
-      callback->onTrainEnd(model, train_config);
+      callback->onTrainEnd(model);
     }
   }
 
   void onEpochBegin(BoltGraph& model, TrainConfig& train_config) {
     for (const auto& callback : _callbacks) {
-      callback->onEpochBegin(model, train_config);
+      callback->onEpochBegin(model);
     }
   }
 
   void onEpochEnd(BoltGraph& model, TrainConfig& train_config) {
     for (const auto& callback : _callbacks) {
-      callback->onEpochEnd(model, train_config);
+      callback->onEpochEnd(model);
     }
   }
 
   void onBatchBegin(BoltGraph& model, TrainConfig& train_config) {
     for (const auto& callback : _callbacks) {
-      callback->onBatchBegin(model, train_config);
+      callback->onBatchBegin(model);
     }
   }
 
   void onBatchEnd(BoltGraph& model, TrainConfig& train_config) {
     for (const auto& callback : _callbacks) {
-      callback->onBatchEnd(model, train_config);
+      callback->onBatchEnd(model);
     }
   }
 
