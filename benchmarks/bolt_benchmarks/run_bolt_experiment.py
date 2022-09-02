@@ -285,7 +285,7 @@ def load_svm_dataset(dataset_config, use_s3):
         s3_prefix = "share/data/" + dataset_config["path"]
         s3_bucket = "thirdai-corp"
         data_loader = dataset.S3DataLoader(
-            s3_bucket=s3_bucket, prefix_filter=s3_prefix, batch_size=batch_size
+            bucket_name=s3_bucket, prefix_filter=s3_prefix, batch_size=batch_size
         )
         return dataset.load_bolt_svm_dataset(data_loader)
     else:
