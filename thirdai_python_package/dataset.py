@@ -92,15 +92,23 @@ class S3DataLoader(DataLoader):
                 yield line
 
     def next_batch(self):
-        print("Current batch: " + str(self.current_batch_id), time.time(), flush=True)
-        self.current_batch_id += 1
+        print(
+            "Loading new batch: " + str(self.current_batch_id), time.time(), flush=True
+        )
         lines = []
         while len(lines) < self.batch_size:
             next_line = self.get_next_line()
             if next_line == None:
                 break
             lines.append(next_line)
-        print("Batch created", time.time(), flush=True)
+        print(
+            f"Batch {self.current_batch_id} created with {len(lines)} elements",
+            time.time(),
+            flush=True,
+        )
+        self.current_batch_id += 1
+        if lines == []:
+            return None
         return lines
 
     def get_next_line(self):
