@@ -1,5 +1,6 @@
 #pragma once
 #include <compression/src/CompressedVector.h>
+#include <compression/src/DragonVector.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
 #include <pybind11/iostream.h>

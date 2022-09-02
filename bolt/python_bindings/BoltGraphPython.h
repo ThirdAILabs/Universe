@@ -5,6 +5,7 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <compression/python_bindings/ConversionUtils.h>
 #include <compression/src/CompressedVector.h>
+#include <compression/src/CompressionFactory.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>

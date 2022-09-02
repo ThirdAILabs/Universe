@@ -25,7 +25,7 @@ uint32_t UniversalHash::gethash(const std::string& key) {
   return res;
 }
 
-uint32_t UniversalHash::gethash(uint64_t key) {
+uint32_t UniversalHash::gethash(uint64_t key) const {
   uint32_t res = 0;
   for (uint32_t i = 0; i < sizeof(key); i++) {
     res ^= T[i][static_cast<unsigned char>(key >> (i << 3))];

@@ -23,7 +23,7 @@ class UniversalHash {
   /**
    * Hash integer key. Allows for smaller int sizes.
    */
-  uint32_t gethash(uint64_t key);
+  uint32_t gethash(uint64_t key) const;
 
  private:
   // Private constructor for cereal.

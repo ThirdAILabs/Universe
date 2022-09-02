@@ -1,3 +1,4 @@
+#include "DragonVector.h"
 #include "CompressedVector.h"
 #include <hashing/src/UniversalHash.h>
 #include <sys/types.h>
