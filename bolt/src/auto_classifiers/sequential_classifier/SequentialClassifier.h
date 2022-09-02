@@ -6,6 +6,7 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -129,6 +130,33 @@ class SequentialClassifier {
     }
 
     return results;
+  }
+
+  std::tuple<std::vector<std::string>, std::vector<float>,
+             std::vector<uint32_t>>
+  explain(const std::unordered_map<std::string, std::string>& sample) {
+    std::vector<std::string_view> columnar_sample(
+        _single_inference_col_nums.size());
+    for (const auto& [col_name, col_value] : sample) {
+      uint32_t col_num = _single_inference_col_nums.at(col_name);
+      columnar_sample[col_num] = col_value.data();
+    }
+
+    BoltVector input_vector;
+    _single_inference_batch_processor->makeInputVector(columnar_sample,
+                                                       input_vector);
+
+    auto [gradients_indices, gradients_ratios] =
+        _model->getInputGradientSingle({input_vector});
+
+    RootCauseAnalysis explanation(
+        _single_inference_batch_processor->getInputBlocks());
+
+    auto result = explanation.getPercentExplanationWithColumnNames(
+        gradients_ratios, *gradients_indices,
+        _single_inference_col_nums.getColumnNumToColNameMap());
+
+    return result;
   }
 
   BoltVector predictSingle(
