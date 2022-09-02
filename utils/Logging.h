@@ -17,8 +17,6 @@ constexpr auto kDefaultLogPath = "";
 constexpr auto kDefaultLogLevel = "info";
 constexpr auto kDefaultPattern = "[%Y-%m-%d %T] %v";
 
-static bool console_logging_enabled = kDefaultLogToStderr;
-
 // This configures a logger provided a string path. Client is
 // expected to configure logging at the beginning.
 inline void setup_logging(bool log_to_stderr = kDefaultLogToStderr,
@@ -34,7 +32,6 @@ inline void setup_logging(bool log_to_stderr = kDefaultLogToStderr,
     if (log_to_stderr) {
       auto stderr_sink = std::make_shared<StderrSink>();
       sinks.push_back(stderr_sink);
-      console_logging_enabled = true;
     }
 
     if (!path.empty()) {
