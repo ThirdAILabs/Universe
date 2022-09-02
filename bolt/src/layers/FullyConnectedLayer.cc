@@ -33,7 +33,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sampling_mode(BoltSamplingMode::LSH),
       _use_sparse_sparse_optimization(
           config.shouldUseSparseSparseOptimization()),
-      _prev_is_active(_prev_dim, false),
+      _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -164,6 +164,9 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
   _this_is_dense = DENSE;
 
   if constexpr (!DENSE && !PREV_DENSE) {
+    // We track using _active_pairs_array even if we are using the sparse sparse
+    // optimization because it allows us to avoid duplicate weight updates
+    // during updateParameters.
     for (uint64_t cur_index = 0; cur_index < len_out; cur_index++) {
       uint64_t act_neuron = output.active_neurons[cur_index];
       for (uint64_t prev_index = 0; prev_index < input.len; prev_index++) {

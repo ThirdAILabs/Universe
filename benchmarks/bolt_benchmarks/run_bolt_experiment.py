@@ -72,7 +72,7 @@ def load_and_compile_model(model_config):
 
     output_node = name_to_node[list(nodes_with_no_successor)[0]]
     model = bolt.graph.Model(inputs=inputs, output=output_node)
-    model.compile(loss=get_loss(model_config))
+    model.compile(loss=get_loss(model_config), print_when_done=False)
     model.summary(detailed=True)
     return model
 
@@ -199,9 +199,6 @@ def construct_input_node(input_config):
 
 def construct_fully_connected_node(fc_config):
     use_default_sampling = fc_config.get("use_default_sampling", False)
-    use_sparse_sparse_optimization = fc_config.get(
-        "use_sparse_sparse_optimization", False
-    )
     sparsity = fc_config.get("sparsity", 1)
 
     if use_default_sampling or sparsity == 1:
@@ -218,7 +215,7 @@ def construct_fully_connected_node(fc_config):
             sampling_config=get_sampling_config(fc_config),
         )
 
-    if use_sparse_sparse_optimization:
+    if fc_config.get("use_sparse_sparse_optimization", False):
         layer.enable_sparse_sparse_optimization()
 
     return layer

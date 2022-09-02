@@ -170,18 +170,19 @@ class FullyConnectedLayer final {
   // Default set in constructor is false
   bool _use_sparse_sparse_optimization;
 
-  // --------------- Within-batch variables ------------------------------
-  // These variables are set while we are processing a batch (usually during
-  // calls to forward) and are used later, usually while in updateParameters.
-  // Since these are temporary within batch variables, we do NOT
-  // serialize them, and we reinitialize them upon deserialization (so they
-  // have the correct size).
-  // Overall, these variables are
-  //  - initialized during the constructor/deserialization
-  //  - populated during forward
-  //  - used during updateParameters
-  //  - cleaned up/zero'd during updateParameters (with a call to
-  //    cleanupWithinBatchVariables)
+  /* --------------- Within-batch variables ------------------------------
+   * These variables are set while we are processing a batch (usually during
+   * calls to forward) and are used later, usually while in updateParameters.
+   * Since these are temporary within batch variables, we do NOT
+   * serialize them, and we reinitialize them upon deserialization (so they
+   * have the correct size).
+   * Overall, these variables are
+   *  - initialized during the constructor/deserialization
+   *  - populated during forward
+   *  - used during updateParameters
+   *  - cleaned up/zero'd during updateParameters (with a call to
+   *    cleanupWithinBatchVariables)
+   */
 
   // These track whether the current/previous layer was dense (using whether
   // the BoltVectors in forward are dense).
