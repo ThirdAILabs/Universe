@@ -13,6 +13,11 @@ set(ENV{LD_PRELOAD} "")
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 
+# See [1] https://gcc.gnu.org/wiki/Visibility
+#     [2] https://stackoverflow.com/a/31157258/4565794
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+
 message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
@@ -29,6 +34,7 @@ if (MSVC)
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp:llvm /w")
 else()
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
   add_compile_options(
     -Wall
     -Wextra
