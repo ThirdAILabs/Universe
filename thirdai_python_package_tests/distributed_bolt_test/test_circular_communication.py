@@ -7,12 +7,11 @@ except ImportError:
         "Error while importing thirdai.distributed_bolt." "You might be missing Ray"
     )
 
-
+import pytest
 import numpy as np
 
-import pytest
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.xfail]
 
 
 def test_all_reduce_circular_communication():
