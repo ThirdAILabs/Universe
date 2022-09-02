@@ -105,6 +105,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                            BoltBatch(std::move(batch_labels)));
   }
 
+  std::vector<std::shared_ptr<Block>> getInputBlocks() const {
+    return _input_blocks;
+  }
+
   bool expectsHeader() const final { return _expects_header; }
 
   void processHeader(const std::string& header) final { (void)header; }
@@ -121,6 +125,14 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
                                      BoltVector& vector) {
     return makeVector(sample, vector, _label_blocks, _label_blocks_dense);
+  }
+
+  static std::shared_ptr<GenericBatchProcessor> make(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
+      char delimiter = ',', bool parallel = true) {
+    return std::make_shared<GenericBatchProcessor>(
+        input_blocks, label_blocks, has_header, delimiter, parallel);
   }
 
  private:
