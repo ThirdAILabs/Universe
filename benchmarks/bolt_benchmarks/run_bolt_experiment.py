@@ -9,7 +9,7 @@ from utils import (
     log_single_epoch_training_metrics,
     log_prediction_metrics,
     config_get,
-    running_on_aws
+    running_on_aws,
 )
 from thirdai import bolt, dataset
 
@@ -90,7 +90,7 @@ def load_all_datasets(dataset_config):
 
     all_dataset_configs = config_get(dataset_config, "datasets")
     for single_dataset_config in all_dataset_configs:
-        format = (single_dataset_config, "format")
+        format = config_get(single_dataset_config, "format")
         use_s3 = single_dataset_config.get("use_s3_on_aws", False) and running_on_aws()
         dataset_types = config_get(single_dataset_config, "type_list")
 
@@ -100,7 +100,7 @@ def load_all_datasets(dataset_config):
             loaded_datasets = load_click_through_dataset(single_dataset_config, use_s3)
         elif format == "mlm_with_tokens":
             loaded_datasets = load_mlm_datasets(
-                single_dataset_config, return_tokens=True
+                single_dataset_config, use_s3, return_tokens=True
             )
         elif format == "mlm_without_tokens":
             loaded_datasets = load_mlm_datasets(
@@ -279,28 +279,24 @@ def get_loss(model_config):
 
 
 def load_svm_dataset(dataset_config, use_s3):
-    batch_size=config_get(dataset_config, "batch_size")
+    batch_size = config_get(dataset_config, "batch_size")
     if use_s3:
         print("Using S3 to load SVM dataset")
         s3_prefix = "share/data/" + dataset_config["path"]
         s3_bucket = "thirdai-corp"
         data_loader = dataset.S3DataLoader(
-            s3_bucket=s3_bucket,
-            prefix_filter=s3_prefix,
-            batch_size=use_s3
+            s3_bucket=s3_bucket, prefix_filter=s3_prefix, batch_size=use_s3
         )
         return dataset.load_bolt_svm_dataset(data_loader)
     else:
         dataset_path = find_full_filepath(config_get(dataset_config, "path"))
-        return dataset.load_bolt_svm_dataset(
-            dataset_path, batch_size=batch_size
-        )
+        return dataset.load_bolt_svm_dataset(dataset_path, batch_size=batch_size)
 
 
 def load_click_through_dataset(dataset_config, use_s3):
     if use_s3:
         raise ValueError("S3 not supported yet for loading mlm datasets")
-    
+
     dataset_path = find_full_filepath(config_get(dataset_config, "path"))
     return dataset.load_click_through_dataset(
         filename=dataset_path,
@@ -316,7 +312,7 @@ def load_click_through_dataset(dataset_config, use_s3):
 def load_mlm_datasets(dataset_config, use_s3, return_tokens):
     if use_s3:
         raise ValueError("S3 not supported yet for loading mlm datasets")
-    
+
     # We load the train and test data at the same time because the need to use
     # the same loader to ensure that the words in the vocabulary are mapped to
     # the same output neuron.

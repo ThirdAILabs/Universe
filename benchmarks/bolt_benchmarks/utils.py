@@ -160,5 +160,6 @@ def load_svm_as_csr_numpy(path, use_softmax):
     data_y = _list_of_lists_to_csr(data[1], use_softmax)
     return data_x, data_y, data[1]
 
+
 def running_on_aws():
     return os.environ.get("AWS_DEFAULT_REGION") != None
