@@ -54,8 +54,6 @@ class TrainConfig {
 
   constexpr float learningRate() const { return _learning_rate; }
 
-  void setLearningRate(float learning_rate) { _learning_rate = learning_rate; }
-
   MetricAggregator getMetricAggregator() const {
     return MetricAggregator(_metric_names, _verbose);
   }
