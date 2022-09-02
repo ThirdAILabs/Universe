@@ -60,7 +60,6 @@ inline std::unique_ptr<CompressedVector<float>> convertPyDictToCompressedVector(
     return convertPydictToDragonVector(pycompressed_vector);
   }
   if (compression_scheme == "count_sketch") {
-    std::cout << "Inside convert to pydict" << std::endl;
     return convertPyDictToCountSketch(pycompressed_vector);
   }
   throw std::logic_error(
@@ -140,9 +139,6 @@ inline std::unique_ptr<CompressedVector<float>> convertPyDictToCountSketch(
   std::vector<uint32_t> cpp_seed_for_sign;
 
   uint32_t num_sketches = static_cast<uint32_t>(py_count_sketches.size());
-
-  std::cout << "Inside ConvertPyDictToCountSketch" << std::endl;
-
   for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
     cpp_count_sketches.push_back(
         thirdai::compression::python::makeVectorFrom1dNumpyArray(
