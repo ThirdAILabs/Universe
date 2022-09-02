@@ -100,7 +100,7 @@ MetricData BoltGraph::train(
   // automatically delete the training state
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
-      std::optional<ProgressBar> maybeProgressBar = makeOptionalProgressBar(
+      std::optional<ProgressBar> bar = makeOptionalProgressBar(
           train_config.verbose(), "train", train_context.numBatches());
 
       auto train_start = std::chrono::high_resolution_clock::now();
@@ -115,8 +115,8 @@ MetricData BoltGraph::train(
                                     rebuild_hash_tables_batch,
                                     reconstruct_hash_functions_batch);
 
-        if (maybeProgressBar) {
-          maybeProgressBar->increment();
+        if (bar) {
+          bar->increment();
         }
 
         log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
@@ -137,8 +137,8 @@ MetricData BoltGraph::train(
 
       log::info(logline);
 
-      if (maybeProgressBar) {
-        maybeProgressBar->close(logline);
+      if (bar) {
+        bar->close(logline);
       }
 
       _epoch_count++;
@@ -337,7 +337,7 @@ InferenceResult BoltGraph::predict(
       _output, predict_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
 
-  std::optional<ProgressBar> maybeProgressBar = makeOptionalProgressBar(
+  std::optional<ProgressBar> bar = makeOptionalProgressBar(
       predict_config.verbose(), "test", predict_context.numBatches());
 
   auto test_start = std::chrono::high_resolution_clock::now();
@@ -356,8 +356,8 @@ InferenceResult BoltGraph::predict(
 
       processInferenceBatch(batch_size, batch_labels, metrics);
 
-      if (maybeProgressBar) {
-        maybeProgressBar->increment();
+      if (bar) {
+        bar->increment();
       }
 
       processOutputCallback(predict_config.outputCallback(), batch_size);
@@ -380,8 +380,8 @@ InferenceResult BoltGraph::predict(
       fmt::format("test | full |  batches {} | time {}s | {}", _epoch_count,
                   predict_context.numBatches(), test_time, metrics.summary());
   log::info(logline);
-  if (maybeProgressBar) {
-    maybeProgressBar->close(logline);
+  if (bar) {
+    bar->close(logline);
   }
 
   metrics.logAndReset();
