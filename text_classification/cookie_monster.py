@@ -43,14 +43,14 @@ class CookieMonster:
             activation="relu",
         )(self.input_layer)
         self.output_layer = bolt.graph.FullyConnected(
-            dim=output_dim, activation="softmax"
+            dim=output_dim, activation="sigmoid"
         )(self.hidden_layer)
 
         self.model = bolt.graph.Model(
             inputs=[self.input_layer], output=self.output_layer
         )
 
-        self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+        self.model.compile(loss=bolt.BinaryCrossEntropyLoss())
 
     def set_output_dimension(self, dimension):
         if self.output_layer.get_dim() == dimension:
