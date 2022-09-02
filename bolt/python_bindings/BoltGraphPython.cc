@@ -7,6 +7,7 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/callbacks/Callback.h>
+#include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -508,6 +509,15 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def("on_batch_begin", &Callback::onBatchBegin)
       .def("on_batch_end", &Callback::onBatchEnd)
       .def("should_stop_training", &Callback::shouldStopTraining);
+
+  py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
+      callbacks_submodule, "EarlyStopCheckpoint")
+      .def(py::init<std::vector<dataset::BoltDatasetPtr>,
+                    dataset::BoltDatasetPtr, PredictConfig, std::string,
+                    uint32_t, double>(),
+           py::arg("validation_data"), py::arg("validation_labels"),
+           py::arg("predict_config"), py::arg("best_model_save_location"),
+           py::arg("patience"), py::arg("min_delta"));
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,

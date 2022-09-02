@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <optional>
 #include <random>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -128,21 +129,6 @@ class FullyConnectedLayer final {
   ~FullyConnectedLayer() = default;
 
  private:
-  uint64_t _dim, _prev_dim, _sparse_dim;
-  float _sparsity;
-  bool _trainable;
-  ActivationFunction _act_func;
-
-  std::vector<float> _weights;
-  std::vector<float> _biases;
-
-  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
-  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
-
-  std::unique_ptr<hashing::HashFunction> _hasher;
-  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
-  std::vector<uint32_t> _rand_neurons;
-
   template <bool DENSE>
   constexpr uint32_t nonzerosInOutput() const {
     if constexpr (DENSE) {
@@ -150,34 +136,6 @@ class FullyConnectedLayer final {
     } else {
       return _sparse_dim;
     }
-  }
-
-  using ActiveNeuronsPair =
-      std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
-
-  // This set of variables are only used within a batch, so we do not use
-  // _this_is_dense to check if the layer is sparse, we instead check if
-  // _sparsity is less than 1.
-  bool _prev_is_dense;
-  bool _this_is_dense;
-
-  // This is only used if _prev_is_dense == false and _this_is_dense == false
-  // This is a vector of unique_ptr so that the push_back in the critical
-  // region is just a pointer move and can be very fast
-  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs;
-  // This is only used if _prev_is_dense == false
-  std::vector<bool> _prev_is_active;
-  // This is only used if _this_is_dense == false
-  std::vector<bool> _is_active;
-
-  // A flag to check whether the current network is running in the normal
-  // settings and distributed settings
-  bool _is_distributed;
-
-  BoltSamplingMode _sampling_mode;
-
-  bool useRandomSampling() const {
-    return _sampling_mode == BoltSamplingMode::RandomSampling;
   }
 
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
@@ -228,12 +186,25 @@ class FullyConnectedLayer final {
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
                            const BoltVector* labels);
 
+  /**
+   * If force_build=true build hash tables, return if false.
+   * For non-trainable layers, buildHashTablesImpl is called with
+   * force_build=false except during initialization and setting weights.
+   * For trainable layers, buildHashTablesImpl is always called with
+   * force_build=true.
+   */
+  void buildHashTablesImpl(bool force_build);
+
   void randomNeuronSampling(const BoltVector& input, const BoltVector& output,
                             const BoltVector* labels);
 
   template <bool PREV_DENSE>
   void lshNeuronSampling(const BoltVector& input, BoltVector& output,
                          const BoltVector* labels);
+
+  bool useRandomSampling() const {
+    return _sampling_mode == BoltSamplingMode::RandomSampling;
+  }
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
@@ -267,14 +238,44 @@ class FullyConnectedLayer final {
             _prev_is_active, _is_active);
   }
 
-  /**
-   * If force_build=true build hash tables, return if false.
-   * For non-trainable layers, buildHashTablesImpl is called with
-   * force_build=false except during initialization and setting weights.
-   * For trainable layers, buildHashTablesImpl is always called with
-   * force_build=true.
-   */
-  void buildHashTablesImpl(bool force_build);
+  uint64_t _dim, _prev_dim, _sparse_dim;
+  float _sparsity;
+  bool _trainable;
+  ActivationFunction _act_func;
+
+  std::vector<float> _weights;
+  std::vector<float> _biases;
+
+  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
+  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
+
+  std::unique_ptr<hashing::HashFunction> _hasher;
+  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
+  std::vector<uint32_t> _rand_neurons;
+
+  // This set of variables are only used within a batch, so we do not use
+  // _this_is_dense to check if the layer is sparse, we instead check if
+  // _sparsity is less than 1.
+  bool _prev_is_dense;
+  bool _this_is_dense;
+
+  using ActiveNeuronsPair =
+      std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
+
+  // This is only used if _prev_is_dense == false and _this_is_dense == false
+  // This is a vector of unique_ptr so that the push_back in the critical
+  // region is just a pointer move and can be very fast
+  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs;
+  // This is only used if _prev_is_dense == false
+  std::vector<bool> _prev_is_active;
+  // This is only used if _this_is_dense == false
+  std::vector<bool> _is_active;
+
+  // A flag to check whether the current network is running in the normal
+  // settings and distributed settings
+  bool _is_distributed;
+
+  BoltSamplingMode _sampling_mode;
 };
 
 }  // namespace thirdai::bolt

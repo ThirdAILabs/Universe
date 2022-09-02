@@ -33,6 +33,9 @@ class Metric {
   // called at the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
 
+  // returns whether its better if the metric is smaller
+  virtual bool smallerIsBetter() const = 0;
+
   // Returns the name of the metric.
   virtual std::string getName() = 0;
 
@@ -100,6 +103,8 @@ class CategoricalAccuracy final : public Metric {
 
   std::string getName() final { return name; }
 
+  bool smallerIsBetter() const final { return false; }
+
  private:
   std::atomic<uint32_t> _correct;
   std::atomic<uint32_t> _num_samples;
@@ -143,6 +148,8 @@ class MeanSquaredErrorMetric final : public Metric {
   static constexpr const char* name = "mean_squared_error";
 
   std::string getName() final { return name; }
+
+  bool smallerIsBetter() const final { return true; }
 
  private:
   template <bool DENSE, bool LABEL_DENSE>
@@ -239,6 +246,8 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 
   std::string getName() final { return name; }
 
+  bool smallerIsBetter() const final { return true; }
+
  private:
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
@@ -278,6 +287,8 @@ class RecallAtK : public Metric {
   }
 
   std::string getName() final { return "recall@" + std::to_string(_k); }
+
+  bool smallerIsBetter() const final { return false; }
 
   static inline bool isRecallAtK(const std::string& name) {
     return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
@@ -393,6 +404,8 @@ class FMeasure final : public Metric {
     return name_ss.str();
   }
 
+  bool smallerIsBetter() const final { return false; }
+
   static bool isFMeasure(const std::string& name) {
     return std::regex_match(name, std::regex("f_measure\\(0\\.\\d+\\)"));
   }
@@ -427,6 +440,20 @@ class FMeasure final : public Metric {
   std::atomic<uint64_t> _false_positive;
   std::atomic<uint64_t> _false_negative;
 };
+
+static std::shared_ptr<Metric> makeMetric(const std::string& name) {
+  if (name == CategoricalAccuracy::name) {
+    return std::make_shared<CategoricalAccuracy>();
+  } else if (name == WeightedMeanAbsolutePercentageError::name) {
+    return std::make_shared<WeightedMeanAbsolutePercentageError>();
+  } else if (name == MeanSquaredErrorMetric::name) {
+    return std::make_shared<MeanSquaredErrorMetric>();
+  } else if (FMeasure::isFMeasure(name)) {
+    return FMeasure::make(name);
+  } else {
+    throw std::invalid_argument("'" + name + "' is not a valid metric.");
+  }
+}
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 using InferenceMetricData = std::unordered_map<std::string, double>;
