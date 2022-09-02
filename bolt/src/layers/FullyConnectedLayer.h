@@ -181,7 +181,8 @@ class FullyConnectedLayer final {
    *  - populated during forward
    *  - used during updateParameters
    *  - cleaned up/zero'd during updateParameters (with a call to
-   *    cleanupWithinBatchVariables)
+   *    cleanupWithinBatchVariables for everything except _active_pairs_array,
+   *    which we clean up while we update the weights.)
    */
 
   // These track whether the current/previous layer was dense (using whether
@@ -317,15 +318,6 @@ class FullyConnectedLayer final {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
             _is_distributed, _sampling_mode, _use_sparse_sparse_optimization);
-
-    /**
-     * Here we init the optimizer so that any calls to train in the network
-     * are safe. If we need to reduce memory usage for smaller machines we can
-     * use the removeOptimizer() method to remove these parameters. This will
-     * also likely require adding an additional node state for uninitialized
-     * optimizers so that we have memory safety.
-     */
-    initOptimizer();
 
     // TODO(david) another way to reduce memory for inference is to remove these
     // in addition to the optimizer as mentioned above

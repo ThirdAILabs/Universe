@@ -572,6 +572,7 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParametersOptimized(
         // This is a race condition but it is probably okay, it just means that
         // we might by mistake update the same active pair twice.
         if (_active_pairs_array[active_pair_index]) {
+          // We clean _active_pairs_array here for performance
           _active_pairs_array[active_pair_index] = false;
           updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                        B1_bias_corrected, B2_bias_corrected);
@@ -594,6 +595,8 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParametersNormal(
       uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
       // TODO(David): could use bloom filter here also?
       if (_active_pairs_array[active_pair_index]) {
+        // We clean _active_pairs_array here for performance
+        _active_pairs_array[active_pair_index] = false;
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
       }
@@ -681,7 +684,8 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
 inline void FullyConnectedLayer::cleanupWithinBatchVars() {
   if (!_this_is_dense && !_prev_is_dense) {
     _active_pairs_raw.clear();
-    std::fill(_active_pairs_array.begin(), _active_pairs_array.end(), 0);
+    // We cleanup _active_pairs_array as we use it in the sparse sparse weight
+    // update methods because otherwise this is a bottleneck.
   }
   std::fill(_prev_is_active.begin(), _prev_is_active.end(), 0);
   std::fill(_is_active.begin(), _is_active.end(), 0);
