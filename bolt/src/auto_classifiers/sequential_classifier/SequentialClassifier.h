@@ -7,6 +7,7 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -135,16 +136,7 @@ class SequentialClassifier {
   std::tuple<std::vector<std::string>, std::vector<float>,
              std::vector<uint32_t>>
   explain(const std::unordered_map<std::string, std::string>& sample) {
-    std::vector<std::string_view> columnar_sample(
-        _single_inference_col_nums.size());
-    for (const auto& [col_name, col_value] : sample) {
-      uint32_t col_num = _single_inference_col_nums.at(col_name);
-      columnar_sample[col_num] = col_value.data();
-    }
-
-    BoltVector input_vector;
-    _single_inference_batch_processor->makeInputVector(columnar_sample,
-                                                       input_vector);
+    BoltVector input_vector = getInputForSingleInference(sample);
 
     auto [gradients_indices, gradients_ratios] =
         _model->getInputGradientSingle({input_vector});
@@ -161,16 +153,7 @@ class SequentialClassifier {
 
   BoltVector predictSingle(
       const std::unordered_map<std::string, std::string>& sample) {
-    std::vector<std::string_view> columnar_sample(
-        _single_inference_col_nums.size());
-    for (const auto& [col_name, col_value] : sample) {
-      uint32_t col_num = _single_inference_col_nums.at(col_name);
-      columnar_sample[col_num] = col_value.data();
-    }
-
-    BoltVector input_vector;
-    _single_inference_batch_processor->makeInputVector(columnar_sample,
-                                                       input_vector);
+    BoltVector input_vector = getInputForSingleInference(sample);
 
     return _model->predictSingle({input_vector},
                                  /* use_sparse_inference= */ false);
@@ -195,6 +178,21 @@ class SequentialClassifier {
   }
 
  private:
+  BoltVector getInputForSingleInference(
+      const std::unordered_map<std::string, std::string>& sample) {
+    std::vector<std::string_view> columnar_sample(
+        _single_inference_col_nums.size());
+    for (const auto& [col_name, col_value] : sample) {
+      uint32_t col_num = _single_inference_col_nums.at(col_name);
+      columnar_sample[col_num] = col_value.data();
+    }
+
+    BoltVector input_vector;
+    _single_inference_batch_processor->makeInputVector(columnar_sample,
+                                                       input_vector);
+
+    return input_vector;
+  }
   static float getLayerSparsity(uint32_t layer_size) {
     if (layer_size < 500) {
       return 1.0;
