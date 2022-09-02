@@ -62,9 +62,9 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
         node_layers.end());
   }
 
-  if (print_when_done) {
-    summarize(/* print = */ true, /* detailed = */ false);
-  }
+  std::string model_summary =
+      summarize(/* print = */ print_when_done, /* detailed = */ false);
+  log::info(model_summary);
 }
 
 MetricData BoltGraph::train(
@@ -101,7 +101,8 @@ MetricData BoltGraph::train(
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
       std::optional<ProgressBar> bar = makeOptionalProgressBar(
-          train_config.verbose(), "train", train_context.numBatches());
+          train_config.verbose(), fmt::format("train epoch {}", _epoch_count),
+          train_context.numBatches());
 
       auto train_start = std::chrono::high_resolution_clock::now();
 
@@ -721,7 +722,7 @@ std::string BoltGraph::summarize(bool print, bool detailed) const {
   }
   summary << "============================================================\n";
   if (print) {
-    log::info("{}", summary.str());
+    std::cout << summary.str() << std::endl;
   }
   return summary.str();
 }
