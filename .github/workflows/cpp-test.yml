@@ -77,4 +77,4 @@ jobs:
       - name: Run all c++ tests
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE
-          bin/cpp-test.sh -V
+          bin/cpp-test.sh --output-on-failure
