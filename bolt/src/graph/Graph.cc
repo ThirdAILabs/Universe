@@ -147,8 +147,6 @@ MetricData BoltGraph::train(
     throw;
   }
 
-  cleanupAfterBatchProcessing();
-
   callbacks.onTrainEnd(*this);
 
   auto metric_data = metrics.getOutput();
