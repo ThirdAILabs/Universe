@@ -37,7 +37,7 @@ class MaskedSentenceBatchProcessor final
     for (uint32_t i = 0; i < rows.size(); i++) {
       auto [row_pairgrams, indices, label] = processRow(rows[i]);
       vectors[i] = std::move(row_pairgrams);
-      masked_indices[i] = indices;
+      masked_indices[i] = std::move(indices);
       labels[i] = std::move(label);
     }
 

@@ -2,7 +2,7 @@ from thirdai import bolt, dataset
 from thirdai.dataset import DataPipeline, blocks, text_encodings
 
 # Uncomment the following line when used on a machine with valid mlflow credentials
-# import mlflow
+import mlflow
 import os
 
 
@@ -10,7 +10,7 @@ class CookieMonster:
     def __init__(
         self,
         input_dimension,
-        hidden_dimension=2000,
+        hidden_dimension=2048,
         output_dimension=2,
         hidden_sparsity=0.1,
         mlflow_enabled=True,
@@ -22,7 +22,7 @@ class CookieMonster:
         self.hidden_sparsity = hidden_sparsity
         self.mlflow_enabled = mlflow_enabled
         self.construct(output_dimension)
-        self.mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
+        self.mlm_loader = dataset.MLMDatasetLoader(self.input_dimension, masked_tokens_percentage=0.15)
 
         self.config_file_dir = os.path.dirname(os.path.abspath(__file__))
         self.config_file_name = os.path.join(
@@ -37,14 +37,20 @@ class CookieMonster:
 
     def construct(self, output_dim):
         self.input_layer = bolt.graph.Input(dim=self.input_dimension)
-        self.hidden_layer = bolt.graph.FullyConnected(
+        self.first_hidden_layer = bolt.graph.FullyConnected(
             dim=self.hidden_dim,
             sparsity=self.hidden_sparsity,
             activation="relu",
         )(self.input_layer)
+        self.second_hidden_layer = bolt.graph.FullyConnected(
+            dim=1024,
+            sparsity=0.1,
+            activation="relu"
+        )(self.first_hidden_layer)
+
         self.output_layer = bolt.graph.FullyConnected(
             dim=output_dim, activation="sigmoid"
-        )(self.hidden_layer)
+        )(self.second_hidden_layer)
 
         self.model = bolt.graph.Model(
             inputs=[self.input_layer], output=self.output_layer
@@ -55,17 +61,21 @@ class CookieMonster:
     def set_output_dimension(self, dimension):
         if self.output_layer.get_dim() == dimension:
             return
-        save_loc = "./hidden_layer_parameters"
-        self.hidden_layer.save_parameters(save_loc)
+        first_hidden_save_loc = "./first_hidden_layer_parameters"
+        second_hidden_save_loc = "./second_hidden_layer_parameters"
+        self.first_hidden_layer.save_parameters(first_hidden_save_loc)
+        self.second_hidden_layer.save_parameters(second_hidden_save_loc)
 
         self.construct(dimension)
-        self.hidden_layer.load_parameters(save_loc)
-        os.remove(save_loc)
+        self.first_hidden_layer.load_parameters(first_hidden_save_loc)
+        self.second_hidden_layer.load_parameters(second_hidden_save_loc)
+        os.remove(first_hidden_save_loc)
+        os.remove(second_hidden_save_loc)
 
     def load_data(self, task_type, file, batch_size, label_dim):
         if task_type == "mlm":
             # TODO: Check file format
-            data, label = self.mlm_loader.load(file, batch_size)
+            data, masked_indices, label = self.mlm_loader.load(file, batch_size)
         elif task_type == "classification":
             pipeline = DataPipeline(
                 file,
@@ -169,15 +179,45 @@ class CookieMonster:
                 print("\n")
 
         if self.mlflow_enabled:
-            save_loc = "./hidden_layer_parameters"
-            self.hidden_layer.save_parameters(save_loc)
-            mlflow.log_artifact(save_loc)
+            first_hidden_save_loc = "./first_hidden_layer_parameters"
+            second_hidden_save_loc = "./second_hidden_layer_parameters"
+            self.first_hidden_layer.save_parameters(first_hidden_save_loc)
+            self.second_hidden_layer.save_parameters(second_hidden_save_loc)
+            mlflow.log_artifact(first_hidden_save_loc)
+            mlflow.log_artifact(second_hidden_save_loc)
             mlflow.end_run()
 
-    def evaluate(self, path_to_config_directory):
-        self.eat_corpus(path_to_config_directory, evaluate=True)
+    def evaluate(self, path_to_config_directory, evaluate=False):
+        self.eat_corpus(path_to_config_directory, evaluate, verbose=True)
+
+    def load_hidden_layer_parameters(self, first_hidden_layer_parameters, second_hidden_layer_parameters):
+        """
+        Input:
+            - hidden_layer_parameters: If MlFlow is enabled, this is a URL corresponding
+                to where the parameters were saved. Otherwise, this is a path to a local
+                file containing serialized parameters.
+
+        """
+        print("Loading Hidden Layer Parameters ...")
+        if self.mlflow_enabled:
+            local_param_path_hidden1 = mlflow.artifacts.download_artifacts(
+                first_hidden_layer_parameters
+            )
+            local_param_path_hidden2 = mlflow.artifacts.download_artifacts(
+                second_hidden_layer_parameters
+            )
+
+            print("local parameter path first hidden layer = {}\n".format(local_param_path_hidden1))
+            print("local parameter path secon hidden layer = {}\n".format(local_param_path_hidden2))
+            self.first_hidden_layer.load_parameters("/home/blaise/first_hidden_layer_parameters")
+            self.second_hidden_layer.load_parameters("/home/blaise/second_hidden_layer_parameters")
+        else:
+            self.first_hidden_layer.load_parameters(first_hidden_layer_parameters)
+
+        print("Loaded Hidden Layer Parameters")
 
     def download_hidden_parameters(self, link_to_parameter):
         local_param_path = mlflow.artifacts.download_artifacts(link_to_parameter)
-        self.hidden_layer.load_parameters(local_param_path)
+
+        self.first_hidden_layer.load_parameters(local_param_path)
         print("Loaded parameters")
