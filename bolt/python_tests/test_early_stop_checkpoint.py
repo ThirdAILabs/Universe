@@ -67,12 +67,12 @@ def test_early_stop_checkpoint():
         .enable_sparse_inference()
     )
 
-    last_model_accuracy = last_model.predict(
-        valid_data, valid_labels, predict_config
-    )[0]["categorical_accuracy"]
+    last_model_accuracy = last_model.predict(valid_data, valid_labels, predict_config)[
+        0
+    ]["categorical_accuracy"]
 
-    early_stop_accuracy = best_model.predict(
-        valid_data, valid_labels, predict_config
-    )[0]["categorical_accuracy"]
+    early_stop_accuracy = best_model.predict(valid_data, valid_labels, predict_config)[
+        0
+    ]["categorical_accuracy"]
 
     assert early_stop_accuracy >= last_model_accuracy

@@ -73,5 +73,6 @@ class PyCallback : public Callback {
                                                    /* Empty list of arguments */
     );
   }
-}
+};
+
 }  // namespace thirdai::bolt

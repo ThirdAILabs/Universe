@@ -24,7 +24,6 @@
 namespace thirdai::bolt {
 
 class DistributedTrainingContext;
-using GraphCallback = std::function<void()>;
 
 class BoltGraph {
   friend class DistributedTrainingContext;
@@ -40,9 +39,7 @@ class BoltGraph {
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
         _epoch_count(0),
-        _batch_cnt(0),
-        _per_batch_callback(std::nullopt),
-        _per_epoch_callback(std::nullopt) {
+        _batch_cnt(0) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
