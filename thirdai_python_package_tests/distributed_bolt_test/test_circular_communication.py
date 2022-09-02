@@ -4,7 +4,7 @@ except ImportError:
     import warnings
 
     warnings.warn(
-        "Error while importing thirdai.distributed_bolt." "You might be missing Ray"
+        "Error while importing thirdai.distributed_bolt. " "You might be missing Ray"
     )
 
 import pytest
