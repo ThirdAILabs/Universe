@@ -52,20 +52,28 @@ def tokenize_to_svm(
 
             fw.write("\n")
 
-class S3DataLoader(DataLoader):
 
-    def __init__(self, s3_bucket, prefix_filter, batch_size, aws_access_key_id=None, aws_secret_access_key=None):
+class S3DataLoader(DataLoader):
+    def __init__(
+        self,
+        s3_bucket,
+        prefix_filter,
+        batch_size,
+        aws_access_key_id=None,
+        aws_secret_access_key=None,
+    ):
         DataLoader.__init__(self, batch_size)
-        
+
         import boto3
+
         if aws_access_key_id:
             session = boto3.Session(
                 aws_access_key_id=aws_access_key_id,
                 aws_secret_access_key=aws_secret_access_key,
             )
-            self.s3_client = session.resource('s3')
+            self.s3_client = session.resource("s3")
         else:
-            self.s3_client = boto3.resource('s3')
+            self.s3_client = boto3.resource("s3")
 
         self.batch_size = batch_size
         self.bucket = self.s3_client.Bucket(s3_bucket)
@@ -77,7 +85,7 @@ class S3DataLoader(DataLoader):
         for obj in self.objects_in_bucket:
             key = obj.key
             print("Now parsing object " + key)
-            body = obj.get()['Body']
+            body = obj.get()["Body"]
             for line in body.iter_lines():
                 yield line
 
@@ -96,6 +104,6 @@ class S3DataLoader(DataLoader):
     def resource_name(self):
         return self.bucket + "/" + self.prefix_filter
 
+
 __all__.append(tokenize_to_svm)
 __all__.append(S3DataLoader)
-
