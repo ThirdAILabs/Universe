@@ -22,6 +22,9 @@ class TabularPairGram : public Block {
 
   uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
 
+  // have to see for this multiple columns blocks which one to return.
+  uint32_t getColumnNum() const final { return _metadata->getLabelCol(); }
+
  protected:
   // TODO(david) We should always include all unigrams but if the number of
   // columns is too large, this processing time becomes slow. One idea is to

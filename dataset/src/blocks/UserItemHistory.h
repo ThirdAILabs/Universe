@@ -149,6 +149,9 @@ class UserItemHistoryBlock final : public Block {
         n_unique_items);
   }
 
+  // have to see which one to send in case of multiple columns.
+  uint32_t getColumnNum() const final { return _user_col; }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,

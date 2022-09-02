@@ -129,6 +129,8 @@ class Block {
    */
   virtual uint32_t expectedNumColumns() const = 0;
 
+  virtual uint32_t getColumnNum() const = 0;
+
  protected:
   /**
    * Derived class-specific implementation of how input rows get
