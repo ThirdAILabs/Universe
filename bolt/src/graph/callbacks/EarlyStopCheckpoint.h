@@ -53,9 +53,8 @@ class EarlyStopCheckpoint : public Callback {
     }
   }
 
-  void onTrainBegin(BoltGraph& model, TrainConfig& train_config) final {
+  void onTrainBegin(BoltGraph& model) final {
     (void)model;
-    (void)train_config;
 
     std::string metric_name = _predict_config.getMetricNames()[0];
 
@@ -68,9 +67,7 @@ class EarlyStopCheckpoint : public Callback {
                                  : std::numeric_limits<double>::min();
   }
 
-  void onEpochEnd(BoltGraph& model, TrainConfig& train_config) final {
-    (void)train_config;
-
+  void onEpochEnd(BoltGraph& model) final {
     std::string metric_name = _predict_config.getMetricNames()[0];
     double metric_val =
         model.predict(_validation_data, _validation_labels, _predict_config)
@@ -86,10 +83,7 @@ class EarlyStopCheckpoint : public Callback {
     }
   }
 
-  void onTrainEnd(BoltGraph& model, TrainConfig& train_config) final {
-    (void)train_config;
-    (void)model;
-  }
+  void onTrainEnd(BoltGraph& model) final { (void)model; }
 
   bool shouldStopTraining() final { return _should_stop_training; }
 
