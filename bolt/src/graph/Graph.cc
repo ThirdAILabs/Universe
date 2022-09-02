@@ -122,7 +122,6 @@ MetricData BoltGraph::train(
       if (callbacks.shouldStopTraining()) {
         break;
       }
-      perEpochCallback();
 
       auto train_end = std::chrono::high_resolution_clock::now();
       int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
@@ -177,8 +176,6 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
     metrics.processSample(_output->getOutputVector(vec_id),
                           batch_labels[vec_id]);
   }
-
-  perBatchCallback();
 }
 
 void BoltGraph::updateParametersAndSampling(

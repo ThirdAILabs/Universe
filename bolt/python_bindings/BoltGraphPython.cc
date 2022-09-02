@@ -1,5 +1,6 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
+#include "PyCallback.h"
 #include <bolt/src/graph/DistributedBoltGraph.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
@@ -448,24 +449,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "assigned name. As such, must be called after compile. You can "
            "determine which layer is which by printing a graph summary. "
            "Possible operations to perform on the returned object include "
-           "setting layer sparsity, freezing weights, or saving to a file")
-#if THIRDAI_EXPOSE_ALL
-      .def("register_batch_callback",
-           [](BoltGraph& model, GraphCallback callback) {
-             // From testing we don't need to release the GIL to call the python
-             // callback, even if the python function calls back into the C++
-             // code.
-             model.registerPerBatchCallback(std::move(callback));
-           })
-      .def("register_epoch_callback",
-           [](BoltGraph& model, GraphCallback callback) {
-             // From testing we don't need to release the GIL to call the python
-             // callback, even if the python function calls back into the C++
-             // code.
-             model.registerPerEpochCallback(std::move(callback));
-           })
-#endif
-      ;
+           "setting layer sparsity, freezing weights, or saving to a file");
 
   py::class_<DistributedTrainingContext>(graph_submodule, "DistributedModel")
       .def(py::init<std::vector<InputPtr>, NodePtr,
@@ -515,7 +499,15 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 void createCallbacksSubmodule(py::module_& graph_submodule) {
   auto callbacks_submodule = graph_submodule.def_submodule("callbacks");
 
-  py::class_<Callback, CallbackPtr>(callbacks_submodule, "Callback");  // NOLINT
+  py::class_<Callback, PyCallback, CallbackPtr>(callbacks_submodule, "Callback")
+      .def(py::init<>())
+      .def("on_train_begin", &Callback::onTrainBegin)
+      .def("on_train_end", &Callback::onTrainEnd)
+      .def("on_epoch_begin", &Callback::onEpochBegin)
+      .def("on_epoch_end", &Callback::onEpochEnd)
+      .def("on_batch_begin", &Callback::onBatchBegin)
+      .def("on_batch_end", &Callback::onBatchEnd)
+      .def("should_stop_training", &Callback::shouldStopTraining);
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
