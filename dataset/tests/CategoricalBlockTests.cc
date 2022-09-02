@@ -24,6 +24,7 @@ class CategoricalBlockTest : public testing::Test {
     std::vector<std::vector<uint32_t>> matrix;
     for (uint32_t row_idx = 0; row_idx < n_rows; row_idx++) {
       std::vector<uint32_t> row;
+      row.reserve(dims.size());
       for (auto dim : dims) {
         row.push_back(std::rand() % dim);
       }
