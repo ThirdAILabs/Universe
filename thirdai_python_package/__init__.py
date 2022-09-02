@@ -27,14 +27,16 @@ try:
 except ImportError:
     pass
 
-# ray have grpcio as its dependency, which doesn't have a trivial installation for 
+# ray have grpcio as its dependency, which doesn't have a trivial installation for
 # Apple MAC M1, See https://github.com/grpc/grpc/issues/25082
 try:
     import thirdai.distributed_bolt
 except ImportError:
     import warnings
-    warnings.warn("Error while importing thirdai.distributed_bolt."
-            "You might be missing Ray.")
+
+    warnings.warn(
+        "Error while importing thirdai.distributed_bolt." "You might be missing Ray."
+    )
 
 
 # Don't import this or include it in __all__ for now because it requires
