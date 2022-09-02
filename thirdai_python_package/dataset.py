@@ -57,7 +57,7 @@ def tokenize_to_svm(
 class S3DataLoader(DataLoader):
     def __init__(
         self,
-        s3_bucket,
+        bucket_name,
         prefix_filter,
         batch_size,
         aws_access_key_id=None,
@@ -77,7 +77,8 @@ class S3DataLoader(DataLoader):
             self.s3_client = boto3.resource("s3")
 
         self.batch_size = batch_size
-        self.bucket = self.s3_client.Bucket(s3_bucket)
+        self.bucket_name = bucket_name
+        self.bucket = self.s3_client.Bucket(self.bucket_name)
         self.prefix_filter = prefix_filter
         self.objects_in_bucket = list(self.bucket.objects.filter(Prefix=prefix_filter))
         self.line_iterator = self._get_line_iterator()
@@ -92,20 +93,12 @@ class S3DataLoader(DataLoader):
                 yield line
 
     def next_batch(self):
-        print(
-            "Loading new batch: " + str(self.current_batch_id), time.time(), flush=True
-        )
         lines = []
         while len(lines) < self.batch_size:
             next_line = self.get_next_line()
             if next_line == None:
                 break
             lines.append(next_line)
-        print(
-            f"Batch {self.current_batch_id} created with {len(lines)} elements",
-            time.time(),
-            flush=True,
-        )
         self.current_batch_id += 1
         if lines == []:
             return None
@@ -115,7 +108,7 @@ class S3DataLoader(DataLoader):
         return next(self.line_iterator, None)
 
     def resource_name(self):
-        return self.bucket + "/" + self.prefix_filter
+        return f"s3://{self.bucket_name}/{self.prefix_filter}"
 
 
 __all__.append(tokenize_to_svm)

@@ -281,7 +281,7 @@ def get_loss(model_config):
 def load_svm_dataset(dataset_config, use_s3):
     batch_size = config_get(dataset_config, "batch_size")
     if use_s3:
-        print("Using S3 to load SVM dataset")
+        print("Using S3 to load SVM dataset", flush=True)
         s3_prefix = "share/data/" + dataset_config["path"]
         s3_bucket = "thirdai-corp"
         data_loader = dataset.S3DataLoader(
