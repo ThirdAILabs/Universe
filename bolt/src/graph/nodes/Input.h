@@ -34,8 +34,8 @@ class Input final : public Node {
   }
 
   static std::shared_ptr<Input> makeTokenInput(
-      uint32_t expected_dim, std::pair<uint32_t, uint32_t> num_nonzeros_range) {
-    return std::make_shared<Input>(expected_dim, num_nonzeros_range);
+      uint32_t expected_dim, std::pair<uint32_t, uint32_t> num_tokens_range) {
+    return std::make_shared<Input>(expected_dim, num_tokens_range);
   }
 
   // This class does not own this memory, but we pass it in as a pointer that

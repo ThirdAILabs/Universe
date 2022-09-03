@@ -45,7 +45,7 @@ BoltGraph getModel() {
 
   auto token_input = Input::makeTokenInput(
       /* expected_dim= */ n_classes,
-      /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(1, 1));
+      /* num_tokens_range= */ std::pair<uint32_t, uint32_t>(1, 1));
   auto embedding = EmbeddingNode::make(
       /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
       /* log_embedding_block_size= */ 12);

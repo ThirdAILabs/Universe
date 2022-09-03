@@ -145,7 +145,7 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
 
   auto token_input = Input::makeTokenInput(
       /* expected_dim= */ n_batches * batch_size + 1,
-      /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(1, 1));
+      /* num_tokens_range= */ std::pair<uint32_t, uint32_t>(1, 1));
 
   auto embedding_layer = EmbeddingNode::make(
       /* num_embedding_lookups= */ 4, /* lookup_size= */ 8,

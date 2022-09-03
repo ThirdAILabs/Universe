@@ -51,7 +51,7 @@ TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
   auto input = Input::make(/* expected_dim= */ n_classes);
   auto token_input = Input::makeTokenInput(
       /* expected_dim= */ n_switch_layers,
-      /* num_nonzeros_range = */ std::pair<uint32_t, uint32_t>(1, 1));
+      /* num_tokens_range = */ std::pair<uint32_t, uint32_t>(1, 1));
 
   auto switch_layer = SwitchNode::make(
       /* dim= */ 100, /* activation= */ "relu",
