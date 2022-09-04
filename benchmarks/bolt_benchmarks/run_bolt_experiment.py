@@ -217,7 +217,7 @@ def construct_fully_connected_node(fc_config):
         layer = bolt.graph.FullyConnected(
             dim=config_get(fc_config, "dim"),
             sparsity=sparsity,
-            activation_function=config_get(fc_config, "activation"),
+            activation=config_get(fc_config, "activation"),
             sampling_config=get_sampling_config(fc_config),
         )
 
