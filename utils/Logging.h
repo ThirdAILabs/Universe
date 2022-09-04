@@ -11,18 +11,18 @@ namespace thirdai::log {
 // Provide of a few sensible defaults for a logger. The following is also used
 // at pybindings, editing here provides consistency in the C++ and Python API
 // being the single-source of truth.
-constexpr auto kName = "thirdai";
-constexpr auto kDefaultLogToStderr = true;
-constexpr auto kDefaultLogPath = "";
-constexpr auto kDefaultLogLevel = "info";
-constexpr auto kDefaultPattern = "[%Y-%m-%d %T] %v";
+constexpr auto NAME = "thirdai";
+constexpr auto DEFAULT_LOG_TO_STDERR = true;
+constexpr auto DEFAULT_LOG_PATH = "";
+constexpr auto DEFAULT_LOG_LEVEL = "info";
+constexpr auto DEFAULT_LOG_PATTERN = "[%Y-%m-%d %T] %v";
 
 // This configures a logger provided a string path. Client is
 // expected to configure logging at the beginning.
-inline void setupLogging(bool log_to_stderr = kDefaultLogToStderr,
-                         const std::string& path = kDefaultLogPath,
-                         const std::string& level = kDefaultLogLevel,
-                         const std::string& pattern = kDefaultPattern) {
+inline void setupLogging(bool log_to_stderr = DEFAULT_LOG_TO_STDERR,
+                         const std::string& path = DEFAULT_LOG_PATH,
+                         const std::string& level = DEFAULT_LOG_LEVEL,
+                         const std::string& pattern = DEFAULT_LOG_PATTERN) {
   try {
     using FileSink = spdlog::sinks::basic_file_sink_mt;
     using StderrSink = spdlog::sinks::stderr_color_sink_mt;
@@ -40,7 +40,7 @@ inline void setupLogging(bool log_to_stderr = kDefaultLogToStderr,
     }
 
     auto logger =
-        std::make_shared<spdlog::logger>(kName, sinks.begin(), sinks.end());
+        std::make_shared<spdlog::logger>(NAME, sinks.begin(), sinks.end());
 
     spdlog::register_logger(logger);
     logger->set_pattern(pattern);
@@ -74,14 +74,14 @@ inline void setupLogging(bool log_to_stderr = kDefaultLogToStderr,
 
 // Macro to prevent repetition. The desire is to achieve a syntax:
 // thirdai::log::{trace,debug,info,warn,error,critical}
-#define _DEFINE_RELAY_FN(level)       \
-  template <class... Args>            \
-  void level(Args... args) {          \
-    auto logger = spdlog::get(kName); \
-    if (!logger) {                    \
-      return;                         \
-    }                                 \
-    logger->level(args...);           \
+#define _DEFINE_RELAY_FN(level)      \
+  template <class... Args>           \
+  void level(Args... args) {         \
+    auto logger = spdlog::get(NAME); \
+    if (!logger) {                   \
+      return;                        \
+    }                                \
+    logger->level(args...);          \
   }
 
 // Function definitions via macros

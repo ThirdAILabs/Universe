@@ -39,10 +39,10 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 #endif
 
   m.def("setup_logging", &thirdai::log::setupLogging,
-        py::arg("log_to_stderr") = thirdai::log::kDefaultLogToStderr,
-        py::arg("path") = thirdai::log::kDefaultLogPath,
-        py::arg("level") = thirdai::log::kDefaultLogLevel,
-        py::arg("pattern") = thirdai::log::kDefaultPattern,
+        py::arg("log_to_stderr") = thirdai::log::DEFAULT_LOG_TO_STDERR,
+        py::arg("path") = thirdai::log::DEFAULT_LOG_PATH,
+        py::arg("level") = thirdai::log::DEFAULT_LOG_LEVEL,
+        py::arg("pattern") = thirdai::log::DEFAULT_LOG_PATTERN,
         "Set up logging for thirdai C++ library.\n"
         "  log_to_stderr: bool - Print logs to standard error. Turned off "
         "(false) by default.\n"
