@@ -23,7 +23,7 @@ def main():
 
     config = toml.load(args.config_path)
 
-    setup_logging(log_to_stderr=args.verbose, path=args.log_file, level=args.log_level)
+    setup_logging(log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level)
 
     model = load_and_compile_model(config)
     datasets = load_all_datasets(config)
@@ -395,7 +395,7 @@ def build_arg_parser():
     )
 
     parser.add_argument(
-        "--verbose",
+        "--log-to-stderr",
         action="store_true",
         help="Logs to stderr, based on the log-level. Use --log-level to control granularity.",
     )
