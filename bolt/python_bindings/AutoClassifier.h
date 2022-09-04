@@ -2,12 +2,13 @@
 
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/DataLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <limits>
+#include <optional>
 
 namespace py = pybind11;
 
@@ -15,7 +16,6 @@ namespace thirdai::bolt::python {
 
 class AutoClassifierBase {
  public:
-  // TODO(Nick): Is there a better name for this?
   enum class ReturnMode { NumpyArray, NumpyArrayWithThresholding, ClassName };
 
   explicit AutoClassifierBase(BoltGraphPtr model, ReturnMode return_mode,
@@ -28,11 +28,23 @@ class AutoClassifierBase {
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
-             bool shuffle_data = false) {
-    auto batch_processor = getTrainingBatchProcessor();
+             std::optional<uint32_t> batch_size = std::nullopt,
+             std::optional<uint32_t> max_in_memory_batches = std::nullopt) {
+    auto data_source = std::make_shared<dataset::SimpleFileDataLoader>(
+        filename, batch_size.value_or(defaultBatchSize()));
 
-    dataset::StreamingGenericDatasetLoader data_loader(
-        filename, batch_processor, defaultBatchSize(), shuffle_data);
+    train(data_source, epochs, learning_rate, max_in_memory_batches);
+  }
+
+  void train(const std::shared_ptr<dataset::DataLoader>& data_source,
+             uint32_t epochs, float learning_rate,
+             std::optional<uint32_t> max_in_memory_batches = std::nullopt) {
+    auto batch_processor =
+        getTrainingBatchProcessor(data_source, max_in_memory_batches);
+    data_source->reset();
+
+    dataset::StreamingDataset<BoltBatch, BoltBatch> data_loader(
+        data_source, batch_processor);
 
     auto [data, labels] = data_loader.loadInMemory();
 
@@ -52,10 +64,15 @@ class AutoClassifierBase {
   }
 
   py::object predict(const std::string& filename) {
+    return predict(std::make_shared<dataset::SimpleFileDataLoader>(
+        filename, defaultBatchSize()));
+  }
+
+  py::object predict(const std::shared_ptr<dataset::DataLoader>& data_source) {
     auto batch_processor = getPredictBatchProcessor();
 
-    dataset::StreamingGenericDatasetLoader data_loader(
-        filename, batch_processor, defaultBatchSize());
+    dataset::StreamingDataset<BoltBatch, BoltBatch> data_loader(
+        data_source, batch_processor);
 
     auto [data, labels] = data_loader.loadInMemory();
 
@@ -109,7 +126,9 @@ class AutoClassifierBase {
    * Interface for constructing batch processor and featurizing data.
    */
 
-  virtual dataset::GenericBatchProcessorPtr getTrainingBatchProcessor() = 0;
+  virtual dataset::GenericBatchProcessorPtr getTrainingBatchProcessor(
+      std::shared_ptr<dataset::DataLoader> data_loader,
+      std::optional<uint64_t> max_in_memory_batches) = 0;
 
   virtual dataset::GenericBatchProcessorPtr getPredictBatchProcessor() = 0;
 

@@ -19,6 +19,8 @@ class DataLoader {
 
   virtual std::string resourceName() const = 0;
 
+  virtual void reset() = 0;
+
   uint32_t getMaxBatchSize() const { return _target_batch_size; }
 
   virtual ~DataLoader() = default;
@@ -61,6 +63,8 @@ class SimpleFileDataLoader final : public DataLoader {
     }
     return std::nullopt;
   }
+
+  void reset() final { _file = SafeFileIO::ifstream(_filename); }
 
   std::string resourceName() const final { return _filename; }
 
