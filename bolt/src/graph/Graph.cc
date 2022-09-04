@@ -34,7 +34,7 @@ std::optional<ProgressBar> makeOptionalProgressBar(bool make, Args... args) {
   if (!make) {
     return std::nullopt;
   }
-  return ProgressBar(args...);
+  return std::make_optional<ProgressBar>(args...);
 }
 }  // namespace
 
