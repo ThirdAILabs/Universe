@@ -1,3 +1,5 @@
+# We have two criteo benchmarks because the datasets are slightly different in input dimension.
+
 experiment_identifier = "Criteo DLRM 46M"
 model_identifier = "criteo_dlrm"
 dataset_identifier = "criteo_click_through_46M"
@@ -47,6 +49,7 @@ pred = "numerical_input"
 dim = 1000
 sparsity = 0.2
 activation = "relu"
+# Use random sampling because it speeds up training without impacting convergence.
 use_random_sampling = true
 
 [[nodes]]
@@ -83,6 +86,7 @@ pred = "concat"
 dim = 1000
 sparsity = 0.2
 activation = "relu"
+# Use random sampling because it speeds up training without impacting convergence.
 use_random_sampling = true
 
 [[nodes]]

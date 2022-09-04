@@ -81,6 +81,9 @@ def load_and_compile_model(model_config):
 # ["train_data", "train_labels", "test_data", "test_labels"]
 # to lists of datasets (except for the labels, which will either be a single dataset or None)
 def load_all_datasets(dataset_config):
+    # We have separate test_labels and test_labels_np so that we can load the
+    # test labels both as a bolt dataset for predict and also as a numpy array
+    # which is needed to compute the roc_auc.
     result = {
         "train_data": [],
         "train_labels": [],
@@ -402,9 +405,7 @@ def compute_roc_auc(predict_output, datasets, use_mlflow):
             f"Length of activations must match length of test_labels_np to compute roc_auc."
         )
 
-    if len(activations.shape) == 1:
-        scores = activations
-    elif len(activations.shape) == 2 and activations.shape[1] == 2:
+    if len(activations.shape) == 2 and activations.shape[1] == 2:
         scores = activations[:, 1]
     elif len(activations.shape) == 2 and activations.shape[1] == 1:
         scores = activations[:, 0]
