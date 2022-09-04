@@ -99,13 +99,13 @@ class CategoricalAccuracy final : public Metric {
     _num_samples = 0;
   }
 
-  static constexpr const char* kName = "categorical_accuracy";
+  static constexpr const char* NAME = "categorical_accuracy";
 
-  std::string name() final { return kName; }
+  std::string name() final { return NAME; }
 
   std::string summary() final {
     std::stringstream stream;
-    stream << kName << ": " << value();
+    stream << NAME << ": " << value();
     return stream.str();
   }
 
@@ -149,13 +149,13 @@ class MeanSquaredErrorMetric final : public Metric {
     _num_samples = 0;
   }
 
-  static constexpr const char* kName = "mean_squared_error";
+  static constexpr const char* NAME = "mean_squared_error";
 
-  std::string name() final { return kName; }
+  std::string name() final { return NAME; }
 
   std::string summary() final {
     std::stringstream stream;
-    stream << kName << ": " << value();
+    stream << NAME << ": " << value();
     return stream.str();
   }
 
@@ -251,14 +251,13 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
     _sum_of_truths = 0.0;
   }
 
-  static constexpr const char* kName =
-      "weighted_mean_absolute_percentage_error";
+  static constexpr const char* NAME = "weighted_mean_absolute_percentage_error";
 
-  std::string name() final { return kName; }
+  std::string name() final { return NAME; }
 
   std::string summary() final {
     std::stringstream stream;
-    stream << kName << ": " << value();
+    stream << NAME << ": " << value();
     return stream.str();
   }
 
@@ -415,11 +414,11 @@ class FMeasure final : public Metric {
     _false_negative = 0;
   }
 
-  static constexpr const char* kName = "f_measure";
+  static constexpr const char* NAME = "f_measure";
 
   std::string name() final {
     std::stringstream name_ss;
-    name_ss << kName << '(' << _threshold << ')';
+    name_ss << NAME << '(' << _threshold << ')';
     return name_ss.str();
   }
 
