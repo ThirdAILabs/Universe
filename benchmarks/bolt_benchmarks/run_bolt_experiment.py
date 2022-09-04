@@ -23,7 +23,9 @@ def main():
 
     config = toml.load(args.config_path)
 
-    setup_logging(log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level)
+    setup_logging(
+        log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level
+    )
 
     model = load_and_compile_model(config)
     datasets = load_all_datasets(config)
@@ -406,7 +408,10 @@ def build_arg_parser():
         help="Logs to stderr, based on the log-level. Use --log-level to control granularity.",
     )
     parser.add_argument(
-        "--log-file", type=str, help="File to write on disk to. Leaving empty (default) implies no logging to file.", default=""
+        "--log-file",
+        type=str,
+        help="File to write on disk to. Leaving empty (default) implies no logging to file.",
+        default="",
     )
     parser.add_argument(
         "--log-level",
