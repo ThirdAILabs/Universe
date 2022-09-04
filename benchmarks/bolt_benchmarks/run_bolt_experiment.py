@@ -400,7 +400,7 @@ def build_arg_parser():
         help="Logs to stderr, based on the log-level. Use --log-level to control granularity.",
     )
     parser.add_argument(
-        "--log-file", type=str, help="File to write on disk to.", default=""
+        "--log-file", type=str, help="File to write on disk to. Leaving empty (default) implies no logging to file.", default=""
     )
     parser.add_argument(
         "--log-level",
