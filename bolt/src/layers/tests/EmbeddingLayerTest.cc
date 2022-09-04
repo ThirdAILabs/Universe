@@ -74,8 +74,10 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   }
 
   static void testEmbeddingBackpropagation(
-      std::unique_ptr<EmbeddingLayer>& layer,
+      bool use_concat_reduction,
       const std::vector<std::vector<uint32_t>>& tokens) {
+    auto layer = createEmbeddingLayer(use_concat_reduction ? "concat" : "sum");
+
     BoltBatch output = getEmbeddings(layer, tokens);
 
     std::unordered_map<uint32_t, float> gradients;
@@ -104,24 +106,14 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
               layer, tokens[batch_index][token_idx], lookup_index);
 
           for (uint32_t i = 0; i < LOOKUP_SIZE; i++) {
-            uint32_t gradient_offset = token_idx * NUM_LOOKUPS * LOOKUP_SIZE +
-                                       lookup_index * LOOKUP_SIZE + i;
+            uint32_t gradient_offset;
+            if (use_concat_reduction) {
+              gradient_offset = token_idx * NUM_LOOKUPS * LOOKUP_SIZE +
+                                lookup_index * LOOKUP_SIZE + i;
+            } else {
+              gradient_offset = lookup_index * LOOKUP_SIZE + i;
+            }
 
-            /**
-             * Let d be the dimenision of the embedding foreach token and n be
-             * the number of tokens. Then the offset of the gradient for the
-             * i-th component of the embedding for the k-th token in a
-             * concatenation reduction occurs at k * d + i. But in a sum
-             * reduction it occurs at i.
-             *
-             * Since the entire dimension of all the embeddings with a
-             * concatenation reduction is n*d, and with a sum reduction its d.
-             *
-             * Hence if we compute the offset for a concatenation reduction and
-             * take it mod the entire embedding dimension its the correct index,
-             * regardless of which reduction is used.
-             */
-            gradient_offset = gradient_offset % output[batch_index].len;
             gradients[loc + i] +=
                 output[batch_index].gradients[gradient_offset];
           }
@@ -251,18 +243,14 @@ TEST_F(EmbeddingLayerTestFixture, BackpropagationSumReduction) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
-  auto layer = createEmbeddingLayer("sum");
-
-  testEmbeddingBackpropagation(layer, tokens);
+  testEmbeddingBackpropagation(/* use_concat_reduction= */ false, tokens);
 }
 
 TEST_F(EmbeddingLayerTestFixture, BackpropagationConcatReduction) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55}, {9, 2, 24}, {61, 75, 11}};
 
-  auto layer = createEmbeddingLayer("concat");
-
-  testEmbeddingBackpropagation(layer, tokens);
+  testEmbeddingBackpropagation(/* use_concat_reduction= */ true, tokens);
 }
 
 // Test that the disjoint ranges are computed correctly for gradient updates,
