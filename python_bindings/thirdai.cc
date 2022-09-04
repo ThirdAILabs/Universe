@@ -42,7 +42,17 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         py::arg("log_to_stderr") = thirdai::log::kDefaultLogToStderr,
         py::arg("path") = thirdai::log::kDefaultLogPath,
         py::arg("level") = thirdai::log::kDefaultLogLevel,
-        py::arg("pattern") = thirdai::log::kDefaultPattern);
+        py::arg("pattern") = thirdai::log::kDefaultPattern,
+        "Set up logging for thirdai C++ library.\n"
+        "  log_to_stderr: bool - Print logs to standard error. Turned off "
+        "(false) by default.\n"
+        "  path: str - Path to file to write logs to. Empty (default) implies "
+        "no file logging.\n"
+        "  level: str - Print logs upto this level. Choices are "
+        "trace,debug,info,warn,critical,error,off. Default is info.\n"
+        "  pattern: str - Pattern string to customize logging from client. See "
+        "https://github.com/gabime/spdlog/wiki/3.-Custom-formatting for using "
+        "format-strings.");
 
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:
