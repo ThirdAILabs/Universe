@@ -10,12 +10,11 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                                uint32_t seed)
     : _num_lookups_per_token(config.numEmbeddingLookups()),
       _lookup_size(config.lookupSize()),
+      _total_embedding_dim(config.numEmbeddingLookups() * config.lookupSize()),
       _log_embedding_block_size(config.logEmbeddingBlockSize()),
       _reduction(config.reduction()),
       _num_tokens_per_input(config.numTokensPerInput()),
       _hash_fn(seed) {
-  _total_embedding_dim = _lookup_size * _num_lookups_per_token;
-
   switch (_reduction) {
     case EmbeddingReductionType::SUM:
       break;

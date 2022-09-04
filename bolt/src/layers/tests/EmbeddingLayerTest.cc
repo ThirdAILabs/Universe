@@ -78,7 +78,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
       const std::vector<std::vector<uint32_t>>& tokens) {
     BoltBatch output = getEmbeddings(layer, tokens);
 
-    std::unordered_map<uint32_t, float> deltas;
+    std::unordered_map<uint32_t, float> gradients;
 
     for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
       for (uint32_t i = 0; i < output[batch_index].len; i++) {
@@ -89,6 +89,13 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
       layer->backpropagate(batch_index, output[batch_index]);
 
+      /**
+       * The location in the embedding block a token's embedding originates from
+       * is determined by the hash of the token. These loops look at the
+       * gradients for each part of the output embedding, map it back to the
+       * location in the embedding block it originated from, and sum up the
+       * gradients for each location.
+       */
       for (uint32_t token_idx = 0; token_idx < tokens[batch_index].size();
            token_idx++) {
         for (uint32_t lookup_index = 0; lookup_index < NUM_LOOKUPS;
@@ -99,15 +106,31 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
           for (uint32_t i = 0; i < LOOKUP_SIZE; i++) {
             uint32_t gradient_offset = token_idx * NUM_LOOKUPS * LOOKUP_SIZE +
                                        lookup_index * LOOKUP_SIZE + i;
+
+            /**
+             * Let d be the dimenision of the embedding foreach token and n be
+             * the number of tokens. Then the offset of the gradient for the
+             * i-th component of the embedding for the k-th token in a
+             * concatenation reduction occurs at k * d + i. But in a sum
+             * reduction it occurs at i.
+             *
+             * Since the entire dimension of all the embeddings with a
+             * concatenation reduction is n*d, and with a sum reduction its d.
+             *
+             * Hence if we compute the offset for a concatenation reduction and
+             * take it mod the entire embedding dimension its the correct index,
+             * regardless of which reduction is used.
+             */
             gradient_offset = gradient_offset % output[batch_index].len;
-            deltas[loc + i] += output[batch_index].gradients[gradient_offset];
+            gradients[loc + i] +=
+                output[batch_index].gradients[gradient_offset];
           }
         }
       }
     }
 
     for (uint32_t i = 0; i < getEmbeddingBlockSize(layer); i++) {
-      ASSERT_FLOAT_EQ(getEmbeddingGradients(layer)[i], deltas[i]);
+      ASSERT_FLOAT_EQ(getEmbeddingGradients(layer)[i], gradients[i]);
     }
   }
 
@@ -132,8 +155,8 @@ TEST_F(EmbeddingLayerTestFixture, TestEmbeddingBlockOffsetUniqueness) {
             getHashLocFromLayer(layer, /* token= */ 5, /* lookup_index= */ 18));
 }
 
-// Check that for a single token the embeddings contain the data at the correct
-// index in the embedding block.
+// Check that for a single token the embeddings with a sum reduction and a
+// concatenation reduction are equivalent.
 TEST_F(EmbeddingLayerTestFixture,
        SameOutputOfReductionsForSingleTokenEmbedding) {
   auto sum_embedding_layer = createEmbeddingLayer("sum");
@@ -165,19 +188,25 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingSumReduction) {
 
   BoltBatch output = getEmbeddings(layer, tokens);
 
+  /**
+   * Since the embedding block is a sequence of consecutive integers we can
+   * check that the final embedding at each index is the sum of the hashes of
+   * each token plus offset within the embedding.
+   */
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     const float* embedding = output[batch_index].activations;
 
     for (uint32_t lookup_index = 0; lookup_index < NUM_LOOKUPS;
          lookup_index++) {
       for (uint32_t i = 0; i < LOOKUP_SIZE; i++) {
-        float expected_val = 0;
+        float sum_of_token_embeddings_at_index = 0;
         for (uint32_t token : tokens[batch_index]) {
           uint64_t start = getHashLocFromLayer(layer, token, lookup_index);
 
-          expected_val += start + i + 1;
+          sum_of_token_embeddings_at_index += start + i + 1;
         }
-        ASSERT_EQ(embedding[lookup_index * LOOKUP_SIZE + i], expected_val);
+        ASSERT_EQ(embedding[lookup_index * LOOKUP_SIZE + i],
+                  sum_of_token_embeddings_at_index);
       }
     }
   }
@@ -193,6 +222,11 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingConcatReduction) {
 
   BoltBatch output = getEmbeddings(layer, tokens);
 
+  /**
+   * Since the embedding block is a sequence of consecutive integers we can
+   * check that the final embedding foreach token is a sequence of integers
+   * starting at the hash of the token.
+   */
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     ASSERT_EQ(output[batch_index].len,
               NUM_TOKENS_PER_INPUT * LOOKUP_SIZE * NUM_LOOKUPS);
