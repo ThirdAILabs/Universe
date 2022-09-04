@@ -73,7 +73,8 @@ def load_and_compile_model(model_config):
 
     output_node = name_to_node[list(nodes_with_no_successor)[0]]
     model = bolt.graph.Model(inputs=inputs, output=output_node)
-    model.compile(loss=get_loss(model_config))
+    model.compile(loss=get_loss(model_config), print_when_done=False)
+    model.summary(detailed=True)
     return model
 
 
@@ -207,18 +208,23 @@ def construct_fully_connected_node(fc_config):
     sparsity = fc_config.get("sparsity", 1)
 
     if use_default_sampling or sparsity == 1:
-        return bolt.graph.FullyConnected(
+        layer = bolt.graph.FullyConnected(
             dim=config_get(fc_config, "dim"),
             sparsity=sparsity,
             activation=config_get(fc_config, "activation"),
         )
+    else:
+        layer = bolt.graph.FullyConnected(
+            dim=config_get(fc_config, "dim"),
+            sparsity=sparsity,
+            activation_function=config_get(fc_config, "activation"),
+            sampling_config=get_sampling_config(fc_config),
+        )
 
-    return bolt.graph.FullyConnected(
-        dim=config_get(fc_config, "dim"),
-        sparsity=sparsity,
-        activation=config_get(fc_config, "activation"),
-        sampling_config=get_sampling_config(fc_config),
-    )
+    if fc_config.get("use_sparse_sparse_optimization", False):
+        layer.enable_sparse_sparse_optimization()
+
+    return layer
 
 
 def construct_embedding_node(embedding_config):

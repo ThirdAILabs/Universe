@@ -85,11 +85,16 @@ MetricData BoltGraph::train(
 
   MetricAggregator metrics = train_config.getMetricAggregator();
 
+  CallbackList callbacks = train_config.getCallbacks();
+  callbacks.onTrainBegin(*this);
+
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+      callbacks.onEpochBegin(*this);
+
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
@@ -98,6 +103,8 @@ MetricData BoltGraph::train(
 
       for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
            batch_idx++) {
+        callbacks.onBatchBegin(*this);
+
         train_context.setInputs(batch_idx, _inputs);
 
         const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
@@ -107,8 +114,14 @@ MetricData BoltGraph::train(
                                     reconstruct_hash_functions_batch);
 
         bar.increment();
+
+        callbacks.onBatchEnd(*this);
       }
 
+      callbacks.onEpochEnd(*this);
+      if (callbacks.shouldStopTraining()) {
+        break;
+      }
       perEpochCallback();
 
       auto train_end = std::chrono::high_resolution_clock::now();
@@ -132,6 +145,8 @@ MetricData BoltGraph::train(
   }
 
   cleanupAfterBatchProcessing();
+
+  callbacks.onTrainEnd(*this);
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
@@ -233,12 +248,12 @@ BoltGraph::getInputGradientSingle(
 
     BoltVector& input_vector = _inputs[0]->getOutputVector(/*vec_index= */ 0);
 
-    std::vector<float> vec_grad(input_vector.len, 0.0);
+    std::vector<float> normalised_vec_grad(input_vector.len, 0.0);
 
-    // Assigning the vec_grad data() to gradients so that we dont have to
-    // worry about initializing and then freeing the memory.
+    // Assigning the normalised_vec_grad data() to gradients so that we dont
+    // have to worry about initializing and then freeing the memory.
 
-    input_vector.gradients = vec_grad.data();
+    input_vector.gradients = normalised_vec_grad.data();
     std::vector<uint32_t> input_vector_indices;
 
     /*
@@ -281,10 +296,14 @@ BoltGraph::getInputGradientSingle(
     input_vector.gradients = nullptr;
     cleanupAfterBatchProcessing();
 
-    if (input_vector_indices.empty()) {
-      return std::make_pair(std::nullopt, vec_grad);
+    for (uint32_t i = 0; i < input_vector.len; i++) {
+      normalised_vec_grad[i] /= input_vector.activations[i];
     }
-    return std::make_pair(input_vector_indices, vec_grad);
+
+    if (input_vector_indices.empty()) {
+      return std::make_pair(std::nullopt, normalised_vec_grad);
+    }
+    return std::make_pair(input_vector_indices, normalised_vec_grad);
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
