@@ -19,10 +19,10 @@ constexpr auto kDefaultPattern = "[%Y-%m-%d %T] %v";
 
 // This configures a logger provided a string path. Client is
 // expected to configure logging at the beginning.
-inline void setup_logging(bool log_to_stderr = kDefaultLogToStderr,
-                          const std::string& path = kDefaultLogPath,
-                          const std::string& level = kDefaultLogLevel,
-                          const std::string& pattern = kDefaultPattern) {
+inline void setupLogging(bool log_to_stderr = kDefaultLogToStderr,
+                         const std::string& path = kDefaultLogPath,
+                         const std::string& level = kDefaultLogLevel,
+                         const std::string& pattern = kDefaultPattern) {
   try {
     using FileSink = spdlog::sinks::basic_file_sink_mt;
     using StderrSink = spdlog::sinks::stderr_color_sink_mt;

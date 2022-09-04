@@ -38,7 +38,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         "Set a license filepath for any future calls to the thirdai library.");
 #endif
 
-  m.def("setup_logging", &thirdai::log::setup_logging,
+  m.def("setup_logging", &thirdai::log::setupLogging,
         py::arg("log_to_stderr") = thirdai::log::kDefaultLogToStderr,
         py::arg("path") = thirdai::log::kDefaultLogPath,
         py::arg("level") = thirdai::log::kDefaultLogLevel,
