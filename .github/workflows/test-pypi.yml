@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main, fix-test-pypi]
+    branches: [main]
   release:
     types:
       - published
