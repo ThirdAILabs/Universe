@@ -10,15 +10,6 @@
 namespace thirdai::compression {
 
 template <class T>
-void printvector(const std::string& name, std::vector<T> vec) {
-  std::cout << name << std::endl;
-  for (auto i : vec) {
-    std::cout << i << " ";
-  }
-  std::cout << std::endl;
-}
-
-template <class T>
 inline std::unique_ptr<CompressedVector<T>> compress(
     const T* values, uint32_t size, const std::string& compression_scheme,
     float compression_density, uint32_t seed_for_hashing,

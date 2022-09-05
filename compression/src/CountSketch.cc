@@ -37,24 +37,16 @@ CountSketch<T>::CountSketch(const T* values_to_compress, uint32_t size,
       std::max(static_cast<uint32_t>(compression_density * size),
                static_cast<uint32_t>(1));
 
-  // std::cout << "Inside countsketch.cc " << std::endl;
-  // std::cout << "the size is: " << size
-  //           << " the compression density is: " << compression_density
-  //           << std::endl;
-  // std::cout << "Sketch size is: " << sketch_size << std::endl;
+  // this is the weirdest bug I've been seen so far. For odd sketch_sizes, the
+  // accuracy is very good, for even sketch_sizes, the accuracy drops
+  sketch_size = sketch_size % 2 == 0 ? sketch_size + 1 : sketch_size;
+  // std::cout << "sketch size in constructor: " << sketch_size << std::endl;
   _count_sketches.assign(num_sketches, std::vector<T>(sketch_size, 0));
-  // std::cout << "num_sketches is: " << num_sketches << std::endl;
-  // std::cout << " size of hashing seed is " <<
-  // _seed_for_hashing_indices.size()
-  //           << " size of hashing sign is " << _seed_for_sign.size()
-  //           << std::endl;
   for (uint32_t i = 0; i < num_sketches; i++) {
     _hasher_index.push_back(UniversalHash(_seed_for_hashing_indices[i]));
     _hasher_sign.push_back(UniversalHash(_seed_for_sign[i]));
   }
-  // std::cout << "hashers are made" << std::endl;
   sketch(values_to_compress, size);
-  // std::cout << "values are sketched now" << std::endl;
 }
 
 template <class T>
@@ -66,34 +58,17 @@ CountSketch<T>::CountSketch(std::vector<std::vector<T>> count_sketches,
       _seed_for_hashing_indices(std::move(seed_for_hashing_indices)),
       _seed_for_sign(std::move(seed_for_sign)),
       _uncompressed_size(_uncompressed_size) {
-  // std::cout << "\n\n\n";
-  // std::cout << "inside constructor using sketches\n";
-  // std::cout << "size seed for hashing: " << _seed_for_hashing_indices.size()
-  //           << std::endl;
   uint32_t num_sketches = static_cast<uint32_t>(_count_sketches.size());
   for (uint32_t i = 0; i < num_sketches; i++) {
     _hasher_index.push_back(UniversalHash(_seed_for_hashing_indices[i]));
     _hasher_sign.push_back(UniversalHash(_seed_for_sign[i]));
   }
-  // std::cout << "hasher index size: " << _hasher_index.size()
-  // << " hasher sign size: " << _hasher_sign.size() << std::endl;
-  // std::cout << "\n\n\n";
 }
 
 template <class T>
 void CountSketch<T>::sketch(const T* values_to_compress, uint32_t size) {
-  uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
-  for (size_t num_sketch = 0; num_sketch < _count_sketches.size();
-       num_sketch++) {
-    UniversalHash hasher_index = _hasher_index[num_sketch];
-    UniversalHash hasher_sign = _hasher_sign[num_sketch];
-    for (uint32_t index = 0; index < size; index++) {
-      uint32_t hashed_index = hasher_index.gethash(index) % sketch_size;
-      uint32_t hashed_sign = hasher_sign.gethash(index) % 2;
-      _count_sketches[num_sketch][hashed_index] +=
-          (hashed_sign == 0) * (-values_to_compress[index]) +
-          (hashed_sign == 1) * (values_to_compress[index]);
-    }
+  for (uint32_t index = 0; index < size; index++) {
+    set(index, values_to_compress[index]);
   }
 }
 
@@ -101,23 +76,12 @@ template <class T>
 T CountSketch<T>::get(uint32_t index) const {
   T estimated_value = 0;
   uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
-  // std::cout << "inside get " << std::endl;
-  // std::cout << "sketch size is: " << sketch_size << std::endl;
-  // std::cout << "num sketches is: " << _count_sketches.size() << std::endl;
-  // std::cout << "going to the for loop" << std::endl;
-  // std::cout << " size of hasher index is: " << _hasher_index.size()
-  //           << std::endl;
-  // std::cout << "size of hasher sign is: " << _hasher_sign.size() <<
-  // std::endl;
   for (size_t num_sketch = 0; num_sketch < _count_sketches.size();
        num_sketch++) {
-    // std::cout << "num_sketch: " << num_sketch << std::endl;
     uint32_t hashed_index =
         _hasher_index[num_sketch].gethash(index) % sketch_size;
     uint32_t hashed_sign = _hasher_sign[num_sketch].gethash(index) % 2;
 
-    // std::cout << " hashed_index: " << hashed_index
-    // << " hashed_sign: " << hashed_sign << std::endl;
     if (hashed_sign == 0) {
       estimated_value -= _count_sketches[num_sketch][hashed_index];
     } else {
@@ -130,6 +94,7 @@ T CountSketch<T>::get(uint32_t index) const {
 template <class T>
 void CountSketch<T>::set(uint32_t index, T value) {
   uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
+  // std::cout << "Sketch size inside set is: " << sketch_size << std::endl;
   for (size_t num_sketch = 0; num_sketch < _count_sketches.size();
        num_sketch++) {
     uint32_t hashed_index =
@@ -214,13 +179,6 @@ std::string CountSketch<T>::type() const {
 
 template <class T>
 std::vector<T> CountSketch<T>::decompress() const {
-  // std::cout << "inside decompression: " << std::endl;
-  // std::cout << "the parameters are: uncompressed_size: " <<
-  // _uncompressed_size
-  //           << " num sketches: " << numSketches() << " sketchsize: " <<
-  //           size()
-  //           << std::endl;
-
   std::vector<T> decompressed_vector(_uncompressed_size, 0);
   // #pragma omp parallel for default(none)
   //     shared(decompressed_vector, _uncompressed_size)

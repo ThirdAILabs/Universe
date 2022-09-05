@@ -74,6 +74,7 @@ class ParameterReference {
   py::dict compress(const std::string& compression_scheme,
                     float compression_density, uint32_t seed_for_hashing,
                     uint32_t sample_population_size) {
+    // std::cout << "compression density: " << compression_density << std::endl;
     return thirdai::compression::python::convertCompressedVectorToPyDict(
         thirdai::compression::compress(
             _params, static_cast<uint32_t>(_total_dim), compression_scheme,

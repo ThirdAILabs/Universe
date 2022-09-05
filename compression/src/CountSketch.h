@@ -60,6 +60,38 @@ class CountSketch final : public CompressedVector<T> {
 
   std::vector<T> decompress() const final;
 
+  void printCountsketch() const {
+    std::cout << "printing the count sketch" << std::endl;
+    for (size_t i = 0; i < _count_sketches.size(); i++) {
+      for (size_t j = 0; j < _count_sketches[0].size(); j++) {
+        std::cout << _count_sketches[i][j] << " ";
+      }
+      std::cout << std::endl;
+    }
+
+    std::cout << "seed for hashing\n";
+    for (size_t i = 0; i < _seed_for_hashing_indices.size(); i++) {
+      std::cout << _seed_for_hashing_indices[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "seed for sign\n";
+    for (size_t i = 0; i < _seed_for_sign.size(); i++) {
+      std::cout << _seed_for_sign[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "uncompressed size: " << _uncompressed_size << std::endl;
+  }
+
+  static void printvector(const std::string& name, std::vector<T> vec) {
+    std::cout << name << std::endl;
+    for (auto i : vec) {
+      std::cout << i << " ";
+    }
+    std::cout << std::endl;
+  }
+
  private:
   std::vector<std::vector<T>> _count_sketches;
   std::vector<uint32_t> _seed_for_hashing_indices;
