@@ -67,8 +67,8 @@ jobs:
 
           # On linux we copy a valid license to the home directory within the docker
           CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
-          CIBW_TEST_REQUIRES_MACOS: datasets mmh3 numpy pytest ray[default]
-          CIBW_TEST_REQUIRES_LINUX: datasets mmh3 numpy pytest ray[default]
+          CIBW_TEST_REQUIRES_MACOS: datasets mmh3 numpy pytest 'ray[default]'
+          CIBW_TEST_REQUIRES_LINUX: datasets mmh3 numpy pytest 'ray[default]'
           CIBW_TEST_REQUIRES_WINDOWS: datasets mmh3 numpy pytest
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
