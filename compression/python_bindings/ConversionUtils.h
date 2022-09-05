@@ -148,18 +148,12 @@ inline std::unique_ptr<CompressedVector<float>> convertPyDictToCountSketch(
     cpp_seed_for_sign.push_back(
         py::cast<uint32_t>(py_seed_for_sign[num_sketch]));
   }
-  // std::cout << "sketches being made and all" << std::endl;
-
   uint32_t uncompressed_size =
       py::cast<uint32_t>(pycompressed_vector["uncompressed_size"]);
 
   CountSketch<float> count_sketch = compression::CountSketch<float>(
       cpp_count_sketches, cpp_seed_for_hashing_indices, cpp_seed_for_sign,
       uncompressed_size);
-  // std::cout << "done calling the constructor" << std::endl;
-  //   count_sketch.printCountsketch();
-  //   CountSketch<float>::printvector("Decompressed Vector",
-  //                                   count_sketch.decompress());
   return std::make_unique<CountSketch<float>>(count_sketch);
 }
 
@@ -177,10 +171,6 @@ inline py::dict convertCountSketchToPyDict(
         count_sketch_vector.indexSeeds()[num_sketch]);
     seed_for_sign.append(count_sketch_vector.signSeeds()[num_sketch]);
   }
-  //   std::cout << "Inside convert to pydict\n";
-  //   count_sketch_vector.printCountsketch();
-  //   CountSketch<float>::printvector("Decompressed Vector",
-  //   count_sketch_vector.decompress());
 
   py::dict pycompressed_vector;
   pycompressed_vector["compression_scheme"] = count_sketch_vector.type();

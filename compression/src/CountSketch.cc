@@ -39,7 +39,7 @@ CountSketch<T>::CountSketch(const T* values_to_compress, uint32_t size,
 
   // this is the weirdest bug I've been seen so far. For odd sketch_sizes, the
   // accuracy is very good, for even sketch_sizes, the accuracy drops
-  sketch_size = sketch_size % 2 == 0 ? sketch_size + 1 : sketch_size;
+  // sketch_size = sketch_size % 2 == 0 ? sketch_size + 1 : sketch_size;
   // std::cout << "sketch size in constructor: " << sketch_size << std::endl;
   _count_sketches.assign(num_sketches, std::vector<T>(sketch_size, 0));
   for (uint32_t i = 0; i < num_sketches; i++) {
