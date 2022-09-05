@@ -69,6 +69,16 @@ class CMakeBuild(build_ext):
         if "CMAKE_ARGS" in os.environ:
             cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
 
+        # Detect if user wants to use ccache from a CMake variable
+        # If set to 0 (also used as a default when unset) ccache is disabled.
+        # Otherwise ccache is enabled.
+        use_ccache = os.environ.get("USE_CCACHE", "0")
+        if use_ccache != "0":
+            cmake_args += [
+                "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+                "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
+            ]
+
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)
             # multithreads automatically. MSVC would require all variables be
