@@ -23,7 +23,7 @@ class FullyConnectedNetwork(DistributedBolt):
         self,
         num_workers,
         config_filename,
-        num_cpus_per_node,
+        num_cpus_per_node: Optional[int] = -1,
         communication_type: Optional[str] = "circular",
     ):
         """This function initializes this class, which provides wrapper over DistributedBolt and
@@ -42,14 +42,9 @@ class FullyConnectedNetwork(DistributedBolt):
         self.logging = init_logging("distributed_fully_connected.log")
         self.logging.info("Training has started!")
 
-        try:
-            config = toml.load(config_filename)
-        except Exception:
-            self.logging.error(
-                "Could not load the toml file! "
-                + "Config File Location:"
-                + config_filename
-            )
+        # We do not need a try catch statements here,
+        # toml error prompts are enough
+        config = toml.load(config_filename)
 
         if len(config["dataset"]["train_data"]) != num_workers:
             raise ValueError(
@@ -90,27 +85,33 @@ class FullyConnectedNetwork(DistributedBolt):
         for i in range(len(config["nodes"])):
             self.layer_dims.append(config["nodes"][i]["dim"])
 
-        num_cpus = get_num_cpus()
-        if num_cpus_per_node is not -1:
-            if num_cpus_per_node <= num_cpus:
-                num_cpus = num_cpus_per_node
+        # num_cpus_per_worker is checking num_cpus_per_node function
+        # parameter, that whether user wants  to use some particular number of
+        # CPUs per worker to be used else, they would be detected automatically
+
+        num_cpus_per_worker = get_num_cpus()
+        if num_cpus_per_node != -1:
+            if num_cpus_per_node <= num_cpus_per_worker:
+                num_cpus_per_worker = num_cpus_per_node
             else:
                 raise ValueError(
                     "Argument num_cpus_per_node=",
                     num_cpus_per_node,
                     "could not be greater than number of cpus on machine, which is",
-                    num_cpus,
+                    num_cpus_per_worker,
                 )
 
         # max_concurrency here, indicates the number of threads
         # that this particular worker can run. Setting it a large value like
         # 100, as the ray queues the work load else.
         self.primary_worker = PrimaryWorker.options(
-            num_cpus=num_cpus, max_concurrency=100
+            num_cpus=num_cpus_per_worker, max_concurrency=100
         ).remote(self.layer_dims, self.num_workers)
 
         self.replica_workers = [
-            ReplicaWorker.options(num_cpus=num_cpus, max_concurrency=100).remote(
+            ReplicaWorker.options(
+                num_cpus=num_cpus_per_worker, max_concurrency=100
+            ).remote(
                 self.num_workers,
                 worker_id + 1,
                 self.primary_worker,
