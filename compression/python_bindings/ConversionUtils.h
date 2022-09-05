@@ -55,7 +55,7 @@ inline std::unique_ptr<CompressedVector<float>> convertPyDictToCompressedVector(
   throw std::logic_error(
       "Received unknown compression type " +
       py::cast<std::string>(pycompressed_vector["compression_scheme"]) +
-      ". Currently only Dragon compression is supported.");
+      ". Currently supports Dragon compression only.");
 }
 
 inline py::dict convertCompressedVectorToPyDict(
@@ -82,7 +82,6 @@ inline py::dict convertCompressedVectorToPyDict(
   }
 
   throw std::logic_error("CompressedVector Type not known");
-  return py_compressed_vector;
 }
 
 }  // namespace thirdai::compression::python
