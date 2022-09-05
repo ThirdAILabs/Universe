@@ -85,27 +85,33 @@ class FullyConnectedNetwork(DistributedBolt):
         for i in range(len(config["nodes"])):
             self.layer_dims.append(config["nodes"][i]["dim"])
 
-        num_cpus = get_num_cpus()
+        # num_cpus_per_worker is checking num_cpus_per_node function
+        # parameter, that whether user wants  to use some particular number of
+        # CPUs per worker to be used else, they would be detected automatically
+
+        num_cpus_per_worker = get_num_cpus()
         if num_cpus_per_node != -1:
-            if num_cpus_per_node <= num_cpus:
-                num_cpus = num_cpus_per_node
+            if num_cpus_per_node <= num_cpus_per_worker:
+                num_cpus_per_worker = num_cpus_per_node
             else:
                 raise ValueError(
                     "Argument num_cpus_per_node=",
                     num_cpus_per_node,
                     "could not be greater than number of cpus on machine, which is",
-                    num_cpus,
+                    num_cpus_per_worker,
                 )
 
         # max_concurrency here, indicates the number of threads
         # that this particular worker can run. Setting it a large value like
         # 100, as the ray queues the work load else.
         self.primary_worker = PrimaryWorker.options(
-            num_cpus=num_cpus, max_concurrency=100
+            num_cpus=num_cpus_per_worker, max_concurrency=100
         ).remote(self.layer_dims, self.num_workers)
 
         self.replica_workers = [
-            ReplicaWorker.options(num_cpus=num_cpus, max_concurrency=100).remote(
+            ReplicaWorker.options(
+                num_cpus=num_cpus_per_worker, max_concurrency=100
+            ).remote(
                 self.num_workers,
                 worker_id + 1,
                 self.primary_worker,
