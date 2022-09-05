@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import string
 from thirdai._distributed_bolt.backend.distributed_bolt import DistributedBolt
 import ray
@@ -23,7 +24,7 @@ class FullyConnectedNetwork(DistributedBolt):
         self,
         num_workers,
         config_filename,
-        num_cpus_per_node,
+        num_cpus_per_node: Optional[int] = -1,
         communication_type: Optional[str] = "circular",
     ):
         """This function initializes this class, which provides wrapper over DistributedBolt and
@@ -42,14 +43,9 @@ class FullyConnectedNetwork(DistributedBolt):
         self.logging = init_logging("distributed_fully_connected.log")
         self.logging.info("Training has started!")
 
-        try:
-            config = toml.load(config_filename)
-        except Exception:
-            self.logging.error(
-                "Could not load the toml file! "
-                + "Config File Location:"
-                + config_filename
-            )
+        # We do not need a try catch statements here,
+        # toml handles the error pretty prompts are enough
+        config = toml.load(config_filename)
 
         if len(config["dataset"]["train_data"]) != num_workers:
             raise ValueError(
@@ -91,7 +87,7 @@ class FullyConnectedNetwork(DistributedBolt):
             self.layer_dims.append(config["nodes"][i]["dim"])
 
         num_cpus = get_num_cpus()
-        if num_cpus_per_node is not -1:
+        if num_cpus_per_node != -1:
             if num_cpus_per_node <= num_cpus:
                 num_cpus = num_cpus_per_node
             else:
