@@ -44,7 +44,7 @@ class FullyConnectedNetwork(DistributedBolt):
         self.logging.info("Training has started!")
 
         # We do not need a try catch statements here,
-        # toml handles the error pretty prompts are enough
+        # toml error prompts are enough
         config = toml.load(config_filename)
 
         if len(config["dataset"]["train_data"]) != num_workers:
