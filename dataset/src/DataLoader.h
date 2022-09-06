@@ -65,8 +65,8 @@ class SimpleFileDataLoader final : public DataLoader {
   }
 
   void restart() final {
-    _file.close();
-    _file = SafeFileIO::ifstream(_filename);
+    _file.clear();
+    _file.seekg(0, std::ios::beg);
   }
 
   std::string resourceName() const final { return _filename; }
