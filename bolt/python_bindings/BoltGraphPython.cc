@@ -46,10 +46,11 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "sample_population_size is "
            "the number of random samples you take for estimating a threshold "
            "for dragon compression or the number of sketches needed for "
-           "count_sketc")
+           "count_sketch")
       .def("set", &ParameterReference::set, py::arg("new_params"),
-           "Takes in a numpy array and copies its contents into the parameters "
-           "held in the ParameterReference object.");
+           "Either takes in a numpy array and copies its contents into the "
+           "parameters held in the ParameterReference object. Or takes in a "
+           "python dictionary which represents a compressed vector object.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
