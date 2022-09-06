@@ -224,7 +224,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))
 #if THIRDAI_EXPOSE_ALL
-      .def("hyperparameters", &SequentialClassifier::hyperparameters)
+      .def("summarizeModel", &SequentialClassifier::summarizeModel)
 #endif
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),

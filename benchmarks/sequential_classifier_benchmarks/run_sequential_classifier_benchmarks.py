@@ -93,7 +93,7 @@ def train_and_evaluate_one_epoch(model, config):
         metrics=metrics,
     )
 
-    logged_params.update(model.hyperparameters())
+    logged_params.update({"model_summary": model.summarize_model()})
 
     train_metrics = {key : val[-1] for (key, val) in train_metrics.items()}
     logged_metrics.update(prefix_dict_keys(train_metrics, "train_"))

@@ -17,11 +17,6 @@
 #include <utility>
 #include <variant>
 
-namespace thirdai::bolt {
-using HyperparameterMap =
-    std::unordered_map<std::string, std::variant<uint32_t, float, std::string>>;
-}  // namespace thirdai::bolt
-
 namespace thirdai::bolt::sequential_classifier {
 
 class SequentialClassifier {
@@ -91,26 +86,6 @@ class SequentialClassifier {
                                 /* epochs= */ epochs)
             .withMetrics(std::move(metrics));
 
-    _hyperparameters["hidden_dim"] = static_cast<uint32_t>(512);
-    _hyperparameters["hidden_sparsity"] = static_cast<float>(1.0);
-    _hyperparameters["hidden_activation"] = "relu";
-    _hyperparameters["output_dim"] =
-        static_cast<uint32_t>(pipeline.getLabelDim());
-    _hyperparameters["output_sparsity"] = static_cast<float>(output_sparsity);
-    _hyperparameters["output_activation"] = "softmax";
-    _hyperparameters["output_num_tables"] = static_cast<uint32_t>(64);
-    _hyperparameters["output_hashes_per_table"] = static_cast<uint32_t>(4);
-    _hyperparameters["output_reservoir_size"] = static_cast<uint32_t>(64);
-    _hyperparameters["loss_function"] = "categorical_cross_entropy";
-    _hyperparameters["batch_size"] =
-        static_cast<uint32_t>(train_data->batchSize());
-    _hyperparameters["reconstruct_hash_function_batch_interval"] =
-        train_config.getReconstructHashFunctionsBatchInterval(
-            train_data->batchSize(), train_data->len());
-    _hyperparameters["rebuild_hash_tables_batch_interval"] =
-        train_config.getRebuildHashTablesBatchInterval(train_data->batchSize(),
-                                                       train_data->len());
-
     return _model->train({train_data}, train_labels, train_config);
   }
 
@@ -167,12 +142,12 @@ class SequentialClassifier {
     return results.first;
   }
 
-  HyperparameterMap hyperparameters() {
+  std::string summarizeModel() {
     if (!_model) {
-      throw std::runtime_error("Called hyperparameters() before training.");
+      throw std::runtime_error("Called sumarizeModel() before training.");
     }
 
-    return _hyperparameters;
+    return _model->summarize(/* print= */ false, /* detailed= */ true);
   }
 
   void save(const std::string& filename) {
@@ -219,8 +194,7 @@ class SequentialClassifier {
   Schema _schema;
   DataState _state;
   BoltGraphPtr _model;
-  HyperparameterMap _hyperparameters;
-
+  
   // Private constructor for cereal
   SequentialClassifier() {}
 
@@ -228,7 +202,7 @@ class SequentialClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_schema, _state, _model, _hyperparameters);
+    archive(_schema, _state, _model);
   }
 };
 
