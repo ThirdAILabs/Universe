@@ -8,7 +8,7 @@
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>
-#include <dataset/src/encodings/text/TextEncodingUtils.h>
+#include <dataset/src/utils/TextEncodingUtils.h>
 #include <cctype>
 #include <stdexcept>
 #include <string>
