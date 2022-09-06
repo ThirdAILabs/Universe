@@ -411,13 +411,15 @@ def compute_roc_auc(predict_output, datasets, use_mlflow):
             f"Length of activations must match length of test_labels_np to compute roc_auc."
         )
 
+    # If there are two output neurons then the true scores are activations of the second neuron.
     if len(activations.shape) == 2 and activations.shape[1] == 2:
         scores = activations[:, 1]
+    # If there is a single output neuron the it is the true score.
     elif len(activations.shape) == 2 and activations.shape[1] == 1:
         scores = activations[:, 0]
     else:
         raise ValueError(
-            "Activations must have shape (n,), (n,1), or (n,2) to compute roc_auc."
+            "Activations must have shape (n,1), or (n,2) to compute roc_auc."
         )
 
     from sklearn.metrics import roc_auc_score
