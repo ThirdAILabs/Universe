@@ -11,7 +11,6 @@
 #include <cstdint>
 #include <optional>
 #include <random>
-#include <utility>
 
 namespace thirdai::bolt {
 
@@ -126,9 +125,32 @@ class FullyConnectedLayer final {
 
   void initOptimizer();
 
+  void enableSparseSparseOptimization() {
+    _use_sparse_sparse_optimization = true;
+  }
+
+  void disableSparseSparseOptimization() {
+    _use_sparse_sparse_optimization = false;
+  }
+
   ~FullyConnectedLayer() = default;
 
  private:
+  uint64_t _dim, _prev_dim, _sparse_dim;
+  float _sparsity;
+  bool _trainable;
+  ActivationFunction _act_func;
+
+  std::vector<float> _weights;
+  std::vector<float> _biases;
+
+  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
+  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
+
+  std::unique_ptr<hashing::HashFunction> _hasher;
+  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
+  std::vector<uint32_t> _rand_neurons;
+
   template <bool DENSE>
   constexpr uint32_t nonzerosInOutput() const {
     if constexpr (DENSE) {
@@ -138,10 +160,79 @@ class FullyConnectedLayer final {
     }
   }
 
-  inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
-                                                 float eps,
-                                                 float B1_bias_corrected,
-                                                 float B2_bias_corrected);
+  // A flag to check whether the current network is running in normal
+  // or distributed mode
+  bool _is_distributed;
+
+  BoltSamplingMode _sampling_mode;
+
+  // Whether to track ActivePairs in raw form (the sparse sparse "optimization")
+  // Default set in constructor is false
+  bool _use_sparse_sparse_optimization;
+
+  /* --------------- Within-batch variables ------------------------------
+   * These variables are set while we are processing a batch (usually during
+   * calls to forward) and are used later, usually while in updateParameters.
+   * Since these are temporary within batch variables, we do NOT
+   * serialize them, and we reinitialize them upon deserialization (so they
+   * have the correct size).
+   * Overall, these variables are
+   *  - initialized during the constructor/deserialization
+   *  - populated during forward
+   *  - used during updateParameters
+   *  - cleaned up/zero'd during updateParameters (with a call to
+   *    cleanupWithinBatchVariables for everything except _active_pairs_array,
+   *    which we clean up while we update the weights.)
+   */
+
+  // These track whether the current/previous layer was dense (using whether
+  // the BoltVectors in forward are dense).
+  bool _prev_is_dense;
+  bool _this_is_dense;
+
+  // The following variables track which neurons were active during batch
+  // training.
+
+  // _prev_is_active is used if _prev_is_dense == false. It tracks the neurons
+  // in the previous layer which are active at some point in the batch.
+  std::vector<bool> _prev_is_active;
+
+  // _is_active is used if _this_is_dense == false. It tracks the neurons in the
+  // current layer which are active at some point in the batch.
+  std::vector<bool> _is_active;
+
+  /* The following two variables are only used if _prev_is_dense == false and
+   * _this_is_dense == false. They track exactly which pairs of neurons were
+   * active in two different ways: _active_pairs_array marks position
+   * cur_neuron * _prev_dim + prev_neuron with true if (prev_neuron, cur_neuron)
+   * was active during the training of the current batch. _active_pairs_raw
+   * appends an ActivePair object for each example. The ActivePair object
+   * contains all of the [prev_neurons] and [cur_neurons] that were active for
+   * that example (the active pairs for that example are then a cartesian
+   * product of those two lists).
+   * IMPORTANT: we only use _active_pairs_raw when
+   * _use_sparse_sparse_optimization is true.
+   */
+  std::vector<bool> _active_pairs_array;
+  using ActiveNeuronsPair =
+      std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
+  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs_raw;
+
+  // -------------------------------------------------------------------------
+
+  void initActiveNeuronsTrackers();
+
+  bool useRandomSampling() const {
+    return _sampling_mode == BoltSamplingMode::RandomSampling;
+  }
+
+  inline void updateSparseSparseWeightParametersNormal(float lr, float B1,
+                                                       float B2, float eps,
+                                                       float B1_bias_corrected,
+                                                       float B2_bias_corrected);
+  inline void updateSparseSparseWeightParametersOptimized(
+      float lr, float B1, float B2, float eps, float B1_bias_corrected,
+      float B2_bias_corrected);
   inline void updateSparseDenseWeightParameters(float lr, float B1, float B2,
                                                 float eps,
                                                 float B1_bias_corrected,
@@ -171,6 +262,10 @@ class FullyConnectedLayer final {
   inline void deinitSamplingDatastructures();
 
   template <bool DENSE, bool PREV_DENSE>
+  void markActiveNeuronsForUpdate(const BoltVector& input,
+                                  const BoltVector& output, uint32_t len_out);
+
+  template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
                    const BoltVector* labels);
 
@@ -186,15 +281,6 @@ class FullyConnectedLayer final {
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
                            const BoltVector* labels);
 
-  /**
-   * If force_build=true build hash tables, return if false.
-   * For non-trainable layers, buildHashTablesImpl is called with
-   * force_build=false except during initialization and setting weights.
-   * For trainable layers, buildHashTablesImpl is always called with
-   * force_build=true.
-   */
-  void buildHashTablesImpl(bool force_build);
-
   void randomNeuronSampling(const BoltVector& input, const BoltVector& output,
                             const BoltVector* labels);
 
@@ -202,18 +288,14 @@ class FullyConnectedLayer final {
   void lshNeuronSampling(const BoltVector& input, BoltVector& output,
                          const BoltVector* labels);
 
-  bool useRandomSampling() const {
-    return _sampling_mode == BoltSamplingMode::RandomSampling;
-  }
-
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
 
   template <class Archive>
   void save(Archive& archive) const {
-    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
-            _prev_is_active, _is_active);
+    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
+            _weights, _biases, _hasher, _hash_table, _rand_neurons,
+            _is_distributed, _sampling_mode, _use_sparse_sparse_optimization);
   }
 
   /**
@@ -233,49 +315,23 @@ class FullyConnectedLayer final {
    */
   template <class Archive>
   void load(Archive& archive) {
-    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _biases, _hasher, _hash_table, _rand_neurons, _sampling_mode,
-            _prev_is_active, _is_active);
+    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
+            _weights, _biases, _hasher, _hash_table, _rand_neurons,
+            _is_distributed, _sampling_mode, _use_sparse_sparse_optimization);
+
+    // TODO(david) another way to reduce memory for inference is to remove these
+    // in addition to the optimizer as mentioned above
+    initActiveNeuronsTrackers();
   }
 
-  uint64_t _dim, _prev_dim, _sparse_dim;
-  float _sparsity;
-  bool _trainable;
-  ActivationFunction _act_func;
-
-  std::vector<float> _weights;
-  std::vector<float> _biases;
-
-  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
-  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
-
-  std::unique_ptr<hashing::HashFunction> _hasher;
-  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
-  std::vector<uint32_t> _rand_neurons;
-
-  // This set of variables are only used within a batch, so we do not use
-  // _this_is_dense to check if the layer is sparse, we instead check if
-  // _sparsity is less than 1.
-  bool _prev_is_dense;
-  bool _this_is_dense;
-
-  using ActiveNeuronsPair =
-      std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
-
-  // This is only used if _prev_is_dense == false and _this_is_dense == false
-  // This is a vector of unique_ptr so that the push_back in the critical
-  // region is just a pointer move and can be very fast
-  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs;
-  // This is only used if _prev_is_dense == false
-  std::vector<bool> _prev_is_active;
-  // This is only used if _this_is_dense == false
-  std::vector<bool> _is_active;
-
-  // A flag to check whether the current network is running in the normal
-  // settings and distributed settings
-  bool _is_distributed;
-
-  BoltSamplingMode _sampling_mode;
+  /**
+   * If force_build=true build hash tables, return if false.
+   * For non-trainable layers, buildHashTablesImpl is called with
+   * force_build=false except during initialization and setting weights.
+   * For trainable layers, buildHashTablesImpl is always called with
+   * force_build=true.
+   */
+  void buildHashTablesImpl(bool force_build);
 };
 
 }  // namespace thirdai::bolt

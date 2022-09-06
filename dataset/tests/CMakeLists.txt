@@ -124,18 +124,6 @@ target_link_libraries(
 )
 
 add_executable(
-  categorical_multi_label_test
-  CategoricalMultiLabelTest.cc
-)
-
-target_link_libraries(
-  categorical_multi_label_test
-  PRIVATE
-  gtest_main
-  dataset_core_lib
-)
-
-add_executable(
   text_processing_tests
   TextProcessingTests.cc
 )
@@ -171,7 +159,6 @@ set(DATASET_TESTS
   user_item_history_block_tests
   block_batch_processor_test
   generic_batch_processor_test
-  categorical_multi_label_test
   text_processing_tests
   save_load_dataset_test
   streaming_generic_dataset_loader_tests

@@ -70,3 +70,6 @@ tags
 [._]*.un~
 
 # -- End vim .gitignore
+
+# Ignore log files
+*.log
