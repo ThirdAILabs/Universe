@@ -10,6 +10,7 @@
 #include <numeric>
 #include <optional>
 #include <queue>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -328,6 +329,50 @@ struct BoltVector {
       }
     }
     return top_k;
+  }
+
+  inline BoltVector sample(uint32_t n_neurons, const BoltVector* labels) const {
+    if (n_neurons >= len) {
+      return *this;
+    }
+
+    BoltVector sampled_vector(n_neurons, /* is_dense= */ false, /* has_gradient= */ false);
+
+    uint32_t filled = 0;
+
+    if (labels != nullptr) {
+      for (; filled < std::min(labels->len, n_neurons); filled++) {
+        uint32_t active_neuron = labels->isDense() ? filled : labels->active_neurons[filled];
+        sampled_vector.active_neurons[filled] = active_neuron;
+        sampled_vector.activations[filled] = findActiveNeuronNoTemplate(active_neuron).activation;
+      }
+    }
+    
+    if (filled >= n_neurons) {
+      return sampled_vector;
+    }
+
+    std::vector<uint32_t> positions(len);
+    // Hack to intepret the float as an integer without doing a
+    // conversion.
+    uint32_t seed = *reinterpret_cast<uint32_t*>(&activations[0]);
+          
+    std::default_random_engine rd(seed);
+    std::iota(positions.begin(), positions.end(), 0);
+    std::shuffle(positions.begin(), positions.end(), rd);
+
+    for (auto pos : positions) {
+      uint32_t active_neuron = isDense() ? pos : active_neurons[pos];
+      if (!(labels->findActiveNeuronNoTemplate(active_neuron).activation)) {
+        sampled_vector.active_neurons[filled] = active_neuron;
+        sampled_vector.activations[filled] = activations[pos];
+        filled++;  
+        if (filled == n_neurons) {
+          break;
+        }
+      }
+    }
+    return sampled_vector;
   }
 
   constexpr bool hasGradients() const { return gradients != nullptr; }
