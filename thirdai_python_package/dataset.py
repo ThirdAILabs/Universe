@@ -81,8 +81,10 @@ class S3DataLoader(DataLoader):
         self.bucket = self.s3_client.Bucket(self.bucket_name)
         self.prefix_filter = prefix_filter
         self.objects_in_bucket = list(self.bucket.objects.filter(Prefix=prefix_filter))
+        self.restart()
+
+    def restart(self):
         self.line_iterator = self._get_line_iterator()
-        self.current_batch_id = 0
 
     def _get_line_iterator(self):
         for obj in self.objects_in_bucket:
@@ -99,7 +101,6 @@ class S3DataLoader(DataLoader):
             if next_line == None:
                 break
             lines.append(next_line)
-        self.current_batch_id += 1
         if lines == []:
             return None
         return lines
