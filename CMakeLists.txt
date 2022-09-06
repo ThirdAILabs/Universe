@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.4...3.18)
 
+# Pick up modules added by thirdai
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+
 if (NOT WIN32)
   set(CMAKE_CXX_COMPILER "g++")
   set(CMAKE_C_COMPILER "gcc")
@@ -16,6 +20,12 @@ set(ENV{LD_PRELOAD} "")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
+
+# Project versioning
+find_package(Git REQUIRED)
+include(GetVersionFromFile)
+message(STATUS "Project name: ${PROJECT_NAME}")
+message(STATUS "Project version: ${PROJECT_VERSION_STRING_FULL}")
 
 message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
@@ -164,6 +174,7 @@ include(CTest)
 
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
+include_directories(${CMAKE_BINARY_DIR})
 
 # Our source directories
 add_subdirectory(bolt)
@@ -173,6 +184,7 @@ add_subdirectory(exceptions)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(utils)
 add_subdirectory(wrappers)
 
 # Only add the licensing subdirectory if the corresponding flag is set
