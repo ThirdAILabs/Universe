@@ -52,6 +52,12 @@ jobs:
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
           CIBW_ENVIRONMENT_WINDOWS: >
               CMAKE_ARGS="-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30"
+
+          # MacOS default AppleClang has failures on C++-11. The following is
+          # intended as a short-term fix to be undertaken independently at a
+          # later stage (TODO: jerin-thirdai).
+          CIBW_ENVIRONMENT_MACOS: >
+              CMAKE_ARGS="-DCMAKE_CXX_COMPILER=/usr/local/bin/gcc-11 -DCMAKE_C_COMPILER=g++-11"
           
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
@@ -63,7 +69,6 @@ jobs:
           # platforms numpy isn't available so our tests don't work.
           CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64"
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
 
           # On linux we copy a valid license to the home directory within the docker
           CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
