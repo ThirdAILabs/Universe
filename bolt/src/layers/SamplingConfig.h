@@ -25,6 +25,8 @@ class SamplingConfig {
 
   virtual bool isRandomSampling() const { return false; }
 
+  virtual ~SamplingConfig() = default;
+
  protected:
   static uint32_t clip(uint32_t input, uint32_t low, uint32_t high) {
     if (input < low) {
