@@ -72,22 +72,24 @@ class S3DataLoader(DataLoader):
                 aws_access_key_id=aws_access_key_id,
                 aws_secret_access_key=aws_secret_access_key,
             )
-            self.s3_client = session.resource("s3")
+            self._s3_client = session.resource("s3")
         else:
-            self.s3_client = boto3.resource("s3")
+            self._s3_client = boto3.resource("s3")
 
-        self.batch_size = batch_size
-        self.bucket_name = bucket_name
-        self.bucket = self.s3_client.Bucket(self.bucket_name)
-        self.prefix_filter = prefix_filter
-        self.objects_in_bucket = list(self.bucket.objects.filter(Prefix=prefix_filter))
+        self._batch_size = batch_size
+        self._bucket_name = bucket_name
+        self._bucket = self._s3_client.Bucket(self._bucket_name)
+        self._prefix_filter = prefix_filter
+        self._objects_in_bucket = list(
+            self._bucket.objects.filter(Prefix=prefix_filter)
+        )
         self.restart()
 
     def restart(self):
-        self.line_iterator = self._get_line_iterator()
+        self._line_iterator = self._get_line_iterator()
 
     def _get_line_iterator(self):
-        for obj in self.objects_in_bucket:
+        for obj in self._objects_in_bucket:
             key = obj.key
             print("Now parsing object " + key)
             body = obj.get()["Body"]
@@ -96,7 +98,7 @@ class S3DataLoader(DataLoader):
 
     def next_batch(self):
         lines = []
-        while len(lines) < self.batch_size:
+        while len(lines) < self._batch_size:
             next_line = self.get_next_line()
             if next_line == None:
                 break
@@ -106,10 +108,10 @@ class S3DataLoader(DataLoader):
         return lines
 
     def get_next_line(self):
-        return next(self.line_iterator, None)
+        return next(self._line_iterator, None)
 
     def resource_name(self):
-        return f"s3://{self.bucket_name}/{self.prefix_filter}"
+        return f"s3://{self._bucket_name}/{self._prefix_filter}"
 
 
 __all__.append(tokenize_to_svm)

@@ -4,6 +4,7 @@ __all__ = [
     "search",
     "dataset",
     "hashing",
+    "distributed_bolt",
     "set_thirdai_license_path",
     "set_global_num_threads",
 ]
@@ -45,7 +46,3 @@ except ImportError:
 # Don't import this or include it in __all__ for now because it requires
 # pytorch + transformers.
 # import thirdai.embeddings
-
-# Don't import this or include it in __all__ for now because it requires
-# ray.
-# import thirdai.distributed_bolt
