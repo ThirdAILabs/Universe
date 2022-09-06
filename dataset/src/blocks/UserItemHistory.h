@@ -88,14 +88,16 @@ class UserItemHistoryBlock final : public Block {
                        uint32_t timestamp_col,
                        ThreadSafeVocabularyPtr user_id_map,
                        ThreadSafeVocabularyPtr item_id_map,
-                       ItemHistoryCollectionPtr item_history_collection)
+                       ItemHistoryCollectionPtr item_history_collection,
+                       std::optional<char> item_col_delimiter = std::nullopt)
       : _user_col(user_col),
         _item_col(item_col),
         _timestamp_col(timestamp_col),
         _track_last_n(item_history_collection->maxItemsPerHistory()),
         _user_id_lookup(std::move(user_id_map)),
         _item_id_lookup(std::move(item_id_map)),
-        _records(std::move(item_history_collection)) {
+        _records(std::move(item_history_collection)),
+        _item_col_delimiter(item_col_delimiter) {
     if (_user_id_lookup->vocabSize() > _records->numHistories()) {
       std::stringstream error_ss;
       error_ss << "[UserItemHistoryBlock] Invoked with incompatible "
@@ -110,14 +112,16 @@ class UserItemHistoryBlock final : public Block {
 
   UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
                        uint32_t timestamp_col, uint32_t track_last_n,
-                       uint32_t n_unique_users, uint32_t n_unique_items)
+                       uint32_t n_unique_users, uint32_t n_unique_items,
+                       std::optional<char> item_col_delimiter = std::nullopt)
       : _user_col(user_col),
         _item_col(item_col),
         _timestamp_col(timestamp_col),
         _track_last_n(track_last_n),
         _user_id_lookup(ThreadSafeVocabulary::make(n_unique_users)),
         _item_id_lookup(ThreadSafeVocabulary::make(n_unique_items)),
-        _records(ItemHistoryCollection::make(n_unique_users, track_last_n)) {}
+        _records(ItemHistoryCollection::make(n_unique_users, track_last_n)),
+        _item_col_delimiter(item_col_delimiter) {}
 
   uint32_t featureDim() const final { return _item_id_lookup->vocabSize(); }
 
@@ -129,24 +133,23 @@ class UserItemHistoryBlock final : public Block {
     return max_col_idx + 1;
   }
 
-  static UserItemHistoryBlockPtr make(uint32_t user_col, uint32_t item_col,
-                                      uint32_t timestamp_col,
-                                      ThreadSafeVocabularyPtr user_id_map,
-                                      ThreadSafeVocabularyPtr item_id_map,
-                                      ItemHistoryCollectionPtr records) {
+  static UserItemHistoryBlockPtr make(
+      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
+      ThreadSafeVocabularyPtr user_id_map, ThreadSafeVocabularyPtr item_id_map,
+      ItemHistoryCollectionPtr records,
+      std::optional<char> item_col_delimiter = std::nullopt) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, std::move(user_id_map),
-        std::move(item_id_map), std::move(records));
+        std::move(item_id_map), std::move(records), item_col_delimiter);
   }
 
-  static UserItemHistoryBlockPtr make(uint32_t user_col, uint32_t item_col,
-                                      uint32_t timestamp_col,
-                                      uint32_t track_last_n,
-                                      uint32_t n_unique_users,
-                                      uint32_t n_unique_items) {
+  static UserItemHistoryBlockPtr make(
+      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
+      uint32_t track_last_n, uint32_t n_unique_users, uint32_t n_unique_items,
+      std::optional<char> item_col_delimiter = std::nullopt) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, track_last_n, n_unique_users,
-        n_unique_items);
+        n_unique_items, item_col_delimiter);
   }
 
  protected:
@@ -161,14 +164,15 @@ class UserItemHistoryBlock final : public Block {
       uint32_t user_id = _user_id_lookup->getUid(user_str);
       int64_t epoch_timestamp = TimeObject(timestamp_str).secondsSinceEpoch();
 
-      auto item_id = _item_id_lookup->getUid(item_str);
+      auto item_ids = getItemIds(item_str);
 
 #pragma omp critical(user_item_history_block)
       {
         encodeTrackedItems(user_id, epoch_timestamp, vec);
-        _records->add(user_id, item_id, epoch_timestamp);
+        for (const auto& item_id : item_ids) {
+          _records->add(user_id, item_id, epoch_timestamp);
+        }
       }
-
     } catch (...) {
       return std::current_exception();
     }
@@ -176,6 +180,22 @@ class UserItemHistoryBlock final : public Block {
   }
 
  private:
+  std::vector<uint32_t> getItemIds(const std::string& item_str) {
+    if (!_item_col_delimiter) {
+      return {_item_id_lookup->getUid(item_str)};
+    }
+    auto item_id_views =
+        ProcessorUtils::parseCsvRow(item_str, _item_col_delimiter.value());
+    std::vector<uint32_t> item_id_strs;
+    item_id_strs.reserve(item_id_views.size());
+    for (auto item_id_view : item_id_views) {
+      auto item_id_str = std::string(item_id_view);
+      auto item_id = _item_id_lookup->getUid(item_id_str);
+      item_id_strs.push_back(item_id);
+    }
+    return item_id_strs;
+  }
+
   void encodeTrackedItems(uint32_t user_id, int64_t epoch_timestamp,
                           SegmentedFeatureVector& vec) {
     uint32_t added = 0;
@@ -201,6 +221,8 @@ class UserItemHistoryBlock final : public Block {
   ThreadSafeVocabularyPtr _item_id_lookup;
 
   std::shared_ptr<ItemHistoryCollection> _records;
+
+  std::optional<char> _item_col_delimiter;
 };
 
 }  // namespace thirdai::dataset
