@@ -444,15 +444,17 @@ class FMeasure final : public Metric {
 static std::shared_ptr<Metric> makeMetric(const std::string& name) {
   if (name == CategoricalAccuracy::name) {
     return std::make_shared<CategoricalAccuracy>();
-  } else if (name == WeightedMeanAbsolutePercentageError::name) {
-    return std::make_shared<WeightedMeanAbsolutePercentageError>();
-  } else if (name == MeanSquaredErrorMetric::name) {
-    return std::make_shared<MeanSquaredErrorMetric>();
-  } else if (FMeasure::isFMeasure(name)) {
-    return FMeasure::make(name);
-  } else {
-    throw std::invalid_argument("'" + name + "' is not a valid metric.");
   }
+  if (name == WeightedMeanAbsolutePercentageError::name) {
+    return std::make_shared<WeightedMeanAbsolutePercentageError>();
+  }
+  if (name == MeanSquaredErrorMetric::name) {
+    return std::make_shared<MeanSquaredErrorMetric>();
+  }
+  if (FMeasure::isFMeasure(name)) {
+    return FMeasure::make(name);
+  }
+  throw std::invalid_argument("'" + name + "' is not a valid metric.");
 }
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;

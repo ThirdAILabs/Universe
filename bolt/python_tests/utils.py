@@ -112,7 +112,12 @@ def gen_single_sparse_node(num_classes, sparsity=0.5):
 
 
 def get_simple_dag_model(
-    input_dim, hidden_layer_dim, hidden_layer_sparsity, output_dim
+    input_dim,
+    hidden_layer_dim,
+    hidden_layer_sparsity,
+    output_dim,
+    output_activation="softmax",
+    loss=bolt.CategoricalCrossEntropyLoss(),
 ):
     input_layer = bolt.graph.Input(dim=input_dim)
 
@@ -120,13 +125,13 @@ def get_simple_dag_model(
         dim=hidden_layer_dim, sparsity=hidden_layer_sparsity, activation="relu"
     )(input_layer)
 
-    output_layer = bolt.graph.FullyConnected(dim=output_dim, activation="softmax")(
-        hidden_layer
-    )
+    output_layer = bolt.graph.FullyConnected(
+        dim=output_dim, activation=output_activation
+    )(hidden_layer)
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
 
-    model.compile(bolt.CategoricalCrossEntropyLoss())
+    model.compile(loss)
 
     return model
 
