@@ -15,7 +15,7 @@ if [ -d "${DATADIR}" ]; then
       # This is a temporary workaround until we get IAM roles working on AWS
       # It mounts the AWS credentials present on the home machine to the home
       # directory of the docker image
-      -v $HOME/.aws/credentials:/root/.aws/credentials:ro
+      -v $HOME/.aws/credentials:/root/.aws/credentials:ro \
       bash
 else
     docker run \
