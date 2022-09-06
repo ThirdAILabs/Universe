@@ -37,11 +37,23 @@ message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
-if(MSVC)
-  if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-    message(
-      FATAL_ERROR "For now, we only support building in release mode using MSVC"
-    )
+# Check if there is a license flag, and only if so add the cryptopp lib
+# We have two different License flags, one for if to build the license files
+# (THIRDAI_BUILD_LICENSE) and one for if to check the license (THIRDAI_CHECK_LICENSE).
+# If just the THIRDAI_CHECK_LICENSE flag is set there will be a linker error.
+list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
+if (${LICENSE_BUILD_FLAG_FOUND})
+  # Use our own source
+  set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
+  add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
+  set(CRYPTOPP_LIB cryptopp::cryptopp)
+endif()
+
+
+if (MSVC)
+  if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
   endif()
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
 
@@ -141,32 +153,6 @@ add_subdirectory(deps/spdlog)
 # can work with vscode
 include_directories(deps)
 
-# Check if there is a license flag, and only if so add the cryptopp lib We have
-# two different License flags, one for if to build the license files
-# (THIRDAI_BUILD_LICENSE) and one for if to check the license
-# (THIRDAI_CHECK_LICENSE). If just the THIRDAI_CHECK_LICENSE flag is set there
-# will be a linker error.
-list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
-set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
-if(${LICENSE_BUILD_FLAG_FOUND})
-
-  message("Building cryptopp...")
-  # Install CRYPTOPP and set the static lib to be the static library file. This
-  # is pretty ugly (the build happens at configure time, not build time) but
-  # honestly okay (I spent way too long getting anything at all to work). Plus,
-  # it's gated by a feature flag anyways. For now use default 32 jobs to build.
-  if(MSVC)
-    set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/cryptlib.lib)
-    message(
-      "${CRYPTOPP_LIB} must already exist or there will be errors (you can build with nmake, see https://www.cryptopp.com/wiki/Nmake_(Command_Line) )"
-    )
-  else()
-    set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
-    message("Running make in ${CMAKE_SOURCE_DIR}/deps/cryptopp")
-    execute_process(COMMAND make static CXX=g++ -j32 -C
-                            ${CMAKE_SOURCE_DIR}/deps/cryptopp)
-  endif()
-endif()
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
@@ -252,6 +238,6 @@ pybind11_add_module(
 
 target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
 
-if(${LICENSE_BUILD_FLAG_FOUND})
+if (${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
 endif()
