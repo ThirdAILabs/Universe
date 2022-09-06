@@ -67,7 +67,7 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
                             std::optional<char> delimiter = std::nullopt)
       : CategoricalBlock(col, n_classes, delimiter) {}
 
-  static CategoricalBlockPtr make(
+  static auto make(
       uint32_t col, uint32_t n_classes,
       std::optional<char> delimiter = std::nullopt) {
     return std::make_shared<NumericalCategoricalBlock>(col, n_classes,
@@ -103,14 +103,14 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
       : StringLookupCategoricalBlock(col, ThreadSafeVocabulary::make(n_classes),
                                      delimiter) {}
 
-  static CategoricalBlockPtr make(
+  static auto make(
       uint32_t col, ThreadSafeVocabularyPtr vocab,
       std::optional<char> delimiter = std::nullopt) {
     return std::make_shared<StringLookupCategoricalBlock>(col, std::move(vocab),
                                                           delimiter);
   }
 
-  static CategoricalBlockPtr make(
+  static auto make(
       uint32_t col, uint32_t n_classes,
       std::optional<char> delimiter = std::nullopt) {
     return std::make_shared<StringLookupCategoricalBlock>(col, n_classes,
