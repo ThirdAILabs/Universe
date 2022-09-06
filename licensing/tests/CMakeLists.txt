@@ -10,7 +10,7 @@ target_link_libraries(
   license_test
   PRIVATE
   gtest_main
-  ${CRYPTOPP_LIB}
+  cryptopp
 )
 
 gtest_discover_tests(license_test DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
