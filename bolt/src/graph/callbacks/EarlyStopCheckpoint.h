@@ -49,20 +49,14 @@ class EarlyStopCheckpoint : public Callback {
           "metric, passed in " +
           std::to_string(num_metrics) + " metrics.");
     }
+
+    initValidationTrackers();
   }
 
   void onTrainBegin(BoltGraph& model) final {
     (void)model;
 
-    std::string metric_name = _predict_config.getMetricNames()[0];
-
-    // setting these onTrainBegin allows callback instances to be reused
-    _epochs_since_best = 0;
-    _should_stop_training = false;
-    _should_minimize = makeMetric(metric_name)->smallerIsBetter();
-    _best_validation_score = _should_minimize
-                                 ? std::numeric_limits<double>::max()
-                                 : std::numeric_limits<double>::min();
+    initValidationTrackers();
   }
 
   void onEpochEnd(BoltGraph& model) final {
@@ -91,6 +85,17 @@ class EarlyStopCheckpoint : public Callback {
     return metric_val - _min_delta > _best_validation_score;
   }
 
+  void initValidationTrackers() {
+    std::string metric_name = _predict_config.getMetricNames()[0];
+
+    _epochs_since_best = 0;
+    _should_stop_training = false;
+    _should_minimize = makeMetric(metric_name)->smallerIsBetter();
+    _best_validation_score = _should_minimize
+                                 ? std::numeric_limits<double>::max()
+                                 : std::numeric_limits<double>::min();
+  }
+
   std::vector<dataset::BoltDatasetPtr> _validation_data;
   dataset::BoltDatasetPtr _validation_labels;
   PredictConfig _predict_config;
@@ -98,8 +103,10 @@ class EarlyStopCheckpoint : public Callback {
   uint32_t _patience;
   double _min_delta;
 
-  bool _should_stop_training;
+  // Below are variables used to track the best validation score over the course
+  // of a train call. These are set in onTrainBegin(..) so they can be reused.
   uint32_t _epochs_since_best;
+  bool _should_stop_training;
   bool _should_minimize;
   double _best_validation_score;
 };

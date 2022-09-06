@@ -533,6 +533,8 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
           " results from a given validation set. Saves the best model to "
           "model_save_path.\n"
           "Arguments:\n"
+          " * validation_data: Data input as passed to predict.\n"
+          " * validation_labels: Label input as passed to predict.\n"
           " * predict_config: PredictConfig. Configurations for evaluation on "
           "the given validation data. must include metrics\n"
           " * model_save_path: string. The file path to save the model that "
