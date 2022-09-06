@@ -314,7 +314,7 @@ def load_svm_dataset(dataset_config, use_s3):
     else:
         dataset_path = find_full_filepath(config_get(dataset_config, "path"))
         return dataset.load_bolt_svm_dataset(
-            dataset_path, batch_size=config_get(dataset_config, "batch_size")
+            dataset_path, batch_size=batch_size
         )
 
 
