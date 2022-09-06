@@ -48,11 +48,9 @@ class DragonVector final : public CompressedVector<T> {
 
   std::vector<T> values() const { return _values; }
 
-  int seedForHashing() const { return _seed_for_hashing; }
+  uint32_t seedForHashing() const { return _seed_for_hashing; }
 
   uint32_t uncompressedSize() const { return _uncompressed_size; }
-
-  float compressionDensity() const { return _compression_density; }
 
   uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
 
@@ -78,7 +76,6 @@ class DragonVector final : public CompressedVector<T> {
   // size of the original vector
   uint32_t _uncompressed_size;
 
-  float _compression_density;
   uint32_t _seed_for_hashing;
 
   void sketch(const T* values, T threshold, uint32_t size,

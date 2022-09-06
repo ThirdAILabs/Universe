@@ -41,9 +41,7 @@ DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
                               float compression_density,
                               uint32_t seed_for_hashing,
                               uint32_t sample_population_size)
-    : _uncompressed_size(size),
-      _compression_density(compression_density),
-      _seed_for_hashing(seed_for_hashing) {
+    : _uncompressed_size(size), _seed_for_hashing(seed_for_hashing) {
   uint32_t sketch_size =
       std::max(static_cast<uint32_t>(compression_density * size),
                std::min(size, _min_sketch_size));
@@ -108,7 +106,6 @@ void DragonVector<T>::set(uint32_t index, T value) {
 template <class T>
 void DragonVector<T>::clear() {
   _uncompressed_size = 0;
-  _compression_density = 1;
   _values.clear();
   _indices.clear();
 }
