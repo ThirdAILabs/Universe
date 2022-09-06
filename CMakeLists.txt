@@ -142,14 +142,21 @@ include_directories(deps)
 list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 if (${LICENSE_BUILD_FLAG_FOUND})
+
+  message("Building cryptopp...")
   # Install CRYPTOPP and set the static lib to be the static library file. This is pretty
   # ugly (the build happens at configure time, not build time) but honestly
   # okay (I spent way too long getting anything at all to work). Plus, it's 
   # gated by a feature flag anyways.
   # For now use default 32 jobs to build.
-  file(GLOB CRYPTOPP_SOURCES deps/cryptopp/*.cpp)
-  add_library(cryptopp STATIC ${CRYPTOPP_SOURCES})
-  target_include_directories(cryptopp PUBLIC deps/cryptopp)
+  if (MSVC)
+    set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/cryptlib.lib)
+    message("${CRYPTOPP_LIB} must already exist or there will be errors (you can build with nmake, see https://www.cryptopp.com/wiki/Nmake_(Command_Line) )")
+  else()
+    set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
+    message("Running make in ${CMAKE_SOURCE_DIR}/deps/cryptopp")
+    execute_process(COMMAND make static CXX=g++ CXXFLAGS="-fvisibility=hidden -fvisibility-inlines-hidden" -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+  endif()
 endif()
 
 
@@ -239,5 +246,5 @@ pybind11_add_module(_thirdai
 target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
 
 if (${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(_thirdai PRIVATE cryptopp)
+  target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
 endif()
