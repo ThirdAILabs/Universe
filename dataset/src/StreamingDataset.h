@@ -125,6 +125,8 @@ class StreamingDataset {
     return dataset;
   }
 
+  virtual ~StreamingDataset() = default;
+
  protected:
   std::shared_ptr<DataLoader> _data_loader;
 
