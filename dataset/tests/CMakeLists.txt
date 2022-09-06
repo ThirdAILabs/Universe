@@ -42,6 +42,7 @@ target_link_libraries(
   categorical_block_test
   PRIVATE
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
