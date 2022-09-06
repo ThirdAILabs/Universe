@@ -4,6 +4,7 @@
 #include <dataset/python_bindings/DatasetPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <utils/Logging.h>
+#include <utils/Version.h>
 
 // Pybind11 library
 #include <pybind11/cast.h>
@@ -53,6 +54,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         "  pattern: str - Pattern string to customize logging from client. See "
         "https://github.com/gabime/spdlog/wiki/3.-Custom-formatting for using "
         "format-strings.");
+
+  m.attr("__version__") = thirdai::version();
 
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:

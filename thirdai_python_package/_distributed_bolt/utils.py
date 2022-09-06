@@ -42,20 +42,11 @@ def config_get(config, field):
 
 
 def construct_fully_connected_node(fc_config):
-    use_default_sampling = fc_config.get("use_default_sampling", False)
     sparsity = fc_config.get("sparsity", 1)
-
-    if use_default_sampling or sparsity == 1:
-        return bolt.graph.FullyConnected(
-            dim=config_get(fc_config, "dim"),
-            sparsity=sparsity,
-            activation=config_get(fc_config, "activation"),
-        )
-
     return bolt.graph.FullyConnected(
         dim=config_get(fc_config, "dim"),
         sparsity=sparsity,
-        activation_function=config_get(fc_config, "activation"),
+        activation=config_get(fc_config, "activation"),
     )
 
 
