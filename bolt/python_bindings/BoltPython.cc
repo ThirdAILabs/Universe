@@ -226,7 +226,18 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
-           py::arg("output_file") = std::nullopt);
+           py::arg("output_file") = std::nullopt)
+      .def("predict_single",
+           [](SequentialClassifier& model,
+              const std::unordered_map<std::string, std::string>& sample) {
+             auto output = model.predictSingle(sample);
+             return denseBoltVectorToNumpy(output);
+           })
+      .def("explain",
+           [](SequentialClassifier& model,
+              const std::unordered_map<std::string, std::string>& sample) {
+             return model.explain(sample);
+           });
 
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
@@ -262,7 +273,12 @@ void createBoltSubmodule(py::module_& module) {
           "then the classifier will output the name of the class/category of "
           "each prediction this file with one prediction result on each "
           "line.\n")
-      .def("explain", &TabularClassifier::explain, py::arg("input_row"))
+      .def("explain",
+           [](TabularClassifier& model,
+              std::vector<std::string>& sample) {
+             auto output = model.predictSingle(sample);
+             return output;
+           })
       .def("predict_single", &TabularClassifier::predictSingle,
            py::arg("input_row"),
            "Given a list of input values excluding the label column, predict "
