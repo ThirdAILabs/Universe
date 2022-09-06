@@ -164,13 +164,13 @@ class Node {
   /*
    * Do any cleanup to bring the Node into the same state it was in before
    * prepareForBatchProcessing was called. This moves the node from state 4 to
-   * state 3.
+   * state 3. If the cleanup was already done this is a no-op.
    */
   void cleanupAfterBatchProcessing() {
-    if (getState() != Node::PreparedForBatchProcessing) {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "Can only call cleanupAfterBatchProcessing after "
-          "prepareForBatchProcessing.");
+          "Calling cleanupAfterBatchProcessing before calling compile.");
     }
 
     cleanupAfterBatchProcessingImpl();

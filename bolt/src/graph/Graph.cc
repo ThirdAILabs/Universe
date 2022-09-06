@@ -92,6 +92,8 @@ MetricData BoltGraph::train(
         have a batch size larger than the first batch_size. We will be using the
         same datastructures to store the activations for every batch during
         training so we need this to be able to support the largest batch size.
+
+        This is done per epoch so callbacks can call predict during training.
       */
       prepareToProcessBatches(train_context.batchSize(),
                               /* use_sparsity=*/true);
