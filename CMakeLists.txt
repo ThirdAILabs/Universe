@@ -155,7 +155,7 @@ if (${LICENSE_BUILD_FLAG_FOUND})
   else()
     set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
     message("Running make in ${CMAKE_SOURCE_DIR}/deps/cryptopp")
-    execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+    execute_process(COMMAND make static CXX=g++ CXXFLAGS="-fvisibility=hidden -fvisibility-inlines-hidden" -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
   endif()
 endif()
 
