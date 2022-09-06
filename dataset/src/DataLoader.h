@@ -64,7 +64,10 @@ class SimpleFileDataLoader final : public DataLoader {
     return std::nullopt;
   }
 
-  void restart() final { _file = SafeFileIO::ifstream(_filename); }
+  void restart() final {
+    _file.close();
+    _file = SafeFileIO::ifstream(_filename);
+  }
 
   std::string resourceName() const final { return _filename; }
 
