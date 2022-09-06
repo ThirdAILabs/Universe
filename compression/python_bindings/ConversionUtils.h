@@ -71,8 +71,6 @@ inline py::dict convertCompressedVectorToPyDict(
     py_compressed_vector["original_size"] = dragon_sketch.uncompressedSize();
     py_compressed_vector["sketch_size"] = dragon_sketch.size();
     py_compressed_vector["seed_for_hashing"] = dragon_sketch.seedForHashing();
-    py_compressed_vector["compression_density"] =
-        dragon_sketch.compressionDensity();
     py_compressed_vector["indices"] =
         py::array_t<uint32_t>(py::cast(dragon_sketch.indices()));
     py_compressed_vector["values"] =
