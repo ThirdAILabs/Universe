@@ -245,6 +245,7 @@ class Pipeline {
 
     auto& user_item_history =
         state.history_collections_by_id[sequential_block_id];
+    // Reset history if for training to prevent test data from leaking in.
     if (!user_item_history || for_training) {
       user_item_history =
           dataset::ItemHistoryCollection::make(n_unique_users, track_last_n);
