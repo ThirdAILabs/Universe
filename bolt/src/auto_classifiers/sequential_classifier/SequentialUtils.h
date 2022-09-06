@@ -137,6 +137,12 @@ class ColumnNumberMap {
     return col_num_to_col_name;
   }
 
+  void print_column_names() {
+    for (const auto& k: _name_to_num) {
+      std::cout<<k.first<<" "<<k.second<<std::endl;
+    }
+  }
+
  private:
   std::unordered_map<std::string, uint32_t> _name_to_num;
 };

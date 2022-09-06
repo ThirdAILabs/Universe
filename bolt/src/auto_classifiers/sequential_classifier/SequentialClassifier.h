@@ -141,12 +141,9 @@ class SequentialClassifier {
     auto [gradients_indices, gradients_ratios] =
         _model->getInputGradientSingle({input_vector});
 
-    RootCauseAnalysis explanation(
-        _single_inference_batch_processor->getInputBlocks());
-
-    auto result = explanation.getPercentExplanationWithColumnNames(
+    auto result = getPercentExplanationWithColumnNames(
         gradients_ratios, *gradients_indices,
-        _single_inference_col_nums.getColumnNumToColNameMap());
+        _single_inference_col_nums.getColumnNumToColNameMap(),_single_inference_batch_processor);
 
     return result;
   }
