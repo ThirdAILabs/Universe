@@ -106,7 +106,7 @@ class LayerNormNode final : public Node,
     }
     variance /= len;
 
-    return {mean, variance};
+    return std::make_pair(mean, variance);
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {

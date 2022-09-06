@@ -11,13 +11,12 @@ namespace thirdai::bolt {
 
 /**
  * @brief This callback is intended to stop training early based on prediction
- * results from a given validation set. Saves the best model to
- * best_model_save_location
+ * results from a given validation set. Saves the best model to model_save_path
  *
  * @param predict_config configurations for evaluation on the given validation
  * data. must include metrics
- * @param best_model_save_location where to save the model that scored the best
- * on the validation set
+ * @param model_save_path file path to save the model that scored the
+ * best on the validation set
  * @param patience number of epochs with no improvement in validation score
  * after which training will be stopped.
  * @param min_delta minimum change in the monitored quantity to qualify as an
@@ -35,13 +34,12 @@ class EarlyStopCheckpoint : public Callback {
  public:
   EarlyStopCheckpoint(std::vector<dataset::BoltDatasetPtr> validation_data,
                       dataset::BoltDatasetPtr validation_labels,
-                      PredictConfig predict_config,
-                      std::string best_model_save_location,
+                      PredictConfig predict_config, std::string model_save_path,
                       uint32_t patience = 2, double min_delta = 0)
       : _validation_data(std::move(validation_data)),
         _validation_labels(std::move(validation_labels)),
         _predict_config(std::move(predict_config)),
-        _best_model_save_location(std::move(best_model_save_location)),
+        _model_save_path(std::move(model_save_path)),
         _patience(patience),
         _min_delta(std::abs(min_delta)) {
     uint32_t num_metrics = _predict_config.getMetricNames().size();
@@ -77,13 +75,11 @@ class EarlyStopCheckpoint : public Callback {
     if (isImprovement(metric_val)) {
       _best_validation_score = metric_val;
       _epochs_since_best = 0;
-      model.save(_best_model_save_location);
+      model.save(_model_save_path);
     } else if (_epochs_since_best == _patience) {
       _should_stop_training = true;
     }
   }
-
-  void onTrainEnd(BoltGraph& model) final { (void)model; }
 
   bool shouldStopTraining() final { return _should_stop_training; }
 
@@ -98,7 +94,7 @@ class EarlyStopCheckpoint : public Callback {
   std::vector<dataset::BoltDatasetPtr> _validation_data;
   dataset::BoltDatasetPtr _validation_labels;
   PredictConfig _predict_config;
-  std::string _best_model_save_location;
+  std::string _model_save_path;
   uint32_t _patience;
   double _min_delta;
 

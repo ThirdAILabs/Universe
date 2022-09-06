@@ -1,4 +1,3 @@
-from cgi import test
 from thirdai import bolt
 from utils import gen_numpy_training_data, get_simple_dag_model
 import pytest
@@ -28,16 +27,12 @@ def train_models(
         loss=loss,
     )
 
-    predict_config = (
-        bolt.graph.PredictConfig.make()
-        .with_metrics([metric_name])
-        .enable_sparse_inference()
-    )
+    predict_config = bolt.graph.PredictConfig.make().with_metrics([metric_name])
 
     save_loc = "./best.model"
 
     train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=20)
+        bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=20)
         .with_metrics([metric_name])
         .with_callbacks(
             [
@@ -45,8 +40,8 @@ def train_models(
                     validation_data=[valid_data],
                     validation_labels=valid_labels,
                     predict_config=predict_config,
-                    best_model_save_location=save_loc,
-                    patience=5,
+                    model_save_path=save_loc,
+                    patience=2,
                     min_delta=0,
                 )
             ]
@@ -60,6 +55,8 @@ def train_models(
     return model, best_model
 
 
+# this method trains a model with the early stop callback and returns the
+# validation scores for the best model saved and the last model
 def run_early_stop_test(loss, output_activation, metric_name):
     train_data, train_labels = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=50, noise_std=0.3
@@ -78,11 +75,7 @@ def run_early_stop_test(loss, output_activation, metric_name):
         metric_name,
     )
 
-    predict_config = (
-        bolt.graph.PredictConfig.make()
-        .with_metrics([metric_name])
-        .enable_sparse_inference()
-    )
+    predict_config = bolt.graph.PredictConfig.make().with_metrics([metric_name])
 
     last_model_score = last_model.predict(valid_data, valid_labels, predict_config)[0][
         metric_name

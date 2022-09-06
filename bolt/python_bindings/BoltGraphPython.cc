@@ -522,12 +522,26 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
-      .def(py::init<std::vector<dataset::BoltDatasetPtr>,
-                    dataset::BoltDatasetPtr, PredictConfig, std::string,
-                    uint32_t, double>(),
-           py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("best_model_save_location"),
-           py::arg("patience"), py::arg("min_delta"));
+      .def(
+          py::init<std::vector<dataset::BoltDatasetPtr>,
+                   dataset::BoltDatasetPtr, PredictConfig, std::string,
+                   uint32_t, double>(),
+          py::arg("validation_data"), py::arg("validation_labels"),
+          py::arg("predict_config"), py::arg("model_save_path"),
+          py::arg("patience"), py::arg("min_delta"),
+          "This callback is intended to stop training early based on prediction"
+          " results from a given validation set. Saves the best model to "
+          "model_save_path.\n"
+          "Arguments:\n"
+          " * predict_config: PredictConfig. Configurations for evaluation on "
+          "the given validation data. must include metrics\n"
+          " * model_save_path: string. The file path to save the model that "
+          "scored the best on the validation set\n"
+          " * patience: int. The nuber of epochs with no improvement in "
+          "validation score after which training will be stopped.\n"
+          " * min_delta: float. The minimum change in the monitored quantity "
+          "to qualify as an improvement, i.e. an absolute change of less than "
+          "min_delta will count as no improvement.\n");
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,

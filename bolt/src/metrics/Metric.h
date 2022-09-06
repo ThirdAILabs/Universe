@@ -33,7 +33,9 @@ class Metric {
   // called at the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
 
-  // returns whether its better if the metric is smaller
+  // returns whether its better if the metric is smaller. for example, with a
+  // an accuracy related metric this would return false since larger is better
+  // (larger means more accurate)
   virtual bool smallerIsBetter() const = 0;
 
   // Returns the name of the metric.
