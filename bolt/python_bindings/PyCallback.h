@@ -4,7 +4,7 @@
 #include <pybind11/pybind11.h>
 
 namespace thirdai::bolt {
-// For explanation of PYBIND11_OVERRIDE_PURE, see
+// For explanation of PYBIND11_OVERRIDE_NAME, see
 //  https://pybind11.readthedocs.io/en/stable/advanced/classes.html#overriding-virtual-functions-in-python
 //  Basically this allows us to define data loaders in python
 class PyCallback : public Callback {
