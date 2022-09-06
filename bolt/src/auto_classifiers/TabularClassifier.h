@@ -16,8 +16,6 @@
 
 namespace thirdai::bolt {
 
-using Blocks = std::vector<std::shared_ptr<dataset::Block>>;
-
 class TabularClassifier {
  public:
   TabularClassifier(const std::string& model_size, uint32_t n_classes)
@@ -64,24 +62,6 @@ class TabularClassifier {
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
         output_filename, _metadata->getClassIdToNames());
-  }
-
-  std::tuple<std::vector<std::string>, std::vector<float>,
-             std::vector<uint32_t>>
-  explain(std::vector<std::string>& values) {
-    BoltVector input = makeInputVector(values);
-
-    auto [gradients_indices, gradients_ratios] =
-        _classifier->getInputGradientSingle({input});
-
-    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
-        makeTabularBatchProcessor();
-
-    auto result = getPercentExplanationWithColumnNames(
-        gradients_ratios, *gradients_indices, _metadata->getColNumToColName(),
-        batch_processor);
-
-    return result;
   }
 
   std::string predictSingle(std::vector<std::string>& values) {
