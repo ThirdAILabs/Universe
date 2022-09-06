@@ -42,6 +42,7 @@ target_link_libraries(
   categorical_block_test
   PRIVATE
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
@@ -53,6 +54,12 @@ target_link_libraries(
   date_block_test
   PRIVATE
   gtest_main
+)
+
+target_link_libraries(
+  date_block_test
+  PUBLIC
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
@@ -76,6 +83,7 @@ target_link_libraries(
   thread_safe_vocabulary_tests
   PRIVATE
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
@@ -87,6 +95,7 @@ target_link_libraries(
   user_item_history_block_tests
   PRIVATE
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
@@ -110,6 +119,7 @@ target_link_libraries(
   generic_batch_processor_test
   PRIVATE
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
@@ -123,6 +133,12 @@ target_link_libraries(
   gtest_main
 )
 
+target_link_libraries(
+  streaming_generic_dataset_loader_tests
+  PUBLIC
+  OpenMP::OpenMP_CXX
+)
+
 add_executable(
   text_processing_tests
   TextProcessingTests.cc
@@ -134,6 +150,12 @@ target_link_libraries(
   gtest_main
   dataset_core_lib
   hash_function_lib
+)
+
+target_link_libraries(
+  text_processing_tests
+  PUBLIC
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
