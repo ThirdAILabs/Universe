@@ -149,8 +149,6 @@ MetricData BoltGraph::train(
 
   callbacks.onTrainEnd(*this);
 
-  callbacks.onTrainEnd(*this);
-
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
 
