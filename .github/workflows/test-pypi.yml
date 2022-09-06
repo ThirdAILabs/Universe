@@ -57,7 +57,7 @@ jobs:
           # intended as a short-term fix to be undertaken independently at a
           # later stage (TODO: jerin-thirdai).
           CIBW_ENVIRONMENT_MACOS: >
-              CMAKE_ARGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-11 -DCMAKE_C_COMPILER=/usr/local/bin/gcc-11"
+              CMAKE_ARGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-11 -DCMAKE_CXX_COMPILER=/usr/local/bin/g++-11"
           
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
