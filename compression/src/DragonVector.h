@@ -60,6 +60,10 @@ class DragonVector final : public CompressedVector<T> {
 
   std::vector<T> decompress() const final;
 
+  std::stringstream serialize() const final;
+
+  static DragonVector<T> deserialize(std::stringstream& input_stream);
+
  private:
   /*
    * If we add a lot of compression schemes, we should have a sparse vector
@@ -75,7 +79,7 @@ class DragonVector final : public CompressedVector<T> {
   uint32_t _uncompressed_size;
 
   float _compression_density;
-  int _seed_for_hashing;
+  uint32_t _seed_for_hashing;
 
   void sketch(const T* values, T threshold, uint32_t size,
               uint32_t sketch_size);

@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <vector>
 namespace thirdai::compression::tests {
 
@@ -73,6 +74,26 @@ TEST_F(DragonVectorTest, ExtendDragonVectorTest) {
     ASSERT_EQ(values[i], values[i + size_before_extend]);
   }
   ASSERT_EQ(_vec.uncompressedSize(), _uncompressed_size);
+}
+
+TEST_F(DragonVectorTest, SerializeDragonVectorTest) {
+  uint32_t size;
+  std::stringstream os;
+  std::string name = "dragon";
+  size = static_cast<uint32_t>(name.size());
+
+  os.write(reinterpret_cast<char*>(&size), sizeof(uint32_t));
+  os.write(name.c_str(), size);
+
+  uint32_t interpreted_size;
+
+  // std::cout << os.str() << std::endl;st
+  os.read(reinterpret_cast<char*>(&interpreted_size), sizeof(uint32_t));
+
+  std::cout << "size of interpreted is: " << interpreted_size << std::endl;
+  std::cout << "and the string is: "
+            << thirdai::compression::readBinaryString(std::move(os),
+                                                      interpreted_size);
 }
 
 }  // namespace thirdai::compression::tests

@@ -92,6 +92,8 @@ class CountSketch final : public CompressedVector<T> {
     std::cout << std::endl;
   }
 
+  std::stringstream serialize() const final;
+
  private:
   std::vector<std::vector<T>> _count_sketches;
   std::vector<uint32_t> _seed_for_hashing_indices;

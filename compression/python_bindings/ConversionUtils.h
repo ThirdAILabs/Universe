@@ -193,4 +193,5 @@ inline py::dict convertCountSketchToPyDict(
 
   return pycompressed_vector;
 }
+
 }  // namespace thirdai::compression::python

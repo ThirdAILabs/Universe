@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -182,6 +183,12 @@ std::vector<T> CountSketch<T>::decompress() const {
     decompressed_vector[i] = get(i);
   }
   return decompressed_vector;
+}
+
+template <class T>
+std::stringstream CountSketch<T>::serialize() const {
+  std::stringstream ss;
+  return ss;
 }
 
 template class CountSketch<float>;

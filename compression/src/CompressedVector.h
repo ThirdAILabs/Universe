@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <memory>
 #include <random>
+#include <sstream>
 
 namespace thirdai::compression {
 
@@ -48,6 +49,8 @@ class CompressedVector {
   virtual std::string type() const = 0;
 
   virtual ~CompressedVector() = default;
+
+  virtual std::stringstream serialize() const = 0;
 };
 
 }  // namespace thirdai::compression

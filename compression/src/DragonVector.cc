@@ -1,11 +1,13 @@
 #include "DragonVector.h"
 #include "CompressedVector.h"
 #include <hashing/src/UniversalHash.h>
+#include <_types/_uint32_t.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -151,6 +153,91 @@ std::vector<T> DragonVector<T>::decompress() const {
 template <class T>
 std::string DragonVector<T>::type() const {
   return "dragon";
+}
+
+/*
+ * Serialization function for the dragon vector. The order of serialization is:
+ * 1) Size of compression scheme string + Compression Scheme
+ * 2) Uncompressed Size of the vector
+ * 3) Compression density
+ * 4) Seed for hashing
+ * 5) Size of indices and values array (they are the same)
+ * 6) Indices and then values array
+ */
+
+template <class T>
+std::stringstream DragonVector<T>::serialize() const {
+  std::stringstream output_stream;
+
+  // Writing compression scheme (1)
+  std::string compression_scheme = "dragon";
+  uint32_t size = static_cast<uint32_t>(compression_scheme.size());
+  output_stream.write(reinterpret_cast<char*>(&size), sizeof(uint32_t));
+  output_stream.write(compression_scheme.c_str(), size);
+
+  // Writing uncompressed size, compression density, seed_for_hashing (2,3,4)
+  output_stream.write(reinterpret_cast<const char*>(&_uncompressed_size),
+                      sizeof(uint32_t));
+  output_stream.write(reinterpret_cast<const char*>(&_compression_density),
+                      sizeof(float));
+  output_stream.write(reinterpret_cast<const char*>(&_seed_for_hashing),
+                      sizeof(uint32_t));
+
+  // Writing size of indices, values vectors (5)
+  uint32_t sketch_size = this->size();
+
+  // Writing the indices and values vectors to the array (6)
+  output_stream.write(reinterpret_cast<char*>(&sketch_size), sizeof(uint32_t));
+  const uint32_t* indices_data = _indices.data();
+  output_stream.write(reinterpret_cast<const char*>(indices_data),
+                      sizeof(uint32_t) * _indices.size());
+
+  const T* values_data = _values.data();
+  output_stream.write(reinterpret_cast<const char*>(values_data),
+                      sizeof(T) * _values.size());
+
+  return output_stream;
+}
+
+template <class T>
+DragonVector<T> DragonVector<T>::deserialize(std::stringstream& input_stream) {
+  // Reading the compression scheme (1)
+  uint32_t string_size;
+  std::string compression_scheme;
+  input_stream.read(reinterpret_cast<char*>(&string_size), sizeof(uint32_t));
+  char* buff(new char[string_size]);
+  input_stream.read(reinterpret_cast<char*>(buff), string_size);
+  compression_scheme.assign(buff, string_size);
+
+  // Reading uncompressed size, compression density, seed_for_hashing (2,3,4)
+  uint32_t uncompressed_size;
+  float compression_density;
+  uint32_t seed_for_hashing;
+
+  input_stream.read(reinterpret_cast<char*>(&uncompressed_size),
+                    sizeof(uint32_t));
+  input_stream.read(reinterpret_cast<char*>(&compression_density),
+                    sizeof(float));
+  input_stream.read(reinterpret_cast<char*>(&seed_for_hashing),
+                    sizeof(uint32_t));
+
+  // Reading size of indices and values array (5)
+  uint32_t sketch_size;
+  input_stream.read(reinterpret_cast<char*>(&sketch_size), sizeof(uint32_t));
+
+  // Reading the indices and values array (6)
+  uint32_t* indices_data = nullptr;
+  T* values_data = nullptr;
+  input_stream.read(reinterpret_cast<char*>(indices_data),
+                    sizeof(uint32_t) * sketch_size);
+  input_stream.read(reinterpret_cast<char*>(values_data),
+                    sizeof(T) * sketch_size);
+
+  std::vector<uint32_t> indices(indices_data, indices_data + sketch_size);
+  std::vector<T> values(values_data, values_data + sketch_size);
+
+  return std::move(
+      DragonVector<T>(indices, values, uncompressed_size, seed_for_hashing));
 }
 
 template class DragonVector<float>;
