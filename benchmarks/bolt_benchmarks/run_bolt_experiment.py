@@ -1,20 +1,15 @@
 # TODO(josh): Add back mach benchmark
 
-import argparse
-import os
+import pathlib
 import sys
-import toml
-
 from thirdai import bolt, dataset
+
 
 sys.path.append(str(pathlib.Path(__file__).parent.resolve()) + "/..")
 from utils import (
-    build_arg_parser,
     start_experiment,
     start_mlflow,
-    verify_mlflow_args,
     find_full_filepath,
-    load_config,
     log_single_epoch_training_metrics,
     log_prediction_metrics,
     mlflow_is_enabled,
@@ -434,35 +429,6 @@ def compute_roc_auc(predict_output, datasets, use_mlflow):
     print(f"ROC AUC = {roc_auc}")
     if use_mlflow:
         log_prediction_metrics([{"roc_auc": roc_auc}])
-
-
-def build_arg_parser():
-    parser = argparse.ArgumentParser(
-        description="Creates, trains, and tests a bolt network on the specified config."
-    )
-
-    parser.add_argument(
-        "config_path",
-        type=str,
-        help="Path to a config file containing the dataset, experiment, and model configs.",
-    )
-    parser.add_argument(
-        "--disable_mlflow",
-        action="store_true",
-        help="Disable mlflow logging for the current run.",
-    )
-    parser.add_argument(
-        "--disable_upload_artifacts",
-        action="store_true",
-        help="Disable the mlflow artifact file logging for the current run.",
-    )
-    parser.add_argument(
-        "--run_name",
-        default="",
-        type=str,
-        help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
-    )
-    return parser
 
 
 if __name__ == "__main__":
