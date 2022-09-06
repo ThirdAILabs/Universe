@@ -1,9 +1,11 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
-#include <dataset/src/encodings/categorical/ContiguousNumericId.h>
+#include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <exception>
 #include <memory>
+#include <optional>
 
 namespace thirdai::dataset {
 
@@ -16,53 +18,128 @@ class CategoricalBlock : public Block {
   // Declaration included from BlockInterface.h
   friend CategoricalBlockTest;
 
-  /**
-   * Constructor.
-   *
-   * Arguments:
-   *   col: int - the column number of the input row containing
-   *     the categorical feature to be encoded.
-   *   encoding: CategoricalEncoding - the categorical feature encoding model.
-   */
-  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding> encoding)
-      : _col(col), _encoding(std::move(encoding)) {}
+  CategoricalBlock(uint32_t col, uint32_t n_classes,
+                   std::optional<char> delimiter)
+      : _n_classes(n_classes), _col(col), _delimiter(delimiter) {}
 
-  /**
-   * Constructor with default encoder.
-   *
-   * Arguments:
-   *   col: int - the column number of the input row containing
-   *     the categorical feature to be encoded.
-   *   dim: int - the dimension of the encoding.
-   */
-  CategoricalBlock(uint32_t col, uint32_t dim)
-      : _col(col), _encoding(std::make_shared<ContiguousNumericId>(dim)) {}
+  uint32_t featureDim() const final { return _n_classes; };
 
-  uint32_t featureDim() const final { return _encoding->featureDim(); };
-
-  bool isDense() const final { return _encoding->isDense(); };
+  bool isDense() const final { return false; };
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
-
-  static std::shared_ptr<Block> make(
-      uint32_t col, std::shared_ptr<CategoricalEncoding> encoding) {
-    return std::make_shared<CategoricalBlock>(col, encoding);
-  }
-
-  static std::shared_ptr<Block> make(uint32_t col, uint32_t dim) {
-    return std::make_shared<CategoricalBlock>(col, dim);
-  }
 
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec) final {
-    return _encoding->encodeCategory(input_row.at(_col), vec);
+    if (!_delimiter) {
+      return encodeCategory(input_row.at(_col), vec);
+    }
+
+    auto csv_category_set = std::string(input_row[_col]);
+    auto categories =
+        ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
+    for (auto category : categories) {
+      auto exception = encodeCategory(category, vec);
+      if (exception) {
+        return exception;
+      }
+    }
+
+    return nullptr;
   }
+
+  virtual std::exception_ptr encodeCategory(std::string_view category,
+                                            SegmentedFeatureVector& vec) = 0;
+
+  uint32_t _n_classes;
 
  private:
   uint32_t _col;
-  std::shared_ptr<CategoricalEncoding> _encoding;
+  std::optional<char> _delimiter;
 };
+
+using CategoricalBlockPtr = std::shared_ptr<CategoricalBlock>;
+
+class NumericalCategoricalBlock final : public CategoricalBlock {
+ public:
+  NumericalCategoricalBlock(uint32_t col, uint32_t n_classes,
+                            std::optional<char> delimiter = std::nullopt)
+      : CategoricalBlock(col, n_classes, delimiter) {}
+
+  static CategoricalBlockPtr make(
+      uint32_t col, uint32_t n_classes,
+      std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<NumericalCategoricalBlock>(col, n_classes,
+                                                       delimiter);
+  }
+
+ protected:
+  std::exception_ptr encodeCategory(std::string_view category,
+                                    SegmentedFeatureVector& vec) final {
+    char* end;
+    uint32_t id = std::strtoul(category.data(), &end, 10);
+    if (id >= _n_classes) {
+      return std::make_exception_ptr(
+          std::invalid_argument("Received label " + std::to_string(id) +
+                                " larger than or equal to n_classes"));
+    }
+    vec.addSparseFeatureToSegment(id, 1.0);
+    return nullptr;
+  }
+};
+
+using NumericalCategoricalBlockPtr = std::shared_ptr<NumericalCategoricalBlock>;
+
+class StringLookupCategoricalBlock final : public CategoricalBlock {
+ public:
+  StringLookupCategoricalBlock(uint32_t col, ThreadSafeVocabularyPtr vocab,
+                               std::optional<char> delimiter = std::nullopt)
+      : CategoricalBlock(col, vocab->vocabSize(), delimiter),
+        _vocab(std::move(vocab)) {}
+
+  StringLookupCategoricalBlock(uint32_t col, uint32_t n_classes,
+                               std::optional<char> delimiter = std::nullopt)
+      : StringLookupCategoricalBlock(col, ThreadSafeVocabulary::make(n_classes),
+                                     delimiter) {}
+
+  static CategoricalBlockPtr make(
+      uint32_t col, ThreadSafeVocabularyPtr vocab,
+      std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<StringLookupCategoricalBlock>(col, std::move(vocab),
+                                                          delimiter);
+  }
+
+  static CategoricalBlockPtr make(
+      uint32_t col, uint32_t n_classes,
+      std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<StringLookupCategoricalBlock>(col, n_classes,
+                                                          delimiter);
+  }
+
+  ThreadSafeVocabularyPtr getVocabulary() const { return _vocab; }
+
+ protected:
+  std::exception_ptr encodeCategory(std::string_view category,
+                                    SegmentedFeatureVector& vec) final {
+    auto id_str = std::string(category);
+
+    uint32_t uid;
+    try {
+      uid = _vocab->getUid(id_str);
+    } catch (...) {
+      return std::current_exception();
+    }
+
+    vec.addSparseFeatureToSegment(/* index= */ uid, /* value= */ 1.0);
+    return nullptr;
+  }
+
+ private:
+  ThreadSafeVocabularyPtr _vocab;
+};
+
+using StringLookupCategoricalBlockPtr =
+    std::shared_ptr<StringLookupCategoricalBlock>;
 
 }  // namespace thirdai::dataset
