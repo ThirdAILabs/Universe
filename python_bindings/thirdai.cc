@@ -3,6 +3,7 @@
 #include <hashing/python_bindings/HashingPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <search/python_bindings/DocSearchPython.h>
+#include <utils/Version.h>
 
 // Pybind11 library
 #include <pybind11/cast.h>
@@ -36,6 +37,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         py::arg("license_path"),
         "Set a license filepath for any future calls to the thirdai library.");
 #endif
+
+  m.attr("__version__") = thirdai::version();
 
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:

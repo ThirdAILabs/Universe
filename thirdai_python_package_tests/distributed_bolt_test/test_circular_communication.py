@@ -1,4 +1,5 @@
 try:
+    import thirdai.distributed
     from thirdai._distributed_bolt.backend.worker import Worker
 except ImportError:
     import warnings
