@@ -218,6 +218,9 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatchMultipleMaskedTokens) {
     BoltVector label_vector = labels[index];
     auto unigrams = unigram_hashes_from_words(split_sentences[index]);
 
+    ASSERT_EQ(masked_indices[index].len,
+              static_cast<uint32_t>(unigrams.size() * 0.3));
+
     for (uint32_t i = 0; i < label_vector.len; i++) {
       uint32_t masked_index = masked_indices[index].active_neurons[i];
       uint32_t masked_word_hash = unigrams[masked_index];

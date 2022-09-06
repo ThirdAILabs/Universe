@@ -80,8 +80,7 @@ class MLMDatasetLoader {
       : _batch_processor(
             std::make_shared<MaskedSentenceBatchProcessor>(pairgram_range)) {}
 
-  explicit MLMDatasetLoader(uint32_t pairgram_range,
-                            float masked_tokens_percentage)
+  MLMDatasetLoader(uint32_t pairgram_range, float masked_tokens_percentage)
       : _batch_processor(std::make_shared<MaskedSentenceBatchProcessor>(
             pairgram_range, masked_tokens_percentage)) {}
 
