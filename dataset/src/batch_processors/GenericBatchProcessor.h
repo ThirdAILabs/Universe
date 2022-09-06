@@ -144,10 +144,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
   void printBlockColumns() {
-    for(const auto& block: _input_blocks) {
-      std::cout<<block->getColumnNum()<<" ";
+    for (const auto& block : _input_blocks) {
+      std::cout << block->getColumnNum() << " ";
     }
-    std::cout<<std::endl;
+    std::cout << std::endl;
   }
 
  private:

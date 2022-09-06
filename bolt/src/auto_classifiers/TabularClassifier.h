@@ -78,7 +78,8 @@ class TabularClassifier {
         makeTabularBatchProcessor();
 
     auto result = getPercentExplanationWithColumnNames(
-        gradients_ratios, *gradients_indices, _metadata->getColNumToColName(),batch_processor);
+        gradients_ratios, *gradients_indices, _metadata->getColNumToColName(),
+        batch_processor);
 
     return result;
   }

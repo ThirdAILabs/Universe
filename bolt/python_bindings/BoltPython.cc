@@ -274,8 +274,7 @@ void createBoltSubmodule(py::module_& module) {
           "each prediction this file with one prediction result on each "
           "line.\n")
       .def("explain",
-           [](TabularClassifier& model,
-              std::vector<std::string>& sample) {
+           [](TabularClassifier& model, std::vector<std::string>& sample) {
              auto output = model.predictSingle(sample);
              return output;
            })

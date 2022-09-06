@@ -143,7 +143,8 @@ class SequentialClassifier {
 
     auto result = getPercentExplanationWithColumnNames(
         gradients_ratios, *gradients_indices,
-        _single_inference_col_nums.getColumnNumToColNameMap(),_single_inference_batch_processor);
+        _single_inference_col_nums.getColumnNumToColNameMap(),
+        _single_inference_batch_processor);
 
     return result;
   }

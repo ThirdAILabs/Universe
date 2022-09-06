@@ -138,8 +138,8 @@ class ColumnNumberMap {
   }
 
   void print_column_names() {
-    for (const auto& k: _name_to_num) {
-      std::cout<<k.first<<" "<<k.second<<std::endl;
+    for (const auto& k : _name_to_num) {
+      std::cout << k.first << " " << k.second << std::endl;
     }
   }
 
