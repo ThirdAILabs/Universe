@@ -180,8 +180,8 @@ std::string CountSketch<T>::type() const {
 template <class T>
 std::vector<T> CountSketch<T>::decompress() const {
   std::vector<T> decompressed_vector(_uncompressed_size, 0);
-  // #pragma omp parallel for default(none)
-  //     shared(decompressed_vector, _uncompressed_size)
+#pragma omp parallel for default(none) \
+    shared(decompressed_vector, _uncompressed_size)
   for (uint32_t i = 0; i < _uncompressed_size; i++) {
     decompressed_vector[i] = get(i);
   }

@@ -45,7 +45,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Returns a python dictionary of compressed vectors. "
            "sample_population_size is "
            "the number of random samples you take for estimating a threshold "
-           "for dragon compression")
+           "for dragon compression or the number of sketches needed for "
+           "count_sketc")
       .def("set", &ParameterReference::set, py::arg("new_params"),
            "Takes in a numpy array and copies its contents into the parameters "
            "held in the ParameterReference object.");

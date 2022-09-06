@@ -16,6 +16,14 @@
 
 namespace py = pybind11;
 
+/*
+ * Currently, ConversionUtils supports converting compressed vectors to Python
+ * dict and vice-versa. Python dictionaries might be very slow and also kind of
+ * non-cpp way of doing things. We will in further updates add a serializer to
+ * the compression interface using which we can construct a compressed vector
+ * from a binary stream and convert a compressed vector to a binary stream.
+ */
+
 namespace thirdai::compression::python {
 
 template <class T>
@@ -65,26 +73,27 @@ inline std::unique_ptr<CompressedVector<float>> convertPyDictToCompressedVector(
   throw std::logic_error(
       "Received unknown compression type " +
       py::cast<std::string>(pycompressed_vector["compression_scheme"]) +
-      ". Currently only Dragon compression is supported.");
+      ". Currently only Dragon compression and Count_sketch is supported.");
 }
 
 inline py::dict convertCompressedVectorToPyDict(
     const std::unique_ptr<CompressedVector<float>>& compressed_vector) {
   py::dict pycompressed_vector;
   pycompressed_vector["compression_scheme"] = compressed_vector->type();
+
   if (compressed_vector->type() == "dragon") {
     // dynamic casting a compressed vector to a dragon vector
     DragonVector<float> dragon_sketch =
         *dynamic_cast<DragonVector<float>*>(compressed_vector.get());
     return convertDragonVectorToPyDict(dragon_sketch);
   }
+
   if (compressed_vector->type() == "count_sketch") {
     CountSketch<float> count_sketch =
         *dynamic_cast<CountSketch<float>*>(compressed_vector.get());
     return convertCountSketchToPyDict(count_sketch);
   }
   throw std::logic_error("CompressedVector Type not known");
-  return pycompressed_vector;
 }
 
 inline std::unique_ptr<CompressedVector<float>> convertPydictToDragonVector(
@@ -114,6 +123,7 @@ inline std::unique_ptr<CompressedVector<float>> convertPydictToDragonVector(
 inline py::dict convertDragonVectorToPyDict(
     const DragonVector<float>& dragon_sketch) {
   py::dict pycompressed_vector;
+
   pycompressed_vector["compression_scheme"] = dragon_sketch.type();
   pycompressed_vector["original_size"] = dragon_sketch.uncompressedSize();
   pycompressed_vector["sketch_size"] = dragon_sketch.size();
@@ -124,6 +134,7 @@ inline py::dict convertDragonVectorToPyDict(
       py::array_t<uint32_t>(py::cast(dragon_sketch.indices()));
   pycompressed_vector["values"] =
       py::array_t<float>(py::cast(dragon_sketch.values()));
+
   return pycompressed_vector;
 }
 
