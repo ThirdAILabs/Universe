@@ -133,11 +133,15 @@ class CMakeBuild(build_ext):
         subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_dir)
 
 
+version = None
+with open("thirdai.version") as version_file:
+    version = version_file.read().strip()
+
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="thirdai",
-    version="0.1.8",
+    version=version,
     author="ThirdAI",
     author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
