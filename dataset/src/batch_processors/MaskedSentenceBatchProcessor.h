@@ -7,6 +7,7 @@
 #include <optional>
 #include <random>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::dataset {
 
@@ -18,12 +19,14 @@ class MaskedSentenceBatchProcessor final
         _unknown_token_hash(TextEncodingUtils::computeUnigram(
             /* key= */ "[UNK]", /* len= */ 5)),
         _rand(723204),
-        _masked_tokens_percentage(std::nullopt) {}
+        _masked_tokens_percentage(0.0) {}
 
-  explicit MaskedSentenceBatchProcessor(uint32_t output_range,
-                                        const float masked_tokens_percentage)
+  MaskedSentenceBatchProcessor(uint32_t output_range,
+                               const float masked_tokens_percentage)
       : MaskedSentenceBatchProcessor(output_range) {
-    _masked_tokens_percentage = masked_tokens_percentage;
+    // No linting since an initializer for a delegating constructor must appear
+    // alone
+    _masked_tokens_percentage = masked_tokens_percentage;  // NOLINT
   }
 
   std::tuple<BoltBatch, BoltBatch, BoltBatch> createBatch(
@@ -33,11 +36,11 @@ class MaskedSentenceBatchProcessor final
     std::vector<BoltVector> labels(rows.size());
 
 #pragma omp parallel for default(none) \
-    shared(vectors, masked_indices, labels, rows)
+    shared(rows, vectors, masked_indices, labels)
     for (uint32_t i = 0; i < rows.size(); i++) {
       auto [row_pairgrams, indices, label] = processRow(rows[i]);
       vectors[i] = std::move(row_pairgrams);
-      masked_indices[i] = indices;
+      masked_indices[i] = std::move(indices);
       labels[i] = std::move(label);
     }
 
@@ -63,23 +66,25 @@ class MaskedSentenceBatchProcessor final
     std::vector<uint32_t> masked_indices;
     std::vector<uint32_t> masked_word_hashes;
 
-    uint32_t masked_tokens_size = 1;
+    uint32_t masked_tokens_size =
+        (_masked_tokens_percentage == 0.0)
+            ? 1
+            : static_cast<uint32_t>(size * _masked_tokens_percentage);
+    std::unordered_set<uint32_t> already_masked_tokens;
 
-    if (_masked_tokens_percentage.has_value()) {
-      masked_tokens_size =
-          static_cast<uint32_t>(size * _masked_tokens_percentage.value());
-      for (uint32_t unigram_index = 0; unigram_index < masked_tokens_size;
-           unigram_index++) {
-        uint32_t masked_index = _rand() % size;
-        masked_indices.push_back(masked_index);
-        masked_word_hashes.push_back(unigrams[masked_index]);
-        unigrams[masked_index] = _unknown_token_hash;
-      }
-    } else {
+    uint32_t unigram_index = 0;
+
+    while (unigram_index < masked_tokens_size) {
       uint32_t masked_index = _rand() % size;
+      if (already_masked_tokens.count(masked_index) > 0) {
+        continue;
+      }
       masked_indices.push_back(masked_index);
+      already_masked_tokens.insert(masked_index);
       masked_word_hashes.push_back(unigrams[masked_index]);
-      unigrams[masked_indices[0]] = _unknown_token_hash;
+      unigrams[masked_index] = _unknown_token_hash;
+
+      unigram_index++;
     }
 
     // We are using the hash of the masked word to find its ID because the
@@ -103,11 +108,11 @@ class MaskedSentenceBatchProcessor final
       }
     }
 
-    int len = _masked_tokens_percentage.has_value() ? masked_tokens_size : 1;
+    uint32_t len = masked_tokens_size;
 
     BoltVector label(len, false, false);
 
-    for (uint32_t index = 0; index < masked_tokens_size; index++) {
+    for (uint32_t index = 0; index < len; index++) {
       label.active_neurons[index] = masked_word_ids[index];
       label.activations[index] = 1.0;
     }
@@ -125,10 +130,10 @@ class MaskedSentenceBatchProcessor final
   uint32_t _unknown_token_hash;
   std::mt19937 _rand;
 
-  // This represents the percentage of tokens masked in any input sequence.
+  // Represents the percentage of tokens masked in any input sequence.
   // For instance, if _masked_tokens_percentage = 0.10, then 10% of the
   // words in the input sequence are randomly masked.
-  std::optional<float> _masked_tokens_percentage;
+  float _masked_tokens_percentage;
 };  // namespace thirdai::dataset
 
 }  // namespace thirdai::dataset
