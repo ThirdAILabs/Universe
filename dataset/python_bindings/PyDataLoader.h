@@ -27,8 +27,8 @@ class PyDataLoader : public DataLoader {
     PYBIND11_OVERRIDE_PURE_NAME(std::optional<std::string>, /* Return type */
                                 DataLoader,                 /* Parent class */
                                 "next_line", /* Name of python function */
-                                nextLine,     /* Name of C++ function */
-                                                 /* Empty list of arguments */
+                                nextLine,    /* Name of C++ function */
+                                             /* Empty list of arguments */
     );
   }
 
