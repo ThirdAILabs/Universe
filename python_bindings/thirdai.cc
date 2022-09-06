@@ -3,7 +3,7 @@
 #include <hashing/python_bindings/HashingPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <search/python_bindings/DocSearchPython.h>
-#include <utils/version.h>
+#include <utils/Version.h>
 
 // Pybind11 library
 #include <pybind11/cast.h>

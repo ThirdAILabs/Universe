@@ -1,8 +1,8 @@
 #pragma once
 
 /*
- * File version.h is generated using CMake. Do not modify
- * version.h manually! Edit version.h.in file instead.
+ * File Version.h is generated using CMake. Do not modify
+ * Version.h manually! Edit Version.h.in file instead.
  */
 
 #include <string>
