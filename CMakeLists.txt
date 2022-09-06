@@ -174,6 +174,7 @@ include(CTest)
 
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
+include_directories(${CMAKE_BINARY_DIR})
 
 # Our source directories
 add_subdirectory(bolt)
