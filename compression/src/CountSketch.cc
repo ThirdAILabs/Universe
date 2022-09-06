@@ -37,10 +37,7 @@ CountSketch<T>::CountSketch(const T* values_to_compress, uint32_t size,
       std::max(static_cast<uint32_t>(compression_density * size),
                static_cast<uint32_t>(1));
 
-  // this is the weirdest bug I've been seen so far. For odd sketch_sizes, the
-  // accuracy is very good, for even sketch_sizes, the accuracy drops
-  // sketch_size = sketch_size % 2 == 0 ? sketch_size + 1 : sketch_size;
-  // std::cout << "sketch size in constructor: " << sketch_size << std::endl;
+  sketch_size = sketch_size % 2 == 0 ? sketch_size + 1 : sketch_size;
   _count_sketches.assign(num_sketches, std::vector<T>(sketch_size, 0));
   for (uint32_t i = 0; i < num_sketches; i++) {
     _hasher_index.push_back(UniversalHash(_seed_for_hashing_indices[i]));
@@ -94,7 +91,6 @@ T CountSketch<T>::get(uint32_t index) const {
 template <class T>
 void CountSketch<T>::set(uint32_t index, T value) {
   uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
-  // std::cout << "Sketch size inside set is: " << sketch_size << std::endl;
   for (size_t num_sketch = 0; num_sketch < _count_sketches.size();
        num_sketch++) {
     uint32_t hashed_index =
