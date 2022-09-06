@@ -111,6 +111,8 @@ class StreamingDataset {
 
   uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
 
+  void restart() { _data_loader->restart(); }
+
   static std::shared_ptr<StreamingDataset<BATCH_Ts...>> loadDatasetFromFile(
       const std::string& filename, uint32_t batch_size,
       std::shared_ptr<BatchProcessor<BATCH_Ts...>> batch_processor) {

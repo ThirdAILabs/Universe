@@ -3,6 +3,8 @@
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <dataset/src/DataLoader.h>
+#include <dataset/src/Datasets.h>
+#include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
@@ -41,25 +43,18 @@ class AutoClassifierBase {
              std::optional<uint32_t> max_in_memory_batches = std::nullopt) {
     auto batch_processor =
         getTrainingBatchProcessor(data_source, max_in_memory_batches);
-    data_source->reset();
+    data_source->restart();
 
-    dataset::StreamingDataset<BoltBatch, BoltBatch> data_loader(
-        data_source, batch_processor);
+    dataset::StreamingDataset<BoltBatch, BoltBatch> dataset(data_source,
+                                                            batch_processor);
 
-    auto [data, labels] = data_loader.loadInMemory();
-
-    if (freezeHashTables() && epochs > 1) {
-      TrainConfig train_cfg_initial = TrainConfig::makeConfig(learning_rate, 1);
-      _model->train({data}, {labels}, train_cfg_initial);
-
-      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
-
-      TrainConfig train_cfg_remaining =
-          TrainConfig::makeConfig(learning_rate, epochs - 1);
-      _model->train({data}, {labels}, train_cfg_remaining);
+    if (max_in_memory_batches) {
+      trainOnStream(dataset, learning_rate, epochs,
+                    max_in_memory_batches.value());
     } else {
-      TrainConfig train_cfg = TrainConfig::makeConfig(learning_rate, epochs);
-      _model->train({data}, {labels}, train_cfg);
+      auto [train_data, train_labels] = dataset.loadInMemory();
+
+      trainInMemory(train_data, train_labels, learning_rate, epochs);
     }
   }
 
@@ -122,6 +117,55 @@ class AutoClassifierBase {
   }
 
  private:
+  void trainInMemory(dataset::BoltDatasetPtr& train_data,
+                     dataset::BoltDatasetPtr& train_labels, float learning_rate,
+                     uint32_t epochs) {
+    if (freezeHashTables() && epochs > 1) {
+      TrainConfig train_cfg_initial = TrainConfig::makeConfig(learning_rate, 1);
+      _model->train({train_data}, train_labels, train_cfg_initial);
+
+      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+
+      --epochs;
+    }
+
+    TrainConfig train_cfg = TrainConfig::makeConfig(learning_rate, epochs);
+    _model->train({train_data}, {train_labels}, train_cfg);
+  }
+
+  void trainOnStream(dataset::StreamingDataset<BoltBatch, BoltBatch>& dataset,
+                     float learning_rate, uint32_t epochs,
+                     uint32_t max_in_memory_batches) {
+    if (freezeHashTables() && epochs > 1) {
+      trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
+      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+
+      --epochs;
+    }
+
+    for (uint32_t e = 0; e < epochs; e++) {
+      trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
+    }
+  }
+
+  void trainSingleEpochOnStream(
+      dataset::StreamingDataset<BoltBatch, BoltBatch>& dataset,
+      float learning_rate, uint32_t max_in_memory_batches) {
+    while (1) {
+      auto [data, labels] = dataset.loadInMemory(max_in_memory_batches);
+
+      if (data->len() == 0) {
+        break;
+      }
+
+      TrainConfig train_config =
+          TrainConfig::makeConfig(learning_rate, /* epochs= */ 1);
+      _model->train({data}, labels, train_config);
+    }
+
+    dataset.restart();
+  }
+
   /**
    * Interface for constructing batch processor and featurizing data.
    */
