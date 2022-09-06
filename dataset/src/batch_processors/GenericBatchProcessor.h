@@ -51,6 +51,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       _expected_num_cols =
           std::max(block->expectedNumColumns(), _expected_num_cols);
     }
+    makeOffsetsVector();
   }
 
   std::tuple<BoltBatch, BoltBatch> createBatch(
@@ -135,6 +136,20 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         input_blocks, label_blocks, has_header, delimiter, parallel);
   }
 
+  std::pair<std::shared_ptr<Block>, uint32_t> getBlockAndIndexWithinBlock(
+      uint32_t index) {
+    auto iter = std::upper_bound(_offsets.begin(), _offsets.end(), index);
+    return std::make_pair(_input_blocks[iter - _offsets.begin() - 1],
+                          (index - _offsets[iter - _offsets.begin() - 1]));
+  }
+
+  void printBlockColumns() {
+    for(const auto& block: _input_blocks) {
+      std::cout<<block->getColumnNum()<<" ";
+    }
+    std::cout<<std::endl;
+  }
+
  private:
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
@@ -172,6 +187,13 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return dim;
   }
 
+  void makeOffsetsVector() {
+    _offsets.push_back(0);
+    for (const auto& block : _input_blocks) {
+      _offsets.push_back(_offsets.back() + block->featureDim());
+    }
+  }
+
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
@@ -202,6 +224,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
    */
   std::vector<std::shared_ptr<Block>> _input_blocks;
   std::vector<std::shared_ptr<Block>> _label_blocks;
+
+  std::vector<uint32_t> _offsets;
 };
 
 using GenericBatchProcessorPtr = std::shared_ptr<GenericBatchProcessor>;
