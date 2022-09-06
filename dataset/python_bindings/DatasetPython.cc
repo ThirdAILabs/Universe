@@ -219,7 +219,7 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule, "DataLoader")
       .def(py::init<uint32_t>(), py::arg("target_batch_size"))
       .def("next_batch", &DataLoader::nextBatch)
-      .def("get_next_line", &DataLoader::getNextLine)
+      .def("next_line", &DataLoader::nextLine)
       .def("resource_name", &DataLoader::resourceName);
 
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleBufferConfig")

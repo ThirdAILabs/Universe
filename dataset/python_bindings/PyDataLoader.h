@@ -23,11 +23,11 @@ class PyDataLoader : public DataLoader {
     );
   }
 
-  std::optional<std::string> getNextLine() override {
+  std::optional<std::string> nextLine() override {
     PYBIND11_OVERRIDE_PURE_NAME(std::optional<std::string>, /* Return type */
                                 DataLoader,                 /* Parent class */
-                                "get_next_line", /* Name of python function */
-                                getNextLine,     /* Name of C++ function */
+                                "next_line", /* Name of python function */
+                                nextLine,     /* Name of C++ function */
                                                  /* Empty list of arguments */
     );
   }

@@ -24,7 +24,7 @@ class StreamingDataset {
     // needed. The first row is interpreted as the header. The batch processor
     // is responsible for checking that the header is properly formatted.
     if (_batch_processor->expectsHeader()) {
-      auto header = _data_loader->getNextLine();
+      auto header = _data_loader->nextLine();
       if (!header) {
         throw std::invalid_argument("Cannot read empty file.");
       }

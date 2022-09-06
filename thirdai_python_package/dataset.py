@@ -99,7 +99,7 @@ class S3DataLoader(DataLoader):
     def next_batch(self):
         lines = []
         while len(lines) < self._batch_size:
-            next_line = self.get_next_line()
+            next_line = self.next_line()
             if next_line == None:
                 break
             lines.append(next_line)
@@ -107,8 +107,11 @@ class S3DataLoader(DataLoader):
             return None
         return lines
 
-    def get_next_line(self):
-        return next(self._line_iterator, None)
+    def next_line(self):
+        next_line = next(self._line_iterator, None)
+        if next_line:
+            next_line = next_line.decode("utf-8")
+        return next_line
 
     def resource_name(self):
         return f"s3://{self._bucket_name}/{self._prefix_filter}"
