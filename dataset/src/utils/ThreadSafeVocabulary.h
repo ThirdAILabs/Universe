@@ -23,6 +23,10 @@ namespace thirdai::dataset {
  *
  * This object is safe to be used by multiple functions / objects
  * at the same time.
+ *
+ * TODO(Geordie): If we see an OOV string (new string after
+ * expected number of unique strings), we default to throwing
+ * an error. We should consider other OOV handling schemes.
  */
 class ThreadSafeVocabulary {
  public:

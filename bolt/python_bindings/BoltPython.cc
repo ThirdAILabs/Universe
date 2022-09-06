@@ -3,6 +3,7 @@
 #include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/auto_classifiers/TabularClassifier.h>
 #include <bolt/src/auto_classifiers/TextClassifier.h>
+#include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -205,6 +206,27 @@ void createBoltSubmodule(py::module_& module) {
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
+
+  py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
+                                   "Autoclassifier for sequential predictions.")
+      .def(py::init<const std::pair<std::string, uint32_t>&,
+                    const std::pair<std::string, uint32_t>&, const std::string&,
+                    const std::vector<std::string>&,
+                    const std::vector<std::pair<std::string, uint32_t>>&,
+                    const std::vector<
+                        std::tuple<std::string, uint32_t, uint32_t>>&>(),
+           py::arg("user"), py::arg("target"), py::arg("timestamp"),
+           py::arg("static_text") = std::vector<std::string>(),
+           py::arg("static_categorical") =
+               std::vector<std::pair<std::string, uint32_t>>(),
+           py::arg("sequential") =
+               std::vector<std::tuple<std::string, uint32_t, uint32_t>>())
+      .def("train", &SequentialClassifier::train, py::arg("train_file"),
+           py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("metrics") = std::vector<std::string>({"recall@1"}))
+      .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
+           py::arg("metrics") = std::vector<std::string>({"recall@1"}),
+           py::arg("output_file") = std::nullopt);
 
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),

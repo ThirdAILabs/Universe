@@ -131,7 +131,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.");
+          "Returns a ParameterReference object to the bias gradients vector.")
+      .def("enable_sparse_sparse_optimization",
+           &FullyConnectedNode::enableSparseSparseOptimization);
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
@@ -464,7 +466,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "It constructs a Bolt Graph and initializes the training."
            "This class further provide multiple APIs to be use in "
            "Distributed setting.")
-      .def("calculateGraidentSingleNode",
+      .def("calculateGradientSingleNode",
            &DistributedTrainingContext::calculateGradientSingleNode,
            py::arg("batch_idx"),
            "This function trains the BoltGraph Model with training"
