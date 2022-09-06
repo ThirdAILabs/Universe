@@ -112,7 +112,7 @@ class Pipeline {
     auto file_reader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
 
-    auto header = file_reader->getHeader();
+    auto header = file_reader->nextLine();
     if (!header) {
       throw std::runtime_error("File header not found.");
     }
