@@ -110,13 +110,13 @@ class StopOnFifthEpoch(bolt.graph.callbacks.Callback):
         self.epoch_count += 1
 
     def should_stop_training(self, model):
-        return True
         if self.epoch_count == 5:
             return True
+        return False
 
 
 def test_callbacks_stop_correctly():
-    stop_on_fifth_callback = SaveOnFifthEpoch()
+    stop_on_fifth_callback = StopOnFifthEpoch()
 
     train_model_with_callback(stop_on_fifth_callback)
 
