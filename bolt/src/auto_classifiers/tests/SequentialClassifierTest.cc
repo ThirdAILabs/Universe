@@ -175,6 +175,12 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
 
   // we will check the total percentage is close to 100 and the percentage
   // significance are sorted.
+
+  // this is a check why this test is failing in github but passing here.
+  for (auto item : percentage_significances) {
+    std::cout << item << " ";
+  }
+  std::cout << std::endl;
   assert_percentage_significance(percentage_significances);
 
   // we will check the indices within each block are within the limits.
