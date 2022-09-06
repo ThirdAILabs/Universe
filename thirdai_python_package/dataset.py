@@ -65,6 +65,8 @@ class S3DataLoader(DataLoader):
     ):
         DataLoader.__init__(self, batch_size)
 
+        # We are doing this import here instead of at the top of the file
+        # so boto3 is not a dependency of our package
         import boto3
 
         if aws_access_key_id:

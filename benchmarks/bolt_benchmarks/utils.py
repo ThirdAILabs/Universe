@@ -11,6 +11,9 @@ from urllib.request import urlopen
 from typing import Any, Dict
 from sklearn.datasets import load_svmlight_file
 
+# See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html
+AWS_METADATA_URL = "http://169.254.169.254/latest/meta-data/public-ipv4"
+
 
 def start_mlflow(config, mlflow_args):
     if not mlflow_args.disable_mlflow:
@@ -167,10 +170,8 @@ def load_svm_as_csr_numpy(path, use_softmax):
 def is_ec2_instance():
     """Check if an instance is running on EC2 by trying to retrieve ec2 metadata."""
     result = False
-    # See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html
-    meta = "http://169.254.169.254/latest/meta-data/public-ipv4"
     try:
-        result = urlopen(meta).status == 200
+        result = urlopen(AWS_METADATA_URL).status == 200
     except ConnectionError:
         return result
     return result
