@@ -145,9 +145,9 @@ class MeanSquaredErrorMetric final : public Metric {
   std::string getName() final { return name; }
 
  private:
-  template <bool DENSE, bool LABEL_DENSE>
+  template <bool OUTPUT_DENSE, bool LABEL_DENSE>
   float computeMSE(const BoltVector& output, const BoltVector& labels) {
-    if (DENSE || LABEL_DENSE) {
+    if constexpr (OUTPUT_DENSE || LABEL_DENSE) {
       // If either vector is dense then we need to iterate over the full
       // dimension from the layer.
       uint32_t dim = std::max(output.len, labels.len);
@@ -155,7 +155,7 @@ class MeanSquaredErrorMetric final : public Metric {
       float error = 0.0;
       for (uint32_t i = 0; i < dim; i++) {
         float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-        float act = output.findActiveNeuron<DENSE>(i).activation;
+        float act = output.findActiveNeuron<OUTPUT_DENSE>(i).activation;
         float delta = label - act;
         error += delta * delta;
       }
@@ -164,25 +164,28 @@ class MeanSquaredErrorMetric final : public Metric {
 
     // If both are sparse then we need to iterate over the nonzeros from both
     // vectors. To avoid double counting the overlapping neurons we avoid
-    // computing the error while iterating over the output active_neurons, if
-    // the labels also contain the same active_neuron.
-
+    // computing the error while iterating over the labels for neurons that are
+    // also in the output active neurons.
     float error = 0.0;
     for (uint32_t i = 0; i < output.len; i++) {
-      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-      if (label > 0.0) {
-        continue;
-      }
-      float act = output.findActiveNeuron<DENSE>(i).activation;
+      float label =
+          labels.findActiveNeuron<LABEL_DENSE>(output.active_neurons[i])
+              .activation;
+      float act = output.activations[i];
       float delta = label - act;
       error += delta * delta;
     }
 
     for (uint32_t i = 0; i < labels.len; i++) {
-      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-      float act = output.findActiveNeuron<DENSE>(i).activation;
-      float delta = label - act;
-      error += delta * delta;
+      auto output_neuron =
+          output.findActiveNeuron<OUTPUT_DENSE>(labels.active_neurons[i]);
+      // Skip any neurons that were in the active neuron set since the loss was
+      // already computed for them.
+      if (!output_neuron.pos) {
+        float label = labels.activations[i];
+        // The activation is 0 since this isn't in the output active neurons.
+        error += label * label;
+      }
     }
     return error;
   }
@@ -394,7 +397,7 @@ class FMeasure final : public Metric {
   }
 
   static bool isFMeasure(const std::string& name) {
-    return std::regex_match(name, std::regex("f_measure\\(0\\.\\d+\\)"));
+    return std::regex_match(name, std::regex(R"(f_measure\(0\.\d+\))"));
   }
 
   static std::shared_ptr<Metric> make(const std::string& name) {
