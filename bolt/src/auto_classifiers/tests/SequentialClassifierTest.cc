@@ -94,7 +94,7 @@ void assert_percentage_significance(
   // assert the values are sorted in descending order of absolute values.
   bool isSorted = std::is_sorted(
       percentage_significances.begin(), percentage_significances.end(),
-      [](float pair1, float pair2) { return abs(pair1) > abs(pair2); });
+      [](float pair1, float pair2) { return abs(pair1) >= abs(pair2); });
 
   ASSERT_TRUE(isSorted);
 
