@@ -1,31 +1,37 @@
 # TODO(josh): Add back mach benchmark
 
 import argparse
+import os
+import sys
 import toml
+
+from thirdai import bolt, dataset
+
+sys.path.append(str(pathlib.Path(__file__).parent.resolve()) + "/..")
 from utils import (
+    build_arg_parser,
+    start_experiment,
     start_mlflow,
     verify_mlflow_args,
     find_full_filepath,
+    load_config,
     log_single_epoch_training_metrics,
     log_prediction_metrics,
+    mlflow_is_enabled,
     config_get,
 )
-from thirdai import bolt, dataset
-import numpy as np
 
 
 def main():
-    parser = build_arg_parser()
-    args = parser.parse_args()
 
-    verify_mlflow_args(parser, mlflow_args=args)
-
-    config = toml.load(args.config_path)
+    config, args = start_experiment(
+        description="Creates, trains, and tests a bolt network on the specified config."
+    )
 
     model = load_and_compile_model(config)
     datasets = load_all_datasets(config)
     start_mlflow(config, mlflow_args=args)
-    run_experiment(model, datasets, config, use_mlflow=not args.disable_mlflow)
+    run_experiment(model, datasets, config, use_mlflow=mlflow_is_enabled(args))
 
 
 def load_and_compile_model(model_config):

@@ -223,6 +223,9 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))
+#if THIRDAI_EXPOSE_ALL
+      .def("hyperparameters", &SequentialClassifier::hyperparameters)
+#endif
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
            py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1);

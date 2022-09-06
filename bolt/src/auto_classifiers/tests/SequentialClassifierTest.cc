@@ -61,8 +61,8 @@ TEST(SequentialClassifierTest, TestLoadSave) {
   auto loaded_model_results =
       new_classifier->predict(test_file_name, /* metrics= */ {"recall@1"});
 
-  ASSERT_EQ(original_model_results.first["recall@1"],
-            loaded_model_results.first["recall@1"]);
+  ASSERT_EQ(original_model_results["recall@1"],
+            loaded_model_results["recall@1"]);
 
   std::remove(train_file_name);
   std::remove(test_file_name);

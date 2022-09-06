@@ -1,17 +1,26 @@
 #pragma once
 
+#include <cereal/types/variant.hpp>
 #include "SequentialUtils.h"
 #include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/Metric.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
+#include <variant>
+
+namespace thirdai::bolt {
+using HyperparameterMap =
+    std::unordered_map<std::string, std::variant<uint32_t, float, std::string>>;
+}  // namespace thirdai::bolt
 
 namespace thirdai::bolt::sequential_classifier {
 
@@ -53,9 +62,9 @@ class SequentialClassifier {
     _schema.sequential = toSeqQuadruplets(sequential);
   }
 
-  void train(const std::string& train_filename, uint32_t epochs,
-             float learning_rate,
-             std::vector<std::string> metrics = {"recall@1"}) {
+  MetricData train(const std::string& train_filename, uint32_t epochs,
+                   float learning_rate,
+                   std::vector<std::string> metrics = {"recall@1"}) {
     auto pipeline = Pipeline::buildForFile(_schema, _state, train_filename,
                                            /* delimiter = */ ',',
                                            /* for_training = */ true);
@@ -82,10 +91,30 @@ class SequentialClassifier {
                                 /* epochs= */ epochs)
             .withMetrics(std::move(metrics));
 
-    _model->train({train_data}, train_labels, train_config);
+    _hyperparameters["hidden_dim"] = static_cast<uint32_t>(512);
+    _hyperparameters["hidden_sparsity"] = static_cast<float>(1.0);
+    _hyperparameters["hidden_activation"] = "relu";
+    _hyperparameters["output_dim"] =
+        static_cast<uint32_t>(pipeline.getLabelDim());
+    _hyperparameters["output_sparsity"] = static_cast<float>(output_sparsity);
+    _hyperparameters["output_activation"] = "softmax";
+    _hyperparameters["output_num_tables"] = static_cast<uint32_t>(64);
+    _hyperparameters["output_hashes_per_table"] = static_cast<uint32_t>(4);
+    _hyperparameters["output_reservoir_size"] = static_cast<uint32_t>(64);
+    _hyperparameters["loss_function"] = "categorical_cross_entropy";
+    _hyperparameters["batch_size"] =
+        static_cast<uint32_t>(train_data->batchSize());
+    _hyperparameters["reconstruct_hash_function_batch_interval"] =
+        train_config.getReconstructHashFunctionsBatchInterval(
+            train_data->batchSize(), train_data->len());
+    _hyperparameters["rebuild_hash_tables_batch_interval"] =
+        train_config.getRebuildHashTablesBatchInterval(train_data->batchSize(),
+                                                       train_data->len());
+
+    return _model->train({train_data}, train_labels, train_config);
   }
 
-  InferenceResult predict(
+  InferenceMetricData predict(
       const std::string& test_filename,
       std::vector<std::string> metrics = {"recall@1"},
       const std::optional<std::string>& output_filename = std::nullopt,
@@ -135,7 +164,15 @@ class SequentialClassifier {
       output_file->close();
     }
 
-    return results;
+    return results.first;
+  }
+
+  HyperparameterMap hyperparameters() {
+    if (!_model) {
+      throw std::runtime_error("Called hyperparameters() before training.");
+    }
+
+    return _hyperparameters;
   }
 
   void save(const std::string& filename) {
@@ -182,6 +219,7 @@ class SequentialClassifier {
   Schema _schema;
   DataState _state;
   BoltGraphPtr _model;
+  HyperparameterMap _hyperparameters;
 
   // Private constructor for cereal
   SequentialClassifier() {}
@@ -190,7 +228,7 @@ class SequentialClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_schema, _state, _model);
+    archive(_schema, _state, _model, _hyperparameters);
   }
 };
 
