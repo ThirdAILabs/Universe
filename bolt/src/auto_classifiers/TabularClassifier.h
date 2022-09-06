@@ -74,10 +74,11 @@ class TabularClassifier {
     auto [gradients_indices, gradients_ratios] =
         _classifier->getInputGradientSingle({input});
 
-    RootCauseAnalysis explanation(getInputBlocks());
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
 
-    auto result = explanation.getPercentExplanationWithColumnNames(
-        gradients_ratios, *gradients_indices, _metadata->getColNumToColName());
+    auto result = getPercentExplanationWithColumnNames(
+        gradients_ratios, *gradients_indices, _metadata->getColNumToColName(),batch_processor);
 
     return result;
   }
@@ -146,13 +147,6 @@ class TabularClassifier {
     return std::make_shared<dataset::GenericBatchProcessor>(
         /* input_blocks = */ input_blocks,
         /* target_blocks = */ target_blocks, /* has_header = */ true);
-  }
-
-  Blocks getInputBlocks() {
-    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
-        makeTabularBatchProcessor();
-
-    return batch_processor->getInputBlocks();
   }
 
   BoltVector makeInputVector(std::vector<std::string>& values) {
