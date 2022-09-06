@@ -150,7 +150,7 @@ class UserItemHistoryBlock final : public Block {
   }
 
   // have to see which one to send in case of multiple columns.
-  uint32_t getColumnNum() const final { return _user_col; }
+  uint32_t getColumnNum() const final { return _item_col; }
 
  protected:
   std::exception_ptr buildSegment(
