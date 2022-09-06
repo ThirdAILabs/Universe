@@ -109,7 +109,7 @@ class StopOnFifthEpoch(bolt.graph.callbacks.Callback):
     def on_epoch_end(self, model):
         self.epoch_count += 1
 
-    def should_stop_training(self, model):
+    def should_stop_training(self):
         if self.epoch_count == 5:
             return True
         return False
