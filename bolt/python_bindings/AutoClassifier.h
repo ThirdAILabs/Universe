@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ConversionUtils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <dataset/src/DataLoader.h>
@@ -51,11 +52,10 @@ class AutoClassifierBase {
     if (max_in_memory_batches) {
       trainOnStream(dataset, learning_rate, epochs,
                     max_in_memory_batches.value());
-    } else {
-      auto [train_data, train_labels] = dataset.loadInMemory();
-
-      trainInMemory(train_data, train_labels, learning_rate, epochs);
     }
+
+    auto [train_data, train_labels] = dataset.loadInMemory();
+    trainInMemory(train_data, train_labels, learning_rate, epochs);
   }
 
   py::object predict(const std::string& filename) {
@@ -78,7 +78,7 @@ class AutoClassifierBase {
       predict_cfg.enableSparseInference();
     }
 
-    auto [_, output] = _model->predict({data}, {labels}, predict_cfg);
+    auto [metrics, output] = _model->predict({data}, {labels}, predict_cfg);
 
     if (_return_mode == ReturnMode::NumpyArrayWithThresholding) {
       thresholdActivations(output, _threshold);
@@ -87,9 +87,9 @@ class AutoClassifierBase {
     switch (_return_mode) {
       case ReturnMode::NumpyArray:
       case ReturnMode::NumpyArrayWithThresholding:
-        return constructNumpyActivationsArrays(output);
+        return constructNumpyActivationsArrays(metrics, output);
       case ReturnMode::ClassName:
-        return getClassNames(output);
+        return py::make_tuple(py::cast(metrics), getClassNames(output));
     }
   }
 
@@ -199,7 +199,7 @@ class AutoClassifierBase {
 
  private:
   static py::object constructNumpyActivationsArrays(
-      InferenceOutputTracker& output) {
+      InferenceMetricData& metrics, InferenceOutputTracker& output) {
     uint32_t num_samples = output.numSamples();
     uint32_t inference_dim = output.numNonzerosInOutput();
     py::object output_handle = py::cast(std::move(output));
@@ -208,22 +208,12 @@ class AutoClassifierBase {
         output.getNonowningActiveNeuronPointer();
     const float* activations_ptr = output.getNonowningActivationPointer();
 
-    py::array_t<float, py::array::c_style | py::array::forcecast>
-        activations_array({num_samples, inference_dim},
-                          {inference_dim * sizeof(float), sizeof(float)},
-                          activations_ptr, output_handle);
-
-    if (active_neurons_ptr == nullptr) {
-      // This is not a move on return because we are constructing a py::object.
-      return std::move(activations_array);
-    }
-
-    py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
-        active_neurons_array(
-            {num_samples, inference_dim},
-            {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
-            active_neurons_ptr, output_handle);
-    return py::make_tuple(active_neurons_array, active_neurons_array);
+    return constructPythonInferenceTuple(
+        py::cast(metrics), /* num_samples= */ num_samples,
+        /* inference_dim= */ inference_dim, /* activations= */ activations_ptr,
+        /* active_neurons= */ active_neurons_ptr,
+        /* activation_handle= */ output_handle,
+        /* active_neuron_handle= */ output_handle);
   }
 
   static void thresholdActivations(InferenceOutputTracker& output,
