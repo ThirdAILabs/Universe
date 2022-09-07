@@ -1,17 +1,16 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>
-#include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/encodings/text/TextEncodingUtils.h>
+#include <dataset/src/utils/TextEncodingUtils.h>
 #include <random>
 #include <unordered_map>
 
 namespace thirdai::dataset {
 
 class MaskedSentenceBatchProcessor final
-    : public BatchProcessor<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch> {
+    : public BatchProcessor<BoltBatch, BoltBatch, BoltBatch> {
  public:
   explicit MaskedSentenceBatchProcessor(uint32_t output_range)
       : _output_range(output_range),
@@ -19,11 +18,11 @@ class MaskedSentenceBatchProcessor final
             /* key= */ "[UNK]", /* len= */ 5)),
         _rand(723204) {}
 
-  std::tuple<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch> createBatch(
+  std::tuple<BoltBatch, BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
-    std::vector<bolt::BoltVector> vectors(rows.size());
-    std::vector<std::vector<uint32_t>> masked_indices(rows.size());
-    std::vector<bolt::BoltVector> labels(rows.size());
+    std::vector<BoltVector> vectors(rows.size());
+    std::vector<BoltVector> masked_indices(rows.size());
+    std::vector<BoltVector> labels(rows.size());
 
 #pragma omp parallel for default(none) \
     shared(rows, vectors, masked_indices, labels)
@@ -34,9 +33,9 @@ class MaskedSentenceBatchProcessor final
       labels[i] = std::move(label);
     }
 
-    return std::make_tuple(bolt::BoltBatch(std::move(vectors)),
-                           BoltTokenBatch(std::move(masked_indices)),
-                           bolt::BoltBatch(std::move(labels)));
+    return std::make_tuple(BoltBatch(std::move(vectors)),
+                           BoltBatch(std::move(masked_indices)),
+                           BoltBatch(std::move(labels)));
   }
 
   bool expectsHeader() const final { return false; }
@@ -48,7 +47,7 @@ class MaskedSentenceBatchProcessor final
   }
 
  private:
-  std::tuple<bolt::BoltVector, uint32_t, bolt::BoltVector> processRow(
+  std::tuple<BoltVector, BoltVector, BoltVector> processRow(
       const std::string& row) {
     auto unigrams = TextEncodingUtils::computeRawUnigrams(row);
 
@@ -73,13 +72,10 @@ class MaskedSentenceBatchProcessor final
       }
     }
 
-    bolt::BoltVector label(1, false, false);
-    label.active_neurons[0] = word_id;
-    label.activations[0] = 1.0;
-
     return {TextEncodingUtils::computePairgramsFromUnigrams(unigrams,
                                                             _output_range),
-            masked_index, std::move(label)};
+            BoltVector::singleElementSparseVector(masked_index),
+            BoltVector::singleElementSparseVector(word_id)};
   }
 
   std::unordered_map<uint32_t, uint32_t> _word_hashes_to_ids;

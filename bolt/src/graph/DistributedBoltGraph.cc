@@ -3,7 +3,6 @@
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
-#include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <utility>
@@ -13,8 +12,7 @@ namespace thirdai::bolt {
 
 void DistributedTrainingContext::calculateGradientSingleNode(
     uint32_t batch_idx) {
-  _train_context.setInputs(batch_idx, _bolt_graph->_inputs,
-                           _bolt_graph->_token_inputs);
+  _train_context.setInputs(batch_idx, _bolt_graph._inputs);
   const BoltBatch& batch_labels = _train_context.labels()->at(batch_idx);
   _bolt_graph->processTrainingBatch(batch_labels, _metrics);
 }

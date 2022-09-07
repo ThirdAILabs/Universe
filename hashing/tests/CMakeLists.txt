@@ -9,6 +9,7 @@ add_library(
 target_link_libraries(
   lsh_test_helper_lib
   PRIVATE
+  OpenMP::OpenMP_CXX
   gtest_main
 )
 
@@ -42,6 +43,7 @@ set(
   hash_function_lib
   lsh_test_helper_lib
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 target_link_libraries(
@@ -74,8 +76,14 @@ target_link_libraries(
   ${LIBS}
 )
 
-gtest_discover_tests(murmurhash_test)
-gtest_discover_tests(universalhash_test)
-gtest_discover_tests(srp_test)
-gtest_discover_tests(fast_srp_test)
-gtest_discover_tests(densified_minhash_test)
+set(HASHING_TESTS
+  murmurhash_test
+  universalhash_test
+  srp_test
+  fast_srp_test
+  densified_minhash_test
+)
+
+foreach(HASHING_TEST IN LISTS HASHING_TESTS)
+  gtest_discover_tests(${HASHING_TEST} DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+endforeach()

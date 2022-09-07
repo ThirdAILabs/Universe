@@ -6,15 +6,13 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
-#include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
-#include <dataset/src/encodings/text/PairGram.h>
 #include <chrono>
 #include <cstdint>
 #include <exception>
@@ -72,7 +70,7 @@ class MultiLabelTextClassifier {
                       .withRebuildHashTables(10000)
                       .withReconstructHashFunctions(50000);
 
-    _classifier->train({train_data}, {}, train_labels, config);
+    _classifier->train({train_data}, train_labels, config);
   }
 
   InferenceResult predict(const std::string& filename,
@@ -88,7 +86,7 @@ class MultiLabelTextClassifier {
 
     auto config = PredictConfig::makeConfig().withMetrics(metrics);
 
-    return _classifier->predict({pred_data}, {}, pred_labels, config);
+    return _classifier->predict({pred_data}, pred_labels, config);
   }
 
   BoltVector predictSingleFromSentence(std::string sentence,
@@ -107,7 +105,7 @@ class MultiLabelTextClassifier {
     }
 
     BoltVector output =
-        _classifier->predictSingle({input_vector}, {},
+        _classifier->predictSingle({input_vector},
                                    /* use_sparse_inference = */ false);
 
     assert(output.isDense());
@@ -154,7 +152,9 @@ class MultiLabelTextClassifier {
     return deserialize_into;
   }
 
- protected:
+  uint32_t numClasses() const { return _n_classes; }
+
+ private:
   static float getOutputSparsity(uint32_t output_dim) {
     /*
       For smaller output layers, we return a sparsity
@@ -186,38 +186,17 @@ class MultiLabelTextClassifier {
   }
 
   void buildBatchProcessors(uint32_t n_classes) {
-    _labeled_processor = std::make_shared<dataset::GenericBatchProcessor>(
-        buildInputBlocks(/* no_label= */ false),
-        buildLabelBlocks(/* no_label= */ false, n_classes),
+    _labeled_processor = dataset::GenericBatchProcessor::make(
+        /* input_blocks= */ {dataset::PairGramTextBlock::make(/* col= */ 1)},
+        /* label_blocks= */
+        {dataset::NumericalCategoricalBlock::make(
+            /* col= */ 0, /* n_classes= */ n_classes, /* delimiter= */ ',')},
         /* has_header= */ false, /* delimiter= */ '\t');
 
-    _unlabeled_processor = std::make_shared<dataset::GenericBatchProcessor>(
-        buildInputBlocks(/* no_label= */ true),
-        buildLabelBlocks(/* no_label= */ true),
+    _unlabeled_processor = dataset::GenericBatchProcessor::make(
+        /* input_blocks= */ {dataset::PairGramTextBlock::make(/* col= */ 0)},
+        /* label_blocks= */ {},
         /* has_header= */ false, /* delimiter= */ '\t');
-  }
-
-  static std::vector<dataset::BlockPtr> buildInputBlocks(bool no_label) {
-    auto pairgram_encoding =
-        std::make_shared<dataset::PairGram>(/* dim= */ 100000);
-    uint32_t column = no_label ? 0 : 1;
-    return {std::make_shared<dataset::TextBlock>(column, pairgram_encoding)};
-  }
-
-  static std::vector<dataset::BlockPtr> buildLabelBlocks(
-      bool no_label, uint32_t n_classes = 0) {
-    if (!no_label && n_classes == 0) {
-      throw std::invalid_argument(
-          "buildLabelBlocks: Must pass n_classes if not for single inference.");
-    }
-    if (no_label) {
-      return {};
-    }
-    auto multi_label_encoding =
-        std::make_shared<dataset::CategoricalMultiLabel>(
-            /* n_classes= */ n_classes, /* delimiter= */ ',');
-    return {std::make_shared<dataset::CategoricalBlock>(
-        /* col= */ 0, /* encoding= */ multi_label_encoding)};
   }
 
   static std::string tokensToSentence(const std::vector<uint32_t>& tokens) {

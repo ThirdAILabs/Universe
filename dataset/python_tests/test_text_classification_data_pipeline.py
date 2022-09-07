@@ -2,7 +2,6 @@ import pytest
 import os
 from thirdai.dataset import DataPipeline
 from thirdai.dataset import blocks
-from thirdai.dataset import text_encodings
 from thirdai import bolt, dataset
 import numpy as np
 
@@ -19,68 +18,53 @@ def generate_text_classification_dataset(filename, delim):
                 f.write(f"2{delim}neutral stuff\n")
 
 
-def helper_for_text_classification_data_pipeline(text_encoding, delim):
+def helper_for_text_classification_data_pipeline(text_block, delim):
     file = "test_text_classification.csv"
     generate_text_classification_dataset(file, delim)
     pipeline = DataPipeline(
         file,
         batch_size=256,
-        input_blocks=[blocks.Text(1, text_encoding)],
-        label_blocks=[blocks.Categorical(0, 3)],
+        input_blocks=[text_block],
+        label_blocks=[blocks.NumericalId(col=0, n_classes=3)],
         delimiter=delim,
     )
     [data, labels] = pipeline.load_in_memory()
 
-    layers = [
-        bolt.FullyConnected(
-            dim=1000,
-            sparsity=0.1,
-            activation_function="relu",
-        ),
-        bolt.FullyConnected(dim=3, activation_function="softmax"),
-    ]
+    input_layer = bolt.graph.Input(dim=pipeline.get_input_dim())
+    hidden_layer = bolt.graph.FullyConnected(dim=1000, sparsity=0.1, activation="relu")(
+        input_layer
+    )
+    output_layer = bolt.graph.FullyConnected(dim=3, activation="softmax")(hidden_layer)
 
-    network = bolt.Network(layers=layers, input_dim=pipeline.get_input_dim())
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model.compile(bolt.CategoricalCrossEntropyLoss())
 
-    learning_rate = 0.001
-    epochs = 1
-    for i in range(epochs):
-        network.train(
-            train_data=data,
-            train_labels=labels,
-            loss_fn=bolt.CategoricalCrossEntropyLoss(),
-            learning_rate=learning_rate,
-            epochs=1,
-            verbose=False,
-        )
-        metrics, preds = network.predict(
-            test_data=data,
-            test_labels=labels,
-            metrics=["categorical_accuracy"],
-            verbose=False,
-        )
-    assert metrics["categorical_accuracy"] > 0.9
+    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=1).silence()
+    model.train(data, labels, train_cfg)
+
+    predict_cfg = (
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+    )
+    metrics = model.predict(data, labels, predict_cfg)
+
+    assert metrics[0]["categorical_accuracy"] > 0.9
 
     os.remove(file)
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_unigrams():
-    helper_for_text_classification_data_pipeline(text_encodings.UniGram(100_000), ",")
-    helper_for_text_classification_data_pipeline(text_encodings.UniGram(100_000), "\t")
+    helper_for_text_classification_data_pipeline(blocks.TextUniGram(col=1), ",")
+    helper_for_text_classification_data_pipeline(blocks.TextUniGram(col=1), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_pairgrams():
-    helper_for_text_classification_data_pipeline(text_encodings.PairGram(100_000), ",")
-    helper_for_text_classification_data_pipeline(text_encodings.PairGram(100_000), "\t")
+    helper_for_text_classification_data_pipeline(blocks.TextPairGram(col=1), ",")
+    helper_for_text_classification_data_pipeline(blocks.TextPairGram(col=1), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_chartrigrams():
-    helper_for_text_classification_data_pipeline(
-        text_encodings.CharKGram(3, 100_000), ","
-    )
-    helper_for_text_classification_data_pipeline(
-        text_encodings.CharKGram(3, 100_000), "\t"
-    )
+    helper_for_text_classification_data_pipeline(blocks.TextCharKGram(col=1, k=3), ",")
+    helper_for_text_classification_data_pipeline(blocks.TextCharKGram(col=1, k=3), "\t")

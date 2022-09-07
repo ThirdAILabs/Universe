@@ -1,4 +1,4 @@
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <algorithm>
@@ -103,7 +103,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
   std::uniform_int_distribution<uint32_t> _dense_feature_dist;
   std::uniform_int_distribution<uint32_t> _categorical_feature_dist;
 
-  void verifySparseLabelBatch(const bolt::BoltBatch& labels,
+  void verifySparseLabelBatch(const BoltBatch& labels,
                               uint32_t label_count_base) {
     ASSERT_TRUE(labels.getBatchSize() == _batch_size ||
                 labels.getBatchSize() == _num_vectors % _batch_size);
@@ -116,7 +116,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     }
   }
 
-  void verifyDenseInputBatch(const bolt::BoltBatch& dense_inputs,
+  void verifyDenseInputBatch(const BoltBatch& dense_inputs,
                              uint32_t vec_count_base) {
     ASSERT_TRUE(dense_inputs.getBatchSize() == _batch_size ||
                 dense_inputs.getBatchSize() == _num_vectors % _batch_size);
@@ -131,15 +131,24 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     }
   }
 
-  void verifyTokenBatch(const BoltTokenBatch& tokens, uint32_t vec_count_base) {
+  void verifyTokenBatch(const BoltBatch& tokens, uint32_t vec_count_base) {
     ASSERT_TRUE(tokens.getBatchSize() == _batch_size ||
                 tokens.getBatchSize() == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < tokens.getBatchSize(); v++) {
-      ASSERT_EQ(tokens[v].size(), getNumCategoricalFeatures());
-      for (uint32_t i = 0; i < tokens[v].size(); i++) {
-        ASSERT_EQ(tokens[v].at(i), _ground_truths_vectors.at(vec_count_base + v)
-                                       .categorical_features.at(i));
+      EXPECT_EQ(tokens[v].len, getNumCategoricalFeatures());
+      for (uint32_t i = 0; i < tokens[v].len; i++) {
+        uint32_t correct_token = _ground_truths_vectors.at(vec_count_base + v)
+                                     .categorical_features.at(i);
+        ASSERT_EQ(tokens[v].active_neurons[i], correct_token);
+
+        // 0 tokens are input as empty cells to test handling of missing data.
+        // They are added as tokens with value 0.0 in the dataset.
+        if (correct_token != 0) {
+          ASSERT_EQ(tokens[v].activations[i], 1.0);
+        } else {
+          ASSERT_EQ(tokens[v].activations[i], 0.0);
+        }
       }
     }
   }
@@ -153,10 +162,12 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTestSparseLabel) {
-  auto [dense_inputs, tokens, labels] = ClickThroughDatasetLoader::loadDataset(
-      _filename, _batch_size, /* num_dense_features= */ getNumDenseFeatures(),
-      /* max_num_categorical_features= */ getNumCategoricalFeatures(),
-      /* delimiter= */ '\t');
+  auto [dense_inputs, tokens, labels] =
+      ClickThroughDatasetLoader::loadDatasetFromFile(
+          _filename, _batch_size,
+          /* num_dense_features= */ getNumDenseFeatures(),
+          /* max_num_categorical_features= */ getNumCategoricalFeatures(),
+          /* delimiter= */ '\t');
 
   uint32_t label_count = 0;
   for (const auto& batch : *labels) {

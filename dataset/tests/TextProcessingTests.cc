@@ -4,7 +4,7 @@
 #include <dataset/src/StreamingDataset.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/batch_processors/TextClassificationProcessor.h>
-#include <dataset/src/encodings/text/TextEncodingUtils.h>
+#include <dataset/src/utils/TextEncodingUtils.h>
 #include <unordered_map>
 
 namespace thirdai::dataset::tests {
@@ -41,7 +41,7 @@ std::unordered_map<uint32_t, uint32_t> pairgram_hashes_as_map(
   return pairgrams;
 }
 
-void checkPairgramVector(const bolt::BoltVector& vector,
+void checkPairgramVector(const BoltVector& vector,
                          const std::vector<std::string>& words) {
   auto unigrams = unigram_hashes_from_words(words);
   auto pairgrams = pairgram_hashes_as_map(unigrams, RANGE);
@@ -58,7 +58,7 @@ void checkPairgramVector(const bolt::BoltVector& vector,
   ASSERT_EQ(pairgrams.size(), 0);
 }
 
-void checkPairgramVector(const bolt::BoltVector& vector,
+void checkPairgramVector(const BoltVector& vector,
                          std::unordered_map<uint32_t, uint32_t> pairgrams) {
   ASSERT_EQ(vector.len, pairgrams.size());
 
@@ -156,7 +156,7 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
 
   for (uint32_t i = 0; i < 4; i++) {
     auto unigrams = unigram_hashes_from_words(words[i]);
-    uint32_t masked_index = masked_indices[i].at(0);
+    uint32_t masked_index = masked_indices[i].active_neurons[0];
     uint32_t masked_word_hash = unigrams[masked_index];
     unigrams[masked_index] = unknown_hash;
 

@@ -6,7 +6,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "utils/SafeFileIO.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -28,6 +28,8 @@ class DatasetBase {
   virtual uint64_t batchSize(uint64_t batch_idx) const = 0;
 
   virtual uint64_t numBatches() const = 0;
+
+  virtual ~DatasetBase() = default;
 
  private:
   friend class cereal::access;
@@ -141,5 +143,4 @@ class InMemoryDataset : public DatasetBase {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(
-    thirdai::dataset::InMemoryDataset<thirdai::bolt::BoltBatch>)
+CEREAL_REGISTER_TYPE(thirdai::dataset::InMemoryDataset<thirdai::BoltBatch>)

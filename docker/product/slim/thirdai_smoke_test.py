@@ -4,10 +4,7 @@ import pytest
 def test_bolt_smoke():
     from thirdai import bolt, search
 
-    bolt.Network(
-        layers=[bolt.FullyConnected(dim=256, activation_function="relu")],
-        input_dim=10,
-    )
+    bolt.graph.Model(inputs=[], output=None)
 
 
 def test_docsearch_smoke():

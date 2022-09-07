@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ProcessorUtils.h"
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
@@ -12,14 +12,15 @@
 
 namespace thirdai::dataset {
 
-class GenericBatchProcessor
-    : public BatchProcessor<bolt::BoltBatch, bolt::BoltBatch> {
+class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
  public:
   GenericBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                         std::vector<std::shared_ptr<Block>> label_blocks,
-                        bool has_header = false, char delimiter = ',')
+                        bool has_header = false, char delimiter = ',',
+                        bool parallel = true)
       : _expects_header(has_header),
         _delimiter(delimiter),
+        _parallel(parallel),
         _expected_num_cols(0),
         _input_blocks_dense(
             std::all_of(input_blocks.begin(), input_blocks.end(),
@@ -52,10 +53,10 @@ class GenericBatchProcessor
     }
   }
 
-  std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
+  std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
-    std::vector<bolt::BoltVector> batch_inputs(rows.size());
-    std::vector<bolt::BoltVector> batch_labels(rows.size());
+    std::vector<BoltVector> batch_inputs(rows.size());
+    std::vector<BoltVector> batch_labels(rows.size());
 
     /*
       These variables keep track of the presence of an erroneous input line.
@@ -65,8 +66,9 @@ class GenericBatchProcessor
     std::exception_ptr num_columns_error;
     std::exception_ptr block_err;
 
-#pragma omp parallel for default(none) \
-    shared(rows, batch_inputs, batch_labels, num_columns_error, block_err)
+#pragma omp parallel for default(none)                          \
+    shared(rows, batch_inputs, batch_labels, num_columns_error, \
+           block_err) if (_parallel)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
@@ -99,8 +101,8 @@ class GenericBatchProcessor
       std::rethrow_exception(num_columns_error);
     }
 
-    return std::make_tuple(bolt::BoltBatch(std::move(batch_inputs)),
-                           bolt::BoltBatch(std::move(batch_labels)));
+    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
+                           BoltBatch(std::move(batch_labels)));
   }
 
   bool expectsHeader() const final { return _expects_header; }
@@ -112,13 +114,21 @@ class GenericBatchProcessor
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
   std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
-                                     bolt::BoltVector& vector) {
+                                     BoltVector& vector) {
     return makeVector(sample, vector, _input_blocks, _input_blocks_dense);
   }
 
   std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
-                                     bolt::BoltVector& vector) {
+                                     BoltVector& vector) {
     return makeVector(sample, vector, _label_blocks, _label_blocks_dense);
+  }
+
+  static std::shared_ptr<GenericBatchProcessor> make(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
+      char delimiter = ',', bool parallel = true) {
+    return std::make_shared<GenericBatchProcessor>(
+        input_blocks, label_blocks, has_header, delimiter, parallel);
   }
 
  private:
@@ -126,7 +136,7 @@ class GenericBatchProcessor
    * Encodes a sample as a BoltVector according to the given blocks.
    */
   static std::exception_ptr makeVector(
-      std::vector<std::string_view>& sample, bolt::BoltVector& vector,
+      std::vector<std::string_view>& sample, BoltVector& vector,
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
     std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
@@ -171,6 +181,7 @@ class GenericBatchProcessor
 
   bool _expects_header;
   char _delimiter;
+  bool _parallel;
 
   uint32_t _expected_num_cols;
   bool _input_blocks_dense;

@@ -2,19 +2,6 @@ from thirdai import bolt, dataset
 import numpy as np
 import os
 
-# Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
-def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, sparsity):
-    layers = [
-        bolt.FullyConnected(
-            dim=sparse_dim,
-            sparsity=sparsity,
-            activation_function="ReLU",
-        ),
-        bolt.FullyConnected(dim=output_dim, activation_function="Softmax"),
-    ]
-    network = bolt.Network(layers=layers, input_dim=input_dim)
-    return network
-
 
 # Generates easy training data: the ground truth function is f(x_i) = i, where
 # x_i is the one hot encoding of i. Thus the input and output dimension are both
@@ -59,22 +46,6 @@ def get_categorical_acc(network, examples, labels, batch_size=64):
         examples, labels, batch_size, metrics=["categorical_accuracy"], verbose=False
     )
     return acc["categorical_accuracy"]
-
-
-# Returns a single layer (no hidden layer) bolt network with
-# input_dim = output_dim, 50% sparsity by default, and a Softmax activation
-# function.
-def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
-
-    layers = [
-        bolt.FullyConnected(
-            dim=n_classes,
-            sparsity=sparsity,
-            activation_function="Softmax",
-        ),
-    ]
-    network = bolt.Network(layers=layers, input_dim=n_classes)
-    return network
 
 
 def train_single_node_distributed_network(
@@ -179,48 +150,52 @@ def compute_accuracy_with_file(test_labels, pred_file):
     ) / len(predictions)
 
 
-def gen_random_weights_simple_network(input_output_layer_dim, hidden_layer_dim):
-    w1 = np.random.randn(hidden_layer_dim, input_output_layer_dim).astype(np.float32)
-    w2 = np.random.randn(input_output_layer_dim, hidden_layer_dim).astype(np.float32)
-    return w1, w2
-
-
-def gen_random_bias_simple_network(output_layer_dim, hidden_layer_dim):
-    b1 = np.random.randn(hidden_layer_dim).astype(np.float32)
-    b2 = np.random.randn(output_layer_dim).astype(np.float32)
-    return b1, b2
-
-
-# given a numpy vector we create bunch of numpy vectors from it by adding delta(0.001) at each index
-# seperately and creating a bolt dataset from these created numpy vectors.
-def get_perturbed_dataset(numpy_input):
-    perturbed_vectors = []
-    for i in range(len(numpy_input)):
-        """
-        We are making a copy because in python assign operation makes two variables to point
-        to same address space, and we only want to modify one and keep the other same.
-        """
-        vec = np.array(numpy_input)
-        vec[i] = vec[i] + 0.001
-        perturbed_vectors.append(vec)
-    perturbed_vectors = np.array(perturbed_vectors)
-    perturbed_dataset = dataset.from_numpy(
-        perturbed_vectors, batch_size=len(numpy_input)
-    )
-    return perturbed_dataset
-
-
-# get the activation difference at particular label from all the perturbed_activations
-# with respect to normal_activation (activations of normal vector without any perturbation)
-# and assert the difference in activation are in same order of input gradients.
-def assert_activation_difference_and_gradients_in_same_order(
-    perturbed_activations, numpy_label, gradient_vector, normal_activation
+# Builds, trains, and does prediction on a model using numpy data and numpy
+# labels. The model must have the same input and output dimension. This function
+# returns the result of a call to model.predict.
+def build_train_and_predict_single_hidden_layer(
+    data_np,
+    labels_np,
+    input_output_dim,
+    output_sparsity,
+    optimize_sparse_sparse=False,
+    enable_sparse_inference=False,
+    batch_size=256,
+    epochs=3,
+    learning_rate=0.001,
 ):
-    act_difference_at_required_label = [
-        perturbed_act[numpy_label] - normal_activation[numpy_label]
-        for perturbed_act in perturbed_activations
-    ]
-    assert np.array_equal(
-        np.argsort(act_difference_at_required_label),
-        np.argsort(gradient_vector),
+    data = dataset.from_numpy((data_np), batch_size=batch_size)
+    labels = dataset.from_numpy(labels_np, batch_size=batch_size)
+
+    input_layer = bolt.graph.Input(dim=input_output_dim)
+    output_layer = bolt.graph.FullyConnected(
+        dim=input_output_dim,
+        activation="softmax",
+        sparsity=output_sparsity,
+        sampling_config=bolt.DWTASamplingConfig(
+            hashes_per_table=3, num_tables=64, reservoir_size=8
+        ),
+    )(input_layer)
+    if optimize_sparse_sparse:
+        output_layer.enable_sparse_sparse_optimization()
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model.compile(bolt.CategoricalCrossEntropyLoss())
+
+    train_config = bolt.graph.TrainConfig.make(
+        learning_rate=learning_rate, epochs=epochs
+    ).silence()
+
+    model.train(data, labels, train_config)
+
+    predict_config = (
+        bolt.graph.PredictConfig.make()
+        .with_metrics(["categorical_accuracy"])
+        .return_activations()
+        .silence()
     )
+
+    if enable_sparse_inference:
+        predict_config.enable_sparse_inference()
+
+    return model.predict(data, labels, predict_config)

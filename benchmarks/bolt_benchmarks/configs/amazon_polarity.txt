@@ -17,12 +17,14 @@ format = "svm"
 type_list = ["train_data", "train_labels"]
 path = "amazon_polarity/svm_train.txt"
 batch_size = 256
+use_s3_on_aws = true
 
 [[datasets]]
 format = "svm"
 type_list = ["test_data", "test_labels"]
 path = "amazon_polarity/svm_test.txt"
 batch_size = 256
+use_s3_on_aws = true
 
 
 [[nodes]]
@@ -38,6 +40,7 @@ dim = 10000
 activation = "ReLU"
 sparsity = 0.005
 use_default_sampling = true
+use_sparse_sparse_optimization = true
 
 [[nodes]]
 type = "FullyConnected"

@@ -67,6 +67,8 @@ class FullyConnectedNode final
 
   bool isInputNode() const final { return false; }
 
+  void initOptimizer() final { _layer->initOptimizer(); }
+
   ActivationFunction getActivationFunction() const {
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
@@ -182,6 +184,17 @@ class FullyConnectedNode final
           "getBiasGradientsPtr.");
     }
     return _layer->getBiasGradientsPtr();
+  }
+
+  void enableSparseSparseOptimization() {
+    // Exactly one of _config and _layer is guarenteed to have a value.
+    // Implementing an enableSparseSparseOptimization method in both places
+    // allows us to set it at any time (even before compilation).
+    if (_config.has_value()) {
+      _config->enableSparseSparseOptimization();
+    } else {
+      _layer->enableSparseSparseOptimization();
+    }
   }
 
   static std::shared_ptr<FullyConnectedNode> make(uint32_t dim,

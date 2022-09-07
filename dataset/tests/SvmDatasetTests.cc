@@ -114,7 +114,8 @@ class SvmDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
-  auto [data, labels] = SvmDatasetLoader::loadDataset(filename, batch_size);
+  auto [data, labels] =
+      SvmDatasetLoader::loadDatasetFromFile(filename, batch_size);
 
   // Check data vectors are correct.
   uint32_t vec_count = 0;
@@ -143,12 +144,11 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
     ASSERT_TRUE(batch.getBatchSize() == batch_size ||
                 batch.getBatchSize() == num_vectors % batch_size);
 
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      ASSERT_EQ(batch[v].len, _vectors.at(label_count).labels.size());
-      for (uint32_t i = 0; i < batch[v].len; i++) {
-        ASSERT_EQ(batch[v].active_neurons[i],
-                  _vectors.at(label_count).labels.at(i));
-        ASSERT_FLOAT_EQ(batch[v].activations[i],
+    for (const auto& vec : batch) {
+      ASSERT_EQ(vec.len, _vectors.at(label_count).labels.size());
+      for (uint32_t i = 0; i < vec.len; i++) {
+        ASSERT_EQ(vec.active_neurons[i], _vectors.at(label_count).labels.at(i));
+        ASSERT_FLOAT_EQ(vec.activations[i],
                         1.0 / _vectors.at(label_count).labels.size());
       }
 

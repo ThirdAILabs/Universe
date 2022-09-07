@@ -1,7 +1,7 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <queue>
 #include <stdexcept>
@@ -206,6 +206,8 @@ class Node {
 
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
+
+  virtual void initOptimizer() = 0;
 
   // Prints out a single line summary in the format
   // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...

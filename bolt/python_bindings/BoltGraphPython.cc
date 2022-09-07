@@ -5,15 +5,14 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Switch.h>
-#include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <pybind11/functional.h>
 #include <optional>
 
@@ -130,7 +129,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.");
+          "Returns a ParameterReference object to the bias gradients vector.")
+      .def("enable_sparse_sparse_optimization",
+           &FullyConnectedNode::enableSparseSparseOptimization);
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
@@ -185,11 +186,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Tells the graph which token input to use for this Embedding Node.");
 
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
-      .def(py::init<uint32_t>(), py::arg("dim"),
+      .def(py::init<uint32_t, std::optional<std::pair<uint32_t, uint32_t>>>(),
+           py::arg("dim"), py::arg("num_nonzeros_range") = std::nullopt,
            "Constructs an input layer node for the graph.");
-
-  py::class_<TokenInput, TokenInputPtr, Node>(graph_submodule, "TokenInput")
-      .def(py::init<>(), "Constructs a token input layer node for the graph.");
 
   py::class_<NormalizationLayerConfig>(graph_submodule, "LayerNormConfig")
       .def_static("make", &NormalizationLayerConfig::makeConfig)
@@ -209,7 +208,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("rebuild_hash_tables"))
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
-           py::arg("reconstruct_hash_functions"));
+           py::arg("reconstruct_hash_functions"))
+      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"));
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)
@@ -226,9 +226,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * inputs (List[Node]) - The input nodes to the graph. Note that "
            "inputs are mapped to input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
-      .def(py::init<std::vector<InputPtr>, std::vector<TokenInputPtr>,
-                    NodePtr>(),
-           py::arg("inputs"), py::arg("token_inputs"), py::arg("output"),
+      .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
+           py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"
            "Arguments:\n"
            " * inputs (List[InputNode]) - The input nodes to the graph. Note "
@@ -250,15 +249,13 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
              const dataset::BoltDatasetPtr& labels,
              const TrainConfig& train_config) {
-            return model.train({data}, /* train_tokens = */ {}, labels,
-                               train_config);
+            return model.train({data}, labels, train_config);
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"))
       .def(
           "train", &BoltGraph::train, py::arg("train_data"),
-          py::arg("train_tokens"), py::arg("train_labels"),
-          py::arg("train_config"),
+          py::arg("train_labels"), py::arg("train_config"),
           "Trains the network on the given training data.\n"
           "Arguments:\n"
           " * train_data: PyObject - Training data. This can be one of "
@@ -395,15 +392,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
              const dataset::BoltDatasetPtr& labels,
              const PredictConfig& predict_config) {
-            return dagPredictPythonWrapper(model, {data}, /* tokens = */ {},
-                                           labels, predict_config);
+            return dagPredictPythonWrapper(model, {data}, labels,
+                                           predict_config);
           },
           py::arg("test_data"), py::arg("test_labels"),
           py::arg("predict_config"))
       .def(
           "predict", &dagPredictPythonWrapper, py::arg("test_data"),
-          py::arg("test_tokens"), py::arg("test_labels"),
-          py::arg("predict_config"),
+          py::arg("test_labels"), py::arg("predict_config"),
           "Predicts the output given the input vectors and evaluates the "
           "predictions based on the given metrics.\n"
           "Arguments:\n"
@@ -504,8 +500,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              const dataset::BoltDatasetPtr& data,
              const dataset::BoltDatasetPtr& labels,
              const PredictConfig& predict_config) {
-            return dagPredictPythonWrapper(*model._bolt_graph, {data},
-                                           /* tokens = */ {}, labels,
+            return dagPredictPythonWrapper(*model._bolt_graph, {data}, labels,
                                            predict_config);
           },
           py::arg("test_data"), py::arg("test_labels"),
@@ -515,14 +510,21 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("get_layer", &DistributedTrainingContext::getNodeByName,
            py::arg("layer_name"),
            "Returns the pointer to layer with name layer_name");
+
+  createCallbacksSubmodule(graph_submodule);
+}
+
+void createCallbacksSubmodule(py::module_& graph_submodule) {
+  auto callbacks_submodule = graph_submodule.def_submodule("callbacks");
+
+  py::class_<Callback, CallbackPtr>(callbacks_submodule, "Callback");  // NOLINT
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
                                   const dataset::BoltDatasetList& data,
-                                  const dataset::BoltTokenDatasetList& tokens,
                                   const dataset::BoltDatasetPtr& labels,
                                   const PredictConfig& predict_config) {
-  auto [metrics, output] = model.predict(data, tokens, labels, predict_config);
+  auto [metrics, output] = model.predict(data, labels, predict_config);
 
   // We need to get these now because we are about to std::move output
   const float* activation_pointer = output.getNonowningActivationPointer();

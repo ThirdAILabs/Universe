@@ -34,6 +34,7 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
 # to add a python package you don't need to rebuild everything
 RUN pip3 install --upgrade \
     black \
+    boto3 \ 
     pytest \
     mlflow \
     toml \
@@ -41,6 +42,7 @@ RUN pip3 install --upgrade \
     ipython \
     datasets \
     mmh3 \
+    moto \
     numpy \
     boto3 \
     awscli \
@@ -53,6 +55,7 @@ RUN pip3 install --upgrade \
 RUN pip3 install tensorflow tensorflow-datasets ; exit 0
 RUN pip3 install torch torchvision ; exit 0
 RUN pip3 install transformers ; exit 0
+RUN sudo apt install openssh-client ; exit 0
 RUN apt-get install linux-tools-common linux-tools-generic linux-tools-`uname -r` ; exit 0
 
 

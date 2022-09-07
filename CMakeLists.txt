@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.4...3.18)
 
-if (NOT WIN32)
-  set(CMAKE_CXX_COMPILER "g++")
-  set(CMAKE_C_COMPILER "gcc")
-  message("Not using MSVC (we should not be on Windows then), forcing GCC and G++")
-else()
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+if(WIN32)
   # Set this to use static linking by default, see
   # https://cmake.org/cmake/help/latest/prop_tgt/MSVC_RUNTIME_LIBRARY.html
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -16,6 +14,18 @@ set(ENV{LD_PRELOAD} "")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
+
+# See [1] https://gcc.gnu.org/wiki/Visibility
+#     [2] https://stackoverflow.com/a/31157258/4565794
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+
+# Project versioning
+find_package(Git REQUIRED)
+include(GetVersionFromFile)
+message(STATUS "Project name: ${PROJECT_NAME}")
+message(STATUS "Project version: ${PROJECT_VERSION_STRING_FULL}")
 
 message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
@@ -32,9 +42,8 @@ if (MSVC)
   endif()
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp:llvm /w")
 else()
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   add_compile_options(
-    -fopenmp
-    -fPIC
     -Wall
     -Wextra
     -Werror
@@ -72,9 +81,6 @@ else()
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
   )
 
-  add_link_options(
-    -fopenmp
-  )
 endif()
 
 # Add feature flags passed in from python
@@ -97,6 +103,18 @@ if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
     $<$<CONFIG:DebugWithAsan>:-fsanitize=address>
   )
 endif()
+
+# Custom command line options
+
+# The following is added for Windows workflows failing on GitHub, inorder to
+# provide a configurable TimeOut.  The default value is set to 5,
+# from
+# http://github.com/Kitware/CMake/blob/9d1ecd72fb45af722da7668d0c7482b7a0b1876f/Modules/GoogleTest.cmake#L419-L436,
+# retaining default behaviour.
+# 
+# For Windows workflow, we may configure this to a higher value now through CMake command-line supply.
+
+set(THIRDAI_GTEST_DISCOVERY_TIMEOUT 5 CACHE STRING "Timeout for GoogleTest discovery, configurable from command-line.")
 
 find_package(OpenMP REQUIRED)
 
@@ -152,14 +170,17 @@ include(CTest)
 
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
+include_directories(${CMAKE_BINARY_DIR})
 
 # Our source directories
 add_subdirectory(bolt)
+add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
 add_subdirectory(exceptions)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(utils)
 add_subdirectory(wrappers)
 
 # Only add the licensing subdirectory if the corresponding flag is set
@@ -214,7 +235,6 @@ pybind11_add_module(_thirdai
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   ${BOLT_SOURCES} 
-  ${DLRM_SOURCES}
   ${SEARCH_SOURCES} 
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
@@ -222,6 +242,8 @@ pybind11_add_module(_thirdai
   ${WRAPPER_SOURCES}
   ${DATASET_SOURCES}
 )
+
+target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
 
 if (${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})

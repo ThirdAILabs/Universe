@@ -13,9 +13,10 @@ namespace thirdai::bolt::python {
 
 void createBoltGraphSubmodule(py::module_& bolt_submodule);
 
+void createCallbacksSubmodule(py::module_& graph_submodule);
+
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
                                   const dataset::BoltDatasetList& data,
-                                  const dataset::BoltTokenDatasetList& tokens,
                                   const dataset::BoltDatasetPtr& labels,
                                   const PredictConfig& predict_config);
 

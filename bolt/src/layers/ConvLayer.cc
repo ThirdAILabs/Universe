@@ -35,16 +35,11 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
 
   _weights = std::vector<float>(_num_filters * _patch_dim);
-  _w_gradient = std::vector<float>(_num_filters * _patch_dim, 0);
-  _w_momentum = std::vector<float>(_num_filters * _patch_dim, 0);
-  _w_velocity = std::vector<float>(_num_filters * _patch_dim, 0);
-
   _biases = std::vector<float>(_num_filters);
-  _b_gradient = std::vector<float>(_num_filters, 0);
-  _b_momentum = std::vector<float>(_num_filters, 0);
-  _b_velocity = std::vector<float>(_num_filters, 0);
 
   _is_active = std::vector<bool>(_num_filters * _num_patches, false);
+
+  initOptimizer();
 
   buildPatchMaps(next_kernel_size);
 
@@ -225,7 +220,7 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
       uint64_t in_idx = in_patch * effective_patch_dim + i;
       uint32_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
       assert(prev_act_neuron < _prev_dim);
-      _w_gradient[act_filter * _patch_dim + prev_act_neuron] +=
+      _weight_optimizer->gradients[act_filter * _patch_dim + prev_act_neuron] +=
           output.gradients[n] * input.activations[in_idx];
       if (!FIRST_LAYER) {
         input.gradients[in_idx] +=
@@ -233,7 +228,7 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
             _weights[act_filter * _patch_dim + prev_act_neuron];
       }
     }
-    _b_gradient[act_filter] += output.gradients[n];
+    _bias_optimizer->gradients[act_filter] += output.gradients[n];
   }
 }
 
@@ -290,37 +285,50 @@ void ConvLayer::updateParameters(float lr, uint32_t iter, float B1, float B2,
 
     for (uint64_t i = 0; i < _patch_dim; i++) {
       auto indx = n * _patch_dim + i;
-      float grad = _w_gradient[indx];
+      float grad = _weight_optimizer->gradients[indx];
       assert(!std::isnan(grad));
 
-      _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
-      _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
-      assert(!std::isnan(_w_momentum[indx]));
-      assert(!std::isnan(_w_velocity[indx]));
+      _weight_optimizer->momentum[indx] =
+          B1 * _weight_optimizer->momentum[indx] + (1 - B1) * grad;
+      _weight_optimizer->velocity[indx] =
+          B2 * _weight_optimizer->velocity[indx] + (1 - B2) * grad * grad;
+      assert(!std::isnan(_weight_optimizer->momentum[indx]));
+      assert(!std::isnan(_weight_optimizer->velocity[indx]));
 
       _weights[indx] +=
-          lr * (_w_momentum[indx] / B1_bias_corrected) /
-          (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
+          lr * (_weight_optimizer->momentum[indx] / B1_bias_corrected) /
+          (std::sqrt(_weight_optimizer->velocity[indx] / B2_bias_corrected) +
+           eps);
       assert(!std::isnan(_weights[indx]));
 
-      _w_gradient[indx] = 0;
+      _weight_optimizer->gradients[indx] = 0;
     }
 
-    float grad = _b_gradient[n];
+    float grad = _bias_optimizer->gradients[n];
     assert(!std::isnan(grad));
 
-    _b_momentum[n] = B1 * _b_momentum[n] + (1 - B1) * grad;
-    _b_velocity[n] = B2 * _b_velocity[n] + (1 - B2) * grad * grad;
+    _bias_optimizer->momentum[n] =
+        B1 * _bias_optimizer->momentum[n] + (1 - B1) * grad;
+    _bias_optimizer->velocity[n] =
+        B2 * _bias_optimizer->velocity[n] + (1 - B2) * grad * grad;
 
-    assert(!std::isnan(_b_momentum[n]));
-    assert(!std::isnan(_b_velocity[n]));
+    assert(!std::isnan(_bias_optimizer->momentum[n]));
+    assert(!std::isnan(_bias_optimizer->velocity[n]));
 
-    _biases[n] += lr * (_b_momentum[n] / B1_bias_corrected) /
-                  (std::sqrt(_b_velocity[n] / B2_bias_corrected) + eps);
+    _biases[n] +=
+        lr * (_bias_optimizer->momentum[n] / B1_bias_corrected) /
+        (std::sqrt(_bias_optimizer->velocity[n] / B2_bias_corrected) + eps);
     assert(!std::isnan(_biases[n]));
 
-    _b_gradient[n] = 0;
+    _bias_optimizer->gradients[n] = 0;
     _is_active[n] = false;
+  }
+}
+
+void ConvLayer::initOptimizer() {
+  if (!_weight_optimizer || !_bias_optimizer) {
+    _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
+    _bias_optimizer = AdamOptimizer(_dim);
   }
 }
 
@@ -361,17 +369,6 @@ float* ConvLayer::getBiases() const {
   return biases_copy;
 }
 
-void ConvLayer::setTrainable(bool trainable) {
-  (void)trainable;
-  throw thirdai::exceptions::NotImplemented(
-      "setTrainable not implemented for ConvLayer");
-}
-
-bool ConvLayer::getTrainable() const {
-  throw thirdai::exceptions::NotImplemented(
-      "getTrainable not implemented for ConvLayer");
-}
-
 void ConvLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 }
@@ -382,17 +379,21 @@ void ConvLayer::setBiases(const float* new_biases) {
 
 void ConvLayer::setWeightGradients(const float* update_weight_gradient) {
   std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
-            _w_gradient.begin());
+            _weight_optimizer->gradients.begin());
 }
 
 void ConvLayer::setBiasesGradients(const float* update_bias_gradient) {
   std::copy(update_bias_gradient, update_bias_gradient + _dim,
-            _b_gradient.begin());
+            _bias_optimizer->gradients.begin());
 }
 
-float* ConvLayer::getBiasesGradient() { return _b_gradient.data(); }
+float* ConvLayer::getBiasesGradient() {
+  return _bias_optimizer->gradients.data();
+}
 
-float* ConvLayer::getWeightsGradient() { return _w_gradient.data(); }
+float* ConvLayer::getWeightsGradient() {
+  return _weight_optimizer->gradients.data();
+}
 
 // this function is only called from constructor
 void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {

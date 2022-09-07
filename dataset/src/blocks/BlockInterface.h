@@ -1,7 +1,8 @@
 #pragma once
 
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
+#include <memory>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -80,7 +81,9 @@ class SegmentedFeatureVector {
   /**
    * Converts this vector to a BoltVector.
    */
-  virtual bolt::BoltVector toBoltVector() = 0;
+  virtual BoltVector toBoltVector() = 0;
+
+  virtual ~SegmentedFeatureVector() = default;
 };
 
 /**
@@ -127,6 +130,8 @@ class Block {
    * to see in each row of the dataset.
    */
   virtual uint32_t expectedNumColumns() const = 0;
+
+  virtual ~Block() = default;
 
  protected:
   /**

@@ -7,10 +7,10 @@
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
@@ -59,10 +59,9 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
 MetricData BoltGraph::train(
     const std::vector<dataset::BoltDatasetPtr>& train_data,
-    const std::vector<dataset::BoltTokenDatasetPtr>& train_tokens,
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config) {
-  DatasetContext train_context(train_data, train_tokens, train_labels);
+  DatasetContext train_context(train_data, train_labels);
 
   verifyCanTrain(train_context);
 
@@ -86,11 +85,16 @@ MetricData BoltGraph::train(
 
   MetricAggregator metrics = train_config.getMetricAggregator();
 
+  CallbackList callbacks = train_config.getCallbacks();
+  callbacks.onTrainBegin(*this);
+
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
   try {
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+      callbacks.onEpochBegin(*this);
+
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
@@ -99,7 +103,9 @@ MetricData BoltGraph::train(
 
       for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
            batch_idx++) {
-        train_context.setInputs(batch_idx, _inputs, _token_inputs);
+        callbacks.onBatchBegin(*this);
+
+        train_context.setInputs(batch_idx, _inputs);
 
         const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
         processTrainingBatch(batch_labels, metrics);
@@ -108,8 +114,14 @@ MetricData BoltGraph::train(
                                     reconstruct_hash_functions_batch);
 
         bar.increment();
+
+        callbacks.onBatchEnd(*this);
       }
 
+      callbacks.onEpochEnd(*this);
+      if (callbacks.shouldStopTraining()) {
+        break;
+      }
       perEpochCallback();
 
       auto train_end = std::chrono::high_resolution_clock::now();
@@ -134,6 +146,8 @@ MetricData BoltGraph::train(
 
   cleanupAfterBatchProcessing();
 
+  callbacks.onTrainEnd(*this);
+
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
 
@@ -145,12 +159,15 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
   assert(graphCompiled());
   batch_labels.verifyExpectedDimension(
       /* expected_dimension = */ _output->outputDim(),
+      /* num_nonzeros_range = */ std::nullopt,
       /* origin_string = */
       "Passed in label BoltVector is larger than the output dim");
 
 #pragma omp parallel for default(none) shared(batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
+
+    resetOutputGradients(vec_id);
 
     _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
                          batch_labels.getBatchSize());
@@ -217,8 +234,8 @@ BoltGraph::getInputGradientSingle(
     std::vector<BoltVector>&& input_data,
     bool explain_prediction_using_highest_activation,
     std::optional<uint32_t> neuron_to_explain) {
-  SingleUnitDatasetContext single_input_gradients_context(std::move(input_data),
-                                                          {});
+  SingleUnitDatasetContext single_input_gradients_context(
+      std::move(input_data));
 
   prepareToProcessBatches(/*batch_size= */ 1, /* use_sparsity=*/true);
 
@@ -227,17 +244,16 @@ BoltGraph::getInputGradientSingle(
                                   _output->numNonzerosInOutput());
 
   try {
-    single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs,
-                                             _token_inputs);
+    single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs);
 
     BoltVector& input_vector = _inputs[0]->getOutputVector(/*vec_index= */ 0);
 
-    std::vector<float> vec_grad(input_vector.len, 0.0);
+    std::vector<float> normalised_vec_grad(input_vector.len, 0.0);
 
-    // Assigning the vec_grad data() to gradients so that we dont have to
-    // worry about initializing and then freeing the memory.
+    // Assigning the normalised_vec_grad data() to gradients so that we dont
+    // have to worry about initializing and then freeing the memory.
 
-    input_vector.gradients = vec_grad.data();
+    input_vector.gradients = normalised_vec_grad.data();
     std::vector<uint32_t> input_vector_indices;
 
     /*
@@ -268,6 +284,7 @@ BoltGraph::getInputGradientSingle(
           input_vector.active_neurons + input_vector.len);
     }
 
+    resetOutputGradients(/* vec_index= */ 0);
     _loss->lossGradients(_output->getOutputVector(/*vec_index= */ 0),
                          label_vector, /*batch_size= */ 1);
     backpropagate(/*vec_index= */ 0);
@@ -279,10 +296,14 @@ BoltGraph::getInputGradientSingle(
     input_vector.gradients = nullptr;
     cleanupAfterBatchProcessing();
 
-    if (input_vector_indices.empty()) {
-      return std::make_pair(std::nullopt, vec_grad);
+    for (uint32_t i = 0; i < input_vector.len; i++) {
+      normalised_vec_grad[i] /= input_vector.activations[i];
     }
-    return std::make_pair(input_vector_indices, vec_grad);
+
+    if (input_vector_indices.empty()) {
+      return std::make_pair(std::nullopt, normalised_vec_grad);
+    }
+    return std::make_pair(input_vector_indices, normalised_vec_grad);
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
@@ -291,10 +312,9 @@ BoltGraph::getInputGradientSingle(
 
 InferenceResult BoltGraph::predict(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
-    const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
     const dataset::BoltDatasetPtr& test_labels,
     const PredictConfig& predict_config) {
-  DatasetContext predict_context(test_data, test_tokens, test_labels);
+  DatasetContext predict_context(test_data, test_labels);
 
   bool has_labels = (test_labels != nullptr);
 
@@ -328,7 +348,7 @@ InferenceResult BoltGraph::predict(
   try {
     for (uint64_t batch_idx = 0; batch_idx < predict_context.numBatches();
          batch_idx++) {
-      predict_context.setInputs(batch_idx, _inputs, _token_inputs);
+      predict_context.setInputs(batch_idx, _inputs);
 
       uint64_t batch_size = predict_context.batchSize(batch_idx);
       const BoltBatch* batch_labels =
@@ -370,12 +390,9 @@ InferenceResult BoltGraph::predict(
 
 // Predicts on a single sample input for performance. Always returns
 // activations and doesn't calculate metrics.
-BoltVector BoltGraph::predictSingle(
-    std::vector<BoltVector>&& test_data,
-    std::vector<std::vector<uint32_t>>&& test_tokens,
-    bool use_sparse_inference) {
-  SingleUnitDatasetContext single_predict_context(std::move(test_data),
-                                                  std::move(test_tokens));
+BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
+                                    bool use_sparse_inference) {
+  SingleUnitDatasetContext single_predict_context(std::move(test_data));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
                    /* returning_activations = */ true,
@@ -387,8 +404,7 @@ BoltVector BoltGraph::predictSingle(
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
   try {
-    single_predict_context.setInputs(/* batch_idx = */ 0, _inputs,
-                                     _token_inputs);
+    single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
     forward(/* vec_index = */ 0, nullptr);
     BoltVector output_copy = _output->getOutputVector(
         /* vec_index = */ 0);
@@ -468,6 +484,12 @@ void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {
   }
 }
 
+void BoltGraph::resetOutputGradients(uint32_t vec_index) {
+  for (auto& node : _nodes) {
+    node->getOutputVector(vec_index).zeroOutGradients();
+  }
+}
+
 void BoltGraph::enableDistributedTraining() {
   for (NodePtr& node : _nodes) {
     FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
@@ -486,7 +508,6 @@ void BoltGraph::traverseGraph() {
 
   std::unordered_set<NodePtr> all_inputs;
   all_inputs.insert(_inputs.begin(), _inputs.end());
-  all_inputs.insert(_token_inputs.begin(), _token_inputs.end());
 
   std::unordered_map<NodePtr, int32_t> successor_counts = getSuccessorCounts();
 
@@ -571,6 +592,10 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
     throw std::invalid_argument("Must pass in labels for training.");
   }
 
+  for (auto& node : _nodes) {
+    node->initOptimizer();
+  }
+
   verifyInputForGraph(train_context);
 }
 
@@ -616,13 +641,6 @@ void BoltGraph::verifyInputForGraph(const DatasetContextBase& context) {
         std::to_string(_inputs.size()) + " but received " +
         std::to_string(context.numVectorDatasets()) + ".");
   }
-
-  if (context.numTokenDatasets() != _token_inputs.size()) {
-    throw std::invalid_argument("Wrong number of token inputs, expected " +
-                                std::to_string(_token_inputs.size()) +
-                                " but received " +
-                                std::to_string(_inputs.size()) + ".");
-  }
 }
 
 void BoltGraph::verifyGraphProperties() {
@@ -664,8 +682,8 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
-  archive(_nodes, _output, _inputs, _token_inputs,
-          _internal_fully_connected_layers, _loss, _epoch_count, _batch_cnt);
+  archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
+          _epoch_count, _batch_cnt);
 }
 
 void BoltGraph::save(const std::string& filename) {

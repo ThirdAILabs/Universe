@@ -4,11 +4,11 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include <bolt/src/layers/BoltVector.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>
-#include <dataset/src/encodings/text/TextEncodingUtils.h>
+#include <dataset/src/utils/TextEncodingUtils.h>
 #include <cctype>
 #include <stdexcept>
 #include <string>
@@ -46,25 +46,24 @@ class TextClassificationProcessor final : public UnaryBoltBatchProcessor {
   std::vector<std::string> getClassIdToNames() { return _class_id_to_class; }
 
  protected:
-  std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
-      const std::string& row) final {
+  std::pair<BoltVector, BoltVector> processRow(const std::string& row) final {
     // Split the row
     auto [lhs, rhs] = split(row);
 
     if (_label_on_right) {
-      bolt::BoltVector label_vec = getLabel(rhs);
-      bolt::BoltVector data_vec =
+      BoltVector label_vec = getLabel(rhs);
+      BoltVector data_vec =
           TextEncodingUtils::computePairgrams(lhs, _output_range);
       return std::make_pair(std::move(data_vec), std::move(label_vec));
     }
-    bolt::BoltVector label_vec = getLabel(lhs);
-    bolt::BoltVector data_vec =
+    BoltVector label_vec = getLabel(lhs);
+    BoltVector data_vec =
         TextEncodingUtils::computePairgrams(rhs, _output_range);
     return std::make_pair(std::move(data_vec), std::move(label_vec));
   }
 
  private:
-  bolt::BoltVector getLabel(std::string_view category_str_view) {
+  BoltVector getLabel(std::string_view category_str_view) {
     std::string category_str(category_str_view);
     uint32_t label;
     if (_class_to_class_id.count(category_str)) {
@@ -75,7 +74,7 @@ class TextClassificationProcessor final : public UnaryBoltBatchProcessor {
       _class_id_to_class.push_back(std::move(category_str));
     }
 
-    bolt::BoltVector label_vec(1, false, false);
+    BoltVector label_vec(1, false, false);
     label_vec.active_neurons[0] = label;
     label_vec.activations[0] = 1.0;
 

@@ -18,7 +18,8 @@ Installations
 - Check if ray path is included in system path by printing (run 'echo $PATH' on the terminal)
 - Ray's default path is ``/home/$USER/.local/bin``
 - If not included, run the command: ``export PATH=$PATH:/home/$USER/.local/bin``
-                
+
+
 Automatic Cluster Initialization
 ----------------------------------
 - Fill in the cluster configuration YAML file(cluster_configuration.YAML in cluster_configuration_files): 
@@ -27,8 +28,8 @@ Automatic Cluster Initialization
 - workers_ip: Add the IP for all the worker nodes
 - ssh_private_key: Uncomment if ssh passwordless logging is not there on the nodes 
 - min_workers, max_workers: By default make them min_workers == max_workers == len(worker_ips)
-- For starting the ray cluster automatically, run the command: python3 start_cluster.py cluster_configuration.YAML
-- For stopping the ray cluster automatically, run the command: python3 stop_cluster.py cluster_configuration.YAML
+- For starting the ray cluster automatically, run the command: python3 start_cluster.py cluster_configuration.yaml
+- For stopping the ray cluster automatically, run the command: python3 stop_cluster.py cluster_configuration.yaml
                 
                 
 Manual Cluster Initialization
@@ -51,18 +52,22 @@ Make sure to divide the training data equally(almost) for all nodes. Otherwise, 
 
 Importing the library:
 
->>> from thirdai.distributed_bolt import DistributedBolt
+>>> from thirdai.distributed_bolt import db
 
 The current APIs supported:
 
->>> head = DistributedBolt(num_of_workers=num_of_workers, config_filename=config_filename) 
->>> head.train(circular=True, num_cpus_per_node=k(set number of CPUs here manually)) 
->>> print(head.predict()) #returns predict on the model trained
+>>> head = db.FullyConnectedNetwork(
+        num_workers=num_worker,
+        config_filename=config_filename,
+        num_cpus_per_node=num_cpus,
+        communication_type="circular"/"linear",
+    ) 
+>>> head.train() 
+>>> head.predict() #returns predict on the model trained
 
-Look at train_distributed_amzn670k.py for sample code.
+Look at examples folder for sample code.
 
 IMPORTANT
 ------------------
-1. Make sure you have the ``DistributedBolt_V1`` branch built on every node(head node and worker node) you are running.
-2. Set up passwordless ssh between nodes(for easier usage)
-3. If the num_cpus_per_node is not set, DistributedBolt will automatically get the number of CPUs available on the current and initialize the worker node with that count.
+1. Set up passwordless ssh between nodes(for easier usage)
+2. If the num_cpus_per_node is not set, DistributedBolt will automatically get the number of CPUs available on the current and initialize the worker node with that count.
