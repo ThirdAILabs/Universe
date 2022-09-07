@@ -1,4 +1,4 @@
-job = "Amazon670k Product Recommendation Distributed Training"
+job = "MNIST Distributed Training"
 
 [dataset]
 train_data = ["mnist_data/xaa","mnist_data/xab"]
