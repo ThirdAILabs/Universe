@@ -95,7 +95,7 @@ class AutoClassifierBase {
     }
   }
 
-  py::object predictSingle(PREDICT_SINGLE_INPUT sample) {
+  py::object predictSingle(const PREDICT_SINGLE_INPUT& sample) {
     BoltVector input = featurizeInputForInference(sample);
 
     BoltVector output = _model->predictSingle({input}, useSparseInference());
@@ -131,7 +131,8 @@ class AutoClassifierBase {
 
   virtual dataset::GenericBatchProcessorPtr getPredictBatchProcessor() = 0;
 
-  virtual BoltVector featurizeInputForInference(PREDICT_SINGLE_INPUT input) = 0;
+  virtual BoltVector featurizeInputForInference(
+      const PREDICT_SINGLE_INPUT& input) = 0;
 
   virtual std::string getClassName(uint32_t neuron_id) = 0;
 
