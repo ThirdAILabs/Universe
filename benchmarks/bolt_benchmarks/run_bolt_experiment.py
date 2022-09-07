@@ -233,11 +233,15 @@ def construct_embedding_node(embedding_config):
     num_embedding_lookups = config_get(embedding_config, "num_embedding_lookups")
     lookup_size = config_get(embedding_config, "lookup_size")
     log_embedding_block_size = config_get(embedding_config, "log_embedding_block_size")
+    reduction = config_get(embedding_config, "reduction")
+    num_tokens_per_input = embedding_config.get("num_tokens_per_input", None)
 
     return bolt.graph.Embedding(
         num_embedding_lookups=num_embedding_lookups,
         lookup_size=lookup_size,
         log_embedding_block_size=log_embedding_block_size,
+        reduction=reduction,
+        num_tokens_per_input=num_tokens_per_input
     )
 
 

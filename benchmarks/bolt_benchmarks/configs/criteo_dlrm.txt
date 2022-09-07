@@ -29,7 +29,7 @@ type_list = ["test_data", "test_data", "test_labels"]
 path = "criteo/test_shuf.txt"
 batch_size = 256
 max_num_numerical_features = 16
-max_categorical_features = 23
+max_categorical_features = 24
 delimiter = " "
 
 [[datasets]]
@@ -63,8 +63,8 @@ activation = "relu"
 type = "Input"
 name = "categorical_input"
 dim = 4294967295
-min_num_nonzeros = 23
-max_num_nonzeros = 23
+min_num_nonzeros = 24
+max_num_nonzeros = 24
 
 [[nodes]]
 type = "Embedding"
@@ -73,6 +73,8 @@ pred = "categorical_input"
 num_embedding_lookups = 8
 lookup_size = 16
 log_embedding_block_size = 20
+reduction="concat"
+num_tokens_per_input=24
 
 [[nodes]]
 type = "Concatenate"
