@@ -15,6 +15,10 @@ import thirdai.search
 import thirdai.dataset
 import thirdai.hashing
 
+
+# Relay __version__ from C++
+from thirdai._thirdai import __version__
+
 # Import the top level methods so they are available directly from thirdai
 # If the import fails it means this build doesn't expose these methods, so we
 # just pass
