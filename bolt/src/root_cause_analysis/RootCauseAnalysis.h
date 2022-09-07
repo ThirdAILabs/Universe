@@ -7,9 +7,9 @@ namespace thirdai::bolt {
 
 using Blocks = std::vector<std::shared_ptr<dataset::Block>>;
 
-inline std::vector<std::pair<float, uint32_t>>
-makeGradientRatiosWithIndicesSorted(std::vector<float> gradients_ratio,
-                                    std::vector<uint32_t> gradients_indices) {
+inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
+    std::vector<float> gradients_ratio,
+    std::vector<uint32_t> gradients_indices) {
   std::vector<std::pair<float, uint32_t>> gradient_ratios_with_indices;
   for (uint32_t j = 0; j < gradients_ratio.size(); j++) {
     gradient_ratios_with_indices.push_back(
@@ -33,14 +33,14 @@ getPercentExplanationWithColumnNames(
     const std::shared_ptr<dataset::GenericBatchProcessor>&
         generic_batch_processor) {
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
-      makeGradientRatiosWithIndicesSorted(gradients_ratio,
-                                          std::move(gradients_indices));
+      sortGradientsBySignificance(gradients_ratio,
+                                  std::move(gradients_indices));
   float ratio_sum = 0;
   for (float gradient_ratio : gradients_ratio) {
     ratio_sum += std::abs(gradient_ratio);
   }
   std::vector<std::string> column_names;
-  std::vector<float> gradient_percent_ratio;
+  std::vector<float> gradient_significance;
   std::vector<uint32_t> indices_within_block;
   for (const auto& col : gradients_ratio_with_indices) {
     auto [block, index_within_block] =
@@ -48,9 +48,9 @@ getPercentExplanationWithColumnNames(
     indices_within_block.push_back(index_within_block);
     auto column = block->getColumnNum();
     column_names.push_back(num_to_name[column]);
-    gradient_percent_ratio.push_back((col.first / ratio_sum) * 100);
+    gradient_significance.push_back((col.first / ratio_sum) * 100);
   }
-  return std::make_tuple(column_names, gradient_percent_ratio,
+  return std::make_tuple(column_names, gradient_significance,
                          indices_within_block);
 }
 
