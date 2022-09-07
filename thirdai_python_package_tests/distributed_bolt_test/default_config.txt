@@ -1,8 +1,8 @@
 job = "Amazon670k Product Recommendation Distributed Training"
 
 [dataset]
-train_data = ["/share/pratik/mnist_a","/share/pratik/mnist_b"]
-test_data = "/share/pratik/mnist.t"
+train_data = ["mnist_data/xaa","mnist_data/xab"]
+test_data = "mnist_data/mnist.t"
 format = "svm"
 
 [params]

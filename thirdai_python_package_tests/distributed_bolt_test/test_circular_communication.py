@@ -1,22 +1,16 @@
+import sys
+
 try:
-    import thirdai.distributed
     from thirdai._distributed_bolt.backend.worker import Worker
 except ImportError:
-    import warnings
-
-    warnings.warn(
-        "Error while importing thirdai.distributed_bolt. "
-        "You might be missing ray. "
-        "Try: python3 -m pip install 'ray[default]'"
-    )
+    pass
 
 import pytest
 import numpy as np
 
 
-pytestmark = [pytest.mark.xfail]
-
-
+@pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
+@pytest.mark.xfail
 def test_all_reduce_circular_communication():
     num_workers = 20
     workers = [Worker(num_workers, i, None) for i in range(num_workers)]
