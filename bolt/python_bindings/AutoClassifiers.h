@@ -10,26 +10,27 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exceptions/src/Exceptions.h>
 #include <pybind11/pybind11.h>
+#include <limits>
 
 namespace thirdai::bolt::python {
+
+inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes);
+inline float getHiddenLayerSparsity(uint64_t layer_dim);
 
 class TextClassifier final : public AutoClassifierBase {
  public:
   TextClassifier(uint32_t hidden_layer_dim, uint32_t n_classes)
       : AutoClassifierBase(createModel(hidden_layer_dim, n_classes),
                            ReturnMode::ClassName) {
-    auto label_block =
-        dataset::StringLookupCategoricalBlock::make(/* col= */ 0, _n_classes);
-    _label_id_lookup = label_block->getVocabulary();
-
-    _batch_processor = dataset::GenericBatchProcessor::make(
-        {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
+    _label_id_lookup = dataset::ThreadSafeVocabulary::make(n_classes);
   }
 
   void save(const std::string& filename) {
@@ -46,8 +47,6 @@ class TextClassifier final : public AutoClassifierBase {
     std::unique_ptr<TextClassifier> deserialize_into(new TextClassifier());
     iarchive(*deserialize_into);
 
-    deserialize_into->reinitializeBatchProcessors();
-
     return deserialize_into;
   }
 
@@ -57,11 +56,14 @@ class TextClassifier final : public AutoClassifierBase {
       std::optional<uint64_t> max_in_memory_batches) final {
     (void)data_loader;
     (void)max_in_memory_batches;
-    return _batch_processor;
+    return getPredictBatchProcessor();
   }
 
   dataset::GenericBatchProcessorPtr getPredictBatchProcessor() final {
-    return _batch_processor;
+    auto label_block = dataset::StringLookupCategoricalBlock::make(
+        /* col= */ 0, _label_id_lookup);
+    return dataset::GenericBatchProcessor::make(
+        {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
   }
 
   BoltVector featurizeInputForInference(const py::object& input) final {
@@ -87,37 +89,6 @@ class TextClassifier final : public AutoClassifierBase {
   }
 
  private:
-  static BoltGraphPtr createModel(uint32_t hidden_layer_dim,
-                                  uint32_t n_classes) {
-    auto input_layer = std::make_shared<Input>(
-        dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
-
-    auto hidden_layer = std::make_shared<FullyConnectedNode>(
-        /* dim= */ hidden_layer_dim,
-        /* sparsity= */ getHiddenLayerSparsity(hidden_layer_dim),
-        /* activation= */ "relu");
-    hidden_layer->addPredecessor(input_layer);
-
-    auto output_layer = std::make_shared<FullyConnectedNode>(
-        /* dim= */ n_classes, /* activation= */ "softmax");
-    output_layer->addPredecessor(hidden_layer);
-
-    auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
-                                             output_layer);
-
-    model->compile(std::make_shared<CategoricalCrossEntropyLoss>(),
-                   /* print_when_done= */ false);
-
-    return model;
-  }
-
-  void reinitializeBatchProcessors() {
-    auto label_block = dataset::StringLookupCategoricalBlock::make(
-        /* col= */ 0, _label_id_lookup);
-    _batch_processor = dataset::GenericBatchProcessor::make(
-        {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
-  }
-
   // Private constructor for cereal.
   TextClassifier()
       : AutoClassifierBase(nullptr, ReturnMode::NumpyArray),
@@ -129,19 +100,14 @@ class TextClassifier final : public AutoClassifierBase {
     archive(cereal::base_class<AutoClassifierBase>(this), _label_id_lookup);
   }
 
-  dataset::GenericBatchProcessorPtr _batch_processor;
   dataset::ThreadSafeVocabularyPtr _label_id_lookup;
-  uint32_t _n_classes;
 };
 
 class MultiLabelTextClassifier final : public AutoClassifierBase {
  public:
   explicit MultiLabelTextClassifier(uint32_t n_classes, float threshold = 0.95)
       : AutoClassifierBase(createModel(n_classes),
-                           ReturnMode::NumpyArrayWithThresholding, threshold),
-        _n_classes(n_classes) {
-    buildBatchProcessors();
-  }
+                           ReturnMode::NumpyArrayWithThresholding, threshold) {}
 
   void save(const std::string& filename) {
     std::ofstream filestream =
@@ -159,8 +125,6 @@ class MultiLabelTextClassifier final : public AutoClassifierBase {
         new MultiLabelTextClassifier());
     iarchive(*deserialize_into);
 
-    deserialize_into->buildBatchProcessors();
-
     return deserialize_into;
   }
 
@@ -170,11 +134,16 @@ class MultiLabelTextClassifier final : public AutoClassifierBase {
       std::optional<uint64_t> max_in_memory_batches) final {
     (void)data_loader;
     (void)max_in_memory_batches;
-    return _batch_processor;
+    return getPredictBatchProcessor();
   }
 
   dataset::GenericBatchProcessorPtr getPredictBatchProcessor() final {
-    return _batch_processor;
+    return dataset::GenericBatchProcessor::make(
+        {dataset::PairGramTextBlock::make(/* col= */ 1)},
+        {dataset::NumericalCategoricalBlock::make(
+            /* col= */ 0,
+            /* n_classes= */ _model->outputDim())},
+        /* has_header= */ false, /* delimiter= */ '\t');
   }
 
   BoltVector featurizeInputForInference(const py::object& input) final {
@@ -216,18 +185,6 @@ class MultiLabelTextClassifier final : public AutoClassifierBase {
                    /* print_when_done= */ false);
 
     return model;
-  }
-
-  void buildBatchProcessors() {
-    _batch_processor = dataset::GenericBatchProcessor::make(
-        {dataset::PairGramTextBlock::make(/* col= */ 1)},
-        {dataset::NumericalCategoricalBlock::make(/* col= */ 0,
-                                                  /* n_classes= */ _n_classes)},
-        /* has_header= */ false, /* delimiter= */ '\t');
-
-    _inference_featurizer = dataset::GenericBatchProcessor::make(
-        {dataset::PairGramTextBlock::make(/* col= */ 0)}, {},
-        /* has_header= */ false, /* delimiter= */ '\t');
   }
 
   static float getOutputSparsity(uint32_t output_dim) {
@@ -278,34 +235,125 @@ class MultiLabelTextClassifier final : public AutoClassifierBase {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<AutoClassifierBase>(this), _n_classes);
+    archive(cereal::base_class<AutoClassifierBase>(this));
   }
-
-  dataset::GenericBatchProcessorPtr _batch_processor;
-  dataset::GenericBatchProcessorPtr _inference_featurizer;
-  uint32_t _n_classes;
 };
 
 class TabularClassifier final : public AutoClassifierBase {
+ public:
+  TabularClassifier(uint32_t hidden_layer_dim, uint32_t n_classes,
+                    std::vector<std::string> column_datatypes)
+      : AutoClassifierBase(createModel(hidden_layer_dim, n_classes),
+                           ReturnMode::NumpyArray),
+        _column_datatypes(std::move(column_datatypes)) {}
+
  protected:
   dataset::GenericBatchProcessorPtr getTrainingBatchProcessor(
       std::shared_ptr<dataset::DataLoader> data_loader,
-      std::optional<uint64_t> max_in_memory_batches) final;
+      std::optional<uint64_t> max_in_memory_batches) final {
+    processTabularMetadata(data_loader, max_in_memory_batches);
 
-  dataset::GenericBatchProcessorPtr getPredictBatchProcessor() final;
+    return getPredictBatchProcessor();
+  }
+
+  dataset::GenericBatchProcessorPtr getPredictBatchProcessor() final {
+    std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
+        std::make_shared<dataset::TabularPairGram>(
+            _metadata, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
+
+    auto vocab = dataset::ThreadSafeVocabulary::make(
+        _metadata->getClassToIdMap(), /* fixed= */ true);
+
+    std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
+        dataset::StringLookupCategoricalBlock::make(_metadata->getLabelCol(),
+                                                    vocab)};
+
+    return std::make_shared<dataset::GenericBatchProcessor>(
+        /* input_blocks = */ input_blocks,
+        /* target_blocks = */ target_blocks, /* has_header = */ true);
+  }
 
   BoltVector featurizeInputForInference(const py::object& input) final;
 
   std::string getClassName(uint32_t neuron_id) final;
 
-  uint32_t defaultBatchSize() const final;
+  uint32_t defaultBatchSize() const final { return 256; }
 
-  bool freezeHashTables() const final;
+  bool freezeHashTables() const final { return true; }
 
-  bool useSparseInference() const final;
+  bool useSparseInference() const final { return true; }
 
-  std::vector<std::string> getPredictMetrics() const final;
+  std::vector<std::string> getPredictMetrics() const final {
+    return {"categorical_accuracy"};
+  }
+
+ private:
+  void processTabularMetadata(
+      const std::shared_ptr<dataset::DataLoader>& data_loader,
+
+      std::optional<uint32_t> max_in_memory_batches) {
+    std::shared_ptr<dataset::TabularMetadataProcessor>
+        metadata_batch_processor =
+            std::make_shared<dataset::TabularMetadataProcessor>(
+                _column_datatypes, _model->outputDim());
+
+    // TabularMetadataProcessor inherets ComputeBatchProcessor so this doesn't
+    // produce any vectors, we are just using it to iterate over the dataset.
+    auto compute_dataset =
+        std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+            data_loader, metadata_batch_processor);
+
+    compute_dataset->loadInMemory(
+        max_in_memory_batches.value_or(std::numeric_limits<uint64_t>::max()));
+
+    _metadata = metadata_batch_processor->getMetadata();
+  }
+
+  std::shared_ptr<dataset::TabularMetadata> _metadata;
+  std::vector<std::string> _column_datatypes;
 };
+
+inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes) {
+  auto input_layer = std::make_shared<Input>(
+      dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
+
+  auto hidden_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ hidden_layer_dim,
+      /* sparsity= */ getHiddenLayerSparsity(hidden_layer_dim),
+      /* activation= */ "relu");
+  hidden_layer->addPredecessor(input_layer);
+
+  auto output_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ n_classes, /* activation= */ "softmax");
+  output_layer->addPredecessor(hidden_layer);
+
+  auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
+                                           output_layer);
+
+  model->compile(std::make_shared<CategoricalCrossEntropyLoss>(),
+                 /* print_when_done= */ false);
+
+  return model;
+}
+
+inline float getHiddenLayerSparsity(uint64_t layer_dim) {
+  if (layer_dim < 300) {
+    return 1.0;
+  }
+  if (layer_dim < 1000) {
+    return 0.2;
+  }
+  if (layer_dim < 4000) {
+    return 0.1;
+  }
+  if (layer_dim < 10000) {
+    return 0.05;
+  }
+  if (layer_dim < 30000) {
+    return 0.01;
+  }
+  return 0.005;
+}
 
 }  // namespace thirdai::bolt::python
 

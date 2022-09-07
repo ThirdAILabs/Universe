@@ -2,7 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
-#include "ConversionUtils.h"
+#include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <dataset/src/DataLoader.h>
@@ -292,26 +292,6 @@ class AutoClassifierBase {
               active_neurons_array.mutable_data());
 
     return py::make_tuple(active_neurons_array, activations_array);
-  }
-
- protected:
-  static float getHiddenLayerSparsity(uint64_t layer_dim) {
-    if (layer_dim < 300) {
-      return 1.0;
-    }
-    if (layer_dim < 1000) {
-      return 0.2;
-    }
-    if (layer_dim < 4000) {
-      return 0.1;
-    }
-    if (layer_dim < 10000) {
-      return 0.05;
-    }
-    if (layer_dim < 30000) {
-      return 0.01;
-    }
-    return 0.005;
   }
 };
 

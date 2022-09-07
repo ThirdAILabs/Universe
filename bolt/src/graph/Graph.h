@@ -109,6 +109,8 @@ class BoltGraph {
     _per_epoch_callback = std::move(callback);
   }
 
+  uint32_t outputDim() const { return _output->outputDim(); }
+
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
