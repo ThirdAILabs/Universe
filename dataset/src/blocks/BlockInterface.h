@@ -131,11 +131,9 @@ class Block {
    */
   virtual uint32_t expectedNumColumns() const = 0;
 
-<<<<<<< HEAD
   virtual uint32_t getColumnNum() const = 0;
-=======
+
   virtual ~Block() = default;
->>>>>>> dda50efa012a4f17023bed19e897f873d3edc0f2
 
  protected:
   /**
