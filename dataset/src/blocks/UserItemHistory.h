@@ -163,14 +163,14 @@ class UserItemHistoryBlock final : public Block {
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
       uint32_t user_id = _user_id_lookup->getUid(user_str);
-      int64_t epoch_timestamp = TimeObject(timestamp_str).secondsSinceEpoch();
+      int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_ids = getItemIds(item_str);
 
 #pragma omp critical(user_item_history_block)
       {
-        buildVectorWithTrackedItems(user_id, epoch_timestamp, vec);
-        addCurrentRowItemsToHistory(user_id, epoch_timestamp, item_ids);
+        extendVectorWithUserHistory(user_id, timestamp_seconds, vec);
+        addItemsToUserHistory(user_id, timestamp_seconds, item_ids);
       }
     } catch (...) {
       return std::current_exception();
@@ -195,7 +195,7 @@ class UserItemHistoryBlock final : public Block {
     return item_id_strs;
   }
 
-  void buildVectorWithTrackedItems(uint32_t user_id, int64_t epoch_timestamp,
+  void extendVectorWithUserHistory(uint32_t user_id, int64_t timestamp_seconds,
                                    SegmentedFeatureVector& vec) {
     uint32_t added = 0;
 
@@ -204,17 +204,17 @@ class UserItemHistoryBlock final : public Block {
         break;
       }
 
-      if (item.timestamp <= epoch_timestamp) {
+      if (item.timestamp <= timestamp_seconds) {
         vec.addSparseFeatureToSegment(item.item, 1.0);
         added++;
       }
     }
   }
 
-  void addCurrentRowItemsToHistory(uint32_t user_id, int64_t epoch_timestamp,
-                                   std::vector<uint32_t>& item_ids) {
+  void addItemsToUserHistory(uint32_t user_id, int64_t timestamp_seconds,
+                             std::vector<uint32_t>& item_ids) {
     for (const auto& item_id : item_ids) {
-      _per_user_history->add(user_id, item_id, epoch_timestamp);
+      _per_user_history->add(user_id, item_id, timestamp_seconds);
     }
   }
 
