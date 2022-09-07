@@ -95,7 +95,7 @@ class AutoClassifierBase {
     }
   }
 
-  py::object predict_single(PREDICT_SINGLE_INPUT sample) {
+  py::object predictSingle(PREDICT_SINGLE_INPUT sample) {
     BoltVector input = featurizeInputForInference(sample);
 
     BoltVector output = _model->predictSingle({input}, useSparseInference());
