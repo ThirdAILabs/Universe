@@ -47,7 +47,7 @@ class PairGramTextBlock final : public TextBlock {
       uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(col, dim) {}
 
-  static TextBlockPtr make(
+  static auto make(
       uint32_t col,
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<PairGramTextBlock>(col, dim);
@@ -79,7 +79,7 @@ class UniGramTextBlock final : public TextBlock {
       uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(col, dim) {}
 
-  static TextBlockPtr make(
+  static auto make(
       uint32_t col,
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<UniGramTextBlock>(col, dim);
@@ -112,7 +112,7 @@ class CharKGramTextBlock final : public TextBlock {
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(col, dim), _k(k) {}
 
-  static TextBlockPtr make(
+  static auto make(
       uint32_t col, uint32_t k,
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<CharKGramTextBlock>(col, k, dim);
