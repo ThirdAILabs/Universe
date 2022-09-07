@@ -30,30 +30,12 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     # Install sudo
     && apt-get update && apt-get -y install sudo
   
-# Split this into a different RUN command for clarity, and also so if you want
-# to add a python package you don't need to rebuild everything
-RUN pip3 install --upgrade \
-    black \
-    boto3 \ 
-    pytest \
-    mlflow \
-    toml \
-    psutil \
-    ipython \
-    datasets \
-    mmh3 \
-    moto \
-    numpy \
-    boto3 \
-    awscli \
-    sklearn \
-    pandas \
-    scikit-image
+RUN pip3 install -r requirments.txt
 
 # The exit 0 means these commands will still continue even if the install fails. 
-# This is because these downloads might not work on arm64
+# This is because these downloads might not work on arm64, but we still want
+# to be able to build a docker image
 RUN pip3 install tensorflow tensorflow-datasets ; exit 0
-RUN pip3 install torch torchvision ; exit 0
 RUN pip3 install transformers ; exit 0
 RUN sudo apt install openssh-client ; exit 0
 RUN apt-get install linux-tools-common linux-tools-generic linux-tools-`uname -r` ; exit 0
