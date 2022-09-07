@@ -35,17 +35,6 @@ separate_arguments(FEATURE_FLAGS)
 message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
 message("====================================")
 
-# Check if there is a license flag, and only if so add the cryptopp lib
-# We have two different License flags, one for if to build the license files
-# (THIRDAI_BUILD_LICENSE) and one for if to check the license (THIRDAI_CHECK_LICENSE).
-# If just the THIRDAI_CHECK_LICENSE flag is set there will be a linker error.
-list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
-SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
-if (${LICENSE_BUILD_FLAG_FOUND})
-  add_subdirectory(deps/cryptopp EXCLUDE_FROM_ALL)
-  set(CRYPTOPP_LIB cryptopp-static)
-endif()
-
 
 if (MSVC)
   if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -146,6 +135,16 @@ add_subdirectory(deps/googletest)
 # can work with vscode
 include_directories(deps) 
 
+# Check if there is a license flag, and only if so add the cryptopp lib
+# We have two different License flags, one for if to build the license files
+# (THIRDAI_BUILD_LICENSE) and one for if to check the license (THIRDAI_CHECK_LICENSE).
+# If just the THIRDAI_CHECK_LICENSE flag is set there will be a linker error.
+list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
+if (${LICENSE_BUILD_FLAG_FOUND})
+  add_subdirectory(deps/cryptopp EXCLUDE_FROM_ALL)
+  set(CRYPTOPP_LIB cryptopp-static)
+endif()
 
 
 find_package (Python3 COMPONENTS Interpreter Development)
