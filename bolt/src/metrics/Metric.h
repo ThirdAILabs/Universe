@@ -247,6 +247,12 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::atomic<float> _sum_of_truths;
 };
 
+/**
+ * @brief A common metric for retrieval tasks, computed as
+ * |matches| / |label set|, where:
+ * matches = set of classes that are present in both the top K
+ * predictions and the label set
+ */
 class RecallAtK : public Metric {
  public:
   explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
@@ -324,6 +330,16 @@ class RecallAtK : public Metric {
   std::atomic_uint64_t _label_count;
 };
 
+/**
+ * @brief A common metric for evaluating the performance of sequential
+ * recommendation models at the next item prediction task. It is the
+ * same as Recall@K, except that the predictions are retrieved from a
+ * randomly sampled subset of all possible output classes.
+ * It is computed as |matches| / |label set|, where:
+ * matches = set of classes that are present in both the label set and
+ * the top K predictions from a randomly sampled subset of all possible
+ * output classes.
+ */
 class SampledRecallAtK : public RecallAtK {
  public:
   explicit SampledRecallAtK(uint32_t k, uint32_t n_samples)
