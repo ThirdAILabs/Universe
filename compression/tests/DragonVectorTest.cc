@@ -77,23 +77,23 @@ TEST_F(DragonVectorTest, ExtendDragonVectorTest) {
 }
 
 TEST_F(DragonVectorTest, SerializeDragonVectorTest) {
-  uint32_t size;
-  std::stringstream os;
-  std::string name = "dragon";
-  size = static_cast<uint32_t>(name.size());
+  std::stringstream ss = _vec.serialize();
 
-  os.write(reinterpret_cast<char*>(&size), sizeof(uint32_t));
-  os.write(name.c_str(), size);
+  DragonVector<float> new_vec = DragonVector<float>(ss);
 
-  uint32_t interpreted_size;
+  ASSERT_EQ(new_vec.size(), _vec.size());
+  ASSERT_EQ(new_vec.uncompressedSize(), _vec.uncompressedSize());
 
-  // std::cout << os.str() << std::endl;st
-  os.read(reinterpret_cast<char*>(&interpreted_size), sizeof(uint32_t));
+  std::vector<uint32_t> indices = _vec.indices();
+  std::vector<float> values = _vec.values();
 
-  std::cout << "size of interpreted is: " << interpreted_size << std::endl;
-  std::cout << "and the string is: "
-            << thirdai::compression::readBinaryString(std::move(os),
-                                                      interpreted_size);
+  std::vector<uint32_t> indices_deserialized = new_vec.indices();
+  std::vector<float> values_deserialized = new_vec.values();
+
+  for (size_t i = 0; i < indices.size(); i++) {
+    ASSERT_EQ(indices[i], indices_deserialized[i]);
+    ASSERT_EQ(values[i], values_deserialized[i]);
+  }
 }
 
 }  // namespace thirdai::compression::tests

@@ -60,7 +60,7 @@ class DragonVector final : public CompressedVector<T> {
 
   std::stringstream serialize() const final;
 
-  static DragonVector<T> deserialize(std::stringstream& input_stream);
+  explicit DragonVector(std::stringstream& input_stream);
 
  private:
   /*
