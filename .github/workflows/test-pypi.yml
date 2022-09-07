@@ -68,7 +68,7 @@ jobs:
           # On linux we copy a valid license to the home directory within the docker
           CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
           # Install test dependencies with overwritten environment variables.
-          CIBW_BEFORE_TEST: CC=gcc CXX=g++ pip3 install -r requirements.txt
+          CIBW_BEFORE_TEST: pip3 install -r requirements.txt
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
 

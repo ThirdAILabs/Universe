@@ -36,7 +36,6 @@ RUN pip3 install -r /requirements.txt
 # The exit 0 means these commands will still continue even if the install fails. 
 # This is because these downloads might not work on arm64, but we still want
 # to be able to build a docker image with some maximum amount of functionality
-RUN pip3 install tensorflow tensorflow-datasets ; exit 0
 RUN sudo apt install openssh-client ; exit 0
 RUN apt-get install linux-tools-common linux-tools-generic linux-tools-`uname -r` ; exit 0
 
