@@ -18,14 +18,12 @@ class MaskedSentenceBatchProcessor final
         _unknown_token_hash(TextEncodingUtils::computeUnigram(
             /* key= */ "[UNK]", /* len= */ 5)),
         _rand(723204),
-        _masked_tokens_percentage(0.0) {}
+        _masked_tokens_percentage(std::nullopt) {}
 
   MaskedSentenceBatchProcessor(uint32_t output_range,
                                const float masked_tokens_percentage)
       : MaskedSentenceBatchProcessor(output_range) {
-    // No linting since an initializer for a delegating constructor must appear
-    // alone
-    _masked_tokens_percentage = masked_tokens_percentage;  // NOLINT
+    _masked_tokens_percentage = masked_tokens_percentage;
   }
 
   std::tuple<BoltBatch, BoltBatch, BoltBatch> createBatch(
@@ -66,16 +64,15 @@ class MaskedSentenceBatchProcessor final
     std::vector<uint32_t> masked_word_hashes;
 
     uint32_t masked_tokens_size =
-        (_masked_tokens_percentage == 0.0)
-            ? 1
-            : static_cast<uint32_t>(size * _masked_tokens_percentage);
+        (_masked_tokens_percentage.has_value())
+            ? static_cast<uint32_t>(size * _masked_tokens_percentage.value())
+            : 1;
     std::unordered_set<uint32_t> already_masked_tokens;
-
     uint32_t unigram_index = 0;
 
     while (unigram_index < masked_tokens_size) {
       uint32_t masked_index = _rand() % size;
-      if (already_masked_tokens.count(masked_index) > 0) {
+      if (already_masked_tokens.count(masked_index)) {
         continue;
       }
       masked_indices.push_back(masked_index);
@@ -99,28 +96,22 @@ class MaskedSentenceBatchProcessor final
         if (_word_hashes_to_ids.count(masked_word_hash)) {
           masked_word_ids.push_back(_word_hashes_to_ids.at(masked_word_hash));
         } else {
-          auto map_size = _word_hashes_to_ids.size();
+          uint32_t map_size = _word_hashes_to_ids.size();
           masked_word_ids.push_back(map_size);
 
           _word_hashes_to_ids[masked_word_hash] = map_size;
         }
       }
     }
+    BoltVector label = BoltVector::makeSparseVector(
+        masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
 
-    uint32_t len = masked_tokens_size;
-
-    BoltVector label(len, false, false);
-
-    for (uint32_t index = 0; index < len; index++) {
-      label.active_neurons[index] = masked_word_ids[index];
-      label.activations[index] = 1.0;
-    }
-
-    const std::vector<float> values(masked_tokens_size, 1.0);
     auto pairgrams = TextEncodingUtils::computePairgramsFromUnigrams(
         unigrams, _output_range);
 
-    return {pairgrams, BoltVector::makeSparseVector(masked_indices, values),
+    return {std::move(pairgrams),
+            BoltVector::makeSparseVector(
+                masked_indices, std::vector<float>(masked_tokens_size, 1.0)),
             std::move(label)};
   }
 
@@ -132,7 +123,7 @@ class MaskedSentenceBatchProcessor final
   // Represents the percentage of tokens masked in any input sequence.
   // For instance, if _masked_tokens_percentage = 0.10, then 10% of the
   // words in the input sequence are randomly masked.
-  float _masked_tokens_percentage;
+  std::optional<float> _masked_tokens_percentage;
 };  // namespace thirdai::dataset
 
 }  // namespace thirdai::dataset
