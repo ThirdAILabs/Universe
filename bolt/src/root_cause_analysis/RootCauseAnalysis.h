@@ -19,8 +19,8 @@ makeGradientRatiosWithIndicesSorted(std::vector<float> gradients_ratio,
                  std::pair<float, uint32_t> pair2) {
     return abs(pair1.first) > abs(pair2.first);
   };
-  sort(gradient_ratios_with_indices.begin(), gradient_ratios_with_indices.end(),
-       func);
+  std::sort(gradient_ratios_with_indices.begin(),
+            gradient_ratios_with_indices.end(), func);
   return gradient_ratios_with_indices;
 }
 
