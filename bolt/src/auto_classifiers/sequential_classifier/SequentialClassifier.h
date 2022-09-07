@@ -44,13 +44,15 @@ class SequentialClassifier {
       const std::string& timestamp,
       const std::vector<std::string>& static_text = {},
       const std::vector<CategoricalPair>& static_categorical = {},
-      const std::vector<SequentialTriplet>& sequential = {}) {
+      const std::vector<SequentialTriplet>& sequential = {},
+      std::optional<char> multi_class_delim = std::nullopt) {
     _schema.user = user;
     _schema.target = target;
     _schema.timestamp_col_name = timestamp;
     _schema.static_text_col_names = static_text;
     _schema.static_categorical = static_categorical;
     _schema.sequential = sequential;
+    _schema.multi_class_delim = multi_class_delim;
   }
 
   void train(const std::string& train_filename, uint32_t epochs,
