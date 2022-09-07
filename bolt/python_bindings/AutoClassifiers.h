@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
 #include <bolt/python_bindings/AutoClassifierBase.h>
 #include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
@@ -26,6 +29,22 @@ class TextClassifier final : public AutoClassifierBase {
 
     _batch_processor = dataset::GenericBatchProcessor::make(
         {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
+  }
+
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<TextClassifier> load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<TextClassifier> deserialize_into(new TextClassifier());
+    iarchive(*deserialize_into);
+    return deserialize_into;
   }
 
  protected:
@@ -86,6 +105,16 @@ class TextClassifier final : public AutoClassifierBase {
                    /* print_when_done= */ false);
 
     return model;
+  }
+
+  // Private constructor for cereal.
+  TextClassifier() : AutoClassifierBase(nullptr, ReturnMode::NumpyArray) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<AutoClassifierBase>(this), _batch_processor,
+            _label_id_lookup);
   }
 
   dataset::GenericBatchProcessorPtr _batch_processor;

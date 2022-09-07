@@ -2,7 +2,7 @@ from thirdai import bolt
 import pytest
 import datasets
 import random
-from utils import remove_files, compute_accuracy_with_file
+from utils import remove_files, compute_accuracy_of_predictions
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -24,8 +24,7 @@ def write_dataset_to_csv(dataset, filename, return_labels=False):
     random.shuffle(data)
 
     with open(filename, "w") as file:
-        file.write('"text","category"\n')
-        lines = [f'"{sentence}","{label_name}"\n' for sentence, label_name in data]
+        lines = [f'{label_name},{sentence}\n' for sentence, label_name in data]
         file.writelines(lines)
 
     if return_labels:
@@ -40,62 +39,43 @@ def download_clinc_dataset():
 
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
 
-
-def trim(sentence):
-    """
-    we are removing quotes from start and end of sentence,
-    because thats how we are trimming the sentence in our cpp code.
-    """
-    i = len(sentence) - 1
-    while i > 0 and (sentence[i] == '"'):
-        sentence = sentence[:-1]
-        i = i - 1
-
-    j = 0
-    while j < len(sentence) and (sentence[j] == '"'):
-        sentence = sentence[1:]
-    return sentence
-
-
 def test_text_classifier_clinc_dataset():
     (n_classes, test_labels) = download_clinc_dataset()
-    classifier = bolt.TextClassifier(model_size="1Gb", n_classes=n_classes)
+    classifier = bolt.TextClassifier(hidden_layer_dim=200, n_classes=n_classes)
 
-    classifier.train(train_file=TRAIN_FILE, epochs=5, learning_rate=0.01)
+    classifier.train(filename=TRAIN_FILE, epochs=5, learning_rate=0.01)
 
-    classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
+    _, predictions = classifier.predict(filename=TEST_FILE)
 
-    acc = compute_accuracy_with_file(test_labels, PREDICTION_FILE)
+    acc = compute_accuracy_of_predictions(test_labels, predictions)
 
     print("Computed Accuracy: ", acc)
     assert acc > 0.7
 
-    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])
+    remove_files([TRAIN_FILE, TEST_FILE])
 
 
 def test_text_classifier_predict_single():
-    (n_classes, test_labels) = download_clinc_dataset()
-    classifier = bolt.TextClassifier(model_size="1Gb", n_classes=n_classes)
+    (n_classes, _) = download_clinc_dataset()
+    classifier = bolt.TextClassifier(hidden_layer_dim=200, n_classes=n_classes)
 
-    classifier.train(train_file=TRAIN_FILE, epochs=5, learning_rate=0.01)
+    classifier.train(filename=TRAIN_FILE, epochs=5, learning_rate=0.01)
 
-    classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
+    _, predictions = classifier.predict(filename=TEST_FILE)
 
     with open(TEST_FILE) as test:
         test_set = test.readlines()
 
-    with open(PREDICTION_FILE) as pred:
-        expected_predictions = pred.readlines()
 
-    for i in range(len(test_set) - 1):
+    for sample, prediction in zip(test_set, predictions):
         """
         we are taking i+1 because first row is a header in test file and
         split it with '","' because its how the sentence and label seperated uniquely
         in file and taking the sentence which is present at first index.
         """
-        actual_prediction = classifier.predict_single(
-            trim(test_set[i + 1].split('","')[0])
+        single_prediction = classifier.predict_single(
+            sample.split(',')[1]
         )
-        assert actual_prediction == expected_predictions[i][:-1]
+        assert single_prediction == prediction
 
-    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])
+    remove_files([TRAIN_FILE, TEST_FILE])

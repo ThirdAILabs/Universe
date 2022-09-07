@@ -117,6 +117,8 @@ class AutoClassifierBase {
     }
   }
 
+  virtual ~AutoClassifierBase() = default;
+
  private:
   void trainInMemory(dataset::BoltDatasetPtr& train_data,
                      dataset::BoltDatasetPtr& train_labels, float learning_rate,
@@ -277,7 +279,7 @@ class AutoClassifierBase {
     py::array_t<float, py::array::c_style | py::array::forcecast>
         activations_array(output.len);
     std::copy(output.activations, output.activations + output.len,
-              activations_array.data());
+              activations_array.mutable_data());
 
     if (output.isDense()) {
       // This is not a move on return because we are constructing a py::object.
@@ -287,7 +289,7 @@ class AutoClassifierBase {
     py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
         active_neurons_array(output.len);
     std::copy(output.active_neurons, output.active_neurons + output.len,
-              active_neurons_array.data());
+              active_neurons_array.mutable_data());
 
     return py::make_tuple(active_neurons_array, activations_array);
   }
