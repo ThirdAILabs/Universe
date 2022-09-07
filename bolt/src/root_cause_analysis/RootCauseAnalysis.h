@@ -7,6 +7,13 @@ namespace thirdai::bolt {
 
 using Blocks = std::vector<std::shared_ptr<dataset::Block>>;
 
+// TODO (YASH)
+// 1. make this indices within block point to the exact things that affect. For
+// example in text block rather than giving index we can store a map and give
+// exact keywords responsible.
+// 2. For this to happen, we have to change some of blocks to store map(like
+// textblock(unigram, pairgram or in general char k gram)).
+
 inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
     std::vector<float> gradients_ratio,
     std::vector<uint32_t> gradients_indices) {
