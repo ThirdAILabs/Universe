@@ -18,7 +18,7 @@ class DragonVectorTest : public testing::Test {
   std::vector<float> _original_vec;
   uint32_t _uncompressed_size = 100;
   float _compression_density = 0.1;
-  int _seed_for_hashing = 2;
+  int _seed_for_hashing = 0;
   uint32_t sample_population_size = 50;
 
   DragonVectorTest() {
