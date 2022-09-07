@@ -4,7 +4,7 @@
 #include <dataset/src/StreamingDataset.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/batch_processors/TextClassificationProcessor.h>
-#include <dataset/src/encodings/text/TextEncodingUtils.h>
+#include <dataset/src/utils/TextEncodingUtils.h>
 #include <unordered_map>
 
 namespace thirdai::dataset::tests {
