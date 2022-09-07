@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/python_bindings/AutoClassifierBase.h>
 #include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
@@ -24,7 +25,7 @@ class TextClassifier final : public AutoClassifierBase {
       : AutoClassifierBase(createModel(hidden_layer_dim, n_classes),
                            ReturnMode::ClassName) {
     auto label_block =
-        dataset::StringLookupCategoricalBlock::make(/* col= */ 0, n_classes);
+        dataset::StringLookupCategoricalBlock::make(/* col= */ 0, _n_classes);
     _label_id_lookup = label_block->getVocabulary();
 
     _batch_processor = dataset::GenericBatchProcessor::make(
@@ -44,6 +45,9 @@ class TextClassifier final : public AutoClassifierBase {
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<TextClassifier> deserialize_into(new TextClassifier());
     iarchive(*deserialize_into);
+
+    deserialize_into->reinitializeBatchProcessors();
+
     return deserialize_into;
   }
 
@@ -107,32 +111,57 @@ class TextClassifier final : public AutoClassifierBase {
     return model;
   }
 
+  void reinitializeBatchProcessors() {
+    auto label_block = dataset::StringLookupCategoricalBlock::make(
+        /* col= */ 0, _label_id_lookup);
+    _batch_processor = dataset::GenericBatchProcessor::make(
+        {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
+  }
+
   // Private constructor for cereal.
-  TextClassifier() : AutoClassifierBase(nullptr, ReturnMode::NumpyArray) {}
+  TextClassifier()
+      : AutoClassifierBase(nullptr, ReturnMode::NumpyArray),
+        _label_id_lookup(nullptr) {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<AutoClassifierBase>(this), _batch_processor,
-            _label_id_lookup);
+    archive(cereal::base_class<AutoClassifierBase>(this), _label_id_lookup);
   }
 
   dataset::GenericBatchProcessorPtr _batch_processor;
   dataset::ThreadSafeVocabularyPtr _label_id_lookup;
+  uint32_t _n_classes;
 };
 
 class MultiLabelTextClassifier final : public AutoClassifierBase {
  public:
-  explicit MultiLabelTextClassifier(uint32_t n_classes)
+  explicit MultiLabelTextClassifier(uint32_t n_classes, float threshold = 0.95)
       : AutoClassifierBase(createModel(n_classes),
-                           ReturnMode::NumpyArrayWithThresholding) {
-    _batch_processor = dataset::GenericBatchProcessor::make(
-        {dataset::PairGramTextBlock::make(/* col= */ 1)},
-        {dataset::NumericalCategoricalBlock::make(/* col= */ 0,
-                                                  /* n_classes= */ n_classes)});
+                           ReturnMode::NumpyArrayWithThresholding, threshold),
+        _n_classes(n_classes) {
+    buildBatchProcessors();
+  }
 
-    _inference_featurizer = dataset::GenericBatchProcessor::make(
-        {dataset::PairGramTextBlock::make(/* col= */ 0)}, {});
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<MultiLabelTextClassifier> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<MultiLabelTextClassifier> deserialize_into(
+        new MultiLabelTextClassifier());
+    iarchive(*deserialize_into);
+
+    deserialize_into->buildBatchProcessors();
+
+    return deserialize_into;
   }
 
  protected:
@@ -189,6 +218,18 @@ class MultiLabelTextClassifier final : public AutoClassifierBase {
     return model;
   }
 
+  void buildBatchProcessors() {
+    _batch_processor = dataset::GenericBatchProcessor::make(
+        {dataset::PairGramTextBlock::make(/* col= */ 1)},
+        {dataset::NumericalCategoricalBlock::make(/* col= */ 0,
+                                                  /* n_classes= */ _n_classes)},
+        /* has_header= */ false, /* delimiter= */ '\t');
+
+    _inference_featurizer = dataset::GenericBatchProcessor::make(
+        {dataset::PairGramTextBlock::make(/* col= */ 0)}, {},
+        /* has_header= */ false, /* delimiter= */ '\t');
+  }
+
   static float getOutputSparsity(uint32_t output_dim) {
     /*
       For smaller output layers, we return a sparsity
@@ -230,8 +271,19 @@ class MultiLabelTextClassifier final : public AutoClassifierBase {
     return sentence_ss.str();
   }
 
+  // Private constructor for cereal.
+  MultiLabelTextClassifier()
+      : AutoClassifierBase(nullptr, ReturnMode::NumpyArray) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<AutoClassifierBase>(this), _n_classes);
+  }
+
   dataset::GenericBatchProcessorPtr _batch_processor;
   dataset::GenericBatchProcessorPtr _inference_featurizer;
+  uint32_t _n_classes;
 };
 
 class TabularClassifier final : public AutoClassifierBase {
@@ -256,3 +308,6 @@ class TabularClassifier final : public AutoClassifierBase {
 };
 
 }  // namespace thirdai::bolt::python
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::python::TextClassifier)
+CEREAL_REGISTER_TYPE(thirdai::bolt::python::MultiLabelTextClassifier)

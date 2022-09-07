@@ -17,10 +17,10 @@ def test_multi_label_text_classifier_load_save():
             f.write(line)
 
     threshold = 0.95  # Default threshold
-    model.train(temp_train_file, epochs=10, learning_rate=0.1, metrics=[])
+    model.train(temp_train_file, epochs=10, learning_rate=0.1)
 
     inference_sample = [1, 1]
-    activations_before_save = model.predict_single_from_tokens(inference_sample)
+    activations_before_save = model.predict_single(inference_sample)
 
     assert activations_before_save.shape == (5,)
     # We expect the model to predict class 1; class 1 should have max activation.
@@ -31,7 +31,7 @@ def test_multi_label_text_classifier_load_save():
     model.save(model_save_file)
 
     reloaded_model = bolt.MultiLabelTextClassifier.load(model_save_file)
-    activations_after_load = reloaded_model.predict_single_from_tokens(inference_sample)
+    activations_after_load = reloaded_model.predict_single(inference_sample)
 
     assert (activations_before_save == activations_after_load).all()
 
@@ -46,7 +46,12 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
     We expect that there is always one output activation greater than or
     equal to the threshold.
     """
-    model = bolt.MultiLabelTextClassifier(n_classes=5)
+
+    # We chose 1.5 because this is an impossible threshold to reach naturally, 
+    # which forces predict_single to force the highest activation to this threshold.
+    threshold = 1.5
+
+    model = bolt.MultiLabelTextClassifier(n_classes=5, threshold=threshold)
 
     train_contents = ["1\t1 1\n", "2\t2 2\n", "3\t3 3\n", "4\t4 4\n"]
 
@@ -56,15 +61,10 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
         for line in train_contents:
             f.write(line)
 
-    threshold = 1.5  # We chose 1.5 because this is an impossible threshold
-    # to reach naturally, which forces predict_single to
-    # force the highest activation to this threshold.
-    model.train(temp_train_file, epochs=10, learning_rate=0.1, metrics=[])
+    model.train(temp_train_file, epochs=10, learning_rate=0.1)
 
     inference_sample = [1, 1]
-    activations_before_save = model.predict_single_from_tokens(
-        inference_sample, activation_threshold=threshold
-    )
+    activations_before_save = model.predict_single(inference_sample)
 
     assert activations_before_save.shape == (5,)
     # We expect the model to predict class 1; class 1 should have max activation.
