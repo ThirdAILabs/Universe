@@ -9,6 +9,7 @@ add_library(
 target_link_libraries(
   lsh_test_helper_lib
   PRIVATE
+  OpenMP::OpenMP_CXX
   gtest_main
 )
 
@@ -42,6 +43,7 @@ set(
   hash_function_lib
   lsh_test_helper_lib
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 target_link_libraries(

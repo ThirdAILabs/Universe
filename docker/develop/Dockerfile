@@ -34,6 +34,7 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
 # to add a python package you don't need to rebuild everything
 RUN pip3 install --upgrade \
     black \
+    boto3 \ 
     pytest \
     mlflow \
     toml \
@@ -41,6 +42,7 @@ RUN pip3 install --upgrade \
     ipython \
     datasets \
     mmh3 \
+    moto \
     numpy \
     boto3 \
     awscli \
