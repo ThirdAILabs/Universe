@@ -69,7 +69,7 @@ class EarlyStopCheckpoint : public Callback {
       _best_validation_score = metric_val;
       _epochs_since_best = 0;
       model.save(_model_save_path);
-      return
+      return;
     }
 
     _epochs_since_best++;

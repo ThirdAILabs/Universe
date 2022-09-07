@@ -120,6 +120,21 @@ MetricData BoltGraph::train(
 
         callbacks.onBatchEnd(*this);
       }
+
+      auto train_end = std::chrono::high_resolution_clock::now();
+      int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
+                               train_end - train_start)
+                               .count();
+
+      time_per_epoch.push_back(static_cast<double>(epoch_time));
+      if (train_config.verbose()) {
+        std::cout << std::endl
+                  << "Processed " << train_context.numBatches()
+                  << " training batches in " << epoch_time << " seconds"
+                  << std::endl;
+      }
+      _epoch_count++;
+      metrics.logAndReset();
     } catch (const std::exception& e) {
       cleanupAfterBatchProcessing();
       throw;
@@ -132,21 +147,6 @@ MetricData BoltGraph::train(
       break;
     }
     perEpochCallback();
-
-    auto train_end = std::chrono::high_resolution_clock::now();
-    int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
-                             train_end - train_start)
-                             .count();
-
-    time_per_epoch.push_back(static_cast<double>(epoch_time));
-    if (train_config.verbose()) {
-      std::cout << std::endl
-                << "Processed " << train_context.numBatches()
-                << " training batches in " << epoch_time << " seconds"
-                << std::endl;
-    }
-    _epoch_count++;
-    metrics.logAndReset();
   }
 
   callbacks.onTrainEnd(*this);
