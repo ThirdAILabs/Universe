@@ -3,9 +3,11 @@ import pytest
 pytestmark = [pytest.mark.unit]
 
 from thirdai import bolt, dataset
-from ..utils import gen_numpy_training_data
-from ..test_tabular_classifier import (
-    PREDICTION_FILE,
+from utils import (
+    gen_numpy_training_data,
+)
+
+from test_tabular_classifier import (
     TRAIN_FILE,
     get_census_income_metadata,
     setup_module,
@@ -198,20 +200,22 @@ def test_distributed_training_with_bolt():
 def test_distributed_tabular_classifier():
     (n_classes, column_datatypes, test_labels) = get_census_income_metadata()
 
-    classifier_a = bolt.TabularClassifier(model_size="medium", n_classes=n_classes)
-    classifier_b = bolt.TabularClassifier(model_size="medium", n_classes=n_classes)
+    classifier_a = bolt.TabularClassifier(model_size="1Gb", n_classes=n_classes)
+    classifier_b = bolt.TabularClassifier(model_size="1Gb", n_classes=n_classes)
 
     classifier_a.init_classifier_distributed_training(
         train_file=TRAIN_FILE,
         column_datatypes=column_datatypes,
         epochs=1,
         learning_rate=0.01,
+        batch_size=256,
     )
     classifier_b.init_classifier_distributed_training(
         train_file=TRAIN_FILE,
         column_datatypes=column_datatypes,
         epochs=1,
         learning_rate=0.01,
+        batch_size=256,
     )
 
     distributed_training_context_model_a = (

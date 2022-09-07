@@ -21,7 +21,8 @@ class DistributedTrainingContext {
       const dataset::BoltDatasetPtr& train_labels,
       const TrainConfig& train_config, std::shared_ptr<LossFunction> loss,
       bool print_when_done)
-      : _bolt_graph(BoltGraph(std::move(inputs), std::move(output))),
+      : _bolt_graph(std::make_shared<BoltGraph>(
+            std::vector<InputPtr>{std::move(inputs)}, output)),
         _train_context(DatasetContext(train_data, train_labels)),
         _learning_rate(train_config.learningRate()),
         _metrics(train_config.getMetricAggregator()),
@@ -43,7 +44,7 @@ class DistributedTrainingContext {
                              const dataset::BoltDatasetPtr& train_labels,
                              const TrainConfig& train_config)
       : _bolt_graph(std::move(bolt_graph_ptr)),
-        _train_context(DatasetContext({train_data}, {}, train_labels)),
+        _train_context(DatasetContext({train_data}, train_labels)),
         _learning_rate(train_config.learningRate()),
         _metrics(train_config.getMetricAggregator()),
         _rebuild_hash_tables_batch(

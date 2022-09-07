@@ -12,7 +12,7 @@ namespace thirdai::bolt {
 
 void DistributedTrainingContext::calculateGradientSingleNode(
     uint32_t batch_idx) {
-  _train_context.setInputs(batch_idx, _bolt_graph._inputs);
+  _train_context.setInputs(batch_idx, _bolt_graph->_inputs);
   const BoltBatch& batch_labels = _train_context.labels()->at(batch_idx);
   _bolt_graph->processTrainingBatch(batch_labels, _metrics);
 }
