@@ -65,12 +65,15 @@ class EarlyStopCheckpoint : public Callback {
         model.predict(_validation_data, _validation_labels, _predict_config)
             .first[metric_name];
 
-    _epochs_since_best++;
     if (isImprovement(metric_val)) {
       _best_validation_score = metric_val;
       _epochs_since_best = 0;
       model.save(_model_save_path);
-    } else if (_epochs_since_best == _patience) {
+      return
+    }
+
+    _epochs_since_best++;
+    if (_epochs_since_best == _patience) {
       _should_stop_training = true;
     }
   }

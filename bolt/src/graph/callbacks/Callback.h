@@ -19,6 +19,10 @@ using CallbackPtr = std::shared_ptr<Callback>;
  * model training process. Functions may alter the model state.
  *
  * Right now this callback is only used during training.
+ *
+ * TODO(david): lets make this a state machine where we assert that previous
+ * steps are called before moving to the next stage. See Node.h getState() and
+ * other methods for reference.
  */
 class Callback {
  public:
