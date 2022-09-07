@@ -88,7 +88,8 @@ class SequentialClassifier {
   InferenceResult predict(
       const std::string& test_filename,
       std::vector<std::string> metrics = {"recall@1"},
-      const std::optional<std::string>& output_filename = std::nullopt) {
+      const std::optional<std::string>& output_filename = std::nullopt,
+      uint32_t print_top_k = 1) {
     if (!_model) {
       throw std::runtime_error("Called predict() before training.");
     }
@@ -106,9 +107,19 @@ class SequentialClassifier {
       if (!output_file) {
         return;
       }
-      uint32_t class_id = output.getHighestActivationId();
+      auto class_ids = output.findKLargestActivationsK(print_top_k);
       auto target_lookup = _state.vocabs_by_column[_schema.target.first];
-      (*output_file) << target_lookup->getString(class_id) << std::endl;
+
+      uint32_t first = true;
+      while (!class_ids.empty()) {
+        auto [_activation, class_id] = class_ids.top();
+        class_ids.pop();
+        if (!first) {
+          (*output_file) << ',';
+        }
+        (*output_file) << target_lookup->getString(class_id) << std::endl;
+        first = false;
+      }
     };
 
     auto [test_data, test_labels] = pipeline.loadInMemory();
