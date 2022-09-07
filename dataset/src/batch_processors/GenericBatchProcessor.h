@@ -143,13 +143,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                           (index - _offsets[iter - _offsets.begin() - 1]));
   }
 
-  void printBlockColumns() {
-    for (const auto& block : _input_blocks) {
-      std::cout << block->getColumnNum() << " ";
-    }
-    std::cout << std::endl;
-  }
-
  private:
   /**
    * Encodes a sample as a BoltVector according to the given blocks.

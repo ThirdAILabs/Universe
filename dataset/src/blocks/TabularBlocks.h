@@ -22,7 +22,8 @@ class TabularPairGram : public Block {
 
   uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
 
-  // TODO (YASH) see how to return correct column because it contains bunch of columns baked in this block.
+  // TODO (YASH) see how to return correct column because it contains bunch of
+  // columns baked in this block.
   uint32_t getColumnNum() const final { return _metadata->getLabelCol(); }
 
  protected:
