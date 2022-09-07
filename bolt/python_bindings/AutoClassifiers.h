@@ -25,7 +25,7 @@ namespace thirdai::bolt::python {
 inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes);
 inline float getHiddenLayerSparsity(uint64_t layer_dim);
 
-class TextClassifier final : public AutoClassifierBase {
+class TextClassifier final : public AutoClassifierBase<const std::string&> {
  public:
   TextClassifier(uint32_t hidden_layer_dim, uint32_t n_classes)
       : AutoClassifierBase(createModel(hidden_layer_dim, n_classes),
@@ -66,10 +66,7 @@ class TextClassifier final : public AutoClassifierBase {
         {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
   }
 
-  BoltVector featurizeInputForInference(const py::object& input) final {
-    // TODO(Nicholas): check type:
-    std::string input_str = input.cast<std::string>();
-
+  BoltVector featurizeInputForInference(const std::string& input_str) final {
     return dataset::TextEncodingUtils::computePairgrams(
         input_str, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
   }
@@ -103,7 +100,8 @@ class TextClassifier final : public AutoClassifierBase {
   dataset::ThreadSafeVocabularyPtr _label_id_lookup;
 };
 
-class MultiLabelTextClassifier final : public AutoClassifierBase {
+class MultiLabelTextClassifier final
+    : public AutoClassifierBase<const std::vector<uint32_t>&> {
  public:
   explicit MultiLabelTextClassifier(uint32_t n_classes, float threshold = 0.95)
       : AutoClassifierBase(createModel(n_classes),
@@ -146,10 +144,9 @@ class MultiLabelTextClassifier final : public AutoClassifierBase {
         /* has_header= */ false, /* delimiter= */ '\t');
   }
 
-  BoltVector featurizeInputForInference(const py::object& input) final {
-    // TODO(Nicholas): Check input type
-    std::string sentence =
-        tokensToSentence(input.cast<std::vector<uint32_t>>());
+  BoltVector featurizeInputForInference(
+      const std::vector<uint32_t>& input) final {
+    std::string sentence = tokensToSentence(input);
 
     return dataset::TextEncodingUtils::computePairgrams(
         sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
@@ -239,7 +236,8 @@ class MultiLabelTextClassifier final : public AutoClassifierBase {
   }
 };
 
-class TabularClassifier final : public AutoClassifierBase {
+class TabularClassifier final
+    : public AutoClassifierBase<const std::vector<std::string>&> {
  public:
   TabularClassifier(uint32_t hidden_layer_dim, uint32_t n_classes,
                     std::vector<std::string> column_datatypes)
@@ -253,29 +251,48 @@ class TabularClassifier final : public AutoClassifierBase {
       std::optional<uint64_t> max_in_memory_batches) final {
     processTabularMetadata(data_loader, max_in_memory_batches);
 
-    return getPredictBatchProcessor();
+    return getBatchProcessor();
   }
 
   dataset::GenericBatchProcessorPtr getPredictBatchProcessor() final {
-    std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
-        std::make_shared<dataset::TabularPairGram>(
-            _metadata, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
-
-    auto vocab = dataset::ThreadSafeVocabulary::make(
-        _metadata->getClassToIdMap(), /* fixed= */ true);
-
-    std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
-        dataset::StringLookupCategoricalBlock::make(_metadata->getLabelCol(),
-                                                    vocab)};
-
-    return std::make_shared<dataset::GenericBatchProcessor>(
-        /* input_blocks = */ input_blocks,
-        /* target_blocks = */ target_blocks, /* has_header = */ true);
+    return getBatchProcessor();
   }
 
-  BoltVector featurizeInputForInference(const py::object& input) final;
+  BoltVector featurizeInputForInference(
+      const std::vector<std::string>& values) final {
+    if (values.size() != _metadata->numColumns() - 1) {
+      throw std::invalid_argument(
+          "Passed in an input of size " + std::to_string(values.size()) +
+          " but needed a vector of size " +
+          std::to_string(_metadata->numColumns() - 1) +
+          ". predict_single expects a vector of values in the same format as "
+          "the original csv but without the label present.");
+    }
 
-  std::string getClassName(uint32_t neuron_id) final;
+    std::vector<std::string_view> encodable_values(values.begin(),
+                                                   values.end());
+
+    /*
+      the batch processor fails if the number of columns mismatches with the
+      original format. since we are only creating an input vector here the
+      label is not relevant, thus we add some bogus here in the label's column
+    */
+    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
+                            /* value = */ " ");
+
+    dataset::GenericBatchProcessorPtr batch_processor = getBatchProcessor();
+
+    BoltVector input;
+    if (auto err = batch_processor->makeInputVector(encodable_values, input)) {
+      std::rethrow_exception(err);
+    }
+
+    return input;
+  }
+
+  std::string getClassName(uint32_t neuron_id) final {
+    return _vocab->getString(neuron_id);
+  }
 
   uint32_t defaultBatchSize() const final { return 256; }
 
@@ -288,6 +305,23 @@ class TabularClassifier final : public AutoClassifierBase {
   }
 
  private:
+  dataset::GenericBatchProcessorPtr getBatchProcessor() {
+    std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
+        std::make_shared<dataset::TabularPairGram>(
+            _metadata, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
+
+    _vocab = dataset::ThreadSafeVocabulary::make(_metadata->getClassToIdMap(),
+                                                 /* fixed= */ true);
+
+    std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
+        dataset::StringLookupCategoricalBlock::make(_metadata->getLabelCol(),
+                                                    _vocab)};
+
+    return std::make_shared<dataset::GenericBatchProcessor>(
+        /* input_blocks = */ input_blocks,
+        /* target_blocks = */ target_blocks, /* has_header = */ true);
+  }
+
   void processTabularMetadata(
       const std::shared_ptr<dataset::DataLoader>& data_loader,
 
@@ -309,6 +343,7 @@ class TabularClassifier final : public AutoClassifierBase {
     _metadata = metadata_batch_processor->getMetadata();
   }
 
+  dataset::ThreadSafeVocabularyPtr _vocab;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
   std::vector<std::string> _column_datatypes;
 };
@@ -359,3 +394,4 @@ inline float getHiddenLayerSparsity(uint64_t layer_dim) {
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::TextClassifier)
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::MultiLabelTextClassifier)
+CEREAL_REGISTER_TYPE(thirdai::bolt::python::TabularClassifier)
