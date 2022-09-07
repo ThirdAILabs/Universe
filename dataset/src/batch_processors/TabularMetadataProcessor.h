@@ -83,10 +83,6 @@ class TabularMetadata {
     return _class_to_class_id;
   }
 
-  std::unordered_map<uint32_t, std::string> getColNumToColName() {
-    return _col_to_col_name;
-  }
-
   uint32_t getStringHashValue(const std::string& str_val, uint32_t col) const {
     std::string unique_category = str_val + getColSalt(col);
     return TextEncodingUtils::computeUnigram(unique_category.data(),
