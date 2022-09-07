@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
@@ -19,12 +20,13 @@ class CategoricalBlockTest : public testing::Test {
    * of vectors of integers.
    */
   static std::vector<std::vector<uint32_t>> generate_int_matrix(
-      uint32_t n_rows, uint32_t n_cols) {
+      uint32_t n_rows, const std::vector<uint32_t>& dims) {
     std::vector<std::vector<uint32_t>> matrix;
     for (uint32_t row_idx = 0; row_idx < n_rows; row_idx++) {
       std::vector<uint32_t> row;
-      for (uint32_t col = 0; col < n_cols; col++) {
-        row.push_back(std::rand());
+      row.reserve(dims.size());
+      for (auto dim : dims) {
+        row.push_back(std::rand() % dim);
       }
       matrix.push_back(row);
     }
@@ -89,17 +91,19 @@ class CategoricalBlockTest : public testing::Test {
 TEST_F(CategoricalBlockTest, ProducesCorrectVectorsDifferentColumns) {
   std::vector<SegmentedSparseFeatureVector> vecs;
   std::vector<uint32_t> dims{100, 1000, 55};
-  std::vector<CategoricalBlock> blocks{
-      {0, dims[0]}, {1, dims[1]}, {2, dims[2]}};
+  std::vector<CategoricalBlockPtr> blocks{
+      NumericalCategoricalBlock::make(/* col=*/0, dims[0]),
+      NumericalCategoricalBlock::make(/* col=*/1, dims[1]),
+      NumericalCategoricalBlock::make(/* col= */ 2, dims[2])};
 
-  auto int_matrix = generate_int_matrix(1000, 3);
+  auto int_matrix = generate_int_matrix(1000, dims);
   auto input_matrix = generate_input_matrix(int_matrix);
 
   // Encode the input matrix
   for (const auto& row : input_matrix) {
     SegmentedSparseFeatureVector vec;
     for (auto& block : blocks) {
-      addVectorSegmentWithBlock(block, row, vec);
+      addVectorSegmentWithBlock(*block, row, vec);
     }
     vecs.push_back(std::move(vec));
   }
@@ -128,6 +132,43 @@ TEST_F(CategoricalBlockTest, ProducesCorrectVectorsDifferentColumns) {
     ASSERT_EQ(actual_key_value_pairs.size(), expected_key_value_pairs.size());
     for (const auto& [key, val] : expected_key_value_pairs) {
       ASSERT_EQ(val, actual_key_value_pairs[key]);
+    }
+  }
+}
+
+TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
+  std::vector<std::shared_ptr<Block>> multi_label_blocks = {
+      NumericalCategoricalBlock::make(/* col= */ 0,
+                                      /* n_classes= */ 100,
+                                      /* delimiter= */ ','),
+      NumericalCategoricalBlock::make(/* col= */ 1,
+                                      /* n_classes= */ 100,
+                                      /* delimiter= */ ',')};
+
+  GenericBatchProcessor batch_processor(
+      /* input_blocks= */ {}, /* label_blocks= */ multi_label_blocks,
+      /* has_header= */ false, /* delimiter= */ ' ');
+
+  std::vector<std::string> rows = {"4,90,77 21,43,18,0", "55,67,82 49,2",
+                                   "36 84,59,6"};
+
+  auto batch = batch_processor.createBatch(rows);
+
+  auto [data, labels] = std::move(batch);
+
+  std::vector<std::vector<uint32_t>> expected_labels = {
+      {4, 90, 77, 121, 143, 118, 100},
+      {55, 67, 82, 149, 102},
+      {36, 184, 159, 106}};
+
+  EXPECT_EQ(labels.getBatchSize(), expected_labels.size());
+
+  for (uint32_t vec_index = 0; vec_index < labels.getBatchSize(); vec_index++) {
+    ASSERT_EQ(labels[vec_index].len, expected_labels.at(vec_index).size());
+    for (uint32_t i = 0; i < labels[vec_index].len; i++) {
+      ASSERT_EQ(labels[vec_index].active_neurons[i],
+                expected_labels.at(vec_index).at(i));
+      ASSERT_EQ(labels[vec_index].activations[i], 1.0);
     }
   }
 }

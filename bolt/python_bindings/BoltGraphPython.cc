@@ -5,6 +5,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -128,7 +129,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.");
+          "Returns a ParameterReference object to the bias gradients vector.")
+      .def("enable_sparse_sparse_optimization",
+           &FullyConnectedNode::enableSparseSparseOptimization);
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
@@ -207,7 +210,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("rebuild_hash_tables"))
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
-           py::arg("reconstruct_hash_functions"));
+           py::arg("reconstruct_hash_functions"))
+      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"));
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)
@@ -479,7 +483,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "It constructs a Bolt Graph and initializes the training."
            "This class further provide multiple APIs to be use in "
            "Distributed setting.")
-      .def("calculateGraidentSingleNode",
+      .def("calculateGradientSingleNode",
            &DistributedTrainingContext::calculateGradientSingleNode,
            py::arg("batch_idx"),
            "This function trains the BoltGraph Model with training"
@@ -508,6 +512,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("get_layer", &DistributedTrainingContext::getNodeByName,
            py::arg("layer_name"),
            "Returns the pointer to layer with name layer_name");
+
+  createCallbacksSubmodule(graph_submodule);
+}
+
+void createCallbacksSubmodule(py::module_& graph_submodule) {
+  auto callbacks_submodule = graph_submodule.def_submodule("callbacks");
+
+  py::class_<Callback, CallbackPtr>(callbacks_submodule, "Callback");  // NOLINT
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
