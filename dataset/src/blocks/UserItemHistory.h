@@ -169,7 +169,7 @@ class UserItemHistoryBlock final : public Block {
 
 #pragma omp critical(user_item_history_block)
       {
-        encodePreviouslyTrackedItems(user_id, epoch_timestamp, vec);
+        buildVectorWithTrackedItems(user_id, epoch_timestamp, vec);
         addCurrentRowItemsToHistory(user_id, epoch_timestamp, item_ids);
       }
     } catch (...) {
@@ -195,8 +195,8 @@ class UserItemHistoryBlock final : public Block {
     return item_id_strs;
   }
 
-  void encodePreviouslyTrackedItems(uint32_t user_id, int64_t epoch_timestamp,
-                                    SegmentedFeatureVector& vec) {
+  void buildVectorWithTrackedItems(uint32_t user_id, int64_t epoch_timestamp,
+                                   SegmentedFeatureVector& vec) {
     uint32_t added = 0;
 
     for (const auto& item : _per_user_history->at(user_id)) {
