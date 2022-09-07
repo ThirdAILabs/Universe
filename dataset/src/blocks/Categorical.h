@@ -103,16 +103,14 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
       : StringLookupCategoricalBlock(col, ThreadSafeVocabulary::make(n_classes),
                                      delimiter) {}
 
-  static CategoricalBlockPtr make(
-      uint32_t col, ThreadSafeVocabularyPtr vocab,
-      std::optional<char> delimiter = std::nullopt) {
+  static auto make(uint32_t col, ThreadSafeVocabularyPtr vocab,
+                   std::optional<char> delimiter = std::nullopt) {
     return std::make_shared<StringLookupCategoricalBlock>(col, std::move(vocab),
                                                           delimiter);
   }
 
-  static CategoricalBlockPtr make(
-      uint32_t col, uint32_t n_classes,
-      std::optional<char> delimiter = std::nullopt) {
+  static auto make(uint32_t col, uint32_t n_classes,
+                   std::optional<char> delimiter = std::nullopt) {
     return std::make_shared<StringLookupCategoricalBlock>(col, n_classes,
                                                           delimiter);
   }

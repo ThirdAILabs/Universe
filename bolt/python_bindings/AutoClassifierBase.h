@@ -24,7 +24,6 @@ class AutoClassifierBase {
   explicit AutoClassifierBase(BoltGraphPtr model, ReturnMode return_mode,
                               std::optional<float> threshold = std::nullopt)
       : _model(std::move(model)), _return_mode(return_mode) {
-    // TODO(Nick): Find a cleaner way of passing in the threshold.
     if (_return_mode == ReturnMode::NumpyArrayWithThresholding) {
       _threshold = threshold.value_or(0.95);
     }
@@ -166,6 +165,7 @@ class AutoClassifierBase {
     dataset.restart();
   }
 
+ protected:
   /**
    * Interface for constructing batch processor and featurizing data.
    */
@@ -192,7 +192,6 @@ class AutoClassifierBase {
 
   virtual std::vector<std::string> getPredictMetrics() const = 0;
 
- protected:
   BoltGraphPtr _model;
   ReturnMode _return_mode;
   float _threshold;
@@ -280,6 +279,26 @@ class AutoClassifierBase {
               active_neurons_array.data());
 
     return py::make_tuple(active_neurons_array, activations_array);
+  }
+
+ protected:
+  static float getHiddenLayerSparsity(uint64_t layer_dim) {
+    if (layer_dim < 300) {
+      return 1.0;
+    }
+    if (layer_dim < 1000) {
+      return 0.2;
+    }
+    if (layer_dim < 4000) {
+      return 0.1;
+    }
+    if (layer_dim < 10000) {
+      return 0.05;
+    }
+    if (layer_dim < 30000) {
+      return 0.01;
+    }
+    return 0.005;
   }
 };
 
