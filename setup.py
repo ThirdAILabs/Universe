@@ -156,7 +156,7 @@ setup(
     zip_safe=False,
     install_requires=["numpy", "typing_extensions"],
     extras_require={
-        "test": ["pytest", "boto3", "moto", "datasets", "torch"],
+        "test": ["pytest", "boto3", "moto", "datasets", "torch", "transformers"],
         "benchmark": [
             "toml",
             "psutil",
