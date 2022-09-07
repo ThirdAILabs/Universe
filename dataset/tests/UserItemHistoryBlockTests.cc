@@ -199,7 +199,7 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
 
   auto [batch, _] = processor.createBatch(samples);
 
-  ASSERT_EQ(batch[0].len, 1);
+  ASSERT_EQ(batch[0].len, 0);
 
   std::unordered_set<uint32_t> active_neurons;
   for (uint32_t i = 0; i < batch[1].len; i++) {
