@@ -14,7 +14,7 @@ cffi==1.15.1
 charset-normalizer==2.1.1
 click==8.0.4
 colorama==0.4.4
-cryptography==36.0.2
+cryptography==38.0.1
 datasets==2.4.0
 decorator==5.1.1
 dill==0.3.5.1
@@ -48,6 +48,7 @@ parso==0.8.3
 pathspec==0.10.1
 pexpect==4.8.0
 pickleshare==0.7.5
+Pillow==9.2.0
 platformdirs==2.5.2
 pluggy==1.0.0
 prompt-toolkit==3.0.31
@@ -80,6 +81,7 @@ tokenizers==0.11.6
 toml==0.10.2
 tomli==2.0.1
 torch==1.12.1
+torchvision==0.13.1
 tqdm==4.64.1
 traitlets==5.3.0
 transformers==4.21.3
