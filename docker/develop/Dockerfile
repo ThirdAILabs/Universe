@@ -29,8 +29,9 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     pip \
     # Install sudo
     && apt-get update && apt-get -y install sudo
-  
-RUN pip3 install -r requirements.txt
+
+COPY requirements.txt /requirements.txt
+RUN pip3 install -r /requirements.txt
 
 # The exit 0 means these commands will still continue even if the install fails. 
 # This is because these downloads might not work on arm64, but we still want
