@@ -189,7 +189,14 @@ class EmbeddingLayerConfig {
         _lookup_size(lookup_size),
         _log_embedding_block_size(log_embedding_block_size),
         _reduction(getReductionType(reduction)),
-        _num_tokens_per_input(num_tokens_per_input) {}
+        _num_tokens_per_input(num_tokens_per_input) {
+    if (_reduction == EmbeddingReductionType::CONCATENATION &&
+        !_num_tokens_per_input) {
+      throw std::invalid_argument(
+          "Cannot construct embedding layer with concatenation reduction "
+          "without specifying num_tokens_per_input.");
+    }
+  }
 
   uint32_t numEmbeddingLookups() const { return _num_embedding_lookups; }
 
@@ -198,6 +205,11 @@ class EmbeddingLayerConfig {
   uint32_t logEmbeddingBlockSize() const { return _log_embedding_block_size; }
 
   EmbeddingReductionType reduction() const { return _reduction; }
+
+  uint32_t totalEmbeddingDim() const {
+    return _num_embedding_lookups * _lookup_size *
+           _num_tokens_per_input.value_or(1);
+  }
 
   std::optional<uint32_t> numTokensPerInput() const {
     return _num_tokens_per_input;

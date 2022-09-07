@@ -34,7 +34,7 @@ class EmbeddingNode final : public Node,
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
-      return _config->numEmbeddingLookups() * _config->lookupSize();
+      return _config->totalEmbeddingDim();
     }
     return _embedding_layer->getEmbeddingDim();
   }
