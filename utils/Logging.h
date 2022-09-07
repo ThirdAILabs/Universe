@@ -5,6 +5,7 @@
 // Include stdout, file sinks we use.
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include <utils/Version.h>
 
 namespace thirdai::log {
 
@@ -64,6 +65,10 @@ inline void setupLogging(bool log_to_stderr = DEFAULT_LOG_TO_STDERR,
     else {
       logger->warn("Unknown log level '{}' for logger '{}'", level,
                    logger->name());
+    }
+    // At this point the client has requested logging.
+    if (logger) {
+      logger->info("thirdai {}", version());
     }
 
   } catch (const spdlog::spdlog_ex& exception) {
