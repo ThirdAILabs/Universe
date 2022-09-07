@@ -12,8 +12,7 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserItemHistory.h>
-#include <dataset/src/encodings/categorical/StringLookup.h>
-#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <memory>
 #include <sstream>
@@ -113,7 +112,7 @@ class Pipeline {
     auto file_reader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
 
-    auto header = file_reader->getHeader();
+    auto header = file_reader->nextLine();
     if (!header) {
       throw std::runtime_error("File header not found.");
     }
@@ -148,8 +147,8 @@ class Pipeline {
         col_nums.at(schema.timestamp_col_name)));
 
     for (const auto& text_col_name : schema.static_text_col_names) {
-      input_blocks.push_back(std::make_shared<dataset::TextBlock>(
-          col_nums.at(text_col_name), /* dim = */ 100000));
+      input_blocks.push_back(
+          dataset::UniGramTextBlock::make(col_nums.at(text_col_name)));
     }
 
     for (const auto& categorical : schema.static_categorical) {
@@ -174,8 +173,8 @@ class Pipeline {
     if (!string_vocab) {
       string_vocab = dataset::ThreadSafeVocabulary::make(n_classes);
     }
-    return dataset::CategoricalBlock::make(
-        col_nums.at(cat_col_name), dataset::StringLookup::make(string_vocab));
+    return dataset::StringLookupCategoricalBlock::make(
+        col_nums.at(cat_col_name), string_vocab);
   }
 
   // We pass in an ID because sequential blocks can corrupt each other's states.

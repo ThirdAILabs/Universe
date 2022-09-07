@@ -18,10 +18,6 @@ namespace thirdai::dataset::python {
 
 void createDatasetSubmodule(py::module_& module);
 
-py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size,
-                                    bool softmax_for_multiclass = true);
-
 /*
  * This function takes a single sentence, and parses it into an sparse
  * vector of features. Right now it only supports the following parsing:

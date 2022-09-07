@@ -3,8 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>
-#include <dataset/src/encodings/text/TextEncodingUtils.h>
-#include <optional>
+#include <dataset/src/utils/TextEncodingUtils.h>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>

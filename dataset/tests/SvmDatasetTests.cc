@@ -114,7 +114,8 @@ class SvmDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
-  auto [data, labels] = SvmDatasetLoader::loadDataset(filename, batch_size);
+  auto [data, labels] =
+      SvmDatasetLoader::loadDatasetFromFile(filename, batch_size);
 
   // Check data vectors are correct.
   uint32_t vec_count = 0;
