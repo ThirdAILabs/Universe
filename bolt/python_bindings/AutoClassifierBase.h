@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/memory.hpp>
 #include "ConversionUtils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
@@ -197,6 +199,15 @@ class AutoClassifierBase {
   float _threshold;
 
  private:
+  // Private constructor for cereal.
+  AutoClassifierBase() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_model, _return_mode, _threshold);
+  }
+
   static py::object constructNumpyActivationsArrays(
       InferenceMetricData& metrics, InferenceOutputTracker& output) {
     uint32_t num_samples = output.numSamples();
