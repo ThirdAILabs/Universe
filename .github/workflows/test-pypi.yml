@@ -25,10 +25,10 @@ jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    fail-fast: false
     strategy:
       matrix:
         os: [windows-2019, ubuntu-20.04, macos-12]
+      fail-fast: false
 
     steps:
       - uses: actions/checkout@v2
