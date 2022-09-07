@@ -2,7 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
-#include "ConversionUtils.h"
+#include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <dataset/src/DataLoader.h>
@@ -19,6 +19,7 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::python {
 
+template <typename PREDICT_SINGLE_INPUT>
 class AutoClassifierBase {
  public:
   enum class ReturnMode { NumpyArray, NumpyArrayWithThresholding, ClassName };
@@ -26,7 +27,6 @@ class AutoClassifierBase {
   explicit AutoClassifierBase(BoltGraphPtr model, ReturnMode return_mode,
                               std::optional<float> threshold = std::nullopt)
       : _model(std::move(model)), _return_mode(return_mode) {
-    // TODO(Nick): Find a cleaner way of passing in the threshold.
     if (_return_mode == ReturnMode::NumpyArrayWithThresholding) {
       _threshold = threshold.value_or(0.95);
     }
@@ -95,7 +95,7 @@ class AutoClassifierBase {
     }
   }
 
-  py::object predict_single(const py::object& sample) {
+  py::object predict_single(PREDICT_SINGLE_INPUT sample) {
     BoltVector input = featurizeInputForInference(sample);
 
     BoltVector output = _model->predictSingle({input}, useSparseInference());
@@ -117,6 +117,39 @@ class AutoClassifierBase {
         return py::cast(getClassName(output.getHighestActivationId()));
     }
   }
+
+  virtual ~AutoClassifierBase() = default;
+
+ protected:
+  /**
+   * Interface for constructing batch processor and featurizing data.
+   */
+
+  virtual dataset::GenericBatchProcessorPtr getTrainingBatchProcessor(
+      std::shared_ptr<dataset::DataLoader> data_loader,
+      std::optional<uint64_t> max_in_memory_batches) = 0;
+
+  virtual dataset::GenericBatchProcessorPtr getPredictBatchProcessor() = 0;
+
+  virtual BoltVector featurizeInputForInference(PREDICT_SINGLE_INPUT input) = 0;
+
+  virtual std::string getClassName(uint32_t neuron_id) = 0;
+
+  /**
+   * Interface for other options related to training and prediction.
+   */
+
+  virtual uint32_t defaultBatchSize() const = 0;
+
+  virtual bool freezeHashTables() const = 0;
+
+  virtual bool useSparseInference() const = 0;
+
+  virtual std::vector<std::string> getPredictMetrics() const = 0;
+
+  BoltGraphPtr _model;
+  ReturnMode _return_mode;
+  float _threshold;
 
  private:
   void trainInMemory(dataset::BoltDatasetPtr& train_data,
@@ -168,38 +201,26 @@ class AutoClassifierBase {
     dataset.restart();
   }
 
-  /**
-   * Interface for constructing batch processor and featurizing data.
-   */
+  py::list getClassNames(InferenceOutputTracker& output) {
+    py::list output_class_names;
 
-  virtual dataset::GenericBatchProcessorPtr getTrainingBatchProcessor(
-      std::shared_ptr<dataset::DataLoader> data_loader,
-      std::optional<uint64_t> max_in_memory_batches) = 0;
+    uint32_t output_dim = output.numNonzerosInOutput();
 
-  virtual dataset::GenericBatchProcessorPtr getPredictBatchProcessor() = 0;
+    for (uint32_t i = 0; i < output.numSamples(); i++) {
+      uint32_t* active_neurons = output.activeNeuronsForSample(i);
+      float* activations = output.activationsForSample(i);
 
-  virtual BoltVector featurizeInputForInference(const py::object& input) = 0;
+      uint32_t max_index = getMaxIndex(activations, output_dim);
 
-  virtual std::string getClassName(uint32_t neuron_id) = 0;
+      uint32_t pred =
+          active_neurons == nullptr ? max_index : active_neurons[max_index];
 
-  /**
-   * Interface for other options related to training and prediction.
-   */
+      output_class_names.append(getClassName(pred));
+    }
 
-  virtual uint32_t defaultBatchSize() const = 0;
+    return output_class_names;
+  }
 
-  virtual bool freezeHashTables() const = 0;
-
-  virtual bool useSparseInference() const = 0;
-
-  virtual std::vector<std::string> getPredictMetrics() const = 0;
-
- protected:
-  BoltGraphPtr _model;
-  ReturnMode _return_mode;
-  float _threshold;
-
- private:
   // Private constructor for cereal.
   AutoClassifierBase() {}
 
@@ -241,26 +262,6 @@ class AutoClassifierBase {
     }
   }
 
-  py::list getClassNames(InferenceOutputTracker& output) {
-    py::list output_class_names;
-
-    uint32_t output_dim = output.numNonzerosInOutput();
-
-    for (uint32_t i = 0; i < output.numSamples(); i++) {
-      uint32_t* active_neurons = output.activeNeuronsForSample(i);
-      float* activations = output.activationsForSample(i);
-
-      uint32_t max_index = getMaxIndex(activations, output_dim);
-
-      uint32_t pred =
-          active_neurons == nullptr ? max_index : active_neurons[max_index];
-
-      output_class_names.append(getClassName(pred));
-    }
-
-    return output_class_names;
-  }
-
   static uint32_t getMaxIndex(const float* const values, uint32_t len) {
     uint32_t max_index = 0;
     float max_value = -std::numeric_limits<float>::max();
@@ -278,7 +279,7 @@ class AutoClassifierBase {
     py::array_t<float, py::array::c_style | py::array::forcecast>
         activations_array(output.len);
     std::copy(output.activations, output.activations + output.len,
-              activations_array.data());
+              activations_array.mutable_data());
 
     if (output.isDense()) {
       // This is not a move on return because we are constructing a py::object.
@@ -288,7 +289,7 @@ class AutoClassifierBase {
     py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
         active_neurons_array(output.len);
     std::copy(output.active_neurons, output.active_neurons + output.len,
-              active_neurons_array.data());
+              active_neurons_array.mutable_data());
 
     return py::make_tuple(active_neurons_array, activations_array);
   }
