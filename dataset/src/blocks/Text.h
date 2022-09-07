@@ -87,11 +87,18 @@ class UniGramTextBlock final : public TextBlock {
     return std::make_shared<UniGramTextBlock>(col, dim);
   }
 
+  std::string at(uint32_t index) {
+    return index_to_word_map.at(index);
+  }
+
+
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> unigrams =
-        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
+    auto [unigrams, index_to_word] =
+        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim,true);
+
+    index_to_word_map = std::move(*index_to_word);
 
     TextEncodingUtils::sumRepeatedIndices(
         unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
@@ -100,6 +107,9 @@ class UniGramTextBlock final : public TextBlock {
 
     return nullptr;
   }
+
+  std::unordered_map<uint32_t,std::string> index_to_word_map;
+
 };
 
 using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;
