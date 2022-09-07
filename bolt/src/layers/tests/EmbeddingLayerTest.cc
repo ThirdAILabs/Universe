@@ -92,8 +92,8 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
       layer->backpropagate(batch_index, output[batch_index]);
 
       /**
-       * The location in the embedding block a token's embedding originates from
-       * is determined by the hash of the token. These loops look at the
+       * The location in the embedding block of a token's embedding originates
+       * from is determined by the hash of the token. These loops look at the
        * gradients for each part of the output embedding, map it back to the
        * location in the embedding block it originated from, and sum up the
        * gradients for each location.
@@ -181,9 +181,10 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingSumReduction) {
   BoltBatch output = getEmbeddings(layer, tokens);
 
   /**
-   * Since the embedding block is a sequence of consecutive integers we can
-   * check that the final embedding at each index is the sum of the hashes of
-   * each token plus offset within the embedding.
+   * Since the embedding block is a sequence of consecutive integers (done in
+   * the createEmbeddingLayer helper function) we can check that the final
+   * embedding at each index is the sum of the hashes of each token plus offset
+   * within the embedding.
    */
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     const float* embedding = output[batch_index].activations;
@@ -215,9 +216,10 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbeddingConcatReduction) {
   BoltBatch output = getEmbeddings(layer, tokens);
 
   /**
-   * Since the embedding block is a sequence of consecutive integers we can
-   * check that the final embedding foreach token is a sequence of integers
-   * starting at the hash of the token.
+   * Since the embedding block is a sequence of consecutive integers (done in
+   * the createEmbeddingLayer helper function) we can check that the final
+   * embedding foreach token is a sequence of integers starting at the hash of
+   * the token.
    */
   for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     ASSERT_EQ(output[batch_index].len,

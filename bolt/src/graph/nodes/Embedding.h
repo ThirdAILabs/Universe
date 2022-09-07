@@ -34,9 +34,9 @@ class EmbeddingNode final : public Node,
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
-      return _config->totalEmbeddingDim();
+      return _config->getOutputDim();
     }
-    return _embedding_layer->getEmbeddingDim();
+    return _embedding_layer->getOutputDim();
   }
 
   std::shared_ptr<EmbeddingNode> addInput(InputPtr input) {

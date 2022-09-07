@@ -32,7 +32,7 @@ class EmbeddingLayer {
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
-  uint32_t getEmbeddingDim() const { return _total_embedding_dim; }
+  uint32_t getOutputDim() const { return _total_embedding_dim; }
 
   void initializeLayer(uint32_t new_batch_size);
 

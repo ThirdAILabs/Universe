@@ -206,7 +206,7 @@ class EmbeddingLayerConfig {
 
   EmbeddingReductionType reduction() const { return _reduction; }
 
-  uint32_t totalEmbeddingDim() const {
+  uint32_t getOutputDim() const {
     return _num_embedding_lookups * _lookup_size *
            _num_tokens_per_input.value_or(1);
   }
