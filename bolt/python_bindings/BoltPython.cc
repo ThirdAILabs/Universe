@@ -26,6 +26,36 @@
 
 namespace thirdai::bolt::python {
 
+template <typename PREDICT_SINGLE_INPUT>
+void defineAutoClassifierBase(py::module_& module,
+                              const std::string& baseClassName) {
+  py::class_<AutoClassifierBase<PREDICT_SINGLE_INPUT>>(module, baseClassName)
+      .def("train",
+           py::overload_cast<const std::string&, uint32_t, float,
+                             std::optional<uint32_t>, std::optional<uint32_t>>(
+               &AutoClassifierBase<PREDICT_SINGLE_INPUT>::train),
+           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("batch_size") = std::nullopt,
+           py::arg("max_in_memory_batches") = std::nullopt)
+      .def("train",
+           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&,
+                             uint32_t, float, std::optional<uint32_t>>(
+               &AutoClassifierBase<PREDICT_SINGLE_INPUT>::train),
+           py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("max_in_memory_batches") = std::nullopt)
+      .def("predict",
+           py::overload_cast<const std::string&>(
+               &AutoClassifierBase<PREDICT_SINGLE_INPUT>::predict),
+           py::arg("filename"))
+      .def("predict",
+           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&>(
+               &AutoClassifierBase<PREDICT_SINGLE_INPUT>::predict),
+           py::arg("data_source"))
+      .def("predict_single",
+           &AutoClassifierBase<PREDICT_SINGLE_INPUT>::predict_single,
+           py::arg("input"));
+}
+
 void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
@@ -97,32 +127,8 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
-  py::class_<AutoClassifierBase>(bolt_submodule, "AutoClassifierBase")
-      .def("train",
-           py::overload_cast<const std::string&, uint32_t, float,
-                             std::optional<uint32_t>, std::optional<uint32_t>>(
-               &AutoClassifierBase::train),
-           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt)
-      .def("train",
-           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&,
-                             uint32_t, float, std::optional<uint32_t>>(
-               &AutoClassifierBase::train),
-           py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("max_in_memory_batches") = std::nullopt)
-      .def("predict",
-           py::overload_cast<const std::string&>(&AutoClassifierBase::predict),
-           py::arg("filename"))
-      .def("predict",
-           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&>(
-               &AutoClassifierBase::predict),
-           py::arg("data_source"))
-      .def("predict_single", &AutoClassifierBase::predict_single,
-           py::arg("input"));
-
-  py::class_<TextClassifier, AutoClassifierBase>(bolt_submodule,
-                                                 "TextClassifier")
+  py::class_<TextClassifier, AutoClassifierBase<const std::string&>>(
+      bolt_submodule, "TextClassifier")
       .def(py::init<uint32_t, uint32_t>(), py::arg("hidden_layer_dim"),
            py::arg("n_classes"),
            "Constructs a TextClassifier with autotuning.\n"
@@ -134,7 +140,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("save", &TextClassifier::save, py::arg("filename"))
       .def_static("load", &TextClassifier::load, py::arg("filename"));
 
-  py::class_<MultiLabelTextClassifier, AutoClassifierBase>(
+  py::class_<MultiLabelTextClassifier,
+             AutoClassifierBase<const std::vector<uint32_t>&>>(
       bolt_submodule, "MultiLabelTextClassifier")
       .def(py::init<uint32_t, float>(), py::arg("n_classes"),
            py::arg("threshold") = 0.95)
