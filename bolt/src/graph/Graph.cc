@@ -80,24 +80,24 @@ MetricData BoltGraph::train(
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this);
 
-  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
-  // some sort of RAII training context object whose destructor will
-  // automatically delete the training state
-  try {
-    for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
-      callbacks.onEpochBegin(*this);
+  for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+    callbacks.onEpochBegin(*this);
 
-      /*
-        Because of how the datasets are read we know that all batches will not
-        have a batch size larger than the first batch_size. We will be using the
-        same datastructures to store the activations for every batch during
-        training so we need this to be able to support the largest batch size.
+    /*
+      Because of how the datasets are read we know that all batches will not
+      have a batch size larger than the first batch_size. We will be using the
+      same datastructures to store the activations for every batch during
+      training so we need this to be able to support the largest batch size.
 
-        This is done per epoch so callbacks can call predict during training.
-      */
-      prepareToProcessBatches(train_context.batchSize(),
-                              /* use_sparsity=*/true);
+      This is done per epoch so callbacks can call predict during training.
+    */
+    prepareToProcessBatches(train_context.batchSize(),
+                            /* use_sparsity=*/true);
 
+    // TODO(josh/Nick): This try catch is kind of a hack, we should really use
+    // some sort of RAII training context object whose destructor will
+    // automatically delete the training state
+    try {
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
@@ -120,33 +120,33 @@ MetricData BoltGraph::train(
 
         callbacks.onBatchEnd(*this);
       }
-
+    } catch (const std::exception& e) {
       cleanupAfterBatchProcessing();
-
-      callbacks.onEpochEnd(*this);
-      if (callbacks.shouldStopTraining()) {
-        break;
-      }
-      perEpochCallback();
-
-      auto train_end = std::chrono::high_resolution_clock::now();
-      int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
-                               train_end - train_start)
-                               .count();
-
-      time_per_epoch.push_back(static_cast<double>(epoch_time));
-      if (train_config.verbose()) {
-        std::cout << std::endl
-                  << "Processed " << train_context.numBatches()
-                  << " training batches in " << epoch_time << " seconds"
-                  << std::endl;
-      }
-      _epoch_count++;
-      metrics.logAndReset();
+      throw;
     }
-  } catch (const std::exception& e) {
+
     cleanupAfterBatchProcessing();
-    throw;
+
+    callbacks.onEpochEnd(*this);
+    if (callbacks.shouldStopTraining()) {
+      break;
+    }
+    perEpochCallback();
+
+    auto train_end = std::chrono::high_resolution_clock::now();
+    int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
+                             train_end - train_start)
+                             .count();
+
+    time_per_epoch.push_back(static_cast<double>(epoch_time));
+    if (train_config.verbose()) {
+      std::cout << std::endl
+                << "Processed " << train_context.numBatches()
+                << " training batches in " << epoch_time << " seconds"
+                << std::endl;
+    }
+    _epoch_count++;
+    metrics.logAndReset();
   }
 
   callbacks.onTrainEnd(*this);
