@@ -33,7 +33,9 @@ class Metric {
   // called at the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
 
-  // returns whether its better if the metric is smaller
+  // returns whether its better if the metric is smaller. for example, with a
+  // an accuracy related metric this would return false since larger is better
+  // (larger means more accurate)
   virtual bool smallerIsBetter() const = 0;
 
   // Returns the name of the metric.
@@ -456,6 +458,9 @@ static std::shared_ptr<Metric> makeMetric(const std::string& name) {
   }
   if (FMeasure::isFMeasure(name)) {
     return FMeasure::make(name);
+  }
+  if (RecallAtK::isRecallAtK(name)) {
+    return RecallAtK::make(name);
   }
   throw std::invalid_argument("'" + name + "' is not a valid metric.");
 }

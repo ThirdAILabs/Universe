@@ -11,13 +11,12 @@ namespace thirdai::bolt {
 
 /**
  * @brief This callback is intended to stop training early based on prediction
- * results from a given validation set. Saves the best model to
- * best_model_save_location
+ * results from a given validation set. Saves the best model to model_save_path
  *
  * @param predict_config configurations for evaluation on the given validation
  * data. must include metrics
- * @param best_model_save_location where to save the model that scored the best
- * on the validation set
+ * @param model_save_path file path to save the model that scored the
+ * best on the validation set
  * @param patience number of epochs with no improvement in validation score
  * after which training will be stopped.
  * @param min_delta minimum change in the monitored quantity to qualify as an
@@ -35,13 +34,12 @@ class EarlyStopCheckpoint : public Callback {
  public:
   EarlyStopCheckpoint(std::vector<dataset::BoltDatasetPtr> validation_data,
                       dataset::BoltDatasetPtr validation_labels,
-                      PredictConfig predict_config,
-                      std::string best_model_save_location,
+                      PredictConfig predict_config, std::string model_save_path,
                       uint32_t patience = 2, double min_delta = 0)
       : _validation_data(std::move(validation_data)),
         _validation_labels(std::move(validation_labels)),
         _predict_config(std::move(predict_config)),
-        _best_model_save_location(std::move(best_model_save_location)),
+        _model_save_path(std::move(model_save_path)),
         _patience(patience),
         _min_delta(std::abs(min_delta)) {
     uint32_t num_metrics = _predict_config.getMetricNames().size();
@@ -51,20 +49,12 @@ class EarlyStopCheckpoint : public Callback {
           "metric, passed in " +
           std::to_string(num_metrics) + " metrics.");
     }
+    initValidationTrackers();
   }
 
   void onTrainBegin(BoltGraph& model) final {
     (void)model;
-
-    std::string metric_name = _predict_config.getMetricNames()[0];
-
-    // setting these onTrainBegin allows callback instances to be reused
-    _epochs_since_best = 0;
-    _should_stop_training = false;
-    _should_minimize = makeMetric(metric_name)->smallerIsBetter();
-    _best_validation_score = _should_minimize
-                                 ? std::numeric_limits<double>::max()
-                                 : std::numeric_limits<double>::min();
+    initValidationTrackers();
   }
 
   void onEpochEnd(BoltGraph& model) final {
@@ -73,17 +63,18 @@ class EarlyStopCheckpoint : public Callback {
         model.predict(_validation_data, _validation_labels, _predict_config)
             .first[metric_name];
 
-    _epochs_since_best++;
     if (isImprovement(metric_val)) {
       _best_validation_score = metric_val;
       _epochs_since_best = 0;
-      model.save(_best_model_save_location);
-    } else if (_epochs_since_best == _patience) {
+      model.save(_model_save_path);
+      return;
+    }
+
+    _epochs_since_best++;
+    if (_epochs_since_best == _patience) {
       _should_stop_training = true;
     }
   }
-
-  void onTrainEnd(BoltGraph& model) final { (void)model; }
 
   bool shouldStopTraining() final { return _should_stop_training; }
 
@@ -95,15 +86,28 @@ class EarlyStopCheckpoint : public Callback {
     return metric_val - _min_delta > _best_validation_score;
   }
 
+  void initValidationTrackers() {
+    std::string metric_name = _predict_config.getMetricNames()[0];
+
+    _epochs_since_best = 0;
+    _should_stop_training = false;
+    _should_minimize = makeMetric(metric_name)->smallerIsBetter();
+    _best_validation_score = _should_minimize
+                                 ? std::numeric_limits<double>::max()
+                                 : std::numeric_limits<double>::min();
+  }
+
   std::vector<dataset::BoltDatasetPtr> _validation_data;
   dataset::BoltDatasetPtr _validation_labels;
   PredictConfig _predict_config;
-  std::string _best_model_save_location;
+  std::string _model_save_path;
   uint32_t _patience;
   double _min_delta;
 
-  bool _should_stop_training;
+  // Below are variables used to track the best validation score over the course
+  // of a train call. These are set in onTrainBegin(..) so they can be reused.
   uint32_t _epochs_since_best;
+  bool _should_stop_training;
   bool _should_minimize;
   double _best_validation_score;
 };

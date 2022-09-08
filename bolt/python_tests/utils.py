@@ -175,6 +175,65 @@ def compute_accuracy_with_file(test_labels, pred_file):
     ) / len(predictions)
 
 
+def build_simple_hidden_layer_model(
+    input_dim=10,
+    hidden_dim=10,
+    output_dim=10,
+):
+    input_layer = bolt.graph.Input(dim=input_dim)
+
+    hidden_layer = bolt.graph.FullyConnected(
+        dim=hidden_dim,
+        activation="relu",
+    )(input_layer)
+
+    output_layer = bolt.graph.FullyConnected(dim=output_dim, activation="softmax")(
+        hidden_layer
+    )
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+
+    return model
+
+
+def build_single_node_bolt_dag_model(
+    train_data,
+    train_labels,
+    sparsity,
+    num_classes,
+    learning_rate=0.0001,
+    hidden_layer_dim=2000,
+):
+    data = dataset.from_numpy(train_data, batch_size=64)
+    labels = dataset.from_numpy(train_labels, batch_size=64)
+
+    input_layer = bolt.graph.Input(dim=num_classes)
+    hidden_layer = bolt.graph.FullyConnected(
+        dim=hidden_layer_dim,
+        sparsity=sparsity,
+        activation="relu",
+    )(input_layer)
+    output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
+        hidden_layer
+    )
+
+    train_config = (
+        bolt.graph.TrainConfig.make(learning_rate=learning_rate, epochs=3)
+        .silence()
+        .with_rebuild_hash_tables(3000)
+        .with_reconstruct_hash_functions(10000)
+    )
+    model = bolt.graph.DistributedModel(
+        inputs=[input_layer],
+        output=output_layer,
+        train_data=[data],
+        train_labels=labels,
+        train_config=train_config,
+        loss=bolt.CategoricalCrossEntropyLoss(),
+    )
+    return model
+
+
 # Builds, trains, and does prediction on a model using numpy data and numpy
 # labels. The model must have the same input and output dimension. This function
 # returns the result of a call to model.predict.

@@ -90,7 +90,7 @@ class LayerNormNode final : public Node,
 
   // Computes the first and second moments {mean, variance} required
   // to normalize the input to this layer.
-  static std::pair<float, float> computeNormalizationMoments(
+  static std::tuple<float, float> computeNormalizationMoments(
       const BoltVector& bolt_vector) {
     uint32_t len = bolt_vector.len;
     float mean = 0, variance = 0;

@@ -37,9 +37,20 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Returns a numpy array which shadows the parameters held in the "
            "ParameterReference and acts as a reference to them, modifying this "
            "array will modify the parameters.")
+
+      // TODO(Shubh): Should work with a custom serializer rather than python
+      // dictionaries. Or we should make a Compressed vector module at python
+      // end to deal with this
+      .def("compress", &ParameterReference::compress,
+           py::arg("compression_scheme"), py::arg("compression_density"),
+           py::arg("seed_for_hashing"), py::arg("sample_population_size"),
+           "Returns a python dictionary of compressed vectors. "
+           "sample_population_size is the number of random samples you take "
+           "for estimating a threshold for dragon compression")
       .def("set", &ParameterReference::set, py::arg("new_params"),
-           "Takes in a numpy array and copies its contents into the parameters "
-           "held in the ParameterReference object.");
+           "Either takes in a numpy array and copies its contents into the "
+           "parameters held in the ParameterReference object. Or takes in a "
+           "python dictionary which represents a compressed vector object.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
@@ -514,12 +525,28 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
-      .def(py::init<std::vector<dataset::BoltDatasetPtr>,
-                    dataset::BoltDatasetPtr, PredictConfig, std::string,
-                    uint32_t, double>(),
-           py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("best_model_save_location"),
-           py::arg("patience"), py::arg("min_delta"));
+      .def(
+          py::init<std::vector<dataset::BoltDatasetPtr>,
+                   dataset::BoltDatasetPtr, PredictConfig, std::string,
+                   uint32_t, double>(),
+          py::arg("validation_data"), py::arg("validation_labels"),
+          py::arg("predict_config"), py::arg("model_save_path"),
+          py::arg("patience"), py::arg("min_delta"),
+          "This callback is intended to stop training early based on prediction"
+          " results from a given validation set. Saves the best model to "
+          "model_save_path.\n"
+          "Arguments:\n"
+          " * validation_data: Data input as passed to predict.\n"
+          " * validation_labels: Label input as passed to predict.\n"
+          " * predict_config: PredictConfig. Configurations for evaluation on "
+          "the given validation data. must include metrics\n"
+          " * model_save_path: string. The file path to save the model that "
+          "scored the best on the validation set\n"
+          " * patience: int. The nuber of epochs with no improvement in "
+          "validation score after which training will be stopped.\n"
+          " * min_delta: float. The minimum change in the monitored quantity "
+          "to qualify as an improvement, i.e. an absolute change of less than "
+          "min_delta will count as no improvement.\n");
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
