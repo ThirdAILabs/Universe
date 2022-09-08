@@ -9,8 +9,10 @@ from utils import (
     log_single_epoch_training_metrics,
     log_prediction_metrics,
     config_get,
+    is_ec2_instance,
 )
 from thirdai import bolt, dataset
+import numpy as np
 
 
 def main():
@@ -72,7 +74,8 @@ def load_and_compile_model(model_config):
 
     output_node = name_to_node[list(nodes_with_no_successor)[0]]
     model = bolt.graph.Model(inputs=inputs, output=output_node)
-    model.compile(loss=get_loss(model_config))
+    model.compile(loss=get_loss(model_config), print_when_done=False)
+    model.summary(detailed=True)
     return model
 
 
@@ -80,25 +83,32 @@ def load_and_compile_model(model_config):
 # ["train_data", "train_labels", "test_data", "test_labels"]
 # to lists of datasets (except for the labels, which will either be a single dataset or None)
 def load_all_datasets(dataset_config):
+    # We have separate test_labels and test_labels_np so that we can load the
+    # test labels both as a bolt dataset for predict and also as a numpy array
+    # which is needed to compute the roc_auc.
     result = {
         "train_data": [],
         "train_labels": [],
         "test_data": [],
         "test_labels": [],
+        "test_labels_np": [],
     }
 
     all_dataset_configs = config_get(dataset_config, "datasets")
     for single_dataset_config in all_dataset_configs:
         format = config_get(single_dataset_config, "format")
+        use_s3 = single_dataset_config.get("use_s3_on_aws", False) and is_ec2_instance()
         dataset_types = config_get(single_dataset_config, "type_list")
 
         if format == "svm":
-            loaded_datasets = load_svm_dataset(single_dataset_config)
+            loaded_datasets = load_svm_dataset(single_dataset_config, use_s3)
         elif format == "click":
-            loaded_datasets = load_click_through_dataset(single_dataset_config)
+            loaded_datasets = load_click_through_dataset(single_dataset_config, use_s3)
+        elif format == "click_labels":
+            loaded_datasets = load_click_through_labels(single_dataset_config, use_s3)
         elif format == "mlm_with_tokens":
             loaded_datasets = load_mlm_datasets(
-                single_dataset_config, return_tokens=True
+                single_dataset_config, use_s3, return_tokens=True
             )
         elif format == "mlm_without_tokens":
             loaded_datasets = load_mlm_datasets(
@@ -127,14 +137,8 @@ def load_all_datasets(dataset_config):
         )
     result["train_labels"] = result["train_labels"][0]
 
-    if len(result["test_labels"]) == 1:
-        result["test_labels"] = result["test_labels"][0]
-    elif len(result["test_labels"]) == 0:
-        result["test_labels"] = None
-    else:
-        raise ValueError(
-            f"Must have 0 or 1 test label datasets but found {len(result['test_labels'])} test_labels."
-        )
+    check_test_labels(result, "test_labels")
+    check_test_labels(result, "test_labels_np")
 
     return result
 
@@ -142,6 +146,8 @@ def load_all_datasets(dataset_config):
 def run_experiment(model, datasets, experiment_config, use_mlflow):
     num_epochs, train_config = load_train_config(experiment_config)
     predict_config = load_predict_config(experiment_config)
+    if should_compute_roc_auc(experiment_config):
+        predict_config.return_activations()
 
     for epoch_num in range(num_epochs):
 
@@ -158,21 +164,24 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         if use_mlflow:
             log_single_epoch_training_metrics(train_metrics)
 
-        predict_metrics = model.predict(
+        predict_output = model.predict(
             test_data=datasets["test_data"],
             test_labels=datasets["test_labels"],
             predict_config=predict_config,
         )
         if use_mlflow:
-            log_prediction_metrics(predict_metrics)
+            log_prediction_metrics(predict_output)
 
-        # TODO(Nick): Should we compute auc for criteo?
+        if should_compute_roc_auc(experiment_config):
+            compute_roc_auc(predict_output, datasets, use_mlflow)
 
     if "save" in experiment_config.keys():
         model.save(config_get(experiment_config, "save"))
 
 
 def get_sampling_config(layer_config):
+    if layer_config.get("use_random_sampling", False):
+        return bolt.RandomSamplingConfig()
     return bolt.SamplingConfig(
         hashes_per_table=config_get(layer_config, "hashes_per_table"),
         num_tables=config_get(layer_config, "num_tables"),
@@ -201,29 +210,38 @@ def construct_fully_connected_node(fc_config):
     sparsity = fc_config.get("sparsity", 1)
 
     if use_default_sampling or sparsity == 1:
-        return bolt.graph.FullyConnected(
+        layer = bolt.graph.FullyConnected(
             dim=config_get(fc_config, "dim"),
             sparsity=sparsity,
             activation=config_get(fc_config, "activation"),
         )
+    else:
+        layer = bolt.graph.FullyConnected(
+            dim=config_get(fc_config, "dim"),
+            sparsity=sparsity,
+            activation=config_get(fc_config, "activation"),
+            sampling_config=get_sampling_config(fc_config),
+        )
 
-    return bolt.graph.FullyConnected(
-        dim=config_get(fc_config, "dim"),
-        sparsity=sparsity,
-        activation_function=config_get(fc_config, "activation"),
-        sampling_config=get_sampling_config(fc_config),
-    )
+    if fc_config.get("use_sparse_sparse_optimization", False):
+        layer.enable_sparse_sparse_optimization()
+
+    return layer
 
 
 def construct_embedding_node(embedding_config):
     num_embedding_lookups = config_get(embedding_config, "num_embedding_lookups")
     lookup_size = config_get(embedding_config, "lookup_size")
     log_embedding_block_size = config_get(embedding_config, "log_embedding_block_size")
+    reduction = config_get(embedding_config, "reduction")
+    num_tokens_per_input = embedding_config.get("num_tokens_per_input", None)
 
     return bolt.graph.Embedding(
         num_embedding_lookups=num_embedding_lookups,
         lookup_size=lookup_size,
         log_embedding_block_size=log_embedding_block_size,
+        reduction=reduction,
+        num_tokens_per_input=num_tokens_per_input,
     )
 
 
@@ -276,14 +294,36 @@ def get_loss(model_config):
     raise ValueError(f"{loss_string} is not a valid loss function.")
 
 
-def load_svm_dataset(dataset_config):
-    dataset_path = find_full_filepath(config_get(dataset_config, "path"))
-    return dataset.load_bolt_svm_dataset(
-        dataset_path, batch_size=config_get(dataset_config, "batch_size")
-    )
+def check_test_labels(datasets_map, key):
+    if len(datasets_map[key]) == 1:
+        datasets_map[key] = datasets_map[key][0]
+    elif len(datasets_map[key]) == 0:
+        datasets_map[key] = None
+    else:
+        raise ValueError(
+            f"Must have 0 or 1 test label datasets but found {len(datasets_map[key])} test_labels."
+        )
 
 
-def load_click_through_dataset(dataset_config):
+def load_svm_dataset(dataset_config, use_s3):
+    batch_size = config_get(dataset_config, "batch_size")
+    if use_s3:
+        print("Using S3 to load SVM dataset", flush=True)
+        s3_prefix = "share/data/" + dataset_config["path"]
+        s3_bucket = "thirdai-corp"
+        data_loader = dataset.S3DataLoader(
+            bucket_name=s3_bucket, prefix_filter=s3_prefix, batch_size=batch_size
+        )
+        return dataset.load_bolt_svm_dataset(data_loader)
+    else:
+        dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+        return dataset.load_bolt_svm_dataset(dataset_path, batch_size=batch_size)
+
+
+def load_click_through_dataset(dataset_config, use_s3):
+    if use_s3:
+        raise ValueError("S3 not supported yet for loading click through datasets")
+
     dataset_path = find_full_filepath(config_get(dataset_config, "path"))
     return dataset.load_click_through_dataset(
         filename=dataset_path,
@@ -296,7 +336,19 @@ def load_click_through_dataset(dataset_config):
     )
 
 
-def load_mlm_datasets(dataset_config, return_tokens):
+def load_click_through_labels(dataset_config, use_s3):
+    if use_s3:
+        raise ValueError("S3 not supported yet for loading click through labels")
+
+    dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+    with open(dataset_path) as file:
+        return [np.array([int(line[0]) for line in file.readlines()])]
+
+
+def load_mlm_datasets(dataset_config, use_s3, return_tokens):
+    if use_s3:
+        raise ValueError("S3 not supported yet for loading mlm datasets")
+
     # We load the train and test data at the same time because the need to use
     # the same loader to ensure that the words in the vocabulary are mapped to
     # the same output neuron.
@@ -361,6 +413,44 @@ def switch_to_sparse_inference_if_needed(
     if use_sparse_inference:
         print(f"Switching to sparse inference on epoch {current_epoch}")
         predict_config.enable_sparse_inference()
+
+
+def should_compute_roc_auc(experiment_config):
+    return experiment_config.get("compute_roc_auc", False)
+
+
+def compute_roc_auc(predict_output, datasets, use_mlflow):
+    if datasets["test_labels_np"] is None:
+        raise ValueError("Cannot compute roc_auc without test_labels_np specified.")
+
+    if len(predict_output) != 2:
+        raise ValueError("Cannot compute roc_auc without dense activations.")
+
+    labels = datasets["test_labels_np"]
+    activations = predict_output[1]
+
+    if len(activations) != len(labels):
+        raise ValueError(
+            f"Length of activations must match length of test_labels_np to compute roc_auc."
+        )
+
+    # If there are two output neurons then the true scores are activations of the second neuron.
+    if len(activations.shape) == 2 and activations.shape[1] == 2:
+        scores = activations[:, 1]
+    # If there is a single output neuron the it is the true score.
+    elif len(activations.shape) == 2 and activations.shape[1] == 1:
+        scores = activations[:, 0]
+    else:
+        raise ValueError(
+            "Activations must have shape (n,1), or (n,2) to compute roc_auc."
+        )
+
+    from sklearn.metrics import roc_auc_score
+
+    roc_auc = roc_auc_score(labels, scores)
+    print(f"ROC AUC = {roc_auc}")
+    if use_mlflow:
+        log_prediction_metrics([{"roc_auc": roc_auc}])
 
 
 def build_arg_parser():

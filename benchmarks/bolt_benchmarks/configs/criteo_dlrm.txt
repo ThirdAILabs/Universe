@@ -1,6 +1,8 @@
-experiment_identifier = "Criteo DLRM"
+# We have two criteo benchmarks because the datasets are slightly different in input dimension.
+
+experiment_identifier = "Criteo DLRM 46M"
 model_identifier = "criteo_dlrm"
-dataset_identifier = "criteo_click_through_small"
+dataset_identifier = "criteo_click_through_46M"
 
 
 train_metrics = []
@@ -10,30 +12,35 @@ rebuild_hash_tables = 128000
 learning_rate = 0.0001
 loss_fn = "CategoricalCrossEntropyLoss"
 test_metrics = ["categorical_accuracy"]
+compute_roc_auc = true
 
 [[datasets]]
 format = "click"
 type_list = ["train_data", "train_data", "train_labels"]
-path = "criteo-small/train_shuf.txt"
-batch_size = 256
-max_num_numerical_features = 15
-max_categorical_features = 24
+path = "criteo/train_shuf.txt"
+batch_size = 512
+max_num_numerical_features = 13
+max_categorical_features = 26
 delimiter = " "
 
 [[datasets]]
 format = "click"
 type_list = ["test_data", "test_data", "test_labels"]
-path = "criteo-small/test_shuf.txt"
+path = "criteo/test_shuf.txt"
 batch_size = 256
-max_num_numerical_features = 15
-max_categorical_features = 23
+max_num_numerical_features = 13
+max_categorical_features = 26
 delimiter = " "
 
+[[datasets]]
+format = "click_labels"
+type_list = ["test_labels_np"]
+path = "criteo/test_shuf.txt"
 
 [[nodes]]
 type = "Input"
 name = "numerical_input"
-dim = 15
+dim = 13
 
 [[nodes]]
 type = "FullyConnected"
@@ -42,7 +49,8 @@ pred = "numerical_input"
 dim = 1000
 sparsity = 0.2
 activation = "relu"
-use_default_sampling = true
+# Use random sampling because it speeds up training without impacting convergence.
+use_random_sampling = true
 
 [[nodes]]
 type = "FullyConnected"
@@ -55,8 +63,8 @@ activation = "relu"
 type = "Input"
 name = "categorical_input"
 dim = 4294967295
-min_num_tokens = 0
-max_num_tokens = 24
+min_num_nonzeros = 26
+max_num_nonzeros = 26
 
 [[nodes]]
 type = "Embedding"
@@ -64,7 +72,9 @@ name = "embedding"
 pred = "categorical_input"
 num_embedding_lookups = 8
 lookup_size = 16
-log_embedding_block_size = 10
+log_embedding_block_size = 20
+reduction="concat"
+num_tokens_per_input=26
 
 [[nodes]]
 type = "Concatenate"
@@ -78,7 +88,8 @@ pred = "concat"
 dim = 1000
 sparsity = 0.2
 activation = "relu"
-use_default_sampling = true
+# Use random sampling because it speeds up training without impacting convergence.
+use_random_sampling = true
 
 [[nodes]]
 type = "FullyConnected"

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <limits>
 #include <optional>
@@ -13,7 +14,6 @@ class TrainConfig {
     construct the training config. The remaining parameters can be set using a
     builder pattern.
   */
-
   static TrainConfig makeConfig(float learning_rate, uint32_t epochs) {
     return TrainConfig(learning_rate, epochs);
   }
@@ -28,7 +28,7 @@ class TrainConfig {
     return *this;
   }
 
-  TrainConfig silence() {
+  TrainConfig& silence() {
     _verbose = false;
     return *this;
   }
@@ -42,6 +42,13 @@ class TrainConfig {
     _reconstruct_hash_functions = reconstruct;
     return *this;
   }
+
+  TrainConfig& withCallbacks(const std::vector<CallbackPtr>& callbacks) {
+    _callbacks = CallbackList(callbacks);
+    return *this;
+  }
+
+  CallbackList getCallbacks() const { return _callbacks; }
 
   constexpr uint32_t epochs() const { return _epochs; }
 
@@ -94,7 +101,8 @@ class TrainConfig {
         _verbose(true),
         _batch_size({}),
         _rebuild_hash_tables(std::nullopt),
-        _reconstruct_hash_functions(std::nullopt) {}
+        _reconstruct_hash_functions(std::nullopt),
+        _callbacks({}) {}
 
   uint32_t _epochs;
   float _learning_rate;
@@ -104,6 +112,8 @@ class TrainConfig {
 
   std::optional<uint32_t> _rebuild_hash_tables;
   std::optional<uint32_t> _reconstruct_hash_functions;
+
+  CallbackList _callbacks;
 };
 
 class PredictConfig {
@@ -141,6 +151,8 @@ class PredictConfig {
   MetricAggregator getMetricAggregator() const {
     return MetricAggregator(_metric_names, _verbose);
   }
+
+  std::vector<std::string> getMetricNames() const { return _metric_names; }
 
   constexpr bool verbose() const { return _verbose; }
 

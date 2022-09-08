@@ -2,10 +2,6 @@
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
-#include <dataset/src/encodings/text/CharKGram.h>
-#include <dataset/src/encodings/text/PairGram.h>
-#include <dataset/src/encodings/text/TextEncodingUtils.h>
-#include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <random>
 #include <string>
@@ -61,12 +57,12 @@ class TextBlockTest : public testing::Test {
   }
 
   static std::vector<SegmentedSparseFeatureVector> makeSegmentedVecs(
-      SentenceMatrix& matrix, std::vector<TextBlock>& blocks) {
+      SentenceMatrix& matrix, std::vector<TextBlockPtr>& blocks) {
     std::vector<SegmentedSparseFeatureVector> vecs;
     for (const auto& row : matrix) {
       SegmentedSparseFeatureVector vec;
       for (auto& block : blocks) {
-        extendVectorWithBlock(block, row, vec);
+        extendVectorWithBlock(*block, row, vec);
       }
       vecs.push_back(std::move(vec));
     }
@@ -177,11 +173,11 @@ TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
 
   uint32_t dim_for_encodings = 50;
   uint32_t k_chars = 3;
-  std::vector<TextBlock> blocks;
-  blocks.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
-  blocks.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
-  blocks.emplace_back(2,
-                      std::make_shared<CharKGram>(k_chars, dim_for_encodings));
+  std::vector<TextBlockPtr> blocks;
+  blocks.push_back(UniGramTextBlock::make(/* col= */ 0, dim_for_encodings));
+  blocks.push_back(PairGramTextBlock::make(/* col= */ 1, dim_for_encodings));
+  blocks.push_back(
+      CharKGramTextBlock::make(/* col= */ 2, k_chars, dim_for_encodings));
 
   std::vector<SegmentedSparseFeatureVector> vecs =
       makeSegmentedVecs(sentence_matrix, blocks);
@@ -243,18 +239,18 @@ TEST_F(TextBlockTest, TestEncodingsDeterministic) {
 
   uint32_t dim_for_encodings = 50;
   uint32_t k_chars = 3;
-  std::vector<TextBlock> blocks_1;
-  std::vector<TextBlock> blocks_2;
+  std::vector<TextBlockPtr> blocks_1;
+  std::vector<TextBlockPtr> blocks_2;
   // Duplicate each block. They will independently produce features
   // and we can check that the resulting vectors are equal.
-  blocks_1.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
-  blocks_2.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
-  blocks_1.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
-  blocks_2.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
-  blocks_1.emplace_back(
-      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings));
-  blocks_2.emplace_back(
-      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings));
+  blocks_1.push_back(UniGramTextBlock::make(/* col= */ 0, dim_for_encodings));
+  blocks_2.push_back(UniGramTextBlock::make(/* col= */ 0, dim_for_encodings));
+  blocks_1.push_back(PairGramTextBlock::make(/* col= */ 1, dim_for_encodings));
+  blocks_2.push_back(PairGramTextBlock::make(/* col= */ 1, dim_for_encodings));
+  blocks_1.push_back(
+      CharKGramTextBlock::make(/* col= */ 2, k_chars, dim_for_encodings));
+  blocks_2.push_back(
+      CharKGramTextBlock::make(/* col= */ 2, k_chars, dim_for_encodings));
 
   std::vector<SegmentedSparseFeatureVector> vecs_1 =
       makeSegmentedVecs(sentence_matrix, blocks_1);

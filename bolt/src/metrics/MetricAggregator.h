@@ -20,20 +20,7 @@ class MetricAggregator {
                             bool verbose = true)
       : _verbose(verbose) {
     for (const auto& name : metrics) {
-      if (name == CategoricalAccuracy::name) {
-        _metrics.push_back(std::make_shared<CategoricalAccuracy>());
-      } else if (name == WeightedMeanAbsolutePercentageError::name) {
-        _metrics.push_back(
-            std::make_shared<WeightedMeanAbsolutePercentageError>());
-      } else if (name == MeanSquaredErrorMetric::name) {
-        _metrics.push_back(std::make_shared<MeanSquaredErrorMetric>());
-      } else if (FMeasure::isFMeasure(name)) {
-        _metrics.push_back(FMeasure::make(name));
-      } else if (RecallAtK::isRecallAtK(name)) {
-        _metrics.push_back(RecallAtK::make(name));
-      } else {
-        throw std::invalid_argument("'" + name + "' is not a valid metric.");
-      }
+      _metrics.push_back(makeMetric(name));
     }
   }
 

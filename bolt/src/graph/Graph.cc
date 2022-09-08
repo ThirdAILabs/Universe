@@ -73,23 +73,31 @@ MetricData BoltGraph::train(
       train_config.getReconstructHashFunctionsBatchInterval(
           train_context.batchSize(), train_context.len());
 
-  /*
-    Because of how the datasets are read we know that all batches will not have
-    a batch size larger than the first batch_size. We will be using the same
-    datastructures to store the activations for every batch during training so
-    we need this to be able to support the largest batch size.
-   */
-  prepareToProcessBatches(train_context.batchSize(), /* use_sparsity=*/true);
-
   std::vector<double> time_per_epoch;
 
   MetricAggregator metrics = train_config.getMetricAggregator();
 
-  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
-  // some sort of RAII training context object whose destructor will
-  // automatically delete the training state
-  try {
-    for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+  CallbackList callbacks = train_config.getCallbacks();
+  callbacks.onTrainBegin(*this);
+
+  for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+    callbacks.onEpochBegin(*this);
+
+    /*
+      Because of how the datasets are read we know that all batches will not
+      have a batch size larger than the first batch_size. We will be using the
+      same datastructures to store the activations for every batch during
+      training so we need this to be able to support the largest batch size.
+
+      This is done per epoch so callbacks can call predict during training.
+    */
+    prepareToProcessBatches(train_context.batchSize(),
+                            /* use_sparsity=*/true);
+
+    // TODO(josh/Nick): This try catch is kind of a hack, we should really use
+    // some sort of RAII training context object whose destructor will
+    // automatically delete the training state
+    try {
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
@@ -98,6 +106,8 @@ MetricData BoltGraph::train(
 
       for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
            batch_idx++) {
+        callbacks.onBatchBegin(*this);
+
         train_context.setInputs(batch_idx, _inputs);
 
         const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
@@ -107,9 +117,9 @@ MetricData BoltGraph::train(
                                     reconstruct_hash_functions_batch);
 
         bar.increment();
-      }
 
-      perEpochCallback();
+        callbacks.onBatchEnd(*this);
+      }
 
       auto train_end = std::chrono::high_resolution_clock::now();
       int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
@@ -125,13 +135,20 @@ MetricData BoltGraph::train(
       }
       _epoch_count++;
       metrics.logAndReset();
+    } catch (const std::exception& e) {
+      cleanupAfterBatchProcessing();
+      throw;
     }
-  } catch (const std::exception& e) {
+
     cleanupAfterBatchProcessing();
-    throw;
+
+    callbacks.onEpochEnd(*this);
+    if (callbacks.shouldStopTraining()) {
+      break;
+    }
   }
 
-  cleanupAfterBatchProcessing();
+  callbacks.onTrainEnd(*this);
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
@@ -162,8 +179,6 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
     metrics.processSample(_output->getOutputVector(vec_id),
                           batch_labels[vec_id]);
   }
-
-  perBatchCallback();
 }
 
 void BoltGraph::updateParametersAndSampling(
@@ -233,12 +248,12 @@ BoltGraph::getInputGradientSingle(
 
     BoltVector& input_vector = _inputs[0]->getOutputVector(/*vec_index= */ 0);
 
-    std::vector<float> vec_grad(input_vector.len, 0.0);
+    std::vector<float> normalised_vec_grad(input_vector.len, 0.0);
 
-    // Assigning the vec_grad data() to gradients so that we dont have to
-    // worry about initializing and then freeing the memory.
+    // Assigning the normalised_vec_grad data() to gradients so that we dont
+    // have to worry about initializing and then freeing the memory.
 
-    input_vector.gradients = vec_grad.data();
+    input_vector.gradients = normalised_vec_grad.data();
     std::vector<uint32_t> input_vector_indices;
 
     /*
@@ -281,10 +296,14 @@ BoltGraph::getInputGradientSingle(
     input_vector.gradients = nullptr;
     cleanupAfterBatchProcessing();
 
-    if (input_vector_indices.empty()) {
-      return std::make_pair(std::nullopt, vec_grad);
+    for (uint32_t i = 0; i < input_vector.len; i++) {
+      normalised_vec_grad[i] /= input_vector.activations[i];
     }
-    return std::make_pair(input_vector_indices, vec_grad);
+
+    if (input_vector_indices.empty()) {
+      return std::make_pair(std::nullopt, normalised_vec_grad);
+    }
+    return std::make_pair(input_vector_indices, normalised_vec_grad);
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
