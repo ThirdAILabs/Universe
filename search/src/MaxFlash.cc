@@ -4,25 +4,11 @@
 
 namespace thirdai::search {
 
-template class MaxFlash<uint8_t>;
-template class MaxFlash<uint16_t>;
-template class MaxFlash<uint32_t>;
-
 template <typename LABEL_T>
 MaxFlash<LABEL_T>::MaxFlash(uint32_t num_tables, uint32_t range,
                             LABEL_T num_elements,
                             const std::vector<uint32_t>& hashes)
     : _hashtable(num_tables, range, num_elements, hashes) {}
-
-template float MaxFlash<uint8_t>::getScore(const std::vector<uint32_t>&,
-                                           uint32_t, std::vector<uint32_t>&,
-                                           const std::vector<float>&) const;
-template float MaxFlash<uint16_t>::getScore(const std::vector<uint32_t>&,
-                                            uint32_t, std::vector<uint32_t>&,
-                                            const std::vector<float>&) const;
-template float MaxFlash<uint32_t>::getScore(const std::vector<uint32_t>&,
-                                            uint32_t, std::vector<uint32_t>&,
-                                            const std::vector<float>&) const;
 
 template <typename LABEL_T>
 float MaxFlash<LABEL_T>::getScore(
@@ -56,5 +42,9 @@ float MaxFlash<LABEL_T>::getScore(
 
   return sum;
 }
+
+template class MaxFlash<uint8_t>;
+template class MaxFlash<uint16_t>;
+template class MaxFlash<uint32_t>;
 
 }  // namespace thirdai::search

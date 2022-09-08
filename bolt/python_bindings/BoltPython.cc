@@ -228,7 +228,9 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
-           py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1);
+           py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
+      .def("save", &SequentialClassifier::save, py::arg("filename"))
+      .def_static("load", &SequentialClassifier::load, py::arg("filename"));
 
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
