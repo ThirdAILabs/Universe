@@ -3,6 +3,7 @@
 #include "BlockInterface.h"
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <memory>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -25,10 +26,10 @@ class TextBlock : public Block {
       uint32_t index,
       std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
       const final {
-    (void)index;
-    (void)num_to_name;
-    throw std::invalid_argument("not yet implemented in text block!");
+    return std::make_pair(num_to_name->at(_col), getWordResponsible(index));
   }
+
+  virtual std::string getWordResponsible(uint32_t index) const = 0;
 
  protected:
   std::exception_ptr buildSegment(
@@ -64,6 +65,11 @@ class PairGramTextBlock final : public TextBlock {
     return std::make_shared<PairGramTextBlock>(col, dim);
   }
 
+  std::string getWordResponsible(uint32_t index) const final {
+    (void)index;
+    throw std::invalid_argument("not yet implemented for pairgram block.");
+  }
+
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
@@ -96,11 +102,17 @@ class UniGramTextBlock final : public TextBlock {
     return std::make_shared<UniGramTextBlock>(col, dim);
   }
 
+  std::string getWordResponsible(uint32_t index) const final {
+    return _index_to_word_map.at(index);
+  }
+
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> unigrams =
-        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
+    auto [unigrams, index_to_word] =
+        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim, true);
+
+    _index_to_word_map = std::move(*index_to_word);
 
     TextEncodingUtils::sumRepeatedIndices(
         unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
@@ -109,6 +121,9 @@ class UniGramTextBlock final : public TextBlock {
 
     return nullptr;
   }
+
+ private:
+  std::unordered_map<uint32_t, std::string> _index_to_word_map;
 };
 
 using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;
@@ -127,6 +142,11 @@ class CharKGramTextBlock final : public TextBlock {
       uint32_t col, uint32_t k,
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<CharKGramTextBlock>(col, k, dim);
+  }
+
+  std::string getWordResponsible(uint32_t index) const final {
+    (void)index;
+    throw std::invalid_argument("not yet implemented for char-k block.");
   }
 
  protected:
