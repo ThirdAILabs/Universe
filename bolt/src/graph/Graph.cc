@@ -107,8 +107,9 @@ MetricData BoltGraph::train(
     for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
       callbacks.onEpochBegin(*this);
       std::optional<ProgressBar> bar = makeOptionalProgressBar(
-          train_config.verbose(), fmt::format("train epoch {}", _epoch_count),
-          train_context.numBatches());
+          /*make=*/train_config.verbose(),
+          /*description=*/fmt::format("train epoch {}", _epoch_count),
+          /*max_steps=*/train_context.numBatches());
 
       auto train_start = std::chrono::high_resolution_clock::now();
 
@@ -359,7 +360,9 @@ InferenceResult BoltGraph::predict(
       /* total_num_samples = */ predict_context.len());
 
   std::optional<ProgressBar> bar = makeOptionalProgressBar(
-      predict_config.verbose(), "test", predict_context.numBatches());
+      /*make=*/predict_config.verbose(),
+      /*description=*/"test",
+      /*max_steps=*/predict_context.numBatches());
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
