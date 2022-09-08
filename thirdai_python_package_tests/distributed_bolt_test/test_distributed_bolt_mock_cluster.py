@@ -1,5 +1,6 @@
 import sys
 import pytest
+import os
 
 try:
     import thirdai.distributed_bolt as db
@@ -37,7 +38,7 @@ def setup_module():
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
 @pytest.mark.xfail
-def test_distributed_bolt_on_mock_cluster():
+def test_distributed_bolt_linear_on_mock_cluster():
     # Initilizing a mock cluster with two node
     cluster = Cluster(
         initialize_head=True,
@@ -48,8 +49,9 @@ def test_distributed_bolt_on_mock_cluster():
     cluster.add_node(num_cpus=1)
 
     # Configuration file the training
-    config_filename = (
-        "../thirdai_python_package_tests/distributed_bolt_test/default_config.txt"
+    config_filename = os.path.join(
+        os.path.dirname(__file__), # Directory where this .py file is
+        "default_config.txt"
     )
 
     head = db.FullyConnectedNetwork(
