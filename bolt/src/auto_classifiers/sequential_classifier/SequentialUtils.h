@@ -12,8 +12,7 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserItemHistory.h>
-#include <dataset/src/encodings/categorical/StringLookup.h>
-#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <memory>
 #include <sstream>
@@ -113,14 +112,14 @@ class Pipeline {
     auto file_reader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
 
-    auto header = file_reader->getHeader();
+    auto header = file_reader->nextLine();
     if (!header) {
       throw std::runtime_error("File header not found.");
     }
 
     ColumnNumberMap col_nums(*header, delimiter);
 
-    auto input_blocks = buildInputBlocks(schema, state, col_nums);
+    auto input_blocks = buildInputBlocks(schema, state, col_nums, for_training);
 
     std::vector<dataset::BlockPtr> label_blocks;
     label_blocks.push_back(
@@ -140,7 +139,8 @@ class Pipeline {
 
  private:
   static std::vector<dataset::BlockPtr> buildInputBlocks(
-      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums) {
+      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums,
+      bool for_training) {
     std::vector<dataset::BlockPtr> input_blocks;
     input_blocks.push_back(makeCategoricalBlock(schema.user, state, col_nums));
 
@@ -148,8 +148,8 @@ class Pipeline {
         col_nums.at(schema.timestamp_col_name)));
 
     for (const auto& text_col_name : schema.static_text_col_names) {
-      input_blocks.push_back(std::make_shared<dataset::TextBlock>(
-          col_nums.at(text_col_name), /* dim = */ 100000));
+      input_blocks.push_back(
+          dataset::UniGramTextBlock::make(col_nums.at(text_col_name)));
     }
 
     for (const auto& categorical : schema.static_categorical) {
@@ -158,9 +158,9 @@ class Pipeline {
     }
 
     for (uint32_t seq_idx = 0; seq_idx < schema.sequential.size(); seq_idx++) {
-      input_blocks.push_back(
-          makeSequentialBlock(seq_idx, schema.user, schema.sequential[seq_idx],
-                              schema.timestamp_col_name, state, col_nums));
+      input_blocks.push_back(makeSequentialBlock(
+          seq_idx, schema.user, schema.sequential[seq_idx],
+          schema.timestamp_col_name, state, col_nums, for_training));
     }
 
     return input_blocks;
@@ -174,8 +174,8 @@ class Pipeline {
     if (!string_vocab) {
       string_vocab = dataset::ThreadSafeVocabulary::make(n_classes);
     }
-    return dataset::CategoricalBlock::make(
-        col_nums.at(cat_col_name), dataset::StringLookup::make(string_vocab));
+    return dataset::StringLookupCategoricalBlock::make(
+        col_nums.at(cat_col_name), string_vocab);
   }
 
   // We pass in an ID because sequential blocks can corrupt each other's states.
@@ -183,7 +183,7 @@ class Pipeline {
       uint32_t sequential_block_id, const CategoricalPair& user,
       const SequentialTriplet& sequential,
       const std::string& timestamp_col_name, DataState& state,
-      const ColumnNumberMap& col_nums) {
+      const ColumnNumberMap& col_nums, bool for_training) {
     const auto& [user_col_name, n_unique_users] = user;
     auto& user_vocab = state.vocabs_by_column[user_col_name];
     if (!user_vocab) {
@@ -198,7 +198,8 @@ class Pipeline {
 
     auto& user_item_history =
         state.history_collections_by_id[sequential_block_id];
-    if (!user_item_history) {
+    // Reset history if for training to prevent test data from leaking in.
+    if (!user_item_history || for_training) {
       user_item_history =
           dataset::ItemHistoryCollection::make(n_unique_users, track_last_n);
     }

@@ -134,7 +134,7 @@ def test_set_values():
 
 # We compress the weight gradients of the model, and then reconstruct the weight
 # gradients from the compressed dragon vector.
-def test_compressed_dragon_training():
+def test_compressed_training():
 
     train_data, train_labels = gen_numpy_training_data(
         n_classes=10, n_samples=1000, convert_to_bolt_dataset=False

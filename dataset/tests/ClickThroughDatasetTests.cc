@@ -162,10 +162,12 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTestSparseLabel) {
-  auto [dense_inputs, tokens, labels] = ClickThroughDatasetLoader::loadDataset(
-      _filename, _batch_size, /* num_dense_features= */ getNumDenseFeatures(),
-      /* max_num_categorical_features= */ getNumCategoricalFeatures(),
-      /* delimiter= */ '\t');
+  auto [dense_inputs, tokens, labels] =
+      ClickThroughDatasetLoader::loadDatasetFromFile(
+          _filename, _batch_size,
+          /* num_dense_features= */ getNumDenseFeatures(),
+          /* max_num_categorical_features= */ getNumCategoricalFeatures(),
+          /* delimiter= */ '\t');
 
   uint32_t label_count = 0;
   for (const auto& batch : *labels) {

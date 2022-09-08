@@ -5,6 +5,7 @@ target_link_libraries(
   metric_test
   PRIVATE 
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(mse_test MeanSquaredErrorMetricTest.cc)
