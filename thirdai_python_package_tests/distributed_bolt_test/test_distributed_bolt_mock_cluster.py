@@ -1,6 +1,6 @@
 # Here we are mocking a cluster on a single machine
 # without explicitly starting a ray cluster. We are
-# testing both the communication circular and linear
+# testing both the communication circular and linear 
 # in the following tests.
 # For reference: https://docs.ray.io/en/latest/ray-core/examples/testing-tips.html#tip-3-create-a-mini-cluster-with-ray-cluster-utils-cluster
 
