@@ -156,10 +156,10 @@ class UserItemHistoryBlock final : public Block {
       uint32_t index,
       std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
       const final {
-    (void)index;
-    (void)num_to_name;
-    throw std::invalid_argument(
-        "not yet implemented in user item history block!");
+    ItemRecord item = _records->at(_user_id)[index];
+
+    return std::make_pair(num_to_name->at(_item_col),
+                          _item_id_lookup->getString(item.item));
   }
 
  protected:
@@ -172,6 +172,7 @@ class UserItemHistoryBlock final : public Block {
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
       uint32_t user_id = _user_id_lookup->getUid(user_str);
+      _user_id = user_id;
       int64_t epoch_timestamp = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_id = _item_id_lookup->getUid(item_str);
@@ -214,6 +215,7 @@ class UserItemHistoryBlock final : public Block {
   ThreadSafeVocabularyPtr _item_id_lookup;
 
   std::shared_ptr<ItemHistoryCollection> _records;
+  uint32_t _user_id;
 };
 
 }  // namespace thirdai::dataset
