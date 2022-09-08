@@ -51,19 +51,16 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
 
  protected:
-  dataset::GenericBatchProcessorPtr getTrainingBatchProcessor(
-      std::shared_ptr<dataset::DataLoader> data_loader,
-      std::optional<uint64_t> max_in_memory_batches) final {
-    (void)data_loader;
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
+                     std::optional<uint64_t> max_in_memory_batches) final {
     (void)max_in_memory_batches;
-    return getPredictBatchProcessor();
+    return getDataset(data_loader);
   }
 
-  dataset::GenericBatchProcessorPtr getPredictBatchProcessor() final {
-    auto label_block = dataset::StringLookupCategoricalBlock::make(
-        /* col= */ 0, _label_id_lookup);
-    return dataset::GenericBatchProcessor::make(
-        {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+    return getDataset(data_loader);
   }
 
   void processPredictionBeforeReturning(uint32_t* active_neurons,
@@ -89,11 +86,22 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
 
   bool useSparseInference() const final { return true; }
 
-  std::vector<std::string> getPredictMetrics() const final {
+  std::vector<std::string> getEvaluationMetrics() const final {
     return {"categorical_accuracy"};
   }
 
  private:
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
+      std::shared_ptr<dataset::DataLoader> data_loader) {
+    auto label_block = dataset::StringLookupCategoricalBlock::make(
+        /* col= */ 0, _label_id_lookup);
+    auto batch_processor = dataset::GenericBatchProcessor::make(
+        {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
+
+    return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+        std::move(data_loader), batch_processor);
+  }
+
   // Private constructor for cereal.
   TextClassifier()
       : AutoClassifierBase(nullptr, ReturnMode::NumpyArray),
@@ -112,8 +120,8 @@ class MultiLabelTextClassifier final
     : public AutoClassifierBase<std::vector<uint32_t>> {
  public:
   explicit MultiLabelTextClassifier(uint32_t n_classes, float threshold = 0.95)
-      : AutoClassifierBase(createModel(n_classes), ReturnMode::NumpyArray,
-                           threshold) {}
+      : AutoClassifierBase(createModel(n_classes), ReturnMode::NumpyArray),
+        _threshold(threshold) {}
 
   void save(const std::string& filename) {
     std::ofstream filestream =
@@ -135,21 +143,16 @@ class MultiLabelTextClassifier final
   }
 
  protected:
-  dataset::GenericBatchProcessorPtr getTrainingBatchProcessor(
-      std::shared_ptr<dataset::DataLoader> data_loader,
-      std::optional<uint64_t> max_in_memory_batches) final {
-    (void)data_loader;
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
+                     std::optional<uint64_t> max_in_memory_batches) final {
     (void)max_in_memory_batches;
-    return getPredictBatchProcessor();
+    return getDataset(data_loader);
   }
 
-  dataset::GenericBatchProcessorPtr getPredictBatchProcessor() final {
-    return dataset::GenericBatchProcessor::make(
-        {dataset::PairGramTextBlock::make(/* col= */ 1)},
-        {dataset::NumericalCategoricalBlock::make(
-            /* col= */ 0,
-            /* n_classes= */ _model->outputDim())},
-        /* has_header= */ false, /* delimiter= */ '\t');
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+    return getDataset(data_loader);
   }
 
   void processPredictionBeforeReturning(uint32_t* active_neurons,
@@ -181,7 +184,7 @@ class MultiLabelTextClassifier final
 
   bool useSparseInference() const final { return false; }
 
-  std::vector<std::string> getPredictMetrics() const final {
+  std::vector<std::string> getEvaluationMetrics() const final {
     return {"categorical_accuracy"};
   }
 
@@ -201,6 +204,19 @@ class MultiLabelTextClassifier final
                    /* print_when_done= */ false);
 
     return model;
+  }
+
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
+      std::shared_ptr<dataset::DataLoader> data_loader) {
+    auto batch_processor = dataset::GenericBatchProcessor::make(
+        {dataset::PairGramTextBlock::make(/* col= */ 1)},
+        {dataset::NumericalCategoricalBlock::make(
+            /* col= */ 0,
+            /* n_classes= */ _model->outputDim())},
+        /* has_header= */ false, /* delimiter= */ '\t');
+
+    return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+        std::move(data_loader), batch_processor);
   }
 
   static float getOutputSparsity(uint32_t output_dim) {
@@ -244,6 +260,8 @@ class MultiLabelTextClassifier final
     return sentence_ss.str();
   }
 
+  float _threshold;
+
   // Private constructor for cereal.
   MultiLabelTextClassifier()
       : AutoClassifierBase(nullptr, ReturnMode::NumpyArray) {}
@@ -251,7 +269,7 @@ class MultiLabelTextClassifier final
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<AutoClassifierBase>(this));
+    archive(cereal::base_class<AutoClassifierBase>(this), _threshold);
   }
 };
 
@@ -283,16 +301,19 @@ class TabularClassifier final
   }
 
  protected:
-  dataset::GenericBatchProcessorPtr getTrainingBatchProcessor(
-      std::shared_ptr<dataset::DataLoader> data_loader,
-      std::optional<uint64_t> max_in_memory_batches) final {
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
+                     std::optional<uint64_t> max_in_memory_batches) final {
     processTabularMetadata(data_loader, max_in_memory_batches);
 
-    return getBatchProcessor();
+    return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+        std::move(data_loader), getBatchProcessor());
   }
 
-  dataset::GenericBatchProcessorPtr getPredictBatchProcessor() final {
-    return getBatchProcessor();
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+    return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+        std::move(data_loader), getBatchProcessor());
   }
 
   void processPredictionBeforeReturning(uint32_t* active_neurons,
@@ -345,7 +366,7 @@ class TabularClassifier final
 
   bool useSparseInference() const final { return true; }
 
-  std::vector<std::string> getPredictMetrics() const final {
+  std::vector<std::string> getEvaluationMetrics() const final {
     return {"categorical_accuracy"};
   }
 
