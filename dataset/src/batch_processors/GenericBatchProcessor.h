@@ -136,11 +136,13 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         input_blocks, label_blocks, has_header, delimiter, parallel);
   }
 
-  std::pair<std::shared_ptr<Block>, uint32_t> getBlockAndIndexWithinBlock(
-      uint32_t index) {
+  std::pair<std::string, std::string> getColumnNameAndKeyResponsibleWithinBlock(
+      uint32_t index,
+      const std::unordered_map<uint32_t, std::string>& num_to_name) {
     auto iter = std::upper_bound(_offsets.begin(), _offsets.end(), index);
-    return std::make_pair(_input_blocks[iter - _offsets.begin() - 1],
-                          (index - _offsets[iter - _offsets.begin() - 1]));
+    std::shared_ptr<Block> block = _input_blocks[iter - _offsets.begin() - 1];
+    uint32_t index_within_block = index - _offsets[iter - _offsets.begin() - 1];
+    return block->explainIndex(index_within_block, num_to_name);
   }
 
  private:
