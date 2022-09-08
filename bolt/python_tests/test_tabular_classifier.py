@@ -84,7 +84,7 @@ def test_tabular_classifier_census_income_dataset():
         learning_rate=0.01,
     )
 
-    _, predictions = classifier.predict(filename=TEST_FILE)
+    _, predictions = classifier.evaluate(filename=TEST_FILE)
 
     acc = compute_accuracy_of_predictions(test_labels, predictions)
 
@@ -118,10 +118,10 @@ def test_tabular_classifier_predict_single():
         learning_rate=0.01,
     )
 
-    _, predictions = classifier.predict(filename=TEST_FILE)
+    _, predictions = classifier.evaluate(filename=TEST_FILE)
 
     single_test_samples = create_single_test_samples()
 
     for sample, expected_prediction in zip(single_test_samples, predictions):
-        actual_prediction = classifier.predict_single(sample)
+        actual_prediction = classifier.predict(sample)
         assert actual_prediction == expected_prediction

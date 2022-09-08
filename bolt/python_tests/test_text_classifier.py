@@ -46,7 +46,7 @@ def test_text_classifier_clinc_dataset():
 
     classifier.train(filename=TRAIN_FILE, epochs=5, learning_rate=0.01)
 
-    _, predictions = classifier.predict(filename=TEST_FILE)
+    _, predictions = classifier.evaluate(filename=TEST_FILE)
 
     acc = compute_accuracy_of_predictions(test_labels, predictions)
 
@@ -62,7 +62,7 @@ def test_text_classifier_predict_single():
 
     classifier.train(filename=TRAIN_FILE, epochs=5, learning_rate=0.01)
 
-    _, predictions = classifier.predict(filename=TEST_FILE)
+    _, predictions = classifier.evaluate(filename=TEST_FILE)
 
     with open(TEST_FILE) as test:
         test_set = test.readlines()
@@ -73,7 +73,7 @@ def test_text_classifier_predict_single():
         split it with '","' because its how the sentence and label seperated uniquely
         in file and taking the sentence which is present at first index.
         """
-        single_prediction = classifier.predict_single(sample.split(",")[1])
+        single_prediction = classifier.predict(sample.split(",")[1])
         assert single_prediction == prediction
 
     remove_files([TRAIN_FILE, TEST_FILE])

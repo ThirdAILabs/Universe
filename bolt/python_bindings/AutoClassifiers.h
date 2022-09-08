@@ -306,6 +306,8 @@ class TabularClassifier final
                      std::optional<uint64_t> max_in_memory_batches) final {
     processTabularMetadata(data_loader, max_in_memory_batches);
 
+    data_loader->restart();
+
     return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
         std::move(data_loader), getBatchProcessor());
   }
