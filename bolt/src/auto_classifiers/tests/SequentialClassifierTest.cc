@@ -9,29 +9,6 @@
 
 namespace thirdai::bolt::sequential_classifier::tests {
 
-// I wanna make sure that:
-// If I don't pass a delimiter, categorical columns are not split -> error if
-// multi class in file because then it'll be seen as new classes If I pass a
-// delimiter, categorical columns are split -> no error Make sure that user does
-// not get split.
-
-/**
- * TODO:
- *
- * Test normal load save without multiclass
- * Test load save with multiclass
- * Test file with multiclass user fails even if multi class delimiter is given
- * Test file with multiclass categorical fail if multi class delimiter is not
- * given (test that no multiclass if delimiter is not given) Test file with
- * multiclass target fail if multi class delimiter is not given (test that no
- * multiclass if delimiter is not given)
- *
- * Sequential Classifier builder function should take in optional delimiter.
- * mock sequential data writer should take in train and test lines as well so
- * it's clear from each test what's being tested
- *
- */
-
 constexpr const char* TRAIN_FILE_NAME = "seq_class_train.csv";
 constexpr const char* TEST_FILE_NAME = "seq_class_test.csv";
 constexpr const char* MODEL_SAVE_FILE_NAME = "seq_class_save";
@@ -109,7 +86,7 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
   writeRowsToFile(TEST_FILE_NAME,
                   {"user,target,timestamp,static_text,static_categorical",
                    "0,0 1,2022-09-02,hello,0 1", "0,1 0,2022-09-03,hello,1 2",
-                   "0,0 1,2022-09-04,hello,2 3", "0,1 0,2022-09-05,hello,3 4"});
+                   "0,0 1,2022-09-04,hello,2 3", "0,1 0,2022-09-05,hello,3 0"});
 
   SequentialClassifier model(
       /* user= */ {"user", 1},

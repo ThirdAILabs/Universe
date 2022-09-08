@@ -164,7 +164,8 @@ class Pipeline {
     for (uint32_t seq_idx = 0; seq_idx < schema.sequential.size(); seq_idx++) {
       input_blocks.push_back(makeSequentialBlock(
           seq_idx, schema.user, schema.sequential[seq_idx],
-          schema.timestamp_col_name, state, col_nums, for_training));
+          schema.timestamp_col_name, state, col_nums, for_training, 
+          schema.multi_class_delim));
     }
 
     return input_blocks;
@@ -187,7 +188,8 @@ class Pipeline {
       uint32_t sequential_block_id, const CategoricalPair& user,
       const SequentialTriplet& sequential,
       const std::string& timestamp_col_name, DataState& state,
-      const ColumnNumberMap& col_nums, bool for_training) {
+      const ColumnNumberMap& col_nums, bool for_training, 
+      std::optional<char> delimiter) {
     const auto& [user_col_name, n_unique_users] = user;
     auto& user_vocab = state.vocabs_by_column[user_col_name];
     if (!user_vocab) {
@@ -211,7 +213,7 @@ class Pipeline {
     return dataset::UserItemHistoryBlock::make(
         col_nums.at(user_col_name), col_nums.at(item_col_name),
         col_nums.at(timestamp_col_name), user_vocab, item_vocab,
-        user_item_history);
+        user_item_history, delimiter);
   }
 };
 
