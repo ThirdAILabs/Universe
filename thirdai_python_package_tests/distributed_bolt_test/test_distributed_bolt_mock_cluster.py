@@ -35,6 +35,7 @@ def setup_module():
     os.system("cp xaa xab mnist.t mnist_data/")
     os.system("rm xaa xab mnist.t")
 
+
 @pytest.fixture(scope="module")
 def train_distributed_bolt_check(request):
     # Initilizing a mock cluster with two node
@@ -48,8 +49,8 @@ def train_distributed_bolt_check(request):
 
     # Configuration file the training
     config_filename = os.path.join(
-        os.path.dirname(__file__), # Directory where this .py file is
-        "default_config.txt"
+        os.path.dirname(__file__),  # Directory where this .py file is
+        "default_config.txt",
     )
 
     head = db.FullyConnectedNetwork(
@@ -68,8 +69,11 @@ def train_distributed_bolt_check(request):
     ray.shutdown()
     cluster.shutdown()
 
+
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
 @pytest.mark.xfail
-@pytest.mark.parametrize("train_distributed_bolt_check",["linear", "circular"], indirect=True)
+@pytest.mark.parametrize(
+    "train_distributed_bolt_check", ["linear", "circular"], indirect=True
+)
 def test_distributed_bolt_linear_on_mock_cluster(train_distributed_bolt_check):
     assert train_distributed_bolt_check[0]["categorical_accuracy"] > 0.9
