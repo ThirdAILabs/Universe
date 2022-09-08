@@ -51,14 +51,4 @@ inline T estimateTopKThreshold(const T* values, uint32_t size,
   return estimated_threshold;
 }
 
-inline std::string readBinaryString(std::stringstream is, uint32_t size) {
-  std::string return_str;
-  if (size > 0) {
-    char* buff(new char[size]);
-    is.read(reinterpret_cast<char*>(buff), size);
-    return_str.assign(buff, size);
-  }
-  return return_str;
-}
-
 }  // namespace thirdai::compression

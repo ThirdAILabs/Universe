@@ -1,7 +1,6 @@
 #include "CountSketch.h"
 #include "CompressedVector.h"
 #include <hashing/src/UniversalHash.h>
-#include <_types/_uint32_t.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cmath>

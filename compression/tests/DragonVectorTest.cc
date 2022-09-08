@@ -79,16 +79,16 @@ TEST_F(DragonVectorTest, ExtendDragonVectorTest) {
 TEST_F(DragonVectorTest, SerializeDragonVectorTest) {
   std::stringstream ss = _vec.serialize();
 
-  DragonVector<float> new_vec = DragonVector<float>(ss);
+  DragonVector<float> deserialized_vec = DragonVector<float>(ss);
 
-  ASSERT_EQ(new_vec.size(), _vec.size());
-  ASSERT_EQ(new_vec.uncompressedSize(), _vec.uncompressedSize());
+  ASSERT_EQ(deserialized_vec.size(), _vec.size());
+  ASSERT_EQ(deserialized_vec.uncompressedSize(), _vec.uncompressedSize());
 
   std::vector<uint32_t> indices = _vec.indices();
   std::vector<float> values = _vec.values();
 
-  std::vector<uint32_t> indices_deserialized = new_vec.indices();
-  std::vector<float> values_deserialized = new_vec.values();
+  std::vector<uint32_t> indices_deserialized = deserialized_vec.indices();
+  std::vector<float> values_deserialized = deserialized_vec.values();
 
   for (size_t i = 0; i < indices.size(); i++) {
     ASSERT_EQ(indices[i], indices_deserialized[i]);
