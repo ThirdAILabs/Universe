@@ -63,8 +63,8 @@ activation = "relu"
 type = "Input"
 name = "categorical_input"
 dim = 4294967295
-min_num_nonzeros = 26
-max_num_nonzeros = 26
+min_num_tokens = 26
+max_num_tokens = 26
 
 [[nodes]]
 type = "Embedding"
