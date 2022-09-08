@@ -21,9 +21,10 @@ class TabularClassifier {
         /* n_classes = */ _n_classes, model_size);
   }
 
-  void initClassifierDistributedTraining(
+  std::shared_ptr<dataset::GenericBatchProcessor>
+  prepare_metadata_and_batch_processor(
       const std::string& filename, std::vector<std::string>& column_datatypes,
-      uint32_t epochs, float learning_rate, int batch_size = 256) {
+      int batch_size = 256) {
     if (_metadata) {
       std::cout << "Note: Metadata from the training dataset is used for "
                    "predictions on future test data. Calling train(..) again "
@@ -34,6 +35,15 @@ class TabularClassifier {
 
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
+    return batch_processor;
+  }
+
+  void initClassifierDistributedTraining(
+      const std::string& filename, std::vector<std::string>& column_datatypes,
+      uint32_t epochs, float learning_rate, int batch_size = 256) {
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        prepare_metadata_and_batch_processor(filename, column_datatypes,
+                                             batch_size);
     _classifier->initClassifierDistributedTraining(
         filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
@@ -50,16 +60,8 @@ class TabularClassifier {
   void train(const std::string& filename,
              std::vector<std::string>& column_datatypes, uint32_t epochs,
              float learning_rate) {
-    if (_metadata) {
-      std::cout << "Note: Metadata from the training dataset is used for "
-                   "predictions on future test data. Calling train(..) again "
-                   "resets this metadata."
-                << std::endl;
-    }
-    _metadata = processTabularMetadata(filename, column_datatypes);
-
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
-        makeTabularBatchProcessor();
+        prepare_metadata_and_batch_processor(filename, column_datatypes);
 
     _classifier->train(
         filename,
