@@ -146,7 +146,6 @@ MetricData BoltGraph::train(
     if (callbacks.shouldStopTraining()) {
       break;
     }
-    perEpochCallback();
   }
 
   callbacks.onTrainEnd(*this);
@@ -180,8 +179,6 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
     metrics.processSample(_output->getOutputVector(vec_id),
                           batch_labels[vec_id]);
   }
-
-  perBatchCallback();
 }
 
 void BoltGraph::updateParametersAndSampling(

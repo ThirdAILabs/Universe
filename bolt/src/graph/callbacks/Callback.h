@@ -26,23 +26,25 @@ using CallbackPtr = std::shared_ptr<Callback>;
  */
 class Callback {
  public:
+  Callback() {}
+
   // instead of passing in a model we could have a model be set in
   // the constructor. This would require some sort of lambda/factory
   // constructor. We can think about this later.
-  virtual void onTrainBegin(BoltGraph& model) { (void)model; };
+  virtual void onTrainBegin(BoltGraph& model) { (void)model; }
 
-  virtual void onTrainEnd(BoltGraph& model) { (void)model; };
+  virtual void onTrainEnd(BoltGraph& model) { (void)model; }
 
-  virtual void onEpochBegin(BoltGraph& model) { (void)model; };
+  virtual void onEpochBegin(BoltGraph& model) { (void)model; }
 
-  virtual void onEpochEnd(BoltGraph& model) { (void)model; };
+  virtual void onEpochEnd(BoltGraph& model) { (void)model; }
 
   // currently predict/train is not supported for onbatch.. functions. this
   // would require refactoring of the graph api thus is saved for a future
   // change. Currently throws a supported error message.
   virtual void onBatchBegin(BoltGraph& model) { (void)model; };
 
-  virtual void onBatchEnd(BoltGraph& model) { (void)model; };
+  virtual void onBatchEnd(BoltGraph& model) { (void)model; }
 
   // TODO(david): semantically this is a little odd here, ideally we don't add
   // new functions every time we make a new callback. One alternative is to keep
