@@ -53,12 +53,12 @@ TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
       /* expected_dim= */ n_switch_layers,
       /* num_tokens_range = */ std::pair<uint32_t, uint32_t>(1, 1));
 
-  auto switch_layer = SwitchNode::make(
+  auto switch_layer = SwitchNode::makeDense(
       /* dim= */ 100, /* activation= */ "relu",
       /* n_layers= */ n_switch_layers);
   switch_layer->addPredecessors(input, token_input);
 
-  auto output = FullyConnectedNode::make(
+  auto output = FullyConnectedNode::makeDense(
       /* dim= */ n_classes, /* activation= */ "softmax");
   output->addPredecessor(switch_layer);
 

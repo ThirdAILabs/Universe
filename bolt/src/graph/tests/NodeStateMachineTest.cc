@@ -181,7 +181,7 @@ class FullyConnectedStateMachineTest final : public NodeStateMachineTest {
 };
 
 TEST(NodeStateMachineTest, FullyConnectedStateMachine) {
-  auto fully_connected_node = FullyConnectedNode::make(
+  auto fully_connected_node = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "relu");
 
   FullyConnectedStateMachineTest test(fully_connected_node);

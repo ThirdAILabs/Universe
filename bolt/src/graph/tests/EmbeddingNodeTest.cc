@@ -26,7 +26,7 @@ TEST(EmbeddingNodeTest, SimpleTokenDataset) {
       /* log_embedding_block_size= */ 14);
   embedding_layer->addInput(token_input);
 
-  auto fully_connected_layer = FullyConnectedNode::make(
+  auto fully_connected_layer = FullyConnectedNode::makeDense(
       /* dim= */ 2,
       /* activation= */ "softmax");
   fully_connected_layer->addPredecessor(embedding_layer);

@@ -39,8 +39,8 @@ static constexpr uint32_t batch_size = 100;
 
 BoltGraph getModel() {
   auto input = Input::make(/* expected_dim= */ n_classes);
-  auto hidden_layer = FullyConnectedNode::make(/* dim= */ 200,
-                                               /* activation= */ "relu");
+  auto hidden_layer = FullyConnectedNode::makeDense(/* dim= */ 200,
+                                                    /* activation= */ "relu");
   hidden_layer->addPredecessor(input);
 
   auto token_input = Input::makeTokenInput(
@@ -54,8 +54,8 @@ BoltGraph getModel() {
   auto concat = ConcatenateNode::make();
   concat->setConcatenatedNodes({hidden_layer, embedding});
 
-  auto output = FullyConnectedNode::make(/* dim= */ n_classes,
-                                         /* activation= */ "softmax");
+  auto output = FullyConnectedNode::makeDense(/* dim= */ n_classes,
+                                              /* activation= */ "softmax");
   output->addPredecessor(concat);
 
   BoltGraph model(/* inputs= */ {input, token_input},

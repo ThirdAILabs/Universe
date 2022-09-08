@@ -7,6 +7,7 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/layers/SamplingConfig.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <exceptions/src/Exceptions.h>
 #include <cstddef>
@@ -25,7 +26,7 @@ class FullyConnectedNode final
       public std::enable_shared_from_this<FullyConnectedNode> {
   friend class SwitchNode;
 
- public:
+ private:
   FullyConnectedNode(uint64_t dim, const std::string& activation)
       : _layer(nullptr),
         _config(FullyConnectedLayerConfig(dim, activation)),
@@ -45,26 +46,32 @@ class FullyConnectedNode final
                                           std::move(sampling_config))),
         _predecessor(nullptr) {}
 
-  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim,
-                                                  std::string activation) {
-    return std::make_shared<FullyConnectedNode>(dim, std::move(activation));
+ public:
+  static std::shared_ptr<FullyConnectedNode> makeDense(
+      uint32_t dim, const std::string& activation) {
+    return std::shared_ptr<FullyConnectedNode>(
+        new FullyConnectedNode(dim, activation));
   }
 
-  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim, float sparsity,
-                                                  std::string activation) {
-    return std::make_shared<FullyConnectedNode>(dim, sparsity,
-                                                std::move(activation));
+  static std::shared_ptr<FullyConnectedNode> makeAutotuned(
+      uint32_t dim, float sparsity, const std::string& activation) {
+    return std::shared_ptr<FullyConnectedNode>(
+        new FullyConnectedNode(dim, sparsity, activation));
   }
 
-  static std::shared_ptr<FullyConnectedNode> make(uint32_t dim, float sparsity,
-                                                  std::string activation,
-                                                  uint32_t num_tables,
-                                                  uint32_t hashes_per_table,
-                                                  uint32_t reservoir_size) {
+  static std::shared_ptr<FullyConnectedNode> make(
+      uint32_t dim, float sparsity, const std::string& activation,
+      SamplingConfigPtr sampling_config) {
+    return std::shared_ptr<FullyConnectedNode>(new FullyConnectedNode(
+        dim, sparsity, activation, std::move(sampling_config)));
+  }
+
+  static std::shared_ptr<FullyConnectedNode> makeExplicitSamplingConfig(
+      uint32_t dim, float sparsity, const std::string& activation,
+      uint32_t num_tables, uint32_t hashes_per_table, uint32_t reservoir_size) {
     auto sampling_config = std::make_shared<DWTASamplingConfig>(
         num_tables, hashes_per_table, reservoir_size);
-    return std::make_shared<FullyConnectedNode>(dim, sparsity, activation,
-                                                sampling_config);
+    return make(dim, sparsity, activation, sampling_config);
   }
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node) {

@@ -17,7 +17,7 @@ namespace thirdai::bolt {
 
 class EmbeddingNode final : public Node,
                             public std::enable_shared_from_this<EmbeddingNode> {
- public:
+ private:
   EmbeddingNode(uint32_t num_embedding_lookups, uint32_t lookup_size,
                 uint32_t log_embedding_block_size)
       : _embedding_layer(nullptr),
@@ -28,11 +28,12 @@ class EmbeddingNode final : public Node,
         _outputs(std::nullopt),
         _token_input(nullptr) {}
 
+ public:
   static std::shared_ptr<EmbeddingNode> make(
       uint32_t num_embedding_lookups, uint32_t lookup_size,
       uint32_t log_embedding_block_size) {
-    return std::make_shared<EmbeddingNode>(num_embedding_lookups, lookup_size,
-                                           log_embedding_block_size);
+    return std::shared_ptr<EmbeddingNode>(new EmbeddingNode(
+        num_embedding_lookups, lookup_size, log_embedding_block_size));
   }
 
   uint32_t outputDim() const final {

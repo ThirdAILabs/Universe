@@ -21,7 +21,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectInputLayerInOutput) {
 
 TEST(GraphRejectsInvalidInputsTest,
      RejectSoftmaxWithoutCategoricalCrossEntropy) {
-  auto layer = FullyConnectedNode::make(
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "softmax");
   BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
 
@@ -32,7 +32,7 @@ TEST(GraphRejectsInvalidInputsTest,
 
 TEST(GraphRejectsInvalidInputsTest,
      RejectCategoricalCrossEntropyWithoutSoftmax) {
-  auto layer = FullyConnectedNode::make(
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "relu");
   BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
 
@@ -42,7 +42,7 @@ TEST(GraphRejectsInvalidInputsTest,
 }
 
 TEST(GraphRejectsInvalidInputsTest, RejectBinaryCrossEntropyWithoutSigmoid) {
-  auto layer = FullyConnectedNode::make(
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "softmax");
   BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
 
@@ -53,7 +53,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectBinaryCrossEntropyWithoutSigmoid) {
 
 TEST(GraphRejectsInvalidInputsTest, AcceptsCategoricalCrossEntropyWithSoftmax) {
   auto input = Input::make(/* expected_dim= */ 10);
-  auto layer = FullyConnectedNode::make(
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "softmax");
   layer->addPredecessor(input);
 
@@ -65,7 +65,7 @@ TEST(GraphRejectsInvalidInputsTest, AcceptsCategoricalCrossEntropyWithSoftmax) {
 
 TEST(GraphRejectsInvalidInputsTest, AcceptsBinaryCrossEntropyWithSigmoid) {
   auto input = Input::make(/* expected_dim= */ 10);
-  auto layer = FullyConnectedNode::make(
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "sigmoid");
   layer->addPredecessor(input);
 
@@ -84,7 +84,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectConcatenatingInputLayer) {
 
 TEST(GraphRejectsInvalidInputsTest, RejectConcatenateAsOutputLayer) {
   auto input = Input::make(/* expected_dim= */ 10);
-  auto layer = FullyConnectedNode::make(
+  auto layer = FullyConnectedNode::makeDense(
                    /* dim= */ 10, /* activation= */ "relu")
                    ->addPredecessor(input);
   auto concat = ConcatenateNode::make()->setConcatenatedNodes({layer, layer});
@@ -96,20 +96,20 @@ TEST(GraphRejectsInvalidInputsTest, RejectConcatenateAsOutputLayer) {
 
 TEST(GraphRejectsInvalidInputsTest, AcceptsCorrectConcatenation) {
   auto input = Input::make(/* expected_dim= */ 10);
-  auto layer_1 = FullyConnectedNode::make(
+  auto layer_1 = FullyConnectedNode::makeDense(
                      /* dim= */ 10, /* activation= */ "relu")
                      ->addPredecessor(input);
-  auto layer_2 = FullyConnectedNode::make(
+  auto layer_2 = FullyConnectedNode::makeDense(
                      /* dim= */ 10, /* activation= */ "relu")
                      ->addPredecessor(input);
   auto concat_1 = ConcatenateNode::make()->setConcatenatedNodes(
       {layer_1, layer_2, layer_2});
-  auto layer_3 = FullyConnectedNode::make(
+  auto layer_3 = FullyConnectedNode::makeDense(
                      /* dim= */ 10, /* activation= */ "relu")
                      ->addPredecessor(concat_1);
   auto concat_2 = ConcatenateNode::make()->setConcatenatedNodes(
       {layer_1, layer_3, concat_1});
-  auto output = FullyConnectedNode::make(
+  auto output = FullyConnectedNode::makeDense(
                     /* dim= */ 10, /* activation= */ "relu")
                     ->addPredecessor(concat_2);
   BoltGraph graph(/* inputs= */ {input}, /* output= */ output);
@@ -121,7 +121,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectsUnkownInput) {
   auto input1 = Input::make(/* expected_dim= */ 10);
   auto input2 = Input::make(/* expected_dim= */ 20);
 
-  auto layer = FullyConnectedNode::make(
+  auto layer = FullyConnectedNode::makeDense(
                    /* dim= */ 10, /* activation= */ "relu")
                    ->addPredecessor(input1);
 
@@ -135,7 +135,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectsUnusedInput) {
   auto input1 = Input::make(/* expected_dim= */ 10);
   auto input2 = Input::make(/* expected_dim= */ 20);
 
-  auto layer = FullyConnectedNode::make(
+  auto layer = FullyConnectedNode::makeDense(
                    /* dim= */ 10, /* activation= */ "relu")
                    ->addPredecessor(input1);
 

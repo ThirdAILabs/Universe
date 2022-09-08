@@ -21,13 +21,13 @@ class ModelWithLayers {
   ModelWithLayers() {
     input = Input::make(n_classes);
 
-    hidden1 = FullyConnectedNode::make(2000, "relu");
+    hidden1 = FullyConnectedNode::makeDense(500, "relu");
     hidden1->addPredecessor(input);
 
     normalized_hidden1 = LayerNormNode::make();
     normalized_hidden1->addPredecessor(hidden1);
 
-    hidden2 = FullyConnectedNode::make(2000, "relu");
+    hidden2 = FullyConnectedNode::makeDense(500, "relu");
     hidden2->addPredecessor(input);
 
     normalized_hidden2 = LayerNormNode::make();
@@ -36,7 +36,7 @@ class ModelWithLayers {
     concat = ConcatenateNode::make();
     concat->setConcatenatedNodes({normalized_hidden1, normalized_hidden2});
 
-    output = FullyConnectedNode::make(n_classes, "softmax");
+    output = FullyConnectedNode::makeDense(n_classes, "softmax");
     output->addPredecessor(concat);
 
     model = std::make_unique<BoltGraph>(std::vector<InputPtr>{input}, output);
@@ -152,7 +152,7 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
       /* log_embedding_block_size= */ 14);
   embedding_layer->addInput(token_input);
 
-  auto fully_connected_layer = FullyConnectedNode::make(
+  auto fully_connected_layer = FullyConnectedNode::makeDense(
       /* dim= */ 2,
       /* activation= */ "softmax");
   fully_connected_layer->addPredecessor(embedding_layer);

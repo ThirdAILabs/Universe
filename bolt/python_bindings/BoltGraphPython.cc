@@ -132,8 +132,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
-      .def(py::init<>(), "Constructs a normalization layer object.")
-      .def(py::init<const NormalizationLayerConfig&>(),
+      .def(py::init(&LayerNormNode::make),
+           "Constructs a normalization layer object.")
+      .def(py::init(&LayerNormNode::makeWithConfig),
            py::arg("layer_norm_config"),
            "Constructs a normalization layer object"
            "Arguments:\n"
@@ -146,7 +147,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
       .def(
-          py::init<>(),
+          py::init(&ConcatenateNode::make),
           "A layer that concatenates an arbitrary number of layers together.\n")
       .def("__call__", &ConcatenateNode::setConcatenatedNodes,
            py::arg("input_layers"),
@@ -157,20 +158,18 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 #if THIRDAI_EXPOSE_ALL
   py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
                                                             "Switch")
-      .def(py::init<uint64_t, const std::string&, uint32_t>(), py::arg("dim"),
+      .def(py::init(&SwitchNode::makeDense), py::arg("dim"),
            py::arg("activation"), py::arg("n_layers"))
-      .def(py::init<uint64_t, float, const std::string&, uint32_t>(),
-           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("n_layers"))
+      .def(py::init(&SwitchNode::makeAutotuned), py::arg("dim"),
+           py::arg("sparsity"), py::arg("activation"), py::arg("n_layers"))
       .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
            py::arg("token_input"));
 #endif
 
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
                                                     "Embedding")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(),
-           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
-           py::arg("log_embedding_block_size"),
+      .def(py::init(&EmbeddingNode::make), py::arg("num_embedding_lookups"),
+           py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            "Constructs an Embedding layer that can be used in the graph.\n"
            "Arguments:\n"
            " * num_embedding_lookups: Int (positive) - The number of embedding "

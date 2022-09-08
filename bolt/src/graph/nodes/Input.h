@@ -6,6 +6,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <cstddef>
 #include <iomanip>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -20,7 +21,7 @@ namespace thirdai::bolt {
 // than have to worry if they they need to access an input directly or access
 // the outputs of a previous layer.
 class Input final : public Node {
- public:
+ private:
   explicit Input(uint32_t expected_input_dim,
                  std::optional<std::pair<uint32_t, uint32_t>>
                      num_nonzeros_range = std::nullopt)
@@ -29,13 +30,14 @@ class Input final : public Node {
         _expected_input_dim(expected_input_dim),
         _num_nonzeros_range(std::move(num_nonzeros_range)) {}
 
+ public:
   static std::shared_ptr<Input> make(uint32_t expected_dim) {
-    return std::make_shared<Input>(expected_dim);
+    return std::shared_ptr<Input>(new Input(expected_dim));
   }
 
   static std::shared_ptr<Input> makeTokenInput(
       uint32_t expected_dim, std::pair<uint32_t, uint32_t> num_tokens_range) {
-    return std::make_shared<Input>(expected_dim, num_tokens_range);
+    return std::shared_ptr<Input>(new Input(expected_dim, num_tokens_range));
   }
 
   // This class does not own this memory, but we pass it in as a pointer that
