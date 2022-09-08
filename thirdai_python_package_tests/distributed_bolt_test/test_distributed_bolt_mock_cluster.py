@@ -83,6 +83,7 @@ def train_distributed_bolt_check(request):
 )
 def test_distributed_bolt_on_mock_cluster(train_distributed_bolt_check):
     import multiprocessing
+
     if multiprocessing.cpu_count() < 2:
         assert False, "not enough cpus for distributed training"
 
