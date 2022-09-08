@@ -18,8 +18,7 @@ namespace thirdai::bolt {
 class AutoClassifierBase {
  public:
   AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
-                     const std::string& model_size,
-                     bool is_training_distributed = false);
+                     const std::string& model_size);
 
   void train(
       const std::string& filename,
@@ -79,7 +78,6 @@ class AutoClassifierBase {
   }
 
   BoltGraphPtr _model;
-  bool _is_training_distributed;
   DistributedTrainingContextptr _distributed_train_context;
 };
 

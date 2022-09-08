@@ -17,9 +17,7 @@
 namespace thirdai::bolt {
 
 AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
-                                       const std::string& model_size,
-                                       bool is_training_distributed)
-    : _is_training_distributed(is_training_distributed) {
+                                       const std::string& model_size){
   uint32_t hidden_layer_size =
       getHiddenLayerSize(model_size, n_classes, input_dim);
 
