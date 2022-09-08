@@ -128,7 +128,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
         float val =
             _ground_truths_vectors.at(vec_count_base + v).dense_features.at(i);
         if (val != 0) {
-          val = std::logf(val);
+          val = logf(val);
         }
         ASSERT_NEAR(dense_inputs[v].activations[i], val, 0.0005);
       }
