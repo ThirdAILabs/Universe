@@ -202,7 +202,7 @@ DragonVector<T>::DragonVector(std::stringstream& input_stream) {
   input_stream.read(reinterpret_cast<char*>(buff), string_size);
   compression_scheme.assign(buff, string_size);
 
-  // Reading uncompressed size, compression density, seed_for_hashing (2,3)
+  // Reading uncompressed size, seed_for_hashing (2,3)
   uint32_t uncompressed_size;
   uint32_t seed_for_hashing;
   input_stream.read(reinterpret_cast<char*>(&uncompressed_size),

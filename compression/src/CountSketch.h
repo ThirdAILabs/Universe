@@ -34,6 +34,8 @@ class CountSketch final : public CompressedVector<T> {
               std::vector<uint32_t> seed_for_hashing_indices,
               std::vector<uint32_t> seed_for_sign, uint32_t _uncompressed_size);
 
+  explicit CountSketch(std::stringstream& input_stream);
+
   T get(uint32_t index) const final;
 
   void set(uint32_t index, T value) final;
