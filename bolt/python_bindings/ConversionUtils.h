@@ -136,6 +136,7 @@ inline py::tuple constructPythonInferenceTuple(
     const py::object& activation_handle,
     const py::object& active_neuron_handle) {
   if (!activations) {
+    std::cout << "HERE SOMEHOW" << std::endl;
     return py::make_tuple(py_metric_data);
   }
 

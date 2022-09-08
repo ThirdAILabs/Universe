@@ -108,23 +108,20 @@ def create_single_test_samples():
 
 def test_tabular_classifier_predict_single():
     (n_classes, column_datatypes, _) = get_census_income_metadata()
-    classifier = bolt.TabularClassifier(model_size="medium", n_classes=n_classes)
-
+    classifier = bolt.TabularClassifier(
+        hidden_layer_dim=1000, n_classes=n_classes, column_datatypes=column_datatypes
+    )
+    
     classifier.train(
-        train_file=TRAIN_FILE,
-        column_datatypes=column_datatypes,
+        filename=TRAIN_FILE,
         epochs=1,
         learning_rate=0.01,
     )
 
-    classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
-
-    with open(PREDICTION_FILE) as pred:
-        # remove trailing newline from each prediction
-        expected_predictions = [x[:-1] for x in pred.readlines()]
+    _, predictions = classifier.predict(filename=TEST_FILE)
 
     single_test_samples = create_single_test_samples()
 
-    for sample, expected_prediction in zip(single_test_samples, expected_predictions):
+    for sample, expected_prediction in zip(single_test_samples, predictions):
         actual_prediction = classifier.predict_single(sample)
         assert actual_prediction == expected_prediction

@@ -242,7 +242,7 @@ class TabularClassifier final
   TabularClassifier(uint32_t hidden_layer_dim, uint32_t n_classes,
                     std::vector<std::string> column_datatypes)
       : AutoClassifierBase(createModel(hidden_layer_dim, n_classes),
-                           ReturnMode::NumpyArray),
+                           ReturnMode::ClassName),
         _column_datatypes(std::move(column_datatypes)) {}
 
   void save(const std::string& filename) {
@@ -342,7 +342,6 @@ class TabularClassifier final
 
   void processTabularMetadata(
       const std::shared_ptr<dataset::DataLoader>& data_loader,
-
       std::optional<uint32_t> max_in_memory_batches) {
     std::shared_ptr<dataset::TabularMetadataProcessor>
         metadata_batch_processor =
@@ -355,10 +354,12 @@ class TabularClassifier final
         std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
             data_loader, metadata_batch_processor);
 
-
-    while(compute_dataset->nextBatchTuple() && )
-    compute_dataset->loadInMemory(
-        max_in_memory_batches.value_or(std::numeric_limits<uint64_t>::max()));
+    uint32_t batches_to_use =
+        max_in_memory_batches.value_or(std::numeric_limits<uint32_t>::max());
+    uint32_t batch_cnt = 0;
+    while (compute_dataset->nextBatchTuple() &&
+           (batch_cnt++ < batches_to_use)) {
+    }
 
     _metadata = metadata_batch_processor->getMetadata();
   }

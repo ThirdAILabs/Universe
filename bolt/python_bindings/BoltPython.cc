@@ -10,7 +10,6 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/DataLoader.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
@@ -24,35 +23,32 @@
 
 namespace thirdai::bolt::python {
 
-template <typename PREDICT_SINGLE_INPUT>
-void defineAutoClassifierBase(py::module_& module,
-                              const std::string& baseClassName) {
-  py::class_<AutoClassifierBase<PREDICT_SINGLE_INPUT>>(module,
-                                                       baseClassName.c_str())
+template <typename CLASSIFIER>
+void defineAutoClassifierCommonMethods(py::class_<CLASSIFIER>& py_class) {
+  py_class
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
                              std::optional<uint32_t>, std::optional<uint32_t>>(
-               &AutoClassifierBase<PREDICT_SINGLE_INPUT>::train),
+               &CLASSIFIER::train),
            py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
            py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt)
       .def("train",
            py::overload_cast<const std::shared_ptr<dataset::DataLoader>&,
                              uint32_t, float, std::optional<uint32_t>>(
-               &AutoClassifierBase<PREDICT_SINGLE_INPUT>::train),
+               &CLASSIFIER::train),
            py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
            py::arg("max_in_memory_batches") = std::nullopt)
       .def("predict",
-           py::overload_cast<const std::string&>(
-               &AutoClassifierBase<PREDICT_SINGLE_INPUT>::predict),
+           py::overload_cast<const std::string&>(&CLASSIFIER::predict),
            py::arg("filename"))
       .def("predict",
            py::overload_cast<const std::shared_ptr<dataset::DataLoader>&>(
-               &AutoClassifierBase<PREDICT_SINGLE_INPUT>::predict),
+               &CLASSIFIER::predict),
            py::arg("data_source"))
-      .def("predict_single",
-           &AutoClassifierBase<PREDICT_SINGLE_INPUT>::predictSingle,
-           py::arg("input"));
+      .def("predict_single", &CLASSIFIER::predictSingle, py::arg("input"))
+      .def("save", &CLASSIFIER::save, py::arg("filename"))
+      .def_static("load", &CLASSIFIER::load, py::arg("filename"));
 }
 
 void createBoltSubmodule(py::module_& module) {
@@ -126,42 +122,46 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
-  defineAutoClassifierBase<std::string>(bolt_submodule, "TextClassifierBase");
+  /**
+   * Text Classifier Definition
+   */
+  py::class_<TextClassifier> text_classifier(bolt_submodule, "TextClassifier");
 
-  py::class_<TextClassifier, AutoClassifierBase<std::string>>(bolt_submodule,
-                                                              "TextClassifier")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("hidden_layer_dim"),
-           py::arg("n_classes"),
-           "Constructs a TextClassifier with autotuning.\n"
-           "Arguments:\n"
-           " * model_size: string - Either 'small', 'medium', 'large', or a"
-           "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
-           " * n_classes: int - How many classes or categories are in the "
-           "labels of the dataset.\n")
-      .def("save", &TextClassifier::save, py::arg("filename"))
-      .def_static("load", &TextClassifier::load, py::arg("filename"));
+  text_classifier.def(
+      py::init<uint32_t, uint32_t>(), py::arg("hidden_layer_dim"),
+      py::arg("n_classes"),
+      "Constructs a TextClassifier with autotuning.\n"
+      "Arguments:\n"
+      " * model_size: string - Either 'small', 'medium', 'large', or a"
+      "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
+      " * n_classes: int - How many classes or categories are in the "
+      "labels of the dataset.\n");
 
-  defineAutoClassifierBase<std::vector<uint32_t>>(
-      bolt_submodule, "MultiLabelTextClassifierBase");
+  defineAutoClassifierCommonMethods(text_classifier);
 
-  py::class_<MultiLabelTextClassifier,
-             AutoClassifierBase<std::vector<uint32_t>>>(
-      bolt_submodule, "MultiLabelTextClassifier")
-      .def(py::init<uint32_t, float>(), py::arg("n_classes"),
-           py::arg("threshold") = 0.95)
-      .def("save", &MultiLabelTextClassifier::save, py::arg("filename"))
-      .def_static("load", &MultiLabelTextClassifier::load, py::arg("filename"));
+  /**
+   * Multi Label Text Classifier Definition
+   */
+  py::class_<MultiLabelTextClassifier> multi_label_classifier(
+      bolt_submodule, "MultiLabelTextClassifier");
 
-  defineAutoClassifierBase<std::vector<std::string>>(bolt_submodule,
-                                                     "TabularClassifierBase");
+  multi_label_classifier.def(py::init<uint32_t, float>(), py::arg("n_classes"),
+                             py::arg("threshold") = 0.95);
 
-  py::class_<TabularClassifier, AutoClassifierBase<std::vector<std::string>>>(
-      bolt_submodule, "TabularClassifier")
-      .def(py::init<uint32_t, uint32_t, std::vector<std::string>>(),
-           py::arg("hidden_layer_dim"), py::arg("n_classes"),
-           py::arg("column_datatypes"))
-      .def("save", &TabularClassifier::save, py::arg("filename"))
-      .def_static("load", &TabularClassifier::load, py::arg("filename"));
+  defineAutoClassifierCommonMethods(multi_label_classifier);
+
+  /**
+   * Tabular Classifier Definition
+   */
+  py::class_<TabularClassifier> tabular_classifier(bolt_submodule,
+                                                   "TabularClassifier");
+
+  tabular_classifier.def(
+      py::init<uint32_t, uint32_t, std::vector<std::string>>(),
+      py::arg("hidden_layer_dim"), py::arg("n_classes"),
+      py::arg("column_datatypes"));
+
+  defineAutoClassifierCommonMethods(tabular_classifier);
 
   /*
     py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
