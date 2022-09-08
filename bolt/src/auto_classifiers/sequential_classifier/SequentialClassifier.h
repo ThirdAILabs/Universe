@@ -39,19 +39,18 @@ class SequentialClassifier {
    * sequential column name, the number of unique classes, and
    * the number of previous values to track.
    */
-  SequentialClassifier(
-      const CategoricalPair& user, const CategoricalPair& target,
-      const std::string& timestamp,
-      const std::vector<std::string>& static_text = {},
-      const std::vector<CategoricalPair>& static_categorical = {},
-      const std::vector<SequentialTriplet>& sequential = {},
-      std::optional<char> multi_class_delim = std::nullopt) {
-    _schema.user = user;
-    _schema.target = target;
-    _schema.timestamp_col_name = timestamp;
-    _schema.static_text_col_names = static_text;
-    _schema.static_categorical = static_categorical;
-    _schema.sequential = sequential;
+  SequentialClassifier(CategoricalPair user, CategoricalPair target,
+                       std::string timestamp,
+                       std::vector<std::string> static_text = {},
+                       std::vector<CategoricalPair> static_categorical = {},
+                       std::vector<SequentialTriplet> sequential = {},
+                       std::optional<char> multi_class_delim = std::nullopt) {
+    _schema.user = std::move(user);
+    _schema.target = std::move(target);
+    _schema.timestamp_col_name = std::move(timestamp);
+    _schema.static_text_col_names = std::move(static_text);
+    _schema.static_categorical = std::move(static_categorical);
+    _schema.sequential = std::move(sequential);
     _schema.multi_class_delim = multi_class_delim;
   }
 
@@ -109,7 +108,7 @@ class SequentialClassifier {
       if (!output_file) {
         return;
       }
-      auto class_ids = output.findKLargestActivationsK(print_top_k);
+      auto class_ids = output.findKLargestActivations(print_top_k);
       auto target_lookup = _state.vocabs_by_column[_schema.target.first];
 
       uint32_t first = true;
