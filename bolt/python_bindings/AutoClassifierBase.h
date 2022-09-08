@@ -52,7 +52,7 @@ class AutoClassifierBase {
   }
 
   py::object evaluate(const std::string& filename) {
-    return predict(std::make_shared<dataset::SimpleFileDataLoader>(
+    return evaluate(std::make_shared<dataset::SimpleFileDataLoader>(
         filename, defaultBatchSize()));
   }
 
@@ -208,13 +208,13 @@ class AutoClassifierBase {
   }
 
   void trainSingleEpochOnStream(
-      dataset::StreamingDataset<BoltBatch, BoltBatch>& dataset,
+      std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>& dataset,
       float learning_rate, uint32_t max_in_memory_batches) {
     TrainConfig train_config =
         TrainConfig::makeConfig(learning_rate, /* epochs= */ 1);
 
     while (1) {
-      auto [data, labels] = dataset.loadInMemory(max_in_memory_batches);
+      auto [data, labels] = dataset->loadInMemory(max_in_memory_batches);
 
       if (data->len() == 0) {
         break;
@@ -223,7 +223,7 @@ class AutoClassifierBase {
       _model->train({data}, labels, train_config);
     }
 
-    dataset.restart();
+    dataset->restart();
   }
 
   // TODO(Someone): Allow this to return top-k class names as well.
