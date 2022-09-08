@@ -14,6 +14,7 @@ from utils import (
     log_prediction_metrics,
     mlflow_is_enabled,
     config_get,
+    is_ec2_instance,
 )
 
 
@@ -97,17 +98,18 @@ def load_all_datasets(dataset_config):
     all_dataset_configs = config_get(dataset_config, "datasets")
     for single_dataset_config in all_dataset_configs:
         format = config_get(single_dataset_config, "format")
+        use_s3 = single_dataset_config.get("use_s3_on_aws", False) and is_ec2_instance()
         dataset_types = config_get(single_dataset_config, "type_list")
 
         if format == "svm":
-            loaded_datasets = load_svm_dataset(single_dataset_config)
+            loaded_datasets = load_svm_dataset(single_dataset_config, use_s3)
         elif format == "click":
-            loaded_datasets = load_click_through_dataset(single_dataset_config)
+            loaded_datasets = load_click_through_dataset(single_dataset_config, use_s3)
         elif format == "click_labels":
-            loaded_datasets = load_click_through_labels(single_dataset_config)
+            loaded_datasets = load_click_through_labels(single_dataset_config, use_s3)
         elif format == "mlm_with_tokens":
             loaded_datasets = load_mlm_datasets(
-                single_dataset_config, return_tokens=True
+                single_dataset_config, use_s3, return_tokens=True
             )
         elif format == "mlm_without_tokens":
             loaded_datasets = load_mlm_datasets(
@@ -300,14 +302,25 @@ def check_test_labels(datasets_map, key):
         )
 
 
-def load_svm_dataset(dataset_config):
-    dataset_path = find_full_filepath(config_get(dataset_config, "path"))
-    return dataset.load_bolt_svm_dataset(
-        dataset_path, batch_size=config_get(dataset_config, "batch_size")
-    )
+def load_svm_dataset(dataset_config, use_s3):
+    batch_size = config_get(dataset_config, "batch_size")
+    if use_s3:
+        print("Using S3 to load SVM dataset", flush=True)
+        s3_prefix = "share/data/" + dataset_config["path"]
+        s3_bucket = "thirdai-corp"
+        data_loader = dataset.S3DataLoader(
+            bucket_name=s3_bucket, prefix_filter=s3_prefix, batch_size=batch_size
+        )
+        return dataset.load_bolt_svm_dataset(data_loader)
+    else:
+        dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+        return dataset.load_bolt_svm_dataset(dataset_path, batch_size=batch_size)
 
 
-def load_click_through_dataset(dataset_config):
+def load_click_through_dataset(dataset_config, use_s3):
+    if use_s3:
+        raise ValueError("S3 not supported yet for loading click through datasets")
+
     dataset_path = find_full_filepath(config_get(dataset_config, "path"))
     return dataset.load_click_through_dataset(
         filename=dataset_path,
@@ -320,13 +333,19 @@ def load_click_through_dataset(dataset_config):
     )
 
 
-def load_click_through_labels(dataset_config):
+def load_click_through_labels(dataset_config, use_s3):
+    if use_s3:
+        raise ValueError("S3 not supported yet for loading click through labels")
+
     dataset_path = find_full_filepath(config_get(dataset_config, "path"))
     with open(dataset_path) as file:
         return [np.array([int(line[0]) for line in file.readlines()])]
 
 
-def load_mlm_datasets(dataset_config, return_tokens):
+def load_mlm_datasets(dataset_config, use_s3, return_tokens):
+    if use_s3:
+        raise ValueError("S3 not supported yet for loading mlm datasets")
+
     # We load the train and test data at the same time because the need to use
     # the same loader to ensure that the words in the vocabulary are mapped to
     # the same output neuron.

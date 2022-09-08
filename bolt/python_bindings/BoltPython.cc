@@ -209,17 +209,20 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
                                    "Autoclassifier for sequential predictions.")
-      .def(py::init<const SeqClassCategoricalPair&,
-                    const SeqClassCategoricalTuple&, const std::string&,
-                    const std::vector<std::string>&,
-                    const std::vector<SeqClassCategoricalTuple>&,
-                    const std::vector<SeqClassSequentialTuple>&>(),
+      .def(py::init<
+               const std::pair<std::string, uint32_t>&,
+               const std::pair<std::string, uint32_t>&, const std::string&,
+               const std::vector<std::string>&,
+               const std::vector<std::pair<std::string, uint32_t>>&,
+               const std::vector<std::tuple<std::string, uint32_t, uint32_t>>&,
+               std::optional<char>>(),
            py::arg("user"), py::arg("target"), py::arg("timestamp"),
            py::arg("static_text") = std::vector<std::string>(),
            py::arg("static_categorical") =
                std::vector<std::pair<std::string, uint32_t>>(),
            py::arg("sequential") =
-               std::vector<std::tuple<std::string, uint32_t, uint32_t>>())
+               std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
+           py::arg("multi_class_delim") = std::nullopt)
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))
@@ -228,7 +231,9 @@ void createBoltSubmodule(py::module_& module) {
 #endif
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
-           py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1);
+           py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
+      .def("save", &SequentialClassifier::save, py::arg("filename"))
+      .def_static("load", &SequentialClassifier::load, py::arg("filename"));
 
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),

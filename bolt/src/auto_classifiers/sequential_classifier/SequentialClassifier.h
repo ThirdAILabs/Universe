@@ -43,18 +43,19 @@ class SequentialClassifier {
    * sequential column name, the number of unique classes, and
    * the number of previous values to track.
    */
-  SequentialClassifier(
-      const CategoricalPair& user, const CategoricalTuple& target,
-      const std::string& timestamp,
-      const std::vector<std::string>& static_text = {},
-      const std::vector<CategoricalTuple>& static_categorical = {},
-      const std::vector<SequentialTuple>& sequential = {}) {
-    _schema.user = toCatTriplet(user);
-    _schema.target = toCatTriplet(target);
-    _schema.timestamp_col_name = timestamp;
-    _schema.static_text_col_names = static_text;
-    _schema.static_categorical = toCatTriplets(static_categorical);
-    _schema.sequential = toSeqQuadruplets(sequential);
+  SequentialClassifier(CategoricalPair user, CategoricalPair target,
+                       std::string timestamp,
+                       std::vector<std::string> static_text = {},
+                       std::vector<CategoricalPair> static_categorical = {},
+                       std::vector<SequentialTriplet> sequential = {},
+                       std::optional<char> multi_class_delim = std::nullopt) {
+    _schema.user = std::move(user);
+    _schema.target = std::move(target);
+    _schema.timestamp_col_name = std::move(timestamp);
+    _schema.static_text_col_names = std::move(static_text);
+    _schema.static_categorical = std::move(static_categorical);
+    _schema.sequential = std::move(sequential);
+    _schema.multi_class_delim = multi_class_delim;
   }
 
   MetricData train(const std::string& train_filename, uint32_t epochs,
@@ -111,9 +112,8 @@ class SequentialClassifier {
       if (!output_file) {
         return;
       }
-      auto class_ids = output.findKLargestActivationsK(print_top_k);
-      auto [target_col_name, _1, _2] = _schema.target;
-      auto target_lookup = _state.vocabs_by_column[target_col_name];
+      auto class_ids = output.findKLargestActivations(print_top_k);
+      auto target_lookup = _state.vocabs_by_column[_schema.target.first];
 
       uint32_t first = true;
       while (!class_ids.empty()) {
@@ -211,8 +211,5 @@ class SequentialClassifier {
 namespace thirdai::bolt {
 
 using SequentialClassifier = sequential_classifier::SequentialClassifier;
-using SeqClassCategoricalPair = sequential_classifier::CategoricalPair;
-using SeqClassCategoricalTuple = sequential_classifier::CategoricalTuple;
-using SeqClassSequentialTuple = sequential_classifier::SequentialTuple;
 
 }  // namespace thirdai::bolt

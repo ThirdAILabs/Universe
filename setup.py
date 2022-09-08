@@ -154,9 +154,11 @@ setup(
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
+    # TODO(Jerin/Josh): Do we want to get rid of requirements.txt and have
+    # this as the single source of truth
     install_requires=["numpy", "typing_extensions"],
     extras_require={
-        "test": ["pytest"],
+        "test": ["pytest", "boto3", "moto", "datasets", "torch", "transformers"],
         "benchmark": [
             "toml",
             "psutil",
