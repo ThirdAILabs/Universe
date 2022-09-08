@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <limits>
@@ -126,7 +127,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
       for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
         float val =
             _ground_truths_vectors.at(vec_count_base + v).dense_features.at(i);
-        ASSERT_EQ(dense_inputs[v].activations[i], val);
+        ASSERT_EQ(dense_inputs[v].activations[i], log(val));
       }
     }
   }

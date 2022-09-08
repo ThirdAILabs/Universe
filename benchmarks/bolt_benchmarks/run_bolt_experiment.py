@@ -241,7 +241,7 @@ def construct_embedding_node(embedding_config):
         lookup_size=lookup_size,
         log_embedding_block_size=log_embedding_block_size,
         reduction=reduction,
-        num_tokens_per_input=num_tokens_per_input
+        num_tokens_per_input=num_tokens_per_input,
     )
 
 
