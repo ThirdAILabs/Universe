@@ -10,11 +10,17 @@ def get_sum_model(input_dim):
     input_2 = bolt.graph.Input(dim=input_dim, num_nonzeros_range=(1, 1))
 
     embedding_bottom = bolt.graph.Embedding(
-        num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10
+        num_embedding_lookups=4,
+        lookup_size=8,
+        log_embedding_block_size=10,
+        reduction="sum",
     )(input_1)
 
     embedding_top = bolt.graph.Embedding(
-        num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10
+        num_embedding_lookups=4,
+        lookup_size=8,
+        log_embedding_block_size=10,
+        reduction="sum",
     )(input_2)
 
     concat_layer = bolt.graph.Concatenate()([embedding_bottom, embedding_top])

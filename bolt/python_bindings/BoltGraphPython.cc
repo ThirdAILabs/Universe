@@ -184,9 +184,11 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
                                                     "Embedding")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, const std::string&,
+                    std::optional<uint32_t>>(),
            py::arg("num_embedding_lookups"), py::arg("lookup_size"),
-           py::arg("log_embedding_block_size"),
+           py::arg("log_embedding_block_size"), py::arg("reduction"),
+           py::arg("num_tokens_per_input") = std::nullopt,
            "Constructs an Embedding layer that can be used in the graph.\n"
            "Arguments:\n"
            " * num_embedding_lookups: Int (positive) - The number of embedding "

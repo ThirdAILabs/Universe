@@ -73,6 +73,7 @@ pred = "categorical_input"
 num_embedding_lookups = 8
 lookup_size = 16
 log_embedding_block_size = 20
+reduction="sum"
 
 [[nodes]]
 type = "Concatenate"
