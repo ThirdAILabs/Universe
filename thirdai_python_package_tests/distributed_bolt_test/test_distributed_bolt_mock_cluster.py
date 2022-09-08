@@ -1,6 +1,6 @@
 # Here we are mocking a cluster on a single machine
 # without explicitly starting a ray cluster. We are
-# testing both the communication circular and linear 
+# testing both the communication circular and linear
 # in the following tests.
 # For reference: https://docs.ray.io/en/latest/ray-core/examples/testing-tips.html#tip-3-create-a-mini-cluster-with-ray-cluster-utils-cluster
 
@@ -69,11 +69,11 @@ def train_distributed_bolt_check(request):
     head.train()
     metrics = head.predict()
 
-    yield metrics
-
     # shutting down the ray and cluster
     ray.shutdown()
     cluster.shutdown()
+
+    yield metrics
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
@@ -82,4 +82,8 @@ def train_distributed_bolt_check(request):
     "train_distributed_bolt_check", ["linear", "circular"], indirect=True
 )
 def test_distributed_bolt_on_mock_cluster(train_distributed_bolt_check):
+    import multiprocessing
+    if multiprocessing.cpu_count() < 2:
+        assert False, "not enough cpus for distributed training"
+
     assert train_distributed_bolt_check[0]["categorical_accuracy"] > 0.9
