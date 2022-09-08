@@ -18,10 +18,6 @@ namespace thirdai::dataset::python {
 
 void createDatasetSubmodule(py::module_& module);
 
-py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size,
-                                    bool softmax_for_multiclass = true);
-
 /*
  * This function takes a single sentence, and parses it into an sparse
  * vector of features. Right now it only supports the following parsing:
@@ -79,6 +75,10 @@ class MLMDatasetLoader {
   explicit MLMDatasetLoader(uint32_t pairgram_range)
       : _batch_processor(
             std::make_shared<MaskedSentenceBatchProcessor>(pairgram_range)) {}
+
+  MLMDatasetLoader(uint32_t pairgram_range, float masked_tokens_percentage)
+      : _batch_processor(std::make_shared<MaskedSentenceBatchProcessor>(
+            pairgram_range, masked_tokens_percentage)) {}
 
   py::tuple load(const std::string& filename, uint32_t batch_size) {
     auto data_loader =

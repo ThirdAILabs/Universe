@@ -2,8 +2,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/encodings/categorical/StringLookup.h>
-#include <dataset/src/encodings/categorical/ThreadSafeVocabulary.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <chrono>
@@ -109,9 +108,8 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
   auto strings =
       generateRandomStrings(n_unique, /* repetitions = */ 1000, /* len = */ 10);
   auto vocab = ThreadSafeVocabulary::make(n_unique);
-  auto lookup_encoding = StringLookup::make(vocab);
-  auto lookup_block = std::make_shared<CategoricalBlock>(
-      /* col = */ 0, /* encoding = */ lookup_encoding);
+  auto lookup_block = StringLookupCategoricalBlock::make(
+      /* col = */ 0, vocab);
 
   GenericBatchProcessor processor(/* input_blocks = */ {lookup_block},
                                   /* label_blocks = */ {});
@@ -127,13 +125,12 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
   auto strings =
       generateRandomStrings(n_unique, /* repetitions = */ 1000, /* len = */ 10);
   auto vocab = ThreadSafeVocabulary::make(n_unique);
-  auto lookup_encoding = StringLookup::make(vocab);
-  auto lookup_block_1 = std::make_shared<CategoricalBlock>(
-      /* col = */ 0, /* encoding = */ lookup_encoding);
-  auto lookup_block_2 = std::make_shared<CategoricalBlock>(
-      /* col = */ 0, /* encoding = */ lookup_encoding);
-  auto lookup_block_3 = std::make_shared<CategoricalBlock>(
-      /* col = */ 0, /* encoding = */ lookup_encoding);
+  auto lookup_block_1 = StringLookupCategoricalBlock::make(
+      /* col = */ 0, vocab);
+  auto lookup_block_2 = StringLookupCategoricalBlock::make(
+      /* col = */ 0, vocab);
+  auto lookup_block_3 = StringLookupCategoricalBlock::make(
+      /* col = */ 0, vocab);
 
   GenericBatchProcessor processor(
       /* input_blocks = */ {lookup_block_1, lookup_block_2, lookup_block_3},

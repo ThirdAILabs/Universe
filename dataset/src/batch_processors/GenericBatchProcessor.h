@@ -123,6 +123,14 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return makeVector(sample, vector, _label_blocks, _label_blocks_dense);
   }
 
+  static std::shared_ptr<GenericBatchProcessor> make(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
+      char delimiter = ',', bool parallel = true) {
+    return std::make_shared<GenericBatchProcessor>(
+        input_blocks, label_blocks, has_header, delimiter, parallel);
+  }
+
  private:
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
