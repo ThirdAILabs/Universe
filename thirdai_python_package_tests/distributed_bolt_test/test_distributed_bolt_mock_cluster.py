@@ -37,7 +37,7 @@ def setup_module():
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
-@pytest.mark.xfail
+# @pytest.mark.xfail
 def test_distributed_bolt_linear_on_mock_cluster():
     # Initilizing a mock cluster with two node
     cluster = Cluster(
@@ -64,7 +64,7 @@ def test_distributed_bolt_linear_on_mock_cluster():
     head.train()
     metrics = head.predict()
 
-    assert metrics[0]["categorical_accuracy"] > 0.93
+    assert metrics[0]["categorical_accuracy"] > 0.9
 
     # shutting down the ray and cluster
     ray.shutdown()
