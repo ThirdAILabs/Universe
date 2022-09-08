@@ -81,5 +81,5 @@ def train_distributed_bolt_check(request):
 @pytest.mark.parametrize(
     "train_distributed_bolt_check", ["linear", "circular"], indirect=True
 )
-def test_distributed_bolt_linear_on_mock_cluster(train_distributed_bolt_check):
+def test_distributed_bolt_on_mock_cluster(train_distributed_bolt_check):
     assert train_distributed_bolt_check[0]["categorical_accuracy"] > 0.9
