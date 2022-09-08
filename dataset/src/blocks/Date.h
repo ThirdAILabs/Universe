@@ -40,6 +40,27 @@ class DateBlock : public Block {
 
   uint32_t getColumnNum() const final { return _col; }
 
+  std::pair<std::string, std::string> explainIndex(
+      uint32_t index,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
+      const final {
+    std::string response;
+    if (index > 77) {
+      throw std::invalid_argument(
+          "index should not increase more than in date block.");
+    }
+    if (index < 7) {
+      response = "day_of_week";
+    } else if (7 <= index && index < 19) {
+      response = "month_of_year";
+    } else if (19 <= index && index < 24) {
+      response = "week_of_month";
+    } else {
+      response = "week_of_year";
+    }
+    return std::make_pair(num_to_name->at(_col), response);
+  }
+
  protected:
   static constexpr uint32_t day_of_week_dim = 7;
   static constexpr uint32_t month_of_year_dim = 12;

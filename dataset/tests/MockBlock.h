@@ -23,6 +23,15 @@ class MockBlock : public Block {
 
   uint32_t getColumnNum() const final { return _column; }
 
+  std::pair<std::string, std::string> explainIndex(
+      uint32_t index,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
+      const final {
+    (void)index;
+    (void)num_to_name;
+    throw std::invalid_argument("not yet implemented in mock block!");
+  }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,

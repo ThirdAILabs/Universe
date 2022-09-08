@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -132,6 +133,11 @@ class Block {
   virtual uint32_t expectedNumColumns() const = 0;
 
   virtual uint32_t getColumnNum() const = 0;
+
+  virtual std::pair<std::string, std::string> explainIndex(
+      uint32_t index,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
+      const = 0;
 
   virtual ~Block() = default;
 
