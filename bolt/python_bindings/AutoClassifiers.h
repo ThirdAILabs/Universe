@@ -25,7 +25,7 @@ namespace thirdai::bolt::python {
 inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes);
 inline float getHiddenLayerSparsity(uint64_t layer_dim);
 
-class TextClassifier final : public AutoClassifierBase<const std::string&> {
+class TextClassifier final : public AutoClassifierBase<std::string> {
  public:
   TextClassifier(uint32_t hidden_layer_dim, uint32_t n_classes)
       : AutoClassifierBase(createModel(hidden_layer_dim, n_classes),
@@ -101,7 +101,7 @@ class TextClassifier final : public AutoClassifierBase<const std::string&> {
 };
 
 class MultiLabelTextClassifier final
-    : public AutoClassifierBase<const std::vector<uint32_t>&> {
+    : public AutoClassifierBase<std::vector<uint32_t>> {
  public:
   explicit MultiLabelTextClassifier(uint32_t n_classes, float threshold = 0.95)
       : AutoClassifierBase(createModel(n_classes),
@@ -237,13 +237,31 @@ class MultiLabelTextClassifier final
 };
 
 class TabularClassifier final
-    : public AutoClassifierBase<const std::vector<std::string>&> {
+    : public AutoClassifierBase<std::vector<std::string>> {
  public:
   TabularClassifier(uint32_t hidden_layer_dim, uint32_t n_classes,
                     std::vector<std::string> column_datatypes)
       : AutoClassifierBase(createModel(hidden_layer_dim, n_classes),
                            ReturnMode::NumpyArray),
         _column_datatypes(std::move(column_datatypes)) {}
+
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<TabularClassifier> load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<TabularClassifier> deserialize_into(
+        new TabularClassifier());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
 
  protected:
   dataset::GenericBatchProcessorPtr getTrainingBatchProcessor(
@@ -337,10 +355,22 @@ class TabularClassifier final
         std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
             data_loader, metadata_batch_processor);
 
+
+    while(compute_dataset->nextBatchTuple() && )
     compute_dataset->loadInMemory(
         max_in_memory_batches.value_or(std::numeric_limits<uint64_t>::max()));
 
     _metadata = metadata_batch_processor->getMetadata();
+  }
+
+  // Private constructor for cereal.
+  TabularClassifier() : AutoClassifierBase(nullptr, ReturnMode::NumpyArray) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<AutoClassifierBase>(this), _vocab, _metadata,
+            _column_datatypes);
   }
 
   dataset::ThreadSafeVocabularyPtr _vocab;

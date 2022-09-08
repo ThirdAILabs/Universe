@@ -47,7 +47,7 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
     equal to the threshold.
     """
 
-    # We chose 1.5 because this is an impossible threshold to reach naturally, 
+    # We chose 1.5 because this is an impossible threshold to reach naturally,
     # which forces predict_single to force the highest activation to this threshold.
     threshold = 1.5
 

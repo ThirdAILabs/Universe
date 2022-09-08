@@ -24,7 +24,7 @@ def write_dataset_to_csv(dataset, filename, return_labels=False):
     random.shuffle(data)
 
     with open(filename, "w") as file:
-        lines = [f'{label_name},{sentence}\n' for sentence, label_name in data]
+        lines = [f"{label_name},{sentence}\n" for sentence, label_name in data]
         file.writelines(lines)
 
     if return_labels:
@@ -38,6 +38,7 @@ def download_clinc_dataset():
     labels = write_dataset_to_csv(clinc_dataset["test"], TEST_FILE, return_labels=True)
 
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
+
 
 def test_text_classifier_clinc_dataset():
     (n_classes, test_labels) = download_clinc_dataset()
@@ -66,16 +67,13 @@ def test_text_classifier_predict_single():
     with open(TEST_FILE) as test:
         test_set = test.readlines()
 
-
     for sample, prediction in zip(test_set, predictions):
         """
         we are taking i+1 because first row is a header in test file and
         split it with '","' because its how the sentence and label seperated uniquely
         in file and taking the sentence which is present at first index.
         """
-        single_prediction = classifier.predict_single(
-            sample.split(',')[1]
-        )
+        single_prediction = classifier.predict_single(sample.split(",")[1])
         assert single_prediction == prediction
 
     remove_files([TRAIN_FILE, TEST_FILE])
