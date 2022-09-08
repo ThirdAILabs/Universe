@@ -19,10 +19,14 @@ using CallbackPtr = std::shared_ptr<Callback>;
  * model training process. Functions may alter the model state.
  *
  * Right now this callback is only used during training.
+ *
+ * TODO(david): lets make this a state machine where we assert that previous
+ * steps are called before moving to the next stage. See Node.h getState() and
+ * other methods for reference.
  */
 class Callback {
  public:
-  // TODO(david): instead of passing in a model we could have a model be set in
+  // instead of passing in a model we could have a model be set in
   // the constructor. This would require some sort of lambda/factory
   // constructor. We can think about this later.
   virtual void onTrainBegin(BoltGraph& model) { (void)model; };
@@ -33,6 +37,9 @@ class Callback {
 
   virtual void onEpochEnd(BoltGraph& model) { (void)model; };
 
+  // currently predict/train is not supported for onbatch.. functions. this
+  // would require refactoring of the graph api thus is saved for a future
+  // change. Currently throws a supported error message.
   virtual void onBatchBegin(BoltGraph& model) { (void)model; };
 
   virtual void onBatchEnd(BoltGraph& model) { (void)model; };

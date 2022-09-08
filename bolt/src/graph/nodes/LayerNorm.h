@@ -144,7 +144,6 @@ class LayerNormNode final : public Node,
   // For a layer with n activations, the expression for the partial derivative
   // can be found here
   // https://www.notion.so/Bolt-DAG-API-Proposal-8d2d72d13df94f64b7829f80ab080def#0d4ec531c9f64e83a460bd56dfe04320
-
   float normDerivative(float activation, float mean, float variance,
                        uint32_t vec_length) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
