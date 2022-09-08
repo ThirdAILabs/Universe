@@ -55,11 +55,14 @@ def build_model(config):
 
 
 def clean_dict_key(key):
-    return key.replace('@', '_')
+    return key.replace("@", "_")
 
 
 def prefix_dict_keys(dictionary, prefix):
-    return {prefix + clean_dict_key(metric_name): value for (metric_name, value) in dictionary.items()}
+    return {
+        prefix + clean_dict_key(metric_name): value
+        for (metric_name, value) in dictionary.items()
+    }
 
 
 def train_and_evaluate_one_epoch(model, config):
@@ -79,8 +82,6 @@ def train_and_evaluate_one_epoch(model, config):
         "recall@25",
         "recall@50",
         "recall@100",
-        "sampled@101_recall@1",
-        "sampled@101_recall@10",
     ]
 
     logged_params = {"learning_rate": learning_rate}
@@ -95,7 +96,7 @@ def train_and_evaluate_one_epoch(model, config):
 
     logged_params.update({"model_summary": model.summarize_model()})
 
-    train_metrics = {key : val[-1] for (key, val) in train_metrics.items()}
+    train_metrics = {key: val[-1] for (key, val) in train_metrics.items()}
     logged_metrics.update(prefix_dict_keys(train_metrics, "train_"))
 
     test_metrics = model.predict(

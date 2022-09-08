@@ -251,8 +251,8 @@ class RecallAtK : public Metric {
  public:
   explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
 
-  void computeMetric(const BoltVector& output, const BoltVector& labels) override {
-    auto top_k = output.findKLargestActivationsK(_k);
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    auto top_k = output.findKLargestActivations(_k);
 
     uint32_t matches = 0;
     while (!top_k.empty()) {
@@ -272,7 +272,7 @@ class RecallAtK : public Metric {
   double getMetricAndReset(bool verbose) final {
     double metric = static_cast<double>(_matches) / _label_count;
     if (verbose) {
-      std::cout << getName() << ": " << std::setprecision(3) << metric
+      std::cout << "Recall@" << _k << ": " << std::setprecision(3) << metric
                 << std::endl;
     }
     _matches = 0;
@@ -280,7 +280,7 @@ class RecallAtK : public Metric {
     return metric;
   }
 
-  std::string getName() override { return "recall@" + std::to_string(_k); }
+  std::string getName() final { return "recall@" + std::to_string(_k); }
 
   static inline bool isRecallAtK(const std::string& name) {
     return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
@@ -321,62 +321,6 @@ class RecallAtK : public Metric {
   uint32_t _k;
   std::atomic_uint64_t _matches;
   std::atomic_uint64_t _label_count;
-};
-
-class SampledRecallAtK : public RecallAtK {
- public:
-  explicit SampledRecallAtK(uint32_t k, uint32_t n_samples)
-      : RecallAtK(k), _n_samples(n_samples) {}
-
-  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    BoltVector sampled_output =
-        output.sample(/* n_neurons= */ _n_samples, /* labels= */ &labels);
-    RecallAtK::computeMetric(sampled_output, labels);
-  }
-
-  std::string getName() final {
-    return "sampled@" + std::to_string(_n_samples) + "_" + RecallAtK::getName();
-  }
-
-  static inline bool isSampledRecallAtK(const std::string& name) {
-    return std::regex_match(name,
-                            std::regex("sampled@[1-9]\\d*_recall@[1-9]\\d*"));
-  }
-
-  static std::shared_ptr<Metric> make(const std::string& name) {
-    if (!isSampledRecallAtK(name)) {
-      std::stringstream error_ss;
-      error_ss
-          << "Invoked SampledRecallAtK::make with invalid string '" << name
-          << "'. SampledRecallAtK::make should be invoked with a string in "
-             "the format 'sampled@n_recall@k', where n and k are positive "
-             "integers.";
-      throw std::invalid_argument(error_ss.str());
-    }
-
-    char* end_ptr;
-    auto n_samples = std::strtol(name.data() + 8, &end_ptr, 10);
-    auto k_position = name.find("recall@") + 7;
-    auto k = std::strtol(name.data() + k_position, &end_ptr, 10);
-
-    if (n_samples <= 0) {
-      std::stringstream error_ss;
-      error_ss << "SampledRecallAtK invoked with n = " << n_samples
-               << ". n should be greater than 0.";
-      throw std::invalid_argument(error_ss.str());
-    }
-    if (k <= 0) {
-      std::stringstream error_ss;
-      error_ss << "SampledRecallAtK invoked with k = " << k
-               << ". k should be greater than 0.";
-      throw std::invalid_argument(error_ss.str());
-    }
-
-    return std::make_shared<SampledRecallAtK>(k, n_samples);
-  }
-
- private:
-  uint32_t _n_samples;
 };
 
 /**

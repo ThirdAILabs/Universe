@@ -194,7 +194,7 @@ class SequentialClassifier {
   Schema _schema;
   DataState _state;
   BoltGraphPtr _model;
-  
+
   // Private constructor for cereal
   SequentialClassifier() {}
 
