@@ -33,10 +33,20 @@ class AutoClassifierBase {
       uint32_t epochs, float learning_rate, int batch_size);
 
   DistributedTrainingContext getDistributedTrainingContext() {
+    if (_distributed_train_context == nullptr) {
+      throw std::runtime_error(
+          "Distributed Training Context is not initialized. Call "
+          "initClassifierDistributedTraining() first.");
+    }
     return *(_distributed_train_context);
   }
 
-  BoltGraph getBoltGraphModel() { return *(_model); }
+  BoltGraph getBoltGraphModel() {
+    if (_model == nullptr) {
+      throw std::runtime_error("Model is not initialized.");
+    }
+    return *(_model);
+  }
 
   void predict(
       const std::string& filename,
