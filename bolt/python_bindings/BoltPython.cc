@@ -39,14 +39,14 @@ void defineAutoClassifierCommonMethods(py::class_<CLASSIFIER>& py_class) {
                &CLASSIFIER::train),
            py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
            py::arg("max_in_memory_batches") = std::nullopt)
-      .def("predict",
-           py::overload_cast<const std::string&>(&CLASSIFIER::predict),
+      .def("evaluate",
+           py::overload_cast<const std::string&>(&CLASSIFIER::evaluate),
            py::arg("filename"))
-      .def("predict",
+      .def("evaluate",
            py::overload_cast<const std::shared_ptr<dataset::DataLoader>&>(
-               &CLASSIFIER::predict),
+               &CLASSIFIER::evaluate),
            py::arg("data_source"))
-      .def("predict_single", &CLASSIFIER::predictSingle, py::arg("input"))
+      .def("predict", &CLASSIFIER::predict, py::arg("input"))
       .def("save", &CLASSIFIER::save, py::arg("filename"))
       .def_static("load", &CLASSIFIER::load, py::arg("filename"));
 }
