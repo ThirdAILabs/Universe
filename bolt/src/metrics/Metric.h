@@ -263,7 +263,7 @@ class RecallAtK : public Metric {
   explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    auto top_k = output.findKLargestActivationsK(_k);
+    auto top_k = output.findKLargestActivations(_k);
 
     uint32_t matches = 0;
     while (!top_k.empty()) {

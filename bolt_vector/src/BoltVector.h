@@ -303,7 +303,7 @@ struct BoltVector {
     return thresholded;
   }
 
-  inline TopKActivationsQueue findKLargestActivationsK(uint32_t k) const {
+  inline TopKActivationsQueue findKLargestActivations(uint32_t k) const {
     TopKActivationsQueue top_k;
     for (uint32_t pos = 0; pos < std::min(k, len); pos++) {
       uint32_t idx = isDense() ? pos : active_neurons[pos];
