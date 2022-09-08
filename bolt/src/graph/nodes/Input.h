@@ -116,7 +116,12 @@ class Input final : public Node {
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
-    summary << name() << " (Input): dim=" << _expected_input_dim << "\n";
+    summary << name() << " (Input): dim=" << _expected_input_dim;
+    if (_num_nonzeros_range) {
+      summary << ", num_nonzeros_range=[" << _num_nonzeros_range->first << ","
+              << _num_nonzeros_range->second << "]";
+    }
+    summary << "\n";
   }
 
   std::string type() const final { return "input"; }
