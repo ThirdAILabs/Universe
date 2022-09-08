@@ -24,13 +24,13 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
 
   auto input_layer = Input::make(input_dim);
 
-  auto hidden_layer = FullyConnectedNode::make(
+  auto hidden_layer = FullyConnectedNode::makeAutotuned(
       /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
       /* activation= */ "relu");
 
   hidden_layer->addPredecessor(input_layer);
 
-  auto output_layer = FullyConnectedNode::make(
+  auto output_layer = FullyConnectedNode::makeDense(
       /* dim= */ n_classes, /* activation= */ "softmax");
 
   output_layer->addPredecessor(hidden_layer);
