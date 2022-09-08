@@ -112,7 +112,7 @@ class AutoClassifierBase {
    * need to process training and test datasets seperately.
    */
   virtual std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-      getTestDataset(std::shared_ptr<dataset::DataLoader>) = 0;
+  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) = 0;
 
   /**
    * Allows for an auto classifier to preprocess the logits of a prediction
@@ -161,6 +161,19 @@ class AutoClassifierBase {
 
   BoltGraphPtr _model;
   ReturnMode _return_mode;
+
+  static uint32_t getMaxIndex(const float* const values, uint32_t len) {
+    uint32_t max_index = 0;
+    float max_value = -std::numeric_limits<float>::max();
+
+    for (uint32_t i = 0; i < len; i++) {
+      if (values[i] > max_value) {
+        max_value = values[i];
+        max_index = i;
+      }
+    }
+    return max_index;
+  }
 
  private:
   void trainInMemory(dataset::BoltDatasetPtr& train_data,
@@ -271,19 +284,6 @@ class AutoClassifierBase {
 
       processPredictionBeforeReturning(active_neurons, activations, output_dim);
     }
-  }
-
-  static uint32_t getMaxIndex(const float* const values, uint32_t len) {
-    uint32_t max_index = 0;
-    float max_value = -std::numeric_limits<float>::max();
-
-    for (uint32_t i = 0; i < len; i++) {
-      if (values[i] > max_value) {
-        max_value = values[i];
-        max_index = i;
-      }
-    }
-    return max_index;
   }
 
   static py::object constructNumpyVector(BoltVector& output) {
