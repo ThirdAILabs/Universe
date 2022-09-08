@@ -235,11 +235,12 @@ class AutoClassifierBase {
       InferenceMetricData& metrics, InferenceOutputTracker& output) {
     uint32_t num_samples = output.numSamples();
     uint32_t inference_dim = output.numNonzerosInOutput();
-    py::object output_handle = py::cast(std::move(output));
 
     const uint32_t* active_neurons_ptr =
         output.getNonowningActiveNeuronPointer();
     const float* activations_ptr = output.getNonowningActivationPointer();
+
+    py::object output_handle = py::cast(std::move(output));
 
     return constructPythonInferenceTuple(
         py::cast(metrics), /* num_samples= */ num_samples,
