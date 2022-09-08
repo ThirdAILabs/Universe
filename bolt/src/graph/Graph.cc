@@ -146,7 +146,6 @@ MetricData BoltGraph::train(
     if (callbacks.shouldStopTraining()) {
       break;
     }
-    perEpochCallback();
   }
 
   callbacks.onTrainEnd(*this);
