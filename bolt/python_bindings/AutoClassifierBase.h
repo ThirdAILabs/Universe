@@ -47,7 +47,7 @@ class AutoClassifierBase {
       return;
     }
 
-    auto [train_data, train_labels] = dataset.loadInMemory();
+    auto [train_data, train_labels] = dataset->loadInMemory();
     trainInMemory(train_data, train_labels, learning_rate, epochs);
   }
 
@@ -59,7 +59,7 @@ class AutoClassifierBase {
   py::object evaluate(const std::shared_ptr<dataset::DataLoader>& data_source) {
     auto dataset = getTestDataset(data_source);
 
-    auto [data, labels] = dataset.loadInMemory();
+    auto [data, labels] = dataset->loadInMemory();
 
     PredictConfig predict_cfg = PredictConfig::makeConfig()
                                     .withMetrics(getEvaluationMetrics())
@@ -102,17 +102,17 @@ class AutoClassifierBase {
   /**
    * Constructs a training dataset from the given data loader.
    */
-  virtual dataset::StreamingDataset<BoltBatch, BoltBatch> getTrainingDataset(
-      std::shared_ptr<dataset::DataLoader> data_loader,
-      std::optional<uint64_t> max_in_memory_batches) = 0;
+  virtual std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
+                     std::optional<uint64_t> max_in_memory_batches) = 0;
 
   /**
    * Constructs a test dataset from the given data loader. This is separate from
    * getTrainingDataset because some classifiers like the tabular classifier may
    * need to process training and test datasets seperately.
    */
-  virtual dataset::StreamingDataset<BoltBatch, BoltBatch> getTestDataset(
-      std::shared_ptr<dataset::DataLoader>) = 0;
+  virtual std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+      getTestDataset(std::shared_ptr<dataset::DataLoader>) = 0;
 
   /**
    * Allows for an auto classifier to preprocess the logits of a prediction
@@ -179,9 +179,9 @@ class AutoClassifierBase {
     _model->train({train_data}, {train_labels}, train_cfg);
   }
 
-  void trainOnStream(dataset::StreamingDataset<BoltBatch, BoltBatch>& dataset,
-                     float learning_rate, uint32_t epochs,
-                     uint32_t max_in_memory_batches) {
+  void trainOnStream(
+      std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>& dataset,
+      float learning_rate, uint32_t epochs, uint32_t max_in_memory_batches) {
     if (freezeHashTablesAfterFirstEpoch() && epochs > 1) {
       trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
