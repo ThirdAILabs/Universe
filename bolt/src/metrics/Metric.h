@@ -459,6 +459,9 @@ static std::shared_ptr<Metric> makeMetric(const std::string& name) {
   if (FMeasure::isFMeasure(name)) {
     return FMeasure::make(name);
   }
+  if (RecallAtK::isRecallAtK(name)) {
+    return RecallAtK::make(name);
+  }
   throw std::invalid_argument("'" + name + "' is not a valid metric.");
 }
 
