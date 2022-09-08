@@ -35,10 +35,8 @@ def setup_module():
     os.system("cp xaa xab mnist.t mnist_data/")
     os.system("rm xaa xab mnist.t")
 
-
-@pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
-# @pytest.mark.xfail
-def test_distributed_bolt_linear_on_mock_cluster():
+@pytest.fixture(scope="module")
+def train_distributed_bolt_check(request):
     # Initilizing a mock cluster with two node
     cluster = Cluster(
         initialize_head=True,
@@ -58,14 +56,20 @@ def test_distributed_bolt_linear_on_mock_cluster():
         num_workers=2,
         config_filename=config_filename,
         num_cpus_per_node=1,
-        communication_type="linear",
+        communication_type=request.param,
         cluster_address=cluster.address,
     )
     head.train()
     metrics = head.predict()
 
-    assert metrics[0]["categorical_accuracy"] > 0.9
+    yield metrics
 
     # shutting down the ray and cluster
     ray.shutdown()
     cluster.shutdown()
+
+@pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
+@pytest.mark.xfail
+@pytest.mark.parametrize("train_distributed_bolt_check",["linear", "circular"], indirect=True)
+def test_distributed_bolt_linear_on_mock_cluster(train_distributed_bolt_check):
+    assert train_distributed_bolt_check[0]["categorical_accuracy"] > 0.9
