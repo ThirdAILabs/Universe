@@ -44,8 +44,7 @@ class CategoricalBlock : public Block {
       SegmentedFeatureVector& vec) final {
     _categories.clear();
     if (!_delimiter) {
-      std::string category = std::string(input_row.at(_col));
-      _categories.push_back(category);
+      _categories.push_back(std::string(input_row.at(_col)));
       return encodeCategory(input_row.at(_col), vec);
     }
 
@@ -53,8 +52,7 @@ class CategoricalBlock : public Block {
     auto categories =
         ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
     for (auto category : categories) {
-      std::string copy_category = std::string(category);
-      _categories.push_back(copy_category);
+      _categories.push_back(std::string(category));
       auto exception = encodeCategory(category, vec);
       if (exception) {
         return exception;
