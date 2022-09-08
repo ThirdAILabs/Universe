@@ -14,7 +14,6 @@ import thirdai.bolt
 import thirdai.search
 import thirdai.dataset
 import thirdai.hashing
-import thirdai.distributed_bolt
 
 
 # Relay __version__ from C++
