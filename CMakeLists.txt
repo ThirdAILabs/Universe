@@ -170,6 +170,7 @@ add_subdirectory(hashing)
 add_subdirectory(hashtable)
 add_subdirectory(utils)
 add_subdirectory(wrappers)
+add_subdirectory(compression)
 
 # Only add the licensing subdirectory if the corresponding flag is set
 if (${LICENSE_BUILD_FLAG_FOUND})
@@ -210,6 +211,11 @@ file (
   dataset/src/*.cc
 )
 
+file(
+   GLOB_RECURSE COMPRESSION_SOURCES
+   compression/src/*.cc
+ )
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and
 # Debug builds, but not our ASan builds. This means that for now we can't run
 # ASan from python, but honestly this is more trouble than it's worth so for
@@ -229,6 +235,7 @@ pybind11_add_module(_thirdai
   ${DATASET_SOURCES}
   ${WRAPPER_SOURCES}
   ${DATASET_SOURCES}
+  ${COMPRESSION_SOURCES}
 )
 
 target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)

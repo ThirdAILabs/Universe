@@ -35,9 +35,20 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Returns a numpy array which shadows the parameters held in the "
            "ParameterReference and acts as a reference to them, modifying this "
            "array will modify the parameters.")
+
+      // TODO(Shubh): Should work with a custom serializer rather than python
+      // dictionaries. Or we should make a Compressed vector module at python
+      // end to deal with this
+      .def("compress", &ParameterReference::compress,
+           py::arg("compression_scheme"), py::arg("compression_density"),
+           py::arg("seed_for_hashing"), py::arg("sample_population_size"),
+           "Returns a python dictionary of compressed vectors. "
+           "sample_population_size is the number of random samples you take "
+           "for estimating a threshold for dragon compression")
       .def("set", &ParameterReference::set, py::arg("new_params"),
-           "Takes in a numpy array and copies its contents into the parameters "
-           "held in the ParameterReference object.");
+           "Either takes in a numpy array and copies its contents into the "
+           "parameters held in the ParameterReference object. Or takes in a "
+           "python dictionary which represents a compressed vector object.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
