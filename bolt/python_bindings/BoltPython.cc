@@ -227,6 +227,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
            py::arg("output_file") = std::nullopt)
+      .def("save", &SequentialClassifier::save, py::arg("filename"))
+      .def_static("load", &SequentialClassifier::load, py::arg("filename"))
       .def("predict_single",
            [](SequentialClassifier& model,
               const std::unordered_map<std::string, std::string>& sample) {

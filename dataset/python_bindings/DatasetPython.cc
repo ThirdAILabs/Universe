@@ -356,6 +356,8 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
       .def(py::init<uint32_t>(), py::arg("pairgram_range"))
+      .def(py::init<uint32_t, float>(), py::arg("pairgram_range"),
+           py::arg("masked_tokens_percentage"))
       .def("load", &MLMDatasetLoader::load, py::arg("filename"),
            py::arg("batch_size"));
 

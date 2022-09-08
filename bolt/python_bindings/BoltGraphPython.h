@@ -3,9 +3,14 @@
 #include "ConversionUtils.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <compression/python_bindings/ConversionUtils.h>
+#include <compression/src/CompressedVector.h>
 #include <dataset/src/Datasets.h>
+#include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -45,10 +50,33 @@ class ParameterReference {
 
   ParameterArray get() const { return ParameterArray(_dimensions, _params); }
 
-  void set(const ParameterArray& new_params) {
-    checkNumpyArrayDimensions(_dimensions, new_params);
+  void set(const py::object& new_params) {
+    if (py::isinstance<py::array>(new_params)) {
+      ParameterArray new_array = py::cast<ParameterArray>(new_params);
+      checkNumpyArrayDimensions(_dimensions, new_params);
+      std::copy(new_array.data(), new_array.data() + _total_dim, _params);
+    } else if (py::isinstance<py::dict>(new_params)) {
+      using CompressedVector = thirdai::compression::CompressedVector<float>;
+      std::unique_ptr<CompressedVector> compressed_vector =
+          thirdai::compression::python::convertPyDictToCompressedVector(
+              new_params);
 
-    std::copy(new_params.data(), new_params.data() + _total_dim, _params);
+      std::vector<float> full_gradients = compressed_vector->decompress();
+      std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
+                _params);
+    } else {
+      throw std::invalid_argument(
+          "Cannot set parameters from an unsupported Python datatype");
+    }
+  }
+
+  py::dict compress(const std::string& compression_scheme,
+                    float compression_density, uint32_t seed_for_hashing,
+                    uint32_t sample_population_size) {
+    return thirdai::compression::python::convertCompressedVectorToPyDict(
+        thirdai::compression::compress(
+            _params, static_cast<uint32_t>(_total_dim), compression_scheme,
+            compression_density, seed_for_hashing, sample_population_size));
   }
 
  private:

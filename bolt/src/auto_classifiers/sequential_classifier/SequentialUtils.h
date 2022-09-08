@@ -163,7 +163,7 @@ class Pipeline {
 
     ColumnNumberMap col_nums(*header, delimiter);
 
-    auto input_blocks = buildInputBlocks(schema, state, col_nums);
+    auto input_blocks = buildInputBlocks(schema, state, col_nums, for_training);
 
     std::vector<dataset::BlockPtr> label_blocks;
     label_blocks.push_back(
@@ -183,14 +183,15 @@ class Pipeline {
 
   static dataset::GenericBatchProcessorPtr buildSingleInferenceBatchProcessor(
       const Schema& schema, DataState& state, const ColumnNumberMap& col_nums) {
-    auto input_blocks = buildInputBlocks(schema, state, col_nums);
+    auto input_blocks = buildInputBlocks(schema, state, col_nums, false);
     return dataset::GenericBatchProcessor::make(
         /* input_blocks= */ input_blocks, /* label_blocks= */ {});
   }
 
  private:
   static std::vector<dataset::BlockPtr> buildInputBlocks(
-      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums) {
+      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums,
+      bool for_training) {
     std::vector<dataset::BlockPtr> input_blocks;
     input_blocks.push_back(makeCategoricalBlock(schema.user, state, col_nums));
 
@@ -208,9 +209,9 @@ class Pipeline {
     }
 
     for (uint32_t seq_idx = 0; seq_idx < schema.sequential.size(); seq_idx++) {
-      input_blocks.push_back(
-          makeSequentialBlock(seq_idx, schema.user, schema.sequential[seq_idx],
-                              schema.timestamp_col_name, state, col_nums));
+      input_blocks.push_back(makeSequentialBlock(
+          seq_idx, schema.user, schema.sequential[seq_idx],
+          schema.timestamp_col_name, state, col_nums, for_training));
     }
 
     return input_blocks;
@@ -233,7 +234,7 @@ class Pipeline {
       uint32_t sequential_block_id, const CategoricalPair& user,
       const SequentialTriplet& sequential,
       const std::string& timestamp_col_name, DataState& state,
-      const ColumnNumberMap& col_nums) {
+      const ColumnNumberMap& col_nums, bool for_training) {
     const auto& [user_col_name, n_unique_users] = user;
     auto& user_vocab = state.vocabs_by_column[user_col_name];
     if (!user_vocab) {
@@ -248,7 +249,8 @@ class Pipeline {
 
     auto& user_item_history =
         state.history_collections_by_id[sequential_block_id];
-    if (!user_item_history) {
+    // Reset history if for training to prevent test data from leaking in.
+    if (!user_item_history || for_training) {
       user_item_history =
           dataset::ItemHistoryCollection::make(n_unique_users, track_last_n);
     }
