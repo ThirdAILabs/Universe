@@ -19,18 +19,13 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::python {
 
-template <typename PREDICT_SINGLE_INPUT_TYPE>
+template <typename PREDICT_INPUT_TYPE>
 class AutoClassifierBase {
  public:
   enum class ReturnMode { NumpyArray, ClassName };
 
-  explicit AutoClassifierBase(BoltGraphPtr model, ReturnMode return_mode,
-                              std::optional<float> threshold = std::nullopt)
-      : _model(std::move(model)), _return_mode(return_mode) {
-    if (_return_mode == ReturnMode::NumpyArrayWithThresholding) {
-      _threshold = threshold.value_or(0.95);
-    }
-  }
+  explicit AutoClassifierBase(BoltGraphPtr model, ReturnMode return_mode)
+      : _model(std::move(model)), _return_mode(return_mode) {}
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
              std::optional<uint32_t> batch_size = std::nullopt,
@@ -44,12 +39,7 @@ class AutoClassifierBase {
   void train(const std::shared_ptr<dataset::DataLoader>& data_source,
              uint32_t epochs, float learning_rate,
              std::optional<uint32_t> max_in_memory_batches = std::nullopt) {
-    auto batch_processor =
-        getTrainingBatchProcessor(data_source, max_in_memory_batches);
-    data_source->restart();
-
-    dataset::StreamingDataset<BoltBatch, BoltBatch> dataset(data_source,
-                                                            batch_processor);
+    auto dataset = getTrainingDataset(data_source, max_in_memory_batches);
 
     if (max_in_memory_batches) {
       trainOnStream(dataset, learning_rate, epochs,
@@ -61,21 +51,18 @@ class AutoClassifierBase {
     trainInMemory(train_data, train_labels, learning_rate, epochs);
   }
 
-  py::object predict(const std::string& filename) {
+  py::object evaluate(const std::string& filename) {
     return predict(std::make_shared<dataset::SimpleFileDataLoader>(
         filename, defaultBatchSize()));
   }
 
-  py::object predict(const std::shared_ptr<dataset::DataLoader>& data_source) {
-    auto batch_processor = getPredictBatchProcessor();
+  py::object evaluate(const std::shared_ptr<dataset::DataLoader>& data_source) {
+    auto dataset = getTestDataset(data_source);
 
-    dataset::StreamingDataset<BoltBatch, BoltBatch> data_loader(
-        data_source, batch_processor);
-
-    auto [data, labels] = data_loader.loadInMemory();
+    auto [data, labels] = dataset.loadInMemory();
 
     PredictConfig predict_cfg = PredictConfig::makeConfig()
-                                    .withMetrics(getPredictMetrics())
+                                    .withMetrics(getEvaluationMetrics())
                                     .returnActivations();
     if (useSparseInference()) {
       predict_cfg.enableSparseInference();
@@ -93,19 +80,13 @@ class AutoClassifierBase {
     }
   }
 
-  py::object predictSingle(const PREDICT_SINGLE_INPUT_TYPE& sample) {
+  py::object predict(const PREDICT_INPUT_TYPE& sample) {
     BoltVector input = featurizeInputForInference(sample);
 
     BoltVector output = _model->predictSingle({input}, useSparseInference());
 
-    if (_return_mode == ReturnMode::NumpyArrayWithThresholding) {
-      uint32_t max_id = output.getHighestActivationId();
-
-      if (output.findActiveNeuronNoTemplate(max_id).activation < _threshold) {
-        output.activations[output.findActiveNeuronNoTemplate(max_id)
-                               .pos.value()] = _threshold + 0.0001;
-      }
-    }
+    processPredictionBeforeReturning(output.active_neurons, output.activations,
+                                     output.len);
 
     switch (_return_mode) {
       case ReturnMode::NumpyArray:
@@ -119,39 +100,67 @@ class AutoClassifierBase {
 
  protected:
   /**
-   * Interface for constructing batch processor and featurizing data.
+   * Constructs a training dataset from the given data loader.
    */
-
-  virtual dataset::GenericBatchProcessorPtr getTrainingBatchProcessor(
+  virtual dataset::StreamingDataset<BoltBatch, BoltBatch> getTrainingDataset(
       std::shared_ptr<dataset::DataLoader> data_loader,
       std::optional<uint64_t> max_in_memory_batches) = 0;
 
-  virtual dataset::GenericBatchProcessorPtr getPredictBatchProcessor() = 0;
+  /**
+   * Constructs a test dataset from the given data loader. This is separate from
+   * getTrainingDataset because some classifiers like the tabular classifier may
+   * need to process training and test datasets seperately.
+   */
+  virtual dataset::StreamingDataset<BoltBatch, BoltBatch> getTestDataset(
+      std::shared_ptr<dataset::DataLoader>) = 0;
 
+  /**
+   * Allows for an auto classifier to preprocess the logits of a prediction
+   * before returning. For instance in the MultiLabelTextClassifier this is used
+   * to apply the threshold so that at least one neuron has a score above the
+   * prediction threshold.
+   */
   virtual void processPredictionBeforeReturning(uint32_t* active_neurons,
                                                 float* activations,
                                                 uint32_t len) = 0;
 
+  /**
+   * This function consumes some inference input type and returns a bolt vector.
+   * This is used for the inference api where the model would take in a string
+   * or a list of integers, etc. and generate a prediction.
+   */
   virtual BoltVector featurizeInputForInference(
-      const PREDICT_SINGLE_INPUT_TYPE& input) = 0;
+      const PREDICT_INPUT_TYPE& input) = 0;
 
+  /**
+   * Returns the name of the class associated with the neuron ID. This is
+   * primarily for classifiers such as Text and Tabular which take in the labels
+   * as strings and assign them to varying neurons.
+   */
   virtual std::string getClassName(uint32_t neuron_id) = 0;
 
   /**
-   * Interface for other options related to training and prediction.
+   * Returns the batch size to use if it is not specified by the user.
    */
-
   virtual uint32_t defaultBatchSize() const = 0;
 
+  /**
+   * Determines if the classifier will freeze hash tables after the first epoch.
+   */
   virtual bool freezeHashTablesAfterFirstEpoch() const = 0;
 
+  /**
+   * Determines if the model will use sparse inference.
+   */
   virtual bool useSparseInference() const = 0;
 
-  virtual std::vector<std::string> getPredictMetrics() const = 0;
+  /**
+   * Species any metrics to use during evaluate.
+   */
+  virtual std::vector<std::string> getEvaluationMetrics() const = 0;
 
   BoltGraphPtr _model;
   ReturnMode _return_mode;
-  float _threshold;
 
  private:
   void trainInMemory(dataset::BoltDatasetPtr& train_data,
@@ -188,6 +197,9 @@ class AutoClassifierBase {
   void trainSingleEpochOnStream(
       dataset::StreamingDataset<BoltBatch, BoltBatch>& dataset,
       float learning_rate, uint32_t max_in_memory_batches) {
+    TrainConfig train_config =
+        TrainConfig::makeConfig(learning_rate, /* epochs= */ 1);
+
     while (1) {
       auto [data, labels] = dataset.loadInMemory(max_in_memory_batches);
 
@@ -195,14 +207,13 @@ class AutoClassifierBase {
         break;
       }
 
-      TrainConfig train_config =
-          TrainConfig::makeConfig(learning_rate, /* epochs= */ 1);
       _model->train({data}, labels, train_config);
     }
 
     dataset.restart();
   }
 
+  // TODO(Someone): Allow this to return top-k class names as well.
   py::list getClassNames(InferenceOutputTracker& output) {
     py::list output_class_names;
 
@@ -229,7 +240,7 @@ class AutoClassifierBase {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_model, _return_mode, _threshold);
+    archive(_model, _return_mode);
   }
 
   static py::object constructNumpyActivationsArrays(
