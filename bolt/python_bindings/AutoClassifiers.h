@@ -66,6 +66,14 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
         {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
   }
 
+  void processPredictionBeforeReturning(uint32_t* active_neurons,
+                                        float* activations,
+                                        uint32_t len) final {
+    (void)active_neurons;
+    (void)activations;
+    (void)len;
+  }
+
   BoltVector featurizeInputForInference(const std::string& input_str) final {
     return dataset::TextEncodingUtils::computePairgrams(
         input_str, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
@@ -77,7 +85,7 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
 
   uint32_t defaultBatchSize() const final { return 256; }
 
-  bool freezeHashTables() const final { return true; }
+  bool freezeHashTablesAfterFirstEpoch() const final { return true; }
 
   bool useSparseInference() const final { return true; }
 
@@ -104,8 +112,8 @@ class MultiLabelTextClassifier final
     : public AutoClassifierBase<std::vector<uint32_t>> {
  public:
   explicit MultiLabelTextClassifier(uint32_t n_classes, float threshold = 0.95)
-      : AutoClassifierBase(createModel(n_classes),
-                           ReturnMode::NumpyArrayWithThresholding, threshold) {}
+      : AutoClassifierBase(createModel(n_classes), ReturnMode::NumpyArray,
+                           threshold) {}
 
   void save(const std::string& filename) {
     std::ofstream filestream =
@@ -144,6 +152,17 @@ class MultiLabelTextClassifier final
         /* has_header= */ false, /* delimiter= */ '\t');
   }
 
+  void processPredictionBeforeReturning(uint32_t* active_neurons,
+                                        float* activations,
+                                        uint32_t len) final {
+    (void)active_neurons;
+
+    uint32_t max_id = getMaxIndex(activations, len);
+    if (activations[max_id] < _threshold) {
+      activations[max_id] = _threshold + 0.0001;
+    }
+  }
+
   BoltVector featurizeInputForInference(
       const std::vector<uint32_t>& input) final {
     std::string sentence = tokensToSentence(input);
@@ -158,7 +177,7 @@ class MultiLabelTextClassifier final
 
   uint32_t defaultBatchSize() const final { return 2048; }
 
-  bool freezeHashTables() const final { return false; }
+  bool freezeHashTablesAfterFirstEpoch() const final { return false; }
 
   bool useSparseInference() const final { return false; }
 
@@ -276,6 +295,14 @@ class TabularClassifier final
     return getBatchProcessor();
   }
 
+  void processPredictionBeforeReturning(uint32_t* active_neurons,
+                                        float* activations,
+                                        uint32_t len) final {
+    (void)active_neurons;
+    (void)activations;
+    (void)len;
+  }
+
   BoltVector featurizeInputForInference(
       const std::vector<std::string>& values) final {
     if (values.size() != _metadata->numColumns() - 1) {
@@ -314,7 +341,7 @@ class TabularClassifier final
 
   uint32_t defaultBatchSize() const final { return 256; }
 
-  bool freezeHashTables() const final { return true; }
+  bool freezeHashTablesAfterFirstEpoch() const final { return true; }
 
   bool useSparseInference() const final { return true; }
 
