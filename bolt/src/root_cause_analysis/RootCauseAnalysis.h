@@ -32,11 +32,11 @@ inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
 }
 
 inline std::tuple<std::vector<std::string>, std::vector<float>,
-                  std::vector<uint32_t>>
+                  std::vector<std::string>>
 getPercentExplanationWithColumnNames(
     const std::vector<float>& gradients_ratio,
     std::vector<uint32_t> gradients_indices,
-    std::unordered_map<uint32_t, std::string> num_to_name,
+    const std::unordered_map<uint32_t, std::string>& num_to_name,
     const std::shared_ptr<dataset::GenericBatchProcessor>&
         generic_batch_processor) {
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
@@ -48,17 +48,17 @@ getPercentExplanationWithColumnNames(
   }
   std::vector<std::string> column_names;
   std::vector<float> gradient_significance;
-  std::vector<uint32_t> indices_within_block;
+  std::vector<std::string> words_responsible;
   for (const auto& col : gradients_ratio_with_indices) {
-    auto [block, index_within_block] =
-        generic_batch_processor->getBlockAndIndexWithinBlock(col.second);
-    indices_within_block.push_back(index_within_block);
-    auto column = block->getColumnNum();
-    column_names.push_back(num_to_name[column]);
+    auto [col_name, word_responsible] =
+        generic_batch_processor->getColumnNameAndKeyResponsibleWithinBlock(
+            col.second, num_to_name);
+    words_responsible.push_back(word_responsible);
+    column_names.push_back(col_name);
     gradient_significance.push_back((col.first / ratio_sum) * 100);
   }
   return std::make_tuple(column_names, gradient_significance,
-                         indices_within_block);
+                         words_responsible);
 }
 
 }  // namespace thirdai::bolt
