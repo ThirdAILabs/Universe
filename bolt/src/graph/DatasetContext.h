@@ -58,8 +58,7 @@ class DatasetContext final : public DatasetContextBase {
     }
   }
 
-  uint64_t batchSize() const { 
-  return _all_dag_datasets.front()->batchSize(); }
+  uint64_t batchSize() const { return _all_dag_datasets.front()->batchSize(); }
 
   uint64_t batchSize(uint64_t batch_idx) const {
     return _all_dag_datasets.front()->batchSize(batch_idx);
