@@ -19,10 +19,10 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::python {
 
-template <typename PREDICT_SINGLE_INPUT>
+template <typename PREDICT_SINGLE_INPUT_TYPE>
 class AutoClassifierBase {
  public:
-  enum class ReturnMode { NumpyArray, NumpyArrayWithThresholding, ClassName };
+  enum class ReturnMode { NumpyArray, ClassName };
 
   explicit AutoClassifierBase(BoltGraphPtr model, ReturnMode return_mode,
                               std::optional<float> threshold = std::nullopt)
@@ -54,6 +54,7 @@ class AutoClassifierBase {
     if (max_in_memory_batches) {
       trainOnStream(dataset, learning_rate, epochs,
                     max_in_memory_batches.value());
+      return;
     }
 
     auto [train_data, train_labels] = dataset.loadInMemory();
@@ -82,20 +83,17 @@ class AutoClassifierBase {
 
     auto [metrics, output] = _model->predict({data}, {labels}, predict_cfg);
 
-    if (_return_mode == ReturnMode::NumpyArrayWithThresholding) {
-      thresholdActivations(output, _threshold);
-    }
+    processPredictionsBeforeReturning(output);
 
     switch (_return_mode) {
       case ReturnMode::NumpyArray:
-      case ReturnMode::NumpyArrayWithThresholding:
         return constructNumpyActivationsArrays(metrics, output);
       case ReturnMode::ClassName:
         return py::make_tuple(py::cast(metrics), getClassNames(output));
     }
   }
 
-  py::object predictSingle(const PREDICT_SINGLE_INPUT& sample) {
+  py::object predictSingle(const PREDICT_SINGLE_INPUT_TYPE& sample) {
     BoltVector input = featurizeInputForInference(sample);
 
     BoltVector output = _model->predictSingle({input}, useSparseInference());
@@ -111,7 +109,6 @@ class AutoClassifierBase {
 
     switch (_return_mode) {
       case ReturnMode::NumpyArray:
-      case ReturnMode::NumpyArrayWithThresholding:
         return constructNumpyVector(output);
       case ReturnMode::ClassName:
         return py::cast(getClassName(output.getHighestActivationId()));
@@ -131,8 +128,12 @@ class AutoClassifierBase {
 
   virtual dataset::GenericBatchProcessorPtr getPredictBatchProcessor() = 0;
 
+  virtual void processPredictionBeforeReturning(uint32_t* active_neurons,
+                                                float* activations,
+                                                uint32_t len) = 0;
+
   virtual BoltVector featurizeInputForInference(
-      const PREDICT_SINGLE_INPUT& input) = 0;
+      const PREDICT_SINGLE_INPUT_TYPE& input) = 0;
 
   virtual std::string getClassName(uint32_t neuron_id) = 0;
 
@@ -142,7 +143,7 @@ class AutoClassifierBase {
 
   virtual uint32_t defaultBatchSize() const = 0;
 
-  virtual bool freezeHashTables() const = 0;
+  virtual bool freezeHashTablesAfterFirstEpoch() const = 0;
 
   virtual bool useSparseInference() const = 0;
 
@@ -156,7 +157,7 @@ class AutoClassifierBase {
   void trainInMemory(dataset::BoltDatasetPtr& train_data,
                      dataset::BoltDatasetPtr& train_labels, float learning_rate,
                      uint32_t epochs) {
-    if (freezeHashTables() && epochs > 1) {
+    if (freezeHashTablesAfterFirstEpoch() && epochs > 1) {
       TrainConfig train_cfg_initial = TrainConfig::makeConfig(learning_rate, 1);
       _model->train({train_data}, train_labels, train_cfg_initial);
 
@@ -172,7 +173,7 @@ class AutoClassifierBase {
   void trainOnStream(dataset::StreamingDataset<BoltBatch, BoltBatch>& dataset,
                      float learning_rate, uint32_t epochs,
                      uint32_t max_in_memory_batches) {
-    if (freezeHashTables() && epochs > 1) {
+    if (freezeHashTablesAfterFirstEpoch() && epochs > 1) {
       trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
@@ -250,17 +251,14 @@ class AutoClassifierBase {
         /* active_neuron_handle= */ output_handle);
   }
 
-  static void thresholdActivations(InferenceOutputTracker& output,
-                                   float threshold) {
+  void processPredictionsBeforeReturning(InferenceOutputTracker& output) {
     uint32_t output_dim = output.numNonzerosInOutput();
 
     for (uint32_t i = 0; i < output.numSamples(); i++) {
+      uint32_t* active_neurons = output.activeNeuronsForSample(i);
       float* activations = output.activationsForSample(i);
-      uint32_t max_index = getMaxIndex(activations, output_dim);
 
-      if (activations[max_index] < threshold) {
-        activations[max_index] = threshold + 0.0001;
-      }
+      processPredictionBeforeReturning(active_neurons, activations, output_dim);
     }
   }
 
