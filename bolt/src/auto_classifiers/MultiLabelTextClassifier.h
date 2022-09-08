@@ -41,9 +41,9 @@ class MultiLabelTextClassifier {
     */
     _classifier = CommonNetworks::FullyConnected(
         /* input_dim= */ _labeled_processor->getInputDim(),
-        /* layers= */ {FullyConnectedNode::make(
+        /* layers= */ {FullyConnectedNode::makeDense(
                            /* dim= */ 1024, "relu"),
-                       FullyConnectedNode::make(
+                       FullyConnectedNode::makeExplicitSamplingConfig(
                            /* dim= */ n_classes,
                            /* sparsity= */ getOutputSparsity(n_classes),
                            /* activation= */ "sigmoid",

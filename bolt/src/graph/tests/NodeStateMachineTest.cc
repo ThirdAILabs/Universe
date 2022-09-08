@@ -158,7 +158,7 @@ class ConcatenateStateMachineTest final : public NodeStateMachineTest {
 };
 
 TEST(NodeStateMachineTest, ConcatenateStateMachine) {
-  auto concatenated_node = std::make_shared<ConcatenateNode>();
+  auto concatenated_node = ConcatenateNode::make();
 
   ConcatenateStateMachineTest test(concatenated_node);
 
@@ -181,7 +181,7 @@ class FullyConnectedStateMachineTest final : public NodeStateMachineTest {
 };
 
 TEST(NodeStateMachineTest, FullyConnectedStateMachine) {
-  auto fully_connected_node = std::make_shared<FullyConnectedNode>(
+  auto fully_connected_node = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "relu");
 
   FullyConnectedStateMachineTest test(fully_connected_node);
@@ -201,14 +201,14 @@ class EmbeddingStateMachineTest final : public NodeStateMachineTest {
     EmbeddingNode* embedding_node = dynamic_cast<EmbeddingNode*>(_node.get());
     ASSERT_NE(embedding_node, nullptr);
 
-    InputPtr input = std::make_shared<Input>(/* dim= */ 1);
+    InputPtr input = Input::make(/* expected_dim= */ 1);
 
     embedding_node->addInput(input);
   }
 };
 
 TEST(NodeStateMachineTest, EmbeddingStateMachine) {
-  auto embedding_node = std::make_shared<EmbeddingNode>(
+  auto embedding_node = EmbeddingNode::make(
       /* num_embedding_lookups= */ 10, /* lookup_size= */ 8,
       /* log_embedding_block_size= */ 5, /* reduction= */ "sum");
 

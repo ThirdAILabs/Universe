@@ -19,10 +19,8 @@ static constexpr uint32_t n_batches = 100;
 static constexpr uint32_t batch_size = 100;
 
 static BoltGraph getSingleLayerModel() {
-  auto input_layer = std::make_shared<Input>(n_classes);
-  auto output_layer =
-      std::make_shared<FullyConnectedNode>(n_classes, "softmax");
-
+  auto input_layer = Input::make(n_classes);
+  auto output_layer = FullyConnectedNode::makeDense(n_classes, "softmax");
   output_layer->addPredecessor(input_layer);
 
   BoltGraph model({input_layer}, output_layer);
@@ -123,15 +121,15 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
 
 static BoltGraph getMultiLayerModel(const std::string& hidden_layer_act,
                                     const std::string& output_layer_act) {
-  auto input_layer = std::make_shared<Input>(n_classes);
+  auto input_layer = Input::make(n_classes);
 
-  auto hidden_layer = std::make_shared<FullyConnectedNode>(
+  auto hidden_layer = FullyConnectedNode::makeAutotuned(
       /* dim= */ 10000, /* sparsity= */ 0.1,
       /* activation= */ hidden_layer_act);
 
   hidden_layer->addPredecessor(input_layer);
 
-  auto output_layer = std::make_shared<FullyConnectedNode>(
+  auto output_layer = FullyConnectedNode::makeDense(
       /* dim= */ n_classes, /* activation= */ output_layer_act);
 
   output_layer->addPredecessor(hidden_layer);

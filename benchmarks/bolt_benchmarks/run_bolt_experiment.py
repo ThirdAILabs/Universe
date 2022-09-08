@@ -193,16 +193,16 @@ def get_sampling_config(layer_config):
 
 def construct_input_node(input_config):
     dim = config_get(input_config, "dim")
-    num_nonzeros_range = None
     if (
-        "min_num_nonzeros" in input_config.keys()
-        and "max_num_nonzeros" in input_config.keys()
+        "min_num_tokens" in input_config.keys()
+        and "max_num_tokens" in input_config.keys()
     ):
-        num_nonzeros_range = (
-            config_get(input_config, "min_num_nonzeros"),
-            config_get(input_config, "max_num_nonzeros"),
+        num_tokens_range = (
+            config_get(input_config, "min_num_tokens"),
+            config_get(input_config, "max_num_tokens"),
         )
-    return bolt.graph.Input(dim=dim, num_nonzeros_range=num_nonzeros_range)
+        return bolt.graph.TokenInput(dim=dim, num_tokens_range=num_tokens_range)
+    return bolt.graph.Input(dim=dim)
 
 
 def construct_fully_connected_node(fc_config):

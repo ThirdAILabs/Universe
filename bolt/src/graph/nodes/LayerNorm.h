@@ -33,7 +33,7 @@ constexpr float DIV_BY_ZERO_GUARD = 0.00000001;
 
 class LayerNormNode final : public Node,
                             public std::enable_shared_from_this<LayerNormNode> {
- public:
+ private:
   LayerNormNode()
       : _config(std::make_shared<NormalizationLayerConfig>()),
         _batch(std::nullopt),
@@ -45,6 +45,16 @@ class LayerNormNode final : public Node,
         _batch(std::nullopt),
         _node_to_normalize(nullptr),
         _compiled(false) {}
+
+ public:
+  static std::shared_ptr<LayerNormNode> make() {
+    return std::shared_ptr<LayerNormNode>(new LayerNormNode());
+  }
+
+  static std::shared_ptr<LayerNormNode> makeWithConfig(
+      const NormalizationLayerConfig& config) {
+    return std::shared_ptr<LayerNormNode>(new LayerNormNode(config));
+  }
 
   std::shared_ptr<LayerNormNode> addPredecessor(NodePtr node) {
     if (getState() != NodeState::Constructed) {

@@ -30,8 +30,8 @@ dim = 100000
 type = "Input"
 name = "token_input"
 dim = 100
-min_num_nonzeros = 1
-max_num_nonzeros = 1
+min_num_tokens = 1
+max_num_tokens = 1
 
 [[nodes]]
 type = "Switch"
