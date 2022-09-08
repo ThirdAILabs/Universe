@@ -134,7 +134,7 @@ class SequentialClassifier {
   }
 
   std::tuple<std::vector<std::string>, std::vector<float>,
-             std::vector<uint32_t>>
+             std::vector<std::string>>
   explain(const std::unordered_map<std::string, std::string>& sample) {
     BoltVector input_vector = getInputForSingleInference(sample);
 
