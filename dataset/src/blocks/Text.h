@@ -112,7 +112,7 @@ class UniGramTextBlock final : public TextBlock {
     auto [unigrams, index_to_word] =
         TextEncodingUtils::computeRawUnigramsWithRange(text, _dim, true);
 
-    _index_to_word_map = std::move(*index_to_word);
+    _index_to_word_map = *index_to_word;
 
     TextEncodingUtils::sumRepeatedIndices(
         unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {

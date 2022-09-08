@@ -124,7 +124,7 @@ void assert_percentage_significance(
     total_percentage_sum += std::abs(percentage_significance);
   }
 
-  ASSERT_GT(total_percentage_sum, 0.99);
+  ASSERT_GT(total_percentage_sum, 99.9);
 }
 
 void assert_words_within_block(
