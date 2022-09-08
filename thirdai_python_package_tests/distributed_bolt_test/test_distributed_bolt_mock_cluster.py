@@ -1,3 +1,10 @@
+# Here we are mocking a cluster on a single machine
+# without explicitly starting a ray cluster. We are
+# testing both the communication circular and linear 
+# in the following tests.
+# For reference: https://docs.ray.io/en/latest/ray-core/examples/testing-tips.html#tip-3-create-a-mini-cluster-with-ray-cluster-utils-cluster
+
+
 import sys
 import pytest
 import os
@@ -13,27 +20,26 @@ except ImportError:
 def setup_module():
     import os
 
-    if not os.path.exists("mnist"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
-        )
-        os.system("bzip2 -d mnist.bz2")
-
-    if not os.path.exists("mnist.t"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
-        )
-        os.system("bzip2 -d mnist.t.bz2")
-
-    os.system("split -l 30000 mnist")
-
     path = "mnist_data"
     if not os.path.exists(path):
         os.makedirs(path)
 
-    os.system("rm mnist")
-    os.system("cp xaa xab mnist.t mnist_data/")
-    os.system("rm xaa xab mnist.t")
+    if not os.path.exists("mnist_data/xaa") or not os.path.exists("mnist_data/xab"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
+        )
+        os.system("bzip2 -d mnist.bz2")
+        os.system("split -l 30000 mnist")
+
+        os.system("rm mnist")
+        os.system("mv xaa xab mnist_data/")
+
+    if not os.path.exists("mnist_data/mnist.t"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
+        )
+        os.system("bzip2 -d mnist.t.bz2")
+        os.system("mv mnist.t mnist_data/")
 
 
 @pytest.fixture(scope="module")
