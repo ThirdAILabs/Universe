@@ -182,4 +182,31 @@ TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
   assertItemHistoryGetsUpdated(batch, user_id_seq, n_users);
   assertItemHistoryNotEmpty(batch);
 }
+
+TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
+  std::vector<std::string> samples = {{"user1,item1 item2 item3,2022-02-02"},
+                                      {"user1,item4,2022-02-02"}};
+
+  GenericBatchProcessor processor(
+      /* input_blocks= */ {UserItemHistoryBlock::make(
+          /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
+          /* track_last_n= */ 3, /* n_unique_users= */ 1,
+          /* n_unique_items= */ 4, /* item_col_delimiter= */ ' ')},
+      /* label_blocks= */ {},
+      /* has_header= */ false,
+      /* delimiter= */ ',',
+      /* parallel= */ false);
+
+  auto [batch, _] = processor.createBatch(samples);
+
+  ASSERT_EQ(batch[0].len, 0);
+
+  std::unordered_set<uint32_t> active_neurons;
+  for (uint32_t i = 0; i < batch[1].len; i++) {
+    active_neurons.insert(batch[1].active_neurons[i]);
+  }
+
+  ASSERT_EQ(active_neurons.size(), 3);
+}
+
 }  // namespace thirdai::dataset
