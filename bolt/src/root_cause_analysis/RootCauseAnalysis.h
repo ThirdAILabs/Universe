@@ -7,12 +7,7 @@ namespace thirdai::bolt {
 
 using Blocks = std::vector<std::shared_ptr<dataset::Block>>;
 
-// TODO (YASH)
-// 1. make this indices within block point to the exact things that affect. For
-// example in text block rather than giving index we can store a map and give
-// exact keywords responsible.
-// 2. For this to happen, we have to change some of blocks to store map(like
-// textblock(unigram, pairgram or in general char k gram)).
+// Here High significance means having high value of absolute ratio.
 
 inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
     std::vector<float> gradients_ratio,
@@ -31,12 +26,25 @@ inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
   return gradient_ratios_with_indices;
 }
 
+/*
+This function returns
+1. Column names: list of column names corresponding to the responsible token.
+2. Percentage Significance: list of values which tells us how much this token is
+responsible.
+3. Responsible token: The main thing in our RCA which gives us exact keyword is
+responsible for this.
+
+we get the column name and responsible token from generic batch processor itself
+because that way, it will also be helpful tabular because it uses one block for
+entire columns.
+*/
+
 inline std::tuple<std::vector<std::string>, std::vector<float>,
                   std::vector<std::string>>
 getPercentExplanationWithColumnNames(
     const std::vector<float>& gradients_ratio,
     std::vector<uint32_t> gradients_indices,
-    const std::unordered_map<uint32_t, std::string>& num_to_name,
+    const std::unordered_map<uint32_t, std::string>& col_num_to_name,
     const std::shared_ptr<dataset::GenericBatchProcessor>&
         generic_batch_processor) {
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
@@ -52,7 +60,7 @@ getPercentExplanationWithColumnNames(
   for (const auto& col : gradients_ratio_with_indices) {
     auto [col_name, word_responsible] =
         generic_batch_processor->getColumnNameAndKeyResponsibleWithinBlock(
-            col.second, num_to_name);
+            col.second, col_num_to_name);
     words_responsible.push_back(word_responsible);
     column_names.push_back(col_name);
     gradient_significance.push_back((col.first / ratio_sum) * 100);
