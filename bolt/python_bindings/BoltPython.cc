@@ -237,11 +237,7 @@ void createBoltSubmodule(py::module_& module) {
              auto output = model.predictSingle(sample);
              return denseBoltVectorToNumpy(output);
            })
-      .def("explain",
-           [](SequentialClassifier& model,
-              const std::unordered_map<std::string, std::string>& sample) {
-             return model.explain(sample);
-           });
+      .def("explain", &SequentialClassifier::explain, py::arg("input_sample"));
 
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
