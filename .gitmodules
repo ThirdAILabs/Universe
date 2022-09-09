@@ -19,3 +19,6 @@
 [submodule "deps/flamegraph"]
 	path = deps/flamegraph
 	url = https://github.com/ThirdAILabs/FlameGraphFork
+[submodule "deps/spdlog"]
+	path = deps/spdlog
+	url = https://github.com/ThirdAILabs/SpdlogFork.git

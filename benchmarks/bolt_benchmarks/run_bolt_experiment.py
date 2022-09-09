@@ -11,7 +11,9 @@ from utils import (
     config_get,
     is_ec2_instance,
 )
+
 from thirdai import bolt, dataset
+from thirdai import setup_logging
 import numpy as np
 
 
@@ -22,6 +24,10 @@ def main():
     verify_mlflow_args(parser, mlflow_args=args)
 
     config = toml.load(args.config_path)
+
+    setup_logging(
+        log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level
+    )
 
     model = load_and_compile_model(config)
     datasets = load_all_datasets(config)
@@ -478,6 +484,25 @@ def build_arg_parser():
         default="",
         type=str,
         help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
+    )
+
+    parser.add_argument(
+        "--log-to-stderr",
+        action="store_true",
+        help="Logs to stderr, based on the log-level. Use --log-level to control granularity.",
+    )
+    parser.add_argument(
+        "--log-file",
+        type=str,
+        help="File to write on disk to. Leaving empty (default) implies no logging to file.",
+        default="",
+    )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        help="Log level to configure.",
+        default="info",
+        choices=["off", "critical", "error", "warn", "info", "debug", "trace"],
     )
     return parser
 
