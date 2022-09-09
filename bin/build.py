@@ -56,7 +56,7 @@ def main():
         "--extras",
         default="", 
         choices=["", "test", "benchmark", "distributed", "all"],
-        metavar="MODE",  # Don't print the choices because they're ugly
+        metavar="EXTRAS",  # Don't print the choices because they're ugly
         help="A string corresponding to the additional python dependencies the build should ensure are installed. See setup.py for the specific packages each option entails.",
     )
     parser.add_argument(
@@ -102,7 +102,10 @@ def main():
         os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
         os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
 
-        checked_system_call(f"pip3 install .[{args.extras}] --verbose --force")
+        if args.extras != "":
+            args.extras = "[" + args.extras + "]"
+        checked_system_call(f"pip3 install .{args.extras} --verbose --force")
+
     else:
         cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DFEATURE_FLAGS='{joined_feature_flags}'"
         build_command = f"cmake --build build --target {args.target} -j {args.jobs}"
