@@ -387,7 +387,7 @@ void createDatasetSubmodule(py::module_& module) {
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
 parseSentenceToUnigramsPython(const std::string& sentence, uint32_t dimension) {
   std::vector<uint32_t> unigrams =
-      TextEncodingUtils::computeRawUnigramsWithRange(sentence, dimension).first;
+      TextEncodingUtils::computeRawUnigramsWithRange(sentence, dimension);
 
   std::vector<uint32_t> indices;
   std::vector<uint32_t> values;

@@ -28,31 +28,37 @@ class TextEncodingUtils {
   static std::vector<uint32_t> computeRawUnigrams(
       const std::string_view sentence) {
     std::vector<uint32_t> unigrams;
-    std::unordered_map<std::string, uint32_t> index_to_word;
-    forEachWordHash(sentence, [&](uint32_t word_hash, const std::string& word) {
-      unigrams.push_back(word_hash);
-      index_to_word[word] = word_hash;
-    });
+    forEachWordHash(sentence,
+                    [&](uint32_t word_hash, const std::string& /*word*/) {
+                      unigrams.push_back(word_hash);
+                    });
     return unigrams;
   }
 
   /**
    * Unigrams in a vector with possible repeated indices (modded to a range)
    */
+  static std::vector<uint32_t> computeRawUnigramsWithRange(
+      const std::string_view sentence, uint32_t output_range) {
+    std::vector<uint32_t> unigrams;
+    forEachWordHash(sentence,
+                    [&](uint32_t word_hash, const std::string& /*word*/) {
+                      unigrams.push_back(word_hash % output_range);
+                    });
+    return unigrams;
+  }
+
   static std::pair<std::vector<uint32_t>,
-                   std::optional<std::unordered_map<uint32_t, std::string>>>
-  computeRawUnigramsWithRange(const std::string_view sentence,
-                              uint32_t output_range, bool want_map = false) {
+                   std::unordered_map<uint32_t, std::string>>
+  computeRawUnigramsWithRangeStoreMap(const std::string_view sentence,
+                                      uint32_t output_range) {
     std::vector<uint32_t> unigrams;
     std::unordered_map<uint32_t, std::string> index_to_word;
     forEachWordHash(sentence, [&](uint32_t word_hash, const std::string& word) {
       unigrams.push_back(word_hash % output_range);
       index_to_word[word_hash % output_range] = word;
     });
-    if (want_map) {
-      return std::make_pair(unigrams, index_to_word);
-    }
-    return std::make_pair(unigrams, std::nullopt);
+    return std::make_pair(unigrams, index_to_word);
   }
 
   /**
@@ -61,7 +67,7 @@ class TextEncodingUtils {
   static BoltVector computeUnigrams(const std::string_view sentence,
                                     uint32_t output_range) {
     std::vector<uint32_t> unigrams =
-        computeRawUnigramsWithRange(sentence, output_range).first;
+        computeRawUnigramsWithRange(sentence, output_range);
 
     std::vector<uint32_t> indices;
     std::vector<float> values;
