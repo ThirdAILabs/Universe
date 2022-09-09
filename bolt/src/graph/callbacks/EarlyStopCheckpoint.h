@@ -75,6 +75,7 @@ class EarlyStopCheckpoint : public Callback {
     std::string real_metric_name = stripMetricPrefixes(_monitored_metric);
     _epochs_since_best = 0;
     _should_minimize = makeMetric(real_metric_name)->smallerIsBetter();
+
     _best_validation_score = _should_minimize
                                  ? std::numeric_limits<double>::max()
                                  : std::numeric_limits<double>::min();

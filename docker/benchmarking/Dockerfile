@@ -1,3 +1,6 @@
+# Don't use this Dockerfile for development, changes won't be propogated
+# back to your local copy of Universe
+
 # Ubuntu 20.04 (focal)
 # https://hub.docker.com/_/ubuntu/?tab=tags&name=focal
 ARG ROOT_CONTAINER=ubuntu:focal
@@ -30,8 +33,14 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     # Install sudo
     && apt-get update && apt-get -y install sudo
 
-COPY requirements.txt /requirements.txt
-RUN pip3 install -r /requirements.txt
+# This means the Dockerfile needs to be built from the root directory
+# This will also copy everything, including files not tracked by git (build
+# files, venv, etc). 
+# TODO(josh): Copy just what we need, and remove the rm command below
+COPY . /Universe/
+
+RUN rm -rf /Universe/build
+RUN /Universe/bin/build.py --extras benchmark
 
 # The exit 0 means these commands will still continue even if the install fails. 
 # This is because these downloads might not work on arm64, but we still want

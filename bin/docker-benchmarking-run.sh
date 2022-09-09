@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Usage:
+# ./docker-benchmarking-run.sh "COMMAND_TO_RUN_IN_DOCKER_IMAGE"
+
 BASEDIR=$(dirname "$0")
 cd $BASEDIR/../
 # Run with --cap-add and --security-opt to be able to trace exectuion, see
@@ -12,16 +15,16 @@ DATADIR="/share/data"
 if [ -d "${DATADIR}" ]; then
     docker run \
       --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
-      -it --rm \
+      --rm \
       -v $HOME/.aws/credentials:/root/.aws/credentials:ro \
       --mount type=bind,source=${DATADIR},target=/data \
-      --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build \
-      bash
+      thirdai/universe_dev_build \
+      bash -c "$1"
 else
     docker run \
       --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
-      -it --rm \
+      --rm \
       -v $HOME/.aws/credentials:/root/.aws/credentials:ro \
-      --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build \
-      bash
+      thirdai/universe_dev_build \
+      bash -c "$1"
 fi
