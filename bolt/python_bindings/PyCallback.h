@@ -17,17 +17,17 @@ class PyCallback : public Callback {
                            Callback,         /* Parent class */
                            "on_train_begin", /* Name of Python function */
                            onTrainBegin,     /* Name of C++ function */
-                           model,            /* Argument(s) */
-                           train_state);
+                           std::ref(model),  /* Argument(s) */
+                           std::ref(train_state));
   }
 
   void onTrainEnd(BoltGraph& model, TrainState& train_state) override {
-    PYBIND11_OVERRIDE_NAME(void,           /* Return type */
-                           Callback,       /* Parent class */
-                           "on_train_end", /* Name of Python function */
-                           onTrainEnd,     /* Name of C++ function */
-                           model,          /* Argument(s) */
-                           train_state);
+    PYBIND11_OVERRIDE_NAME(void,            /* Return type */
+                           Callback,        /* Parent class */
+                           "on_train_end",  /* Name of Python function */
+                           onTrainEnd,      /* Name of C++ function */
+                           std::ref(model), /* Argument(s) */
+                           std::ref(train_state));
   }
 
   void onEpochBegin(BoltGraph& model, TrainState& train_state) override {
@@ -35,17 +35,17 @@ class PyCallback : public Callback {
                            Callback,         /* Parent class */
                            "on_epoch_begin", /* Name of Python function */
                            onEpochBegin,     /* Name of C++ function */
-                           model,            /* Argument(s) */
-                           train_state);
+                           std::ref(model),  /* Argument(s) */
+                           std::ref(train_state));
   }
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) override {
-    PYBIND11_OVERRIDE_NAME(void,           /* Return type */
-                           Callback,       /* Parent class */
-                           "on_epoch_end", /* Name of Python function */
-                           onEpochEnd,     /* Name of C++ function */
-                           model,          /* Argument(s) */
-                           train_state);
+    PYBIND11_OVERRIDE_NAME(void,            /* Return type */
+                           Callback,        /* Parent class */
+                           "on_epoch_end",  /* Name of Python function */
+                           onEpochEnd,      /* Name of C++ function */
+                           std::ref(model), /* Argument(s) */
+                           std::ref(train_state));
   }
 
   void onBatchBegin(BoltGraph& model, TrainState& train_state) override {
@@ -53,17 +53,17 @@ class PyCallback : public Callback {
                            Callback,         /* Parent class */
                            "on_batch_begin", /* Name of Python function */
                            onBatchBegin,     /* Name of C++ function */
-                           model,            /* Argument(s) */
-                           train_state);
+                           std::ref(model),  /* Argument(s) */
+                           std::ref(train_state));
   }
 
   void onBatchEnd(BoltGraph& model, TrainState& train_state) override {
-    PYBIND11_OVERRIDE_NAME(void,           /* Return type */
-                           Callback,       /* Parent class */
-                           "on_batch_end", /* Name of Python function */
-                           onBatchEnd,     /* Name of C++ function */
-                           model,          /* Argument(s) */
-                           train_state);
+    PYBIND11_OVERRIDE_NAME(void,            /* Return type */
+                           Callback,        /* Parent class */
+                           "on_batch_end",  /* Name of Python function */
+                           onBatchEnd,      /* Name of C++ function */
+                           std::ref(model), /* Argument(s) */
+                           std::ref(train_state));
   }
 };
 
