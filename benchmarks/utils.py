@@ -131,18 +131,12 @@ def mlflow_is_enabled(args):
     return not args.disable_mlflow
 
 
-def config_get(config, field):
+def config_get_required(config, field):
     if field not in config:
         raise ValueError(
             f'The field "{field}" was expected to be in "{config}" but was not found.'
         )
     return config[field]
-
-
-def config_get_or(config, field, default):
-    if field in config:
-        return config[field]
-    return default
 
 
 def log_machine_info():
