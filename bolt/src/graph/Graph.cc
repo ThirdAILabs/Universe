@@ -80,6 +80,9 @@ MetricData BoltGraph::train(
   TrainState train_state(train_config, dataset_context.batchSize(),
                          dataset_context.len());
 
+  std::optional<ValidationContext> validation =
+      train_config.getValidationContext();
+
   std::vector<double> time_per_epoch;
 
   MetricAggregator metrics = train_config.getMetricAggregator();
@@ -159,13 +162,19 @@ MetricData BoltGraph::train(
       _epoch_count++;
       metrics.logAndReset();
 
-      train_state.train_metric_data = metrics.getOutput();
+      train_state.updateTrainMetrics(metrics.getOutput());
     } catch (const std::exception& e) {
       cleanupAfterBatchProcessing();
       throw;
     }
 
     cleanupAfterBatchProcessing();
+
+    if (validation) {
+      auto [metrics, _] =
+          predict(validation->data, validation->labels, validation->config);
+      train_state.updateValidationMetrics(metrics);
+    }
 
     callbacks.onEpochEnd(*this, train_state);
     if (train_state.stop_training) {

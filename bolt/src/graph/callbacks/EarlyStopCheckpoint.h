@@ -32,23 +32,12 @@ namespace thirdai::bolt {
  */
 class EarlyStopCheckpoint : public Callback {
  public:
-  EarlyStopCheckpoint(std::vector<dataset::BoltDatasetPtr> validation_data,
-                      dataset::BoltDatasetPtr validation_labels,
-                      PredictConfig predict_config, std::string model_save_path,
+  EarlyStopCheckpoint(std::string monitored_metric, std::string model_save_path,
                       uint32_t patience = 2, double min_delta = 0)
-      : _validation_data(std::move(validation_data)),
-        _validation_labels(std::move(validation_labels)),
-        _predict_config(std::move(predict_config)),
+      : _monitored_metric(monitored_metric),
         _model_save_path(std::move(model_save_path)),
         _patience(patience),
         _min_delta(std::abs(min_delta)) {
-    uint32_t num_metrics = _predict_config.getMetricNames().size();
-    if (num_metrics != 1) {
-      throw std::invalid_argument(
-          "Validation-based early stopping only supports the use of one "
-          "metric, passed in " +
-          std::to_string(num_metrics) + " metrics.");
-    }
     initValidationTrackers();
   }
 
@@ -59,10 +48,7 @@ class EarlyStopCheckpoint : public Callback {
   }
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
-    std::string metric_name = _predict_config.getMetricNames()[0];
-    double metric_val =
-        model.predict(_validation_data, _validation_labels, _predict_config)
-            .first[metric_name];
+    double metric_val = train_state.getMetricValue(_monitored_metric);
 
     if (isImprovement(metric_val)) {
       _best_validation_score = metric_val;
@@ -86,18 +72,29 @@ class EarlyStopCheckpoint : public Callback {
   }
 
   void initValidationTrackers() {
-    std::string metric_name = _predict_config.getMetricNames()[0];
-
+    std::string real_metric_name = stripMetricPrefixes(_monitored_metric);
     _epochs_since_best = 0;
-    _should_minimize = makeMetric(metric_name)->smallerIsBetter();
+    _should_minimize = makeMetric(real_metric_name)->smallerIsBetter();
     _best_validation_score = _should_minimize
                                  ? std::numeric_limits<double>::max()
                                  : std::numeric_limits<double>::min();
   }
 
-  std::vector<dataset::BoltDatasetPtr> _validation_data;
-  dataset::BoltDatasetPtr _validation_labels;
-  PredictConfig _predict_config;
+  static std::string stripMetricPrefixes(std::string prefixed_metric_name) {
+    std::vector<std::string> available_prefixes = {"train_", "val_"};
+    for (const auto& prefix : available_prefixes) {
+      if (prefixed_metric_name.find(prefix)) {
+        return prefixed_metric_name.substr(prefixed_metric_name.size() -
+                                           prefix.size());
+      }
+    }
+    throw std::invalid_argument(
+        "Metric is not prefixed correctly. Metrics should be prefixed with "
+        "'train_' or 'val_' to correctly distinguish between training and "
+        "validation data. ");
+  }
+
+  std::string _monitored_metric;
   std::string _model_save_path;
   uint32_t _patience;
   double _min_delta;
