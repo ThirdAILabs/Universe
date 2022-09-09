@@ -5,7 +5,13 @@ from pandas.api.types import is_numeric_dtype
 from thirdai import bolt
 from xgboost import XGBClassifier
 from pytorch_tabnet.tab_model import TabNetClassifier
-from bolt.python_tests.utils import compute_accuracy_of_predictions
+
+
+def compute_accuracy_of_predictions(test_labels, predictions):
+    assert len(predictions) == len(test_labels)
+    return sum(
+        (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
+    ) / len(predictions)
 
 
 def map_categories_to_integers(dataframes):
@@ -94,10 +100,12 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
     num_bad_epochs = 3
     max_val_acc = 0
     last_accuracy = 0
-    tc = bolt.TabularClassifier(hidden_layer_dim=1000, n_classes=ytrain.nunique())
+    tc = bolt.TabularClassifier(
+        hidden_layer_dim=1000, n_classes=ytrain.nunique(), column_datatypes=dtypes
+    )
     max_epochs = 20
     for _ in range(max_epochs):
-        tc.train(bolt_train_file, dtypes, epochs=1, learning_rate=0.01)
+        tc.train(bolt_train_file, epochs=1, learning_rate=0.01)
         _, predictions = tc.evaluate(bolt_valid_file)
         val_accuracy = compute_accuracy_of_predictions(
             [str(x) for x in yvalid[1:]], predictions
