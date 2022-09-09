@@ -163,6 +163,14 @@ class SequentialClassifier {
     return result;
   }
 
+  BoltVector predictSingle(
+      const std::unordered_map<std::string, std::string>& sample) {
+    BoltVector input_vector = getInputForSingleInference(sample);
+
+    return _model->predictSingle({input_vector},
+                                 /* use_sparse_inference= */ false);
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -178,6 +186,10 @@ class SequentialClassifier {
     std::unique_ptr<SequentialClassifier> deserialize_into(
         new SequentialClassifier());
     iarchive(*deserialize_into);
+    deserialize_into->_single_inference_batch_processor =
+        Pipeline::buildSingleInferenceBatchProcessor(
+            deserialize_into->_schema, deserialize_into->_state,
+            deserialize_into->_single_inference_col_nums);
     return deserialize_into;
   }
 
@@ -233,7 +245,7 @@ class SequentialClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_schema, _state, _model);
+    archive(_schema, _state, _model, _single_inference_col_nums);
   }
 };
 

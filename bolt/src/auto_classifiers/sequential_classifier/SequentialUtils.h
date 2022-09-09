@@ -141,6 +141,13 @@ class ColumnNumberMap {
 
  private:
   std::unordered_map<std::string, uint32_t> _name_to_num;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_name_to_num);
+  }
 };
 
 class Pipeline {
