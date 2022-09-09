@@ -52,6 +52,14 @@ def main():
         help="Specify a target to build (from available cmake targets). If no target is specified it defaults to 'package' which will simply build and install the library with pip.",
     )
     parser.add_argument(
+        "-e",
+        "--extras",
+        default="", 
+        choices=["", "test", "benchmark", "distributed", "all"],
+        metavar="MODE",  # Don't print the choices because they're ugly
+        help="A string corresponding to the additional python dependencies the build should ensure are installed. See setup.py for the specific packages each option entails.",
+    )
+    parser.add_argument(
         "-j",
         "--jobs",
         default="-1",  # we check for -1 below, and if so set # jobs equal to 2 * total # threads
@@ -94,7 +102,7 @@ def main():
         os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
         os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
 
-        checked_system_call("pip3 install . --verbose --force")
+        checked_system_call(f"pip3 install .[{args.extras}] --verbose --force")
     else:
         cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DFEATURE_FLAGS='{joined_feature_flags}'"
         build_command = f"cmake --build build --target {args.target} -j {args.jobs}"

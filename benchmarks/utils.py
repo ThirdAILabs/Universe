@@ -242,7 +242,7 @@ def is_ec2_instance():
     """Check if an instance is running on EC2 by trying to retrieve ec2 metadata."""
     result = False
     try:
-        result = urlopen(AWS_METADATA_URL).status == 200
-    except ConnectionError:
+        result = urlopen(AWS_METADATA_URL, timeout=3).status == 200
+    except Exception:
         return result
     return result
