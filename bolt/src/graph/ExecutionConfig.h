@@ -23,11 +23,6 @@ class TrainConfig {
     return *this;
   }
 
-  TrainConfig& withBatchSize(uint32_t batch_size) {
-    _batch_size = batch_size;
-    return *this;
-  }
-
   TrainConfig& silence() {
     _verbose = false;
     return *this;
@@ -99,7 +94,6 @@ class TrainConfig {
         _learning_rate(learning_rate),
         _metric_names({}),
         _verbose(true),
-        _batch_size({}),
         _rebuild_hash_tables(std::nullopt),
         _reconstruct_hash_functions(std::nullopt),
         _callbacks({}) {}
@@ -108,7 +102,6 @@ class TrainConfig {
   float _learning_rate;
   std::vector<std::string> _metric_names;
   bool _verbose;
-  std::optional<uint32_t> _batch_size;
 
   std::optional<uint32_t> _rebuild_hash_tables;
   std::optional<uint32_t> _reconstruct_hash_functions;
@@ -171,6 +164,29 @@ class PredictConfig {
   std::vector<std::string> _metric_names;
   bool _use_sparse_inference, _verbose, _return_activations;
   std::optional<std::function<void(const BoltVector&)>> _output_callback;
+};
+
+class TrainState {
+ public:
+  TrainState(const TrainConfig& train_config, uint32_t batch_size,
+             uint32_t data_len)
+      : learning_rate(train_config.learningRate()),
+        verbose(train_config.verbose()),
+        rebuild_hash_tables_batch(
+            train_config.getRebuildHashTablesBatchInterval(batch_size,
+                                                           data_len)),
+        reconstruct_hash_functions_batch(
+            train_config.getReconstructHashFunctionsBatchInterval(batch_size,
+                                                                  data_len)),
+        stop_training(false) {}
+
+  float learning_rate;
+  bool verbose;
+
+  uint32_t rebuild_hash_tables_batch;
+  uint32_t reconstruct_hash_functions_batch;
+
+  bool stop_training;
 };
 
 }  // namespace thirdai::bolt
