@@ -200,8 +200,8 @@ class SequentialClassifier {
     }
 
     BoltVector input_vector;
-    _single_inference_batch_processor->makeInputVector(columnar_sample,
-                                                       input_vector);
+    _single_inference_batch_processor->makeInputVectorForInference(
+        columnar_sample, input_vector);
 
     return input_vector;
   }
