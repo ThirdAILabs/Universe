@@ -148,8 +148,9 @@ MetricData BoltGraph::train(
 
       time_per_epoch.push_back(static_cast<double>(epoch_time));
       std::string logline = fmt::format(
-          "train | epoch {} | full |  batches {} | time {}s | {}", _epoch_count,
-          train_context.numBatches(), epoch_time, metrics.summary());
+          "train | epoch {} | complete |  batches {} | time {}s | {}",
+          _epoch_count, train_context.numBatches(), epoch_time,
+          metrics.summary());
 
       log::info(logline);
 
@@ -404,7 +405,7 @@ InferenceResult BoltGraph::predict(
                           .count();
 
   std::string logline =
-      fmt::format("test | full |  batches {} | time {}s | {}", _epoch_count,
+      fmt::format("test | complete |  batches {} | time {}s | {}", _epoch_count,
                   predict_context.numBatches(), test_time, metrics.summary());
   log::info(logline);
   if (bar) {
