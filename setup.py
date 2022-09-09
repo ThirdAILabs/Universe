@@ -165,6 +165,7 @@ setup(
             "moto",
             "datasets",
             "torch",
+            "toml",
             "transformers",
             "cryptography<=36.0.2",
             "tokenizers==0.11.6",
