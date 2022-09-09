@@ -79,24 +79,29 @@ inline void setupLogging(bool log_to_stderr = DEFAULT_LOG_TO_STDERR,
 
 // Macro to prevent repetition. The desire is to achieve a syntax:
 // thirdai::log::{trace,debug,info,warn,error,critical}
-#define _DEFINE_RELAY_FN(level)      \
-  template <class... Args>           \
-  void level(Args... args) {         \
-    auto logger = spdlog::get(NAME); \
-    if (!logger) {                   \
-      return;                        \
-    }                                \
-    logger->level(args...);          \
+//
+// With no modifications this would be spdlog::info or spdlog::warn. We make the
+// syntax at call sites thirdai::log::info or thirdai::log::warn. When within
+// the thirdai namespace, one may simply use log::info or log::warn, omitting
+// thirdai.
+#define _DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(level) \
+  template <class... Args>                              \
+  void level(Args... args) {                            \
+    auto logger = spdlog::get(NAME);                    \
+    if (!logger) {                                      \
+      return;                                           \
+    }                                                   \
+    logger->level(args...);                             \
   }
 
 // Function definitions via macros
-_DEFINE_RELAY_FN(trace)
-_DEFINE_RELAY_FN(debug)
-_DEFINE_RELAY_FN(info)
-_DEFINE_RELAY_FN(warn)
-_DEFINE_RELAY_FN(error)
-_DEFINE_RELAY_FN(critical)
+_DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(trace)
+_DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(debug)
+_DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(info)
+_DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(warn)
+_DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(error)
+_DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(critical)
 
-#undef _DEFINE_RELAY_FN
+#undef _DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION
 
 }  // namespace thirdai::log
