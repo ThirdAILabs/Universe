@@ -72,8 +72,11 @@ jobs:
           # Install test dependencies with overwritten environment variables.
           CIBW_TEST_EXTRAS: "test"
 
-          # Test with verbose output for failures, errors and xfails
-          CIBW_TEST_COMMAND: pytest -rfEx -v {package} --ignore-glob={package}/deps -m release
+          # Test with verbose output -v
+          # Report for failures, Errors and xfails (-rfEx)
+          # -s is capture.
+          # PYTHONUNBUFFERED=1 streams output as things happens.
+          CIBW_TEST_COMMAND: PYTHONUNBUFFERED=1 pytest -s -rfEx -v {package} --ignore-glob={package}/deps -m release
 
 
       - name: Upload wheels
