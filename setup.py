@@ -158,7 +158,7 @@ setup(
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
         # The tokenizers requirement ensures that all of the [test] depedencies are
-        # installable from a wheel on am m1
+        # installable from a wheel on an m1
         "test": [
             "pytest",
             "boto3",
