@@ -43,6 +43,12 @@ class TrainConfig {
     return *this;
   }
 
+  TrainConfig& withValidation(
+      std::vector<dataset::BoltDatasetPtr> validation_data,
+      dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config) {
+    return *this;
+  }
+
   CallbackList getCallbacks() const { return _callbacks; }
 
   constexpr uint32_t epochs() const { return _epochs; }
@@ -187,6 +193,10 @@ class TrainState {
   uint32_t reconstruct_hash_functions_batch;
 
   bool stop_training;
+
+  // TODO(david) should this be read only?
+  MetricData train_metric_data;
+  MetricData validation_metric_data;
 };
 
 }  // namespace thirdai::bolt
