@@ -14,6 +14,7 @@
 #include <pybind11/pybind11.h>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -77,6 +78,9 @@ class AutoClassifierBase {
         return constructNumpyActivationsArrays(metrics, output);
       case ReturnMode::ClassName:
         return py::make_tuple(py::cast(metrics), getClassNames(output));
+      default:
+        // This cannot be reached but the compiler complains.
+        throw std::invalid_argument("Invalid ReturnMode reached.");
     }
   }
 
@@ -93,6 +97,9 @@ class AutoClassifierBase {
         return constructNumpyVector(output);
       case ReturnMode::ClassName:
         return py::cast(getClassName(output.getHighestActivationId()));
+      default:
+        // This cannot be reached but the compiler complains.
+        throw std::invalid_argument("Invalid ReturnMode reached.");
     }
   }
 
@@ -122,7 +129,11 @@ class AutoClassifierBase {
    */
   virtual void processPredictionBeforeReturning(uint32_t* active_neurons,
                                                 float* activations,
-                                                uint32_t len) = 0;
+                                                uint32_t len) {
+    (void)active_neurons;
+    (void)activations;
+    (void)len;
+  }
 
   /**
    * This function consumes some inference input type and returns a bolt vector.
