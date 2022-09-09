@@ -6,6 +6,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
+#include <exception>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -128,6 +129,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return makeVector(sample, vector, _label_blocks, _label_blocks_dense);
   }
 
+  std::exception_ptr makeInputVectorForInference(
+      std::vector<std::string_view>& sample, BoltVector& vector) {
+    return makeVectorForInference(sample, vector, _input_blocks,
+                                  _input_blocks_dense);
+  }
+
   static std::shared_ptr<GenericBatchProcessor> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
@@ -146,26 +153,45 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
  private:
+  static std::shared_ptr<SegmentedFeatureVector> getSegmentedVector(
+      bool blocks_dense) {
+    // Dense vector if all blocks produce dense features, sparse vector
+    // otherwise.
+    if (blocks_dense) {
+      return std::make_shared<SegmentedDenseFeatureVector>();
+    }
+    return std::make_shared<SegmentedSparseFeatureVector>();
+  }
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */
   static std::exception_ptr makeVector(
       std::vector<std::string_view>& sample, BoltVector& vector,
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
-    std::shared_ptr<SegmentedFeatureVector> vec_ptr;
-
-    // Dense vector if all blocks produce dense features, sparse vector
-    // otherwise.
-    if (blocks_dense) {
-      vec_ptr = std::make_shared<SegmentedDenseFeatureVector>();
-    } else {
-      vec_ptr = std::make_shared<SegmentedSparseFeatureVector>();
-    }
+    std::shared_ptr<SegmentedFeatureVector> vec_ptr =
+        getSegmentedVector(blocks_dense);
 
     // Let each block encode the input sample and adds a new segment
     // containing this encoding to the vector.
     for (auto& block : blocks) {
       if (auto err = block->addVectorSegment(sample, *vec_ptr)) {
+        return err;
+      }
+    }
+    vector = vec_ptr->toBoltVector();
+    return nullptr;
+  }
+
+  static std::exception_ptr makeVectorForInference(
+      std::vector<std::string_view>& sample, BoltVector& vector,
+      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
+    std::shared_ptr<SegmentedFeatureVector> vec_ptr =
+        getSegmentedVector(blocks_dense);
+
+    // Let each block encode the input sample and adds a new segment
+    // containing this encoding to the vector.
+    for (auto& block : blocks) {
+      if (auto err = block->addVectorSegment(sample, *vec_ptr, true)) {
         return err;
       }
     }
