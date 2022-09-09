@@ -77,4 +77,4 @@ def test_text_classifier_clinc_dataset():
         single_prediction = new_classifier.predict(sample.split(",")[1])
         assert single_prediction == original_prediction
 
-    # remove_files([TRAIN_FILE, TEST_FILE, SAVE_FILE])
+    remove_files([TRAIN_FILE, TEST_FILE, SAVE_FILE])
