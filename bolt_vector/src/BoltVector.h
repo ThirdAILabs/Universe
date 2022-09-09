@@ -243,16 +243,6 @@ struct BoltVector {
     std::fill_n(gradients, len, 0.0);
   }
 
-  friend std::ostream& operator<<(std::ostream& out, const BoltVector& state) {
-    bool dense = state.active_neurons == nullptr;
-    for (uint32_t i = 0; i < state.len; i++) {
-      printf("\t%u: \t%0.3f, \t%0.3f\n", dense ? i : state.active_neurons[i],
-             state.activations[i],
-             state.gradients != nullptr ? state.gradients[i] : 0.0);
-    }
-    return out;
-  }
-
   /**
    * Finds the position and activation (value) of an active neuron.
    * Whether or not the vector is dense is templated because this is
@@ -313,7 +303,7 @@ struct BoltVector {
     return thresholded;
   }
 
-  inline TopKActivationsQueue findKLargestActivationsK(uint32_t k) const {
+  inline TopKActivationsQueue findKLargestActivations(uint32_t k) const {
     TopKActivationsQueue top_k;
     for (uint32_t pos = 0; pos < std::min(k, len); pos++) {
       uint32_t idx = isDense() ? pos : active_neurons[pos];
@@ -332,28 +322,32 @@ struct BoltVector {
 
   constexpr bool hasGradients() const { return gradients != nullptr; }
 
-  std::string toString() const {
-    std::stringstream ss;
-    ss << "[";
-
-    if (isDense()) {
-      for (size_t i = 0; i < len; i++) {
-        ss << activations[i];
-        if (i < len - 1) {
-          ss << ", ";
+  friend std::ostream& operator<<(std::ostream& out, const BoltVector& vec) {
+    out << "[";
+    if (vec.isDense()) {
+      for (size_t i = 0; i < vec.len; i++) {
+        out << vec.activations[i];
+        if (i < vec.len - 1) {
+          out << ", ";
         }
       }
     } else {
-      for (size_t i = 0; i < len; i++) {
-        ss << "(" << active_neurons[i] << ", " << activations[i] << ")";
-        if (i < len - 1) {
-          ss << ", ";
+      for (size_t i = 0; i < vec.len; i++) {
+        out << "(" << vec.active_neurons[i] << ", " << vec.activations[i]
+            << ")";
+        if (i < vec.len - 1) {
+          out << ", ";
         }
       }
     }
+    out << "]";
 
-    ss << "]";
+    return out;
+  }
 
+  std::string toString() const {
+    std::stringstream ss;
+    ss << *this;
     return ss.str();
   }
 

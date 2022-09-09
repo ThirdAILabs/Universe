@@ -25,6 +25,7 @@ class FullyConnectedNetwork(DistributedBolt):
         config_filename,
         num_cpus_per_node: Optional[int] = -1,
         communication_type: Optional[str] = "circular",
+        cluster_address: Optional[str] = "auto",
     ):
         """This function initializes this class, which provides wrapper over DistributedBolt and
         implements the user facing FullyConnectedNetwork API.
@@ -64,7 +65,7 @@ class FullyConnectedNetwork(DistributedBolt):
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
         runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
 
-        ray.init(address="auto", runtime_env=runtime_env)
+        ray.init(address=cluster_address, runtime_env=runtime_env)
         if not ray.is_initialized():
             raise Exception(
                 textwrap.dedent(

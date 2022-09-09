@@ -18,20 +18,7 @@ class MetricAggregator {
   // that it is not avilable.
   explicit MetricAggregator(const std::vector<std::string>& metrics) {
     for (const auto& name : metrics) {
-      if (name == CategoricalAccuracy::NAME) {
-        _metrics.push_back(std::make_shared<CategoricalAccuracy>());
-      } else if (name == WeightedMeanAbsolutePercentageError::NAME) {
-        _metrics.push_back(
-            std::make_shared<WeightedMeanAbsolutePercentageError>());
-      } else if (name == MeanSquaredErrorMetric::NAME) {
-        _metrics.push_back(std::make_shared<MeanSquaredErrorMetric>());
-      } else if (FMeasure::isFMeasure(name)) {
-        _metrics.push_back(FMeasure::make(name));
-      } else if (RecallAtK::isRecallAtK(name)) {
-        _metrics.push_back(RecallAtK::make(name));
-      } else {
-        throw std::invalid_argument("'" + name + "' is not a valid metric.");
-      }
+      _metrics.push_back(makeMetric(name));
     }
   }
 
