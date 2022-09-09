@@ -12,6 +12,7 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <utils/Logging.h>
 #include <algorithm>
 #include <chrono>
 #include <csignal>
@@ -19,12 +20,23 @@
 #include <optional>
 #include <ostream>
 #include <queue>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <unordered_set>
 
 namespace thirdai::bolt {
+
+namespace {
+template <class... Args>
+std::optional<ProgressBar> makeOptionalProgressBar(bool make, Args... args) {
+  if (!make) {
+    return std::nullopt;
+  }
+  return std::make_optional<ProgressBar>(args...);
+}
+}  // namespace
 
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
                         bool print_when_done) {
@@ -52,9 +64,9 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
         node_layers.end());
   }
 
-  if (print_when_done) {
-    summarize(/* print = */ true, /* detailed = */ false);
-  }
+  std::string model_summary =
+      summarize(/* print = */ print_when_done, /* detailed = */ false);
+  log::info(model_summary);
 }
 
 MetricData BoltGraph::train(
@@ -96,7 +108,12 @@ MetricData BoltGraph::train(
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
-      ProgressBar bar(dataset_context.numBatches(), train_config.verbose());
+
+      std::optional<ProgressBar> bar = makeOptionalProgressBar(
+          /*make=*/train_config.verbose(),
+          /*description=*/fmt::format("train epoch {}", _epoch_count),
+          /*max_steps=*/train_context.numBatches());
+
       auto train_start = std::chrono::high_resolution_clock::now();
 
       for (uint64_t batch_idx = 0; batch_idx < dataset_context.numBatches();
@@ -111,7 +128,12 @@ MetricData BoltGraph::train(
                                     rebuild_hash_tables_batch,
                                     reconstruct_hash_functions_batch);
 
-        bar.increment();
+        if (bar) {
+          bar->increment();
+        }
+
+        log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
+                  metrics.summary());
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -122,12 +144,18 @@ MetricData BoltGraph::train(
                                .count();
 
       time_per_epoch.push_back(static_cast<double>(epoch_time));
-      if (train_config.verbose()) {
-        std::cout << std::endl
-                  << "Processed " << dataset_context.numBatches()
-                  << " training batches in " << epoch_time << " seconds"
-                  << std::endl;
+
+      std::string logline = fmt::format(
+          "train | epoch {} | complete |  batches {} | time {}s | {}",
+          _epoch_count, train_context.numBatches(), epoch_time,
+          metrics.summary());
+
+      log::info(logline);
+
+      if (bar) {
+        bar->close(logline);
       }
+
       _epoch_count++;
       metrics.logAndReset();
     } catch (const std::exception& e) {
@@ -141,7 +169,6 @@ MetricData BoltGraph::train(
     if (callbacks.shouldStopTraining()) {
       break;
     }
-    perEpochCallback();
   }
 
   callbacks.onTrainEnd(*this, train_state);
@@ -175,8 +202,6 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
     metrics.processSample(_output->getOutputVector(vec_id),
                           batch_labels[vec_id]);
   }
-
-  perBatchCallback();
 }
 
 void BoltGraph::updateParametersAndSampling(
@@ -336,7 +361,10 @@ InferenceResult BoltGraph::predict(
       _output, predict_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
 
-  ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
+  std::optional<ProgressBar> bar = makeOptionalProgressBar(
+      /*make=*/predict_config.verbose(),
+      /*description=*/"test",
+      /*max_steps=*/predict_context.numBatches());
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
@@ -354,7 +382,9 @@ InferenceResult BoltGraph::predict(
 
       processInferenceBatch(batch_size, batch_labels, metrics);
 
-      bar.increment();
+      if (bar) {
+        bar->increment();
+      }
 
       processOutputCallback(predict_config.outputCallback(), batch_size);
 
@@ -372,11 +402,12 @@ InferenceResult BoltGraph::predict(
                           test_end - test_start)
                           .count();
 
-  if (predict_config.verbose()) {
-    std::cout << std::endl
-              << "Processed " << predict_context.numBatches()
-              << " test batches in " << test_time << " milliseconds"
-              << std::endl;
+  std::string logline =
+      fmt::format("test | complete |  batches {} | time {}s | {}", _epoch_count,
+                  predict_context.numBatches(), test_time, metrics.summary());
+  log::info(logline);
+  if (bar) {
+    bar->close(logline);
   }
 
   metrics.logAndReset();
@@ -716,7 +747,7 @@ std::string BoltGraph::summarize(bool print, bool detailed) const {
   }
   summary << "============================================================\n";
   if (print) {
-    std::cout << summary.str() << std::flush;
+    std::cout << summary.str() << std::endl;
   }
   return summary.str();
 }

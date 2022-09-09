@@ -49,13 +49,11 @@ class EarlyStopCheckpoint : public Callback {
           "metric, passed in " +
           std::to_string(num_metrics) + " metrics.");
     }
-
     initValidationTrackers();
   }
 
   void onTrainBegin(BoltGraph& model) final {
     (void)model;
-
     initValidationTrackers();
   }
 
