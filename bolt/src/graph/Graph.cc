@@ -77,8 +77,8 @@ MetricData BoltGraph::train(
 
   verifyCanTrain(dataset_context);
 
-  TrainState train_state(train_config, dataset_context.len(),
-                         dataset_context.batchSize());
+  TrainState train_state(train_config, dataset_context.batchSize(),
+                         dataset_context.len());
 
   std::vector<double> time_per_epoch;
 
@@ -124,9 +124,9 @@ MetricData BoltGraph::train(
 
         const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
         processTrainingBatch(batch_labels, metrics);
-        updateParametersAndSampling(train_config.learningRate(),
-                                    rebuild_hash_tables_batch,
-                                    reconstruct_hash_functions_batch);
+        updateParametersAndSampling(
+            train_state.learning_rate, train_state.rebuild_hash_tables_batch,
+            train_state.reconstruct_hash_functions_batch);
 
         if (bar) {
           bar->increment();
@@ -166,7 +166,7 @@ MetricData BoltGraph::train(
     cleanupAfterBatchProcessing();
 
     callbacks.onEpochEnd(*this, train_state);
-    if (callbacks.shouldStopTraining()) {
+    if (train_state.stop_training) {
       break;
     }
   }

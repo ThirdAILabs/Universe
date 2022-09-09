@@ -111,10 +111,9 @@ class CallbackList {
       callback->onBatchEnd(model, train_state);
     }
   }
-}
 
-private : std::vector<CallbackPtr>
-              _callbacks;
+ private:
+  std::vector<CallbackPtr> _callbacks;
 };
 
 }  // namespace thirdai::bolt

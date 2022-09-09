@@ -23,11 +23,6 @@ class TrainConfig {
     return *this;
   }
 
-  TrainConfig& withBatchSize(uint32_t batch_size) {
-    _batch_size = batch_size;
-    return *this;
-  }
-
   TrainConfig& silence() {
     _verbose = false;
     return *this;
@@ -60,7 +55,7 @@ class TrainConfig {
 
   constexpr bool verbose() const { return _verbose; }
 
-  std::optional<uint32_t> getRebuildHashTablesBatchInterval() const {
+  std::optional<uint32_t> getRebuildHashTables() const {
     return _rebuild_hash_tables;
   }
 
@@ -83,7 +78,6 @@ class TrainConfig {
   float _learning_rate;
   std::vector<std::string> _metric_names;
   bool _verbose;
-  std::optional<uint32_t> _batch_size;
 
   std::optional<uint32_t> _rebuild_hash_tables;
   std::optional<uint32_t> _reconstruct_hash_functions;
@@ -150,37 +144,37 @@ class PredictConfig {
 
 class TrainState {
  public:
-  TrainState(const TrainConfig& train_config, uint32_t data_len,
-             uint32_t batch_size)
+  TrainState(const TrainConfig& train_config, uint32_t batch_size,
+             uint32_t data_len)
       : learning_rate(train_config.learningRate()),
         verbose(train_config.verbose()),
-        stop_training(false) {
-    rebuild_hash_tables = train_config.getRebuildHashTables();
-    reconstruct_hash_functions = train_config.getReconstructHashFunction();
-  }
+        rebuild_hash_tables_batch(tableRebuildToBatchInterval(
+            train_config.getRebuildHashTables(), batch_size, data_len)),
+        reconstruct_hash_functions_batch(hashReconstructToBatchInterval(
+            train_config.getReconstructHashFunctions(), batch_size, data_len)),
+        stop_training(false) {}
 
   float learning_rate;
-  // std::vector<std::string> _metric_names;
   bool verbose;
-  // std::optional<uint32_t> _batch_size;
 
-  uint32_t rebuild_hash_tables;
-  uint32_t reconstruct_hash_functions;
-
-  // CallbackList _callbacks;
+  uint32_t rebuild_hash_tables_batch;
+  uint32_t reconstruct_hash_functions_batch;
 
   bool stop_training;
 
  private:
-  uint32_t getRebuildHashTablesBatchInterval(uint32_t batch_size,
-                                             uint32_t data_len) const {
+  // TODO(any): should we change the way we manipulate/pass in rehash/rebuild
+  // parameters?
+  static uint32_t tableRebuildToBatchInterval(
+      std::optional<uint32_t> rebuild_hash_tables, uint32_t batch_size,
+      uint32_t data_len) {
     constexpr uint32_t LargeDatasetThreshold = 100000;
     constexpr uint32_t LargeDatasetFactor = 100;
     constexpr uint32_t SmallDatasetFactor = 20;
 
     uint32_t rebuild_param;
 
-    if (!_rebuild_hash_tables) {
+    if (!rebuild_hash_tables) {
       // For larger datasts we want to do more frequent hash table updates.
       if (data_len < LargeDatasetThreshold) {
         rebuild_param = data_len / SmallDatasetFactor;
@@ -188,19 +182,20 @@ class TrainState {
         rebuild_param = data_len / LargeDatasetFactor;
       }
     } else {
-      rebuild_param = _rebuild_hash_tables.value();
+      rebuild_param = rebuild_hash_tables.value();
     }
 
     return std::max<uint32_t>(rebuild_param / batch_size, 1);
   }
 
-  uint32_t getReconstructHashFunctionsBatchInterval(uint32_t batch_size,
-                                                    uint32_t data_len) const {
+  static uint32_t hashReconstructToBatchInterval(
+      std::optional<uint32_t> reconstruct_hash_functions, uint32_t batch_size,
+      uint32_t data_len) {
     // If reconstruct_hash_functions is not provided then we will have it
     // reconstruct the hash functions every time it process a quarter of the
     // dataset.
     uint32_t reconstruct_param =
-        _reconstruct_hash_functions.value_or(data_len / 4);
+        reconstruct_hash_functions.value_or(data_len / 4);
 
     return std::max<uint32_t>(reconstruct_param / batch_size, 1);
   }
