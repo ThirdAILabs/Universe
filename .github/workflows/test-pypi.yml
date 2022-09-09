@@ -73,7 +73,7 @@ jobs:
           CIBW_TEST_EXTRAS: "test"
 
           # Test with verbose output for failures, errors and xfails
-          CIBW_TEST_COMMAND: pytest -rfEx {package} --ignore-glob={package}/deps -m release
+          CIBW_TEST_COMMAND: pytest -rfEx -v {package} --ignore-glob={package}/deps -m release
 
 
       - name: Upload wheels
