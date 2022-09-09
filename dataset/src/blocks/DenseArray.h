@@ -3,6 +3,8 @@
 #include "BlockInterface.h"
 #include <cmath>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -29,10 +31,20 @@ class DenseArrayBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _start_col + _dim; };
 
+  std::pair<std::string, std::string> explainIndex(
+      uint32_t index,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
+      const final {
+    (void)index;
+    (void)num_to_name;
+    throw std::invalid_argument("not yet implemented in dense array block!");
+  }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+      SegmentedFeatureVector& vec, bool store_map) final {
+    (void)store_map;
     for (uint32_t i = _start_col; i < _start_col + _dim; i++) {
       char* end;
       float value = std::strtof(input_row.at(i).data(), &end);

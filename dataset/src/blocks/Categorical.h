@@ -28,11 +28,23 @@ class CategoricalBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
+  std::pair<std::string, std::string> explainIndex(
+      uint32_t index,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
+      const final {
+    return std::make_pair(num_to_name->at(_col),
+                          std::string(_categories[index]));
+  }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+      SegmentedFeatureVector& vec, bool store_map) final {
+    _categories.clear();
     if (!_delimiter) {
+      if (store_map) {
+        _categories.push_back(input_row.at(_col));
+      }
       return encodeCategory(input_row.at(_col), vec);
     }
 
@@ -40,6 +52,9 @@ class CategoricalBlock : public Block {
     auto categories =
         ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
     for (auto category : categories) {
+      if (store_map) {
+        _categories.push_back(category);
+      }
       auto exception = encodeCategory(category, vec);
       if (exception) {
         return exception;
@@ -57,6 +72,7 @@ class CategoricalBlock : public Block {
  private:
   uint32_t _col;
   std::optional<char> _delimiter;
+  std::vector<std::string_view> _categories;
 };
 
 using CategoricalBlockPtr = std::shared_ptr<CategoricalBlock>;

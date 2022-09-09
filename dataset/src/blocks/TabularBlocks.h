@@ -22,6 +22,15 @@ class TabularPairGram : public Block {
 
   uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
 
+  std::pair<std::string, std::string> explainIndex(
+      uint32_t index,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
+      const final {
+    (void)index;
+    (void)num_to_name;
+    throw std::invalid_argument("not yet implemented in tabular block!");
+  }
+
  protected:
   // TODO(david) We should always include all unigrams but if the number of
   // columns is too large, this processing time becomes slow. One idea is to
@@ -29,7 +38,8 @@ class TabularPairGram : public Block {
   // pairs of columns to pairgram together.
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+      SegmentedFeatureVector& vec, bool store_map) final {
+    (void)store_map;
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       std::string str_val(input_row[col]);

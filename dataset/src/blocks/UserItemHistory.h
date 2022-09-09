@@ -153,16 +153,28 @@ class UserItemHistoryBlock final : public Block {
         n_unique_items, item_col_delimiter);
   }
 
+  std::pair<std::string, std::string> explainIndex(
+      uint32_t index,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
+      const final {
+    ItemRecord item = _per_user_history->at(_user_id)[index];
+
+    return std::make_pair(num_to_name->at(_item_col),
+                          _item_id_lookup->getString(item.item));
+  }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+      SegmentedFeatureVector& vec, bool store_map) final {
+    (void)store_map;
     try {
       auto user_str = std::string(input_row.at(_user_col));
       auto item_str = std::string(input_row.at(_item_col));
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
       uint32_t user_id = _user_id_lookup->getUid(user_str);
+      _user_id = user_id;
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_ids = getItemIds(item_str);
@@ -229,6 +241,7 @@ class UserItemHistoryBlock final : public Block {
   std::shared_ptr<ItemHistoryCollection> _per_user_history;
 
   std::optional<char> _item_col_delimiter;
+  uint32_t _user_id;
 };
 
 }  // namespace thirdai::dataset

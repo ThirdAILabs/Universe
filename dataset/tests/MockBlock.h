@@ -21,10 +21,20 @@ class MockBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _column + 1; };
 
+  std::pair<std::string, std::string> explainIndex(
+      uint32_t index,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
+      const final {
+    (void)index;
+    (void)num_to_name;
+    throw std::invalid_argument("not yet implemented in mock block!");
+  }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) override {
+      SegmentedFeatureVector& vec, bool store_map) override {
+    (void)store_map;
     auto val_str = input_row.at(_column);
     char* end;
     float val = std::strtof(val_str.data(), &end);
