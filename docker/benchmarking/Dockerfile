@@ -33,10 +33,14 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     # Install sudo
     && apt-get update && apt-get -y install sudo
 
-# This needs to be run from the root directory
+# This means the Dockerfile needs to be built from the root directory
+# This will also copy everything, including files not tracked by git (build
+# files, venv, etc). 
+# TODO(josh): Copy just what we need, and remove the rm command below
 COPY . /Universe/
 
-RUN /Universe/bin/build.py --extras benchmarking 
+RUN rm -rf /Universe/build
+RUN /Universe/bin/build.py --extras benchmark
 
 # The exit 0 means these commands will still continue even if the install fails. 
 # This is because these downloads might not work on arm64, but we still want
