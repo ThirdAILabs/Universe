@@ -35,8 +35,8 @@ void assertSuccessfulLoadSave(SequentialClassifier& model) {
   auto loaded_model_results =
       loaded_model->predict(TEST_FILE_NAME, /* metrics= */ {"recall@1"});
 
-  ASSERT_EQ(original_model_results["recall@1"],
-            loaded_model_results["recall@1"]);
+  ASSERT_EQ(original_model_results.first["recall@1"],
+            loaded_model_results.first["recall@1"]);
 
   std::remove(TRAIN_FILE_NAME);
   std::remove(TEST_FILE_NAME);
@@ -67,25 +67,25 @@ SequentialClassifier makeSequentialClassifierForMockData() {
  * 2) We pass in a multi_class_delimiter argument.
  */
 TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
+  /*
+    The train set is curated so that the classifier
+    successfully runs only if it correctly parses multi-class
+    categorical columns. Notice that in the last two samples,
+    the target and static_categorical columns contain classes that
+    have been seen in the previous samples, delimited by spaces.
+    If the classifier fails to parse multi-class categorical columns,
+    these columns would be treated as new unique classes, which then
+    throws an error since it would have exceeded the expected number of
+    unique classes.
+  */
   writeRowsToFile(TRAIN_FILE_NAME,
                   {"user,target,timestamp,static_text,static_categorical",
                    "0,0,2022-08-29,hello,0", "0,1,2022-08-30,hello,1",
-                   "0,0,2022-08-31,hello,2", "0,1,2022-09-01,hello,3"});
+                   "0,0,2022-08-31,hello,2", "0,1,2022-09-01,hello,3",
+                   "0,0 1,2022-09-02,hello,0 1", "0,1 0,2022-09-03,hello,1 2"});
 
-  /*
-    The test set is curated so that the classifier
-    successfully runs only if it correctly parses multi-class
-    categorical columns. Notice that the target and
-    static_categorical columns contain classes that have been
-    seen in the train set, delimited by spaces. If the classifier
-    fails to parse multi-class categorical columns, these columns
-    would be treated as new unique classes, which then throws an
-    error since it would have exceeded the expected number of
-    unique classes.
-  */
   writeRowsToFile(TEST_FILE_NAME,
                   {"user,target,timestamp,static_text,static_categorical",
-                   "0,0 1,2022-09-02,hello,0 1", "0,1 0,2022-09-03,hello,1 2",
                    "0,0 1,2022-09-04,hello,2 3", "0,1 0,2022-09-05,hello,3 0"});
 
   SequentialClassifier model(

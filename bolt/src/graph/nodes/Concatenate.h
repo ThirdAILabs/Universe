@@ -20,8 +20,13 @@ namespace thirdai::bolt {
 class ConcatenateNode final
     : public Node,
       public std::enable_shared_from_this<ConcatenateNode> {
- public:
+ private:
   ConcatenateNode() : _compiled(false){};
+
+ public:
+  static std::shared_ptr<ConcatenateNode> make() {
+    return std::shared_ptr<ConcatenateNode>(new ConcatenateNode());
+  }
 
   std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
       const std::vector<NodePtr>& nodes) {

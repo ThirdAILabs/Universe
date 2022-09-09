@@ -72,8 +72,7 @@ void testConcatForwardAndBackwardPass(
   bool sparse_node_in_concatenation = containsSparseVector(inputs);
 
   // Use a shared pointer so shared_from_this() works
-  std::shared_ptr<ConcatenateNode> concat_node =
-      std::make_shared<ConcatenateNode>();
+  auto concat_node = ConcatenateNode::make();
   concat_node->setConcatenatedNodes(nodes_to_concatenate);
   LayerNameManager name_manager;
   concat_node->compile(name_manager);

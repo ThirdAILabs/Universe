@@ -181,4 +181,59 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
   ASSERT_EQ(words_to_ids.size(), masked_word_ids.size());
 }
 
+TEST(MaskedSentenceBatchProcessor, TestCreateBatchMultipleMaskedTokens) {
+  std::vector<std::string> rows{
+      "the dog ran up the hill and came back down right away",
+      "the cat slept on the window for a very long time",
+      "the monkey and the rhino were playing outside when the monkey got "
+      "injured",
+      "we all love natural language processing and computer vision"};
+
+  std::vector<std::vector<std::string>> split_sentences{
+      {"the", "dog", "ran", "up", "the", "hill", "and", "came", "back", "down",
+       "right", "away"},
+      {"the", "cat", "slept", "on", "the", "window", "for", "a", "very", "long",
+       "time"},
+      {"the", "monkey", "and", "the", "rhino", "were", "playing", "outside",
+       "when", "the", "monkey", "got", "injured"},
+      {"we", "all", "love", "natural", "language", "processing", "and",
+       "computer", "vision"}};
+
+  dataset::MaskedSentenceBatchProcessor processor(
+      RANGE, /* masked_tokens_percentage= */ 0.3);
+
+  auto [data, masked_indices, labels] = processor.createBatch(rows);
+
+  uint32_t unknown_hash =
+      TextEncodingUtils::computeUnigram(/* key= */ "[UNK]", /* len= */ 5);
+
+  const std::unordered_map<uint32_t, uint32_t>& words_to_ids =
+      processor.getWordToIDMap();
+
+  EXPECT_EQ(data.getBatchSize(), 4);
+  EXPECT_EQ(masked_indices.getBatchSize(), 4);
+  EXPECT_EQ(labels.getBatchSize(), 4);
+
+  for (uint32_t index = 0; index < 4; index++) {
+    BoltVector label_vector = labels[index];
+    auto unigrams = unigram_hashes_from_words(split_sentences[index]);
+
+    ASSERT_EQ(masked_indices[index].len,
+              static_cast<uint32_t>(unigrams.size() * 0.3));
+
+    for (uint32_t i = 0; i < label_vector.len; i++) {
+      uint32_t masked_index = masked_indices[index].active_neurons[i];
+      uint32_t masked_word_hash = unigrams[masked_index];
+
+      unigrams[masked_index] = unknown_hash;
+
+      ASSERT_EQ(label_vector.active_neurons[i],
+                words_to_ids.at(masked_word_hash));
+    }
+    auto pairgrams = pairgram_hashes_as_map(unigrams, RANGE);
+
+    checkPairgramVector(data[index], pairgrams);
+  }
+}
+
 }  // namespace thirdai::dataset::tests

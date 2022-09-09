@@ -2,7 +2,6 @@
 
 import pathlib
 import sys
-from thirdai import bolt, dataset
 
 
 sys.path.append(str(pathlib.Path(__file__).parent.resolve()) + "/..")
@@ -17,11 +16,19 @@ from utils import (
     is_ec2_instance,
 )
 
+from thirdai import bolt, dataset
+from thirdai import setup_logging
+import numpy as np
+
 
 def main():
 
     config, args = start_experiment(
         description="Creates, trains, and tests a bolt network on the specified config."
+    )
+
+    setup_logging(
+        log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level
     )
 
     model = load_and_compile_model(config)
@@ -194,16 +201,16 @@ def get_sampling_config(layer_config):
 
 def construct_input_node(input_config):
     dim = config_get(input_config, "dim")
-    num_nonzeros_range = None
     if (
-        "min_num_nonzeros" in input_config.keys()
-        and "max_num_nonzeros" in input_config.keys()
+        "min_num_tokens" in input_config.keys()
+        and "max_num_tokens" in input_config.keys()
     ):
-        num_nonzeros_range = (
-            config_get(input_config, "min_num_nonzeros"),
-            config_get(input_config, "max_num_nonzeros"),
+        num_tokens_range = (
+            config_get(input_config, "min_num_tokens"),
+            config_get(input_config, "max_num_tokens"),
         )
-    return bolt.graph.Input(dim=dim, num_nonzeros_range=num_nonzeros_range)
+        return bolt.graph.TokenInput(dim=dim, num_tokens_range=num_tokens_range)
+    return bolt.graph.Input(dim=dim)
 
 
 def construct_fully_connected_node(fc_config):
@@ -234,11 +241,15 @@ def construct_embedding_node(embedding_config):
     num_embedding_lookups = config_get(embedding_config, "num_embedding_lookups")
     lookup_size = config_get(embedding_config, "lookup_size")
     log_embedding_block_size = config_get(embedding_config, "log_embedding_block_size")
+    reduction = config_get(embedding_config, "reduction")
+    num_tokens_per_input = embedding_config.get("num_tokens_per_input", None)
 
     return bolt.graph.Embedding(
         num_embedding_lookups=num_embedding_lookups,
         lookup_size=lookup_size,
         log_embedding_block_size=log_embedding_block_size,
+        reduction=reduction,
+        num_tokens_per_input=num_tokens_per_input,
     )
 
 

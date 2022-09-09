@@ -70,12 +70,14 @@ class SequentialClassifier {
     if (!_model) {
       _model = CommonNetworks::FullyConnected(
           pipeline.getInputDim(),
-          {FullyConnectedNode::make(/* dim= */ 512, /* activation= */ "relu"),
-           FullyConnectedNode::make(pipeline.getLabelDim(), output_sparsity,
-                                    /* activation= */ "softmax",
-                                    /* num_tables= */ 64,
-                                    /* hashes_per_table= */ 4,
-                                    /* reservoir_size= */ 64)});
+          {FullyConnectedNode::makeDense(/* dim= */ 512,
+                                         /* activation= */ "relu"),
+           FullyConnectedNode::makeExplicitSamplingConfig(
+               pipeline.getLabelDim(), output_sparsity,
+               /* activation= */ "softmax",
+               /* num_tables= */ 64,
+               /* hashes_per_table= */ 4,
+               /* reservoir_size= */ 64)});
       _model->compile(
           CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
     }
