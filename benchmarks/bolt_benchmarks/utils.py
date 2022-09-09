@@ -172,6 +172,6 @@ def is_ec2_instance():
     result = False
     try:
         result = urlopen(AWS_METADATA_URL).status == 200
-    except ConnectionError:
+    except Exception:
         return result
     return result
