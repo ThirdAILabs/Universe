@@ -53,8 +53,14 @@ jobs:
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
           CIBW_ENVIRONMENT_WINDOWS: >
               CMAKE_ARGS="-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30"
-          CIBW_ENVIRONMENT_MACOS:
+              PYTHONUNBUFFERED="1"
+
+          CIBW_ENVIRONMENT_MACOS: >
               MACOSX_DEPLOYMENT_TARGET=10.15
+              PYTHONUNBUFFERED="1"
+
+          CIBW_ENVIRONMENT_LINUX: >
+              PYTHONUNBUFFERED="1"
 
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
@@ -75,8 +81,7 @@ jobs:
           # Test with verbose output -v
           # Report for failures, Errors and xfails (-rfEx)
           # -s is capture.
-          # PYTHONUNBUFFERED=1 streams output as things happens.
-          CIBW_TEST_COMMAND: PYTHONUNBUFFERED=1 pytest -s -rfEx -v {package} --ignore-glob={package}/deps -m release
+          CIBW_TEST_COMMAND: pytest -s -rfEx -v {package} --ignore-glob={package}/deps -m release
 
 
       - name: Upload wheels
