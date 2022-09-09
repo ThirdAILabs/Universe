@@ -61,27 +61,22 @@ MetricData BoltGraph::train(
     const std::vector<dataset::BoltDatasetPtr>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config) {
-  DatasetContext train_context(train_data, train_labels);
+  DatasetContext dataset_context(train_data, train_labels);
 
-  verifyCanTrain(train_context);
+  verifyCanTrain(dataset_context);
 
-  uint32_t rebuild_hash_tables_batch =
-      train_config.getRebuildHashTablesBatchInterval(train_context.batchSize(),
-                                                     train_context.len());
-
-  uint32_t reconstruct_hash_functions_batch =
-      train_config.getReconstructHashFunctionsBatchInterval(
-          train_context.batchSize(), train_context.len());
+  TrainState train_state(train_config, dataset_context.len(),
+                         dataset_context.batchSize());
 
   std::vector<double> time_per_epoch;
 
   MetricAggregator metrics = train_config.getMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
-  callbacks.onTrainBegin(*this);
+  callbacks.onTrainBegin(*this, train_state);
 
   for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
-    callbacks.onEpochBegin(*this);
+    callbacks.onEpochBegin(*this, train_state);
 
     /*
       Because of how the datasets are read we know that all batches will not
@@ -91,7 +86,7 @@ MetricData BoltGraph::train(
 
       This is done per epoch so callbacks can call predict during training.
     */
-    prepareToProcessBatches(train_context.batchSize(),
+    prepareToProcessBatches(dataset_context.batchSize(),
                             /* use_sparsity=*/true);
 
     // TODO(josh/Nick): This try catch is kind of a hack, we should really use
@@ -101,16 +96,16 @@ MetricData BoltGraph::train(
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
-      ProgressBar bar(train_context.numBatches(), train_config.verbose());
+      ProgressBar bar(dataset_context.numBatches(), train_config.verbose());
       auto train_start = std::chrono::high_resolution_clock::now();
 
-      for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
+      for (uint64_t batch_idx = 0; batch_idx < dataset_context.numBatches();
            batch_idx++) {
-        callbacks.onBatchBegin(*this);
+        callbacks.onBatchBegin(*this, train_state);
 
-        train_context.setInputs(batch_idx, _inputs);
+        dataset_context.setInputs(batch_idx, _inputs);
 
-        const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
+        const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
         processTrainingBatch(batch_labels, metrics);
         updateParametersAndSampling(train_config.learningRate(),
                                     rebuild_hash_tables_batch,
@@ -118,7 +113,7 @@ MetricData BoltGraph::train(
 
         bar.increment();
 
-        callbacks.onBatchEnd(*this);
+        callbacks.onBatchEnd(*this, train_state);
       }
 
       auto train_end = std::chrono::high_resolution_clock::now();
@@ -129,7 +124,7 @@ MetricData BoltGraph::train(
       time_per_epoch.push_back(static_cast<double>(epoch_time));
       if (train_config.verbose()) {
         std::cout << std::endl
-                  << "Processed " << train_context.numBatches()
+                  << "Processed " << dataset_context.numBatches()
                   << " training batches in " << epoch_time << " seconds"
                   << std::endl;
       }
@@ -142,14 +137,14 @@ MetricData BoltGraph::train(
 
     cleanupAfterBatchProcessing();
 
-    callbacks.onEpochEnd(*this);
+    callbacks.onEpochEnd(*this, train_state);
     if (callbacks.shouldStopTraining()) {
       break;
     }
     perEpochCallback();
   }
 
-  callbacks.onTrainEnd(*this);
+  callbacks.onTrainEnd(*this, train_state);
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
