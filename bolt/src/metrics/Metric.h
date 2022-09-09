@@ -33,6 +33,11 @@ class Metric {
   // called at the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
 
+  // returns whether its better if the metric is smaller. for example, with a
+  // an accuracy related metric this would return false since larger is better
+  // (larger means more accurate)
+  virtual bool smallerIsBetter() const = 0;
+
   // Returns the name of the metric.
   virtual std::string getName() = 0;
 
@@ -100,6 +105,8 @@ class CategoricalAccuracy final : public Metric {
 
   std::string getName() final { return name; }
 
+  bool smallerIsBetter() const final { return false; }
+
  private:
   std::atomic<uint32_t> _correct;
   std::atomic<uint32_t> _num_samples;
@@ -143,6 +150,8 @@ class MeanSquaredErrorMetric final : public Metric {
   static constexpr const char* name = "mean_squared_error";
 
   std::string getName() final { return name; }
+
+  bool smallerIsBetter() const final { return true; }
 
  private:
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
@@ -242,6 +251,8 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 
   std::string getName() final { return name; }
 
+  bool smallerIsBetter() const final { return true; }
+
  private:
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
@@ -252,7 +263,7 @@ class RecallAtK : public Metric {
   explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    auto top_k = output.findKLargestActivationsK(_k);
+    auto top_k = output.findKLargestActivations(_k);
 
     uint32_t matches = 0;
     while (!top_k.empty()) {
@@ -281,6 +292,8 @@ class RecallAtK : public Metric {
   }
 
   std::string getName() final { return "recall@" + std::to_string(_k); }
+
+  bool smallerIsBetter() const final { return false; }
 
   static inline bool isRecallAtK(const std::string& name) {
     return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
@@ -396,6 +409,8 @@ class FMeasure final : public Metric {
     return name_ss.str();
   }
 
+  bool smallerIsBetter() const final { return false; }
+
   static bool isFMeasure(const std::string& name) {
     return std::regex_match(name, std::regex(R"(f_measure\(0\.\d+\))"));
   }
@@ -430,6 +445,25 @@ class FMeasure final : public Metric {
   std::atomic<uint64_t> _false_positive;
   std::atomic<uint64_t> _false_negative;
 };
+
+static std::shared_ptr<Metric> makeMetric(const std::string& name) {
+  if (name == CategoricalAccuracy::name) {
+    return std::make_shared<CategoricalAccuracy>();
+  }
+  if (name == WeightedMeanAbsolutePercentageError::name) {
+    return std::make_shared<WeightedMeanAbsolutePercentageError>();
+  }
+  if (name == MeanSquaredErrorMetric::name) {
+    return std::make_shared<MeanSquaredErrorMetric>();
+  }
+  if (FMeasure::isFMeasure(name)) {
+    return FMeasure::make(name);
+  }
+  if (RecallAtK::isRecallAtK(name)) {
+    return RecallAtK::make(name);
+  }
+  throw std::invalid_argument("'" + name + "' is not a valid metric.");
+}
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 using InferenceMetricData = std::unordered_map<std::string, double>;

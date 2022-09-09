@@ -28,7 +28,7 @@ class TrainConfig {
     return *this;
   }
 
-  TrainConfig silence() {
+  TrainConfig& silence() {
     _verbose = false;
     return *this;
   }
@@ -151,6 +151,8 @@ class PredictConfig {
   MetricAggregator getMetricAggregator() const {
     return MetricAggregator(_metric_names, _verbose);
   }
+
+  std::vector<std::string> getMetricNames() const { return _metric_names; }
 
   constexpr bool verbose() const { return _verbose; }
 

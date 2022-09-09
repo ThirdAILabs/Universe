@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include "LayerUtils.h"
 #include "SamplingConfig.h"
 #include <cmath>
@@ -168,25 +170,81 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
   ActivationFunction getActFunc() const final { return act_func; }
 };
 
-struct EmbeddingLayerConfig {
-  uint32_t num_embedding_lookups;
-  uint32_t lookup_size;
-  uint32_t log_embedding_block_size;
+enum class EmbeddingReductionType {
+  SUM,
+  CONCATENATION,
+};
 
+class EmbeddingLayerConfig {
+ public:
   // Public constructor, needed for cereal to construct optional, should not be
   // used otherwise.
   EmbeddingLayerConfig() {}
 
-  EmbeddingLayerConfig(uint32_t _num_embedding_lookups, uint32_t _lookup_size,
-                       uint32_t _log_embedding_block_size)
-      : num_embedding_lookups(_num_embedding_lookups),
-        lookup_size(_lookup_size),
-        log_embedding_block_size(_log_embedding_block_size) {}
+  EmbeddingLayerConfig(
+      uint32_t num_embedding_lookups, uint32_t lookup_size,
+      uint32_t log_embedding_block_size, const std::string& reduction,
+      std::optional<uint32_t> num_tokens_per_input = std::nullopt)
+      : _num_embedding_lookups(num_embedding_lookups),
+        _lookup_size(lookup_size),
+        _log_embedding_block_size(log_embedding_block_size),
+        _reduction(getReductionType(reduction)),
+        _num_tokens_per_input(num_tokens_per_input) {
+    if (_reduction == EmbeddingReductionType::CONCATENATION &&
+        !_num_tokens_per_input) {
+      throw std::invalid_argument(
+          "Cannot construct embedding layer with concatenation reduction "
+          "without specifying num_tokens_per_input.");
+    }
+  }
+
+  uint32_t numEmbeddingLookups() const { return _num_embedding_lookups; }
+
+  uint32_t lookupSize() const { return _lookup_size; }
+
+  uint32_t logEmbeddingBlockSize() const { return _log_embedding_block_size; }
+
+  EmbeddingReductionType reduction() const { return _reduction; }
+
+  uint32_t getOutputDim() const {
+    return _num_embedding_lookups * _lookup_size *
+           _num_tokens_per_input.value_or(1);
+  }
+
+  std::optional<uint32_t> numTokensPerInput() const {
+    return _num_tokens_per_input;
+  }
+
+ private:
+  uint32_t _num_embedding_lookups;
+  uint32_t _lookup_size;
+  uint32_t _log_embedding_block_size;
+
+  EmbeddingReductionType _reduction;
+  std::optional<uint32_t> _num_tokens_per_input;
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(num_embedding_lookups, lookup_size, log_embedding_block_size);
+    archive(_num_embedding_lookups, _lookup_size, _log_embedding_block_size,
+            _reduction, _num_tokens_per_input);
+  }
+
+  static EmbeddingReductionType getReductionType(
+      const std::string& reduction_name) {
+    std::string lower_name;
+    for (char c : reduction_name) {
+      lower_name.push_back(std::tolower(c));
+    }
+    if (lower_name == "sum") {
+      return EmbeddingReductionType::SUM;
+    }
+    if (lower_name == "concat" || lower_name == "concatenation") {
+      return EmbeddingReductionType::CONCATENATION;
+    }
+    throw std::invalid_argument(
+        "Invalid embedding reduction time '" + reduction_name +
+        "', supported options are 'sum' or 'concat'/'concatenation'");
   }
 };
 

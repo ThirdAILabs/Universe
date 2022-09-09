@@ -23,16 +23,16 @@ NormalizationLayerConfig getLayerNormConfig() {
 }
 
 static BoltGraph buildSingleNormNodeModel() {
-  auto input = std::make_shared<Input>(/* expected_input_dim */ n_classes);
-  auto hidden_layer = std::make_shared<FullyConnectedNode>(2000, "relu");
+  auto input = Input::make(/* expected_dim= */ n_classes);
+  auto hidden_layer = FullyConnectedNode::makeDense(200, "relu");
   hidden_layer->addPredecessor(input);
 
   NormalizationLayerConfig layer_norm_config = getLayerNormConfig();
 
-  auto hidden_norm_layer = std::make_shared<LayerNormNode>(layer_norm_config);
+  auto hidden_norm_layer = LayerNormNode::makeWithConfig(layer_norm_config);
   hidden_norm_layer->addPredecessor(hidden_layer);
 
-  auto output = std::make_shared<FullyConnectedNode>(
+  auto output = FullyConnectedNode::makeDense(
       /* expected_dim */ n_classes, "softmax");
   output->addPredecessor(hidden_norm_layer);
 
