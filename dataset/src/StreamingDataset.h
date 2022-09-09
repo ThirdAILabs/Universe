@@ -4,6 +4,7 @@
 #include "DataLoader.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/InMemoryDataset.h>
+#include <utils/Logging.h>
 #include <chrono>
 #include <memory>
 #include <optional>
@@ -78,11 +79,10 @@ class StreamingDataset {
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-    std::cout
-        << "Loaded " << len << " vectors from '" + _data_loader->resourceName()
-        << "' in "
-        << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-        << " seconds" << std::endl;
+    log::info(
+        "Loaded {} vectors from '{}' in {} seconds.", len,
+        _data_loader->resourceName(),
+        std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
 
     // We use std::apply again here to call a function acception a variadic
     // template that maps each vector of batches to an InMemoryDataset.

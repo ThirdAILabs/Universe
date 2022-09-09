@@ -3,6 +3,7 @@
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -65,7 +66,7 @@ class ClickThroughBatchProcessor final
       }
       char* end;
       float val = std::strtof(cols[feature_idx].data(), &end);
-      dense_features.push_back(val);
+      dense_features.push_back(std::log(val + 1));
     }
 
     // Its _num_dense_features + 1 because the label is the first column.

@@ -11,7 +11,7 @@
 namespace thirdai::bolt::tests {
 
 TEST(GraphRejectsInvalidInputsTest, RejectInputLayerInOutput) {
-  auto input_layer = std::make_shared<Input>(/* dim= */ 10);
+  auto input_layer = Input::make(/* expected_dim= */ 10);
   BoltGraph graph(/* inputs= */ {}, /* output= */ input_layer);
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
@@ -21,7 +21,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectInputLayerInOutput) {
 
 TEST(GraphRejectsInvalidInputsTest,
      RejectSoftmaxWithoutCategoricalCrossEntropy) {
-  auto layer = std::make_shared<FullyConnectedNode>(
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "softmax");
   BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
 
@@ -32,7 +32,7 @@ TEST(GraphRejectsInvalidInputsTest,
 
 TEST(GraphRejectsInvalidInputsTest,
      RejectCategoricalCrossEntropyWithoutSoftmax) {
-  auto layer = std::make_shared<FullyConnectedNode>(
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "relu");
   BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
 
@@ -42,7 +42,7 @@ TEST(GraphRejectsInvalidInputsTest,
 }
 
 TEST(GraphRejectsInvalidInputsTest, RejectBinaryCrossEntropyWithoutSigmoid) {
-  auto layer = std::make_shared<FullyConnectedNode>(
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "softmax");
   BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
 
@@ -52,8 +52,8 @@ TEST(GraphRejectsInvalidInputsTest, RejectBinaryCrossEntropyWithoutSigmoid) {
 }
 
 TEST(GraphRejectsInvalidInputsTest, AcceptsCategoricalCrossEntropyWithSoftmax) {
-  auto input = std::make_shared<Input>(/* dim= */ 10);
-  auto layer = std::make_shared<FullyConnectedNode>(
+  auto input = Input::make(/* expected_dim= */ 10);
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "softmax");
   layer->addPredecessor(input);
 
@@ -64,8 +64,8 @@ TEST(GraphRejectsInvalidInputsTest, AcceptsCategoricalCrossEntropyWithSoftmax) {
 }
 
 TEST(GraphRejectsInvalidInputsTest, AcceptsBinaryCrossEntropyWithSigmoid) {
-  auto input = std::make_shared<Input>(/* dim= */ 10);
-  auto layer = std::make_shared<FullyConnectedNode>(
+  auto input = Input::make(/* expected_dim= */ 10);
+  auto layer = FullyConnectedNode::makeDense(
       /* dim= */ 10, /* activation= */ "sigmoid");
   layer->addPredecessor(input);
 
@@ -76,20 +76,18 @@ TEST(GraphRejectsInvalidInputsTest, AcceptsBinaryCrossEntropyWithSigmoid) {
 }
 
 TEST(GraphRejectsInvalidInputsTest, RejectConcatenatingInputLayer) {
-  auto input_layer = std::make_shared<Input>(/* dim= */ 10);
+  auto input_layer = Input::make(/* expected_dim= */ 10);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      std::make_shared<ConcatenateNode>()->setConcatenatedNodes(
-          {input_layer, input_layer}),
+      ConcatenateNode::make()->setConcatenatedNodes({input_layer, input_layer}),
       exceptions::GraphCompilationFailure);
 }
 
 TEST(GraphRejectsInvalidInputsTest, RejectConcatenateAsOutputLayer) {
-  auto input = std::make_shared<Input>(/* dim= */ 10);
-  auto layer = std::make_shared<FullyConnectedNode>(
+  auto input = Input::make(/* expected_dim= */ 10);
+  auto layer = FullyConnectedNode::makeDense(
                    /* dim= */ 10, /* activation= */ "relu")
                    ->addPredecessor(input);
-  auto concat =
-      std::make_shared<ConcatenateNode>()->setConcatenatedNodes({layer, layer});
+  auto concat = ConcatenateNode::make()->setConcatenatedNodes({layer, layer});
   BoltGraph graph(/* inputs= */ {input}, /* output= */ concat);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       graph.compile(std::make_shared<MeanSquaredError>()),
@@ -97,21 +95,21 @@ TEST(GraphRejectsInvalidInputsTest, RejectConcatenateAsOutputLayer) {
 }
 
 TEST(GraphRejectsInvalidInputsTest, AcceptsCorrectConcatenation) {
-  auto input = std::make_shared<Input>(/* dim= */ 10);
-  auto layer_1 = std::make_shared<FullyConnectedNode>(
+  auto input = Input::make(/* expected_dim= */ 10);
+  auto layer_1 = FullyConnectedNode::makeDense(
                      /* dim= */ 10, /* activation= */ "relu")
                      ->addPredecessor(input);
-  auto layer_2 = std::make_shared<FullyConnectedNode>(
+  auto layer_2 = FullyConnectedNode::makeDense(
                      /* dim= */ 10, /* activation= */ "relu")
                      ->addPredecessor(input);
-  auto concat_1 = std::make_shared<ConcatenateNode>()->setConcatenatedNodes(
+  auto concat_1 = ConcatenateNode::make()->setConcatenatedNodes(
       {layer_1, layer_2, layer_2});
-  auto layer_3 = std::make_shared<FullyConnectedNode>(
+  auto layer_3 = FullyConnectedNode::makeDense(
                      /* dim= */ 10, /* activation= */ "relu")
                      ->addPredecessor(concat_1);
-  auto concat_2 = std::make_shared<ConcatenateNode>()->setConcatenatedNodes(
+  auto concat_2 = ConcatenateNode::make()->setConcatenatedNodes(
       {layer_1, layer_3, concat_1});
-  auto output = std::make_shared<FullyConnectedNode>(
+  auto output = FullyConnectedNode::makeDense(
                     /* dim= */ 10, /* activation= */ "relu")
                     ->addPredecessor(concat_2);
   BoltGraph graph(/* inputs= */ {input}, /* output= */ output);
@@ -120,10 +118,10 @@ TEST(GraphRejectsInvalidInputsTest, AcceptsCorrectConcatenation) {
 }
 
 TEST(GraphRejectsInvalidInputsTest, RejectsUnkownInput) {
-  auto input1 = std::make_shared<Input>(/* dim= */ 10);
-  auto input2 = std::make_shared<Input>(/* dim= */ 20);
+  auto input1 = Input::make(/* expected_dim= */ 10);
+  auto input2 = Input::make(/* expected_dim= */ 20);
 
-  auto layer = std::make_shared<FullyConnectedNode>(
+  auto layer = FullyConnectedNode::makeDense(
                    /* dim= */ 10, /* activation= */ "relu")
                    ->addPredecessor(input1);
 
@@ -134,10 +132,10 @@ TEST(GraphRejectsInvalidInputsTest, RejectsUnkownInput) {
 }
 
 TEST(GraphRejectsInvalidInputsTest, RejectsUnusedInput) {
-  auto input1 = std::make_shared<Input>(/* dim= */ 10);
-  auto input2 = std::make_shared<Input>(/* dim= */ 20);
+  auto input1 = Input::make(/* expected_dim= */ 10);
+  auto input2 = Input::make(/* expected_dim= */ 20);
 
-  auto layer = std::make_shared<FullyConnectedNode>(
+  auto layer = FullyConnectedNode::makeDense(
                    /* dim= */ 10, /* activation= */ "relu")
                    ->addPredecessor(input1);
 
