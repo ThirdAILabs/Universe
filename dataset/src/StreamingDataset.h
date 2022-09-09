@@ -6,6 +6,7 @@
 #include <dataset/src/InMemoryDataset.h>
 #include <utils/Logging.h>
 #include <chrono>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -42,15 +43,20 @@ class StreamingDataset {
     return _batch_processor->createBatch(*rows);
   }
 
-  // This function maps the tuple of batches returned by nextBatch() into a
-  // tuple of datasets where each dataset contains a list of batches of the type
-  // corresponding to that element of the tuple.
-  // NOLINTNEXTLINE
   virtual std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>
   loadInMemory() {
+    return loadInMemory(std::numeric_limits<uint64_t>::max());
+  }
+
+  // This function maps the tuple of batches returned by nextBatch() into a
+  // tuple of datasets where each dataset contains a list of batches of the
+  // type corresponding to that element of the tuple. NOLINTNEXTLINE
+  std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> loadInMemory(
+      uint64_t max_batches) {
     std::tuple<std::vector<BATCH_Ts>...> batch_lists;
 
     uint64_t len = 0;
+    uint64_t loaded_batches = 0;
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -76,6 +82,11 @@ class StreamingDataset {
                 batch_tuple.value());
           },
           batch_lists);
+
+      loaded_batches++;
+      if (loaded_batches >= max_batches) {
+        break;
+      }
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -99,6 +110,8 @@ class StreamingDataset {
   }
 
   uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
+
+  void restart() { _data_loader->restart(); }
 
   static std::shared_ptr<StreamingDataset<BATCH_Ts...>> loadDataset(
       std::shared_ptr<DataLoader> data_loader,
