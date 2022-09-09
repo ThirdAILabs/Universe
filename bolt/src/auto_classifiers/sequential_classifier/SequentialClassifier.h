@@ -6,6 +6,8 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -52,6 +54,11 @@ class SequentialClassifier {
     _schema.static_categorical = std::move(static_categorical);
     _schema.sequential = std::move(sequential);
     _schema.multi_class_delim = multi_class_delim;
+
+    _single_inference_col_nums = ColumnNumberMap(_schema);
+    _single_inference_batch_processor =
+        Pipeline::buildSingleInferenceBatchProcessor(
+            _schema, _state, _single_inference_col_nums);
   }
 
   void train(const std::string& train_filename, uint32_t epochs,
@@ -140,6 +147,22 @@ class SequentialClassifier {
     return results;
   }
 
+  std::tuple<std::vector<std::string>, std::vector<float>,
+             std::vector<std::string>>
+  explain(const std::unordered_map<std::string, std::string>& sample) {
+    BoltVector input_vector = getInputForSingleInference(sample);
+
+    auto [gradients_indices, gradients_ratios] =
+        _model->getInputGradientSingle({input_vector});
+
+    auto result = getPercentExplanationWithColumnNames(
+        gradients_ratios, *gradients_indices,
+        _single_inference_col_nums.getColumnNumToColNameMap(),
+        _single_inference_batch_processor);
+
+    return result;
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -159,6 +182,21 @@ class SequentialClassifier {
   }
 
  private:
+  BoltVector getInputForSingleInference(
+      const std::unordered_map<std::string, std::string>& sample) {
+    std::vector<std::string_view> columnar_sample(
+        _single_inference_col_nums.size());
+    for (const auto& [col_name, col_value] : sample) {
+      uint32_t col_num = _single_inference_col_nums.at(col_name);
+      columnar_sample[col_num] = col_value.data();
+    }
+
+    BoltVector input_vector;
+    _single_inference_batch_processor->makeInputVectorForInference(
+        columnar_sample, input_vector);
+
+    return input_vector;
+  }
   static float getLayerSparsity(uint32_t layer_size) {
     if (layer_size < 500) {
       return 1.0;
@@ -184,6 +222,9 @@ class SequentialClassifier {
   Schema _schema;
   DataState _state;
   BoltGraphPtr _model;
+
+  ColumnNumberMap _single_inference_col_nums;
+  dataset::GenericBatchProcessorPtr _single_inference_batch_processor;
 
   // Private constructor for cereal
   SequentialClassifier() {}
