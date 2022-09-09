@@ -112,7 +112,7 @@ MetricData BoltGraph::train(
       std::optional<ProgressBar> bar = makeOptionalProgressBar(
           /*make=*/train_config.verbose(),
           /*description=*/fmt::format("train epoch {}", _epoch_count),
-          /*max_steps=*/train_context.numBatches());
+          /*max_steps=*/dataset_context.numBatches());
 
       auto train_start = std::chrono::high_resolution_clock::now();
 
@@ -147,7 +147,7 @@ MetricData BoltGraph::train(
 
       std::string logline = fmt::format(
           "train | epoch {} | complete |  batches {} | time {}s | {}",
-          _epoch_count, train_context.numBatches(), epoch_time,
+          _epoch_count, dataset_context.numBatches(), epoch_time,
           metrics.summary());
 
       log::info(logline);

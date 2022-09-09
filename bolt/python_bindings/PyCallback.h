@@ -12,67 +12,58 @@ class PyCallback : public Callback {
   /* Inherit the constructor */
   using Callback::Callback;
 
-  void onTrainBegin(BoltGraph& model) override {
+  void onTrainBegin(BoltGraph& model, TrainState& train_state) override {
     PYBIND11_OVERRIDE_NAME(void,             /* Return type */
                            Callback,         /* Parent class */
                            "on_train_begin", /* Name of Python function */
                            onTrainBegin,     /* Name of C++ function */
-                           model             /* Argument(s) */
-    );
+                           model,            /* Argument(s) */
+                           train_state);
   }
 
-  void onTrainEnd(BoltGraph& model) override {
+  void onTrainEnd(BoltGraph& model, TrainState& train_state) override {
     PYBIND11_OVERRIDE_NAME(void,           /* Return type */
                            Callback,       /* Parent class */
                            "on_train_end", /* Name of Python function */
                            onTrainEnd,     /* Name of C++ function */
-                           model           /* Argument(s) */
-    );
+                           model,          /* Argument(s) */
+                           train_state);
   }
 
-  void onEpochBegin(BoltGraph& model) override {
+  void onEpochBegin(BoltGraph& model, TrainState& train_state) override {
     PYBIND11_OVERRIDE_NAME(void,             /* Return type */
                            Callback,         /* Parent class */
                            "on_epoch_begin", /* Name of Python function */
                            onEpochBegin,     /* Name of C++ function */
-                           model             /* Argument(s) */
-    );
+                           model,            /* Argument(s) */
+                           train_state);
   }
 
-  void onEpochEnd(BoltGraph& model) override {
+  void onEpochEnd(BoltGraph& model, TrainState& train_state) override {
     PYBIND11_OVERRIDE_NAME(void,           /* Return type */
                            Callback,       /* Parent class */
                            "on_epoch_end", /* Name of Python function */
                            onEpochEnd,     /* Name of C++ function */
-                           model           /* Argument(s) */
-    );
+                           model,          /* Argument(s) */
+                           train_state);
   }
 
-  void onBatchBegin(BoltGraph& model) override {
+  void onBatchBegin(BoltGraph& model, TrainState& train_state) override {
     PYBIND11_OVERRIDE_NAME(void,             /* Return type */
                            Callback,         /* Parent class */
                            "on_batch_begin", /* Name of Python function */
                            onBatchBegin,     /* Name of C++ function */
-                           model             /* Argument(s) */
-    );
+                           model,            /* Argument(s) */
+                           train_state);
   }
 
-  void onBatchEnd(BoltGraph& model) override {
+  void onBatchEnd(BoltGraph& model, TrainState& train_state) override {
     PYBIND11_OVERRIDE_NAME(void,           /* Return type */
                            Callback,       /* Parent class */
                            "on_batch_end", /* Name of Python function */
                            onBatchEnd,     /* Name of C++ function */
-                           model           /* Argument(s) */
-    );
-  }
-
-  bool shouldStopTraining() override {
-    PYBIND11_OVERRIDE_NAME(bool,                   /* Return type */
-                           Callback,               /* Parent class */
-                           "should_stop_training", /* Name of Python function */
-                           shouldStopTraining,     /* Name of C++ function */
-                                                   /* Empty list of arguments */
-    );
+                           model,          /* Argument(s) */
+                           train_state);
   }
 };
 

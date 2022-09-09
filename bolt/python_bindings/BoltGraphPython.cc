@@ -522,8 +522,7 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def("on_epoch_begin", &Callback::onEpochBegin)
       .def("on_epoch_end", &Callback::onEpochEnd)
       .def("on_batch_begin", &Callback::onBatchBegin)
-      .def("on_batch_end", &Callback::onBatchEnd)
-      .def("should_stop_training", &Callback::shouldStopTraining);
+      .def("on_batch_end", &Callback::onBatchEnd);
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
