@@ -152,12 +152,24 @@ class TrainState {
  public:
   TrainState(const TrainConfig& train_config, uint32_t data_len,
              uint32_t batch_size)
-      : _learning_rate(train_config.learningRate()),
-        _verbose(train_config.verbose()),
-        _stop_training(false) {
-    _rebuild_hash_tables = train_config.getRebuildHashTables();
-    _reconstruct_hash_functions = train_config.getReconstructHashFunction();
+      : learning_rate(train_config.learningRate()),
+        verbose(train_config.verbose()),
+        stop_training(false) {
+    rebuild_hash_tables = train_config.getRebuildHashTables();
+    reconstruct_hash_functions = train_config.getReconstructHashFunction();
   }
+
+  float learning_rate;
+  // std::vector<std::string> _metric_names;
+  bool verbose;
+  // std::optional<uint32_t> _batch_size;
+
+  uint32_t rebuild_hash_tables;
+  uint32_t reconstruct_hash_functions;
+
+  // CallbackList _callbacks;
+
+  bool stop_training;
 
  private:
   uint32_t getRebuildHashTablesBatchInterval(uint32_t batch_size,
@@ -192,18 +204,6 @@ class TrainState {
 
     return std::max<uint32_t>(reconstruct_param / batch_size, 1);
   }
-
-  float _learning_rate;
-  // std::vector<std::string> _metric_names;
-  bool _verbose;
-  // std::optional<uint32_t> _batch_size;
-
-  uint32_t _rebuild_hash_tables;
-  uint32_t _reconstruct_hash_functions;
-
-  // CallbackList _callbacks;
-
-  bool _stop_training;
 };
 
 }  // namespace thirdai::bolt
