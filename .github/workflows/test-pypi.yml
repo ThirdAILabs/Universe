@@ -51,9 +51,14 @@ jobs:
         env:
           # The following is to relax the discovery timeout (from a default 5) so that
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
+          # 
+          # KMP_DUPLICATE_LIB_OK is required because some other library
+          # (perhaps numpy) is loading an OpenMP library that is separate from
+          # what we package with.
           CIBW_ENVIRONMENT_WINDOWS: >
               CMAKE_ARGS="-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30"
-          
+              KMP_DUPLICATE_LIB_OK=TRUE
+
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
          
