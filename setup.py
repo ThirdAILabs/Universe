@@ -154,11 +154,21 @@ setup(
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    # TODO(Jerin/Josh): Do we want to get rid of requirements.txt and have
-    # this as the single source of truth
     install_requires=["numpy", "typing_extensions"],
     extras_require={
-        "test": ["pytest", "boto3", "moto", "datasets", "torch", "transformers"],
+        # The cryptography requirement is necessary to avoid ssl errors
+        # The tokenizers requirement ensures that all of the [test] depedencies are
+        # installable from a wheel on am m1
+        "test": [
+            "pytest",
+            "boto3",
+            "moto",
+            "datasets",
+            "torch",
+            "transformers",
+            "cryptography<=36.0.2",
+            "tokenizers==0.11.6",
+        ],
         "benchmark": [
             "toml",
             "psutil",
@@ -166,6 +176,7 @@ setup(
             "mlflow",
             "boto3",
         ],
+        "distributed": ["ray", "toml"],
     },
     packages=["thirdai"]
     + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
