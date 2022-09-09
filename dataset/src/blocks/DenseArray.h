@@ -45,7 +45,8 @@ class DenseArrayBlock : public Block {
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+      SegmentedFeatureVector& vec, bool store_map) final {
+    (void)store_map;
     for (uint32_t i = _start_col; i < _start_col + _dim; i++) {
       char* end;
       float value = std::strtof(input_row.at(i).data(), &end);

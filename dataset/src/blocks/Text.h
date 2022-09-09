@@ -34,12 +34,13 @@ class TextBlock : public Block {
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
-    return encodeText(input_row.at(_col), vec);
+      SegmentedFeatureVector& vec, bool store_map) final {
+    return encodeText(input_row.at(_col), vec, store_map);
   }
 
   virtual std::exception_ptr encodeText(std::string_view text,
-                                        SegmentedFeatureVector& vec) = 0;
+                                        SegmentedFeatureVector& vec,
+                                        bool store_map) = 0;
 
   uint32_t _dim;
 
@@ -72,7 +73,9 @@ class PairGramTextBlock final : public TextBlock {
 
  protected:
   std::exception_ptr encodeText(std::string_view text,
-                                SegmentedFeatureVector& vec) final {
+                                SegmentedFeatureVector& vec,
+                                bool store_map) final {
+    (void)store_map;
     std::vector<uint32_t> pairgrams =
         TextEncodingUtils::computeRawPairgrams(text, _dim);
 
@@ -108,11 +111,15 @@ class UniGramTextBlock final : public TextBlock {
 
  protected:
   std::exception_ptr encodeText(std::string_view text,
-                                SegmentedFeatureVector& vec) final {
-    auto [unigrams, index_to_word] =
-        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim, true);
-
-    _index_to_word_map = *index_to_word;
+                                SegmentedFeatureVector& vec,
+                                bool store_map) final {
+    std::vector<uint32_t> unigrams;
+    if (!store_map) {
+      unigrams = TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
+    } else {
+      auto [unigrams, _index_to_word_map] =
+          TextEncodingUtils::computeRawUnigramsWithRangeStoreMap(text, _dim);
+    }
 
     TextEncodingUtils::sumRepeatedIndices(
         unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
@@ -151,7 +158,9 @@ class CharKGramTextBlock final : public TextBlock {
 
  protected:
   std::exception_ptr encodeText(std::string_view text,
-                                SegmentedFeatureVector& vec) final {
+                                SegmentedFeatureVector& vec,
+                                bool store_map) final {
+    (void)store_map;
     std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
 
     std::vector<uint32_t> char_k_grams;
