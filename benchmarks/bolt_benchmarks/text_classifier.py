@@ -29,9 +29,7 @@ def compute_accuracy(test_file, predictions):
 def train_classifier(train_dataset, n_classes, model_size, epochs, learning_rate):
     classifier = bolt.TextClassifier(model_size=model_size, n_classes=n_classes)
 
-    classifier.train(
-        filename=train_dataset, epochs=epochs, learning_rate=learning_rate
-    )
+    classifier.train(filename=train_dataset, epochs=epochs, learning_rate=learning_rate)
 
     return classifier
 
@@ -115,9 +113,7 @@ def main():
         args.epochs,
         args.learning_rate,
     )
-    evaluate_classifier(
-        classifier, args.test_dataset
-    )
+    evaluate_classifier(classifier, args.test_dataset)
 
 
 if __name__ == "__main__":

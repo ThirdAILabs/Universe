@@ -17,7 +17,7 @@ def write_dataset_to_csv(dataset, filename, return_labels=False):
     data = []
     for item in dataset:
         sentence = item["text"]
-        sentence.replace(',', '')
+        sentence = sentence.replace(",", "")
         label = item["intent"]
         label_name = label_names[label]
         data.append((sentence, label_name))
@@ -50,7 +50,7 @@ def test_text_classifier_clinc_dataset():
     """
 
     (n_classes, test_labels) = download_clinc_dataset()
-    classifier = bolt.TextClassifier(hidden_layer_dim=500, n_classes=n_classes)
+    classifier = bolt.TextClassifier(hidden_layer_dim=200, n_classes=n_classes)
 
     classifier.train(filename=TRAIN_FILE, epochs=5, learning_rate=0.01)
 
