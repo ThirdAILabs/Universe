@@ -18,11 +18,13 @@ if [ -d "${DATADIR}" ]; then
       -it --rm \
       -v $HOME/.aws/credentials:/root/.aws/credentials:ro \
       --mount type=bind,source=${DATADIR},target=/data \
+      thirdai/universe_dev_build \
       bash -c \"$1\"
 else
     docker run \
       --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
       -it --rm \
       -v $HOME/.aws/credentials:/root/.aws/credentials:ro \
+      thirdai/universe_dev_build \
       bash -c \"$1\"
 fi
