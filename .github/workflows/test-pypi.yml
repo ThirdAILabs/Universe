@@ -71,7 +71,9 @@ jobs:
           CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
           # Install test dependencies with overwritten environment variables.
           CIBW_TEST_EXTRAS: "test"
-          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+
+          # Test with verbose output for failures, errors and xfails
+          CIBW_TEST_COMMAND: pytest -rfEx {package} --ignore-glob={package}/deps -m release
 
 
       - name: Upload wheels
