@@ -103,7 +103,7 @@ def main():
         os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
 
         if args.extras != "":
-            args.extra = "[" + args.extra + "]"
+            args.extras = "[" + args.extras + "]"
         checked_system_call(f"pip3 install .{args.extras} --verbose --force")
 
     else:
