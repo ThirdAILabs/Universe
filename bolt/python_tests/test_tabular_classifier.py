@@ -12,7 +12,7 @@ CENSUS_INCOME_BASE_DOWNLOAD_URL = (
 
 TRAIN_FILE = "./census_income_train.csv"
 TEST_FILE = "./census_income_test.csv"
-PREDICTION_FILE = "./census_income_predictions.txt"
+SAVE_FILE = "./temporary_tabular_classifier"
 
 COLUMN_NAMES = [
     "age",
@@ -73,6 +73,12 @@ def get_census_income_metadata():
 
 
 def test_tabular_classifier_census_income_dataset():
+    """
+    This test creates and trains a tabular classifier on the census income
+    dataset and checks that it acheives the correct accuracy. Then it saves the
+    trained classifier, reloads it and ensures that the results of predict match
+    the predictions computed on the entire dataset.
+    """
     (n_classes, column_datatypes, test_labels) = get_census_income_metadata()
     classifier = bolt.TabularClassifier(
         hidden_layer_dim=1000, n_classes=n_classes, column_datatypes=column_datatypes
@@ -91,6 +97,16 @@ def test_tabular_classifier_census_income_dataset():
     print("Computed Accuracy: ", acc)
     assert acc > 0.77
 
+    classifier.save(SAVE_FILE)
+
+    new_classifier = bolt.TabularClassifier.load(SAVE_FILE)
+
+    single_test_samples = create_single_test_samples()
+
+    for sample, original_prediction in zip(single_test_samples, predictions):
+        single_prediction = new_classifier.predict(sample)
+        assert single_prediction == original_prediction
+
 
 def create_single_test_samples():
     with open(TEST_FILE, "r") as file:
@@ -104,24 +120,3 @@ def create_single_test_samples():
             samples.append(values)
 
     return samples
-
-
-def test_tabular_classifier_predict_single():
-    (n_classes, column_datatypes, _) = get_census_income_metadata()
-    classifier = bolt.TabularClassifier(
-        hidden_layer_dim=1000, n_classes=n_classes, column_datatypes=column_datatypes
-    )
-    
-    classifier.train(
-        filename=TRAIN_FILE,
-        epochs=1,
-        learning_rate=0.01,
-    )
-
-    _, predictions = classifier.evaluate(filename=TEST_FILE)
-
-    single_test_samples = create_single_test_samples()
-
-    for sample, expected_prediction in zip(single_test_samples, predictions):
-        actual_prediction = classifier.predict(sample)
-        assert actual_prediction == expected_prediction

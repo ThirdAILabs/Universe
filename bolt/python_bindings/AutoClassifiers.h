@@ -19,6 +19,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <pybind11/pybind11.h>
 #include <limits>
+#include <stdexcept>
 
 namespace thirdai::bolt::python {
 
@@ -61,14 +62,6 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
     return getDataset(data_loader);
-  }
-
-  void processPredictionBeforeReturning(uint32_t* active_neurons,
-                                        float* activations,
-                                        uint32_t len) final {
-    (void)active_neurons;
-    (void)activations;
-    (void)len;
   }
 
   BoltVector featurizeInputForInference(const std::string& input_str) final {
@@ -314,16 +307,12 @@ class TabularClassifier final
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+    if (!_metadata) {
+      throw std::runtime_error(
+          "Cannot call evaulate on TabularClassifier before calling train.");
+    }
     return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
         std::move(data_loader), getBatchProcessor());
-  }
-
-  void processPredictionBeforeReturning(uint32_t* active_neurons,
-                                        float* activations,
-                                        uint32_t len) final {
-    (void)active_neurons;
-    (void)activations;
-    (void)len;
   }
 
   BoltVector featurizeInputForInference(
