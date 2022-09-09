@@ -65,9 +65,10 @@ template <class T>
 void DragonVector<T>::sketch(const T* values, T threshold, uint32_t size,
                              uint32_t sketch_size) {
   UniversalHash hash_function = UniversalHash(_seed_for_hashing);
-#pragma omp parallel for default(none)                              \
-    shared(_indices, _values, values, sketch_size, threshold, size, \
-           _seed_for_hashing, hash_function)
+  // TODO(): Figure out why MSVC does not allow shared values
+  // #pragma omp parallel for default(none)                              \
+  //     shared(_indices, _values, values, sketch_size, threshold, size, \
+  //            _seed_for_hashing, hash_function)
 
   for (uint32_t i = 0; i < size; i++) {
     if (std::abs(values[i]) > threshold) {
