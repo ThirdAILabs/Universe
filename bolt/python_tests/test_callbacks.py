@@ -126,7 +126,9 @@ class CollectTrainAccuracy(bolt.graph.callbacks.Callback):
         self.accuracies = []
 
     def on_epoch_end(self, model, train_state):
-        self.accuracies.append(train_state.get_metric_value("train_categorical_accuracy"))
+        self.accuracies.append(
+            train_state.get_metric_value("train_categorical_accuracy")
+        )
 
 
 def test_train_state_correctly_updates_metrics():
