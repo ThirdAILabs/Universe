@@ -7,7 +7,8 @@ import sys
 from thirdai import bolt, dataset
 from thirdai import setup_logging
 
-from ..utils import (
+sys.path.append(str(pathlib.Path(__file__).parent.resolve()) + "/..")
+from utils import (
     start_experiment,
     start_mlflow,
     find_full_filepath,
