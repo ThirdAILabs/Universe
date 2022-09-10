@@ -98,6 +98,8 @@ class BoltGraph {
 
   NodePtr getNodeByName(const std::string& node_name) const;
 
+  constexpr uint32_t getEpochCount() const { return _epoch_count; }
+
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
