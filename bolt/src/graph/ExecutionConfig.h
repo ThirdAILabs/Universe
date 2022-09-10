@@ -244,27 +244,4 @@ class TrainState {
   std::unordered_map<std::string, double> metrics;
 };
 
-class TrainState {
- public:
-  TrainState(const TrainConfig& train_config, uint32_t batch_size,
-             uint32_t data_len)
-      : learning_rate(train_config.learningRate()),
-        verbose(train_config.verbose()),
-        rebuild_hash_tables_batch(
-            train_config.getRebuildHashTablesBatchInterval(batch_size,
-                                                           data_len)),
-        reconstruct_hash_functions_batch(
-            train_config.getReconstructHashFunctionsBatchInterval(batch_size,
-                                                                  data_len)),
-        stop_training(false) {}
-
-  float learning_rate;
-  bool verbose;
-
-  uint32_t rebuild_hash_tables_batch;
-  uint32_t reconstruct_hash_functions_batch;
-
-  bool stop_training;
-};
-
 }  // namespace thirdai::bolt

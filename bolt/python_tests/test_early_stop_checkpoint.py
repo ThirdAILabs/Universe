@@ -88,7 +88,7 @@ def run_early_stop_test(loss, output_activation, metric_name):
     return last_model_score, early_stop_score
 
 
-def test_early_stop_checkpoint_with_accuracy():
+def test_early_stop_on_validation_accuracy():
     last_model_score, early_stop_score = run_early_stop_test(
         loss=bolt.CategoricalCrossEntropyLoss(),
         output_activation="softmax",
@@ -99,12 +99,23 @@ def test_early_stop_checkpoint_with_accuracy():
     )
 
 
-def test_early_stop_checkpoint_with_loss():
+def test_early_stop_on_validation_loss():
     last_model_score, early_stop_score = run_early_stop_test(
         loss=bolt.MeanSquaredError(),
         output_activation="linear",
         metric_name="mean_squared_error",
     )
     assert early_stop_score < last_model_score or math.isclose(
+        early_stop_score, last_model_score, rel_tol=0.0001
+    )
+
+
+def test_early_stop_on_training_accuracy():
+    last_model_score, early_stop_score = run_early_stop_test(
+        loss=bolt.CategoricalCrossEntropyLoss(),
+        output_activation="softmax",
+        metric_name="categorical_accuracy",
+    )
+    assert early_stop_score > last_model_score or math.isclose(
         early_stop_score, last_model_score, rel_tol=0.0001
     )

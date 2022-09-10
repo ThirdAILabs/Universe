@@ -35,7 +35,7 @@ def train_model_with_callback(callback):
         .with_callbacks([callback])
     )
 
-    model.train(data, labels, train_config)
+    return model.train(data, labels, train_config)
 
 
 class CountCallback(bolt.graph.callbacks.Callback):
@@ -118,3 +118,26 @@ def test_callbacks_stop_correctly():
     train_model_with_callback(stop_on_fifth_callback)
 
     assert stop_on_fifth_callback.epoch_count == 5
+
+
+class CollectTrainAccuracy(bolt.graph.callbacks.Callback):
+    def __init__(self):
+        super().__init__()
+        self.accuracies = []
+
+    def on_epoch_end(self, model, train_state):
+        self.accuracies.append(train_state.get_metric_value("train_categorical_accuracy"))
+
+
+def test_train_state_correctly_updates_metrics():
+    collect_accuracy_callback = CollectTrainAccuracy()
+
+    train_result = train_model_with_callback(collect_accuracy_callback)
+    actual_accuracies = train_result["categorical_accuracy"]
+
+    collected_accuracies = collect_accuracy_callback.accuracies
+
+    assert len(actual_accuracies) == len(collected_accuracies)
+
+    for collected_acc, actual_acc in zip(actual_accuracies, collected_accuracies):
+        assert collected_acc == actual_acc
