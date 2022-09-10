@@ -4,7 +4,7 @@ name: Upload to Test Pypi
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
 concurrency: 
   group: testpypi-${{ github.head_ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 # Run on pushes and releases. The actual upload will only happen on a 
 # release.
@@ -26,6 +26,7 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-2019, ubuntu-20.04, macos-12]
 
