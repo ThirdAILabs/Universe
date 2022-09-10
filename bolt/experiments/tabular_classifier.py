@@ -5,7 +5,13 @@ from pandas.api.types import is_numeric_dtype
 from thirdai import bolt
 from xgboost import XGBClassifier
 from pytorch_tabnet.tab_model import TabNetClassifier
-from bolt.python_tests.utils import compute_accuracy_with_file
+
+
+def compute_accuracy_of_predictions(test_labels, predictions):
+    assert len(predictions) == len(test_labels)
+    return sum(
+        (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
+    ) / len(predictions)
 
 
 def map_categories_to_integers(dataframes):
@@ -75,7 +81,7 @@ def test_bolt_single_inference(model, bolt_test_file):
         sample = first_line.split(",")[:-1]
 
     start_inference = time.time()
-    model.predict_single(sample)
+    model.predict(sample)
     end_inference = time.time()
     return end_inference - start_inference
 
@@ -87,8 +93,6 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
 
     start = time.time()
 
-    prediction_file = "predictions.csv"
-
     # rather than saving/loading the model that performs the best on the validation set,
     # call predict(..) on the test set after every new best epoch and record that accuracy to report
     best_test_accuracy = 0
@@ -96,21 +100,23 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
     num_bad_epochs = 3
     max_val_acc = 0
     last_accuracy = 0
-    tc = bolt.TabularClassifier("medium", ytrain.nunique())
+    tc = bolt.TabularClassifier(
+        hidden_layer_dim=1000, n_classes=ytrain.nunique(), column_datatypes=dtypes
+    )
     max_epochs = 20
-    for e in range(max_epochs):
-        tc.train(bolt_train_file, dtypes, epochs=1, learning_rate=0.01)
-        tc.predict(bolt_valid_file, prediction_file)
-        val_accuracy = compute_accuracy_with_file(
-            [str(x) for x in yvalid[1:]], prediction_file
+    for _ in range(max_epochs):
+        tc.train(bolt_train_file, epochs=1, learning_rate=0.01)
+        _, predictions = tc.evaluate(bolt_valid_file)
+        val_accuracy = compute_accuracy_of_predictions(
+            [str(x) for x in yvalid[1:]], predictions
         )
         if val_accuracy < last_accuracy:
             num_bad_epochs -= 1
         elif val_accuracy > max_val_acc:
             max_val_acc = val_accuracy
-            tc.predict(bolt_test_file, prediction_file)
-            best_test_accuracy = compute_accuracy_with_file(
-                [str(x) for x in ytest[1:]], prediction_file
+            _, predictions = tc.evaluate(bolt_test_file)
+            best_test_accuracy = compute_accuracy_of_predictions(
+                [str(x) for x in ytest[1:]], predictions
             )
 
         last_accuracy = val_accuracy

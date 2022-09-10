@@ -101,6 +101,8 @@ class BoltGraph {
 
   NodePtr getNodeByName(const std::string& node_name) const;
 
+  uint32_t outputDim() const { return _output->outputDim(); }
+
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
