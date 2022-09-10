@@ -477,11 +477,14 @@ class BinaryTextClassifier final
   std::vector<std::string> getEvaluationMetrics() const final { return {}; }
 
  private:
-  static std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getDataset(std::shared_ptr<dataset::DataLoader> data_loader) {
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
+      std::shared_ptr<dataset::DataLoader> data_loader) {
     auto batch_processor = dataset::GenericBatchProcessor::make(
-        {dataset::UniGramTextBlock::make(/* col= */ 5)},
-        {dataset::DenseArrayBlock::make(/* start_col= */ 0, /* dim= */ 5)});
+        /* input_blocks= */ {dataset::UniGramTextBlock::make(
+            /* col= */ _model->outputDim())},
+        /* label_blocks= */ {
+            dataset::DenseArrayBlock::make(/* start_col= */ 0,
+                                           /* dim= */ _model->outputDim())});
 
     return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
         std::move(data_loader), batch_processor);
