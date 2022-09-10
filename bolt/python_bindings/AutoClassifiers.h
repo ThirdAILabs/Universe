@@ -185,9 +185,9 @@ class MultiLabelTextClassifier final
   static BoltGraphPtr createModel(uint32_t n_classes) {
     auto model = CommonNetworks::FullyConnected(
         /* input_dim= */ dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
-        /* layers= */ {FullyConnectedNode::make(
+        /* layers= */ {FullyConnectedNode::makeDense(
                            /* dim= */ 1024, "relu"),
-                       FullyConnectedNode::make(
+                       FullyConnectedNode::makeExplicitSamplingConfig(
                            /* dim= */ n_classes,
                            /* sparsity= */ getOutputSparsity(n_classes),
                            /* activation= */ "sigmoid",
@@ -419,16 +419,16 @@ class TabularClassifier final
 };
 
 inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes) {
-  auto input_layer = std::make_shared<Input>(
+  auto input_layer = Input::make(
       dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
 
-  auto hidden_layer = std::make_shared<FullyConnectedNode>(
+  auto hidden_layer = FullyConnectedNode::makeAutotuned(
       /* dim= */ hidden_layer_dim,
       /* sparsity= */ getHiddenLayerSparsity(hidden_layer_dim),
       /* activation= */ "relu");
   hidden_layer->addPredecessor(input_layer);
 
-  auto output_layer = std::make_shared<FullyConnectedNode>(
+  auto output_layer = FullyConnectedNode::makeDense(
       /* dim= */ n_classes, /* activation= */ "softmax");
   output_layer->addPredecessor(hidden_layer);
 
