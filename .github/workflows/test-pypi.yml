@@ -75,9 +75,6 @@ jobs:
           # Install test dependencies with overwritten environment variables.
           CIBW_TEST_EXTRAS: "test"
 
-          # Test with verbose output -v
-          # Report for failures, Errors and xfails (-rfEx)
-          # -s is capture.
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
 

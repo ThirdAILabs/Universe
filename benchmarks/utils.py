@@ -1,3 +1,4 @@
+import argparse
 import mlflow
 import os
 import toml
@@ -15,6 +16,58 @@ from sklearn.datasets import load_svmlight_file
 AWS_METADATA_URL = "http://169.254.169.254/latest/meta-data/public-ipv4"
 
 
+def build_arg_parser(description):
+    parser = argparse.ArgumentParser(description)
+    parser.add_argument(
+        "config_path",
+        type=str,
+        help="Path to a config file containing the dataset, experiment, and model configs.",
+    )
+    parser.add_argument(
+        "--disable_mlflow",
+        action="store_true",
+        help="Disable mlflow logging for the current run.",
+    )
+    parser.add_argument(
+        "--disable_upload_artifacts",
+        action="store_true",
+        help="Disable the mlflow artifact file logging for the current run.",
+    )
+    parser.add_argument(
+        "--run_name",
+        default="",
+        type=str,
+        help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
+    )
+    parser.add_argument(
+        "--log-to-stderr",
+        action="store_true",
+        help="Logs to stderr, based on the log-level. Use --log-level to control granularity.",
+    )
+    parser.add_argument(
+        "--log-file",
+        type=str,
+        help="File to write on disk to. Leaving empty (default) implies no logging to file.",
+        default="",
+    )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        help="Log level to configure.",
+        default="info",
+        choices=["off", "critical", "error", "warn", "info", "debug", "trace"],
+    )
+    return parser
+
+
+def start_experiment(description):
+    parser = build_arg_parser(description)
+    args = parser.parse_args()
+    verify_mlflow_args(parser, mlflow_args=args)
+    config = load_config(args)
+    return config, args
+
+
 def start_mlflow(config, mlflow_args):
     if not mlflow_args.disable_mlflow:
         experiment_name = config["experiment_identifier"]
@@ -30,7 +83,7 @@ def start_mlflow(config, mlflow_args):
 
 def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
     file_dir = os.path.dirname(os.path.abspath(__file__))
-    file_name = os.path.join(file_dir, "../config.toml")
+    file_name = os.path.join(file_dir, "config.toml")
     with open(file_name) as f:
         parsed_config = toml.load(f)
         mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
@@ -40,6 +93,16 @@ def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
         run_name=run_name,
         tags={"dataset": dataset, "model": model_name},
     )
+
+
+def log_params(params, mlflow_args):
+    if not mlflow_args.disable_mlflow:
+        mlflow.log_params(params)
+
+
+def log_metrics(metrics, mlflow_args):
+    if not mlflow_args.disable_mlflow:
+        mlflow.log_metrics(metrics)
 
 
 def log_single_epoch_training_metrics(train_output):
@@ -60,7 +123,15 @@ def verify_mlflow_args(parser, mlflow_args):
         raise ValueError("Error: --run_name is required when using mlflow logging.")
 
 
-def config_get(config, field):
+def load_config(args):
+    return toml.load(args.config_path)
+
+
+def mlflow_is_enabled(args):
+    return not args.disable_mlflow
+
+
+def config_get_required(config, field):
     if field not in config:
         raise ValueError(
             f'The field "{field}" was expected to be in "{config}" but was not found.'
@@ -104,7 +175,7 @@ def find_full_filepath(filename: str) -> str:
 
     # Load path prefixes to look for datasets from config file in the repository.
     data_path_file = (
-        os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
+        os.path.dirname(os.path.abspath(__file__)) + "/../dataset_paths.toml"
     )
 
     prefix_table = toml.load(data_path_file)
@@ -171,7 +242,7 @@ def is_ec2_instance():
     """Check if an instance is running on EC2 by trying to retrieve ec2 metadata."""
     result = False
     try:
-        result = urlopen(AWS_METADATA_URL).status == 200
-    except ConnectionError:
+        result = urlopen(AWS_METADATA_URL, timeout=3).status == 200
+    except Exception:
         return result
     return result

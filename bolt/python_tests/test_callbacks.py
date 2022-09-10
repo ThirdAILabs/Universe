@@ -48,22 +48,22 @@ class CountCallback(bolt.graph.callbacks.Callback):
         self.batch_begin_count = 0
         self.batch_end_count = 0
 
-    def on_train_begin(self, model):
+    def on_train_begin(self, model, train_state):
         self.train_begin_count += 1
 
-    def on_train_end(self, model):
+    def on_train_end(self, model, train_state):
         self.train_end_count += 1
 
-    def on_epoch_begin(self, model):
+    def on_epoch_begin(self, model, train_state):
         self.epoch_begin_count += 1
 
-    def on_epoch_end(self, model):
+    def on_epoch_end(self, model, train_state):
         self.epoch_end_count += 1
 
-    def on_batch_begin(self, model):
+    def on_batch_begin(self, model, train_state):
         self.batch_begin_count += 1
 
-    def on_batch_end(self, model):
+    def on_batch_end(self, model, train_state):
         self.batch_end_count += 1
 
 
@@ -85,7 +85,7 @@ class SaveOnFifthEpoch(bolt.graph.callbacks.Callback):
         super().__init__()
         self.epoch_count = 0
 
-    def on_epoch_end(self, model):
+    def on_epoch_end(self, model, train_state):
         self.epoch_count += 1
         if self.epoch_count == 5:
             model.save(SAVE_FILENAME)
@@ -106,13 +106,10 @@ class StopOnFifthEpoch(bolt.graph.callbacks.Callback):
         super().__init__()
         self.epoch_count = 0
 
-    def on_epoch_end(self, model):
+    def on_epoch_end(self, model, train_state):
         self.epoch_count += 1
-
-    def should_stop_training(self):
         if self.epoch_count == 5:
-            return True
-        return False
+            train_state.stop_training = True
 
 
 def test_callbacks_stop_correctly():
