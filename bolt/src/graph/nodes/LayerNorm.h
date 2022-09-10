@@ -33,7 +33,7 @@ constexpr float DIV_BY_ZERO_GUARD = 0.00000001;
 
 class LayerNormNode final : public Node,
                             public std::enable_shared_from_this<LayerNormNode> {
- public:
+ private:
   LayerNormNode()
       : _config(std::make_shared<NormalizationLayerConfig>()),
         _batch(std::nullopt),
@@ -45,6 +45,16 @@ class LayerNormNode final : public Node,
         _batch(std::nullopt),
         _node_to_normalize(nullptr),
         _compiled(false) {}
+
+ public:
+  static std::shared_ptr<LayerNormNode> make() {
+    return std::shared_ptr<LayerNormNode>(new LayerNormNode());
+  }
+
+  static std::shared_ptr<LayerNormNode> makeWithConfig(
+      const NormalizationLayerConfig& config) {
+    return std::shared_ptr<LayerNormNode>(new LayerNormNode(config));
+  }
 
   std::shared_ptr<LayerNormNode> addPredecessor(NodePtr node) {
     if (getState() != NodeState::Constructed) {
@@ -90,7 +100,7 @@ class LayerNormNode final : public Node,
 
   // Computes the first and second moments {mean, variance} required
   // to normalize the input to this layer.
-  static std::pair<float, float> computeNormalizationMoments(
+  static std::tuple<float, float> computeNormalizationMoments(
       const BoltVector& bolt_vector) {
     uint32_t len = bolt_vector.len;
     float mean = 0, variance = 0;
@@ -106,7 +116,7 @@ class LayerNormNode final : public Node,
     }
     variance /= len;
 
-    return std::make_pair(mean, variance);
+    return {mean, variance};
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
@@ -144,7 +154,6 @@ class LayerNormNode final : public Node,
   // For a layer with n activations, the expression for the partial derivative
   // can be found here
   // https://www.notion.so/Bolt-DAG-API-Proposal-8d2d72d13df94f64b7829f80ab080def#0d4ec531c9f64e83a460bd56dfe04320
-
   float normDerivative(float activation, float mean, float variance,
                        uint32_t vec_length) {
     assert(getState() == NodeState::PreparedForBatchProcessing);

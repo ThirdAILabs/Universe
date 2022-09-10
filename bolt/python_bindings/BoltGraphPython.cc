@@ -1,11 +1,13 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
+#include "PyCallback.h"
 #include <bolt/src/graph/DistributedBoltGraph.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/callbacks/Callback.h>
+#include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -35,9 +37,20 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Returns a numpy array which shadows the parameters held in the "
            "ParameterReference and acts as a reference to them, modifying this "
            "array will modify the parameters.")
+
+      // TODO(Shubh): Should work with a custom serializer rather than python
+      // dictionaries. Or we should make a Compressed vector module at python
+      // end to deal with this
+      .def("compress", &ParameterReference::compress,
+           py::arg("compression_scheme"), py::arg("compression_density"),
+           py::arg("seed_for_hashing"), py::arg("sample_population_size"),
+           "Returns a python dictionary of compressed vectors. "
+           "sample_population_size is the number of random samples you take "
+           "for estimating a threshold for dragon compression")
       .def("set", &ParameterReference::set, py::arg("new_params"),
-           "Takes in a numpy array and copies its contents into the parameters "
-           "held in the ParameterReference object.");
+           "Either takes in a numpy array and copies its contents into the "
+           "parameters held in the ParameterReference object. Or takes in a "
+           "python dictionary which represents a compressed vector object.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
@@ -47,7 +60,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
                                                               "FullyConnected")
-      .def(py::init<uint64_t, const std::string&>(), py::arg("dim"),
+      .def(py::init(&FullyConnectedNode::makeDense), py::arg("dim"),
            py::arg("activation"),
            "Constructs a dense FullyConnectedLayer object.\n"
            "Arguments:\n"
@@ -55,7 +68,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * activation: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, const std::string&>(), py::arg("dim"),
+      .def(py::init(&FullyConnectedNode::makeAutotuned), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation"),
            "Constructs a sparse FullyConnectedLayer object with sampling "
            "parameters autotuned.\n"
@@ -67,8 +80,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<uint64_t, float, const std::string&, SamplingConfigPtr>(),
-           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+      .def(py::init(&FullyConnectedNode::make), py::arg("dim"),
+           py::arg("sparsity"), py::arg("activation"),
            py::arg("sampling_config"),
            "Constructs a sparse FullyConnectedLayer object.\n"
            "Arguments:\n"
@@ -135,8 +148,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
-      .def(py::init<>(), "Constructs a normalization layer object.")
-      .def(py::init<const NormalizationLayerConfig&>(),
+      .def(py::init(&LayerNormNode::make),
+           "Constructs a normalization layer object.")
+      .def(py::init(&LayerNormNode::makeWithConfig),
            py::arg("layer_norm_config"),
            "Constructs a normalization layer object"
            "Arguments:\n"
@@ -149,7 +163,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
       .def(
-          py::init<>(),
+          py::init(&ConcatenateNode::make),
           "A layer that concatenates an arbitrary number of layers together.\n")
       .def("__call__", &ConcatenateNode::setConcatenatedNodes,
            py::arg("input_layers"),
@@ -160,20 +174,19 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 #if THIRDAI_EXPOSE_ALL
   py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
                                                             "Switch")
-      .def(py::init<uint64_t, const std::string&, uint32_t>(), py::arg("dim"),
+      .def(py::init(&SwitchNode::makeDense), py::arg("dim"),
            py::arg("activation"), py::arg("n_layers"))
-      .def(py::init<uint64_t, float, const std::string&, uint32_t>(),
-           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("n_layers"))
+      .def(py::init(&SwitchNode::makeAutotuned), py::arg("dim"),
+           py::arg("sparsity"), py::arg("activation"), py::arg("n_layers"))
       .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
            py::arg("token_input"));
 #endif
 
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
                                                     "Embedding")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(),
-           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
-           py::arg("log_embedding_block_size"),
+      .def(py::init(&EmbeddingNode::make), py::arg("num_embedding_lookups"),
+           py::arg("lookup_size"), py::arg("log_embedding_block_size"),
+           py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
            "Constructs an Embedding layer that can be used in the graph.\n"
            "Arguments:\n"
            " * num_embedding_lookups: Int (positive) - The number of embedding "
@@ -185,9 +198,11 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
            "Tells the graph which token input to use for this Embedding Node.");
 
+  graph_submodule.def("TokenInput", &Input::makeTokenInput, py::arg("dim"),
+                      py::arg("num_tokens_range"));
+
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
-      .def(py::init<uint32_t, std::optional<std::pair<uint32_t, uint32_t>>>(),
-           py::arg("dim"), py::arg("num_nonzeros_range") = std::nullopt,
+      .def(py::init(&Input::make), py::arg("dim"),
            "Constructs an input layer node for the graph.");
 
   py::class_<NormalizationLayerConfig>(graph_submodule, "LayerNormConfig")
@@ -450,24 +465,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "assigned name. As such, must be called after compile. You can "
            "determine which layer is which by printing a graph summary. "
            "Possible operations to perform on the returned object include "
-           "setting layer sparsity, freezing weights, or saving to a file")
-#if THIRDAI_EXPOSE_ALL
-      .def("register_batch_callback",
-           [](BoltGraph& model, GraphCallback callback) {
-             // From testing we don't need to release the GIL to call the python
-             // callback, even if the python function calls back into the C++
-             // code.
-             model.registerPerBatchCallback(std::move(callback));
-           })
-      .def("register_epoch_callback",
-           [](BoltGraph& model, GraphCallback callback) {
-             // From testing we don't need to release the GIL to call the python
-             // callback, even if the python function calls back into the C++
-             // code.
-             model.registerPerEpochCallback(std::move(callback));
-           })
-#endif
-      ;
+           "setting layer sparsity, freezing weights, or saving to a file");
 
   py::class_<DistributedTrainingContext>(graph_submodule, "DistributedModel")
       .def(py::init<std::vector<InputPtr>, NodePtr,
@@ -517,7 +515,48 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 void createCallbacksSubmodule(py::module_& graph_submodule) {
   auto callbacks_submodule = graph_submodule.def_submodule("callbacks");
 
-  py::class_<Callback, CallbackPtr>(callbacks_submodule, "Callback");  // NOLINT
+  py::class_<Callback, PyCallback, CallbackPtr>(callbacks_submodule, "Callback")
+      .def(py::init<>())
+      .def("on_train_begin", &Callback::onTrainBegin)
+      .def("on_train_end", &Callback::onTrainEnd)
+      .def("on_epoch_begin", &Callback::onEpochBegin)
+      .def("on_epoch_end", &Callback::onEpochEnd)
+      .def("on_batch_begin", &Callback::onBatchBegin)
+      .def("on_batch_end", &Callback::onBatchEnd);
+
+  py::class_<TrainState>(callbacks_submodule, "TrainState")
+      .def_readwrite("learning_rate", &TrainState::learning_rate)
+      .def_readwrite("verbose", &TrainState::verbose)
+      .def_readwrite("rebuild_hash_tables_batch",
+                     &TrainState::rebuild_hash_tables_batch)
+      .def_readwrite("reconstruct_hash_functions_batch",
+                     &TrainState::reconstruct_hash_functions_batch)
+      .def_readwrite("stop_training", &TrainState::stop_training);
+
+  py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
+      callbacks_submodule, "EarlyStopCheckpoint")
+      .def(
+          py::init<std::vector<dataset::BoltDatasetPtr>,
+                   dataset::BoltDatasetPtr, PredictConfig, std::string,
+                   uint32_t, double>(),
+          py::arg("validation_data"), py::arg("validation_labels"),
+          py::arg("predict_config"), py::arg("model_save_path"),
+          py::arg("patience"), py::arg("min_delta"),
+          "This callback is intended to stop training early based on prediction"
+          " results from a given validation set. Saves the best model to "
+          "model_save_path.\n"
+          "Arguments:\n"
+          " * validation_data: Data input as passed to predict.\n"
+          " * validation_labels: Label input as passed to predict.\n"
+          " * predict_config: PredictConfig. Configurations for evaluation on "
+          "the given validation data. must include metrics\n"
+          " * model_save_path: string. The file path to save the model that "
+          "scored the best on the validation set\n"
+          " * patience: int. The nuber of epochs with no improvement in "
+          "validation score after which training will be stopped.\n"
+          " * min_delta: float. The minimum change in the monitored quantity "
+          "to qualify as an improvement, i.e. an absolute change of less than "
+          "min_delta will count as no improvement.\n");
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,

@@ -2,7 +2,12 @@ import argparse
 import mlflow
 import pandas as pd
 import pandas as pd
+import sys
+import pathlib
+
 from thirdai import bolt
+
+sys.path.append(str(pathlib.Path(__file__).parent.resolve()) + "/..")
 from utils import log_machine_info, start_mlflow
 
 

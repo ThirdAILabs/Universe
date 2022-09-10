@@ -12,6 +12,7 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <utils/Logging.h>
 #include <algorithm>
 #include <chrono>
 #include <csignal>
@@ -19,12 +20,23 @@
 #include <optional>
 #include <ostream>
 #include <queue>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <unordered_set>
 
 namespace thirdai::bolt {
+
+namespace {
+template <class... Args>
+std::optional<ProgressBar> makeOptionalProgressBar(bool make, Args... args) {
+  if (!make) {
+    return std::nullopt;
+  }
+  return std::make_optional<ProgressBar>(args...);
+}
+}  // namespace
 
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
                         bool print_when_done) {
@@ -52,77 +64,79 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
         node_layers.end());
   }
 
-  if (print_when_done) {
-    summarize(/* print = */ true, /* detailed = */ false);
-  }
+  std::string model_summary =
+      summarize(/* print = */ print_when_done, /* detailed = */ false);
+  log::info(model_summary);
 }
 
 MetricData BoltGraph::train(
     const std::vector<dataset::BoltDatasetPtr>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config) {
-  DatasetContext train_context(train_data, train_labels);
+  DatasetContext dataset_context(train_data, train_labels);
 
-  verifyCanTrain(train_context);
+  verifyCanTrain(dataset_context);
 
-  uint32_t rebuild_hash_tables_batch =
-      train_config.getRebuildHashTablesBatchInterval(train_context.batchSize(),
-                                                     train_context.len());
-
-  uint32_t reconstruct_hash_functions_batch =
-      train_config.getReconstructHashFunctionsBatchInterval(
-          train_context.batchSize(), train_context.len());
-
-  /*
-    Because of how the datasets are read we know that all batches will not have
-    a batch size larger than the first batch_size. We will be using the same
-    datastructures to store the activations for every batch during training so
-    we need this to be able to support the largest batch size.
-   */
-  prepareToProcessBatches(train_context.batchSize(), /* use_sparsity=*/true);
+  TrainState train_state(train_config, dataset_context.batchSize(),
+                         dataset_context.len());
 
   std::vector<double> time_per_epoch;
 
   MetricAggregator metrics = train_config.getMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
-  callbacks.onTrainBegin(*this);
+  callbacks.onTrainBegin(*this, train_state);
 
-  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
-  // some sort of RAII training context object whose destructor will
-  // automatically delete the training state
-  try {
-    for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
-      callbacks.onEpochBegin(*this);
+  for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+    callbacks.onEpochBegin(*this, train_state);
 
+    /*
+      Because of how the datasets are read we know that all batches will not
+      have a batch size larger than the first batch_size. We will be using the
+      same datastructures to store the activations for every batch during
+      training so we need this to be able to support the largest batch size.
+
+      This is done per epoch so callbacks can call predict during training.
+    */
+    prepareToProcessBatches(dataset_context.batchSize(),
+                            /* use_sparsity=*/true);
+
+    // TODO(josh/Nick): This try catch is kind of a hack, we should really use
+    // some sort of RAII training context object whose destructor will
+    // automatically delete the training state
+    try {
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
-      ProgressBar bar(train_context.numBatches(), train_config.verbose());
+
+      std::optional<ProgressBar> bar = makeOptionalProgressBar(
+          /*make=*/train_config.verbose(),
+          /*description=*/fmt::format("train epoch {}", _epoch_count),
+          /*max_steps=*/dataset_context.numBatches());
+
       auto train_start = std::chrono::high_resolution_clock::now();
 
-      for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
+      for (uint64_t batch_idx = 0; batch_idx < dataset_context.numBatches();
            batch_idx++) {
-        callbacks.onBatchBegin(*this);
+        callbacks.onBatchBegin(*this, train_state);
 
-        train_context.setInputs(batch_idx, _inputs);
+        dataset_context.setInputs(batch_idx, _inputs);
 
-        const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
+        const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
         processTrainingBatch(batch_labels, metrics);
-        updateParametersAndSampling(train_config.learningRate(),
-                                    rebuild_hash_tables_batch,
-                                    reconstruct_hash_functions_batch);
+        updateParametersAndSampling(
+            train_state.learning_rate, train_state.rebuild_hash_tables_batch,
+            train_state.reconstruct_hash_functions_batch);
 
-        bar.increment();
+        if (bar) {
+          bar->increment();
+        }
 
-        callbacks.onBatchEnd(*this);
+        log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
+                  metrics.summary());
+
+        callbacks.onBatchEnd(*this, train_state);
       }
-
-      callbacks.onEpochEnd(*this);
-      if (callbacks.shouldStopTraining()) {
-        break;
-      }
-      perEpochCallback();
 
       auto train_end = std::chrono::high_resolution_clock::now();
       int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
@@ -130,23 +144,34 @@ MetricData BoltGraph::train(
                                .count();
 
       time_per_epoch.push_back(static_cast<double>(epoch_time));
-      if (train_config.verbose()) {
-        std::cout << std::endl
-                  << "Processed " << train_context.numBatches()
-                  << " training batches in " << epoch_time << " seconds"
-                  << std::endl;
+
+      std::string logline = fmt::format(
+          "train | epoch {} | complete |  batches {} | time {}s | {}",
+          _epoch_count, dataset_context.numBatches(), epoch_time,
+          metrics.summary());
+
+      log::info(logline);
+
+      if (bar) {
+        bar->close(logline);
       }
+
       _epoch_count++;
       metrics.logAndReset();
+    } catch (const std::exception& e) {
+      cleanupAfterBatchProcessing();
+      throw;
     }
-  } catch (const std::exception& e) {
+
     cleanupAfterBatchProcessing();
-    throw;
+
+    callbacks.onEpochEnd(*this, train_state);
+    if (train_state.stop_training) {
+      break;
+    }
   }
 
-  cleanupAfterBatchProcessing();
-
-  callbacks.onTrainEnd(*this);
+  callbacks.onTrainEnd(*this, train_state);
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
@@ -177,8 +202,6 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
     metrics.processSample(_output->getOutputVector(vec_id),
                           batch_labels[vec_id]);
   }
-
-  perBatchCallback();
 }
 
 void BoltGraph::updateParametersAndSampling(
@@ -338,7 +361,10 @@ InferenceResult BoltGraph::predict(
       _output, predict_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
 
-  ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
+  std::optional<ProgressBar> bar = makeOptionalProgressBar(
+      /*make=*/predict_config.verbose(),
+      /*description=*/"test",
+      /*max_steps=*/predict_context.numBatches());
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
@@ -356,7 +382,9 @@ InferenceResult BoltGraph::predict(
 
       processInferenceBatch(batch_size, batch_labels, metrics);
 
-      bar.increment();
+      if (bar) {
+        bar->increment();
+      }
 
       processOutputCallback(predict_config.outputCallback(), batch_size);
 
@@ -374,11 +402,12 @@ InferenceResult BoltGraph::predict(
                           test_end - test_start)
                           .count();
 
-  if (predict_config.verbose()) {
-    std::cout << std::endl
-              << "Processed " << predict_context.numBatches()
-              << " test batches in " << test_time << " milliseconds"
-              << std::endl;
+  std::string logline =
+      fmt::format("test | complete |  batches {} | time {}s | {}", _epoch_count,
+                  predict_context.numBatches(), test_time, metrics.summary());
+  log::info(logline);
+  if (bar) {
+    bar->close(logline);
   }
 
   metrics.logAndReset();
@@ -718,7 +747,7 @@ std::string BoltGraph::summarize(bool print, bool detailed) const {
   }
   summary << "============================================================\n";
   if (print) {
-    std::cout << summary.str() << std::flush;
+    std::cout << summary.str() << std::endl;
   }
   return summary.str();
 }

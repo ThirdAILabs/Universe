@@ -3,6 +3,7 @@
 #include <hashing/python_bindings/HashingPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <search/python_bindings/DocSearchPython.h>
+#include <utils/Logging.h>
 #include <utils/Version.h>
 
 // Pybind11 library
@@ -37,6 +38,22 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         py::arg("license_path"),
         "Set a license filepath for any future calls to the thirdai library.");
 #endif
+
+  m.def("setup_logging", &thirdai::log::setupLogging,
+        py::arg("log_to_stderr") = thirdai::log::DEFAULT_LOG_TO_STDERR,
+        py::arg("path") = thirdai::log::DEFAULT_LOG_PATH,
+        py::arg("level") = thirdai::log::DEFAULT_LOG_LEVEL,
+        py::arg("pattern") = thirdai::log::DEFAULT_LOG_PATTERN,
+        "Set up logging for thirdai C++ library.\n"
+        "  log_to_stderr: bool - Print logs to standard error. Turned off "
+        "(false) by default.\n"
+        "  path: str - Path to file to write logs to. Empty (default) implies "
+        "no file logging.\n"
+        "  level: str - Print logs upto this level. Choices are "
+        "trace,debug,info,warn,critical,error,off. Default is info.\n"
+        "  pattern: str - Pattern string to customize logging from client. See "
+        "https://github.com/gabime/spdlog/wiki/3.-Custom-formatting for using "
+        "format-strings.");
 
   m.attr("__version__") = thirdai::version();
 
