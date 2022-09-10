@@ -5,6 +5,7 @@
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
@@ -89,18 +90,26 @@ class AutoClassifierBase {
 
     BoltVector output = _model->predictSingle({input}, useSparseInference());
 
-    processPredictionBeforeReturning(output.active_neurons, output.activations,
-                                     output.len);
+    return processOutput(output);
+  }
 
-    switch (_return_mode) {
-      case ReturnMode::NumpyArray:
-        return constructNumpyVector(output);
-      case ReturnMode::ClassName:
-        return py::cast(getClassName(output.getHighestActivationId()));
-      default:
-        // This cannot be reached but the compiler complains.
-        throw std::invalid_argument("Invalid ReturnMode reached.");
+  py::list predict(const std::vector<PREDICT_INPUT_TYPE>& samples) {
+    std::vector<BoltVector> inputs(samples.size());
+
+#pragma omp parallel for default(none) shared(inputs, samples)
+    for (uint32_t i = 0; i < samples.size(); i++) {
+      inputs[i] = featurizeInputForInference(samples[i]);
     }
+
+    BoltBatch outputs = _model->predictSingleBatch(
+        {BoltBatch(std::move(inputs))}, useSparseInference());
+
+    py::list py_outputs;
+    for (const auto& output : outputs) {
+      py_outputs.append(processOutput(output));
+    }
+
+    return py_outputs;
   }
 
   virtual ~AutoClassifierBase() = default;
@@ -235,6 +244,21 @@ class AutoClassifierBase {
     }
 
     dataset->restart();
+  }
+
+  inline py::object processOutput(BoltVector& output) {
+    processPredictionBeforeReturning(output.active_neurons, output.activations,
+                                     output.len);
+
+    switch (_return_mode) {
+      case ReturnMode::NumpyArray:
+        return constructNumpyVector(output);
+      case ReturnMode::ClassName:
+        return py::cast(getClassName(output.getHighestActivationId()));
+      default:
+        // This cannot be reached but the compiler complains.
+        throw std::invalid_argument("Invalid ReturnMode reached.");
+    }
   }
 
   // TODO(Someone): Allow this to return top-k class names as well.
