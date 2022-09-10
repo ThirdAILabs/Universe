@@ -93,7 +93,7 @@ class AutoClassifierBase {
     return processOutput(output);
   }
 
-  py::list predict(const std::vector<PREDICT_INPUT_TYPE>& samples) {
+  py::list predictBatch(const std::vector<PREDICT_INPUT_TYPE>& samples) {
     std::vector<BoltVector> inputs(samples.size());
 
 #pragma omp parallel for default(none) shared(inputs, samples)
@@ -101,11 +101,13 @@ class AutoClassifierBase {
       inputs[i] = featurizeInputForInference(samples[i]);
     }
 
-    BoltBatch outputs = _model->predictSingleBatch(
-        {BoltBatch(std::move(inputs))}, useSparseInference());
+    std::vector<BoltBatch> batch;
+    batch.push_back(BoltBatch(std::move(inputs)));
+    BoltBatch outputs =
+        _model->predictSingleBatch(std::move(batch), useSparseInference());
 
     py::list py_outputs;
-    for (const auto& output : outputs) {
+    for (BoltVector& output : outputs) {
       py_outputs.append(processOutput(output));
     }
 

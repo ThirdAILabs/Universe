@@ -77,4 +77,24 @@ def test_text_classifier_clinc_dataset():
         single_prediction = new_classifier.predict(sample.split(",")[1])
         assert single_prediction == original_prediction
 
+    for samples, original_predictions in batch_predictions(test_set, predictions):
+
+        new_samples = [x.split(",")[1] for x in samples]
+        batched_prediction = new_classifier.predict_batch(new_samples)
+
+        for prediction, original_prediction in zip(batched_prediction, original_predictions):
+            assert prediction == original_prediction
+
     remove_files([TRAIN_FILE, TEST_FILE, SAVE_FILE])
+
+
+def batch_predictions(original_predictions, samples, batch_size = 10):
+    batches = []
+    for i in range(0, len(original_predictions), batch_size):
+        batches.append(
+            (
+                original_predictions[i:i+batch_size],
+                samples[i:i+batch_size]
+            )
+        )
+    return batches
