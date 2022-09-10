@@ -39,6 +39,10 @@ def test_with_valid_license():
     this_should_require_a_license_bolt()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Invalid license currently does an access violation on Windows",
+)
 def test_with_expired_license():
     import thirdai
 
