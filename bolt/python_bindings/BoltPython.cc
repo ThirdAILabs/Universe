@@ -163,6 +163,19 @@ void createBoltSubmodule(py::module_& module) {
 
   defineAutoClassifierCommonMethods(tabular_classifier);
 
+  /**
+   * Binary Text Classifier
+   */
+  py::class_<BinaryTextClassifier> binary_text_classifier(
+      bolt_submodule, "BinaryTextClassifier");
+
+  binary_text_classifier.def(py::init<uint32_t>(), py::arg("n_outputs"));
+
+  defineAutoClassifierCommonMethods(binary_text_classifier);
+
+  /**
+   * Sequential Classifier
+   */
   py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
                                    "Autoclassifier for sequential predictions.")
       .def(py::init<

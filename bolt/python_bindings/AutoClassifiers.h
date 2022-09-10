@@ -9,9 +9,12 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
@@ -23,13 +26,16 @@
 
 namespace thirdai::bolt::python {
 
-inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes);
+inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes,
+                                bool softmax_output);
+inline std::string convertTokensToString(const std::vector<uint32_t>& tokens);
 inline float getHiddenLayerSparsity(uint64_t layer_dim);
 
 class TextClassifier final : public AutoClassifierBase<std::string> {
  public:
   TextClassifier(uint32_t hidden_layer_dim, uint32_t n_classes)
-      : AutoClassifierBase(createModel(hidden_layer_dim, n_classes),
+      : AutoClassifierBase(createModel(hidden_layer_dim, n_classes,
+                                       /* softmax_output= */ true),
                            ReturnMode::ClassName) {
     _label_id_lookup = dataset::ThreadSafeVocabulary::make(n_classes);
   }
@@ -161,7 +167,7 @@ class MultiLabelTextClassifier final
 
   BoltVector featurizeInputForInference(
       const std::vector<uint32_t>& input) final {
-    std::string sentence = tokensToSentence(input);
+    std::string sentence = convertTokensToString(input);
 
     return dataset::TextEncodingUtils::computePairgrams(
         sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
@@ -242,17 +248,6 @@ class MultiLabelTextClassifier final
     return 0.05;
   }
 
-  static std::string tokensToSentence(const std::vector<uint32_t>& tokens) {
-    std::stringstream sentence_ss;
-    for (uint32_t i = 0; i < tokens.size(); i++) {
-      if (i > 0) {
-        sentence_ss << ' ';
-      }
-      sentence_ss << tokens[i];
-    }
-    return sentence_ss.str();
-  }
-
   float _threshold;
 
   // Private constructor for cereal.
@@ -271,7 +266,8 @@ class TabularClassifier final
  public:
   TabularClassifier(uint32_t hidden_layer_dim, uint32_t n_classes,
                     std::vector<std::string> column_datatypes)
-      : AutoClassifierBase(createModel(hidden_layer_dim, n_classes),
+      : AutoClassifierBase(createModel(hidden_layer_dim, n_classes,
+                                       /* softmax_output= */ true),
                            ReturnMode::ClassName),
         _column_datatypes(std::move(column_datatypes)) {}
 
@@ -418,9 +414,94 @@ class TabularClassifier final
   std::vector<std::string> _column_datatypes;
 };
 
-inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes) {
-  auto input_layer = Input::make(
-      dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
+class BinaryTextClassifier final
+    : public AutoClassifierBase<std::vector<uint32_t>> {
+ public:
+  explicit BinaryTextClassifier(uint32_t n_outputs)
+      : AutoClassifierBase(createModel(/* hidden_layer_dim= */ 1000, n_outputs,
+                                       /* softmax_output= */ false),
+                           ReturnMode::ClassName) {}
+
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<BinaryTextClassifier> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<BinaryTextClassifier> deserialize_into(
+        new BinaryTextClassifier());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
+
+ protected:
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
+                     std::optional<uint64_t> max_in_memory_batches) final {
+    (void)max_in_memory_batches;
+    return getDataset(data_loader);
+  }
+
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+    return getDataset(data_loader);
+  }
+
+  BoltVector featurizeInputForInference(
+      const std::vector<uint32_t>& tokens) final {
+    std::string sentence = convertTokensToString(tokens);
+
+    return dataset::TextEncodingUtils::computeUnigrams(
+        sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
+  }
+
+  std::string getClassName(uint32_t neuron_id) final {
+    (void)neuron_id;
+    throw std::runtime_error(
+        "getClassName() is not support for BinaryTextClassifier.");
+  }
+
+  uint32_t defaultBatchSize() const final { return 256; }
+
+  bool freezeHashTablesAfterFirstEpoch() const final { return false; }
+
+  bool useSparseInference() const final { return false; }
+
+  std::vector<std::string> getEvaluationMetrics() const final { return {}; }
+
+ private:
+  static std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getDataset(std::shared_ptr<dataset::DataLoader> data_loader) {
+    auto batch_processor = dataset::GenericBatchProcessor::make(
+        {dataset::UniGramTextBlock::make(/* col= */ 5)},
+        {dataset::DenseArrayBlock::make(/* start_col= */ 0, /* dim= */ 5)});
+
+    return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+        std::move(data_loader), batch_processor);
+  }
+
+  // Private constructor for cereal.
+  BinaryTextClassifier()
+      : AutoClassifierBase(nullptr, ReturnMode::NumpyArray) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<AutoClassifierBase>(this));
+  }
+};
+
+inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes,
+                                bool softmax_output) {
+  auto input_layer =
+      Input::make(dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
 
   auto hidden_layer = FullyConnectedNode::makeAutotuned(
       /* dim= */ hidden_layer_dim,
@@ -429,16 +510,34 @@ inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes) {
   hidden_layer->addPredecessor(input_layer);
 
   auto output_layer = FullyConnectedNode::makeDense(
-      /* dim= */ n_classes, /* activation= */ "softmax");
+      /* dim= */ n_classes,
+      /* activation= */ softmax_output ? "softmax" : "sigmoid");
   output_layer->addPredecessor(hidden_layer);
 
   auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
                                            output_layer);
 
-  model->compile(std::make_shared<CategoricalCrossEntropyLoss>(),
-                 /* print_when_done= */ false);
+  std::shared_ptr<LossFunction> loss;
+  if (softmax_output) {
+    loss = std::make_shared<CategoricalCrossEntropyLoss>();
+  } else {
+    loss = std::make_shared<BinaryCrossEntropyLoss>();
+  }
+
+  model->compile(loss, /* print_when_done= */ false);
 
   return model;
+}
+
+inline std::string convertTokensToString(const std::vector<uint32_t>& tokens) {
+  std::stringstream sentence_ss;
+  for (uint32_t i = 0; i < tokens.size(); i++) {
+    if (i > 0) {
+      sentence_ss << ' ';
+    }
+    sentence_ss << tokens[i];
+  }
+  return sentence_ss.str();
 }
 
 inline float getHiddenLayerSparsity(uint64_t layer_dim) {
@@ -465,3 +564,4 @@ inline float getHiddenLayerSparsity(uint64_t layer_dim) {
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::TextClassifier)
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::MultiLabelTextClassifier)
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::TabularClassifier)
+CEREAL_REGISTER_TYPE(thirdai::bolt::python::BinaryTextClassifier)
