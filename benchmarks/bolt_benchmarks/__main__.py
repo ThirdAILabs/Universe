@@ -61,8 +61,11 @@ def load_and_compile_model(model_config):
             pred_names = node_config["preds"]
             pred_nodes = [get_node_by_name(pred_name) for pred_name in pred_names]
             for pred_name in pred_names:
-                nodes_with_no_successor.remove(pred_name)
+                if pred_name in nodes_with_no_successor:
+                    nodes_with_no_successor.remove(pred_name)
             if config_get_required(node_config, "type") == "Switch":
+                node(pred_nodes[0], pred_nodes[1])
+            elif config_get_required(node_config, "type") == "DlrmAttention":
                 node(pred_nodes[0], pred_nodes[1])
             else:
                 node(pred_nodes)
@@ -275,6 +278,8 @@ def construct_switch_node(switch_config):
         n_layers=config_get_required(switch_config, "n_layers"),
     )
 
+def construct_dlrm_attention_node(node_config):
+    return bolt.graph.DlrmAttention()
 
 def construct_node(node_config):
     node_type = config_get_required(node_config, "type")
@@ -288,6 +293,8 @@ def construct_node(node_config):
         return construct_embedding_node(node_config)
     if node_type == "Switch":
         return construct_switch_node(node_config)
+    if node_type == "DlrmAttention":
+        return construct_dlrm_attention_node(node_config);
     raise ValueError(f"{node_type} is not a valid node type.")
 
 

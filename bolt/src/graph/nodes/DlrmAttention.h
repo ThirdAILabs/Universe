@@ -33,13 +33,13 @@ class DlrmAttentionNode final
     : public Node,
       public std::enable_shared_from_this<DlrmAttentionNode> {
  public:
-  DlrmAttentionNode() : _compiled_state(std::nullopt) {}
+  DlrmAttentionNode() : _compiled_state(std::nullopt), _compiled(false) {}
 
   uint32_t outputDim() const final {
-    if (getState() != NodeState::Compiled) {
+    if (getState() == NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "Cannot get the output dimension of DlrmAttentionNode before "
-          "compilation.");
+          "setting predecessors.");
     }
 
     return _compiled_state->_output_dim;
@@ -60,11 +60,6 @@ class DlrmAttentionNode final
           "dimension of FullyConnectedNode in DLRMFeatureInteractionNode");
     }
 
-    return shared_from_this();
-  }
-
- protected:
-  void compileImpl() final {
     uint32_t num_embedding_chunks =
         _embedding_node->outputDim() / _fully_connected_node->outputDim();
 
@@ -77,7 +72,12 @@ class DlrmAttentionNode final
         /* num_embedding_chunks= */ num_embedding_chunks,
         /* output_dim= */ output_dim,
         /* embedding_chunk_size= */ embedding_chunk_size);
+
+    return shared_from_this();
   }
+
+ protected:
+  void compileImpl() final { _compiled = true; }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayersImpl() const final {
@@ -221,16 +221,16 @@ class DlrmAttentionNode final
 
   NodeState getState() const final {
     bool predecessors_set = _fully_connected_node && _embedding_node;
-    if (!predecessors_set && !_compiled_state && !_outputs) {
+    if (!predecessors_set && !_compiled_state && !_compiled && !_outputs) {
       return NodeState::Constructed;
     }
-    if (predecessors_set && !_compiled_state && !_outputs) {
+    if (predecessors_set && _compiled_state && !_compiled && !_outputs) {
       return NodeState::PredecessorsSet;
     }
-    if (predecessors_set && _compiled_state && !_outputs) {
+    if (predecessors_set && _compiled_state && _compiled && !_outputs) {
       return NodeState::Compiled;
     }
-    if (predecessors_set && _compiled_state && _outputs) {
+    if (predecessors_set && _compiled_state && _compiled && _outputs) {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
@@ -300,7 +300,10 @@ class DlrmAttentionNode final
   };
   std::optional<CompiledState> _compiled_state;
 
+  bool _compiled;
   std::optional<BoltBatch> _outputs;
 };
+
+using DlrmAttentionNodePtr = std::shared_ptr<DlrmAttentionNode>;
 
 }  // namespace thirdai::bolt
