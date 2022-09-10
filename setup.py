@@ -69,6 +69,16 @@ class CMakeBuild(build_ext):
         if "CMAKE_ARGS" in os.environ:
             cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
 
+        # Detect if user wants to use ccache from a CMake variable
+        # If set to 0 (also used as a default when unset) ccache is disabled.
+        # Otherwise ccache is enabled.
+        use_ccache = os.environ.get("USE_CCACHE", "0")
+        if use_ccache != "0":
+            cmake_args += [
+                "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+                "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
+            ]
+
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)
             # multithreads automatically. MSVC would require all variables be
@@ -123,11 +133,15 @@ class CMakeBuild(build_ext):
         subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_dir)
 
 
+version = None
+with open("thirdai.version") as version_file:
+    version = version_file.read().strip()
+
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="thirdai",
-    version="0.1.8",
+    version=version,
     author="ThirdAI",
     author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
@@ -142,7 +156,20 @@ setup(
     zip_safe=False,
     install_requires=["numpy", "typing_extensions"],
     extras_require={
-        "test": ["pytest"],
+        # The cryptography requirement is necessary to avoid ssl errors
+        # The tokenizers requirement ensures that all of the [test] depedencies are
+        # installable from a wheel on an m1
+        "test": [
+            "pytest",
+            "boto3",
+            "moto",
+            "datasets",
+            "torch",
+            "toml",
+            "transformers",
+            "cryptography<=36.0.2",
+            "tokenizers==0.11.6",
+        ],
         "benchmark": [
             "toml",
             "psutil",
@@ -150,6 +177,7 @@ setup(
             "mlflow",
             "boto3",
         ],
+        "distributed": ["ray", "toml"],
     },
     packages=["thirdai"]
     + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],

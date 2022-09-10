@@ -1,33 +1,8 @@
-from thirdai import bolt, dataset
 import numpy as np
 import pytest
-from utils import gen_numpy_training_data
+from utils import gen_numpy_training_data, build_train_and_predict_single_hidden_layer
 
 pytestmark = [pytest.mark.unit]
-
-
-def build_train_and_predict(data_np, labels_np, num_classes, sparsity):
-    data = dataset.from_numpy(data_np, batch_size=64)
-    labels = dataset.from_numpy(labels_np, batch_size=64)
-
-    input_layer = bolt.graph.Input(dim=num_classes)
-    output_layer = bolt.graph.FullyConnected(
-        dim=num_classes, activation="softmax", sparsity=sparsity
-    )(input_layer)
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(bolt.CategoricalCrossEntropyLoss())
-
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3).silence()
-    model.train(data, labels, train_config)
-
-    predict_config = (
-        bolt.graph.PredictConfig.make()
-        .enable_sparse_inference()
-        .with_metrics(["categorical_accuracy"])
-        .return_activations()
-        .silence()
-    )
-    return model.predict(data, labels, predict_config)
 
 
 def test_dense_numpy_output():
@@ -37,8 +12,8 @@ def test_dense_numpy_output():
     data, labels = gen_numpy_training_data(
         n_classes=num_classes, n_samples=num_samples, convert_to_bolt_dataset=False
     )
-    metrics, activations = build_train_and_predict(
-        data, labels, num_classes, sparsity=1
+    metrics, activations = build_train_and_predict_single_hidden_layer(
+        data, labels, num_classes, output_sparsity=1
     )
 
     assert activations.shape == (num_samples, num_classes)
@@ -57,8 +32,12 @@ def test_sparse_numpy_output():
     data_np, labels_np = gen_numpy_training_data(
         n_classes=num_classes, n_samples=num_samples, convert_to_bolt_dataset=False
     )
-    metrics, activations, active_neurons = build_train_and_predict(
-        data_np, labels_np, num_classes, sparsity=sparsity
+    metrics, activations, active_neurons = build_train_and_predict_single_hidden_layer(
+        data_np,
+        labels_np,
+        num_classes,
+        output_sparsity=sparsity,
+        enable_sparse_inference=True,
     )
 
     assert activations.shape == (num_samples, num_classes * sparsity)

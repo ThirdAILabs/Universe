@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <limits>
@@ -126,7 +127,10 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
       for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
         float val =
             _ground_truths_vectors.at(vec_count_base + v).dense_features.at(i);
-        ASSERT_EQ(dense_inputs[v].activations[i], val);
+        if (val != 0) {
+          val = logf(val);
+        }
+        ASSERT_NEAR(dense_inputs[v].activations[i], val, 0.0005);
       }
     }
   }
@@ -162,10 +166,12 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTestSparseLabel) {
-  auto [dense_inputs, tokens, labels] = ClickThroughDatasetLoader::loadDataset(
-      _filename, _batch_size, /* num_dense_features= */ getNumDenseFeatures(),
-      /* max_num_categorical_features= */ getNumCategoricalFeatures(),
-      /* delimiter= */ '\t');
+  auto [dense_inputs, tokens, labels] =
+      ClickThroughDatasetLoader::loadDatasetFromFile(
+          _filename, _batch_size,
+          /* num_dense_features= */ getNumDenseFeatures(),
+          /* max_num_categorical_features= */ getNumCategoricalFeatures(),
+          /* delimiter= */ '\t');
 
   uint32_t label_count = 0;
   for (const auto& batch : *labels) {

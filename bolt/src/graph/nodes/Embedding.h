@@ -9,6 +9,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 
@@ -16,10 +17,10 @@ namespace thirdai::bolt {
 
 class EmbeddingNode final : public Node,
                             public std::enable_shared_from_this<EmbeddingNode> {
- public:
+ private:
   EmbeddingNode(uint32_t num_embedding_lookups, uint32_t lookup_size,
                 uint32_t log_embedding_block_size, const std::string& reduction,
-                std::optional<uint32_t> num_tokens_per_input = std::nullopt)
+                std::optional<uint32_t> num_tokens_per_input)
       : _embedding_layer(nullptr),
         _config(EmbeddingLayerConfig(
             /* num_embedding_lookups= */ num_embedding_lookups,
@@ -30,13 +31,23 @@ class EmbeddingNode final : public Node,
         _outputs(std::nullopt),
         _token_input(nullptr) {}
 
+ public:
+  static std::shared_ptr<EmbeddingNode> make(
+      uint32_t num_embedding_lookups, uint32_t lookup_size,
+      uint32_t log_embedding_block_size, const std::string& reduction,
+      std::optional<uint32_t> num_tokens_per_input = std::nullopt) {
+    return std::shared_ptr<EmbeddingNode>(new EmbeddingNode(
+        num_embedding_lookups, lookup_size, log_embedding_block_size, reduction,
+        num_tokens_per_input));
+  }
+
   uint32_t outputDim() const final {
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
-      return _config->numEmbeddingLookups() * _config->lookupSize();
+      return _config->getOutputDim();
     }
-    return _embedding_layer->getEmbeddingDim();
+    return _embedding_layer->getOutputDim();
   }
 
   std::shared_ptr<EmbeddingNode> addInput(InputPtr input) {

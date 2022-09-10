@@ -47,6 +47,12 @@ wheelhouse
 # Output files
 *.svg
 
+# Python virtual env
+.venv
+.env
+venv
+env
+
 # -- Begin vim .gitignore
 # Swap
 [._]*.s[a-v][a-z]
@@ -70,3 +76,6 @@ tags
 [._]*.un~
 
 # -- End vim .gitignore
+
+# Ignore log files
+*.log

@@ -21,7 +21,7 @@ TEST(LossFunctionMetrics, MeanSquaredErrorMetric) {
                                          0.0, 0.0, 0.0, 0.3};
   BoltVector dense_output = BoltVector::makeDenseVector(dense_output_vec);
   BoltVector sparse_output =
-      BoltVector::makeSparseVector({0, 1, 3, 7}, {0.2, 0.2, 0.3, 0.3});
+      BoltVector::makeSparseVector({0, 7, 1, 3}, {0.2, 0.3, 0.2, 0.3});
 
   std::vector<float> dense_labels_vec = {0.0, 0.0, 0.0, 0.6,
                                          0.0, 0.0, 0.0, 0.4};
@@ -32,17 +32,21 @@ TEST(LossFunctionMetrics, MeanSquaredErrorMetric) {
 
   float expected_error = meanSquaredError(dense_output_vec, dense_labels_vec);
 
-  mse.computeMetric(dense_output, dense_labels);
-  ASSERT_FLOAT_EQ(mse.getMetricAndReset(false), expected_error);
+  mse.record(dense_output, dense_labels);
+  ASSERT_FLOAT_EQ(mse.value(), expected_error);
+  mse.reset();
 
-  mse.computeMetric(sparse_output, dense_labels);
-  ASSERT_FLOAT_EQ(mse.getMetricAndReset(false), expected_error);
+  mse.record(sparse_output, dense_labels);
+  ASSERT_FLOAT_EQ(mse.value(), expected_error);
+  mse.reset();
 
-  mse.computeMetric(dense_output, sparse_labels);
-  ASSERT_FLOAT_EQ(mse.getMetricAndReset(false), expected_error);
+  mse.record(dense_output, sparse_labels);
+  ASSERT_FLOAT_EQ(mse.value(), expected_error);
+  mse.reset();
 
-  mse.computeMetric(sparse_output, sparse_labels);
-  ASSERT_FLOAT_EQ(mse.getMetricAndReset(false), expected_error);
+  mse.record(sparse_output, sparse_labels);
+  ASSERT_FLOAT_EQ(mse.value(), expected_error);
+  mse.reset();
 }
 
 }  // namespace thirdai::bolt::tests

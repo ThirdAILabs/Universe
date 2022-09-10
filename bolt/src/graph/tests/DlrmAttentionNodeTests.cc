@@ -24,18 +24,18 @@ namespace thirdai::bolt::tests {
 TEST(DlrmAttentionNodeTest, TestSetMembership) {
   uint32_t n_ids = 1000, n_tokens = 5, batch_size = 100, n_batches = 100;
 
-  auto dense_input = std::make_shared<Input>(n_ids);
+  auto dense_input = Input::make(n_ids);
 
-  auto fc_hidden = std::make_shared<FullyConnectedNode>(
+  auto fc_hidden = FullyConnectedNode::makeDense(
                        /* dim= */ 20, /* activation= */ "relu")
                        ->addPredecessor(dense_input);
 
-  auto token_input = std::make_shared<Input>(
+  auto token_input = Input::makeTokenInput(
       /* expected_dim= */ n_ids,
-      /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(n_tokens,
-                                                              n_tokens));
+      /* num_tokens_range= */ std::pair<uint32_t, uint32_t>(n_tokens,
+                                                            n_tokens));
 
-  auto embedding = std::make_shared<EmbeddingNode>(
+  auto embedding = EmbeddingNode::make(
                        /* num_embedding_lookups */ 4, /* lookup_size= */ 5,
                        /* log_embedding_block_size= */ 14,
                        /* reduction= */ "concatenation",
@@ -45,7 +45,7 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
   auto dlrm_attention = std::make_shared<DlrmAttentionNode>()->setPredecessors(
       fc_hidden, embedding);
 
-  auto output = std::make_shared<FullyConnectedNode>(
+  auto output = FullyConnectedNode::makeDense(
                     /* dim= */ 2, /* activation= */ "softmax")
                     ->addPredecessor(dlrm_attention);
 

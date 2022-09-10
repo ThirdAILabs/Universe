@@ -3,39 +3,8 @@ import pytest
 pytestmark = [pytest.mark.unit]
 
 from thirdai import bolt, dataset
-from utils import gen_numpy_training_data
+from utils import gen_numpy_training_data, build_single_node_bolt_dag_model
 import numpy as np
-
-
-def build_single_node_bolt_dag_model(train_data, train_labels, sparsity, num_classes):
-    data = dataset.from_numpy(train_data, batch_size=64)
-    labels = dataset.from_numpy(train_labels, batch_size=64)
-
-    input_layer = bolt.graph.Input(dim=num_classes)
-    hidden_layer = bolt.graph.FullyConnected(
-        dim=2000,
-        sparsity=sparsity,
-        activation="relu",
-    )(input_layer)
-    output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
-        hidden_layer
-    )
-
-    train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=3)
-        .silence()
-        .with_rebuild_hash_tables(3000)
-        .with_reconstruct_hash_functions(10000)
-    )
-    model = bolt.graph.DistributedModel(
-        inputs=[input_layer],
-        output=output_layer,
-        train_data=[data],
-        train_labels=labels,
-        train_config=train_config,
-        loss=bolt.CategoricalCrossEntropyLoss(),
-    )
-    return model
 
 
 def avg_gradients(model_a, model_b):
@@ -138,8 +107,8 @@ def test_distributed_training_with_bolt():
     epochs = 5
     for epoch in range(epochs):
         for batch_num in range(num_of_batches):
-            model_a.calculateGraidentSingleNode(batch_num)
-            model_b.calculateGraidentSingleNode(batch_num)
+            model_a.calculateGradientSingleNode(batch_num)
+            model_b.calculateGradientSingleNode(batch_num)
 
             (
                 avg_weight_gradients_fc_1,

@@ -17,17 +17,17 @@ static constexpr uint32_t batch_size = 100;
 static constexpr uint32_t seed = 24902;
 
 TEST(EmbeddingNodeTest, SimpleTokenDataset) {
-  auto token_input = std::make_shared<Input>(
-      /* dim= */ num_batches * batch_size + 1,
-      /* num_nonzeros_range= */ std::pair<uint32_t, uint32_t>(1, 1));
+  auto token_input = Input::makeTokenInput(
+      /* expected_dim= */ num_batches * batch_size + 1,
+      /* num_tokens_range= */ std::pair<uint32_t, uint32_t>(1, 1));
 
-  auto embedding_layer = std::make_shared<EmbeddingNode>(
+  auto embedding_layer = EmbeddingNode::make(
       /* num_embedding_lookups= */ 4, /* lookup_size= */ 8,
       /* log_embedding_block_size= */ 14,
       /* reduction= */ "sum");
   embedding_layer->addInput(token_input);
 
-  auto fully_connected_layer = std::make_shared<FullyConnectedNode>(
+  auto fully_connected_layer = FullyConnectedNode::makeDense(
       /* dim= */ 2,
       /* activation= */ "softmax");
   fully_connected_layer->addPredecessor(embedding_layer);

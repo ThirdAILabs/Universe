@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <limits>
 #include <optional>
@@ -13,7 +14,6 @@ class TrainConfig {
     construct the training config. The remaining parameters can be set using a
     builder pattern.
   */
-
   static TrainConfig makeConfig(float learning_rate, uint32_t epochs) {
     return TrainConfig(learning_rate, epochs);
   }
@@ -23,12 +23,7 @@ class TrainConfig {
     return *this;
   }
 
-  TrainConfig& withBatchSize(uint32_t batch_size) {
-    _batch_size = batch_size;
-    return *this;
-  }
-
-  TrainConfig silence() {
+  TrainConfig& silence() {
     _verbose = false;
     return *this;
   }
@@ -43,12 +38,19 @@ class TrainConfig {
     return *this;
   }
 
+  TrainConfig& withCallbacks(const std::vector<CallbackPtr>& callbacks) {
+    _callbacks = CallbackList(callbacks);
+    return *this;
+  }
+
+  CallbackList getCallbacks() const { return _callbacks; }
+
   constexpr uint32_t epochs() const { return _epochs; }
 
   constexpr float learningRate() const { return _learning_rate; }
 
   MetricAggregator getMetricAggregator() const {
-    return MetricAggregator(_metric_names, _verbose);
+    return MetricAggregator(_metric_names);
   }
 
   constexpr bool verbose() const { return _verbose; }
@@ -92,18 +94,19 @@ class TrainConfig {
         _learning_rate(learning_rate),
         _metric_names({}),
         _verbose(true),
-        _batch_size({}),
         _rebuild_hash_tables(std::nullopt),
-        _reconstruct_hash_functions(std::nullopt) {}
+        _reconstruct_hash_functions(std::nullopt),
+        _callbacks({}) {}
 
   uint32_t _epochs;
   float _learning_rate;
   std::vector<std::string> _metric_names;
   bool _verbose;
-  std::optional<uint32_t> _batch_size;
 
   std::optional<uint32_t> _rebuild_hash_tables;
   std::optional<uint32_t> _reconstruct_hash_functions;
+
+  CallbackList _callbacks;
 };
 
 class PredictConfig {
@@ -139,8 +142,10 @@ class PredictConfig {
   bool sparseInferenceEnabled() const { return _use_sparse_inference; }
 
   MetricAggregator getMetricAggregator() const {
-    return MetricAggregator(_metric_names, _verbose);
+    return MetricAggregator(_metric_names);
   }
+
+  std::vector<std::string> getMetricNames() const { return _metric_names; }
 
   constexpr bool verbose() const { return _verbose; }
 
@@ -159,6 +164,29 @@ class PredictConfig {
   std::vector<std::string> _metric_names;
   bool _use_sparse_inference, _verbose, _return_activations;
   std::optional<std::function<void(const BoltVector&)>> _output_callback;
+};
+
+class TrainState {
+ public:
+  TrainState(const TrainConfig& train_config, uint32_t batch_size,
+             uint32_t data_len)
+      : learning_rate(train_config.learningRate()),
+        verbose(train_config.verbose()),
+        rebuild_hash_tables_batch(
+            train_config.getRebuildHashTablesBatchInterval(batch_size,
+                                                           data_len)),
+        reconstruct_hash_functions_batch(
+            train_config.getReconstructHashFunctionsBatchInterval(batch_size,
+                                                                  data_len)),
+        stop_training(false) {}
+
+  float learning_rate;
+  bool verbose;
+
+  uint32_t rebuild_hash_tables_batch;
+  uint32_t reconstruct_hash_functions_batch;
+
+  bool stop_training;
 };
 
 }  // namespace thirdai::bolt
