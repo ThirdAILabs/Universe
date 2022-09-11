@@ -419,8 +419,8 @@ class TabularClassifier final
 };
 
 inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes) {
-  auto input_layer = Input::make(
-      dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
+  auto input_layer =
+      Input::make(dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
 
   auto hidden_layer = FullyConnectedNode::makeAutotuned(
       /* dim= */ hidden_layer_dim,
