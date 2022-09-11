@@ -48,11 +48,10 @@ class GraphBatchProcessor final : public BatchProcessor<BoltBatch, BoltBatch> {
       node->allocateMemoryForBatchProduct(rows.size());
     }
 
-    /*
-    #pragma omp parallel for default(none) \
-        shared(rows, input_vectors, label_vectors)
-    */
     _input_node->feed(rows);
+    
+#pragma omp parallel for default(none) \
+    shared(rows, input_vectors, label_vectors)
     for (uint32_t row_idx = 0; row_idx < rows.size(); row_idx++) {
       for (auto& node : _nodes) {
         node->process(row_idx);
