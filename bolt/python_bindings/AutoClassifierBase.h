@@ -101,8 +101,11 @@ class AutoClassifierBase {
       inputs[i] = featurizeInputForInference(samples[i]);
     }
 
+    // We initialize the vector this way because BoltBatch has a deleted copy
+    // constructor which is required for an initializer list.
     std::vector<BoltBatch> batch;
-    batch.push_back(BoltBatch(std::move(inputs)));
+    batch.emplace_back(std::move(inputs));
+
     BoltBatch outputs =
         _model->predictSingleBatch(std::move(batch), useSparseInference());
 
