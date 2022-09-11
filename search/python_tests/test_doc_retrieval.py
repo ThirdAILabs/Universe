@@ -1,5 +1,6 @@
 # Add unit and release test markers for all tests in this file
 import pytest
+import platform
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
