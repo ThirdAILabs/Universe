@@ -123,6 +123,18 @@ target_link_libraries(
 )
 
 add_executable(
+  graph_batch_processor_test
+  GraphBatchProcessorTest.cc
+)
+
+target_link_libraries(
+  graph_batch_processor_test
+  PRIVATE
+  gtest_main
+  OpenMP::OpenMP_CXX
+)
+
+add_executable(
   streaming_generic_dataset_loader_tests
   StreamingGenericDatasetLoaderTests.cc
 )
@@ -181,6 +193,7 @@ set(DATASET_TESTS
   user_item_history_block_tests
   block_batch_processor_test
   generic_batch_processor_test
+  graph_batch_processor_test
   text_processing_tests
   save_load_dataset_test
   streaming_generic_dataset_loader_tests
