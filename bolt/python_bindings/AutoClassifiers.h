@@ -293,7 +293,9 @@ class TabularClassifier final
         new TabularClassifier());
     iarchive(*deserialize_into);
 
-    deserialize_into->createBatchProcessor();
+    if (deserialize_into->_metadata) {
+      deserialize_into->createBatchProcessor();
+    }
 
     return deserialize_into;
   }
