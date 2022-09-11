@@ -269,6 +269,9 @@ class TabularClassifier final
       : AutoClassifierBase(createModel(hidden_layer_dim, n_classes,
                                        /* softmax_output= */ true),
                            ReturnMode::ClassName),
+        _vocab(nullptr),
+        _metadata(nullptr),
+        _batch_processor(nullptr),
         _column_datatypes(std::move(column_datatypes)) {}
 
   void save(const std::string& filename) {
@@ -286,6 +289,8 @@ class TabularClassifier final
         new TabularClassifier());
     iarchive(*deserialize_into);
 
+    deserialize_into->createBatchProcessor();
+
     return deserialize_into;
   }
 
@@ -295,24 +300,31 @@ class TabularClassifier final
                      std::optional<uint64_t> max_in_memory_batches) final {
     processTabularMetadata(data_loader, max_in_memory_batches);
 
+    createBatchProcessor();
+
     data_loader->restart();
 
     return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
-        std::move(data_loader), getBatchProcessor());
+        std::move(data_loader), _batch_processor);
   }
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
-    if (!_metadata) {
+    if (!_batch_processor) {
       throw std::runtime_error(
           "Cannot call evaulate on TabularClassifier before calling train.");
     }
     return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
-        std::move(data_loader), getBatchProcessor());
+        std::move(data_loader), _batch_processor);
   }
 
   BoltVector featurizeInputForInference(
       const std::vector<std::string>& values) final {
+    if (!_batch_processor) {
+      throw std::runtime_error(
+          "Cannot call featurizeInputForInference on TabularClasssifier before "
+          "training.");
+    }
     if (values.size() != _metadata->numColumns() - 1) {
       throw std::invalid_argument(
           "Passed in an input of size " + std::to_string(values.size()) +
@@ -333,10 +345,8 @@ class TabularClassifier final
     encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
                             /* value = */ " ");
 
-    dataset::GenericBatchProcessorPtr batch_processor = getBatchProcessor();
-
     BoltVector input;
-    if (auto err = batch_processor->makeInputVector(encodable_values, input)) {
+    if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
       std::rethrow_exception(err);
     }
 
@@ -358,7 +368,12 @@ class TabularClassifier final
   }
 
  private:
-  dataset::GenericBatchProcessorPtr getBatchProcessor() {
+  void createBatchProcessor() {
+    if (!_metadata) {
+      throw std::runtime_error(
+          "Cannot call createBatchProcessor for tabular classifier with "
+          "metadata as nullptr.");
+    }
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
         std::make_shared<dataset::TabularPairGram>(
             _metadata, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
@@ -370,9 +385,9 @@ class TabularClassifier final
         dataset::StringLookupCategoricalBlock::make(_metadata->getLabelCol(),
                                                     _vocab)};
 
-    return std::make_shared<dataset::GenericBatchProcessor>(
+    _batch_processor = dataset::GenericBatchProcessor::make(
         /* input_blocks = */ input_blocks,
-        /* target_blocks = */ target_blocks, /* has_header = */ true);
+        /* label_blocks = */ target_blocks, /* has_header = */ true);
   }
 
   void processTabularMetadata(
@@ -400,7 +415,11 @@ class TabularClassifier final
   }
 
   // Private constructor for cereal.
-  TabularClassifier() : AutoClassifierBase(nullptr, ReturnMode::NumpyArray) {}
+  TabularClassifier()
+      : AutoClassifierBase(nullptr, ReturnMode::NumpyArray),
+        _vocab(nullptr),
+        _metadata(nullptr),
+        _batch_processor(nullptr) {}
 
   friend class cereal::access;
   template <class Archive>
@@ -411,6 +430,7 @@ class TabularClassifier final
 
   dataset::ThreadSafeVocabularyPtr _vocab;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
+  dataset::GenericBatchProcessorPtr _batch_processor;
   std::vector<std::string> _column_datatypes;
 };
 

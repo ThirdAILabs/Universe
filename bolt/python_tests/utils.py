@@ -278,3 +278,26 @@ def build_train_and_predict_single_hidden_layer(
         predict_config.enable_sparse_inference()
 
     return model.predict(data, labels, predict_config)
+
+
+def check_autoclassifier_predict_correctness(classifier, test_samples, original_predictions):
+    for sample, original_prediction in zip(test_samples, original_predictions):
+        single_prediction = classifier.predict(sample)
+        assert single_prediction == original_prediction
+
+    for samples, predictions in batch_predictions(test_samples, original_predictions):
+        batched_prediction = classifier.predict_batch(samples)
+        for prediction, original_prediction in zip(batched_prediction, predictions):
+            assert prediction == original_prediction
+
+
+def batch_predictions(original_predictions, samples, batch_size = 10):
+    batches = []
+    for i in range(0, len(original_predictions), batch_size):
+        batches.append(
+            (
+                original_predictions[i:i+batch_size],
+                samples[i:i+batch_size]
+            )
+        )
+    return batches
