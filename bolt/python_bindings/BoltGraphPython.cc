@@ -8,6 +8,7 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
+#include <bolt/src/graph/callbacks/LearningRateScheduler.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -532,6 +533,21 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def_readwrite("reconstruct_hash_functions_batch",
                      &TrainState::reconstruct_hash_functions_batch)
       .def_readwrite("stop_training", &TrainState::stop_training);
+
+  py::class_<LearningRateScheduler, Callback>(callbacks_submodule,
+                                              "LearningRateScheduler")
+      .def(py::init<const std::function<float(float, uint32_t)>&>(),
+           py::arg("schedule"),
+           "The learning rate scheduler callback schedules learning rate "
+           "per-epoch changes"
+           "changes based on the schedule function.\n"
+           "Arguments:\n"
+           " * schedule: learning rate schedule function with the signature \n"
+           "         float schedule(float learning_rate, uint32_t epoch)\n")
+      .def(py::init<>(),
+           "Initializes the learning rate scheduler with the identity"
+           " function as the scheduler (i.e., static learning rate across "
+           "epochs).\n");
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")

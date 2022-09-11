@@ -7,23 +7,23 @@
 #include <utility>
 
 namespace thirdai::bolt {
-class LearningRateScheduler : public Callback {
+
+
+class LearningRateScheduler final : public Callback {
  public:
-  LearningRateScheduler()
-      : _schedule([](float learning_rate, uint32_t epoch) {
-          (void)epoch;  // NOLINT
-          return learning_rate;
-        }) {}
-  explicit LearningRateScheduler(std::function<float(float, uint32_t)> schedule)
-      : _schedule(std::move(schedule)) {}
+  LearningRateScheduler() : _schedule(std::nullopt) {}
+  explicit LearningRateScheduler(
+      const std::function<float(float, uint32_t)>& schedule)
+      : _schedule(schedule) {}
 
   void onEpochBegin(BoltGraph& model, TrainState& train_state) final {
-    (void)train_state;
-    uint32_t current_epoch = model.getEpochCount();
-    float current_learning_rate = train_state.learning_rate;
+    if (_schedule.has_value()) {
+      uint32_t current_epoch = model.getEpochCount();
+      float current_learning_rate = train_state.learning_rate;
 
-    train_state.learning_rate =
-        (*_schedule)(current_learning_rate, current_epoch);
+      train_state.learning_rate =
+          (*_schedule)(current_learning_rate, current_epoch);
+    }
   }
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
