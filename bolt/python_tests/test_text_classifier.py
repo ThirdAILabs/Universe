@@ -2,7 +2,7 @@ from thirdai import bolt
 import pytest
 import datasets
 import random
-from utils import remove_files, compute_accuracy_of_predictions
+from utils import remove_files, compute_accuracy_of_predictions, check_autoclassifier_predict_correctness
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -68,33 +68,9 @@ def test_text_classifier_clinc_dataset():
     with open(TEST_FILE) as test:
         test_set = test.readlines()
 
-    for sample, original_prediction in zip(test_set, predictions):
-        """
-        we are taking i+1 because first row is a header in test file and
-        split it with '","' because its how the sentence and label seperated uniquely
-        in file and taking the sentence which is present at first index.
-        """
-        single_prediction = new_classifier.predict(sample.split(",")[1])
-        assert single_prediction == original_prediction
+    test_samples = [x.split(",")[1] for x in test_set]
 
-    for samples, original_predictions in batch_predictions(test_set, predictions):
-
-        new_samples = [x.split(",")[1] for x in samples]
-        batched_prediction = new_classifier.predict_batch(new_samples)
-
-        for prediction, original_prediction in zip(batched_prediction, original_predictions):
-            assert prediction == original_prediction
+    check_autoclassifier_predict_correctness(new_classifier, test_samples, predictions)
 
     remove_files([TRAIN_FILE, TEST_FILE, SAVE_FILE])
 
-
-def batch_predictions(original_predictions, samples, batch_size = 10):
-    batches = []
-    for i in range(0, len(original_predictions), batch_size):
-        batches.append(
-            (
-                original_predictions[i:i+batch_size],
-                samples[i:i+batch_size]
-            )
-        )
-    return batches
