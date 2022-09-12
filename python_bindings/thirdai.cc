@@ -19,28 +19,9 @@
 #include <omp.h>
 #endif
 
-// TODO(all): Figure out naming convention for python exposed classes and
-// methods
-// TODO(any): Add docstrings to methods
-// TODO(any): Can we remove redudancy in the bindings?
-PYBIND11_MODULE(_thirdai, m) {  // NOLINT
-
-#ifndef __clang__
-  m.def("set_global_num_threads", &omp_set_num_threads,
-        py::arg("max_num_threads"),
-        "Set the maximum number of threads to use to any future calls to the "
-        "thirdai library.");
-#endif
-
-#if THIRDAI_CHECK_LICENSE
-  m.def("set_thirdai_license_path",
-        &thirdai::licensing::LicenseWrapper::setLicensePath,
-        py::arg("license_path"),
-        "Set a license filepath for any future calls to the thirdai library.");
-#endif
-
+void createLoggingSubmodule(py::module_& module_) {
   // Logging submodule
-  auto logging_submodule = m.def_submodule("logging");
+  auto logging_submodule = module_.def_submodule("logging");
 
   logging_submodule.def(
       "setup", &thirdai::log::setupLogging,
@@ -66,21 +47,55 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         :type pattern: str
         )pbdoc");
 
-#define DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(_level)               \
-  logging_submodule.def(#_level, [](const std::string& logline) { \
-    thirdai::log::_level(logline);                                \
-  })
+  logging_submodule.def(
+      "critical",
+      [](const std::string& logline) { thirdai::log::critical(logline); },
+      R"pbdoc(Write to logs with level critical.)pbdoc");
 
-  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(critical);
-  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(error);
-  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(warn);
-  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(info);
-  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(debug);
-  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(trace);
+  logging_submodule.def(
+      "error", [](const std::string& logline) { thirdai::log::error(logline); },
+      R"pbdoc(Write to logs with level error.)pbdoc");
 
-#undef DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN
+  logging_submodule.def(
+      "warn", [](const std::string& logline) { thirdai::log::warn(logline); },
+      R"pbdoc(Write to logs with level warn.)pbdoc");
+
+  logging_submodule.def(
+      "info", [](const std::string& logline) { thirdai::log::info(logline); },
+      R"pbdoc(Write to logs with level info.)pbdoc");
+
+  logging_submodule.def(
+      "debug", [](const std::string& logline) { thirdai::log::debug(logline); },
+      R"pbdoc(Write to logs with level debug.)pbdoc");
+
+  logging_submodule.def(
+      "trace", [](const std::string& logline) { thirdai::log::trace(logline); },
+      R"pbdoc(Write to logs with level trace.)pbdoc");
+}
+
+// TODO(all): Figure out naming convention for python exposed classes and
+// methods
+// TODO(any): Add docstrings to methods
+// TODO(any): Can we remove redudancy in the bindings?
+PYBIND11_MODULE(_thirdai, m) {  // NOLINT
+
+#ifndef __clang__
+  m.def("set_global_num_threads", &omp_set_num_threads,
+        py::arg("max_num_threads"),
+        "Set the maximum number of threads to use to any future calls to the "
+        "thirdai library.");
+#endif
+
+#if THIRDAI_CHECK_LICENSE
+  m.def("set_thirdai_license_path",
+        &thirdai::licensing::LicenseWrapper::setLicensePath,
+        py::arg("license_path"),
+        "Set a license filepath for any future calls to the thirdai library.");
+#endif
 
   m.attr("__version__") = thirdai::version();
+
+  createLoggingSubmodule(m);
 
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:
