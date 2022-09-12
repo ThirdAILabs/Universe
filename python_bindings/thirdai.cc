@@ -39,6 +39,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         "Set a license filepath for any future calls to the thirdai library.");
 #endif
 
+  // Logging submodule
   auto logging_submodule = m.def_submodule("logging");
 
   logging_submodule.def(
@@ -65,19 +66,19 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         :type pattern: str
         )pbdoc");
 
-#define RELAY_FN(level)                                          \
-  logging_submodule.def(#level, [](const std::string& logline) { \
-    thirdai::log::level(logline);                                \
+#define DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(_level)               \
+  logging_submodule.def(#_level, [](const std::string& logline) { \
+    thirdai::log::_level(logline);                                \
   })
 
-  RELAY_FN(critical);
-  RELAY_FN(error);
-  RELAY_FN(warn);
-  RELAY_FN(info);
-  RELAY_FN(debug);
-  RELAY_FN(trace);
+  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(critical);
+  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(error);
+  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(warn);
+  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(info);
+  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(debug);
+  DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN(trace);
 
-#undef RELAY_FN
+#undef DEFINE_PYMODULE_TO_THIRDAI_RELAY_FN
 
   m.attr("__version__") = thirdai::version();
 
