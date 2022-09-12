@@ -63,7 +63,7 @@ class CMakeBuild(build_ext):
             # not used on MSVC, but no harm
             "-DCMAKE_BUILD_TYPE={}".format(build_mode),
         ]
-        build_args = []
+        build_args = ["-t", "_thirdai"]
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
         if "CMAKE_ARGS" in os.environ:
