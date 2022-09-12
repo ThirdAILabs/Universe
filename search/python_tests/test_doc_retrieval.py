@@ -63,7 +63,7 @@ def expect_error_on_construction(
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="TSK-568: Error inputs currently does an access violation on Windows",
 )
 @pytest.mark.unit
 def test_error_inputs():

@@ -41,7 +41,7 @@ def test_with_valid_license():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="TSK-568: Expired license currently does an access violation on Windows",
 )
 def test_with_expired_license():
     import thirdai
@@ -55,7 +55,7 @@ def test_with_expired_license():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="TSK-568: Invalid license currently does an access violation on Windows",
 )
 def test_with_invalid_license():
     import thirdai
