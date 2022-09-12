@@ -171,9 +171,9 @@ MetricData BoltGraph::train(
     cleanupAfterBatchProcessing();
 
     if (validation) {
-      auto [metrics, _] =
+      auto [val_metrics, _] =
           predict(validation->data, validation->labels, validation->config);
-      train_state.updateValidationMetrics(metrics);
+      train_state.updateValidationMetrics(val_metrics);
     }
 
     callbacks.onEpochEnd(*this, train_state);

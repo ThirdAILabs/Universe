@@ -85,8 +85,8 @@ class EarlyStopCheckpoint : public Callback {
     std::vector<std::string> available_prefixes = {"train_", "val_"};
     for (const auto& prefix : available_prefixes) {
       if (prefixed_metric_name.find(prefix)) {
-        return prefixed_metric_name.substr(prefixed_metric_name.size() -
-                                           prefix.size());
+        std::string prefixed_copy(prefixed_metric_name);
+        return prefixed_copy.substr(prefix.size());
       }
     }
     throw std::invalid_argument(

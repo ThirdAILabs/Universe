@@ -34,12 +34,15 @@ def train_models(
     train_config = (
         bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=20)
         .with_metrics([metric_name])
+        .with_validation(
+            validation_data=[valid_data],
+            validation_labels=valid_labels,
+            predict_config=predict_config,
+        )
         .with_callbacks(
             [
                 bolt.graph.callbacks.EarlyStopCheckpoint(
-                    validation_data=[valid_data],
-                    validation_labels=valid_labels,
-                    predict_config=predict_config,
+                    monitored_metric="val_" + metric_name,
                     model_save_path=save_loc,
                     patience=2,
                     min_delta=0,
@@ -88,7 +91,7 @@ def run_early_stop_test(loss, output_activation, metric_name):
     return last_model_score, early_stop_score
 
 
-def test_early_stop_on_validation_accuracy():
+def test_early_stop_checkpoint_with_accuracy():
     last_model_score, early_stop_score = run_early_stop_test(
         loss=bolt.CategoricalCrossEntropyLoss(),
         output_activation="softmax",
@@ -99,23 +102,12 @@ def test_early_stop_on_validation_accuracy():
     )
 
 
-def test_early_stop_on_validation_loss():
+def test_early_stop_checkpoint_with_loss():
     last_model_score, early_stop_score = run_early_stop_test(
         loss=bolt.MeanSquaredError(),
         output_activation="linear",
         metric_name="mean_squared_error",
     )
     assert early_stop_score < last_model_score or math.isclose(
-        early_stop_score, last_model_score, rel_tol=0.0001
-    )
-
-
-def test_early_stop_on_training_accuracy():
-    last_model_score, early_stop_score = run_early_stop_test(
-        loss=bolt.CategoricalCrossEntropyLoss(),
-        output_activation="softmax",
-        metric_name="categorical_accuracy",
-    )
-    assert early_stop_score > last_model_score or math.isclose(
         early_stop_score, last_model_score, rel_tol=0.0001
     )
