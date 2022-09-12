@@ -1,5 +1,6 @@
 #pragma once
 #include <spdlog/spdlog.h>
+#include <iostream>
 #include <string>
 
 namespace thirdai::logging {
@@ -11,7 +12,7 @@ constexpr auto NAME = "thirdai";
 constexpr auto DEFAULT_LOG_TO_STDERR = true;
 constexpr auto DEFAULT_LOG_PATH = "";
 constexpr auto DEFAULT_LOG_LEVEL = "info";
-constexpr auto DEFAULT_LOG_PATTERN = "[%Y-%m-%d %T] %v";
+constexpr auto DEFAULT_LOG_PATTERN = "[%Y-%m-%d %T] [%l] %v";
 
 // This configures a logger provided a string path. Client is
 // expected to configure logging at the beginning.
@@ -27,6 +28,7 @@ void setupLogging(bool log_to_stderr = DEFAULT_LOG_TO_STDERR,
 // syntax at call sites thirdai::log::info or thirdai::log::warn. When within
 // the thirdai namespace, one may simply use log::info or log::warn, omitting
 // thirdai.
+// NOLINTNEXTLINE
 #define DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(level) \
   template <class... Args>                             \
   void level(Args... args) {                           \

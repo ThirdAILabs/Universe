@@ -12,7 +12,7 @@ namespace thirdai::logging {
 void setupLogging(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
                   const std::string& path /*= DEFAULT_LOG_PATH*/,
                   const std::string& level /*= DEFAULT_LOG_LEVEL*/,
-                  const std::string& pattern /*= DEFAULT_LOG_PATTERN*/) {
+                  const std::string& pattern /* = DEFAULT_LOG_PATTERN*/) {
   try {
     using FileSink = spdlog::sinks::basic_file_sink_mt;
     using StderrSink = spdlog::sinks::stderr_color_sink_mt;
