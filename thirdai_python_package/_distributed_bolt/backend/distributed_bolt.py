@@ -77,3 +77,22 @@ class DistributedBolt:
 
         assert len(self.workers) > 0, "No workers are initialized now."
         return ray.get(self.workers[0].predict.remote())
+
+    
+    def distribute_data(self, current_path, final_path, data_format):
+        ds = None
+        if data_format == "npy":
+            ds = ray.data.read_numpy(current_path)
+        elif data_format == "csv":
+            ds = ray.data.read_csv(current_path)
+        else:
+            raise ValueError('The data format type specified not supported by Ray Data.'
+                            'Only supported options are csv and numpy.'
+                            'Use custom option for loading this data.')
+
+        data_shards = ds.split(len(self.workers), equal= True, locality_hints = self.workers)
+        for shard, worker in zip(data_shards, self.workers):
+            worker.write_training_data_locally(shard, final_path, data_format)
+
+            
+

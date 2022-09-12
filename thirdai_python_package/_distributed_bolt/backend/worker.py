@@ -374,3 +374,14 @@ class Worker:
             InferenceMetricData: Tuples for activations and metrics
         """
         return self.model.predict()
+
+    
+    def write_training_data_locally(self, shard, location, data_format):
+        if data_format == "npy":
+            shard.write_numpy(location)
+        elif data_format == "csv":
+            shard.write_csv(location)
+        else:
+            raise ValueError('The data format type specified not supported by Ray Data.'
+                            'Only supported options are csv and numpy.'
+                            'Use custom option for loading this data.')
