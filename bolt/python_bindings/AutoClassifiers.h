@@ -446,7 +446,7 @@ class BinaryTextClassifier final
             createModel(/* hidden_layer_dim= */ internal_model_dim, n_outputs,
                         sparsity,
                         /* softmax_output= */ false),
-            ReturnMode::ClassName) {}
+            ReturnMode::NumpyArray) {}
 
   void save(const std::string& filename) {
     std::ofstream filestream =
