@@ -7,7 +7,7 @@ __all__ = [
     "distributed_bolt",
     "set_thirdai_license_path",
     "set_global_num_threads",
-    "setup_logging",
+    "logging",
 ]
 
 # Include these so we can use them just by import the top level.
@@ -16,8 +16,10 @@ import thirdai.dataset as dataset
 import thirdai.hashing as hashing
 import thirdai.search as search
 
+from thirdai._thirdai import logging
+
 # Relay __version__ from C++
-from thirdai._thirdai import __version__, setup_logging
+from thirdai._thirdai import __version__
 
 # Import the top level methods so they are available directly from thirdai
 # If the import fails it means this build doesn't expose these methods, so we
