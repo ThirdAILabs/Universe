@@ -44,16 +44,23 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         py::arg("path") = thirdai::log::DEFAULT_LOG_PATH,
         py::arg("level") = thirdai::log::DEFAULT_LOG_LEVEL,
         py::arg("pattern") = thirdai::log::DEFAULT_LOG_PATTERN,
-        "Set up logging for thirdai C++ library.\n"
-        "  log_to_stderr: bool - Print logs to standard error. Turned off "
-        "(false) by default.\n"
-        "  path: str - Path to file to write logs to. Empty (default) implies "
-        "no file logging.\n"
-        "  level: str - Print logs upto this level. Choices are "
-        "trace,debug,info,warn,critical,error,off. Default is info.\n"
-        "  pattern: str - Pattern string to customize logging from client. See "
-        "https://github.com/gabime/spdlog/wiki/3.-Custom-formatting for using "
-        "format-strings.");
+        R"pbdoc(
+        Set up logging for thirdai C++ library.
+
+        :param log_to_stderr: Print logs to standard error. Turned off 
+               (false) by default.
+        :type log_to_stderr: bool
+        :param path: Path to file to write logs to. Empty (default) implies 
+               no file logging.
+        :type path: str
+        :param level: Print logs upto this level. Choices are
+              trace,debug,info,warn,critical,error,off. Default is info.
+        :type level: str
+        :param pattern: Pattern string to customize logging from client. See 
+               https://github.com/gabime/spdlog/wiki/3.-Custom-formatting for using 
+               format-strings.
+        :type pattern: str
+        )pbdoc");
 
   m.attr("__version__") = thirdai::version();
 

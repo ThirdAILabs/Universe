@@ -19,5 +19,7 @@ contain complete documentation for each of the submodules within thirdai.
    thirdaibolt
    thirdaidistributed
    distributed_tutorial
+   thirdailogging
+
    
 
