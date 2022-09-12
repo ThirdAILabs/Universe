@@ -40,6 +40,15 @@ class PyDataLoader : public DataLoader {
                                                  /* Empty list of arguments */
     );
   }
+
+  void restart() override {
+    PYBIND11_OVERRIDE_PURE_NAME(void,       /* Return type */
+                                DataLoader, /* Parent class */
+                                "restart",  /* Name of python function */
+                                restart,    /* Name of C++ function */
+                                            /* Empty list of arguments */
+    );
+  }
 };
 
 }  // namespace thirdai::dataset
