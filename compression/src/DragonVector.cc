@@ -65,8 +65,8 @@ template <class T>
 void DragonVector<T>::sketch(const T* values, T threshold, uint32_t size,
                              uint32_t sketch_size) {
   UniversalHash hash_function = UniversalHash(_seed_for_hashing);
-  // TODO: MSVC complains about sharing values in the below block. Disabling
-  // short term to get builds green.
+  // TODO(TSK-567): MSVC complains about sharing values in the below block.
+  // Disabling short term to get builds green.
   //
   //     D:\a\Universe\Universe\compression\src\DragonVector.cc(68,9): error
   //     C3028: 'thirdai::compression::DragonVector<float>::_values': only a
