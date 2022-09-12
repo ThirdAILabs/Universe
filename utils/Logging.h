@@ -16,7 +16,7 @@ constexpr auto NAME = "thirdai";
 constexpr auto DEFAULT_LOG_TO_STDERR = true;
 constexpr auto DEFAULT_LOG_PATH = "";
 constexpr auto DEFAULT_LOG_LEVEL = "info";
-constexpr auto DEFAULT_LOG_PATTERN = "[%Y-%m-%d %T] %v";
+constexpr auto DEFAULT_LOG_PATTERN = "[%Y-%m-%d %T] [%l] %v";
 
 // This configures a logger provided a string path. Client is
 // expected to configure logging at the beginning.
