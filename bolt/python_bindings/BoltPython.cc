@@ -170,7 +170,10 @@ void createBoltSubmodule(py::module_& module) {
   py::class_<BinaryTextClassifier> binary_text_classifier(
       bolt_submodule, "BinaryTextClassifier");
 
-  binary_text_classifier.def(py::init<uint32_t>(), py::arg("n_outputs"));
+  binary_text_classifier.def(
+      py::init<uint32_t, uint32_t, std::optional<float>>(),
+      py::arg("n_outputs"), py::arg("internal_model_dim"),
+      py::arg("sparisty") = std::nullopt);
 
   defineAutoClassifierCommonMethods(binary_text_classifier);
 

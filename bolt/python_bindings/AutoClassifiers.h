@@ -27,6 +27,7 @@
 namespace thirdai::bolt::python {
 
 inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes,
+                                std::optional<float> sparsity,
                                 bool softmax_output);
 inline std::string convertTokensToString(const std::vector<uint32_t>& tokens);
 inline float getHiddenLayerSparsity(uint64_t layer_dim);
@@ -35,6 +36,7 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
  public:
   TextClassifier(uint32_t hidden_layer_dim, uint32_t n_classes)
       : AutoClassifierBase(createModel(hidden_layer_dim, n_classes,
+                                       /* sparsity= */ std::nullopt,
                                        /* softmax_output= */ true),
                            ReturnMode::ClassName) {
     _label_id_lookup = dataset::ThreadSafeVocabulary::make(n_classes);
@@ -267,6 +269,7 @@ class TabularClassifier final
   TabularClassifier(uint32_t hidden_layer_dim, uint32_t n_classes,
                     std::vector<std::string> column_datatypes)
       : AutoClassifierBase(createModel(hidden_layer_dim, n_classes,
+                                       /* sparsity= */ std::nullopt,
                                        /* softmax_output= */ true),
                            ReturnMode::ClassName),
         _vocab(nullptr),
@@ -437,10 +440,13 @@ class TabularClassifier final
 class BinaryTextClassifier final
     : public AutoClassifierBase<std::vector<uint32_t>> {
  public:
-  explicit BinaryTextClassifier(uint32_t n_outputs)
-      : AutoClassifierBase(createModel(/* hidden_layer_dim= */ 1000, n_outputs,
-                                       /* softmax_output= */ false),
-                           ReturnMode::ClassName) {}
+  explicit BinaryTextClassifier(uint32_t n_outputs, uint32_t internal_model_dim,
+                                std::optional<float> sparsity = std::nullopt)
+      : AutoClassifierBase(
+            createModel(/* hidden_layer_dim= */ internal_model_dim, n_outputs,
+                        sparsity,
+                        /* softmax_output= */ false),
+            ReturnMode::ClassName) {}
 
   void save(const std::string& filename) {
     std::ofstream filestream =
@@ -522,13 +528,15 @@ class BinaryTextClassifier final
 };
 
 inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes,
+                                std::optional<float> hidden_layer_sparsity,
                                 bool softmax_output) {
   auto input_layer =
       Input::make(dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
 
   auto hidden_layer = FullyConnectedNode::makeAutotuned(
       /* dim= */ hidden_layer_dim,
-      /* sparsity= */ getHiddenLayerSparsity(hidden_layer_dim),
+      /* sparsity= */
+      hidden_layer_sparsity.value_or(getHiddenLayerSparsity(hidden_layer_dim)),
       /* activation= */ "relu");
   hidden_layer->addPredecessor(input_layer);
 
@@ -567,7 +575,7 @@ inline float getHiddenLayerSparsity(uint64_t layer_dim) {
   if (layer_dim < 300) {
     return 1.0;
   }
-  if (layer_dim < 1000) {
+  if (layer_dim < 1500) {
     return 0.2;
   }
   if (layer_dim < 4000) {
