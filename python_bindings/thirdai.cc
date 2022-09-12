@@ -39,12 +39,15 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         "Set a license filepath for any future calls to the thirdai library.");
 #endif
 
-  m.def("setup_logging", &thirdai::log::setupLogging,
-        py::arg("log_to_stderr") = thirdai::log::DEFAULT_LOG_TO_STDERR,
-        py::arg("path") = thirdai::log::DEFAULT_LOG_PATH,
-        py::arg("level") = thirdai::log::DEFAULT_LOG_LEVEL,
-        py::arg("pattern") = thirdai::log::DEFAULT_LOG_PATTERN,
-        R"pbdoc(
+  auto logging_submodule = m.def_submodule("logging");
+
+  logging_submodule.def(
+      "setup", &thirdai::log::setupLogging,
+      py::arg("log_to_stderr") = thirdai::log::DEFAULT_LOG_TO_STDERR,
+      py::arg("path") = thirdai::log::DEFAULT_LOG_PATH,
+      py::arg("level") = thirdai::log::DEFAULT_LOG_LEVEL,
+      py::arg("pattern") = thirdai::log::DEFAULT_LOG_PATTERN,
+      R"pbdoc(
         Set up logging for thirdai C++ library.
 
         :param log_to_stderr: Print logs to standard error. Turned off 
@@ -61,6 +64,20 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
                format-strings.
         :type pattern: str
         )pbdoc");
+
+#define RELAY_FN(level)                                          \
+  logging_submodule.def(#level, [](const std::string& logline) { \
+    thirdai::log::level(logline);                                \
+  })
+
+  RELAY_FN(critical);
+  RELAY_FN(error);
+  RELAY_FN(warn);
+  RELAY_FN(info);
+  RELAY_FN(debug);
+  RELAY_FN(trace);
+
+#undef RELAY_FN
 
   m.attr("__version__") = thirdai::version();
 
