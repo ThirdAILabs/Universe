@@ -11,8 +11,10 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/blocks/Text.h>
@@ -230,15 +232,19 @@ class MultiLabelTextClassifier final
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
       std::shared_ptr<dataset::DataLoader> data_loader) {
-    auto batch_processor = dataset::GenericBatchProcessor::make(
-        {dataset::PairGramTextBlock::make(/* col= */ 1)},
-        {dataset::NumericalCategoricalBlock::make(
+    std::vector<dataset::BlockPtr> input_blocks = {
+        dataset::PairGramTextBlock::make(/* col= */ 1)};
+    std::vector<dataset::BlockPtr> label_blocks = {
+        dataset::NumericalCategoricalBlock::make(
             /* col= */ 0,
-            /* n_classes= */ _model->outputDim(), /* delimiter= */ ',')},
-        /* has_header= */ false, /* delimiter= */ '\t');
+            /* n_classes= */ _model->outputDim(), /* delimiter= */ ',')};
 
-    return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
-        std::move(data_loader), batch_processor);
+    return std::make_unique<dataset::StreamingGenericDatasetLoader>(
+        /* data_loader= */ std::move(data_loader),
+        /* input_blocks= */ input_blocks, /* label_blocks= */ label_blocks,
+        /* shuffle= */ true,
+        /* shuffle_config= */ dataset::DatasetShuffleConfig(),
+        /* has_header= */ false, /* delimiter= */ '\t');
   }
 
   static float getOutputSparsity(uint32_t output_dim) {
