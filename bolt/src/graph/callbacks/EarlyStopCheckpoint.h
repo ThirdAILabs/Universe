@@ -13,8 +13,9 @@ namespace thirdai::bolt {
  * @brief This callback is intended to stop training early based on prediction
  * results from a given validation set. Saves the best model to model_save_path
  *
- * @param predict_config configurations for evaluation on the given validation
- * data. must include metrics
+ * @param monitored_metric The metric to monitor for early stopping. Should be a
+ * valid metric name with an additional prefix of either 'train_' or 'val_' to
+ * associate it to training or validation data respectively.
  * @param model_save_path file path to save the model that scored the
  * best on the validation set
  * @param patience number of epochs with no improvement in validation score
@@ -38,6 +39,7 @@ class EarlyStopCheckpoint : public Callback {
         _model_save_path(std::move(model_save_path)),
         _patience(patience),
         _min_delta(std::abs(min_delta)) {
+    std::cout << _monitored_metric << std::endl;
     initValidationTrackers();
   }
 
@@ -84,9 +86,9 @@ class EarlyStopCheckpoint : public Callback {
   static std::string stripMetricPrefixes(std::string prefixed_metric_name) {
     std::vector<std::string> available_prefixes = {"train_", "val_"};
     for (const auto& prefix : available_prefixes) {
-      if (prefixed_metric_name.find(prefix)) {
-        std::string prefixed_copy(prefixed_metric_name);
-        return prefixed_copy.substr(prefix.size());
+      if (prefix == prefixed_metric_name.substr(0, prefix.size())) {
+        return prefixed_metric_name.substr(
+            prefix.size(), prefixed_metric_name.size() - prefix.size());
       }
     }
     throw std::invalid_argument(
