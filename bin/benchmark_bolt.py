@@ -4,6 +4,7 @@ import argparse
 import os
 from datetime import date
 from pathlib import Path
+import subprocess
 
 
 def parse_args():
@@ -30,13 +31,16 @@ def main():
     args = parse_args()
     prefix = "test_run" if args.test_run else "benchmark"
     bin_directory = os.path.dirname(os.path.abspath(__file__))
+    # Exit code is the number of benchmarking tasks that failed
+    exit_code = 0
     for config in args.configs:
         p = Path(config)
         run_name = f"{prefix}_{p.stem}_{cur_date}"
-        os.system(
+        if subprocess.call(
             f"python3 {bin_directory}/../benchmarks/bolt_benchmarks/run_bolt_experiment.py --disable_upload_artifacts --run_name {run_name}  {config} "
-        )
-
+        ) != 0:
+            exit_code += 1
+    exit(exit_code)
 
 if __name__ == "__main__":
     main()
