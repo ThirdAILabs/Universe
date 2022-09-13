@@ -58,7 +58,7 @@ class AutoClassifierBase {
   }
 
   py::object evaluate(const std::shared_ptr<dataset::DataLoader>& data_source) {
-    auto dataset = getTestDataset(data_source);
+    auto dataset = getEvalDataset(data_source);
 
     auto [data, labels] = dataset->loadInMemory();
 
@@ -119,7 +119,7 @@ class AutoClassifierBase {
    * need to process training and test datasets seperately.
    */
   virtual std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) = 0;
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) = 0;
 
   /**
    * Allows for an auto classifier to preprocess the logits of a prediction
