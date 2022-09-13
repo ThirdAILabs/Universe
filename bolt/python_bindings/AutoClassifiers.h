@@ -475,13 +475,15 @@ class BinaryTextClassifier final
     : public AutoClassifierBase<std::vector<uint32_t>> {
  public:
   explicit BinaryTextClassifier(uint32_t n_outputs, uint32_t internal_model_dim,
-                                std::optional<float> sparsity = std::nullopt)
+                                std::optional<float> sparsity = std::nullopt,
+                                bool use_sparse_inference = true)
       : AutoClassifierBase(
             createAutotunedModel(
                 /* internal_model_dim= */ internal_model_dim, n_outputs,
                 sparsity,
                 /* output_activation= */ ActivationFunction::Sigmoid),
-            ReturnMode::NumpyArray) {}
+            ReturnMode::NumpyArray),
+        _use_sparse_inference(use_sparse_inference) {}
 
   void save(const std::string& filename) {
     std::ofstream filestream =
@@ -531,9 +533,11 @@ class BinaryTextClassifier final
 
   uint32_t defaultBatchSize() const final { return 256; }
 
-  bool freezeHashTablesAfterFirstEpoch() const final { return false; }
+  bool freezeHashTablesAfterFirstEpoch() const final {
+    return _use_sparse_inference;
+  }
 
-  bool useSparseInference() const final { return false; }
+  bool useSparseInference() const final { return _use_sparse_inference; }
 
   std::vector<std::string> getEvaluationMetrics() const final { return {}; }
 
@@ -560,6 +564,8 @@ class BinaryTextClassifier final
   void serialize(Archive& archive) {
     archive(cereal::base_class<AutoClassifierBase>(this));
   }
+
+  bool _use_sparse_inference;
 };
 
 inline BoltGraphPtr createAutotunedModel(
