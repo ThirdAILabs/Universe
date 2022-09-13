@@ -83,8 +83,6 @@ MetricData BoltGraph::train(
   std::optional<ValidationContext> validation =
       train_config.getValidationContext();
 
-  std::vector<double> time_per_epoch;
-
   MetricAggregator metrics = train_config.getMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
@@ -146,8 +144,6 @@ MetricData BoltGraph::train(
                                train_end - train_start)
                                .count();
 
-      time_per_epoch.push_back(static_cast<double>(epoch_time));
-
       std::string logline = fmt::format(
           "train | epoch {} | complete |  batches {} | time {}s | {}",
           _epoch_count, dataset_context.numBatches(), epoch_time,
@@ -189,10 +185,7 @@ MetricData BoltGraph::train(
 
   callbacks.onTrainEnd(*this, train_state);
 
-  auto metric_data = metrics.getOutput();
-  metric_data["epoch_times"] = std::move(time_per_epoch);
-
-  return metric_data;
+  return train_state.getAllMetrics();
 }
 
 void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,

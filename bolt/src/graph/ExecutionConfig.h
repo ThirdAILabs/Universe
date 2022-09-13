@@ -250,15 +250,14 @@ class TrainState {
     return metrics[metric_name];
   }
 
-  void updateEpochTimes(int64_t epoch_time) {
-    epoch_times.push_back(static_cast<double>(epoch_time));
-  }
+  auto getAllMetrics() { return metrics; }
 
-  std::vector<double> getEpochTimes() { return epoch_times; }
+  void updateEpochTimes(int64_t epoch_time) {
+    metrics["epoch_times"].push_back(static_cast<double>(epoch_time));
+  }
 
  private:
   std::unordered_map<std::string, std::vector<double>> metrics;
-  std::vector<double> epoch_times;
 };
 
 }  // namespace thirdai::bolt
