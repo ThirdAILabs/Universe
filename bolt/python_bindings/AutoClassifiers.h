@@ -31,8 +31,8 @@ inline BoltGraphPtr createAutotunedModel(uint32_t internal_model_dim,
                                          uint32_t n_classes,
                                          std::optional<float> sparsity,
                                          ActivationFunction output_activation);
-inline std::string convertTokensToString(const std::vector<uint32_t>& tokens,
-                                         char delimiter);
+inline std::string joinTokensIntoString(const std::vector<uint32_t>& tokens,
+                                        char delimiter);
 inline float autotunedHiddenLayerSparsity(uint64_t layer_dim);
 
 /**
@@ -191,7 +191,7 @@ class MultiLabelTextClassifier final
 
   BoltVector featurizeInputForInference(
       const std::vector<uint32_t>& input) final {
-    std::string sentence = convertTokensToString(input, /* delimiter= */ ' ');
+    std::string sentence = joinTokensIntoString(input, /* delimiter= */ ' ');
 
     return dataset::TextEncodingUtils::computePairgrams(
         sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
@@ -520,7 +520,7 @@ class BinaryTextClassifier final
 
   BoltVector featurizeInputForInference(
       const std::vector<uint32_t>& tokens) final {
-    std::string sentence = convertTokensToString(tokens, /* delimiter= */ ' ');
+    std::string sentence = joinTokensIntoString(tokens, /* delimiter= */ ' ');
 
     return dataset::TextEncodingUtils::computeUnigrams(
         sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
@@ -615,8 +615,8 @@ inline BoltGraphPtr createAutotunedModel(
   return model;
 }
 
-inline std::string convertTokensToString(const std::vector<uint32_t>& tokens,
-                                         char delimiter) {
+inline std::string joinTokensIntoString(const std::vector<uint32_t>& tokens,
+                                        char delimiter) {
   std::stringstream sentence_ss;
   for (uint32_t i = 0; i < tokens.size(); i++) {
     if (i > 0) {
