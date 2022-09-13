@@ -1,15 +1,17 @@
+from pyexpat import model
 from thirdai import bolt
 from utils import gen_numpy_training_data, get_simple_dag_model
 import pytest
+import math
 
-# pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit]
 N_CLASSES = 10
 
 
 def get_lr_scheduling_config():
     return bolt.graph.callbacks.LRSchedulingConfig.make(
         "multiplicative-lr"
-    ).with_parameters({"factor": [0.9]})
+    ).with_parameters({"factor": [0.5]})
 
 
 def get_model():
@@ -25,9 +27,6 @@ def get_model():
         output_activation="softmax",
         loss=bolt.CategoricalCrossEntropyLoss(),
     )
-    # predict_config = bolt.graph.PredictConfig.make().with_metrics(
-    #     ["categorical_accuracy"]
-    # )
 
     train_config = (
         bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=20)
@@ -39,17 +38,17 @@ def get_model():
                 )
             ]
         )
-        .silence()
     )
-
+    train_state = bolt.graph.callbacks.TrainState(train_config, 64, 50)
     model.train(train_data, train_labels, train_config)
 
-    return model
+    return train_config, model, train_state
 
-    # train_config =
 
 
 @pytest.mark.unit
 def test_learning_rate_scheduler():
-    model = get_model()
-    assert 1 == 1
+    train_config, model , train_state = get_model()
+    assert math.isclose(train_state.learning_rate, 0.005, rel_tol=0.0001)
+
+    

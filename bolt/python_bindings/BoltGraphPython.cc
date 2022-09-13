@@ -534,8 +534,15 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
                      &TrainState::reconstruct_hash_functions_batch)
       .def_readwrite("stop_training", &TrainState::stop_training);
 
-  py::class_<LearningRateScheduler, Callback>(callbacks_submodule,
-                                              "LearningRateScheduler")
+  py::class_<LRSchedulingConfig>(callbacks_submodule, "LRSchedulingConfig")
+      .def_static("make", &LRSchedulingConfig::makeConfig,
+                  py::arg("scheduling_primitive"))
+      .def("with_parameters", &LRSchedulingConfig::withParameters,
+           py::arg("parameters"));
+
+  py::class_<LearningRateScheduler, LearningRateSchedulerPtr, Callback>(
+      callbacks_submodule, "LearningRateScheduler")
+      .def(py::init<const LRSchedulingConfig&>(), py::arg("config"))
       .def(py::init<const std::function<float(float, uint32_t)>&>(),
            py::arg("schedule"),
            "The learning rate scheduler callback schedules learning rate "
@@ -547,7 +554,8 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def(py::init<>(),
            "Initializes the learning rate scheduler with the identity"
            " function as the scheduler (i.e., static learning rate across "
-           "epochs).\n");
+           "epochs).\n")
+      .def("get_final_lr", &LearningRateScheduler::getFinalLR);
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")

@@ -146,8 +146,8 @@ MetricData BoltGraph::train(
       time_per_epoch.push_back(static_cast<double>(epoch_time));
 
       std::string logline = fmt::format(
-          "train | epoch {} | complete |  batches {} | time {}s | {}",
-          _epoch_count, dataset_context.numBatches(), epoch_time,
+          "train | epoch {} | lr {} | complete |  batches {} | time {}s | {}",
+          _epoch_count, train_state.learning_rate, dataset_context.numBatches(), epoch_time,
           metrics.summary());
 
       log::info(logline);
