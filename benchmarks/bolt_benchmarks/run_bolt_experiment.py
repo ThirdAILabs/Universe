@@ -8,7 +8,8 @@ import numpy as np
 from thirdai import bolt, dataset
 from thirdai import setup_logging
 
-sys.path.append(str(pathlib.Path(__file__).parent.resolve().parent))
+parent_dir = pathlib.Path(__file__).parent.parent
+sys.path.append(str(parent_dir))
 from utils import (
     start_experiment,
     start_mlflow,
