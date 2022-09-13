@@ -145,8 +145,10 @@ void createBoltSubmodule(py::module_& module) {
   py::class_<MultiLabelTextClassifier> multi_label_classifier(
       bolt_submodule, "MultiLabelTextClassifier");
 
-  multi_label_classifier.def(py::init<uint32_t, float>(), py::arg("n_classes"),
-                             py::arg("threshold") = 0.95);
+  multi_label_classifier
+      .def(py::init<uint32_t, float>(), py::arg("n_classes"),
+           py::arg("threshold") = 0.95)
+      .def("update_threshold", &MultiLabelTextClassifier::updateThreshold);
 
   defineAutoClassifierCommonMethods(multi_label_classifier);
 
