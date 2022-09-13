@@ -17,7 +17,7 @@ def train_model_with_callback(callback):
     data, labels = gen_numpy_training_data(
         n_classes=N_CLASSES,
         n_samples=N_SAMPLES,
-        noise_std=0.1,
+        noise_std=0.3,
         convert_to_bolt_dataset=True,
         batch_size_for_conversion=BATCH_SIZE,
     )
@@ -125,10 +125,8 @@ class CollectTrainAccuracy(bolt.graph.callbacks.Callback):
         super().__init__()
         self.accuracies = []
 
-    def on_epoch_end(self, model, train_state):
-        self.accuracies.append(
-            train_state.get_metric_value("train_categorical_accuracy")
-        )
+    def on_train_end(self, model, train_state):
+        self.accuracies = train_state.get_metric_values("train_categorical_accuracy")
 
 
 def test_train_state_correctly_updates_metrics():

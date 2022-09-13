@@ -535,7 +535,7 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def_readwrite("reconstruct_hash_functions_batch",
                      &TrainState::reconstruct_hash_functions_batch)
       .def_readwrite("stop_training", &TrainState::stop_training)
-      .def("get_metric_value", &TrainState::getMetricValue,
+      .def("get_metric_values", &TrainState::getMetricValues,
            py::arg("metric_name"));
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
@@ -548,10 +548,8 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
           " results from a given validation set. Saves the best model to "
           "model_save_path.\n"
           "Arguments:\n"
-          " * monitored_metric: The metric to monitor for early stopping. "
-          "Should be a valid metric name with an additional prefix of either "
-          "'train_' or 'val_' to associate it to training or validation data "
-          "respectively.\n"
+          " * monitored_metric: The metric to monitor for early stopping. The "
+          "metric is assumed to be associated with validation data.\n"
           " * model_save_path: string. The file path to save the model that "
           "scored the best on the validation set\n"
           " * patience: int. The nuber of epochs with no improvement in "

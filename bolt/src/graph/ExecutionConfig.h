@@ -219,17 +219,17 @@ class TrainState {
 
   void updateTrainMetrics(const MetricData& metric_data) {
     for (const auto& [metric_name, value] : metric_data) {
-      metrics["train_" + metric_name] = value.back();
+      metrics["train_" + metric_name] = value;
     }
   }
 
   void updateValidationMetrics(const InferenceMetricData& metric_data) {
     for (const auto& [metric_name, value] : metric_data) {
-      metrics["val_" + metric_name] = value;
+      metrics["val_" + metric_name].push_back(value);
     }
   }
 
-  double getMetricValue(const std::string& metric_name) {
+  std::vector<double> getMetricValues(const std::string& metric_name) {
     if (metrics.count(metric_name) == 0) {
       throw std::invalid_argument(
           "Could not find metric name '" + metric_name +
@@ -241,7 +241,7 @@ class TrainState {
   }
 
  private:
-  std::unordered_map<std::string, double> metrics;
+  std::unordered_map<std::string, std::vector<double>> metrics;
 };
 
 }  // namespace thirdai::bolt

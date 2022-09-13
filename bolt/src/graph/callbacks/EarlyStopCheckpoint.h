@@ -13,9 +13,8 @@ namespace thirdai::bolt {
  * @brief This callback is intended to stop training early based on prediction
  * results from a given validation set. Saves the best model to model_save_path
  *
- * @param monitored_metric The metric to monitor for early stopping. Should be a
- * valid metric name with an additional prefix of either 'train_' or 'val_' to
- * associate it to training or validation data respectively.
+ * @param monitored_metric The metric to monitor for early stopping. The metric
+ * is assumed to be associated with validation data.
  * @param model_save_path file path to save the model that scored the
  * best on the validation set
  * @param patience number of epochs with no improvement in validation score
@@ -35,7 +34,7 @@ class EarlyStopCheckpoint : public Callback {
  public:
   EarlyStopCheckpoint(std::string monitored_metric, std::string model_save_path,
                       uint32_t patience = 2, double min_delta = 0)
-      : _monitored_metric(monitored_metric),
+      : _monitored_metric(std::move(monitored_metric)),
         _model_save_path(std::move(model_save_path)),
         _patience(patience),
         _min_delta(std::abs(min_delta)) {
@@ -50,7 +49,10 @@ class EarlyStopCheckpoint : public Callback {
   }
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
-    double metric_val = train_state.getMetricValue(_monitored_metric);
+    // we prefix with "val_" here since it only makes sense to early stop on
+    // validation metrics
+    double metric_val =
+        train_state.getMetricValues("val_" + _monitored_metric).back();
 
     if (isImprovement(metric_val)) {
       _best_validation_score = metric_val;
@@ -74,27 +76,12 @@ class EarlyStopCheckpoint : public Callback {
   }
 
   void initValidationTrackers() {
-    std::string real_metric_name = stripMetricPrefixes(_monitored_metric);
     _epochs_since_best = 0;
-    _should_minimize = makeMetric(real_metric_name)->smallerIsBetter();
+    _should_minimize = makeMetric(_monitored_metric)->smallerIsBetter();
 
     _best_validation_score = _should_minimize
                                  ? std::numeric_limits<double>::max()
                                  : std::numeric_limits<double>::min();
-  }
-
-  static std::string stripMetricPrefixes(std::string prefixed_metric_name) {
-    std::vector<std::string> available_prefixes = {"train_", "val_"};
-    for (const auto& prefix : available_prefixes) {
-      if (prefix == prefixed_metric_name.substr(0, prefix.size())) {
-        return prefixed_metric_name.substr(
-            prefix.size(), prefixed_metric_name.size() - prefix.size());
-      }
-    }
-    throw std::invalid_argument(
-        "Metric is not prefixed correctly. Metrics should be prefixed with "
-        "'train_' or 'val_' to correctly distinguish between training and "
-        "validation data. ");
   }
 
   std::string _monitored_metric;

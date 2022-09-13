@@ -163,6 +163,7 @@ MetricData BoltGraph::train(
       metrics.logAndReset();
 
       train_state.updateTrainMetrics(metrics.getOutput());
+      // train_state.updateEpochTime(epoch_time);
     } catch (const std::exception& e) {
       cleanupAfterBatchProcessing();
       throw;
