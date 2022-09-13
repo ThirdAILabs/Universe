@@ -124,6 +124,12 @@ BoltVector AutoClassifierBase::predictSingle(
   return _model->predictSingle(std::move(test_data), use_sparse_inference);
 }
 
+std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
+AutoClassifierBase::getInputGradientSingle(
+    std::vector<BoltVector>&& input_data) {
+  return _model->getInputGradientSingle(std::move(input_data));
+}
+
 std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
 AutoClassifierBase::loadStreamingDataset(
     const std::string& filename,

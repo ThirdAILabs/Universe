@@ -35,6 +35,9 @@ class AutoClassifierBase {
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            bool use_sparse_inference);
 
+  std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
+  getInputGradientSingle(std::vector<BoltVector>&& input_data);
+
   static bool canLoadDatasetInMemory(const std::string& filename);
 
  private:

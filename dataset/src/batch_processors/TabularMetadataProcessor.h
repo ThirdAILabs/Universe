@@ -69,6 +69,13 @@ class TabularMetadata {
     return _col_name_to_col[col_name];
   }
 
+  std::string getColNameFromNum(uint32_t col_num) {
+    if (!_col_to_col_name.count(col_num)) {
+      throw std::invalid_argument(&"Recieved invalid column num: "[col_num]);
+    }
+    return _col_to_col_name[col_num];
+  }
+
   uint32_t numClasses() const { return _class_id_to_class.size(); }
 
   bool containsClassName(const std::string& str_value) const {

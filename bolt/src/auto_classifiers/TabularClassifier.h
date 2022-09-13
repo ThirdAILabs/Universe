@@ -3,6 +3,8 @@
 #include <cereal/archives/binary.hpp>
 #include "AutoClassifierBase.h"
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -61,39 +63,31 @@ class TabularClassifier {
   }
 
   std::string predictSingle(std::vector<std::string>& values) {
-    if (values.size() != _metadata->numColumns() - 1) {
-      throw std::invalid_argument(
-          "Passed in an input of size " + std::to_string(values.size()) +
-          " but needed a vector of size " +
-          std::to_string(_metadata->numColumns() - 1) +
-          ". predict_single expects a vector of values in the same format as "
-          "the original csv but without the label present.");
-    }
-
-    std::vector<std::string_view> encodable_values(values.begin(),
-                                                   values.end());
-
-    /*
-      the batch processor fails if the number of columns mismatches with the
-      original format. since we are only creating an input vector here the
-      label is not relevant, thus we add some bogus here in the label's column
-    */
-    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
-                            /* value = */ " ");
-
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
-
-    BoltVector input;
-    if (auto err = batch_processor->makeInputVector(encodable_values, input)) {
-      std::rethrow_exception(err);
-    }
+    BoltVector input = makeInputVector(values, batch_processor);
 
     BoltVector output =
         _classifier->predictSingle({input},
                                    /* use_sparse_inference = */ true);
 
     return _metadata->getClassIdToNames()[output.getHighestActivationId()];
+  }
+
+  std::tuple<std::vector<std::string>, std::vector<float>,
+             std::vector<std::string>>
+  explain(std::vector<std::string>& values) {
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
+    BoltVector input = makeInputVector(values, batch_processor);
+
+    auto [gradients_indices, gradients_ratios] =
+        _classifier->getInputGradientSingle({input});
+
+    auto result = getPercentExplanationWithColumnNames(
+        gradients_ratios, *gradients_indices, batch_processor);
+
+    return result;
   }
 
   void save(const std::string& filename) {
@@ -114,6 +108,37 @@ class TabularClassifier {
   }
 
  private:
+  BoltVector makeInputVector(
+      std::vector<std::string>& values,
+      const std::shared_ptr<dataset::GenericBatchProcessor>& batch_processor) {
+    if (values.size() != _metadata->numColumns() - 1) {
+      throw std::invalid_argument(
+          "Passed in an input of size " + std::to_string(values.size()) +
+          " but needed a vector of size " +
+          std::to_string(_metadata->numColumns() - 1) +
+          ". predict_single expects a vector of values in the same format as "
+          "the original csv but without the label present.");
+    }
+
+    std::vector<std::string_view> encodable_values(values.begin(),
+                                                   values.end());
+
+    /*
+      the batch processor fails if the number of columns mismatches with the
+      original format. since we are only creating an input vector here the
+      label is not relevant, thus we add some bogus here in the label's column
+    */
+    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
+                            /* value = */ " ");
+
+    BoltVector input;
+    if (auto err = batch_processor->makeInputVectorForInference(
+            encodable_values, input)) {
+      std::rethrow_exception(err);
+    }
+    return input;
+  }
+
   std::shared_ptr<dataset::TabularMetadata> processTabularMetadata(
       const std::string& filename, std::vector<std::string>& column_datatypes,
       uint32_t batch_size = 256) {

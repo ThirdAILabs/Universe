@@ -156,7 +156,7 @@ class UserItemHistoryBlock final : public Block {
   std::pair<std::string, std::string> explainIndex(
       uint32_t index,
       std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      const final {
+      final {
     ItemRecord item = _per_user_history->at(_user_id)[index];
 
     return std::make_pair(num_to_name->at(_item_col),

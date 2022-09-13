@@ -156,9 +156,8 @@ class SequentialClassifier {
         _model->getInputGradientSingle({input_vector});
 
     auto result = getPercentExplanationWithColumnNames(
-        gradients_ratios, *gradients_indices,
-        _single_inference_col_nums.getColumnNumToColNameMap(),
-        _single_inference_batch_processor);
+        gradients_ratios, *gradients_indices, _single_inference_batch_processor,
+        _single_inference_col_nums.getColumnNumToColNameMap());
 
     return result;
   }

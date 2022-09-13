@@ -41,7 +41,7 @@ class DateBlock : public Block {
   std::pair<std::string, std::string> explainIndex(
       uint32_t index,
       std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      const final {
+      final {
     std::string response;
     if (index > 77) {
       throw std::invalid_argument(

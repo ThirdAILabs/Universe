@@ -1,6 +1,7 @@
 #pragma once
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <optional>
 #include <utility>
 
 namespace thirdai::bolt {
@@ -44,9 +45,10 @@ inline std::tuple<std::vector<std::string>, std::vector<float>,
 getPercentExplanationWithColumnNames(
     const std::vector<float>& gradients_ratio,
     std::vector<uint32_t> gradients_indices,
-    const std::unordered_map<uint32_t, std::string>& col_num_to_name,
     const std::shared_ptr<dataset::GenericBatchProcessor>&
-        generic_batch_processor) {
+        generic_batch_processor,
+    const std::optional<std::unordered_map<uint32_t, std::string>>&
+        col_num_to_name = std::nullopt) {
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
       sortGradientsBySignificance(gradients_ratio,
                                   std::move(gradients_indices));
