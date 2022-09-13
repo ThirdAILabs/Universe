@@ -65,17 +65,26 @@ class PredictConfig {
   std::optional<std::function<void(const BoltVector&)>> _output_callback;
 };
 
-struct ValidationContext {
+class ValidationContext {
+ public:
   explicit ValidationContext(
-      std::vector<dataset::BoltDatasetPtr> _validation_data,
-      dataset::BoltDatasetPtr _validation_labels, PredictConfig _predict_config)
-      : data(_validation_data),
-        labels(_validation_labels),
-        config(_predict_config) {}
+      const std::vector<dataset::BoltDatasetPtr>& _validation_data,
+      const dataset::BoltDatasetPtr& _validation_labels,
+      const PredictConfig& _predict_config)
+      : _data(_validation_data),
+        _labels(_validation_labels),
+        _config(_predict_config) {}
 
-  std::vector<dataset::BoltDatasetPtr> data;
-  dataset::BoltDatasetPtr labels;
-  PredictConfig config;
+  const std::vector<dataset::BoltDatasetPtr>& data() const { return _data; }
+
+  const dataset::BoltDatasetPtr& labels() const { return _labels; }
+
+  const PredictConfig& config() const { return _config; }
+
+ private:
+  std::vector<dataset::BoltDatasetPtr> _data;
+  dataset::BoltDatasetPtr _labels;
+  PredictConfig _config;
 };
 
 class TrainConfig {
@@ -115,8 +124,9 @@ class TrainConfig {
   }
 
   TrainConfig& withValidation(
-      std::vector<dataset::BoltDatasetPtr> validation_data,
-      dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config) {
+      const std::vector<dataset::BoltDatasetPtr>& validation_data,
+      const dataset::BoltDatasetPtr& validation_labels,
+      const PredictConfig& predict_config) {
     _validation_context =
         ValidationContext(validation_data, validation_labels, predict_config);
     return *this;
@@ -248,7 +258,7 @@ class TrainState {
 
  private:
   std::unordered_map<std::string, std::vector<double>> metrics;
-  std::vector<double> epoch_times
+  std::vector<double> epoch_times;
 };
 
 }  // namespace thirdai::bolt
