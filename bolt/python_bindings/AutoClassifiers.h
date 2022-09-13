@@ -23,22 +23,33 @@
 #include <pybind11/pybind11.h>
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::bolt::python {
 
-inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes,
-                                std::optional<float> sparsity,
-                                bool softmax_output);
+inline BoltGraphPtr createAutotunedModel(uint32_t internal_model_dim,
+                                         uint32_t n_classes,
+                                         std::optional<float> sparsity,
+                                         ActivationFunction output_activation);
 inline std::string convertTokensToString(const std::vector<uint32_t>& tokens);
-inline float getHiddenLayerSparsity(uint64_t layer_dim);
+inline float autotunedHiddenLayerSparsity(uint64_t layer_dim);
 
+/**
+ * The TextClassifier takes in data in the form:
+ *        <class_name>,<text>.
+ * It uses paigrams to featurize the text and automatically maps the class names
+ * to output neurons. Evaluate and predict return lists of strings of the
+ * predicted class names.
+ */
 class TextClassifier final : public AutoClassifierBase<std::string> {
  public:
-  TextClassifier(uint32_t hidden_layer_dim, uint32_t n_classes)
-      : AutoClassifierBase(createModel(hidden_layer_dim, n_classes,
-                                       /* sparsity= */ std::nullopt,
-                                       /* softmax_output= */ true),
-                           ReturnMode::ClassName) {
+  TextClassifier(uint32_t internal_model_dim, uint32_t n_classes)
+      : AutoClassifierBase(
+            createAutotunedModel(
+                internal_model_dim, n_classes,
+                /* sparsity= */ std::nullopt,
+                /* output_activation= */ ActivationFunction::Softmax),
+            ReturnMode::ClassName) {
     _label_id_lookup = dataset::ThreadSafeVocabulary::make(n_classes);
   }
 
@@ -68,7 +79,7 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
     return getDataset(data_loader);
   }
 
@@ -117,6 +128,14 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   dataset::ThreadSafeVocabularyPtr _label_id_lookup;
 };
 
+/**
+ * The MultiLabelTextClassifier takes in data in the form:
+ *        <class_id_1>,<class_id_2>,...,<class_id_n>\t<text>.
+ * It uses paigrams to featurize the text, and uses sigmoid/bce to handle the
+ * variable number of labels. Thresholding is applied to ensure that each
+ * prediction has at least one neuron with an activation > the given threshold.
+ * Predict and evaluate return numpy arrays of the output activations.
+ */
 class MultiLabelTextClassifier final
     : public AutoClassifierBase<std::vector<uint32_t>> {
  public:
@@ -143,6 +162,8 @@ class MultiLabelTextClassifier final
     return deserialize_into;
   }
 
+  void updateThreshold(float new_threshold) { _threshold = new_threshold; }
+
  protected:
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
@@ -152,7 +173,7 @@ class MultiLabelTextClassifier final
   }
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
     return getDataset(data_loader);
   }
 
@@ -186,7 +207,8 @@ class MultiLabelTextClassifier final
   bool useSparseInference() const final { return false; }
 
   std::vector<std::string> getEvaluationMetrics() const final {
-    return {"categorical_accuracy"};
+    std::string f_measure = "f_measure(" + std::to_string(_threshold) + ")";
+    return {"categorical_accuracy", f_measure};
   }
 
  private:
@@ -213,7 +235,7 @@ class MultiLabelTextClassifier final
         {dataset::PairGramTextBlock::make(/* col= */ 1)},
         {dataset::NumericalCategoricalBlock::make(
             /* col= */ 0,
-            /* n_classes= */ _model->outputDim())},
+            /* n_classes= */ _model->outputDim(), /* delimiter= */ ',')},
         /* has_header= */ false, /* delimiter= */ '\t');
 
     return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
@@ -263,16 +285,25 @@ class MultiLabelTextClassifier final
   }
 };
 
+/**
+ * The TabularClassifier takes in tabular data and applies binning + pairgrams
+ * to featureize it. The column datatypes list indicates how to bin/featurize
+ * the different parts of the dataset and automatically maps the class names
+ * to output neurons. Evaluate and predict return lists of strings of the
+ * predicted class names.
+ */
 class TabularClassifier final
     : public AutoClassifierBase<std::vector<std::string>> {
  public:
-  TabularClassifier(uint32_t hidden_layer_dim, uint32_t n_classes,
+  TabularClassifier(uint32_t internal_model_dim, uint32_t n_classes,
                     std::vector<std::string> column_datatypes)
-      : AutoClassifierBase(createModel(hidden_layer_dim, n_classes,
-                                       /* sparsity= */ std::nullopt,
-                                       /* softmax_output= */ true),
-                           ReturnMode::ClassName),
-        _vocab(nullptr),
+      : AutoClassifierBase(
+            createAutotunedModel(
+                internal_model_dim, n_classes,
+                /* sparsity= */ std::nullopt,
+                /* output_activation= */ ActivationFunction::Softmax),
+            ReturnMode::ClassName),
+        _classname_to_id_lookup(nullptr),
         _metadata(nullptr),
         _batch_processor(nullptr),
         _column_datatypes(std::move(column_datatypes)) {}
@@ -292,7 +323,9 @@ class TabularClassifier final
         new TabularClassifier());
     iarchive(*deserialize_into);
 
-    deserialize_into->createBatchProcessor();
+    if (deserialize_into->_metadata) {
+      deserialize_into->createBatchProcessor();
+    }
 
     return deserialize_into;
   }
@@ -312,7 +345,7 @@ class TabularClassifier final
   }
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
     if (!_batch_processor) {
       throw std::runtime_error(
           "Cannot call evaulate on TabularClassifier before calling train.");
@@ -357,7 +390,7 @@ class TabularClassifier final
   }
 
   std::string getClassName(uint32_t neuron_id) final {
-    return _vocab->getString(neuron_id);
+    return _classname_to_id_lookup->getString(neuron_id);
   }
 
   uint32_t defaultBatchSize() const final { return 256; }
@@ -381,12 +414,13 @@ class TabularClassifier final
         std::make_shared<dataset::TabularPairGram>(
             _metadata, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
 
-    _vocab = dataset::ThreadSafeVocabulary::make(_metadata->getClassToIdMap(),
-                                                 /* fixed= */ true);
+    _classname_to_id_lookup =
+        dataset::ThreadSafeVocabulary::make(_metadata->getClassToIdMap(),
+                                            /* fixed= */ true);
 
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
         dataset::StringLookupCategoricalBlock::make(_metadata->getLabelCol(),
-                                                    _vocab)};
+                                                    _classname_to_id_lookup)};
 
     _batch_processor = dataset::GenericBatchProcessor::make(
         /* input_blocks = */ input_blocks,
@@ -420,18 +454,18 @@ class TabularClassifier final
   // Private constructor for cereal.
   TabularClassifier()
       : AutoClassifierBase(nullptr, ReturnMode::NumpyArray),
-        _vocab(nullptr),
+        _classname_to_id_lookup(nullptr),
         _metadata(nullptr),
         _batch_processor(nullptr) {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<AutoClassifierBase>(this), _vocab, _metadata,
-            _column_datatypes);
+    archive(cereal::base_class<AutoClassifierBase>(this),
+            _classname_to_id_lookup, _metadata, _column_datatypes);
   }
 
-  dataset::ThreadSafeVocabularyPtr _vocab;
+  dataset::ThreadSafeVocabularyPtr _classname_to_id_lookup;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
   dataset::GenericBatchProcessorPtr _batch_processor;
   std::vector<std::string> _column_datatypes;
@@ -443,9 +477,10 @@ class BinaryTextClassifier final
   explicit BinaryTextClassifier(uint32_t n_outputs, uint32_t internal_model_dim,
                                 std::optional<float> sparsity = std::nullopt)
       : AutoClassifierBase(
-            createModel(/* hidden_layer_dim= */ internal_model_dim, n_outputs,
-                        sparsity,
-                        /* softmax_output= */ false),
+            createAutotunedModel(
+                /* internal_model_dim= */ internal_model_dim, n_outputs,
+                sparsity,
+                /* output_activation= */ ActivationFunction::Sigmoid),
             ReturnMode::NumpyArray) {}
 
   void save(const std::string& filename) {
@@ -476,7 +511,7 @@ class BinaryTextClassifier final
   }
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
     return getDataset(data_loader);
   }
 
@@ -527,33 +562,44 @@ class BinaryTextClassifier final
   }
 };
 
-inline BoltGraphPtr createModel(uint32_t hidden_layer_dim, uint32_t n_classes,
-                                std::optional<float> hidden_layer_sparsity,
-                                bool softmax_output) {
+inline BoltGraphPtr createAutotunedModel(
+    uint32_t internal_model_dim, uint32_t n_classes,
+    std::optional<float> hidden_layer_sparsity,
+    ActivationFunction output_activation) {
   auto input_layer =
       Input::make(dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
 
   auto hidden_layer = FullyConnectedNode::makeAutotuned(
-      /* dim= */ hidden_layer_dim,
+      /* dim= */ internal_model_dim,
       /* sparsity= */
-      hidden_layer_sparsity.value_or(getHiddenLayerSparsity(hidden_layer_dim)),
+      hidden_layer_sparsity.value_or(
+          autotunedHiddenLayerSparsity(internal_model_dim)),
       /* activation= */ "relu");
   hidden_layer->addPredecessor(input_layer);
 
-  auto output_layer = FullyConnectedNode::makeDense(
-      /* dim= */ n_classes,
-      /* activation= */ softmax_output ? "softmax" : "sigmoid");
+  FullyConnectedNodePtr output_layer;
+  std::shared_ptr<LossFunction> loss;
+
+  if (output_activation == ActivationFunction::Softmax) {
+    output_layer = FullyConnectedNode::makeDense(
+        /* dim= */ n_classes,
+        /* activation= */ "softmax");
+    loss = std::make_shared<CategoricalCrossEntropyLoss>();
+  } else if (output_activation == ActivationFunction::Sigmoid) {
+    loss = std::make_shared<BinaryCrossEntropyLoss>();
+    output_layer = FullyConnectedNode::makeDense(
+        /* dim= */ n_classes,
+        /* activation= */ "softmax");
+  } else {
+    throw std::invalid_argument(
+        "Output activation in createAutotunedModel must be Softmax or "
+        "Sigmoid.");
+  }
+
   output_layer->addPredecessor(hidden_layer);
 
   auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
                                            output_layer);
-
-  std::shared_ptr<LossFunction> loss;
-  if (softmax_output) {
-    loss = std::make_shared<CategoricalCrossEntropyLoss>();
-  } else {
-    loss = std::make_shared<BinaryCrossEntropyLoss>();
-  }
 
   model->compile(loss, /* print_when_done= */ false);
 
@@ -571,7 +617,7 @@ inline std::string convertTokensToString(const std::vector<uint32_t>& tokens) {
   return sentence_ss.str();
 }
 
-inline float getHiddenLayerSparsity(uint64_t layer_dim) {
+inline float autotunedHiddenLayerSparsity(uint64_t layer_dim) {
   if (layer_dim < 300) {
     return 1.0;
   }

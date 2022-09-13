@@ -63,7 +63,17 @@ class CMakeBuild(build_ext):
             # not used on MSVC, but no harm
             "-DCMAKE_BUILD_TYPE={}".format(build_mode),
         ]
-        build_args = []
+
+        # To build the wheel, we don't need to make "all" targets. We just need
+        # what is required to be packaged with python.  The pybind11 target in
+        # CMakeLists.txt is defined as _thirdai, which is what is shipped with
+        # the built wheel. Since setup.py is for use in packaging the wheel, we
+        # pass this specific target to cmake args to avoid having to compile
+        # tests and other potential libraries/executables created.
+        #
+        # Equivalent to calling `make _thirdai`.
+        build_args = ["-t", "_thirdai"]
+
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
         if "CMAKE_ARGS" in os.environ:

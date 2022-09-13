@@ -101,7 +101,7 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
     max_val_acc = 0
     last_accuracy = 0
     tc = bolt.TabularClassifier(
-        hidden_layer_dim=1000, n_classes=ytrain.nunique(), column_datatypes=dtypes
+        internal_model_dim=1000, n_classes=ytrain.nunique(), column_datatypes=dtypes
     )
     max_epochs = 20
     for _ in range(max_epochs):
