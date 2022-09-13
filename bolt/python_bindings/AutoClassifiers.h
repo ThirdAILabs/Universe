@@ -411,6 +411,14 @@ class TabularClassifier final
 
   uint32_t defaultBatchSize() const final { return 256; }
 
+  std::optional<uint32_t> defaultRebuildHashTablesInterval() const final {
+    return 10000;
+  }
+
+  std::optional<uint32_t> defaultReconstructHashFunctionsInterval() const final {
+    return 50000;
+  }
+
   bool freezeHashTablesAfterFirstEpoch() const final { return true; }
 
   bool useSparseInference() const final { return true; }
