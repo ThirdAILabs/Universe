@@ -55,6 +55,8 @@ jobs:
           # KMP_DUPLICATE_LIB_OK is required because some other library
           # (perhaps numpy) is loading an OpenMP library that is separate from
           # what we package with.
+          #
+          # TODO(GH-779): Fix the multiple libraries existing.
           CIBW_ENVIRONMENT_WINDOWS: >
               CMAKE_ARGS="-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30"
               KMP_DUPLICATE_LIB_OK=TRUE
