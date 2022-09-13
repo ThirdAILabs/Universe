@@ -83,7 +83,7 @@ MetricData BoltGraph::train(
   std::optional<ValidationContext> validation =
       train_config.getValidationContext();
 
-  MetricAggregator metrics = train_config.getMetricAggregator();
+  MetricAggregator train_metrics = train_state.getTrainMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
@@ -124,7 +124,7 @@ MetricData BoltGraph::train(
         dataset_context.setInputs(batch_idx, _inputs);
 
         const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
-        processTrainingBatch(batch_labels, metrics);
+        processTrainingBatch(batch_labels, train_metrics);
         updateParametersAndSampling(
             train_state.learning_rate, train_state.rebuild_hash_tables_batch,
             train_state.reconstruct_hash_functions_batch);
@@ -134,7 +134,7 @@ MetricData BoltGraph::train(
         }
 
         log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
-                  metrics.summary());
+                  train_metrics.summary());
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -147,7 +147,7 @@ MetricData BoltGraph::train(
       std::string logline = fmt::format(
           "train | epoch {} | complete |  batches {} | time {}s | {}",
           _epoch_count, dataset_context.numBatches(), epoch_time,
-          metrics.summary());
+          train_metrics.summary());
 
       log::info(logline);
 
@@ -156,9 +156,8 @@ MetricData BoltGraph::train(
       }
 
       _epoch_count++;
-      metrics.logAndReset();
+      train_metrics.logAndReset();
 
-      train_state.updateTrainMetrics(metrics.getOutput());
       train_state.updateEpochTimes(epoch_time);
     } catch (const std::exception& e) {
       cleanupAfterBatchProcessing();
@@ -185,7 +184,7 @@ MetricData BoltGraph::train(
 
   callbacks.onTrainEnd(*this, train_state);
 
-  auto metric_data = metrics.getOutput();
+  auto metric_data = train_metrics.getOutput();
   metric_data["epoch_times"] = train_state.getMetricValues("epoch_times");
 
   return metric_data;

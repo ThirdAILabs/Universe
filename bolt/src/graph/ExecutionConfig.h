@@ -217,7 +217,8 @@ class TrainState {
         reconstruct_hash_functions_batch(
             train_config.getReconstructHashFunctionsBatchInterval(batch_size,
                                                                   data_len)),
-        stop_training(false) {}
+        stop_training(false),
+        train_metric_aggregator(train_config.getMetricAggregator()) {}
 
   float learning_rate;
   bool verbose;
@@ -250,11 +251,16 @@ class TrainState {
     return metrics[metric_name];
   }
 
+  MetricAggregator& getTrainMetricAggregator() {
+    return train_metric_aggregator;
+  }
+
   void updateEpochTimes(int64_t epoch_time) {
     metrics["epoch_times"].push_back(static_cast<double>(epoch_time));
   }
 
  private:
+  MetricAggregator train_metric_aggregator;
   std::unordered_map<std::string, std::vector<double>> metrics;
 };
 
