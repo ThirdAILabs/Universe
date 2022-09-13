@@ -115,8 +115,9 @@ class UniGramTextBlock final : public TextBlock {
     if (!store_map) {
       unigrams = TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
     } else {
-      auto [unigrams, _index_to_word_map] =
-          TextEncodingUtils::computeRawUnigramsWithRangeStoreMap(text, _dim);
+      auto unigram_map = TextEncodingUtils::computeRawUnigramsWithRangeStoreMap(text, _dim);
+      unigrams = unigram_map.first;
+      _index_to_word_map = unigram_map.second;
     }
 
     TextEncodingUtils::sumRepeatedIndices(
