@@ -32,7 +32,6 @@ def main():
     args = parse_args()
     prefix = "test_run" if args.test_run else "benchmark"
     universe_dir = Path(__file__).resolve().parent.parent
-    print(universe_dir)
     # Exit code is the number of benchmarking tasks that failed
     exit_code = 0
     for config in args.configs:
