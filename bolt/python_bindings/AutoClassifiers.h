@@ -31,7 +31,8 @@ inline BoltGraphPtr createAutotunedModel(uint32_t internal_model_dim,
                                          uint32_t n_classes,
                                          std::optional<float> sparsity,
                                          ActivationFunction output_activation);
-inline std::string convertTokensToString(const std::vector<uint32_t>& tokens);
+inline std::string convertTokensToString(const std::vector<uint32_t>& tokens,
+                                         char delimiter);
 inline float autotunedHiddenLayerSparsity(uint64_t layer_dim);
 
 /**
@@ -190,7 +191,7 @@ class MultiLabelTextClassifier final
 
   BoltVector featurizeInputForInference(
       const std::vector<uint32_t>& input) final {
-    std::string sentence = convertTokensToString(input);
+    std::string sentence = convertTokensToString(input, /* delimiter= */ ' ');
 
     return dataset::TextEncodingUtils::computePairgrams(
         sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
@@ -519,7 +520,7 @@ class BinaryTextClassifier final
 
   BoltVector featurizeInputForInference(
       const std::vector<uint32_t>& tokens) final {
-    std::string sentence = convertTokensToString(tokens);
+    std::string sentence = convertTokensToString(tokens, /* delimiter= */ ' ');
 
     return dataset::TextEncodingUtils::computeUnigrams(
         sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
@@ -544,6 +545,8 @@ class BinaryTextClassifier final
  private:
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
       std::shared_ptr<dataset::DataLoader> data_loader) {
+    // Because we have n_outputs binary label columns, the text column is starts
+    // at _model->outputDim() which is equivalent to n_classes.
     auto batch_processor = dataset::GenericBatchProcessor::make(
         /* input_blocks= */ {dataset::UniGramTextBlock::make(
             /* col= */ _model->outputDim())},
@@ -612,11 +615,12 @@ inline BoltGraphPtr createAutotunedModel(
   return model;
 }
 
-inline std::string convertTokensToString(const std::vector<uint32_t>& tokens) {
+inline std::string convertTokensToString(const std::vector<uint32_t>& tokens,
+                                         char delimiter) {
   std::stringstream sentence_ss;
   for (uint32_t i = 0; i < tokens.size(); i++) {
     if (i > 0) {
-      sentence_ss << ' ';
+      sentence_ss << delimiter;
     }
     sentence_ss << tokens[i];
   }
