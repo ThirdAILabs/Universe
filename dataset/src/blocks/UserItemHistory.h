@@ -173,8 +173,9 @@ class UserItemHistoryBlock final : public Block {
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
       uint32_t user_id = _user_id_lookup->getUid(user_str);
-      if(store_map) {
-      _user_id = user_id;}
+      if (store_map) {
+        _user_id = user_id;
+      }
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_ids = getItemIds(item_str);
@@ -210,16 +211,16 @@ class UserItemHistoryBlock final : public Block {
   void extendVectorWithUserHistory(uint32_t user_id, int64_t timestamp_seconds,
                                    SegmentedFeatureVector& vec) {
     uint32_t added = 0;
-    std::cout<<"hello"<<std::endl;
-    std::cout<<user_id<<std::endl;
+    std::cout << "hello" << std::endl;
+    std::cout << user_id << std::endl;
     for (const auto& item : _per_user_history->at(user_id)) {
-      std::cout<<"whatsapp"<<std::endl;
+      std::cout << "whatsapp" << std::endl;
       if (added >= _track_last_n) {
         break;
       }
 
       if (item.timestamp <= timestamp_seconds) {
-        std::cout<<"heyaa"<<std::endl;
+        std::cout << "heyaa" << std::endl;
         vec.addSparseFeatureToSegment(item.item, 1.0);
         added++;
       }
