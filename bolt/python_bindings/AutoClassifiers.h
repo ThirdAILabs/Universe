@@ -25,7 +25,7 @@
 
 namespace thirdai::bolt::python {
 
-inline BoltGraphPtr createAutotunedModel(uint32_t hidden_layer_dim,
+inline BoltGraphPtr createAutotunedModel(uint32_t internal_model_dim,
                                          uint32_t n_classes,
                                          std::optional<float> sparsity,
                                          bool softmax_output);
@@ -41,8 +41,8 @@ inline float autotunedHiddenLayerSparsity(uint64_t layer_dim);
  */
 class TextClassifier final : public AutoClassifierBase<std::string> {
  public:
-  TextClassifier(uint32_t hidden_layer_dim, uint32_t n_classes)
-      : AutoClassifierBase(createAutotunedModel(hidden_layer_dim, n_classes,
+  TextClassifier(uint32_t internal_model_dim, uint32_t n_classes)
+      : AutoClassifierBase(createAutotunedModel(internal_model_dim, n_classes,
                                                 /* sparsity= */ std::nullopt,
                                                 /* softmax_output= */ true),
                            ReturnMode::ClassName) {
@@ -302,9 +302,9 @@ class MultiLabelTextClassifier final
 class TabularClassifier final
     : public AutoClassifierBase<std::vector<std::string>> {
  public:
-  TabularClassifier(uint32_t hidden_layer_dim, uint32_t n_classes,
+  TabularClassifier(uint32_t internal_model_dim, uint32_t n_classes,
                     std::vector<std::string> column_datatypes)
-      : AutoClassifierBase(createAutotunedModel(hidden_layer_dim, n_classes,
+      : AutoClassifierBase(createAutotunedModel(internal_model_dim, n_classes,
                                                 /* sparsity= */ std::nullopt,
                                                 /* softmax_output= */ true),
                            ReturnMode::ClassName),
@@ -477,16 +477,16 @@ class TabularClassifier final
 };
 
 inline BoltGraphPtr createAutotunedModel(
-    uint32_t hidden_layer_dim, uint32_t n_classes,
+    uint32_t internal_model_dim, uint32_t n_classes,
     std::optional<float> hidden_layer_sparsity, bool softmax_output) {
   auto input_layer =
       Input::make(dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
 
   auto hidden_layer = FullyConnectedNode::makeAutotuned(
-      /* dim= */ hidden_layer_dim,
+      /* dim= */ internal_model_dim,
       /* sparsity= */
       hidden_layer_sparsity.value_or(
-          autotunedHiddenLayerSparsity(hidden_layer_dim)),
+          autotunedHiddenLayerSparsity(internal_model_dim)),
       /* activation= */ "relu");
   hidden_layer->addPredecessor(input_layer);
 

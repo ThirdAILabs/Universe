@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 from thirdai import bolt
 import pytest
 import os
@@ -81,7 +82,7 @@ def test_tabular_classifier_census_income_dataset():
     """
     (n_classes, column_datatypes, test_labels) = get_census_income_metadata()
     classifier = bolt.TabularClassifier(
-        hidden_layer_dim=1000, n_classes=n_classes, column_datatypes=column_datatypes
+        internal_model_dim=1000, n_classes=n_classes, column_datatypes=column_datatypes
     )
 
     classifier.train(
@@ -120,3 +121,140 @@ def create_single_test_samples():
             samples.append(values)
 
     return samples
+
+
+TEMP_TABULAR_TRAIN_FILE = "./temp_tabular_classifier_train_file"
+def create_temp_file(contents):
+    with open(TEMP_TABULAR_TRAIN_FILE, 'w') as file:
+        file.writelines(contents)
+
+def remove_temp_file():
+    os.remove(TEMP_TABULAR_TRAIN_FILE)
+
+def test_evaluate_before_train_throws():
+    create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
+
+    column_datatypes = ["categorical", "label"]
+    classifier = bolt.TabularClassifier(internal_model_dim=1, n_classes=1, column_datatypes=column_datatypes)
+    
+    with pytest.raises(RuntimeError, match=r"Cannot call evaulate on TabularClassifier before calling train."):
+        classifier.evaluate(TEMP_TABULAR_TRAIN_FILE)
+
+    with pytest.raises(RuntimeError, match=r"Cannot call featurizeInputForInference on TabularClasssifier before "
+          "training."):
+        classifier.predict(["cat1"])
+
+    classifier.save(SAVE_FILE)
+    classifier = bolt.TabularClassifier.load(SAVE_FILE)
+
+    with pytest.raises(RuntimeError, match=r"Cannot call evaulate on TabularClassifier before calling train."):
+        classifier.evaluate(TEMP_TABULAR_TRAIN_FILE)
+
+    with pytest.raises(RuntimeError, match=r"Cannot call featurizeInputForInference on TabularClasssifier before "
+          "training."):
+        classifier.predict(["cat1"])
+
+    remove_temp_file()
+
+def test_column_datatypes_mismatch():
+    create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
+
+    column_datatypes = ["label"]
+    classifier = bolt.TabularClassifier(internal_model_dim=1, n_classes=1, column_datatypes=column_datatypes)
+
+    with pytest.raises(ValueError, match=r"Csv format error. Expected*"):
+        classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
+
+    remove_temp_file()
+
+
+def test_train_evaluate_column_mismatch():
+    create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
+
+    column_datatypes = ["categorical", "label"]
+    classifier = bolt.TabularClassifier(internal_model_dim=1, n_classes=2, column_datatypes=column_datatypes)
+
+    classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
+
+    create_temp_file(["colname1,colname2,colname3\n", "value1,value2,label1\n"])
+
+    with pytest.raises(ValueError, match=r"\[ThreadSafeVocabulary\] Seeing a new string 'value2' after calling declareSeenAllStrings()."):
+        classifier.evaluate(TEMP_TABULAR_TRAIN_FILE)
+
+    remove_temp_file()
+
+
+def test_invalid_numeric_column():
+    create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
+
+    column_datatypes = ["numeric", "label"]
+    classifier = bolt.TabularClassifier(internal_model_dim=1, n_classes=1, column_datatypes=column_datatypes)
+
+    with pytest.raises(ValueError, match=r"Could not process column 0 as type 'numeric.' Received value: 'value1.'"):
+        classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
+
+    remove_temp_file()
+
+
+def test_empty_columns():
+    create_temp_file(["colname1,colname2,colname3,colname4\n", "1,value2,value3,label1\n", ",value2,,label2\n"])
+
+    column_datatypes = ["numeric", "categorical", "categorical", "label"]
+    classifier = bolt.TabularClassifier(internal_model_dim=1, n_classes=2, column_datatypes=column_datatypes)
+
+    classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
+    classifier.evaluate(TEMP_TABULAR_TRAIN_FILE)
+
+    remove_temp_file()
+
+
+def test_failure_on_new_label_in_testset():
+    create_temp_file(["colname1,colname2\n", "value1,label1\n", "value2,label2\n"])
+
+    column_datatypes = ["categorical", "label"]
+    classifier = bolt.TabularClassifier(internal_model_dim=1, n_classes=2, column_datatypes=column_datatypes)
+
+    classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
+
+    create_temp_file(["colname1,colname2\n", "value1,label2\n", "value2,label3\n"])
+
+    with pytest.raises(ValueError, match=r"\[ThreadSafeVocabulary\] Seeing a new string 'label3' after calling.*"):
+        classifier.evaluate(TEMP_TABULAR_TRAIN_FILE)
+
+    remove_temp_file()
+
+
+def test_failure_on_to_many_labels():
+    create_temp_file(["colname1,colname2\n", "value1,label1\n", "value2,label2\n"])
+
+    column_datatypes = ["categorical", "label"]
+    classifier = bolt.TabularClassifier(internal_model_dim=1, n_classes=1, column_datatypes=column_datatypes)
+
+    with pytest.raises(ValueError, match=r"Expected 1 classes but found an additional class: 'label2."):
+        classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
+
+    remove_temp_file()
+
+
+def test_no_label_column():
+    create_temp_file(["colname1,colname2\n", "1,value1\n", "2,value2\n"])
+
+    column_datatypes = ["numeric", "categorical"]
+    classifier = bolt.TabularClassifier(internal_model_dim=1, n_classes=2, column_datatypes=column_datatypes)
+
+    with pytest.raises(ValueError, match=r"Dataset does not contain a 'label' column."):
+        classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
+
+    remove_temp_file()
+
+
+def test_duplicate_label_column():
+    create_temp_file(["colname1,colname2\n", "label1,label1\n", "label2,label2\n"])
+
+    column_datatypes = ["label", "label"]
+    classifier = bolt.TabularClassifier(internal_model_dim=1, n_classes=2, column_datatypes=column_datatypes)
+
+    with pytest.raises(ValueError, match=r"Found multiple 'label' columns in dataset."):
+        classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
+
+    remove_temp_file()

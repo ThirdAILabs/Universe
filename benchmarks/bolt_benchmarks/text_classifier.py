@@ -31,8 +31,8 @@ def compute_accuracy(test_file, predictions):
     return correct / total
 
 
-def train_classifier(train_dataset, n_classes, model_size, epochs, learning_rate):
-    classifier = bolt.TextClassifier(model_size=model_size, n_classes=n_classes)
+def train_classifier(train_dataset, n_classes, internal_model_dim, epochs, learning_rate):
+    classifier = bolt.TextClassifier(internal_model_dim=internal_model_dim, n_classes=n_classes)
 
     classifier.train(filename=train_dataset, epochs=epochs, learning_rate=learning_rate)
 
@@ -83,7 +83,7 @@ def build_arg_parser():
         help="The learning rate used for training",
     )
     parser.add_argument(
-        "--hidden_layer_dim",
+        "--internal_model_dim",
         type=int,
         required=True,
         help="The desired hidden layer dimension in the model.",
@@ -114,7 +114,7 @@ def main():
     classifier = train_classifier(
         args.train_dataset,
         args.n_classes,
-        args.model_size,
+        args.internal_model_dim,
         args.epochs,
         args.learning_rate,
     )
