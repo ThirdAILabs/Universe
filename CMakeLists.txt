@@ -40,7 +40,15 @@ if (MSVC)
   if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
   endif()
-  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp:llvm /w")
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
+
+  # We create an interface to plant compile flags and be cohesive with the rest
+  # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile
+  # flags narrowing it to just the required targets.
+
+  add_library(_thirdai_windows_llvm_openmp INTERFACE)
+  target_compile_options(_thirdai_windows_llvm_openmp INTERFACE "/openmp:llvm")
+  add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 else()
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   add_compile_options(
@@ -81,6 +89,7 @@ else()
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
   )
 
+  find_package(OpenMP REQUIRED)
 endif()
 
 # Add feature flags passed in from python
@@ -116,7 +125,6 @@ endif()
 
 set(THIRDAI_GTEST_DISCOVERY_TIMEOUT 5 CACHE STRING "Timeout for GoogleTest discovery, configurable from command-line.")
 
-find_package(OpenMP REQUIRED)
 
 # Header only dependencies
 include_directories(deps/pybind11/include)

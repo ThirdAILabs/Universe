@@ -1,13 +1,16 @@
 # TODO(josh): Add back mach benchmark
 
-import numpy as np
-import pathlib
 import sys
+import pathlib
+
+import numpy as np
 
 from thirdai import bolt, dataset
 from thirdai import setup_logging
 
-from ..utils import (
+parent_dir = pathlib.Path(__file__).parent.parent
+sys.path.append(str(parent_dir))
+from utils import (
     start_experiment,
     start_mlflow,
     find_full_filepath,
