@@ -203,7 +203,7 @@ class MultiLabelTextClassifier final
   bool useSparseInference() const final { return false; }
 
   std::vector<std::string> getEvaluationMetrics() const final {
-    std::string f_measure = "fmeasure(" + std::to_string(_threshold) + ")";
+    std::string f_measure = "f_measure(" + std::to_string(_threshold) + ")";
     return {"categorical_accuracy", f_measure};
   }
 
