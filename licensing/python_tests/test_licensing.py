@@ -1,6 +1,7 @@
 # Add a release test marker for all tests in this file (the tests will only
 # work when built in release mode)
 import pytest
+import platform
 
 pytestmark = [pytest.mark.release]
 
@@ -38,6 +39,10 @@ def test_with_valid_license():
     this_should_require_a_license_bolt()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="TSK-568: Expired license currently does an access violation on Windows",
+)
 def test_with_expired_license():
     import thirdai
 
@@ -48,6 +53,10 @@ def test_with_expired_license():
         this_should_require_a_license_bolt()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="TSK-568: Invalid license currently does an access violation on Windows",
+)
 def test_with_invalid_license():
     import thirdai
 
