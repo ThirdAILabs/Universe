@@ -285,6 +285,7 @@ class AutoClassifierBase {
     if (auto reconstruct_hash_fn = defaultReconstructHashFunctionsInterval()) {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
+    return train_config;
   }
 
   // Private constructor for cereal.
