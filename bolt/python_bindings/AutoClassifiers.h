@@ -21,6 +21,7 @@
 #include <pybind11/pybind11.h>
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::bolt::python {
 
@@ -202,7 +203,8 @@ class MultiLabelTextClassifier final
   bool useSparseInference() const final { return false; }
 
   std::vector<std::string> getEvaluationMetrics() const final {
-    return {"categorical_accuracy"};
+    std::string f_measure = "fmeasure(" + std::to_string(_threshold) + ")";
+    return {"categorical_accuracy", f_measure};
   }
 
  private:
