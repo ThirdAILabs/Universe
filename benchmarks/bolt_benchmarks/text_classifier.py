@@ -31,8 +31,12 @@ def compute_accuracy(test_file, predictions):
     return correct / total
 
 
-def train_classifier(train_dataset, n_classes, internal_model_dim, epochs, learning_rate):
-    classifier = bolt.TextClassifier(internal_model_dim=internal_model_dim, n_classes=n_classes)
+def train_classifier(
+    train_dataset, n_classes, internal_model_dim, epochs, learning_rate
+):
+    classifier = bolt.TextClassifier(
+        internal_model_dim=internal_model_dim, n_classes=n_classes
+    )
 
     classifier.train(filename=train_dataset, epochs=epochs, learning_rate=learning_rate)
 
