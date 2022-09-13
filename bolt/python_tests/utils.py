@@ -280,6 +280,8 @@ def build_train_and_predict_single_hidden_layer(
     return model.predict(data, labels, predict_config)
 
 
+# This function checks that the the results of predict_single and predict batch 
+# match the original predictions.
 def check_autoclassifier_predict_correctness(classifier, test_samples, original_predictions):
     for sample, original_prediction in zip(test_samples, original_predictions):
         single_prediction = classifier.predict(sample)
