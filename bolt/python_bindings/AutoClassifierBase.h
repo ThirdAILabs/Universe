@@ -241,11 +241,11 @@ class AutoClassifierBase {
     while (1) {
       auto [data, labels] = dataset->loadInMemory(max_in_memory_batches);
 
-      if (data->len() == 0) {
+      _model->train({data}, labels, train_config);
+
+      if (data->numBatches() < max_in_memory_batches) {
         break;
       }
-
-      _model->train({data}, labels, train_config);
     }
 
     dataset->restart();

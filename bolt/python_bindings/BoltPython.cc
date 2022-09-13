@@ -129,12 +129,11 @@ void createBoltSubmodule(py::module_& module) {
   py::class_<TextClassifier> text_classifier(bolt_submodule, "TextClassifier");
 
   text_classifier.def(
-      py::init<uint32_t, uint32_t>(), py::arg("hidden_layer_dim"),
+      py::init<uint32_t, uint32_t>(), py::arg("internal_model_dim"),
       py::arg("n_classes"),
       "Constructs a TextClassifier with autotuning.\n"
       "Arguments:\n"
-      " * model_size: string - Either 'small', 'medium', 'large', or a"
-      "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
+      " * internal_model_dim: int - Specifies the internal dimension used in the model.\n"
       " * n_classes: int - How many classes or categories are in the "
       "labels of the dataset.\n");
 
@@ -146,8 +145,10 @@ void createBoltSubmodule(py::module_& module) {
   py::class_<MultiLabelTextClassifier> multi_label_classifier(
       bolt_submodule, "MultiLabelTextClassifier");
 
-  multi_label_classifier.def(py::init<uint32_t, float>(), py::arg("n_classes"),
-                             py::arg("threshold") = 0.95);
+  multi_label_classifier
+      .def(py::init<uint32_t, float>(), py::arg("n_classes"),
+           py::arg("threshold") = 0.95)
+      .def("update_threshold", &MultiLabelTextClassifier::updateThreshold);
 
   defineAutoClassifierCommonMethods(multi_label_classifier);
 
@@ -159,7 +160,7 @@ void createBoltSubmodule(py::module_& module) {
 
   tabular_classifier.def(
       py::init<uint32_t, uint32_t, std::vector<std::string>>(),
-      py::arg("hidden_layer_dim"), py::arg("n_classes"),
+      py::arg("internal_model_dim"), py::arg("n_classes"),
       py::arg("column_datatypes"));
 
   defineAutoClassifierCommonMethods(tabular_classifier);
