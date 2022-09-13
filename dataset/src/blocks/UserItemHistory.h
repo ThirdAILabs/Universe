@@ -211,16 +211,13 @@ class UserItemHistoryBlock final : public Block {
   void extendVectorWithUserHistory(uint32_t user_id, int64_t timestamp_seconds,
                                    SegmentedFeatureVector& vec) {
     uint32_t added = 0;
-    std::cout << "hello" << std::endl;
-    std::cout << user_id << std::endl;
+
     for (const auto& item : _per_user_history->at(user_id)) {
-      std::cout << "whatsapp" << std::endl;
       if (added >= _track_last_n) {
         break;
       }
 
       if (item.timestamp <= timestamp_seconds) {
-        std::cout << "heyaa" << std::endl;
         vec.addSparseFeatureToSegment(item.item, 1.0);
         added++;
       }
