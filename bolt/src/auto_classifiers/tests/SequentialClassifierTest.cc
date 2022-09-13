@@ -106,7 +106,7 @@ void assert_column_names(std::vector<std::string> column_names,
       ASSERT_EQ(
           std::count(column_names.begin(), column_names.end(), column_name), 4);
     } else if (column_name == "sequential") {
-      ASSERT_EQ(
+      ASSERT_LE(
           std::count(column_names.begin(), column_names.end(), column_name), 3);
     } else if (column_name == "static_text") {
       std::vector<std::string> text_reasons =

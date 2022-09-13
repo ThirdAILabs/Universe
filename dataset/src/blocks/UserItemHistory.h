@@ -167,14 +167,15 @@ class UserItemHistoryBlock final : public Block {
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec, bool store_map) final {
-    (void)store_map;
     try {
       auto user_str = std::string(input_row.at(_user_col));
       auto item_str = std::string(input_row.at(_item_col));
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
       uint32_t user_id = _user_id_lookup->getUid(user_str);
-      _user_id = user_id;
+      if (store_map) {
+        _user_id = user_id;
+      }
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_ids = getItemIds(item_str);
