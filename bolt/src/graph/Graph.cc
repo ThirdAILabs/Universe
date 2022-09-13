@@ -403,7 +403,7 @@ InferenceResult BoltGraph::predict(
                           .count();
 
   std::string logline =
-      fmt::format("test | complete |  batches {} | time {}s | {}", _epoch_count,
+      fmt::format("test | complete |  batches {} | time {}ms | {}",
                   predict_context.numBatches(), test_time, metrics.summary());
   log::info(logline);
   if (bar) {
