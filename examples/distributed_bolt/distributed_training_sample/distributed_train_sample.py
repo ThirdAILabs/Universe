@@ -6,7 +6,8 @@ if __name__ == "__main__":
     head = db.FullyConnectedNetwork(
         num_workers=2,
         config_filename=config_filename,
-        communication_type="linear",
+        num_cpus_per_node=20,
+        communication_type="circular",
     )
     head.train()
     metrics = head.predict()

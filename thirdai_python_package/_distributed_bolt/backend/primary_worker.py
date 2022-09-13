@@ -24,6 +24,8 @@ class PrimaryWorker(Worker):
         self,
         layer_dims: List[int],
         no_of_workers: int,
+        config, 
+        communication_type
     ):
         """Initializes the Primary Worker Class
 
@@ -37,7 +39,7 @@ class PrimaryWorker(Worker):
         # set up in add workers
         self.workers = None
 
-        super().__init__(no_of_workers, 0, self)
+        super().__init__(no_of_workers, 0, self, config, layer_dims, communication_type)
 
     def set_workers(self, workers):
         self.workers = workers

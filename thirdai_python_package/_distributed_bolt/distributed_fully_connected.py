@@ -107,7 +107,7 @@ class FullyConnectedNetwork(DistributedBolt):
         # 100, as the ray queues the work load else.
         self.primary_worker = PrimaryWorker.options(
             num_cpus=num_cpus_per_worker, max_concurrency=100
-        ).remote(self.layer_dims, self.num_workers)
+        ).remote(self.layer_dims, self.num_workers, config, communication_type)
 
         self.replica_workers = [
             ReplicaWorker.options(
@@ -116,19 +116,15 @@ class FullyConnectedNetwork(DistributedBolt):
                 self.num_workers,
                 worker_id + 1,
                 self.primary_worker,
+                config,
+                self.layer_dims,
+                communication_type
             )
             for worker_id in range(self.num_workers - 1)
         ]
 
         self.workers = [self.primary_worker]
         self.workers.extend(self.replica_workers)
-
-        ray.get(
-            [
-                worker.make_fully_connected_model.remote(config, self.layer_dims)
-                for worker in self.workers
-            ]
-        )
 
         self.primary_worker.set_workers.remote(self.workers)
 
