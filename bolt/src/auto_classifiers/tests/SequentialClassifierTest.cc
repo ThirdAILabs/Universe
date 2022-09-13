@@ -236,37 +236,6 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
   assertSuccessfulLoadSave(model);
 }
 
-TEST(SequentialClassifierTest, TestLoadSavePredictSingle) {
-  writeRowsToFile(
-      TRAIN_FILE_NAME,
-      {"user,target,timestamp,static_text,static_categorical,sequential",
-       "0,0,2022-08-29,hello,0,B", "0,1,2022-08-30,hello,1,A",
-       "0,0,2022-08-31,hello,2,A", "0,1,2022-09-01,hello,3,B"});
-
-  auto classifier = getTrainedClassifier(TRAIN_FILE_NAME);
-
-  auto single_inference_input = mockSequentialSampleForPredictSingle();
-
-  classifier.save(MODEL_SAVE_FILE_NAME);
-
-  auto loaded_classifier = SequentialClassifier::load(MODEL_SAVE_FILE_NAME);
-
-  auto original_classifier_single_output =
-      classifier.predictSingle(single_inference_input);
-
-  auto loaded_classifier_single_output =
-      loaded_classifier->predictSingle(single_inference_input);
-
-  ASSERT_TRUE(original_classifier_single_output.isDense());
-  ASSERT_TRUE(loaded_classifier_single_output.isDense());
-  ASSERT_EQ(original_classifier_single_output.len,
-            loaded_classifier_single_output.len);
-
-  std::remove(TRAIN_FILE_NAME);
-  std::remove(TEST_FILE_NAME);
-  std::remove(MODEL_SAVE_FILE_NAME);
-}
-
 /**
  * @brief Tests that sequential classifier does not parse static categorical
  * columns into multiple classes if we don't pass in a multi_class_delim

@@ -162,14 +162,6 @@ class SequentialClassifier {
     return result;
   }
 
-  BoltVector predictSingle(
-      const std::unordered_map<std::string, std::string>& sample) {
-    BoltVector input_vector = getInputForSingleInference(sample);
-
-    return _model->predictSingle({input_vector},
-                                 /* use_sparse_inference= */ false);
-  }
-
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
