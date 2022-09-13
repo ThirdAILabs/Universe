@@ -262,7 +262,7 @@ def test_failure_on_new_label_in_testset():
     remove_temp_file()
 
 
-def test_failure_on_to_many_labels():
+def test_failure_on_too_many_labels():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value2,label2\n"])
 
     column_datatypes = ["categorical", "label"]

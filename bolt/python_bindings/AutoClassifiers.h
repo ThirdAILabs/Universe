@@ -9,6 +9,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
@@ -28,7 +29,7 @@ namespace thirdai::bolt::python {
 inline BoltGraphPtr createAutotunedModel(uint32_t internal_model_dim,
                                          uint32_t n_classes,
                                          std::optional<float> sparsity,
-                                         bool softmax_output);
+                                         ActivationFunction output_activation);
 inline std::string convertTokensToString(const std::vector<uint32_t>& tokens);
 inline float autotunedHiddenLayerSparsity(uint64_t layer_dim);
 
@@ -42,10 +43,12 @@ inline float autotunedHiddenLayerSparsity(uint64_t layer_dim);
 class TextClassifier final : public AutoClassifierBase<std::string> {
  public:
   TextClassifier(uint32_t internal_model_dim, uint32_t n_classes)
-      : AutoClassifierBase(createAutotunedModel(internal_model_dim, n_classes,
-                                                /* sparsity= */ std::nullopt,
-                                                /* softmax_output= */ true),
-                           ReturnMode::ClassName) {
+      : AutoClassifierBase(
+            createAutotunedModel(
+                internal_model_dim, n_classes,
+                /* sparsity= */ std::nullopt,
+                /* output_activation= */ ActivationFunction::Softmax),
+            ReturnMode::ClassName) {
     _label_id_lookup = dataset::ThreadSafeVocabulary::make(n_classes);
   }
 
@@ -75,7 +78,7 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
     return getDataset(data_loader);
   }
 
@@ -169,7 +172,7 @@ class MultiLabelTextClassifier final
   }
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
     return getDataset(data_loader);
   }
 
@@ -304,10 +307,12 @@ class TabularClassifier final
  public:
   TabularClassifier(uint32_t internal_model_dim, uint32_t n_classes,
                     std::vector<std::string> column_datatypes)
-      : AutoClassifierBase(createAutotunedModel(internal_model_dim, n_classes,
-                                                /* sparsity= */ std::nullopt,
-                                                /* softmax_output= */ true),
-                           ReturnMode::ClassName),
+      : AutoClassifierBase(
+            createAutotunedModel(
+                internal_model_dim, n_classes,
+                /* sparsity= */ std::nullopt,
+                /* output_activation= */ ActivationFunction::Softmax),
+            ReturnMode::ClassName),
         _classname_to_id_lookup(nullptr),
         _metadata(nullptr),
         _batch_processor(nullptr),
@@ -350,7 +355,7 @@ class TabularClassifier final
   }
 
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
     if (!_batch_processor) {
       throw std::runtime_error(
           "Cannot call evaulate on TabularClassifier before calling train.");
@@ -478,7 +483,8 @@ class TabularClassifier final
 
 inline BoltGraphPtr createAutotunedModel(
     uint32_t internal_model_dim, uint32_t n_classes,
-    std::optional<float> hidden_layer_sparsity, bool softmax_output) {
+    std::optional<float> hidden_layer_sparsity,
+    ActivationFunction output_activation) {
   auto input_layer =
       Input::make(dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
 
@@ -490,20 +496,29 @@ inline BoltGraphPtr createAutotunedModel(
       /* activation= */ "relu");
   hidden_layer->addPredecessor(input_layer);
 
-  auto output_layer = FullyConnectedNode::makeDense(
-      /* dim= */ n_classes,
-      /* activation= */ softmax_output ? "softmax" : "sigmoid");
+  FullyConnectedNodePtr output_layer;
+  std::shared_ptr<LossFunction> loss;
+
+  if (output_activation == ActivationFunction::Softmax) {
+    output_layer = FullyConnectedNode::makeDense(
+        /* dim= */ n_classes,
+        /* activation= */ "softmax");
+    loss = std::make_shared<CategoricalCrossEntropyLoss>();
+  } else if (output_activation == ActivationFunction::Sigmoid) {
+    loss = std::make_shared<BinaryCrossEntropyLoss>();
+    output_layer = FullyConnectedNode::makeDense(
+        /* dim= */ n_classes,
+        /* activation= */ "softmax");
+  } else {
+    throw std::invalid_argument(
+        "Output activation in createAutotunedModel must be Softmax or "
+        "Sigmoid.");
+  }
+
   output_layer->addPredecessor(hidden_layer);
 
   auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
                                            output_layer);
-
-  std::shared_ptr<LossFunction> loss;
-  if (softmax_output) {
-    loss = std::make_shared<CategoricalCrossEntropyLoss>();
-  } else {
-    loss = std::make_shared<BinaryCrossEntropyLoss>();
-  }
 
   model->compile(loss, /* print_when_done= */ false);
 

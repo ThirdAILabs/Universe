@@ -133,7 +133,8 @@ void createBoltSubmodule(py::module_& module) {
       py::arg("n_classes"),
       "Constructs a TextClassifier with autotuning.\n"
       "Arguments:\n"
-      " * internal_model_dim: int - Specifies the internal dimension used in the model.\n"
+      " * internal_model_dim: int - Specifies the internal dimension used in "
+      "the model.\n"
       " * n_classes: int - How many classes or categories are in the "
       "labels of the dataset.\n");
 
