@@ -12,7 +12,7 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
-#include <utils/Logging.h>
+#include <utils/src/Logging.h>
 #include <algorithm>
 #include <chrono>
 #include <csignal>

@@ -1,11 +1,12 @@
 #pragma once
 #include <spdlog/spdlog.h>
+#include <iostream>
 #include <string>
 
 // Include stdout, file sinks we use.
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
-#include <utils/Version.h>
+#include <utils/src/Version.h>
 
 namespace thirdai::log {
 

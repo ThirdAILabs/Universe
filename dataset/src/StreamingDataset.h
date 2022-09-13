@@ -4,7 +4,7 @@
 #include "DataLoader.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/InMemoryDataset.h>
-#include <utils/Logging.h>
+#include <utils/src/Logging.h>
 #include <chrono>
 #include <limits>
 #include <memory>

@@ -250,6 +250,7 @@ pybind11_add_module(_thirdai
   dataset/python_bindings/DatasetPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
+  utils/python_bindings/UtilsPython.cc
   ${BOLT_SOURCES} 
   ${SEARCH_SOURCES} 
   ${HASHING_SOURCES}
