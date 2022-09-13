@@ -4,7 +4,6 @@ import pathlib
 from thirdai import bolt
 from thirdai import setup_logging
 
-sys.path.append(str(pathlib.Path(__file__).parent.resolve()) + "/..")
 from utils import (
     config_get_required,
     find_full_filepath,
