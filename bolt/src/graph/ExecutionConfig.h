@@ -250,8 +250,6 @@ class TrainState {
     return metrics[metric_name];
   }
 
-  auto getAllMetrics() { return metrics; }
-
   void updateEpochTimes(int64_t epoch_time) {
     metrics["epoch_times"].push_back(static_cast<double>(epoch_time));
   }

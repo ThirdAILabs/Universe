@@ -185,7 +185,10 @@ MetricData BoltGraph::train(
 
   callbacks.onTrainEnd(*this, train_state);
 
-  return train_state.getAllMetrics();
+  auto metric_data = metrics.getOutput();
+  metric_data["epoch_times"] = train_state.getMetricValues("epoch_times");
+
+  return metric_data;
 }
 
 void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
