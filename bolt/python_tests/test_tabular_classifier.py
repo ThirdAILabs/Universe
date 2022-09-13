@@ -53,10 +53,6 @@ def setup_module():
             file.writelines([line.replace(".", "") for line in data[1:]])
 
 
-def teardown_module():
-    remove_files([TRAIN_FILE, TEST_FILE])
-
-
 def get_census_income_metadata():
     df = pd.read_csv(TEST_FILE)
     n_classes = df[df.columns[-1]].nunique()
