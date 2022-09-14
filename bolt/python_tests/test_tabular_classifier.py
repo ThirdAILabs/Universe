@@ -3,6 +3,7 @@ from thirdai import bolt
 import pytest
 import os
 import pandas as pd
+import platform
 from utils import (
     compute_accuracy_of_predictions,
     check_autoclassifier_predict_correctness,
