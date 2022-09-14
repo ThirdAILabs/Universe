@@ -121,6 +121,85 @@ class CategoricalAccuracy final : public Metric {
   std::atomic<uint32_t> _num_samples;
 };
 
+/**
+ * The CategoricalCrossEntropy (metric) is a proxy to the
+ * CategoricalCrossEntropy (LossFunction) to track the metric that is closer to
+ * the training objective.
+ */
+class CategoricalCrossEntropy final : public Metric {
+ public:
+  CategoricalCrossEntropy() : _sum(0), _num_samples(0) {}
+
+  void record(const BoltVector& output, const BoltVector& labels) final {
+    float sample_loss = 0;
+    if (output.isDense()) {
+      if (labels.isDense()) {
+        // (Dense Output, Dense Labels)
+        // If both are dense, they're expected to have the same length.
+        // In this case, we may simply run over the dense vectors and compute
+        // sum((p_i)log(q_i)).
+        assert(output.len == labels.len);
+        for (uint32_t i = 0; i < output.len; i++) {
+          sample_loss +=
+              labels.activations[i] * std::log(output.activations[i]);
+        }
+      } else {
+        // (Dense Output, Sparse Labels)
+        for (uint32_t i = 0; i < output.len; i++) {
+          const uint32_t* label_start = labels.active_neurons;
+          const uint32_t* label_end = labels.active_neurons + labels.len;
+
+          // Find the position of the active neuron if it exists in the labels.
+          const uint32_t* label_query = std::find(label_start, label_end, i);
+
+          if (label_query != label_end) {
+            // In this case, we have found the labels. Other label activations
+            // are 0, so we can ignore (0*log(whatever)).
+            //
+            // Compute label_index to lookup the value from labels
+            // sparse-vector.
+            size_t label_index = std::distance(label_start, label_query);
+
+            sample_loss += labels.activations[label_index] *
+                           std::log(output.activations[i]);
+          }
+        }
+      }
+    } else {
+      std::cerr << "Not implemented yet" << std::endl;
+      std::abort();
+    }
+
+    // This is dangerous, unfortunately. Let's get compile working short term.
+    _sum.store(_sum.load() + -1 * sample_loss);
+    _num_samples++;
+  }
+
+  double value() final {
+    double acc = static_cast<double>(_sum) / _num_samples;
+    return acc;
+  }
+
+  void reset() final {
+    _sum = 0;
+    _num_samples = 0;
+  }
+
+  static constexpr const char* NAME = "xent";
+
+  std::string name() final { return NAME; }
+
+  std::string summary() final {
+    return fmt::format("{}: {:.3f}", NAME, value());
+  }
+
+  bool smallerIsBetter() const final { return false; }
+
+ private:
+  std::atomic<float> _sum;
+  std::atomic<uint32_t> _num_samples;
+};
+
 class MeanSquaredErrorMetric final : public Metric {
  public:
   MeanSquaredErrorMetric() : _mse(0), _num_samples(0) {}
@@ -498,6 +577,9 @@ static std::shared_ptr<Metric> makeMetric(const std::string& name) {
   }
   if (RecallAtK::isRecallAtK(name)) {
     return RecallAtK::make(name);
+  }
+  if (name == CategoricalCrossEntropy::NAME) {
+    return std::make_shared<CategoricalCrossEntropy>();
   }
   throw std::invalid_argument("'" + name + "' is not a valid metric.");
 }
