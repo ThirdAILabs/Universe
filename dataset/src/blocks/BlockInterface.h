@@ -21,6 +21,11 @@ class TextBlockTest;
 
 using BlockPtr = std::shared_ptr<Block>;
 
+struct ResponsibleColumnAndInputKey {
+  std::string column_name;
+  std::string input_key;
+};
+
 /**
  * Segmented feature vector abstract class.
  * A vector representation that can be extended with
@@ -111,9 +116,9 @@ class Block {
    */
   std::exception_ptr addVectorSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool store_map = false) {
+      SegmentedFeatureVector& vec, bool remember_raw_features = false) {
     vec.addFeatureSegment(featureDim());
-    return buildSegment(input_row, vec, store_map);
+    return buildSegment(input_row, vec, remember_raw_features);
   }
 
   /**
@@ -132,8 +137,15 @@ class Block {
    */
   virtual uint32_t expectedNumColumns() const = 0;
 
-  virtual std::pair<std::string, std::string> explainIndex(
-      uint32_t index,
+  /**
+   * Returns column name and keyword responsible from that column.
+   * index: index within the block so that we can get exact keyword responsible.
+   * num_to_name: column number to column name map, (optional) because some of
+   * the blocks don't need it like TabularBlock which has this map in its
+   * metadata.
+   */
+  virtual ResponsibleColumnAndInputKey explainFeature(
+      uint32_t index_within_block,
       std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
       const = 0;
 
@@ -149,7 +161,7 @@ class Block {
    */
   virtual std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool store_map) = 0;
+      SegmentedFeatureVector& vec, bool remember_raw_features) = 0;
 };
 
 }  // namespace thirdai::dataset
