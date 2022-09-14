@@ -38,21 +38,21 @@ void setupLogging(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
 
     // Convert a supplied string level into the corresponding
     // spdlog level and configures the logger accordingly.
-    if (level == "trace")
+    if (level == "trace") {
       logger->set_level(spdlog::level::trace);
-    else if (level == "debug")
+    } else if (level == "debug") {
       logger->set_level(spdlog::level::debug);
-    else if (level == "info")
+    } else if (level == "info") {
       logger->set_level(spdlog::level::info);
-    else if (level == "warn")
+    } else if (level == "warn") {
       logger->set_level(spdlog::level::warn);
-    else if (level == "err" || level == "error")
+    } else if (level == "err" || level == "error") {
       logger->set_level(spdlog::level::err);
-    else if (level == "critical")
+    } else if (level == "critical") {
       logger->set_level(spdlog::level::critical);
-    else if (level == "off")
+    } else if (level == "off") {
       logger->set_level(spdlog::level::off);
-    else {
+    } else {
       logger->warn("Unknown log level '{}' for logger '{}'", level,
                    logger->name());
     }
