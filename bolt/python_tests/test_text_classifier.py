@@ -2,7 +2,11 @@ from thirdai import bolt
 import pytest
 import datasets
 import random
-from utils import remove_files, compute_accuracy_of_predictions, check_autoclassifier_predict_correctness
+from utils import (
+    remove_files,
+    compute_accuracy_of_predictions,
+    check_autoclassifier_predict_correctness,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -73,4 +77,3 @@ def test_text_classifier_clinc_dataset():
     check_autoclassifier_predict_correctness(new_classifier, test_samples, predictions)
 
     remove_files([TRAIN_FILE, TEST_FILE, SAVE_FILE])
-
