@@ -130,178 +130,6 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
 };
 
 /**
- * The MultiLabelTextClassifier takes in data in the form:
- *        <class_id_1>,<class_id_2>,...,<class_id_n>\t<text>.
- * It uses paigrams to featurize the text, and uses sigmoid/bce to handle the
- * variable number of labels. Thresholding is applied to ensure that each
- * prediction has at least one neuron with an activation > the given threshold.
- * Predict and evaluate return numpy arrays of the output activations.
- */
-class MultiLabelTextClassifier final
-    : public AutoClassifierBase<std::vector<uint32_t>> {
- public:
-  explicit MultiLabelTextClassifier(uint32_t n_classes, float threshold = 0.95)
-      : AutoClassifierBase(createModel(n_classes), ReturnMode::NumpyArray),
-        _threshold(threshold) {}
-
-  void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
-  }
-
-  static std::unique_ptr<MultiLabelTextClassifier> load(
-      const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<MultiLabelTextClassifier> deserialize_into(
-        new MultiLabelTextClassifier());
-    iarchive(*deserialize_into);
-
-    return deserialize_into;
-  }
-
-  void updateThreshold(float new_threshold) { _threshold = new_threshold; }
-
- protected:
-  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
-                     std::optional<uint64_t> max_in_memory_batches) final {
-    (void)max_in_memory_batches;
-    return getDataset(data_loader);
-  }
-
-  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
-    return getDataset(data_loader);
-  }
-
-  void processPredictionBeforeReturning(uint32_t* active_neurons,
-                                        float* activations,
-                                        uint32_t len) final {
-    (void)active_neurons;
-
-    uint32_t max_id = getMaxIndex(activations, len);
-    if (activations[max_id] < _threshold) {
-      activations[max_id] = _threshold + 0.0001;
-    }
-  }
-
-  BoltVector featurizeInputForInference(
-      const std::vector<uint32_t>& input) final {
-    std::string sentence = tokensToSentence(input);
-
-    return dataset::TextEncodingUtils::computePairgrams(
-        sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
-  }
-
-  std::string getClassName(uint32_t neuron_id) final {
-    return std::to_string(neuron_id);
-  }
-
-  uint32_t defaultBatchSize() const final { return 2048; }
-
-  bool freezeHashTablesAfterFirstEpoch() const final { return false; }
-
-  bool useSparseInference() const final { return false; }
-
-  std::vector<std::string> getEvaluationMetrics() const final {
-    std::string f_measure = "f_measure(" + std::to_string(_threshold) + ")";
-    return {"categorical_accuracy", f_measure};
-  }
-
- private:
-  static BoltGraphPtr createModel(uint32_t n_classes) {
-    auto model = CommonNetworks::FullyConnected(
-        /* input_dim= */ dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
-        /* layers= */ {FullyConnectedNode::makeDense(
-                           /* dim= */ 1024, "relu"),
-                       FullyConnectedNode::makeExplicitSamplingConfig(
-                           /* dim= */ n_classes,
-                           /* sparsity= */ getOutputSparsity(n_classes),
-                           /* activation= */ "sigmoid",
-                           /* num_tables= */ 64, /* hashes_per_table= */ 4,
-                           /* reservoir_size= */ 64)});
-    model->compile(std::make_shared<BinaryCrossEntropyLoss>(),
-                   /* print_when_done= */ false);
-
-    return model;
-  }
-
-  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
-      std::shared_ptr<dataset::DataLoader> data_loader) {
-    std::vector<dataset::BlockPtr> input_blocks = {
-        dataset::PairGramTextBlock::make(/* col= */ 1)};
-    std::vector<dataset::BlockPtr> label_blocks = {
-        dataset::NumericalCategoricalBlock::make(
-            /* col= */ 0,
-            /* n_classes= */ _model->outputDim(), /* delimiter= */ ',')};
-
-    return std::make_unique<dataset::StreamingGenericDatasetLoader>(
-        /* data_loader= */ std::move(data_loader),
-        /* input_blocks= */ input_blocks, /* label_blocks= */ label_blocks,
-        /* shuffle= */ true,
-        /* shuffle_config= */ dataset::DatasetShuffleConfig(),
-        /* has_header= */ false, /* delimiter= */ '\t');
-  }
-
-  static float getOutputSparsity(uint32_t output_dim) {
-    /*
-      For smaller output layers, we return a sparsity
-      that puts the sparse dimension between 80 and 160.
-    */
-    if (output_dim < 450) {
-      return 1.0;
-    }
-    if (output_dim < 900) {
-      return 0.2;
-    }
-    if (output_dim < 1800) {
-      return 0.1;
-    }
-    /*
-      For larger layers, we return a sparsity that
-      puts the sparse dimension between 100 and 260.
-    */
-    if (output_dim < 4000) {
-      return 0.05;
-    }
-    if (output_dim < 10000) {
-      return 0.02;
-    }
-    if (output_dim < 20000) {
-      return 0.01;
-    }
-    return 0.05;
-  }
-
-  static std::string tokensToSentence(const std::vector<uint32_t>& tokens) {
-    std::stringstream sentence_ss;
-    for (uint32_t i = 0; i < tokens.size(); i++) {
-      if (i > 0) {
-        sentence_ss << ' ';
-      }
-      sentence_ss << tokens[i];
-    }
-    return sentence_ss.str();
-  }
-
-  float _threshold;
-
-  // Private constructor for cereal.
-  MultiLabelTextClassifier()
-      : AutoClassifierBase(nullptr, ReturnMode::NumpyArray) {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<AutoClassifierBase>(this), _threshold);
-  }
-};
-
-/**
  * The TabularClassifier takes in tabular data and applies binning + pairgrams
  * to featureize it. The column datatypes list indicates how to bin/featurize
  * the different parts of the dataset and automatically maps the class names
@@ -415,7 +243,8 @@ class TabularClassifier final
     return 10000;
   }
 
-  std::optional<uint32_t> defaultReconstructHashFunctionsInterval() const final {
+  std::optional<uint32_t> defaultReconstructHashFunctionsInterval()
+      const final {
     return 50000;
   }
 
@@ -572,5 +401,4 @@ inline float autotunedHiddenLayerSparsity(uint64_t layer_dim) {
 }  // namespace thirdai::bolt::python
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::TextClassifier)
-CEREAL_REGISTER_TYPE(thirdai::bolt::python::MultiLabelTextClassifier)
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::TabularClassifier)
