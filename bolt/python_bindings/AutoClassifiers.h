@@ -16,6 +16,7 @@
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
@@ -32,7 +33,8 @@ inline BoltGraphPtr createAutotunedModel(uint32_t internal_model_dim,
                                          uint32_t n_classes,
                                          std::optional<float> sparsity,
                                          ActivationFunction output_activation);
-inline std::string convertTokensToString(const std::vector<uint32_t>& tokens);
+inline std::string joinTokensIntoString(const std::vector<uint32_t>& tokens,
+                                        char delimiter);
 inline float autotunedHiddenLayerSparsity(uint64_t layer_dim);
 
 /**
@@ -324,6 +326,106 @@ class TabularClassifier final
   std::vector<std::string> _column_datatypes;
 };
 
+class BinaryTextClassifier final
+    : public AutoClassifierBase<std::vector<uint32_t>> {
+ public:
+  explicit BinaryTextClassifier(uint32_t n_outputs, uint32_t internal_model_dim,
+                                std::optional<float> sparsity = std::nullopt,
+                                bool use_sparse_inference = true)
+      : AutoClassifierBase(
+            createAutotunedModel(
+                /* internal_model_dim= */ internal_model_dim, n_outputs,
+                sparsity,
+                /* output_activation= */ ActivationFunction::Sigmoid),
+            ReturnMode::NumpyArray),
+        _use_sparse_inference(use_sparse_inference) {}
+
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<BinaryTextClassifier> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<BinaryTextClassifier> deserialize_into(
+        new BinaryTextClassifier());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
+
+ protected:
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
+                     std::optional<uint64_t> max_in_memory_batches) final {
+    (void)max_in_memory_batches;
+    return getDataset(data_loader);
+  }
+
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) final {
+    return getDataset(data_loader);
+  }
+
+  BoltVector featurizeInputForInference(
+      const std::vector<uint32_t>& tokens) final {
+    std::string sentence = joinTokensIntoString(tokens, /* delimiter= */ ' ');
+
+    return dataset::TextEncodingUtils::computeUnigrams(
+        sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
+  }
+
+  std::string getClassName(uint32_t neuron_id) final {
+    (void)neuron_id;
+    throw std::runtime_error(
+        "getClassName() is not support for BinaryTextClassifier.");
+  }
+
+  uint32_t defaultBatchSize() const final { return 256; }
+
+  bool freezeHashTablesAfterFirstEpoch() const final {
+    return _use_sparse_inference;
+  }
+
+  bool useSparseInference() const final { return _use_sparse_inference; }
+
+  std::vector<std::string> getEvaluationMetrics() const final { return {}; }
+
+ private:
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
+      std::shared_ptr<dataset::DataLoader> data_loader) {
+    // Because we have n_outputs binary label columns, the text column is starts
+    // at _model->outputDim() which is equivalent to n_classes.
+    auto batch_processor = dataset::GenericBatchProcessor::make(
+        /* input_blocks= */ {dataset::UniGramTextBlock::make(
+            /* col= */ _model->outputDim())},
+        /* label_blocks= */ {
+            dataset::DenseArrayBlock::make(/* start_col= */ 0,
+                                           /* dim= */ _model->outputDim())});
+
+    return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+        std::move(data_loader), batch_processor);
+  }
+
+  // Private constructor for cereal.
+  BinaryTextClassifier()
+      : AutoClassifierBase(nullptr, ReturnMode::NumpyArray) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<AutoClassifierBase>(this),
+            _use_sparse_inference);
+  }
+
+  bool _use_sparse_inference;
+};
+
 inline BoltGraphPtr createAutotunedModel(
     uint32_t internal_model_dim, uint32_t n_classes,
     std::optional<float> hidden_layer_sparsity,
@@ -351,7 +453,7 @@ inline BoltGraphPtr createAutotunedModel(
     loss = std::make_shared<BinaryCrossEntropyLoss>();
     output_layer = FullyConnectedNode::makeDense(
         /* dim= */ n_classes,
-        /* activation= */ "softmax");
+        /* activation= */ "sigmoid");
   } else {
     throw std::invalid_argument(
         "Output activation in createAutotunedModel must be Softmax or "
@@ -368,11 +470,12 @@ inline BoltGraphPtr createAutotunedModel(
   return model;
 }
 
-inline std::string convertTokensToString(const std::vector<uint32_t>& tokens) {
+inline std::string joinTokensIntoString(const std::vector<uint32_t>& tokens,
+                                        char delimiter) {
   std::stringstream sentence_ss;
   for (uint32_t i = 0; i < tokens.size(); i++) {
     if (i > 0) {
-      sentence_ss << ' ';
+      sentence_ss << delimiter;
     }
     sentence_ss << tokens[i];
   }
@@ -383,7 +486,7 @@ inline float autotunedHiddenLayerSparsity(uint64_t layer_dim) {
   if (layer_dim < 300) {
     return 1.0;
   }
-  if (layer_dim < 1000) {
+  if (layer_dim < 1500) {
     return 0.2;
   }
   if (layer_dim < 4000) {
@@ -402,3 +505,4 @@ inline float autotunedHiddenLayerSparsity(uint64_t layer_dim) {
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::TextClassifier)
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::TabularClassifier)
+CEREAL_REGISTER_TYPE(thirdai::bolt::python::BinaryTextClassifier)
