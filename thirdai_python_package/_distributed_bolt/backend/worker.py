@@ -5,7 +5,7 @@ from typing import Tuple, Any, Optional, Dict, List
 from thirdai._distributed_bolt._models.fully_connected_network_model import (
     FullyConnectedNetworkSingleNode,
 )
-import thirdai._distributed_bolt.backend.comm as comm
+import thirdai._distributed_bolt.backend._communication as comm
 
 
 class Worker:
@@ -18,7 +18,15 @@ class Worker:
 
     """
 
-    def __init__(self, total_nodes: int, id: int, primary_worker, config, layer_dims, communication_type):
+    def __init__(
+        self,
+        total_nodes: int,
+        id: int,
+        primary_worker,
+        config,
+        layer_dims,
+        communication_type,
+    ):
         """Initializes the model to run
 
         Args:
@@ -26,6 +34,9 @@ class Worker:
             config (Dict): configuration file for setting up the network
             total_nodes (int): total number of nodes
             id (int): id of this particular worker
+            config: Training Config File
+            layer_dims: dimensions for network
+            communication_type: type of communication worker gonna use
         """
 
         self.model = FullyConnectedNetworkSingleNode(
@@ -42,12 +53,17 @@ class Worker:
             if self.communication_type == "circular"
             else comm.Linear(self.model, self.id, self.primary_worker)
         )
-    
+
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
-    # Hence, we need to provide 
-
+    # Hence, we will need to expose this function here in worker
     def set_friend(self, friend):
+        """Add the friend for communicating for cicrcular all reduce
+
+        Args:
+            friend (Ray Actor Class): worker to which self need to communication
+                            for circular all reduce
+        """
         self.comm.set_friend(friend)
 
     def process_ring(
@@ -56,36 +72,29 @@ class Worker:
         reduce: Optional[bool] = True,
         avg_gradients: Optional[bool] = False,
     ):
+        """This function handles the circular all reduce
+
+        Args:
+            update_id (int): The update sequence id.
+            reduce (Optional[bool], optional): True if reduce, False if gather. Defaults to True.
+            avg_gradients (Optional[bool], optional): whether the update requires updating the gradients.
+                            Defaults to False.
+
+        """
         self.comm.process_ring(update_id, reduce, avg_gradients)
 
     def receive_array_partitions(self, update_id: int):
-        return self.comm.receive_array_partitions(update_id)
-
-    def calculate_gradients_circular(self, batch_no: int):
-        """This function is called only when the mode of
-        communication is circular.
-
-
-        This functions calls the API 'calculateGradientSingleNode',
-        which calculates the gradients for the network managed by
-        this particular worker. The calculateGradientSingleNode trains
-        the network and calculates the gradient for the particular
-        training batch with batch no. batch_no and with loss function
-        specified in the config.
-
-        This function also defines the partition size which defines the
-        size of block of gradients which are communicated between a worker
-        and its friend.
+        """This function returns the array partition for the worker is is called.
 
         Args:
-            batch_no (int): training batch to calculate gradients on.
+            update_id (int): The update sequence id.
 
         Returns:
             _type_: _description_
         """
-        self.comm.calculate_gradients(batch_no)
+        return self.comm.receive_array_partitions(update_id)
 
-    def calculate_gradients_linear(self, batch_no: int):
+    def calculate_gradients(self, batch_no: int):
         """This function is called only when the mode of communication is
         linear.
 
@@ -146,7 +155,7 @@ class Worker:
         self.model.set_parameters(weights, biases)
         return True
 
-    def receive_gradients_circular_communication(self) -> bool:
+    def receive_gradients(self) -> bool:
         """This function is called only when the communication pattern choosen
         is circular.
 
@@ -158,20 +167,6 @@ class Worker:
         """
         self.comm.receive_gradients()
         return True
-
-    def receive_gradients_linear_communication(self) -> bool:
-        """This function is called only when the communication pattern choosen
-        is linear.
-
-        This function is called by the primary_worker to first, get the updated gradients
-        from the primary_worker and then set those updated gradients to the network.
-
-        Returns:
-            bool: returns True, after functions complete
-        """
-        self.comm.receive_gradients()
-        return True
-
 
     def update_parameters(self, learning_rate: float) -> bool:
         """This function calls updateParameter function inside bolt, which

@@ -1,9 +1,10 @@
 import ray
 from typing import Tuple, Any, Optional, Dict, List
 
+
 class Circular:
     def __init__(self, model, id, primary_worker, total_nodes):
-        
+
         self.model = model
         self.id = id
         self.primary_worker = primary_worker
@@ -16,10 +17,9 @@ class Circular:
         self.friend_weight_gradient_list = []
         self.w_gradients = []
         self.b_gradients = []
-        
+
     def set_friend(self, friend):
-        """This function is only needed for circular way of communication.
-        This function assigns each of the worker their friend to which
+        """This function assigns each of the worker their friend to which
         they will be communicating their gradients. Look at this link:
         https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/
 
@@ -71,11 +71,7 @@ class Circular:
             self.b_partitions.append(partition_start_end_list)
 
     def calculate_gradients(self, batch_no: int):
-        """This function is called only when the mode of
-        communication is circular.
-
-
-        This functions calls the API 'calculateGradientSingleNode',
+        """This functions calls the API 'calculateGradientSingleNode',
         which calculates the gradients for the network managed by
         this particular worker. The calculateGradientSingleNode trains
         the network and calculates the gradient for the particular
@@ -101,12 +97,8 @@ class Circular:
 
         self.calculate_gradients_partitions()
 
-
     def receive_gradients(self) -> bool:
-        """This function is called only when the communication pattern choosen
-        is circular.
-
-        This function is called by the primary_worker to make set the updated
+        """This function is called by the primary_worker to make set the updated
         gradients to the network.
 
         Returns:
@@ -168,10 +160,7 @@ class Circular:
         reduce: Optional[bool] = True,
         avg_gradients: Optional[bool] = False,
     ):
-        """This function contains the main code for the circular ring communication
-        pattern.
-
-        The function first calculates the partition index range on which it will
+        """The function first calculates the partition index range on which it will
         work, then get the graidnets on that range from its friend worker and sums
         it to the partition the partition the current worker.
 
@@ -199,10 +188,7 @@ class Circular:
         self.update_partitions(partition_id, reduce, avg_gradients)
 
     def receive_array_partitions(self, update_id: int):
-        """This function will only be get called for circular ring communication
-        pattern.
-
-        This function returns the array partition to the worker it is called by.
+        """This function returns the array partition to the worker it is called by.
 
         Args:
             update_id (int): This id is use to calculate the partition to work on.

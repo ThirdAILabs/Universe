@@ -30,7 +30,7 @@ class ReplicaWorker(Worker):
         primary_worker,
         config,
         layer_dims,
-        communication_type
+        communication_type,
     ):
         """Calls the constructor for Worker
 
@@ -40,4 +40,6 @@ class ReplicaWorker(Worker):
             no_of_workers (int): number of workers in training
             id (int): id of this particular replica worker
         """
-        super().__init__(no_of_workers, id, primary_worker, config, layer_dims, communication_type)
+        super().__init__(
+            no_of_workers, id, primary_worker, config, layer_dims, communication_type
+        )

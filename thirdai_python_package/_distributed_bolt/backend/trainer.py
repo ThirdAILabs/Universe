@@ -2,58 +2,62 @@ import ray
 import time
 
 
-class CircularCommunication:
-    """This class implements function for circular communication"""
+class Trainer:
+    """This class implements a trainer"""
 
-    def __init__(self, workers, primary_worker, logging):
-        """Initializes the circular all reduce algorithm
+    def __init__(self, workers, primary_worker, logging, communication_type):
+        """Initializes the Trainer
 
         Args:
             workers (List[Ray Actor]): List of all the workers which includes the primary worker
             primary_worker (Ray Actor): Primary Actor
             logging (Logging): Logs the Training using circular communication pattern
+            communication_type: Type of communcation which Trainer would be using
         """
+
         self.workers = workers
         self.primary_worker = primary_worker
         self.logging = logging
-        self.logging.info("Circular communication pattern is choosen")
-        for i in range(len(self.workers)):
-            ray.get(
-                self.workers[i].set_friend.remote(
-                    self.workers[(i - 1) % (len(self.workers))]
+        self.communication_type = communication_type
+        if self.communication_type == "linear":
+            self.logging.info("Linear communication pattern is choosen")
+        elif self.communication_type == "circular":
+            self.logging.info("Circular communication pattern is choosen")
+            for i in range(len(self.workers)):
+                ray.get(
+                    self.workers[i].set_friend.remote(
+                        self.workers[(i - 1) % (len(self.workers))]
+                    )
                 )
-            )
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
-    def calculate_gradients(self, batch_id):
-        """Calls calculate Gradient function for circular communication
+    def calculate_gradients(self, batch_no):
+        """Call calculate_gradients function on each of the worker
 
         Args:
             batch_id (Integer): Batch Id for this particular training
         """
         start_calculating_gradients_time = time.time()
         ray.get(
-            [
-                worker.calculate_gradients_circular.remote(batch_id)
-                for worker in self.workers
-            ]
+            [worker.calculate_gradients.remote(batch_no) for worker in self.workers]
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
 
     def communicate(self):
-        """This functions calls primary worker to complete the circular communication
-        and then asks all the worker to get the updated gradients
+        """This functions calls primary worker to complete the communication
+        and then asks all the worker to recieve the updated gradients in their networks
         """
         start_communication_time = time.time()
-        ray.get(self.primary_worker.subwork_circular_communication.remote())
-        ray.get(
-            [
-                worker.receive_gradients_circular_communication.remote()
-                for worker in self.workers
-            ]
-        )
+        if self.communication_type == "linear":
+            ray.get(self.primary_worker.subwork_linear_communication.remote())
+        elif self.communication_type == "circular":
+            ray.get(self.primary_worker.subwork_circular_communication.remote())
+        ray.get([worker.receive_gradients.remote() for worker in self.workers])
         self.averaging_and_communication_time += time.time() - start_communication_time
+
+    def finish_training(self):
+        ray.get([worker.finish_training.remote() for worker in self.workers])
 
     def update_parameters(self, learning_rate):
         """Calls primary worker for updating parameters across all nodes

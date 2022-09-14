@@ -1,5 +1,6 @@
 import ray
 
+
 class Linear:
     def __init__(self, model, id, primary_worker):
         self.model = model
@@ -7,10 +8,7 @@ class Linear:
         self.primary_worker = primary_worker
 
     def calculate_gradients(self, batch_no):
-        """This function is called only when the mode of communication is
-        linear.
-
-        This functions calls the API 'calculateGradientSingleNode',
+        """This functions calls the API 'calculateGradientSingleNode',
         which calculates the gradients for the network managed by
         this particular worker. The calculateGradientSingleNode trains
         the network and calculates the gradient for the particular
@@ -27,10 +25,7 @@ class Linear:
         return True
 
     def receive_gradients(self):
-        """This function is called only when the communication pattern choosen
-        is linear.
-
-        This function is called by the primary_worker to first, get the updated gradients
+        """This function is called by the primary_worker to first, get the updated gradients
         from the primary_worker and then set those updated gradients to the network.
 
         Returns:
@@ -44,5 +39,3 @@ class Linear:
             )
         self.model.set_gradients(self.w_gradients, self.b_gradients)
         return True
-
-    

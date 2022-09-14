@@ -118,7 +118,7 @@ class FullyConnectedNetwork(DistributedBolt):
                 self.primary_worker,
                 config,
                 self.layer_dims,
-                communication_type
+                communication_type,
             )
             for worker_id in range(self.num_workers - 1)
         ]

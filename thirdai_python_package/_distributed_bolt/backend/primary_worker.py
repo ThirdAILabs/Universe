@@ -21,11 +21,7 @@ class PrimaryWorker(Worker):
     """
 
     def __init__(
-        self,
-        layer_dims: List[int],
-        no_of_workers: int,
-        config, 
-        communication_type
+        self, layer_dims: List[int], no_of_workers: int, config, communication_type
     ):
         """Initializes the Primary Worker Class
 

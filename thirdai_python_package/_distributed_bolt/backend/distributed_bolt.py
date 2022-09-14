@@ -1,5 +1,5 @@
 import ray
-import thirdai._distributed_bolt.backend.communication as communication
+from thirdai._distributed_bolt.backend.trainer import Trainer
 import time as time
 from typing import Tuple, Any, Optional, Dict, List
 import textwrap
@@ -33,7 +33,7 @@ class DistributedBolt:
         self.num_of_batches = num_of_batches
         self.primary_worker = primary_worker
         self.communication_type = communication_type
-        if self.communication_type not in communication.AVAILABLE_METHODS:
+        if self.communication_type not in ["linear", "circular"]:
             raise ValueError(
                 textwrap.dedent(
                     """
@@ -50,10 +50,8 @@ class DistributedBolt:
             circular (Optional[bool], optional): True, if circular communication is required.
                     False, if linear communication is required.. Defaults to True.
         """
-        comm = (
-            communication.Circular(self.workers, self.primary_worker, self.logging)
-            if self.communication_type == "circular"
-            else communication.Linear(self.workers, self.primary_worker, self.logging)
+        comm = Trainer(
+            self.workers, self.primary_worker, self.logging, self.communication_type
         )
 
         for epoch in range(self.epochs):
@@ -66,7 +64,7 @@ class DistributedBolt:
                 comm.update_parameters(self.learning_rate)
                 comm.log_training(batch_id, epoch)
 
-        ray.get([worker.finish_training.remote() for worker in self.workers])
+        comm.finish_training()
 
     def predict(self):
         """Calls network.predict() on worker of head node and returns the predictions.
