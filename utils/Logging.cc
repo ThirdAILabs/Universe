@@ -8,8 +8,7 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 
 namespace thirdai::logging {
-// This configures a logger provided a string path. Client is
-// expected to configure logging at the beginning.
+
 void setupLogging(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
                   const std::string& path /*= DEFAULT_LOG_PATH*/,
                   const std::string& level /*= DEFAULT_LOG_LEVEL*/,
