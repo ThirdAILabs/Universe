@@ -210,12 +210,12 @@ class MultiLabelTextClassifier final
   bool useSparseInference() const final { return false; }
 
   std::optional<uint32_t> defaultRebuildHashTablesInterval() const final {
-    return std::nullopt;
+    return 10000;
   }
 
   std::optional<uint32_t> defaultReconstructHashFunctionsInterval()
       const final {
-    return std::nullopt;
+    return 50000;
   }
 
   std::vector<std::string> getEvaluationMetrics() const final {
