@@ -3,7 +3,11 @@ from thirdai import bolt
 import pytest
 import os
 import pandas as pd
-from utils import remove_files, compute_accuracy_of_predictions, check_autoclassifier_predict_correctness
+from utils import (
+    remove_files,
+    compute_accuracy_of_predictions,
+    check_autoclassifier_predict_correctness,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -100,7 +104,9 @@ def test_tabular_classifier_census_income_dataset():
 
     single_test_samples = create_single_test_samples()
 
-    check_autoclassifier_predict_correctness(new_classifier, single_test_samples, predictions)
+    check_autoclassifier_predict_correctness(
+        new_classifier, single_test_samples, predictions
+    )
 
 
 def create_single_test_samples():
