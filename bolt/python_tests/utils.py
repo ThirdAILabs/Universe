@@ -163,12 +163,7 @@ def remove_files(files):
         os.remove(file)
 
 
-def compute_accuracy_with_file(test_labels, pred_file):
-    with open(pred_file) as pred:
-        pred_lines = pred.readlines()
-
-    predictions = [x[:-1] for x in pred_lines]
-
+def compute_accuracy_of_predictions(test_labels, predictions):
     assert len(predictions) == len(test_labels)
     return sum(
         (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)

@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 #include <dataset/src/StreamingDataset.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
-#include <dataset/src/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <unordered_map>
 
@@ -70,61 +69,6 @@ void checkPairgramVector(const BoltVector& vector,
     pairgrams.erase(vector.active_neurons[i]);
   }
   ASSERT_EQ(pairgrams.size(), 0);
-}
-
-void testCreateBatchArbitraryLabels(
-    const std::vector<std::string>& rows, const std::string& header,
-    std::vector<std::vector<std::string>> words) {
-  TextClassificationProcessor processor(RANGE);
-
-  processor.processHeader(header);
-
-  auto [data, labels] = processor.createBatch(rows);
-
-  ASSERT_EQ(data.getBatchSize(), 4);
-  ASSERT_EQ(labels.getBatchSize(), 4);
-
-  std::vector<uint32_t> expected_labels = {0, 1, 0, 2};
-
-  for (uint32_t vec = 0; vec < data.getBatchSize(); vec++) {
-    checkPairgramVector(data[vec], words[vec]);
-
-    ASSERT_EQ(labels[vec].len, 1);
-    ASSERT_EQ(labels[vec].active_neurons[0], expected_labels[vec]);
-    ASSERT_EQ(labels[vec].activations[0], 1.0);
-  }
-}
-
-TEST(TextClassifierBatchProcessor, TestCreateBatchLabelsLeft) {
-  std::vector<std::string> rows = {
-      R"("apple","tasty red fruit")", R"('pear', green fruit in the fall")",
-      R"(apple,' make delicious pies)", R"("mango',grow on trees ' )"};
-
-  std::string header = R"("category","text")";
-
-  std::vector<std::vector<std::string>> words = {
-      {"tasty", "red", "fruit"},
-      {"green", "fruit", "in", "the", "fall"},
-      {"make", "delicious", "pies"},
-      {"grow", "on", "trees"}};
-
-  testCreateBatchArbitraryLabels(rows, header, words);
-}
-
-TEST(TextClassifierBatchProcessor, TestCreateBatchLabelsRight) {
-  std::vector<std::string> rows = {
-      R"("tasty red fruit","apple")", R"( green fruit in the fall", 'pear')",
-      R"(' make delicious pies, apple)", R"(grow on trees ' ,"mango' )"};
-
-  std::string header = R"("text","category")";
-
-  std::vector<std::vector<std::string>> words = {
-      {"tasty", "red", "fruit"},
-      {"green", "fruit", "in", "the", "fall"},
-      {"make", "delicious", "pies"},
-      {"grow", "on", "trees"}};
-
-  testCreateBatchArbitraryLabels(rows, header, words);
 }
 
 TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
