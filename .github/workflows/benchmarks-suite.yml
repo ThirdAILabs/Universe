@@ -36,4 +36,4 @@ jobs:
         run: bin/docker-benchmarking-build.sh
 
       - name: Build Package and Run Benchmark
-        run: bin/docker-benchmarking-run.sh "python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_benchmarks/configs/amazon_polarity.txt /Universe/benchmarks/bolt_benchmarks/configs/amzn670k.txt /Universe/benchmarks/bolt_benchmarks/configs/criteo_dlrm.txt"   
+        run: bin/docker-benchmarking-run.sh "python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_configs/amazon_polarity.txt /Universe/benchmarks/bolt_configs/amzn670k.txt /Universe/benchmarks/bolt_configs/criteo_dlrm.txt"   

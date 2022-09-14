@@ -3,7 +3,6 @@
 import argparse
 import os
 from datetime import date
-from pathlib import Path
 import subprocess
 from pathlib import Path
 
@@ -40,7 +39,7 @@ def main():
         os.path.dirname(os.path.realpath(__file__))
         if (
             subprocess.call(
-                f"python3 benchmarks/bolt_benchmarks/run_bolt_experiment.py --disable_upload_artifacts --run_name {run_name}  {config} ",
+                f"python3 benchmarks/bolt.py --disable_upload_artifacts --run_name {run_name}  {config} ",
                 shell=True,
                 cwd=universe_dir,
             )
