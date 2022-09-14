@@ -170,6 +170,23 @@ class AutoClassifierBase {
   virtual uint32_t defaultBatchSize() const = 0;
 
   /**
+   * Allows the auto classifier to override how often hash tables are rebuilt.
+   * This parameter is autotuned if not specified.
+   */
+  virtual std::optional<uint32_t> defaultRebuildHashTablesInterval() const {
+    return std::nullopt;
+  }
+
+  /**
+   * Allows the auto classifier to override how often hash functions are
+   * reconstructed. This parameter is autotuned if not specified.
+   */
+  virtual std::optional<uint32_t> defaultReconstructHashFunctionsInterval()
+      const {
+    return std::nullopt;
+  }
+
+  /**
    * Determines if the classifier will freeze hash tables after the first epoch.
    */
   virtual bool freezeHashTablesAfterFirstEpoch() const = 0;
@@ -205,7 +222,8 @@ class AutoClassifierBase {
                      dataset::BoltDatasetPtr& train_labels, float learning_rate,
                      uint32_t epochs) {
     if (freezeHashTablesAfterFirstEpoch() && epochs > 1) {
-      TrainConfig train_cfg_initial = TrainConfig::makeConfig(learning_rate, 1);
+      TrainConfig train_cfg_initial =
+          getTrainConfig(learning_rate, /* epochs= */ 1);
       _model->train({train_data}, train_labels, train_cfg_initial);
 
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
@@ -213,7 +231,7 @@ class AutoClassifierBase {
       --epochs;
     }
 
-    TrainConfig train_cfg = TrainConfig::makeConfig(learning_rate, epochs);
+    TrainConfig train_cfg = getTrainConfig(learning_rate, epochs);
     _model->train({train_data}, {train_labels}, train_cfg);
   }
 
@@ -235,8 +253,7 @@ class AutoClassifierBase {
   void trainSingleEpochOnStream(
       std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>& dataset,
       float learning_rate, uint32_t max_in_memory_batches) {
-    TrainConfig train_config =
-        TrainConfig::makeConfig(learning_rate, /* epochs= */ 1);
+    TrainConfig train_config = getTrainConfig(learning_rate, /* epochs= */ 1);
 
     while (1) {
       auto [data, labels] = dataset->loadInMemory(max_in_memory_batches);
@@ -285,6 +302,19 @@ class AutoClassifierBase {
     }
 
     return output_class_names;
+  }
+
+  TrainConfig getTrainConfig(float learning_rate, uint32_t epochs) {
+    TrainConfig train_config = TrainConfig::makeConfig(learning_rate, epochs);
+
+    if (auto hash_table_rebuild = defaultRebuildHashTablesInterval()) {
+      train_config.withRebuildHashTables(hash_table_rebuild.value());
+    }
+
+    if (auto reconstruct_hash_fn = defaultReconstructHashFunctionsInterval()) {
+      train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
+    }
+    return train_config;
   }
 
   // Private constructor for cereal.

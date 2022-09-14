@@ -37,4 +37,4 @@ jobs:
         run: bin/docker-benchmarking-build.sh
 
       - name: Run Benchmark
-        run: bin/docker-benchmarking-run.sh "python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run"
+        run: bin/docker-benchmarking-run.sh "python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_configs/mnist_dense.txt --test_run"
