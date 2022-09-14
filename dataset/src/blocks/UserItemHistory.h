@@ -153,29 +153,30 @@ class UserItemHistoryBlock final : public Block {
         n_unique_items, item_col_delimiter);
   }
 
-  std::pair<std::string, std::string> explainIndex(
-      uint32_t index,
+  ResponsibleColumnAndInputKey explainFeature(
+      uint32_t index_within_block,
       std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
       const final {
-    ItemRecord item = _per_user_history->at(_user_id)[index];
-
-    return std::make_pair(num_to_name->at(_item_col),
-                          _item_id_lookup->getString(item.item));
+    if (num_to_name == std::nullopt) {
+      throw std::invalid_argument(
+          "map of col num to col name is missing in UserItemHistory block.");
+    }
+    return {num_to_name->at(_item_col),
+            _item_id_lookup->getString(index_within_block)};
   }
 
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool store_map) final {
+      SegmentedFeatureVector& vec, bool remember_raw_features) final {
+    (void)remember_raw_features;
     try {
       auto user_str = std::string(input_row.at(_user_col));
       auto item_str = std::string(input_row.at(_item_col));
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
       uint32_t user_id = _user_id_lookup->getUid(user_str);
-      if (store_map) {
-        _user_id = user_id;
-      }
+
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_ids = getItemIds(item_str);
@@ -242,7 +243,6 @@ class UserItemHistoryBlock final : public Block {
   std::shared_ptr<ItemHistoryCollection> _per_user_history;
 
   std::optional<char> _item_col_delimiter;
-  uint32_t _user_id;
 };
 
 }  // namespace thirdai::dataset

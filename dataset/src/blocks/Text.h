@@ -20,11 +20,15 @@ class TextBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
-  std::pair<std::string, std::string> explainIndex(
-      uint32_t index,
+  ResponsibleColumnAndInputKey explainFeature(
+      uint32_t index_within_block,
       std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
       const final {
-    return std::make_pair(num_to_name->at(_col), getWordResponsible(index));
+    if (num_to_name == std::nullopt) {
+      throw std::invalid_argument(
+          "map of col num to col name is missing in text block.");
+    }
+    return {num_to_name->at(_col), getWordResponsible(index_within_block)};
   }
 
   virtual std::string getWordResponsible(uint32_t index) const = 0;
@@ -32,13 +36,13 @@ class TextBlock : public Block {
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool store_map) final {
-    return encodeText(input_row.at(_col), vec, store_map);
+      SegmentedFeatureVector& vec, bool remember_raw_features) final {
+    return encodeText(input_row.at(_col), vec, remember_raw_features);
   }
 
   virtual std::exception_ptr encodeText(std::string_view text,
                                         SegmentedFeatureVector& vec,
-                                        bool store_map) = 0;
+                                        bool remember_raw_features) = 0;
 
   uint32_t _dim;
 
@@ -72,8 +76,8 @@ class PairGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec,
-                                bool store_map) final {
-    (void)store_map;
+                                bool remember_raw_features) final {
+    (void)remember_raw_features;
     std::vector<uint32_t> pairgrams =
         TextEncodingUtils::computeRawPairgrams(text, _dim);
 
@@ -110,9 +114,9 @@ class UniGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec,
-                                bool store_map) final {
+                                bool remember_raw_features) final {
     std::vector<uint32_t> unigrams;
-    if (!store_map) {
+    if (!remember_raw_features) {
       unigrams = TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
     } else {
       auto unigram_map =
@@ -159,8 +163,8 @@ class CharKGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec,
-                                bool store_map) final {
-    (void)store_map;
+                                bool remember_raw_features) final {
+    (void)remember_raw_features;
     std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
 
     std::vector<uint32_t> char_k_grams;
