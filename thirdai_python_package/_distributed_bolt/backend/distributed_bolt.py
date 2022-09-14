@@ -3,6 +3,7 @@ from thirdai._distributed_bolt.backend.trainer import Trainer
 import time as time
 from typing import Tuple, Any, Optional, Dict, List
 import textwrap
+from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 
 
 class DistributedBolt:
@@ -33,7 +34,7 @@ class DistributedBolt:
         self.num_of_batches = num_of_batches
         self.primary_worker = primary_worker
         self.communication_type = communication_type
-        if self.communication_type not in ["linear", "circular"]:
+        if self.communication_type not in AVAILABLE_METHODS:
             raise ValueError(
                 textwrap.dedent(
                     """

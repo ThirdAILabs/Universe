@@ -5,7 +5,7 @@ from typing import Tuple, Any, Optional, Dict, List
 from thirdai._distributed_bolt._models.fully_connected_network_model import (
     FullyConnectedNetworkSingleNode,
 )
-import thirdai._distributed_bolt.backend._communication as comm
+import thirdai._distributed_bolt.backend.communication as comm
 
 
 class Worker:
