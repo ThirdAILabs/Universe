@@ -3,8 +3,10 @@ from thirdai import bolt
 import pytest
 import os
 import pandas as pd
-import platform
-from utils import remove_files, compute_accuracy_of_predictions
+from utils import (
+    compute_accuracy_of_predictions,
+    check_autoclassifier_predict_correctness,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -54,10 +56,6 @@ def setup_module():
             file.writelines([line.replace(".", "") for line in data[1:]])
 
 
-def teardown_module():
-    remove_files([TRAIN_FILE, TEST_FILE])
-
-
 def get_census_income_metadata():
     df = pd.read_csv(TEST_FILE)
     n_classes = df[df.columns[-1]].nunique()
@@ -105,9 +103,9 @@ def test_tabular_classifier_census_income_dataset():
 
     single_test_samples = create_single_test_samples()
 
-    for sample, original_prediction in zip(single_test_samples, predictions):
-        single_prediction = new_classifier.predict(sample)
-        assert single_prediction == original_prediction
+    check_autoclassifier_predict_correctness(
+        new_classifier, single_test_samples, predictions
+    )
 
 
 def create_single_test_samples():
@@ -115,8 +113,8 @@ def create_single_test_samples():
         lines = file.readlines()
 
         samples = []
-        # skip the header
-        for line in lines[1:]:
+        # Skip the header and the last line since it is empty.
+        for line in lines[1:-1]:
             # ignore the label column
             values = line.split(",")[:-1]
             samples.append(values)

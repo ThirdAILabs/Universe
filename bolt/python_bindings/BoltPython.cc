@@ -48,6 +48,7 @@ void defineAutoClassifierCommonMethods(py::class_<CLASSIFIER>& py_class) {
                &CLASSIFIER::evaluate),
            py::arg("data_source"))
       .def("predict", &CLASSIFIER::predict, py::arg("input"))
+      .def("predict_batch", &CLASSIFIER::predictBatch, py::arg("inputs"))
       .def("save", &CLASSIFIER::save, py::arg("filename"))
       .def_static("load", &CLASSIFIER::load, py::arg("filename"));
 }
