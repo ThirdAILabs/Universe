@@ -598,7 +598,7 @@ inline BoltGraphPtr createAutotunedModel(
     loss = std::make_shared<BinaryCrossEntropyLoss>();
     output_layer = FullyConnectedNode::makeDense(
         /* dim= */ n_classes,
-        /* activation= */ "softmax");
+        /* activation= */ "sigmoid");
   } else {
     throw std::invalid_argument(
         "Output activation in createAutotunedModel must be Softmax or "
