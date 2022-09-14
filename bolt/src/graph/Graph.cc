@@ -257,7 +257,7 @@ BoltGraph::getInputGradientSingle(
     std::vector<BoltVector>&& input_data,
     bool explain_prediction_using_highest_activation,
     std::optional<uint32_t> neuron_to_explain) {
-  SingleUnitDatasetContext single_input_gradients_context(
+  SingleBatchDatasetContext single_input_gradients_context(
       std::move(input_data));
 
   prepareToProcessBatches(/*batch_size= */ 1, /* use_sparsity=*/true);
@@ -421,7 +421,7 @@ InferenceResult BoltGraph::predict(
 // activations and doesn't calculate metrics.
 BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
                                     bool use_sparse_inference) {
-  SingleUnitDatasetContext single_predict_context(std::move(test_data));
+  SingleBatchDatasetContext single_predict_context(std::move(test_data));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
                    /* returning_activations = */ true,
@@ -439,6 +439,40 @@ BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
         /* vec_index = */ 0);
     cleanupAfterBatchProcessing();
     return output_copy;
+  } catch (const std::exception& e) {
+    cleanupAfterBatchProcessing();
+    throw;
+  }
+}
+
+BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
+                                        bool use_sparse_inference) {
+  SingleBatchDatasetContext single_predict_context(std::move(test_data));
+
+  verifyCanPredict(single_predict_context, /* has_labels = */ false,
+                   /* returning_activations = */ true,
+                   /* num_metrics_tracked = */ 0);
+
+  uint32_t batch_size = single_predict_context.batchSize();
+
+  prepareToProcessBatches(batch_size, use_sparse_inference);
+
+  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
+  // some sort of RAII training context object whose destructor will
+  // automatically delete the training state
+  try {
+    single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
+
+    std::vector<BoltVector> outputs(batch_size);
+
+#pragma omp parallel for default(none) shared(batch_size, outputs)
+    for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
+      forward(vec_index, nullptr);
+      outputs[vec_index] = _output->getOutputVector(vec_index);
+    }
+
+    cleanupAfterBatchProcessing();
+    return BoltBatch(std::move(outputs));
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;

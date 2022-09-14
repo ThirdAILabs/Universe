@@ -415,7 +415,8 @@ class TabularClassifier final
     return 10000;
   }
 
-  std::optional<uint32_t> defaultReconstructHashFunctionsInterval() const final {
+  std::optional<uint32_t> defaultReconstructHashFunctionsInterval()
+      const final {
     return 50000;
   }
 
