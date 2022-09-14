@@ -45,14 +45,19 @@ class Worker:
         # Set up variables
         self.total_nodes = total_nodes
         self.id = id
+        self.workers = None  # would be set in set_workers
         self.primary_worker = primary_worker
         self.communication_type = communication_type
 
         self.comm = (
             comm.Circular(self.model, self.id, self.primary_worker, self.total_nodes)
             if self.communication_type == "circular"
-            else comm.Linear(self.model, self.id, self.primary_worker)
+            else comm.Linear(self.model, self.id, self.primary_worker, layer_dims)
         )
+
+    def set_workers(self, workers):
+        self.workers = workers
+        self.comm.set_workers(workers)
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.

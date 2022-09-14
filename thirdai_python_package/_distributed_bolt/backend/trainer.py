@@ -49,10 +49,7 @@ class Trainer:
         and then asks all the worker to recieve the updated gradients in their networks
         """
         start_communication_time = time.time()
-        if self.communication_type == "linear":
-            ray.get(self.primary_worker.subwork_linear_communication.remote())
-        elif self.communication_type == "circular":
-            ray.get(self.primary_worker.subwork_circular_communication.remote())
+        ray.get(self.primary_worker.communicate.remote())
         ray.get([worker.receive_gradients.remote() for worker in self.workers])
         self.averaging_and_communication_time += time.time() - start_communication_time
 
