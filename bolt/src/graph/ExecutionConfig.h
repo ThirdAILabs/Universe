@@ -228,40 +228,42 @@ class TrainState {
 
   bool stop_training;
 
-  void updateTrainMetrics(const MetricData& metric_data) {
-    for (const auto& [metric_name, value] : metric_data) {
-      metrics["train_" + metric_name] = value;
-    }
-  }
-
-  void updateValidationMetrics(const InferenceMetricData& metric_data) {
-    for (const auto& [metric_name, value] : metric_data) {
-      metrics["val_" + metric_name].push_back(value);
-    }
-  }
-
-  std::vector<double> getMetricValues(const std::string& metric_name) {
-    if (metrics.count(metric_name) == 0) {
-      throw std::invalid_argument(
-          "Could not find metric name '" + metric_name +
-          "' in list of computed metrics. Metric names are the same as those "
-          "passed in but prefixed with 'train_' and 'val_' depending on the "
-          "association to training/validation respectively. ");
-    }
-    return metrics[metric_name];
-  }
+  std::vector<double> epoch_times;
 
   MetricAggregator& getTrainMetricAggregator() {
     return train_metric_aggregator;
   }
 
-  void updateEpochTimes(int64_t epoch_time) {
-    metrics["epoch_times"].push_back(static_cast<double>(epoch_time));
+  void updateValidationMetrics(const InferenceMetricData& metric_data) {
+    for (const auto& [metric_name, value] : metric_data) {
+      validation_metrics["val_" + metric_name].push_back(value);
+    }
+  }
+
+  std::vector<double> getTrainMetrics(const std::string& metric_name) {
+    auto metric_data = train_metric_aggregator.getOutput();
+    if (metric_data.count(metric_name) != 0) {
+      return metric_data[metric_name];
+    }
+    throw std::invalid_argument(
+        "Could not find metric name '" + metric_name +
+        "' in list of computed train metrics. This must not have been passed "
+        "in the train config.");
+  }
+
+  std::vector<double> getValidationMetrics(const std::string& metric_name) {
+    if (validation_metrics.count(metric_name) != 0) {
+      return validation_metrics[metric_name];
+    }
+    throw std::invalid_argument(
+        "Could not find metric name '" + metric_name +
+        "' in list of computed train metrics. This must not have been passed "
+        "in the train config.");
   }
 
  private:
   MetricAggregator train_metric_aggregator;
-  std::unordered_map<std::string, std::vector<double>> metrics;
+  std::unordered_map<std::string, std::vector<double>> validation_metrics;
 };
 
 }  // namespace thirdai::bolt

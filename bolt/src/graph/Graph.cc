@@ -158,8 +158,7 @@ MetricData BoltGraph::train(
       _epoch_count++;
       train_metrics.logAndReset();
 
-      train_state.updateTrainMetrics(train_metrics.getOutput());
-      train_state.updateEpochTimes(epoch_time);
+      train_state.epoch_times.push_back(static_cast<double>(epoch_time));
     } catch (const std::exception& e) {
       cleanupAfterBatchProcessing();
       throw;
@@ -186,7 +185,7 @@ MetricData BoltGraph::train(
   callbacks.onTrainEnd(*this, train_state);
 
   auto metric_data = train_metrics.getOutput();
-  metric_data["epoch_times"] = train_state.getMetricValues("epoch_times");
+  metric_data["epoch_times"] = std::move(train_state.epoch_times);
 
   return metric_data;
 }

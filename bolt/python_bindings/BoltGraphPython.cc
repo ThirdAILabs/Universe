@@ -535,7 +535,10 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def_readwrite("reconstruct_hash_functions_batch",
                      &TrainState::reconstruct_hash_functions_batch)
       .def_readwrite("stop_training", &TrainState::stop_training)
-      .def("get_metric_values", &TrainState::getMetricValues,
+      .def_readonly("epoch_times", &TrainState::epoch_times)
+      .def("get_train_metrics", &TrainState::getTrainMetrics,
+           py::arg("metric_name"))
+      .def("get_validation_metrics", &TrainState::getValidationMetrics,
            py::arg("metric_name"));
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
