@@ -114,7 +114,7 @@ def create_single_test_samples():
         lines = file.readlines()
 
         samples = []
-        # skip the header and the last line since it is empty
+        # Skip the header and the last line since it is empty.
         for line in lines[1:-1]:
             # ignore the label column
             values = line.split(",")[:-1]
