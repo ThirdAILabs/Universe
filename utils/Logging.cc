@@ -7,7 +7,7 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-namespace thirdai::log {
+namespace thirdai::logging {
 // This configures a logger provided a string path. Client is
 // expected to configure logging at the beginning.
 void setupLogging(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
@@ -67,4 +67,4 @@ void setupLogging(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
   }
 }
 
-}  // namespace thirdai::log
+}  // namespace thirdai::logging

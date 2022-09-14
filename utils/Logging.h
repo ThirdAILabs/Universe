@@ -2,7 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <string>
 
-namespace thirdai::log {
+namespace thirdai::logging {
 
 // Provide of a few sensible defaults for a logger. The following is also used
 // at pybindings, editing here provides consistency in the C++ and Python API
@@ -47,4 +47,4 @@ DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(critical)
 
 #undef DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION
 
-}  // namespace thirdai::log
+}  // namespace thirdai::logging

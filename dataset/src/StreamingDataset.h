@@ -90,7 +90,7 @@ class StreamingDataset {
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-    log::info(
+    logging::info(
         "Loaded {} vectors from '{}' in {} seconds.", len,
         _data_loader->resourceName(),
         std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
