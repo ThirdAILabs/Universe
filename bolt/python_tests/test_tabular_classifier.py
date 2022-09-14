@@ -138,7 +138,7 @@ def remove_temp_file():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="Throwing an exception causes an access violation on Windows",
 )
 def test_evaluate_before_train_throws():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
@@ -182,7 +182,7 @@ def test_evaluate_before_train_throws():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="Throwing an exception causes an access violation on Windows",
 )
 def test_column_datatypes_mismatch():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
@@ -200,7 +200,7 @@ def test_column_datatypes_mismatch():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="Throwing an exception causes an access violation on Windows",
 )
 def test_train_evaluate_column_mismatch():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
@@ -225,7 +225,7 @@ def test_train_evaluate_column_mismatch():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="Throwing an exception causes an access violation on Windows",
 )
 def test_invalid_numeric_column():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
@@ -266,7 +266,7 @@ def test_empty_columns():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="Throwing an exception causes an access violation on Windows",
 )
 def test_failure_on_new_label_in_testset():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value2,label2\n"])
@@ -291,7 +291,7 @@ def test_failure_on_new_label_in_testset():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="Throwing an exception causes an access violation on Windows",
 )
 def test_failure_on_too_many_labels():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value2,label2\n"])
@@ -311,7 +311,7 @@ def test_failure_on_too_many_labels():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="Throwing an exception causes an access violation on Windows",
 )
 def test_no_label_column():
     create_temp_file(["colname1,colname2\n", "1,value1\n", "2,value2\n"])
@@ -329,7 +329,7 @@ def test_no_label_column():
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
-    reason="Invalid license currently does an access violation on Windows",
+    reason="Throwing an exception causes an access violation on Windows",
 )
 def test_duplicate_label_column():
     create_temp_file(["colname1,colname2\n", "label1,label1\n", "label2,label2\n"])
