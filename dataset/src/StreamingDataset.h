@@ -45,14 +45,19 @@ class StreamingDataset {
 
   virtual std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>
   loadInMemory() {
-    return loadInMemory(std::numeric_limits<uint64_t>::max());
+    auto datasets = loadInMemory(std::numeric_limits<uint64_t>::max());
+    if (!datasets) {
+      throw std::invalid_argument("Cannot load datasets from empty resource '" +
+                                  _data_loader->resourceName() + "'.");
+    }
+    return datasets.value();
   }
 
   // This function maps the tuple of batches returned by nextBatch() into a
   // tuple of datasets where each dataset contains a list of batches of the
   // type corresponding to that element of the tuple. NOLINTNEXTLINE
-  std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> loadInMemory(
-      uint64_t max_batches) {
+  std::optional<std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>>
+  loadInMemory(uint64_t max_batches) {
     std::tuple<std::vector<BATCH_Ts>...> batch_lists;
 
     uint64_t len = 0;
@@ -94,6 +99,10 @@ class StreamingDataset {
         "Loaded {} vectors from '{}' in {} seconds.", len,
         _data_loader->resourceName(),
         std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
+
+    if (std::get<0>(batch_lists).empty()) {
+      return std::nullopt;
+    }
 
     // We use std::apply again here to call a function acception a variadic
     // template that maps each vector of batches to an InMemoryDataset.
