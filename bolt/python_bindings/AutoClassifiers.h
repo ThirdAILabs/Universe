@@ -419,7 +419,8 @@ class BinaryTextClassifier final
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<AutoClassifierBase>(this));
+    archive(cereal::base_class<AutoClassifierBase>(this),
+            _use_sparse_inference);
   }
 
   bool _use_sparse_inference;

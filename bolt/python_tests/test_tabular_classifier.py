@@ -3,8 +3,8 @@ from thirdai import bolt
 import pytest
 import os
 import pandas as pd
+import platform
 from utils import (
-    remove_files,
     compute_accuracy_of_predictions,
     check_autoclassifier_predict_correctness,
 )
@@ -114,7 +114,7 @@ def create_single_test_samples():
         lines = file.readlines()
 
         samples = []
-        # skip the header and the last line since it is empty
+        # Skip the header and the last line since it is empty.
         for line in lines[1:-1]:
             # ignore the label column
             values = line.split(",")[:-1]
@@ -135,6 +135,10 @@ def remove_temp_file():
     os.remove(TEMP_TABULAR_TRAIN_FILE)
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception causes an access violation on Windows",
+)
 def test_evaluate_before_train_throws():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
 
@@ -175,6 +179,10 @@ def test_evaluate_before_train_throws():
     remove_temp_file()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception causes an access violation on Windows",
+)
 def test_column_datatypes_mismatch():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
 
@@ -189,6 +197,10 @@ def test_column_datatypes_mismatch():
     remove_temp_file()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception causes an access violation on Windows",
+)
 def test_train_evaluate_column_mismatch():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
 
@@ -210,6 +222,10 @@ def test_train_evaluate_column_mismatch():
     remove_temp_file()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception causes an access violation on Windows",
+)
 def test_invalid_numeric_column():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value3,label2\n"])
 
@@ -247,6 +263,10 @@ def test_empty_columns():
     remove_temp_file()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception causes an access violation on Windows",
+)
 def test_failure_on_new_label_in_testset():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value2,label2\n"])
 
@@ -268,6 +288,10 @@ def test_failure_on_new_label_in_testset():
     remove_temp_file()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception causes an access violation on Windows",
+)
 def test_failure_on_too_many_labels():
     create_temp_file(["colname1,colname2\n", "value1,label1\n", "value2,label2\n"])
 
@@ -284,6 +308,10 @@ def test_failure_on_too_many_labels():
     remove_temp_file()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception causes an access violation on Windows",
+)
 def test_no_label_column():
     create_temp_file(["colname1,colname2\n", "1,value1\n", "2,value2\n"])
 
@@ -298,6 +326,10 @@ def test_no_label_column():
     remove_temp_file()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception causes an access violation on Windows",
+)
 def test_duplicate_label_column():
     create_temp_file(["colname1,colname2\n", "label1,label1\n", "label2,label2\n"])
 
