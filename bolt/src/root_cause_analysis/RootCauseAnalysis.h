@@ -59,7 +59,7 @@ getPercentExplanationWithColumnNames(
   std::vector<std::string> words_responsible;
   for (const auto& col : gradients_ratio_with_indices) {
     auto [col_name, word_responsible] =
-        generic_batch_processor->getColumnNameAndKeyResponsibleWithinBlock(
+        generic_batch_processor->getResponsibleColumnAndInputKey(
             col.second, col_num_to_name);
     words_responsible.push_back(word_responsible);
     column_names.push_back(col_name);
