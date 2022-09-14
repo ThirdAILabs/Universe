@@ -52,7 +52,7 @@ class EarlyStopCheckpoint : public Callback {
     // we prefix with "val_" here since it only makes sense to early stop on
     // validation metrics
     double metric_val =
-        train_state.getMetricValues("val_" + _monitored_metric).back();
+        train_state.getValidationMetrics(_monitored_metric).back();
 
     if (isImprovement(metric_val)) {
       _best_validation_score = metric_val;
