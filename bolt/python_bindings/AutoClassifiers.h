@@ -11,15 +11,10 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-<<<<<<< HEAD
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
-=======
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
->>>>>>> 78a80ea7f93b00def81ab95fc965b5e56f0c6fbd
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/blocks/Text.h>
@@ -406,8 +401,4 @@ inline float autotunedHiddenLayerSparsity(uint64_t layer_dim) {
 }  // namespace thirdai::bolt::python
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::TextClassifier)
-<<<<<<< HEAD
-CEREAL_REGISTER_TYPE(thirdai::bolt::python::MultiLabelTextClassifier)
-=======
->>>>>>> 78a80ea7f93b00def81ab95fc965b5e56f0c6fbd
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::TabularClassifier)
