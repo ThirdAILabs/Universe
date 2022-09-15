@@ -45,10 +45,9 @@ inline std::unique_ptr<CompressedVector<float>> convertStringToCompressedVector(
 
 inline py::bytes convertCompressedVectorToString(
     const std::unique_ptr<CompressedVector<float>>& compressed_vector) {
-  std::string ss;
-  ss = compressed_vector->serialize().str();
-  // a copy being made here because of conversion from ss to bytes
-  return ss;
+  py::bytes bytes_compressed_vector(compressed_vector->serialize().str());
+  // an implicit copy being made here because of conversion from string to bytes
+  return bytes_compressed_vector;
 }
 
 }  // namespace thirdai::compression::python
