@@ -56,11 +56,11 @@ class ParameterReference {
       ParameterArray new_array = py::cast<ParameterArray>(new_params);
       checkNumpyArrayDimensions(_dimensions, new_params);
       std::copy(new_array.data(), new_array.data() + _total_dim, _params);
-    } else if (py::isinstance<py::dict>(new_params)) {
+    } else if (py::isinstance<py::bytes>(new_params)) {
       using CompressedVector = thirdai::compression::CompressedVector<float>;
       std::unique_ptr<CompressedVector> compressed_vector =
-          thirdai::compression::python::convertPyDictToCompressedVector(
-              new_params);
+          thirdai::compression::python::convertStringToCompressedVector(
+              py::cast<py::bytes>(new_params));
 
       std::vector<float> full_gradients = compressed_vector->decompress();
       std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
@@ -71,10 +71,10 @@ class ParameterReference {
     }
   }
 
-  py::dict compress(const std::string& compression_scheme,
-                    float compression_density, uint32_t seed_for_hashing,
-                    uint32_t sample_population_size) {
-    return thirdai::compression::python::convertCompressedVectorToPyDict(
+  py::bytes compress(const std::string& compression_scheme,
+                     float compression_density, uint32_t seed_for_hashing,
+                     uint32_t sample_population_size) {
+    return thirdai::compression::python::convertCompressedVectorToString(
         thirdai::compression::compress(
             _params, static_cast<uint32_t>(_total_dim), compression_scheme,
             compression_density, seed_for_hashing, sample_population_size));

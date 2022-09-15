@@ -177,4 +177,9 @@ def test_compressed_training():
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
         predict_config=predict_config,
     )
+    print(acc[0]["categorical_accuracy"])
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
+
+
+# test_get_values()
+test_compressed_training()
