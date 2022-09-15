@@ -8,10 +8,7 @@ namespace thirdai::bolt {
 class BoltGraph;
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;
 
-class TrainConfig;
-
-class Callback;
-using CallbackPtr = std::shared_ptr<Callback>;
+class TrainState;
 
 /**
  * This class represents a generic Callback interface. Implementing this
@@ -19,32 +16,55 @@ using CallbackPtr = std::shared_ptr<Callback>;
  * model training process. Functions may alter the model state.
  *
  * Right now this callback is only used during training.
+ *
+ * TODO(david): lets make this a state machine where we assert that previous
+ * steps are called before moving to the next stage. See Node.h getState() and
+ * other methods for reference.
  */
 class Callback {
  public:
-  // TODO(david): instead of passing in a model we could have a model be set in
+  Callback() {}
+
+  // instead of passing in a model we could have a model be set in
   // the constructor. This would require some sort of lambda/factory
   // constructor. We can think about this later.
-  virtual void onTrainBegin(BoltGraph& model) { (void)model; };
+  virtual void onTrainBegin(BoltGraph& model, TrainState& train_state) {
+    (void)model;
+    (void)train_state;
+  }
 
-  virtual void onTrainEnd(BoltGraph& model) { (void)model; };
+  virtual void onTrainEnd(BoltGraph& model, TrainState& train_state) {
+    (void)model;
+    (void)train_state;
+  }
 
-  virtual void onEpochBegin(BoltGraph& model) { (void)model; };
+  virtual void onEpochBegin(BoltGraph& model, TrainState& train_state) {
+    (void)model;
+    (void)train_state;
+  }
 
-  virtual void onEpochEnd(BoltGraph& model) { (void)model; };
+  virtual void onEpochEnd(BoltGraph& model, TrainState& train_state) {
+    (void)model;
+    (void)train_state;
+  }
 
-  virtual void onBatchBegin(BoltGraph& model) { (void)model; };
+  // currently predict/train is not supported for onbatch.. functions. this
+  // would require refactoring of the graph api thus is saved for a future
+  // change. Currently throws a supported error message.
+  virtual void onBatchBegin(BoltGraph& model, TrainState& train_state) {
+    (void)model;
+    (void)train_state;
+  }
 
-  virtual void onBatchEnd(BoltGraph& model) { (void)model; };
-
-  // TODO(david): semantically this is a little odd here, ideally we don't add
-  // new functions every time we make a new callback. One alternative is to keep
-  // a "training state" struct that we pass in to the callbacks which can be
-  // changed/used during training.
-  virtual bool shouldStopTraining() { return false; }
+  virtual void onBatchEnd(BoltGraph& model, TrainState& train_state) {
+    (void)model;
+    (void)train_state;
+  }
 
   virtual ~Callback() = default;
 };
+
+using CallbackPtr = std::shared_ptr<Callback>;
 
 /**
  * This class serves as a helpful intermediary between models and callbacks by
@@ -55,47 +75,40 @@ class CallbackList {
   explicit CallbackList(std::vector<CallbackPtr> callbacks)
       : _callbacks(std::move(callbacks)) {}
 
-  void onTrainBegin(BoltGraph& model) {
+  void onTrainBegin(BoltGraph& model, TrainState& train_state) {
     for (const auto& callback : _callbacks) {
-      callback->onTrainBegin(model);
+      callback->onTrainBegin(model, train_state);
     }
   }
 
-  void onTrainEnd(BoltGraph& model) {
+  void onTrainEnd(BoltGraph& model, TrainState& train_state) {
     for (const auto& callback : _callbacks) {
-      callback->onTrainEnd(model);
+      callback->onTrainEnd(model, train_state);
     }
   }
 
-  void onEpochBegin(BoltGraph& model) {
+  void onEpochBegin(BoltGraph& model, TrainState& train_state) {
     for (const auto& callback : _callbacks) {
-      callback->onEpochBegin(model);
+      callback->onEpochBegin(model, train_state);
     }
   }
 
-  void onEpochEnd(BoltGraph& model) {
+  void onEpochEnd(BoltGraph& model, TrainState& train_state) {
     for (const auto& callback : _callbacks) {
-      callback->onEpochEnd(model);
+      callback->onEpochEnd(model, train_state);
     }
   }
 
-  void onBatchBegin(BoltGraph& model) {
+  void onBatchBegin(BoltGraph& model, TrainState& train_state) {
     for (const auto& callback : _callbacks) {
-      callback->onBatchBegin(model);
+      callback->onBatchBegin(model, train_state);
     }
   }
 
-  void onBatchEnd(BoltGraph& model) {
+  void onBatchEnd(BoltGraph& model, TrainState& train_state) {
     for (const auto& callback : _callbacks) {
-      callback->onBatchEnd(model);
+      callback->onBatchEnd(model, train_state);
     }
-  }
-
-  bool shouldStopTraining() {
-    return std::any_of(_callbacks.begin(), _callbacks.end(),
-                       [&](const CallbackPtr& callback) {
-                         return callback->shouldStopTraining();
-                       });
   }
 
  private:

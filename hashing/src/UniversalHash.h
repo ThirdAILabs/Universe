@@ -18,12 +18,17 @@ class UniversalHash {
   /**
    * Hash string key.
    */
-  uint32_t gethash(const std::string& key);
+  uint32_t gethash(const std::string& key) const;
 
   /**
    * Hash integer key. Allows for smaller int sizes.
    */
   uint32_t gethash(uint64_t key) const;
+
+  /**
+   * Returns the seed of the universal hash.
+   */
+  uint32_t seed() const;
 
  private:
   // Private constructor for cereal.

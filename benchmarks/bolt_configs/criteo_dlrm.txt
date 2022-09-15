@@ -1,8 +1,8 @@
 # We have two criteo benchmarks because the datasets are slightly different in input dimension.
 
-experiment_identifier = "Criteo DLRM 1M"
+experiment_identifier = "Criteo DLRM 46M"
 model_identifier = "criteo_dlrm"
-dataset_identifier = "criteo_click_through_small"
+dataset_identifier = "criteo_click_through_46M"
 
 
 train_metrics = []
@@ -17,25 +17,25 @@ compute_roc_auc = true
 [[datasets]]
 format = "click"
 type_list = ["train_data", "train_data", "train_labels"]
-path = "criteo-small/train_shuf.txt"
+path = "criteo/train_shuf.txt"
 batch_size = 512
 max_num_numerical_features = 13
-max_categorical_features = 24
+max_categorical_features = 26
 delimiter = " "
 
 [[datasets]]
 format = "click"
 type_list = ["test_data", "test_data", "test_labels"]
-path = "criteo-small/test_shuf.txt"
+path = "criteo/test_shuf.txt"
 batch_size = 256
 max_num_numerical_features = 13
-max_categorical_features = 24
+max_categorical_features = 26
 delimiter = " "
 
 [[datasets]]
 format = "click_labels"
 type_list = ["test_labels_np"]
-path = "criteo-small/test_shuf.txt"
+path = "criteo/test_shuf.txt"
 
 [[nodes]]
 type = "Input"
@@ -63,8 +63,8 @@ activation = "relu"
 type = "Input"
 name = "categorical_input"
 dim = 4294967295
-min_num_nonzeros = 0
-max_num_nonzeros = 24
+min_num_tokens = 26
+max_num_tokens = 26
 
 [[nodes]]
 type = "Embedding"
@@ -73,6 +73,8 @@ pred = "categorical_input"
 num_embedding_lookups = 8
 lookup_size = 16
 log_embedding_block_size = 20
+reduction="concat"
+num_tokens_per_input=26
 
 [[nodes]]
 type = "Concatenate"

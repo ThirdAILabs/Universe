@@ -22,11 +22,11 @@ namespace thirdai::bolt {
  */
 class SwitchNode final : public Node,
                          public std::enable_shared_from_this<SwitchNode> {
- public:
+ private:
   SwitchNode(uint32_t dim, const std::string& activation, uint32_t n_layers)
       : _layers_used(n_layers, false), _token_input(nullptr) {
     for (uint32_t i = 0; i < n_layers; i++) {
-      _layers.push_back(std::make_shared<FullyConnectedNode>(dim, activation));
+      _layers.push_back(FullyConnectedNode::makeDense(dim, activation));
     }
   }
 
@@ -35,17 +35,39 @@ class SwitchNode final : public Node,
       : _layers_used(n_layers, false), _token_input(nullptr) {
     for (uint32_t i = 0; i < n_layers; i++) {
       _layers.push_back(
-          std::make_shared<FullyConnectedNode>(dim, sparsity, activation));
+          FullyConnectedNode::makeAutotuned(dim, sparsity, activation));
     }
   }
 
   SwitchNode(uint32_t dim, float sparsity, const std::string& activation,
-             SamplingConfigPtr sampling_config, uint32_t n_layers)
+             const SamplingConfigPtr& sampling_config, uint32_t n_layers)
       : _layers_used(n_layers, false), _token_input(nullptr) {
     for (uint32_t i = 0; i < n_layers; i++) {
-      _layers.push_back(std::make_shared<FullyConnectedNode>(
-          dim, sparsity, activation, sampling_config));
+      _layers.push_back(
+          FullyConnectedNode::make(dim, sparsity, activation, sampling_config));
     }
+  }
+
+ public:
+  static std::shared_ptr<SwitchNode> makeDense(uint32_t dim,
+                                               const std::string& activation,
+                                               uint32_t n_layers) {
+    return std::shared_ptr<SwitchNode>(
+        new SwitchNode(dim, activation, n_layers));
+  }
+
+  static std::shared_ptr<SwitchNode> makeAutotuned(
+      uint32_t dim, float sparsity, const std::string& activation,
+      uint32_t n_layers) {
+    return std::shared_ptr<SwitchNode>(
+        new SwitchNode(dim, sparsity, activation, n_layers));
+  }
+
+  static std::shared_ptr<SwitchNode> make(
+      uint32_t dim, float sparsity, const std::string& activation,
+      const SamplingConfigPtr& sampling_config, uint32_t n_layers) {
+    return std::shared_ptr<SwitchNode>(
+        new SwitchNode(dim, sparsity, activation, sampling_config, n_layers));
   }
 
   uint32_t outputDim() const final {

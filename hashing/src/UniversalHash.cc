@@ -17,7 +17,7 @@ UniversalHash::UniversalHash(uint32_t seed) : _seed(seed) {
   }
 }
 
-uint32_t UniversalHash::gethash(const std::string& key) {
+uint32_t UniversalHash::gethash(const std::string& key) const {
   uint32_t res = 0;
   for (uint8_t ch : key) {
     res ^= T[ch & 7][ch];
@@ -32,5 +32,7 @@ uint32_t UniversalHash::gethash(uint64_t key) const {
   }
   return res;
 }
+
+uint32_t UniversalHash::seed() const { return _seed; }
 
 }  // namespace thirdai::hashing
