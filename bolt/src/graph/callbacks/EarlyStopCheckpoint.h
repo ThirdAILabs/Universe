@@ -34,7 +34,6 @@ class EarlyStopCheckpoint : public Callback {
         _model_save_path(std::move(model_save_path)),
         _patience(patience),
         _min_delta(std::abs(min_delta)) {
-    std::cout << _monitored_metric << std::endl;
     initValidationTrackers();
   }
 
