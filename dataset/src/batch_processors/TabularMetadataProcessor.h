@@ -14,7 +14,7 @@ namespace thirdai::dataset {
 struct TabularColumn {
   explicit TabularColumn(uint32_t _col_num) : col_num(_col_num) {}
 
-  virtual void update(const std::string& str_val){};
+  virtual void update(const std::string& str_val) { (void)str_val; };
 
   virtual std::exception_ptr computeUnigram(const std::string& str_val,
                                             uint32_t& unigram) const = 0;
@@ -55,7 +55,7 @@ struct NumericColumn : public TabularColumn {
       }
     } catch (std::invalid_argument& e) {
       throw std::invalid_argument(
-          "Could not process column " + std::to_string(col) +
+          "Could not process column " + std::to_string(col_num) +
           " as type 'numeric.' Received value: '" + str_val + ".'");
     }
   }
@@ -85,7 +85,8 @@ struct NumericColumn : public TabularColumn {
   std::exception_ptr getBin(const std::string& str_val, uint32_t& bin) const {
     // map empty values to their own bin (the last bin)
     if (str_val.empty()) {
-      return num_bins;
+      bin = num_bins;
+      return nullptr;
     }
     double value;
     try {
@@ -98,8 +99,10 @@ struct NumericColumn : public TabularColumn {
     double binsize = max - min / num_bins;
     if (binsize == 0) {
       bin = 0;
+    } else {
+      bin = static_cast<uint32_t>(std::round((value - min) / binsize));
     }
-    return static_cast<uint32_t>(std::round((value - min) / binsize));
+    return nullptr;
   }
 };
 
@@ -111,7 +114,7 @@ struct CategoricalColumn : public TabularColumn {
     const char* char_salt = reinterpret_cast<const char*>(&col_num);
     std::string str_salt(char_salt, 4);
     std::cout << "PRINTING STR SALT" << str_salt << std::endl;
-    std::string unique_category = str_val + salt;
+    std::string unique_category = str_val + str_salt;
     unigram = TextEncodingUtils::computeUnigram(unique_category.data(),
                                                 unique_category.size());
     return nullptr;
@@ -148,7 +151,7 @@ struct LabelColumn : public TabularColumn {
     (void)str_val;
     (void)unigram;
     return std::make_exception_ptr(std::invalid_argument(
-        "Shouldn't compute unigram of LabelColumn, not supported. "))
+        "Shouldn't compute unigram of LabelColumn, not supported. "));
   }
 
   bool isLabel() const { return true; }
