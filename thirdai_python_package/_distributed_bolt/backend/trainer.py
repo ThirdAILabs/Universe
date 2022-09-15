@@ -50,9 +50,9 @@ class Trainer:
         """
         start_communication_time = time.time()
         if self.communication_type == "linear":
-            ray.get(self.primary_worker.subwork_linear_communication.remote())
+            ray.get(self.primary_worker.subwork_linear_communication.remote(self.workers))
         elif self.communication_type == "circular":
-            ray.get(self.primary_worker.subwork_circular_communication.remote())
+            ray.get(self.primary_worker.subwork_circular_communication.remote(self.workers))
         ray.get([worker.receive_gradients.remote() for worker in self.workers])
         self.averaging_and_communication_time += time.time() - start_communication_time
 
@@ -66,7 +66,7 @@ class Trainer:
             learning_rate (float): Learning rate for training
         """
         start_update_parameter_time = time.time()
-        ray.get(self.primary_worker.subwork_update_parameters.remote(learning_rate))
+        ray.get(self.primary_worker.subwork_update_parameters.remote(learning_rate, self.workers))
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def log_training(self, batch_no, epoch):
