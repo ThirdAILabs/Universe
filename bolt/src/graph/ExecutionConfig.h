@@ -68,12 +68,11 @@ class PredictConfig {
 class ValidationContext {
  public:
   explicit ValidationContext(
-      const std::vector<dataset::BoltDatasetPtr>& _validation_data,
-      const dataset::BoltDatasetPtr& _validation_labels,
-      const PredictConfig& _predict_config)
-      : _data(_validation_data),
-        _labels(_validation_labels),
-        _config(_predict_config) {}
+      std::vector<dataset::BoltDatasetPtr> validation_data,
+      dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config)
+      : _data(std::move(validation_data)),
+        _labels(std::move(validation_labels)),
+        _config(std::move(predict_config)) {}
 
   const std::vector<dataset::BoltDatasetPtr>& data() const { return _data; }
 
@@ -236,22 +235,16 @@ class TrainState {
 
   void updateValidationMetrics(const InferenceMetricData& metric_data) {
     for (const auto& [metric_name, value] : metric_data) {
-      validation_metrics["val_" + metric_name].push_back(value);
+      validation_metrics[metric_name].push_back(value);
     }
   }
 
-  std::vector<double> getTrainMetrics(const std::string& metric_name) {
-    auto metric_data = train_metric_aggregator.getOutput();
-    if (metric_data.count(metric_name) != 0) {
-      return metric_data[metric_name];
-    }
-    throw std::invalid_argument(
-        "Could not find metric name '" + metric_name +
-        "' in list of computed train metrics. This must not have been passed "
-        "in the train config.");
+  const std::vector<double>& getTrainMetrics(const std::string& metric_name) {
+    return train_metric_aggregator.getSingleOutput(metric_name);
   }
 
-  std::vector<double> getValidationMetrics(const std::string& metric_name) {
+  const std::vector<double>& getValidationMetrics(
+      const std::string& metric_name) {
     if (validation_metrics.count(metric_name) != 0) {
       return validation_metrics[metric_name];
     }

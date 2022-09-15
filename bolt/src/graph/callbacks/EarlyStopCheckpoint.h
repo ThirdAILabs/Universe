@@ -25,10 +25,6 @@ namespace thirdai::bolt {
  *
  * Based on the keras design found here:
  * https://keras.io/api/callbacks/early_stopping/
- *
- * TODO(david): Validation data should ideally be moved to the train level and
- * this callback should only monitor changes in validation metrics. Let's
- * refactor this when the validation data needs to be used elsewhere.
  */
 class EarlyStopCheckpoint : public Callback {
  public:
@@ -49,8 +45,6 @@ class EarlyStopCheckpoint : public Callback {
   }
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
-    // we prefix with "val_" here since it only makes sense to early stop on
-    // validation metrics
     double metric_val =
         train_state.getValidationMetrics(_monitored_metric).back();
 
