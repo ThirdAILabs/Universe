@@ -18,10 +18,37 @@
 #include <bolt/src/graph/nodes/Switch.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/functional.h>
+#include <Python.h>
 #include <optional>
 #include <string>
 
 namespace thirdai::bolt::python {
+
+// The following callback uses py:: and PyErr symbols, which come from Python.
+// Doing this in an alternate way would require these symbols to be visible in
+// Graph.cc, which kind-of violates the existing structuring.
+//
+// Per pybind11 docs, no Ctrl-C is a Python artifact, which means standalone
+// library Ctrl-C is functional:
+//
+//    Ctrl-C is received by the Python interpreter, and holds it until the GIL
+//    is released, so a long-running function won’t be interrupted.
+//
+// We create a callback holding a chunk of python computation here, and at the
+// bindings layer, the callbacks are sneakily inserted to be present by default.
+class KeyboardInterruptCallback : public Callback {
+ public:
+  // Check whether Ctrl-C has been called on each batch begin. This is at a
+  // granularity where the users can't tell the difference, and probably does
+  // not hurt speed.
+  void onBatchBegin(BoltGraph& model, TrainState& train_state) final {
+    Callback::onBatchBegin(model, train_state);
+    if (PyErr_CheckSignals() != 0) {
+      throw py::error_already_set();
+    }
+  }
+};
+
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
@@ -239,8 +266,18 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("embedding_layer"));
 
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
-      .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
-                  py::arg("epochs"))
+      .def_static(
+          "make",
+          [](float learning_rate, uint32_t epochs) {
+            // Wrapping the C++ make function to by default include the
+            // KeyboardInterrupt callback.
+            auto checkInterrupt = std::make_shared<KeyboardInterruptCallback>();
+            std::vector<CallbackPtr> defaultCallbacks = {checkInterrupt};
+
+            return TrainConfig::makeConfig(learning_rate, epochs,
+                                           defaultCallbacks);
+          },
+          py::arg("learning_rate"), py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
       .def("silence", &TrainConfig::silence)
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
@@ -248,7 +285,21 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"))
-      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      .def(
+          "with_callbacks",
+          [](TrainConfig& train_config,
+             const std::vector<CallbackPtr>& callbacks) {
+            std::vector<CallbackPtr> modifiedCallbacks(callbacks);
+
+            // Configure KeyboardInterrupt callback to be present by default.
+            // Since we are resetting callbacks by this builder pattern method,
+            // we're resetting the callbacks list.
+            auto checkInterrupt = std::make_shared<KeyboardInterruptCallback>();
+            modifiedCallbacks.push_back(checkInterrupt);
+
+            return train_config.withCallbacks(modifiedCallbacks);
+          },
+          py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
            py::arg("predict_config"));

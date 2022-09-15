@@ -93,8 +93,10 @@ class TrainConfig {
     construct the training config. The remaining parameters can be set using a
     builder pattern.
   */
-  static TrainConfig makeConfig(float learning_rate, uint32_t epochs) {
-    return TrainConfig(learning_rate, epochs);
+  static TrainConfig makeConfig(
+      float learning_rate, uint32_t epochs,
+      const std::vector<CallbackPtr>& callbacks = {}) {
+    return TrainConfig(learning_rate, epochs, callbacks);
   }
 
   TrainConfig& withMetrics(std::vector<std::string> metric_names) {
@@ -181,14 +183,15 @@ class TrainConfig {
   }
 
  private:
-  TrainConfig(float learning_rate, uint32_t epochs)
+  TrainConfig(float learning_rate, uint32_t epochs,
+              const std::vector<CallbackPtr>& callbacks)
       : _epochs(epochs),
         _learning_rate(learning_rate),
         _metric_names({}),
         _verbose(true),
         _rebuild_hash_tables(std::nullopt),
         _reconstruct_hash_functions(std::nullopt),
-        _callbacks({}),
+        _callbacks(callbacks),
         _validation_context(std::nullopt) {}
 
   uint32_t _epochs;
