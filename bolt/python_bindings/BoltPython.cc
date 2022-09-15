@@ -1,8 +1,8 @@
 #include "BoltPython.h"
+#include "AutoClassifierBase.h"
+#include "AutoClassifiers.h"
 #include "BoltGraphPython.h"
 #include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
-#include <bolt/src/auto_classifiers/TabularClassifier.h>
-#include <bolt/src/auto_classifiers/TextClassifier.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
@@ -11,7 +11,9 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <dataset/src/DataLoader.h>
 #include <pybind11/cast.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
@@ -21,6 +23,35 @@
 #include <utility>
 
 namespace thirdai::bolt::python {
+
+template <typename CLASSIFIER>
+void defineAutoClassifierCommonMethods(py::class_<CLASSIFIER>& py_class) {
+  py_class
+      .def("train",
+           py::overload_cast<const std::string&, uint32_t, float,
+                             std::optional<uint32_t>, std::optional<uint32_t>>(
+               &CLASSIFIER::train),
+           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("batch_size") = std::nullopt,
+           py::arg("max_in_memory_batches") = std::nullopt)
+      .def("train",
+           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&,
+                             uint32_t, float, std::optional<uint32_t>>(
+               &CLASSIFIER::train),
+           py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("max_in_memory_batches") = std::nullopt)
+      .def("evaluate",
+           py::overload_cast<const std::string&>(&CLASSIFIER::evaluate),
+           py::arg("filename"))
+      .def("evaluate",
+           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&>(
+               &CLASSIFIER::evaluate),
+           py::arg("data_source"))
+      .def("predict", &CLASSIFIER::predict, py::arg("input"))
+      .def("predict_batch", &CLASSIFIER::predictBatch, py::arg("inputs"))
+      .def("save", &CLASSIFIER::save, py::arg("filename"))
+      .def_static("load", &CLASSIFIER::load, py::arg("filename"));
+}
 
 void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
@@ -93,49 +124,26 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
-  py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
-      .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
-           py::arg("n_classes"),
-           "Constructs a TextClassifier with autotuning.\n"
-           "Arguments:\n"
-           " * model_size: string - Either 'small', 'medium', 'large', or a "
-           "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
-           " * n_classes: int - How many classes or categories are in the "
-           "labels of the dataset.\n")
-      .def("train", &TextClassifier::train, py::arg("train_file"),
-           py::arg("epochs"), py::arg("learning_rate"),
-           "Trains the classifier on the given dataset.\n"
-           "Arguments:\n"
-           " * train_file: string - The path to the training dataset to use.\n"
-           " * epochs: Int - How many epochs to train for.\n"
-           " * learning_rate: Float - The learning rate to use for training.\n")
-      .def("predict_single", &TextClassifier::predictSingle,
-           py::arg("sentence"),
-           "Given a sentence, predict the output class. \n"
-           "Arguments:\n"
-           " * sentence: Sentence to predict on text classifier.\n")
-      .def("predict", &TextClassifier::predict, py::arg("test_file"),
-           py::arg("output_file") = std::nullopt,
-           "Runs the classifier on the specified test dataset and optionally "
-           "logs the prediction to a file.\n"
-           "Arguments:\n"
-           " * test_file: string - The path to the test dataset to use.\n"
-           " * output_file: string - Optional argument, if this is specified "
-           "then the classifier will output the name of the class/category of "
-           "each prediction this file with one prediction result on each "
-           "line.\n")
-      .def("save", &TextClassifier::save, py::arg("filename"),
-           "Saves the classifier to a file. The file path must not require any "
-           "folders to be created\n"
-           "Arguments:\n"
-           " * filename: string - The path to the save location of the "
-           "classifier.\n")
-      .def_static(
-          "load", &TextClassifier::load, py::arg("filename"),
-          "Loads and builds a saved classifier from file.\n"
-          "Arguments:\n"
-          " * filename: string - The location of the saved classifier.\n");
+  /**
+   * Text Classifier Definition
+   */
+  py::class_<TextClassifier> text_classifier(bolt_submodule, "TextClassifier");
 
+  text_classifier.def(
+      py::init<uint32_t, uint32_t>(), py::arg("internal_model_dim"),
+      py::arg("n_classes"),
+      "Constructs a TextClassifier with autotuning.\n"
+      "Arguments:\n"
+      " * internal_model_dim: int - Specifies the internal dimension used in "
+      "the model.\n"
+      " * n_classes: int - How many classes or categories are in the "
+      "labels of the dataset.\n");
+
+  defineAutoClassifierCommonMethods(text_classifier);
+
+  /**
+   * Multi Label Text Classifier Definition
+   */
   py::class_<MultiLabelTextClassifier>(bolt_submodule,
                                        "MultiLabelTextClassifier")
       .def(py::init<uint32_t>(), py::arg("n_classes"),
@@ -207,6 +215,36 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
+  /**
+   * Tabular Classifier Definition
+   */
+  py::class_<TabularClassifier> tabular_classifier(bolt_submodule,
+                                                   "TabularClassifier");
+
+  tabular_classifier.def(
+      py::init<uint32_t, uint32_t, std::vector<std::string>>(),
+      py::arg("internal_model_dim"), py::arg("n_classes"),
+      py::arg("column_datatypes"));
+
+  defineAutoClassifierCommonMethods(tabular_classifier);
+
+  /**
+   * Binary Text Classifier
+   */
+  py::class_<BinaryTextClassifier> binary_text_classifier(
+      bolt_submodule, "BinaryTextClassifier");
+
+  binary_text_classifier.def(
+      py::init<uint32_t, uint32_t, std::optional<float>, bool>(),
+      py::arg("n_outputs"), py::arg("internal_model_dim"),
+      py::arg("sparsity") = std::nullopt,
+      py::arg("use_sparse_inference") = true);
+
+  defineAutoClassifierCommonMethods(binary_text_classifier);
+
+  /**
+   * Sequential Classifier
+   */
   py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
                                    "Autoclassifier for sequential predictions.")
       .def(py::init<
@@ -234,58 +272,6 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
       .def("save", &SequentialClassifier::save, py::arg("filename"))
       .def_static("load", &SequentialClassifier::load, py::arg("filename"));
-
-  py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
-      .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
-           py::arg("n_classes"),
-           "Constructs a TabularClassifier with autotuning.\n"
-           "Arguments:\n"
-           " * model_size: string - Either 'small', 'medium', 'large', or a "
-           "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
-           " * n_classes: int - How many classes or categories are in the "
-           "labels of the dataset.\n")
-      .def("train", &TabularClassifier::train, py::arg("train_file"),
-           py::arg("column_datatypes"), py::arg("epochs"),
-           py::arg("learning_rate"),
-           "Trains the classifier on the given dataset.\n"
-           "Arguments:\n"
-           " * train_file: string - The path to the training dataset to use. "
-           "Data is assumed to be in CSV format with ',' delimiter and no "
-           "header. \n"
-           " * column_datatypes: List of str - How to interpret data types of "
-           "columns"
-           " in the dataset. One of 'numeric', 'categorical', 'label'\n"
-           " * epochs: Int - How many epochs to train for.\n"
-           " * learning_rate: Float - The learning rate to use for training.\n")
-      .def(
-          "predict", &TabularClassifier::predict, py::arg("test_file"),
-          py::arg("output_file") = std::nullopt,
-          "Runs the classifier on the specified test dataset and optionally "
-          "logs the prediction to a file.\n"
-          "Arguments:\n"
-          " * test_file: string - The path to the test dataset to use. Data is "
-          "assumed to be in CSV format with ',' delimiter and no header. \n"
-          " * output_file: string - Optional argument, if this is specified "
-          "then the classifier will output the name of the class/category of "
-          "each prediction this file with one prediction result on each "
-          "line.\n")
-      .def("predict_single", &TabularClassifier::predictSingle,
-           py::arg("input_row"),
-           "Given a list of input values excluding the label column, predict "
-           "the class.\n"
-           "Arguments:\n"
-           " * input_row: List of strings representing input values.\n")
-      .def("save", &TabularClassifier::save, py::arg("filename"),
-           "Saves the classifier to a file. The file path must not require any "
-           "folders to be created\n"
-           "Arguments:\n"
-           " * filename: string - The path to the save location of the "
-           "classifier.\n")
-      .def_static(
-          "load", &TabularClassifier::load, py::arg("filename"),
-          "Loads and builds a saved classifier from file.\n"
-          "Arguments:\n"
-          " * filename: string - The location of the saved classifier.\n");
 
   createBoltGraphSubmodule(bolt_submodule);
 }
