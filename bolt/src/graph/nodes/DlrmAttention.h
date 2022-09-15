@@ -257,8 +257,8 @@ class DlrmAttentionNode final
     for (uint32_t i = 0; i < fc_output.len; i++) {
       uint32_t active_neuron =
           fc_output.activeNeuronAtIndex<FC_OUTPUT_DENSE>(i);
-      fc_output.gradients[i] = dot_product_gradient * embedding[active_neuron];
-      emb_gradient[active_neuron] =
+      fc_output.gradients[i] += dot_product_gradient * embedding[active_neuron];
+      emb_gradient[active_neuron] +=
           dot_product_gradient * fc_output.activations[i];
     }
   }
@@ -279,8 +279,8 @@ class DlrmAttentionNode final
                                           float* const emb_2_grad,
                                           uint32_t dim) {
     for (uint32_t i = 0; i < dim; i++) {
-      emb_1_grad[i] = dot_product_gradient * emb_2[i];
-      emb_2_grad[i] = dot_product_gradient * emb_1[i];
+      emb_1_grad[i] += dot_product_gradient * emb_2[i];
+      emb_2_grad[i] += dot_product_gradient * emb_1[i];
     }
   }
 
