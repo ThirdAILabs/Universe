@@ -116,10 +116,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
   std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
-                                     BoltVector& vector,
-                                     bool remember_raw_features = false) {
-    return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
-                      remember_raw_features);
+                                     BoltVector& vector) {
+    return makeVector(sample, vector, _input_blocks, _input_blocks_dense);
   }
 
   std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
@@ -137,7 +135,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   ResponsibleColumnAndInputKey getResponsibleColumnAndInputKey(
       uint32_t feature_index,
-      const std::unordered_map<uint32_t, std::string>& num_to_name) {
+      const std::unordered_map<uint32_t, std::string>& num_to_name,
+      const std::vector<std::string_view>& columnar_sample) {
     auto iter = std::upper_bound(_block_feature_offsets.begin(),
                                  _block_feature_offsets.end(), feature_index);
     std::shared_ptr<Block> block =
@@ -145,7 +144,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     uint32_t index_within_block =
         feature_index -
         _block_feature_offsets[iter - _block_feature_offsets.begin() - 1];
-    return block->explainFeature(index_within_block, num_to_name);
+    return block->explainFeature(index_within_block, num_to_name,
+                                 columnar_sample);
   }
 
  private:
@@ -154,8 +154,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
    */
   static std::exception_ptr makeVector(
       std::vector<std::string_view>& sample, BoltVector& vector,
-      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
-      bool remember_raw_features = false) {
+      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
     std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
     // Dense vector if all blocks produce dense features, sparse vector
@@ -169,8 +168,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     // Let each block encode the input sample and adds a new segment
     // containing this encoding to the vector.
     for (auto& block : blocks) {
-      if (auto err = block->addVectorSegment(sample, *vec_ptr,
-                                             remember_raw_features)) {
+      if (auto err = block->addVectorSegment(sample, *vec_ptr)) {
         return err;
       }
     }

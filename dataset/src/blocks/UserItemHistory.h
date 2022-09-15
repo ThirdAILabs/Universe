@@ -155,8 +155,8 @@ class UserItemHistoryBlock final : public Block {
 
   ResponsibleColumnAndInputKey explainFeature(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      const final {
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::vector<std::string_view> /*columnar_sample*/) const final {
     if (num_to_name == std::nullopt) {
       throw std::invalid_argument(
           "map of col num to col name is missing in UserItemHistory block.");
@@ -168,8 +168,7 @@ class UserItemHistoryBlock final : public Block {
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool remember_raw_features) final {
-    (void)remember_raw_features;
+      SegmentedFeatureVector& vec) final {
     try {
       auto user_str = std::string(input_row.at(_user_col));
       auto item_str = std::string(input_row.at(_item_col));
