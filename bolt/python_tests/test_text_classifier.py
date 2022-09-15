@@ -2,7 +2,11 @@ from thirdai import bolt
 import pytest
 import datasets
 import random
-from utils import remove_files, compute_accuracy_of_predictions
+from utils import (
+    remove_files,
+    compute_accuracy_of_predictions,
+    check_autoclassifier_predict_correctness,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -68,13 +72,8 @@ def test_text_classifier_clinc_dataset():
     with open(TEST_FILE) as test:
         test_set = test.readlines()
 
-    for sample, original_prediction in zip(test_set, predictions):
-        """
-        we are taking i+1 because first row is a header in test file and
-        split it with '","' because its how the sentence and label seperated uniquely
-        in file and taking the sentence which is present at first index.
-        """
-        single_prediction = new_classifier.predict(sample.split(",")[1])
-        assert single_prediction == original_prediction
+    test_samples = [x.split(",")[1] for x in test_set]
+
+    check_autoclassifier_predict_correctness(new_classifier, test_samples, predictions)
 
     remove_files([TRAIN_FILE, TEST_FILE, SAVE_FILE])
