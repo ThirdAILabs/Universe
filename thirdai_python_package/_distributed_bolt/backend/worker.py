@@ -160,7 +160,7 @@ class Worker:
         """
         if self.id != 0:
             weights, biases = ray.get(self.primary_worker.get_weights_biases.remote())
-        self.model.set_parameters(weights, biases)
+            self.model.set_parameters(weights, biases)
         return True
 
     def receive_gradients(self) -> bool:
