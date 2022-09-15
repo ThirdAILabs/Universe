@@ -37,9 +37,85 @@ class PrimaryWorker(Worker):
 
         super().__init__(no_of_workers, 0, self, config, layer_dims, communication_type)
 
-    def communicate(self):
-        """The function calls comm to start communicating the gradients."""
-        self.comm.communicate()
+    def set_workers(self, workers):
+        self.workers = workers
+
+    def subwork_circular_communication(self):
+        """This function first call the workers to compute the gradients on their network
+        and then implements Baidu's All Ring All Reduce algorithm for communication.
+        Read more about that here:
+        https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
+
+        Args:
+            batch_no (int): batch number for the particular worker with worker id (id).
+
+        Returns:
+            _type_: _description_
+        """
+
+        update_id = 0
+        for node in range(self.total_nodes - 1):
+            if node == self.total_nodes - 2:
+                ray.get(
+                    [
+                        worker.process_ring.remote(update_id, avg_gradients=True)
+                        for worker in self.workers
+                    ]
+                )
+            else:
+                ray.get(
+                    [worker.process_ring.remote(update_id) for worker in self.workers]
+                )
+            update_id -= 1
+
+        update_id = 1
+        for node in range(self.total_nodes - 1):
+            ray.get(
+                [
+                    worker.process_ring.remote(update_id, reduce=False)
+                    for worker in self.workers
+                ]
+            )
+            update_id -= 1
+
+    def subwork_linear_communication(self):
+        """This function implements the linear way of communicating between the node.
+        In this way of communication, each of the worker calculates their gradients,
+        send their gradients to the supervisor and the supervisor sums the gradients,
+        averages it and and send the gradients back to the workers.
+
+        Args:
+            batch_no (int): batch number for the particular worker with worker id (id).
+
+        Returns:
+            _type_: _description_
+        """
+        gradients_list = ray.get(
+            [worker.get_calculated_gradients.remote() for worker in self.workers]
+        )
+
+        # Here we are initializing the w_average_gradients for storing the sum
+        self.w_gradients_avg = np.array(
+            [
+                np.zeros((self.layer_dims[layer_no + 1], self.layer_dims[layer_no]))
+                for layer_no in range(len(self.layer_dims) - 1)
+            ]
+        )
+        self.b_gradients_avg = np.array(
+            [
+                np.zeros((self.layer_dims[layer_no + 1]))
+                for layer_no in range(len(self.layer_dims) - 1)
+            ]
+        )
+
+        # summing all the gradients
+        for w_gradients, b_gradients in gradients_list:
+            self.w_gradients_avg += w_gradients
+            self.b_gradients_avg += b_gradients
+
+        # averaging the gradients
+        self.w_gradients_avg = np.divide(self.w_gradients_avg, len(self.workers))
+        self.b_gradients_avg = np.divide(self.b_gradients_avg, len(self.workers))
 
     def gradients_avg(self):
         """This function is called by the workers to get the gradients back from PrimaryWorker.
@@ -49,7 +125,7 @@ class PrimaryWorker(Worker):
         Returns:
             __type__: returns tuple of weight gradient average and bias gradient average
         """
-        return self.comm.w_gradients_avg, self.comm.b_gradients_avg
+        return self.w_gradients_avg, self.b_gradients_avg
 
     def subwork_update_parameters(self, learning_rate: float) -> bool:
         """This function calls every worker to update their parameters(weight and biases) with the

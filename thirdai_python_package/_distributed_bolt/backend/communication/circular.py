@@ -11,54 +11,12 @@ class Circular:
         self.total_nodes = total_nodes
 
         self.friend = None  # this variable is set up in set_friend
-        self.workers = None  # this variable is set up in set_workers
         self.w_partitions = []
         self.b_partitions = []
         self.friend_bias_gradient_list = []
         self.friend_weight_gradient_list = []
         self.w_gradients = []
         self.b_gradients = []
-
-    def set_workers(self, workers):
-        self.workers = workers
-
-    # These functions is called by only Primary Worker
-    def communicate(self):
-        """This function first call the workers to compute the gradients on their network
-        and then implements Baidu's All Ring All Reduce algorithm for communication.
-        Read more about that here:
-        https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
-
-        Returns:
-            _type_: _description_
-        """
-
-        update_id = 0
-        for node in range(self.total_nodes - 1):
-            if node == self.total_nodes - 2:
-                ray.get(
-                    [
-                        worker.process_ring.remote(update_id, avg_gradients=True)
-                        for worker in self.workers
-                    ]
-                )
-            else:
-                ray.get(
-                    [worker.process_ring.remote(update_id) for worker in self.workers]
-                )
-            update_id -= 1
-
-        update_id = 1
-        for node in range(self.total_nodes - 1):
-            ray.get(
-                [
-                    worker.process_ring.remote(update_id, reduce=False)
-                    for worker in self.workers
-                ]
-            )
-            update_id -= 1
-
-    # These functions would be called by each of the workers
 
     def set_friend(self, friend):
         """This function assigns each of the worker their friend to which
