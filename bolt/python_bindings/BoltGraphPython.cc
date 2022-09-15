@@ -534,15 +534,31 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
                      &TrainState::reconstruct_hash_functions_batch)
       .def_readwrite("stop_training", &TrainState::stop_training);
 
-  py::class_<LRSchedulingConfig>(callbacks_submodule, "LRSchedulingConfig")
-      .def_static("make", &LRSchedulingConfig::makeConfig,
-                  py::arg("scheduling_primitive"))
-      .def("with_parameters", &LRSchedulingConfig::withParameters,
-           py::arg("parameters"));
+  py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule, "LRSchedule");
+
+  py::class_<MultiplicativeLR, MultiplicativeLRPtr, LRSchedule>(
+      callbacks_submodule, "MultiplicativeLR")
+      .def(py::init<float>(), py::arg("gamma"),
+           "The Multiplicative learning rate scheduler "
+           "multiplies the current learning rate by gamma every epoch.\n");
+
+  py::class_<ExponentialLR, ExponentialLRPtr, LRSchedule>(callbacks_submodule,
+                                                          "ExponentialLR")
+      .def(py::init<float>(), py::arg("gamma"),
+           "The exponential learning rate scheduler decays the learning"
+           "rate by an exponential factor of gamma for every epoch.\n");
+
+  py::class_<MultiStepLR, MultiStepLRPtr, LRSchedule>(callbacks_submodule,
+                                                      "MultiStepLR")
+      .def(py::init<float, std::vector<uint32_t>>(), py::arg("gamma"),
+           py::arg("milestones"),
+           "The Multi-step learning rate scheduler changes"
+           "the learning rate by a factor of gamma for every milestone"
+           "specified in the vector of milestones. \n");
 
   py::class_<LearningRateScheduler, LearningRateSchedulerPtr, Callback>(
       callbacks_submodule, "LearningRateScheduler")
-      .def(py::init<const LRSchedulingConfig&>(), py::arg("config"))
+      .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
       .def(py::init<const std::function<float(float, uint32_t)>&>(),
            py::arg("schedule"),
            "The learning rate scheduler callback schedules learning rate "

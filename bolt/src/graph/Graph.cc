@@ -118,6 +118,7 @@ MetricData BoltGraph::train(
 
       for (uint64_t batch_idx = 0; batch_idx < dataset_context.numBatches();
            batch_idx++) {
+        train_state.batch_index = batch_idx;
         callbacks.onBatchBegin(*this, train_state);
 
         dataset_context.setInputs(batch_idx, _inputs);
@@ -166,6 +167,7 @@ MetricData BoltGraph::train(
     cleanupAfterBatchProcessing();
 
     callbacks.onEpochEnd(*this, train_state);
+    train_state.epoch = _epoch_count;
     if (train_state.stop_training) {
       break;
     }
