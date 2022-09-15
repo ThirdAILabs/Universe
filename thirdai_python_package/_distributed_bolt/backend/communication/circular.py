@@ -34,9 +34,9 @@ class Circular:
         Calculate the partitions for distributed training called only
         in case of circular communication
         """
-        for w_layers in self.w_gradients:
-            partition_length = int(len(w_layers) / self.total_nodes)
-            remaining_length = len(w_layers) % self.total_nodes
+        for w_gradients in self.w_gradients:
+            partition_length = int(len(w_gradients) / self.total_nodes)
+            remaining_length = len(w_gradients) % self.total_nodes
             partition_start_end_list = []
             current_index = 0
             for i in range(self.total_nodes):
