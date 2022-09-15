@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
 #include <bolt/src/layers/Optimizer.h>
@@ -31,7 +32,7 @@ class EmbeddingLayer {
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
-  uint32_t getEmbeddingDim() const { return _total_embedding_dim; }
+  uint32_t getOutputDim() const { return _total_embedding_dim; }
 
   void initializeLayer(uint32_t new_batch_size);
 
@@ -112,13 +113,15 @@ class EmbeddingLayer {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
-            _log_embedding_block_size, _embedding_block_size, _hash_fn,
-            _embedding_block);
+            _log_embedding_block_size, _reduction, _num_tokens_per_input,
+            _embedding_block_size, _hash_fn, _embedding_block);
   }
 
   uint32_t _num_lookups_per_token, _lookup_size, _total_embedding_dim,
       _log_embedding_block_size;
   uint64_t _embedding_block_size;
+  EmbeddingReductionType _reduction;
+  std::optional<uint32_t> _num_tokens_per_input;
 
   hashing::UniversalHash _hash_fn;
 

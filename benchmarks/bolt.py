@@ -1,32 +1,39 @@
 # TODO(josh): Add back mach benchmark
 
-import argparse
-import toml
+import sys
+import pathlib
+
+import numpy as np
+
+from thirdai import bolt, dataset
+from thirdai import setup_logging
+
 from utils import (
+    start_experiment,
     start_mlflow,
-    verify_mlflow_args,
     find_full_filepath,
     log_single_epoch_training_metrics,
     log_prediction_metrics,
-    config_get,
+    mlflow_is_enabled,
+    config_get_required,
     is_ec2_instance,
 )
-from thirdai import bolt, dataset
-import numpy as np
 
 
 def main():
-    parser = build_arg_parser()
-    args = parser.parse_args()
 
-    verify_mlflow_args(parser, mlflow_args=args)
+    config, args = start_experiment(
+        description="Creates, trains, and tests a bolt network on the specified config."
+    )
 
-    config = toml.load(args.config_path)
+    setup_logging(
+        log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level
+    )
 
     model = load_and_compile_model(config)
     datasets = load_all_datasets(config)
     start_mlflow(config, mlflow_args=args)
-    run_experiment(model, datasets, config, use_mlflow=not args.disable_mlflow)
+    run_experiment(model, datasets, config, use_mlflow=mlflow_is_enabled(args))
 
 
 def load_and_compile_model(model_config):
@@ -39,10 +46,10 @@ def load_and_compile_model(model_config):
 
     nodes_with_no_successor = set()
     inputs = []
-    for node_config in config_get(model_config, "nodes"):
+    for node_config in config_get_required(model_config, "nodes"):
         node = construct_node(node_config)
-        node_name = config_get(node_config, "name")
-        node_type = config_get(node_config, "type")
+        node_name = config_get_required(node_config, "name")
+        node_type = config_get_required(node_config, "type")
 
         if node_type == "Input":
             inputs.append(node)
@@ -56,7 +63,7 @@ def load_and_compile_model(model_config):
             pred_nodes = [get_node_by_name(pred_name) for pred_name in pred_names]
             for pred_name in pred_names:
                 nodes_with_no_successor.remove(pred_name)
-            if config_get(node_config, "type") == "Switch":
+            if config_get_required(node_config, "type") == "Switch":
                 node(pred_nodes[0], pred_nodes[1])
             else:
                 node(pred_nodes)
@@ -94,11 +101,11 @@ def load_all_datasets(dataset_config):
         "test_labels_np": [],
     }
 
-    all_dataset_configs = config_get(dataset_config, "datasets")
+    all_dataset_configs = config_get_required(dataset_config, "datasets")
     for single_dataset_config in all_dataset_configs:
-        format = config_get(single_dataset_config, "format")
+        format = config_get_required(single_dataset_config, "format")
         use_s3 = single_dataset_config.get("use_s3_on_aws", False) and is_ec2_instance()
-        dataset_types = config_get(single_dataset_config, "type_list")
+        dataset_types = config_get_required(single_dataset_config, "type_list")
 
         if format == "svm":
             loaded_datasets = load_svm_dataset(single_dataset_config, use_s3)
@@ -176,33 +183,33 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
             compute_roc_auc(predict_output, datasets, use_mlflow)
 
     if "save" in experiment_config.keys():
-        model.save(config_get(experiment_config, "save"))
+        model.save(config_get_required(experiment_config, "save"))
 
 
 def get_sampling_config(layer_config):
     if layer_config.get("use_random_sampling", False):
         return bolt.RandomSamplingConfig()
     return bolt.SamplingConfig(
-        hashes_per_table=config_get(layer_config, "hashes_per_table"),
-        num_tables=config_get(layer_config, "num_tables"),
-        range_pow=config_get(layer_config, "range_pow"),
-        reservoir_size=config_get(layer_config, "reservoir_size"),
+        hashes_per_table=config_get_required(layer_config, "hashes_per_table"),
+        num_tables=config_get_required(layer_config, "num_tables"),
+        range_pow=config_get_required(layer_config, "range_pow"),
+        reservoir_size=config_get_required(layer_config, "reservoir_size"),
         hash_function=layer_config.get("hash_function", "DWTA"),
     )
 
 
 def construct_input_node(input_config):
-    dim = config_get(input_config, "dim")
-    num_nonzeros_range = None
+    dim = config_get_required(input_config, "dim")
     if (
-        "min_num_nonzeros" in input_config.keys()
-        and "max_num_nonzeros" in input_config.keys()
+        "min_num_tokens" in input_config.keys()
+        and "max_num_tokens" in input_config.keys()
     ):
-        num_nonzeros_range = (
-            config_get(input_config, "min_num_nonzeros"),
-            config_get(input_config, "max_num_nonzeros"),
+        num_tokens_range = (
+            config_get_required(input_config, "min_num_tokens"),
+            config_get_required(input_config, "max_num_tokens"),
         )
-    return bolt.graph.Input(dim=dim, num_nonzeros_range=num_nonzeros_range)
+        return bolt.graph.TokenInput(dim=dim, num_tokens_range=num_tokens_range)
+    return bolt.graph.Input(dim=dim)
 
 
 def construct_fully_connected_node(fc_config):
@@ -211,15 +218,15 @@ def construct_fully_connected_node(fc_config):
 
     if use_default_sampling or sparsity == 1:
         layer = bolt.graph.FullyConnected(
-            dim=config_get(fc_config, "dim"),
+            dim=config_get_required(fc_config, "dim"),
             sparsity=sparsity,
-            activation=config_get(fc_config, "activation"),
+            activation=config_get_required(fc_config, "activation"),
         )
     else:
         layer = bolt.graph.FullyConnected(
-            dim=config_get(fc_config, "dim"),
+            dim=config_get_required(fc_config, "dim"),
             sparsity=sparsity,
-            activation=config_get(fc_config, "activation"),
+            activation=config_get_required(fc_config, "activation"),
             sampling_config=get_sampling_config(fc_config),
         )
 
@@ -230,14 +237,22 @@ def construct_fully_connected_node(fc_config):
 
 
 def construct_embedding_node(embedding_config):
-    num_embedding_lookups = config_get(embedding_config, "num_embedding_lookups")
-    lookup_size = config_get(embedding_config, "lookup_size")
-    log_embedding_block_size = config_get(embedding_config, "log_embedding_block_size")
+    num_embedding_lookups = config_get_required(
+        embedding_config, "num_embedding_lookups"
+    )
+    lookup_size = config_get_required(embedding_config, "lookup_size")
+    log_embedding_block_size = config_get_required(
+        embedding_config, "log_embedding_block_size"
+    )
+    reduction = config_get_required(embedding_config, "reduction")
+    num_tokens_per_input = embedding_config.get("num_tokens_per_input", None)
 
     return bolt.graph.Embedding(
         num_embedding_lookups=num_embedding_lookups,
         lookup_size=lookup_size,
         log_embedding_block_size=log_embedding_block_size,
+        reduction=reduction,
+        num_tokens_per_input=num_tokens_per_input,
     )
 
 
@@ -247,23 +262,23 @@ def construct_switch_node(switch_config):
 
     if use_default_sampling or sparsity == 1:
         return bolt.graph.Switch(
-            dim=config_get(switch_config, "dim"),
+            dim=config_get_required(switch_config, "dim"),
             sparsity=sparsity,
-            activation=config_get(switch_config, "activation"),
-            n_layers=config_get(switch_config, "n_layers"),
+            activation=config_get_required(switch_config, "activation"),
+            n_layers=config_get_required(switch_config, "n_layers"),
         )
 
     return bolt.graph.Switch(
-        dim=config_get(switch_config, "dim"),
+        dim=config_get_required(switch_config, "dim"),
         sparsity=sparsity,
-        activation_function=config_get(switch_config, "activation"),
+        activation_function=config_get_required(switch_config, "activation"),
         sampling_config=get_sampling_config(switch_config),
-        n_layers=config_get(switch_config, "n_layers"),
+        n_layers=config_get_required(switch_config, "n_layers"),
     )
 
 
 def construct_node(node_config):
-    node_type = config_get(node_config, "type")
+    node_type = config_get_required(node_config, "type")
     if node_type == "Input":
         return construct_input_node(node_config)
     if node_type == "Concatenate":
@@ -278,7 +293,7 @@ def construct_node(node_config):
 
 
 def get_loss(model_config):
-    loss_string = config_get(model_config, "loss_fn").lower()
+    loss_string = config_get_required(model_config, "loss_fn").lower()
     # TODO(josh/nick): Add an option to pass in the loss function as string to compile
     # TODO(josh): Consider moving to python 3.10 so we have the match pattern
     if loss_string == "categoricalcrossentropyloss" or loss_string == "cce":
@@ -302,7 +317,7 @@ def check_test_labels(datasets_map, key):
 
 
 def load_svm_dataset(dataset_config, use_s3):
-    batch_size = config_get(dataset_config, "batch_size")
+    batch_size = config_get_required(dataset_config, "batch_size")
     if use_s3:
         print("Using S3 to load SVM dataset", flush=True)
         s3_prefix = "share/data/" + dataset_config["path"]
@@ -312,7 +327,7 @@ def load_svm_dataset(dataset_config, use_s3):
         )
         return dataset.load_bolt_svm_dataset(data_loader)
     else:
-        dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+        dataset_path = find_full_filepath(config_get_required(dataset_config, "path"))
         return dataset.load_bolt_svm_dataset(dataset_path, batch_size=batch_size)
 
 
@@ -320,15 +335,17 @@ def load_click_through_dataset(dataset_config, use_s3):
     if use_s3:
         raise ValueError("S3 not supported yet for loading click through datasets")
 
-    dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+    dataset_path = find_full_filepath(config_get_required(dataset_config, "path"))
     return dataset.load_click_through_dataset(
         filename=dataset_path,
-        batch_size=config_get(dataset_config, "batch_size"),
-        max_num_numerical_features=config_get(
+        batch_size=config_get_required(dataset_config, "batch_size"),
+        max_num_numerical_features=config_get_required(
             dataset_config, "max_num_numerical_features"
         ),
-        max_categorical_features=config_get(dataset_config, "max_categorical_features"),
-        delimiter=config_get(dataset_config, "delimiter"),
+        max_categorical_features=config_get_required(
+            dataset_config, "max_categorical_features"
+        ),
+        delimiter=config_get_required(dataset_config, "delimiter"),
     )
 
 
@@ -336,7 +353,7 @@ def load_click_through_labels(dataset_config, use_s3):
     if use_s3:
         raise ValueError("S3 not supported yet for loading click through labels")
 
-    dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+    dataset_path = find_full_filepath(config_get_required(dataset_config, "path"))
     with open(dataset_path) as file:
         return [np.array([int(line[0]) for line in file.readlines()])]
 
@@ -348,14 +365,14 @@ def load_mlm_datasets(dataset_config, use_s3, return_tokens):
     # We load the train and test data at the same time because the need to use
     # the same loader to ensure that the words in the vocabulary are mapped to
     # the same output neuron.
-    train_path = find_full_filepath(config_get(dataset_config, "train_path"))
-    test_path = find_full_filepath(config_get(dataset_config, "test_path"))
+    train_path = find_full_filepath(config_get_required(dataset_config, "train_path"))
+    test_path = find_full_filepath(config_get_required(dataset_config, "test_path"))
 
     mlm_loader = dataset.MLMDatasetLoader(
-        pairgram_range=config_get(dataset_config, "pairgram_range")
+        pairgram_range=config_get_required(dataset_config, "pairgram_range")
     )
 
-    batch_size = config_get(dataset_config, "batch_size")
+    batch_size = config_get_required(dataset_config, "batch_size")
 
     train_data = mlm_loader.load(filename=train_path, batch_size=batch_size)
 
@@ -372,20 +389,20 @@ def load_mlm_datasets(dataset_config, use_s3, return_tokens):
 # the train_config)
 def load_train_config(experiment_config):
     train_config = bolt.graph.TrainConfig.make(
-        epochs=1, learning_rate=config_get(experiment_config, "learning_rate")
-    ).with_metrics(config_get(experiment_config, "train_metrics"))
+        epochs=1, learning_rate=config_get_required(experiment_config, "learning_rate")
+    ).with_metrics(config_get_required(experiment_config, "train_metrics"))
     if "reconstruct_hash_functions" in experiment_config.keys():
         train_config.with_reconstruct_hash_functions(
             experiment_config["reconstruct_hash_functions"]
         )
     if "rebuild_hash_tables" in experiment_config.keys():
         train_config.with_rebuild_hash_tables(experiment_config["rebuild_hash_tables"])
-    return config_get(experiment_config, "epochs"), train_config
+    return config_get_required(experiment_config, "epochs"), train_config
 
 
 def load_predict_config(experiment_config):
     return bolt.graph.PredictConfig.make().with_metrics(
-        config_get(experiment_config, "test_metrics")
+        config_get_required(experiment_config, "test_metrics")
     )
 
 
@@ -447,35 +464,6 @@ def compute_roc_auc(predict_output, datasets, use_mlflow):
     print(f"ROC AUC = {roc_auc}")
     if use_mlflow:
         log_prediction_metrics([{"roc_auc": roc_auc}])
-
-
-def build_arg_parser():
-    parser = argparse.ArgumentParser(
-        description="Creates, trains, and tests a bolt network on the specified config."
-    )
-
-    parser.add_argument(
-        "config_path",
-        type=str,
-        help="Path to a config file containing the dataset, experiment, and model configs.",
-    )
-    parser.add_argument(
-        "--disable_mlflow",
-        action="store_true",
-        help="Disable mlflow logging for the current run.",
-    )
-    parser.add_argument(
-        "--disable_upload_artifacts",
-        action="store_true",
-        help="Disable the mlflow artifact file logging for the current run.",
-    )
-    parser.add_argument(
-        "--run_name",
-        default="",
-        type=str,
-        help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
-    )
-    return parser
 
 
 if __name__ == "__main__":

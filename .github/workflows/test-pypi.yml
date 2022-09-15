@@ -4,7 +4,7 @@ name: Upload to Test Pypi
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
 concurrency: 
   group: testpypi-${{ github.head_ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 # Run on pushes and releases. The actual upload will only happen on a 
 # release.
@@ -26,6 +26,7 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-2019, ubuntu-20.04, macos-12]
 
@@ -50,9 +51,22 @@ jobs:
         env:
           # The following is to relax the discovery timeout (from a default 5) so that
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
+          # 
+          # KMP_DUPLICATE_LIB_OK is required because some other library
+          # (perhaps numpy) is loading an OpenMP library that is separate from
+          # what we package with.
+          #
+          # TODO(GH-779): Fix the multiple libraries existing.
           CIBW_ENVIRONMENT_WINDOWS: >
               CMAKE_ARGS="-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30"
-          
+              KMP_DUPLICATE_LIB_OK=TRUE
+
+          # TODO(TSK-561): Proper MacOS wheels.
+          CIBW_ENVIRONMENT_MACOS: >
+              CC=/usr/local/bin/gcc-11
+              CXX=/usr/local/bin/g++-11
+              MACOSX_DEPLOYMENT_TARGET=10.15
+
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
          
@@ -67,8 +81,7 @@ jobs:
 
           # On linux we copy a valid license to the home directory within the docker
           CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
-          # Install test dependencies with overwritten environment variables.
-          CIBW_BEFORE_TEST: pip3 install -r requirements.txt
+          CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
 

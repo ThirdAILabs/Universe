@@ -82,6 +82,31 @@ def gen_single_sparse_node(num_classes, sparsity=0.5):
     return model
 
 
+def get_simple_dag_model(
+    input_dim,
+    hidden_layer_dim,
+    hidden_layer_sparsity,
+    output_dim,
+    output_activation="softmax",
+    loss=bolt.CategoricalCrossEntropyLoss(),
+):
+    input_layer = bolt.graph.Input(dim=input_dim)
+
+    hidden_layer = bolt.graph.FullyConnected(
+        dim=hidden_layer_dim, sparsity=hidden_layer_sparsity, activation="relu"
+    )(input_layer)
+
+    output_layer = bolt.graph.FullyConnected(
+        dim=output_dim, activation=output_activation
+    )(hidden_layer)
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+
+    model.compile(loss)
+
+    return model
+
+
 def get_simple_concat_model(
     hidden_layer_top_dim,
     hidden_layer_bottom_dim,
@@ -138,12 +163,7 @@ def remove_files(files):
         os.remove(file)
 
 
-def compute_accuracy_with_file(test_labels, pred_file):
-    with open(pred_file) as pred:
-        pred_lines = pred.readlines()
-
-    predictions = [x[:-1] for x in pred_lines]
-
+def compute_accuracy_of_predictions(test_labels, predictions):
     assert len(predictions) == len(test_labels)
     return sum(
         (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
@@ -258,3 +278,27 @@ def build_train_and_predict_single_hidden_layer(
         predict_config.enable_sparse_inference()
 
     return model.predict(data, labels, predict_config)
+
+
+# This function checks that the the results of predict_single and predict batch
+# match the original predictions.
+def check_autoclassifier_predict_correctness(
+    classifier, test_samples, original_predictions
+):
+    for sample, original_prediction in zip(test_samples, original_predictions):
+        single_prediction = classifier.predict(sample)
+        assert single_prediction == original_prediction
+
+    for samples, predictions in batch_predictions(test_samples, original_predictions):
+        batched_prediction = classifier.predict_batch(samples)
+        for prediction, original_prediction in zip(batched_prediction, predictions):
+            assert prediction == original_prediction
+
+
+def batch_predictions(original_predictions, samples, batch_size=10):
+    batches = []
+    for i in range(0, len(original_predictions), batch_size):
+        batches.append(
+            (original_predictions[i : i + batch_size], samples[i : i + batch_size])
+        )
+    return batches

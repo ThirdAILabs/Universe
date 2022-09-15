@@ -63,7 +63,17 @@ class CMakeBuild(build_ext):
             # not used on MSVC, but no harm
             "-DCMAKE_BUILD_TYPE={}".format(build_mode),
         ]
-        build_args = []
+
+        # To build the wheel, we don't need to make "all" targets. We just need
+        # what is required to be packaged with python.  The pybind11 target in
+        # CMakeLists.txt is defined as _thirdai, which is what is shipped with
+        # the built wheel. Since setup.py is for use in packaging the wheel, we
+        # pass this specific target to cmake args to avoid having to compile
+        # tests and other potential libraries/executables created.
+        #
+        # Equivalent to calling `make _thirdai`.
+        build_args = ["-t", "_thirdai"]
+
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
         if "CMAKE_ARGS" in os.environ:
@@ -154,11 +164,22 @@ setup(
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    # TODO(Jerin/Josh): Do we want to get rid of requirements.txt and have
-    # this as the single source of truth
     install_requires=["numpy", "typing_extensions"],
     extras_require={
-        "test": ["pytest", "boto3", "moto", "datasets", "torch", "transformers"],
+        # The cryptography requirement is necessary to avoid ssl errors
+        # The tokenizers requirement ensures that all of the [test] depedencies are
+        # installable from a wheel on an m1
+        "test": [
+            "pytest",
+            "boto3",
+            "moto",
+            "datasets",
+            "torch",
+            "toml",
+            "transformers",
+            "cryptography<=36.0.2",
+            "tokenizers==0.11.6",
+        ],
         "benchmark": [
             "toml",
             "psutil",
@@ -166,6 +187,7 @@ setup(
             "mlflow",
             "boto3",
         ],
+        "distributed": ["ray", "toml"],
     },
     packages=["thirdai"]
     + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
