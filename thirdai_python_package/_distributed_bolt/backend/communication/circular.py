@@ -166,7 +166,7 @@ class Circular:
     ):
         """
         The function first calculates the partition index range on which it will
-        work, then get the graidnets on that range from its friend worker and sums
+        work, then get the gradients on that range from its friend worker and sums
         it to the partition the partition the current worker.
 
         Here Each of the node communicates the partitioned gradients with

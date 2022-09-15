@@ -4,7 +4,8 @@ import time
 
 class Trainer:
     """
-    This class implements a trainer
+    This class implements a trainer, which controls the trainings,
+    expose high level APIs for trainings, predict.
     """
 
     def __init__(self, workers, primary_worker, logging, communication_type):
@@ -25,10 +26,8 @@ class Trainer:
         self.primary_worker = primary_worker
         self.logging = logging
         self.communication_type = communication_type
-        if self.communication_type == "linear":
-            self.logging.info("Linear communication pattern is choosen")
-        elif self.communication_type == "circular":
-            self.logging.info("Circular communication pattern is choosen")
+        self.logging.info(f"Using {communication_type} method for communication")
+        if communication_type == "circular":
             for i in range(len(self.workers)):
                 ray.get(
                     self.workers[i].set_friend.remote(
@@ -53,7 +52,7 @@ class Trainer:
 
     def communicate(self):
         """
-        This functions calls primary worker to complete the communication
+        Calls primary worker to complete the communication
         and then asks all the worker to recieve the updated gradients in their networks
         """
         start_communication_time = time.time()

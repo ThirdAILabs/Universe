@@ -59,7 +59,7 @@ class DistributedBolt:
         """
         Trains the network using the communication type choosen.
         """
-        comm = Trainer(
+        trainer = Trainer(
             self.workers, self.primary_worker, self.logging, self.communication_type
         )
 
@@ -68,12 +68,12 @@ class DistributedBolt:
 
                 # Here we are asking every worker to calculate their gradients and return
                 # once they all calculate their gradients
-                comm.calculate_gradients(batch_id)
-                comm.communicate()
-                comm.update_parameters(self.learning_rate)
-                comm.log_training(batch_id, epoch)
+                trainer.calculate_gradients(batch_id)
+                trainer.communicate()
+                trainer.update_parameters(self.learning_rate)
+                trainer.log_training(batch_id, epoch)
 
-        comm.finish_training()
+        trainer.finish_training()
 
     def predict(self):
         """
