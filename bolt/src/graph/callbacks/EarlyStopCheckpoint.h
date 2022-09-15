@@ -13,8 +13,8 @@ namespace thirdai::bolt {
  * @brief This callback is intended to stop training early based on prediction
  * results from a given validation set. Saves the best model to model_save_path
  *
- * @param predict_config configurations for evaluation on the given validation
- * data. must include metrics
+ * @param monitored_metric The metric to monitor for early stopping. The metric
+ * is assumed to be associated with validation data.
  * @param model_save_path file path to save the model that scored the
  * best on the validation set
  * @param patience number of epochs with no improvement in validation score
@@ -25,30 +25,15 @@ namespace thirdai::bolt {
  *
  * Based on the keras design found here:
  * https://keras.io/api/callbacks/early_stopping/
- *
- * TODO(david): Validation data should ideally be moved to the train level and
- * this callback should only monitor changes in validation metrics. Let's
- * refactor this when the validation data needs to be used elsewhere.
  */
 class EarlyStopCheckpoint : public Callback {
  public:
-  EarlyStopCheckpoint(std::vector<dataset::BoltDatasetPtr> validation_data,
-                      dataset::BoltDatasetPtr validation_labels,
-                      PredictConfig predict_config, std::string model_save_path,
+  EarlyStopCheckpoint(std::string monitored_metric, std::string model_save_path,
                       uint32_t patience = 2, double min_delta = 0)
-      : _validation_data(std::move(validation_data)),
-        _validation_labels(std::move(validation_labels)),
-        _predict_config(std::move(predict_config)),
+      : _monitored_metric(std::move(monitored_metric)),
         _model_save_path(std::move(model_save_path)),
         _patience(patience),
         _min_delta(std::abs(min_delta)) {
-    uint32_t num_metrics = _predict_config.getMetricNames().size();
-    if (num_metrics != 1) {
-      throw std::invalid_argument(
-          "Validation-based early stopping only supports the use of one "
-          "metric, passed in " +
-          std::to_string(num_metrics) + " metrics.");
-    }
     initValidationTrackers();
   }
 
@@ -59,10 +44,8 @@ class EarlyStopCheckpoint : public Callback {
   }
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
-    std::string metric_name = _predict_config.getMetricNames()[0];
     double metric_val =
-        model.predict(_validation_data, _validation_labels, _predict_config)
-            .first[metric_name];
+        train_state.getValidationMetrics(_monitored_metric).back();
 
     if (isImprovement(metric_val)) {
       _best_validation_score = metric_val;
@@ -86,18 +69,15 @@ class EarlyStopCheckpoint : public Callback {
   }
 
   void initValidationTrackers() {
-    std::string metric_name = _predict_config.getMetricNames()[0];
-
     _epochs_since_best = 0;
-    _should_minimize = makeMetric(metric_name)->smallerIsBetter();
+    _should_minimize = makeMetric(_monitored_metric)->smallerIsBetter();
+
     _best_validation_score = _should_minimize
                                  ? std::numeric_limits<double>::max()
                                  : std::numeric_limits<double>::min();
   }
 
-  std::vector<dataset::BoltDatasetPtr> _validation_data;
-  dataset::BoltDatasetPtr _validation_labels;
-  PredictConfig _predict_config;
+  std::string _monitored_metric;
   std::string _model_save_path;
   uint32_t _patience;
   double _min_delta;

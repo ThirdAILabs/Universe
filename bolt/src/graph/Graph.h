@@ -71,6 +71,9 @@ class BoltGraph {
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            bool use_sparse_inference);
 
+  BoltBatch predictSingleBatch(std::vector<BoltBatch>&& test_data,
+                               bool use_sparse_inference);
+
   BoltVector getLabelVectorExplainPrediction(
       uint32_t vec_id, bool explain_prediction_using_highest_activation);
 
@@ -97,6 +100,8 @@ class BoltGraph {
   std::string summarize(bool print, bool detailed) const;
 
   NodePtr getNodeByName(const std::string& node_name) const;
+
+  uint32_t outputDim() const { return _output->outputDim(); }
 
  private:
   // Private constructor for cereal.
