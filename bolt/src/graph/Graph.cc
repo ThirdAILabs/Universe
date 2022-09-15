@@ -154,6 +154,13 @@ MetricData BoltGraph::train(
                                   /* use_sparsity=*/true);
         }
 
+        uint32_t save_every = train_config.save_every();
+        if (save_every != 0 && updates % save_every == 0) {
+          const std::string checkpoint_path =
+              train_config.save_prefix() + ".last.bolt";
+          save(checkpoint_path);
+        }
+
         callbacks.onBatchEnd(*this, train_state);
       }
 
@@ -194,6 +201,12 @@ MetricData BoltGraph::train(
           namedPredict(label, validation->data(), validation->labels(),
                        validation->config());
       train_state.updateValidationMetrics(val_metrics);
+    }
+
+    if (not train_config.save_prefix().empty()) {
+      const std::string checkpoint_path =
+          train_config.save_prefix() + ".last.bolt";
+      save(checkpoint_path);
     }
 
     callbacks.onEpochEnd(*this, train_state);
