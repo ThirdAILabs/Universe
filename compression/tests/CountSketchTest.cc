@@ -119,7 +119,6 @@ TEST_F(CountSketchTest, SerializeCountSketchTest) {
   CountSketch<float> deserialized_vec = CountSketch<float>(ss);
   ASSERT_EQ(deserialized_vec.size(), _vec.size());
   ASSERT_EQ(deserialized_vec.uncompressedSize(), _vec.uncompressedSize());
-
   uint32_t num_sketches = deserialized_vec.numSketches();
   uint32_t sketch_size = deserialized_vec.size();
 

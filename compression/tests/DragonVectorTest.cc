@@ -79,10 +79,6 @@ TEST_F(DragonVectorTest, ExtendDragonVectorTest) {
 TEST_F(DragonVectorTest, SerializeDragonVectorTest) {
   std::stringstream ss = _vec.serialize();
 
-  uint32_t size_serialized = _vec.serialized_size();
-
-  std::cout << size_serialized << " " << ss.str().size() << std::endl;
-
   DragonVector<float> deserialized_vec = DragonVector<float>(ss);
 
   ASSERT_EQ(deserialized_vec.size(), _vec.size());

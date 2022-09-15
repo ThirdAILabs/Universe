@@ -288,6 +288,30 @@ CountSketch<T>::CountSketch(std::stringstream& input_stream) {
 template <class T>
 uint32_t CountSketch<T>::serialized_size() const {
   uint32_t serialized_size = 0;
+
+  // Compression scheme (1)
+  std::string compression_scheme = "count_sketch";
+  serialized_size +=
+      sizeof(uint32_t) + sizeof(char) * compression_scheme.size();
+
+  // Uncompressed_size (2)
+  serialized_size += sizeof(uint32_t);
+
+  // Number of count sketches
+  serialized_size += sizeof(uint32_t);
+
+  // Seeds for hashing indices
+  serialized_size += sizeof(uint32_t) * numSketches();
+
+  // Seeds for hashing sign
+  serialized_size += sizeof(uint32_t) * numSketches();
+
+  // Size of count sketch
+  serialized_size += sizeof(uint32_t);
+
+  // Count Sketch Vectors
+  serialized_size += sizeof(T) * size() * numSketches();
+
   return serialized_size;
 }
 
