@@ -80,9 +80,10 @@ MetricData BoltGraph::train(
   TrainState train_state(train_config, dataset_context.batchSize(),
                          dataset_context.len());
 
-  std::vector<double> time_per_epoch;
+  std::optional<ValidationContext> validation =
+      train_config.getValidationContext();
 
-  MetricAggregator metrics = train_config.getMetricAggregator();
+  MetricAggregator& train_metrics = train_state.getTrainMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
@@ -123,7 +124,7 @@ MetricData BoltGraph::train(
         dataset_context.setInputs(batch_idx, _inputs);
 
         const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
-        processTrainingBatch(batch_labels, metrics);
+        processTrainingBatch(batch_labels, train_metrics);
         updateParametersAndSampling(
             train_state.learning_rate, train_state.rebuild_hash_tables_batch,
             train_state.reconstruct_hash_functions_batch);
@@ -133,7 +134,7 @@ MetricData BoltGraph::train(
         }
 
         log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
-                  metrics.summary());
+                  train_metrics.summary());
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -143,12 +144,10 @@ MetricData BoltGraph::train(
                                train_end - train_start)
                                .count();
 
-      time_per_epoch.push_back(static_cast<double>(epoch_time));
-
       std::string logline = fmt::format(
           "train | epoch {} | complete |  batches {} | time {}s | {}",
           _epoch_count, dataset_context.numBatches(), epoch_time,
-          metrics.summary());
+          train_metrics.summary());
 
       log::info(logline);
 
@@ -157,13 +156,25 @@ MetricData BoltGraph::train(
       }
 
       _epoch_count++;
-      metrics.logAndReset();
+      train_metrics.logAndReset();
+
+      train_state.epoch_times.push_back(static_cast<double>(epoch_time));
     } catch (const std::exception& e) {
       cleanupAfterBatchProcessing();
       throw;
     }
 
     cleanupAfterBatchProcessing();
+
+    // TODO(david): we should add a some type of "validate_every" parameter to
+    // the validation construct so we are not restricted to validating every
+    // epoch. this also lets us validate after N updates per say. Requires the
+    // raii cleanup change mentioned above for validation after a batch
+    if (validation) {
+      auto [val_metrics, _] = predict(validation->data(), validation->labels(),
+                                      validation->config());
+      train_state.updateValidationMetrics(val_metrics);
+    }
 
     callbacks.onEpochEnd(*this, train_state);
     if (train_state.stop_training) {
@@ -173,8 +184,8 @@ MetricData BoltGraph::train(
 
   callbacks.onTrainEnd(*this, train_state);
 
-  auto metric_data = metrics.getOutput();
-  metric_data["epoch_times"] = std::move(time_per_epoch);
+  auto metric_data = train_metrics.getOutput();
+  metric_data["epoch_times"] = std::move(train_state.epoch_times);
 
   return metric_data;
 }
