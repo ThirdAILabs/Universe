@@ -86,10 +86,6 @@ class PrimaryWorker(Worker):
         Returns:
             _type_: _description_
         """
-        gradients_list = ray.get(
-            [worker.get_calculated_gradients.remote() for worker in workers]
-        )
-
         # Here we are initializing the w_average_gradients for storing the sum
         self.w_gradients_avg = np.array(
             [
@@ -104,8 +100,8 @@ class PrimaryWorker(Worker):
             ]
         )
 
-        # summing all the gradients
-        for w_gradients, b_gradients in gradients_list:
+        for worker in workers:
+            w_gradients, b_gradients = ray.get(worker.get_calculated_gradients.remote())
             self.w_gradients_avg += w_gradients
             self.b_gradients_avg += b_gradients
 
