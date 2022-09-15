@@ -26,7 +26,7 @@ class Circular:
 
         :param friend: storing the friend for this worker
         :type friend: ray.actor
-        """        
+        """
         self.friend = friend
 
     def calculate_gradients_partitions(self):
@@ -175,7 +175,7 @@ class Circular:
 
         :param update_id: This id is use to calculate the partition to work on.
         :type update_id: int
-        :param reduce: This bool determines whether we need, 
+        :param reduce: This bool determines whether we need,
                     to reduce or gather, True: reduce, False: Gather. defaults to True
         :type reduce: Optional[bool], optional
         :param avg_gradients: _description_, defaults to False
