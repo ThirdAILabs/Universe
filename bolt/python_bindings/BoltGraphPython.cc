@@ -542,7 +542,8 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def("get_validation_metrics", &TrainState::getValidationMetrics,
            py::arg("metric_name"));
 
-  py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule, "LRSchedule");
+  py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule,  // NOLINT
+                                        "LRSchedule");        // NOLINT
 
   py::class_<MultiplicativeLR, MultiplicativeLRPtr, LRSchedule>(
       callbacks_submodule, "MultiplicativeLR")
