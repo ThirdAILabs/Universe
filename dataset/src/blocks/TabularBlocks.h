@@ -24,8 +24,8 @@ class TabularPairGram : public Block {
 
   ResponsibleColumnAndInputKey explainFeature(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      const final {
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::vector<std::string_view> /*columnar_sample*/) const final {
     (void)index_within_block;
     (void)num_to_name;
     throw std::invalid_argument("not yet implemented in tabular block!");
@@ -38,8 +38,7 @@ class TabularPairGram : public Block {
   // pairs of columns to pairgram together.
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool remember_raw_features) final {
-    (void)remember_raw_features;
+      SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       std::string str_val(input_row[col]);

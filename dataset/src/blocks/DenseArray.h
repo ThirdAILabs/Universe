@@ -33,8 +33,8 @@ class DenseArrayBlock : public Block {
 
   ResponsibleColumnAndInputKey explainFeature(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      const final {
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::vector<std::string_view> /*columnar_sample*/) const final {
     (void)index_within_block;
     (void)num_to_name;
     throw std::invalid_argument("not yet implemented in dense array block!");
@@ -43,8 +43,7 @@ class DenseArrayBlock : public Block {
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool remember_raw_features) final {
-    (void)remember_raw_features;
+      SegmentedFeatureVector& vec) final {
     for (uint32_t i = _start_col; i < _start_col + _dim; i++) {
       char* end;
       float value = std::strtof(input_row.at(i).data(), &end);

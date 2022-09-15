@@ -116,9 +116,9 @@ class Block {
    */
   std::exception_ptr addVectorSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool remember_raw_features = false) {
+      SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
-    return buildSegment(input_row, vec, remember_raw_features);
+    return buildSegment(input_row, vec);
   }
 
   /**
@@ -146,8 +146,8 @@ class Block {
    */
   virtual ResponsibleColumnAndInputKey explainFeature(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      const = 0;
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::vector<std::string_view> columnar_sample) const = 0;
 
   virtual ~Block() = default;
 
@@ -161,7 +161,7 @@ class Block {
    */
   virtual std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool remember_raw_features) = 0;
+      SegmentedFeatureVector& vec) = 0;
 };
 
 }  // namespace thirdai::dataset
