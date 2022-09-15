@@ -136,6 +136,14 @@ MetricData BoltGraph::train(
         logging::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
                       train_metrics.summary());
 
+        uint32_t save_every = train_config.save_every();
+        uint32_t updates = 1 + epoch * dataset_context.numBatches() + batch_idx;
+        if (save_every != 0 && updates % save_every == 0) {
+          const std::string checkpoint_path =
+              train_config.save_prefix() + ".last.bolt";
+          save(checkpoint_path);
+        }
+
         callbacks.onBatchEnd(*this, train_state);
       }
 

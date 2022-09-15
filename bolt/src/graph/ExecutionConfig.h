@@ -131,6 +131,13 @@ class TrainConfig {
     return *this;
   }
 
+  TrainConfig& withSaveParameters(const std::string& save_prefix,
+                                  uint32_t save_every) {
+    _save_prefix = save_prefix;
+    _save_every = save_every;
+    return *this;
+  }
+
   std::optional<ValidationContext> getValidationContext() const {
     return _validation_context;
   }
@@ -180,6 +187,9 @@ class TrainConfig {
     return std::max<uint32_t>(reconstruct_param / batch_size, 1);
   }
 
+  const std::string& save_prefix() const { return _save_prefix; }
+  uint32_t save_every() const { return _save_every; }
+
  private:
   TrainConfig(float learning_rate, uint32_t epochs)
       : _epochs(epochs),
@@ -189,7 +199,8 @@ class TrainConfig {
         _rebuild_hash_tables(std::nullopt),
         _reconstruct_hash_functions(std::nullopt),
         _callbacks({}),
-        _validation_context(std::nullopt) {}
+        _validation_context(std::nullopt),
+        _save_every(0) {}
 
   uint32_t _epochs;
   float _learning_rate;
@@ -202,6 +213,9 @@ class TrainConfig {
   CallbackList _callbacks;
 
   std::optional<ValidationContext> _validation_context;
+
+  std::string _save_prefix;
+  uint32_t _save_every;
 };
 
 class TrainState {

@@ -225,6 +225,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"))
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      .def("with_save_parameters", &TrainConfig::withSaveParameters,
+           py::arg("save_prefix"), py::arg("save_every"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
            py::arg("predict_config"));
