@@ -66,7 +66,7 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
   std::string model_summary =
       summarize(/* print = */ print_when_done, /* detailed = */ false);
-  log::info(model_summary);
+  logging::info(model_summary);
 }
 
 MetricData BoltGraph::train(
@@ -80,9 +80,10 @@ MetricData BoltGraph::train(
   TrainState train_state(train_config, dataset_context.batchSize(),
                          dataset_context.len());
 
-  std::vector<double> time_per_epoch;
+  std::optional<ValidationContext> validation =
+      train_config.getValidationContext();
 
-  MetricAggregator metrics = train_config.getMetricAggregator();
+  MetricAggregator& train_metrics = train_state.getTrainMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
@@ -124,7 +125,7 @@ MetricData BoltGraph::train(
         dataset_context.setInputs(batch_idx, _inputs);
 
         const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
-        processTrainingBatch(batch_labels, metrics);
+        processTrainingBatch(batch_labels, train_metrics);
         updateParametersAndSampling(
             train_state.learning_rate, train_state.rebuild_hash_tables_batch,
             train_state.reconstruct_hash_functions_batch);
@@ -133,8 +134,8 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
-                  metrics.summary());
+        logging::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
+                      train_metrics.summary());
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -144,27 +145,37 @@ MetricData BoltGraph::train(
                                train_end - train_start)
                                .count();
 
-      time_per_epoch.push_back(static_cast<double>(epoch_time));
-
       std::string logline = fmt::format(
           "train | epoch {} | complete |  batches {} | time {}s | {}",
           _epoch_count, dataset_context.numBatches(), epoch_time,
-          metrics.summary());
+          train_metrics.summary());
 
-      log::info(logline);
+      logging::info(logline);
 
       if (bar) {
         bar->close(logline);
       }
 
       _epoch_count++;
-      metrics.logAndReset();
+      train_metrics.logAndReset();
+
+      train_state.epoch_times.push_back(static_cast<double>(epoch_time));
     } catch (const std::exception& e) {
       cleanupAfterBatchProcessing();
       throw;
     }
 
     cleanupAfterBatchProcessing();
+
+    // TODO(david): we should add a some type of "validate_every" parameter to
+    // the validation construct so we are not restricted to validating every
+    // epoch. this also lets us validate after N updates per say. Requires the
+    // raii cleanup change mentioned above for validation after a batch
+    if (validation) {
+      auto [val_metrics, _] = predict(validation->data(), validation->labels(),
+                                      validation->config());
+      train_state.updateValidationMetrics(val_metrics);
+    }
 
     callbacks.onEpochEnd(*this, train_state);
     train_state.epoch = _epoch_count;
@@ -175,8 +186,8 @@ MetricData BoltGraph::train(
 
   callbacks.onTrainEnd(*this, train_state);
 
-  auto metric_data = metrics.getOutput();
-  metric_data["epoch_times"] = std::move(time_per_epoch);
+  auto metric_data = train_metrics.getOutput();
+  metric_data["epoch_times"] = std::move(train_state.epoch_times);
 
   return metric_data;
 }
@@ -259,7 +270,7 @@ BoltGraph::getInputGradientSingle(
     std::vector<BoltVector>&& input_data,
     bool explain_prediction_using_highest_activation,
     std::optional<uint32_t> neuron_to_explain) {
-  SingleUnitDatasetContext single_input_gradients_context(
+  SingleBatchDatasetContext single_input_gradients_context(
       std::move(input_data));
 
   prepareToProcessBatches(/*batch_size= */ 1, /* use_sparsity=*/true);
@@ -407,7 +418,7 @@ InferenceResult BoltGraph::predict(
   std::string logline =
       fmt::format("test | complete |  batches {} | time {}ms | {}",
                   predict_context.numBatches(), test_time, metrics.summary());
-  log::info(logline);
+  logging::info(logline);
   if (bar) {
     bar->close(logline);
   }
@@ -423,7 +434,7 @@ InferenceResult BoltGraph::predict(
 // activations and doesn't calculate metrics.
 BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
                                     bool use_sparse_inference) {
-  SingleUnitDatasetContext single_predict_context(std::move(test_data));
+  SingleBatchDatasetContext single_predict_context(std::move(test_data));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
                    /* returning_activations = */ true,
@@ -441,6 +452,40 @@ BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
         /* vec_index = */ 0);
     cleanupAfterBatchProcessing();
     return output_copy;
+  } catch (const std::exception& e) {
+    cleanupAfterBatchProcessing();
+    throw;
+  }
+}
+
+BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
+                                        bool use_sparse_inference) {
+  SingleBatchDatasetContext single_predict_context(std::move(test_data));
+
+  verifyCanPredict(single_predict_context, /* has_labels = */ false,
+                   /* returning_activations = */ true,
+                   /* num_metrics_tracked = */ 0);
+
+  uint32_t batch_size = single_predict_context.batchSize();
+
+  prepareToProcessBatches(batch_size, use_sparse_inference);
+
+  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
+  // some sort of RAII training context object whose destructor will
+  // automatically delete the training state
+  try {
+    single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
+
+    std::vector<BoltVector> outputs(batch_size);
+
+#pragma omp parallel for default(none) shared(batch_size, outputs)
+    for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
+      forward(vec_index, nullptr);
+      outputs[vec_index] = _output->getOutputVector(vec_index);
+    }
+
+    cleanupAfterBatchProcessing();
+    return BoltBatch(std::move(outputs));
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;

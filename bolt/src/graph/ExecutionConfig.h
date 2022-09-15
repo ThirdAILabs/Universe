@@ -2,112 +2,11 @@
 
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <dataset/src/Datasets.h>
 #include <limits>
 #include <optional>
 
 namespace thirdai::bolt {
-
-class TrainConfig {
- public:
-  /*
-    The parameters epochs and learning rate must be explicitly provided to
-    construct the training config. The remaining parameters can be set using a
-    builder pattern.
-  */
-  static TrainConfig makeConfig(float learning_rate, uint32_t epochs) {
-    return TrainConfig(learning_rate, epochs);
-  }
-
-  TrainConfig& withMetrics(std::vector<std::string> metric_names) {
-    _metric_names = std::move(metric_names);
-    return *this;
-  }
-
-  TrainConfig& silence() {
-    _verbose = false;
-    return *this;
-  }
-
-  TrainConfig& withRebuildHashTables(uint32_t rebuild) {
-    _rebuild_hash_tables = rebuild;
-    return *this;
-  }
-
-  TrainConfig& withReconstructHashFunctions(uint32_t reconstruct) {
-    _reconstruct_hash_functions = reconstruct;
-    return *this;
-  }
-
-  TrainConfig& withCallbacks(const std::vector<CallbackPtr>& callbacks) {
-    _callbacks = CallbackList(callbacks);
-    return *this;
-  }
-
-  CallbackList getCallbacks() const { return _callbacks; }
-
-  constexpr uint32_t epochs() const { return _epochs; }
-
-  constexpr float learningRate() const { return _learning_rate; }
-
-  MetricAggregator getMetricAggregator() const {
-    return MetricAggregator(_metric_names);
-  }
-
-  constexpr bool verbose() const { return _verbose; }
-
-  uint32_t getRebuildHashTablesBatchInterval(uint32_t batch_size,
-                                             uint32_t data_len) const {
-    constexpr uint32_t LargeDatasetThreshold = 100000;
-    constexpr uint32_t LargeDatasetFactor = 100;
-    constexpr uint32_t SmallDatasetFactor = 20;
-
-    uint32_t rebuild_param;
-
-    if (!_rebuild_hash_tables) {
-      // For larger datasts we want to do more frequent hash table updates.
-      if (data_len < LargeDatasetThreshold) {
-        rebuild_param = data_len / SmallDatasetFactor;
-      } else {
-        rebuild_param = data_len / LargeDatasetFactor;
-      }
-    } else {
-      rebuild_param = _rebuild_hash_tables.value();
-    }
-
-    return std::max<uint32_t>(rebuild_param / batch_size, 1);
-  }
-
-  uint32_t getReconstructHashFunctionsBatchInterval(uint32_t batch_size,
-                                                    uint32_t data_len) const {
-    // If reconstruct_hash_functions is not provided then we will have it
-    // reconstruct the hash functions every time it process a quarter of the
-    // dataset.
-    uint32_t reconstruct_param =
-        _reconstruct_hash_functions.value_or(data_len / 4);
-
-    return std::max<uint32_t>(reconstruct_param / batch_size, 1);
-  }
-
- private:
-  TrainConfig(float learning_rate, uint32_t epochs)
-      : _epochs(epochs),
-        _learning_rate(learning_rate),
-        _metric_names({}),
-        _verbose(true),
-        _rebuild_hash_tables(std::nullopt),
-        _reconstruct_hash_functions(std::nullopt),
-        _callbacks({}) {}
-
-  uint32_t _epochs;
-  float _learning_rate;
-  std::vector<std::string> _metric_names;
-  bool _verbose;
-
-  std::optional<uint32_t> _rebuild_hash_tables;
-  std::optional<uint32_t> _reconstruct_hash_functions;
-
-  CallbackList _callbacks;
-};
 
 class PredictConfig {
  public:
@@ -166,6 +65,145 @@ class PredictConfig {
   std::optional<std::function<void(const BoltVector&)>> _output_callback;
 };
 
+class ValidationContext {
+ public:
+  explicit ValidationContext(
+      std::vector<dataset::BoltDatasetPtr> validation_data,
+      dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config)
+      : _data(std::move(validation_data)),
+        _labels(std::move(validation_labels)),
+        _config(std::move(predict_config)) {}
+
+  const std::vector<dataset::BoltDatasetPtr>& data() const { return _data; }
+
+  const dataset::BoltDatasetPtr& labels() const { return _labels; }
+
+  const PredictConfig& config() const { return _config; }
+
+ private:
+  std::vector<dataset::BoltDatasetPtr> _data;
+  dataset::BoltDatasetPtr _labels;
+  PredictConfig _config;
+};
+
+class TrainConfig {
+ public:
+  /*
+    The parameters epochs and learning rate must be explicitly provided to
+    construct the training config. The remaining parameters can be set using a
+    builder pattern.
+  */
+  static TrainConfig makeConfig(float learning_rate, uint32_t epochs) {
+    return TrainConfig(learning_rate, epochs);
+  }
+
+  TrainConfig& withMetrics(std::vector<std::string> metric_names) {
+    _metric_names = std::move(metric_names);
+    return *this;
+  }
+
+  TrainConfig& silence() {
+    _verbose = false;
+    return *this;
+  }
+
+  TrainConfig& withRebuildHashTables(uint32_t rebuild) {
+    _rebuild_hash_tables = rebuild;
+    return *this;
+  }
+
+  TrainConfig& withReconstructHashFunctions(uint32_t reconstruct) {
+    _reconstruct_hash_functions = reconstruct;
+    return *this;
+  }
+
+  TrainConfig& withCallbacks(const std::vector<CallbackPtr>& callbacks) {
+    _callbacks = CallbackList(callbacks);
+    return *this;
+  }
+
+  TrainConfig& withValidation(
+      const std::vector<dataset::BoltDatasetPtr>& validation_data,
+      const dataset::BoltDatasetPtr& validation_labels,
+      const PredictConfig& predict_config) {
+    _validation_context =
+        ValidationContext(validation_data, validation_labels, predict_config);
+    return *this;
+  }
+
+  std::optional<ValidationContext> getValidationContext() const {
+    return _validation_context;
+  }
+
+  CallbackList getCallbacks() const { return _callbacks; }
+
+  constexpr uint32_t epochs() const { return _epochs; }
+
+  constexpr float learningRate() const { return _learning_rate; }
+
+  MetricAggregator getMetricAggregator() const {
+    return MetricAggregator(_metric_names);
+  }
+
+  constexpr bool verbose() const { return _verbose; }
+
+  uint32_t getRebuildHashTablesBatchInterval(uint32_t batch_size,
+                                             uint32_t data_len) const {
+    constexpr uint32_t LargeDatasetThreshold = 100000;
+    constexpr uint32_t LargeDatasetFactor = 100;
+    constexpr uint32_t SmallDatasetFactor = 20;
+
+    uint32_t rebuild_param;
+
+    if (!_rebuild_hash_tables) {
+      // For larger datasts we want to do more frequent hash table updates.
+      if (data_len < LargeDatasetThreshold) {
+        rebuild_param = data_len / SmallDatasetFactor;
+      } else {
+        rebuild_param = data_len / LargeDatasetFactor;
+      }
+    } else {
+      rebuild_param = _rebuild_hash_tables.value();
+    }
+
+    return std::max<uint32_t>(rebuild_param / batch_size, 1);
+  }
+
+  uint32_t getReconstructHashFunctionsBatchInterval(uint32_t batch_size,
+                                                    uint32_t data_len) const {
+    // If reconstruct_hash_functions is not provided then we will have it
+    // reconstruct the hash functions every time it process a quarter of the
+    // dataset.
+    uint32_t reconstruct_param =
+        _reconstruct_hash_functions.value_or(data_len / 4);
+
+    return std::max<uint32_t>(reconstruct_param / batch_size, 1);
+  }
+
+ private:
+  TrainConfig(float learning_rate, uint32_t epochs)
+      : _epochs(epochs),
+        _learning_rate(learning_rate),
+        _metric_names({}),
+        _verbose(true),
+        _rebuild_hash_tables(std::nullopt),
+        _reconstruct_hash_functions(std::nullopt),
+        _callbacks({}),
+        _validation_context(std::nullopt) {}
+
+  uint32_t _epochs;
+  float _learning_rate;
+  std::vector<std::string> _metric_names;
+  bool _verbose;
+
+  std::optional<uint32_t> _rebuild_hash_tables;
+  std::optional<uint32_t> _reconstruct_hash_functions;
+
+  CallbackList _callbacks;
+
+  std::optional<ValidationContext> _validation_context;
+};
+
 class TrainState {
  public:
   TrainState(const TrainConfig& train_config, uint32_t batch_size,
@@ -180,7 +218,8 @@ class TrainState {
         reconstruct_hash_functions_batch(
             train_config.getReconstructHashFunctionsBatchInterval(batch_size,
                                                                   data_len)),
-        stop_training(false) {}
+        stop_training(false),
+        train_metric_aggregator(train_config.getMetricAggregator()) {}
 
   float learning_rate;
   uint32_t epoch;
@@ -191,6 +230,35 @@ class TrainState {
   uint32_t reconstruct_hash_functions_batch;
 
   bool stop_training;
+
+  std::vector<double> epoch_times;
+
+  MetricAggregator& getTrainMetricAggregator() {
+    return train_metric_aggregator;
+  }
+
+  void updateValidationMetrics(const InferenceMetricData& metric_data) {
+    for (const auto& [metric_name, value] : metric_data) {
+      validation_metrics[metric_name].push_back(value);
+    }
+  }
+
+  const std::vector<double>& getTrainMetrics(const std::string& metric_name) {
+    return train_metric_aggregator.getSingleOutput(metric_name);
+  }
+
+  const std::vector<double>& getValidationMetrics(
+      const std::string& metric_name) {
+    if (validation_metrics.count(metric_name) != 0) {
+      return validation_metrics[metric_name];
+    }
+    throw std::invalid_argument("Could not find metric name '" + metric_name +
+                                "' in list of computed validation metrics. ");
+  }
+
+ private:
+  MetricAggregator train_metric_aggregator;
+  std::unordered_map<std::string, std::vector<double>> validation_metrics;
 };
 
 }  // namespace thirdai::bolt

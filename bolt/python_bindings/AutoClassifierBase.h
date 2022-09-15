@@ -5,6 +5,7 @@
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
@@ -58,7 +59,7 @@ class AutoClassifierBase {
   }
 
   py::object evaluate(const std::shared_ptr<dataset::DataLoader>& data_source) {
-    auto dataset = getTestDataset(data_source);
+    auto dataset = getEvalDataset(data_source);
 
     auto [data, labels] = dataset->loadInMemory();
 
@@ -89,18 +90,31 @@ class AutoClassifierBase {
 
     BoltVector output = _model->predictSingle({input}, useSparseInference());
 
-    processPredictionBeforeReturning(output.active_neurons, output.activations,
-                                     output.len);
+    return processOutput(output);
+  }
 
-    switch (_return_mode) {
-      case ReturnMode::NumpyArray:
-        return constructNumpyVector(output);
-      case ReturnMode::ClassName:
-        return py::cast(getClassName(output.getHighestActivationId()));
-      default:
-        // This cannot be reached but the compiler complains.
-        throw std::invalid_argument("Invalid ReturnMode reached.");
+  py::list predictBatch(const std::vector<PREDICT_INPUT_TYPE>& samples) {
+    std::vector<BoltVector> inputs(samples.size());
+
+#pragma omp parallel for default(none) shared(inputs, samples)
+    for (uint32_t i = 0; i < samples.size(); i++) {
+      inputs[i] = featurizeInputForInference(samples[i]);
     }
+
+    // We initialize the vector this way because BoltBatch has a deleted copy
+    // constructor which is required for an initializer list.
+    std::vector<BoltBatch> batch;
+    batch.emplace_back(std::move(inputs));
+
+    BoltBatch outputs =
+        _model->predictSingleBatch(std::move(batch), useSparseInference());
+
+    py::list py_outputs;
+    for (BoltVector& output : outputs) {
+      py_outputs.append(processOutput(output));
+    }
+
+    return py_outputs;
   }
 
   virtual ~AutoClassifierBase() = default;
@@ -119,7 +133,7 @@ class AutoClassifierBase {
    * need to process training and test datasets seperately.
    */
   virtual std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-  getTestDataset(std::shared_ptr<dataset::DataLoader> data_loader) = 0;
+  getEvalDataset(std::shared_ptr<dataset::DataLoader> data_loader) = 0;
 
   /**
    * Allows for an auto classifier to preprocess the logits of a prediction
@@ -154,6 +168,23 @@ class AutoClassifierBase {
    * Returns the batch size to use if it is not specified by the user.
    */
   virtual uint32_t defaultBatchSize() const = 0;
+
+  /**
+   * Allows the auto classifier to override how often hash tables are rebuilt.
+   * This parameter is autotuned if not specified.
+   */
+  virtual std::optional<uint32_t> defaultRebuildHashTablesInterval() const {
+    return std::nullopt;
+  }
+
+  /**
+   * Allows the auto classifier to override how often hash functions are
+   * reconstructed. This parameter is autotuned if not specified.
+   */
+  virtual std::optional<uint32_t> defaultReconstructHashFunctionsInterval()
+      const {
+    return std::nullopt;
+  }
 
   /**
    * Determines if the classifier will freeze hash tables after the first epoch.
@@ -191,7 +222,8 @@ class AutoClassifierBase {
                      dataset::BoltDatasetPtr& train_labels, float learning_rate,
                      uint32_t epochs) {
     if (freezeHashTablesAfterFirstEpoch() && epochs > 1) {
-      TrainConfig train_cfg_initial = TrainConfig::makeConfig(learning_rate, 1);
+      TrainConfig train_cfg_initial =
+          getTrainConfig(learning_rate, /* epochs= */ 1);
       _model->train({train_data}, train_labels, train_cfg_initial);
 
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
@@ -199,7 +231,7 @@ class AutoClassifierBase {
       --epochs;
     }
 
-    TrainConfig train_cfg = TrainConfig::makeConfig(learning_rate, epochs);
+    TrainConfig train_cfg = getTrainConfig(learning_rate, epochs);
     _model->train({train_data}, {train_labels}, train_cfg);
   }
 
@@ -221,20 +253,30 @@ class AutoClassifierBase {
   void trainSingleEpochOnStream(
       std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>& dataset,
       float learning_rate, uint32_t max_in_memory_batches) {
-    TrainConfig train_config =
-        TrainConfig::makeConfig(learning_rate, /* epochs= */ 1);
+    TrainConfig train_config = getTrainConfig(learning_rate, /* epochs= */ 1);
 
-    while (1) {
-      auto [data, labels] = dataset->loadInMemory(max_in_memory_batches);
-
-      if (data->len() == 0) {
-        break;
-      }
+    while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
+      auto& [data, labels] = datasets.value();
 
       _model->train({data}, labels, train_config);
     }
 
     dataset->restart();
+  }
+
+  inline py::object processOutput(BoltVector& output) {
+    processPredictionBeforeReturning(output.active_neurons, output.activations,
+                                     output.len);
+
+    switch (_return_mode) {
+      case ReturnMode::NumpyArray:
+        return constructNumpyVector(output);
+      case ReturnMode::ClassName:
+        return py::cast(getClassName(output.getHighestActivationId()));
+      default:
+        // This cannot be reached but the compiler complains.
+        throw std::invalid_argument("Invalid ReturnMode reached.");
+    }
   }
 
   // TODO(Someone): Allow this to return top-k class names as well.
@@ -256,6 +298,19 @@ class AutoClassifierBase {
     }
 
     return output_class_names;
+  }
+
+  TrainConfig getTrainConfig(float learning_rate, uint32_t epochs) {
+    TrainConfig train_config = TrainConfig::makeConfig(learning_rate, epochs);
+
+    if (auto hash_table_rebuild = defaultRebuildHashTablesInterval()) {
+      train_config.withRebuildHashTables(hash_table_rebuild.value());
+    }
+
+    if (auto reconstruct_hash_fn = defaultReconstructHashFunctionsInterval()) {
+      train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
+    }
+    return train_config;
   }
 
   // Private constructor for cereal.

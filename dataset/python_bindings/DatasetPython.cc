@@ -1,6 +1,7 @@
 #include "DatasetPython.h"
 #include "PyDataLoader.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/DataLoader.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
