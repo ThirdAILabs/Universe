@@ -1,7 +1,7 @@
+#pragma once
 
+#include "Callback.h"
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/callbacks/Callback.h>
-#include <_types/_uint32_t.h>
 #include <cmath>
 #include <functional>
 #include <memory>
