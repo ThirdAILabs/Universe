@@ -83,7 +83,7 @@ MetricData BoltGraph::train(
   std::optional<ValidationContext> validation =
       train_config.getValidationContext();
 
-  MetricAggregator train_metrics = train_state.getTrainMetricAggregator();
+  MetricAggregator& train_metrics = train_state.getTrainMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
