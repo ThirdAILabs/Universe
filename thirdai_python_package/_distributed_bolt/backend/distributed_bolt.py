@@ -38,7 +38,6 @@ class DistributedBolt:
         :raises ValueError: If communication method does not exist
         """
 
-
         self.logger = logger
         self.workers = workers
         self.epochs = epochs

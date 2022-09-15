@@ -38,9 +38,7 @@ class PrimaryWorker(Worker):
         """
         self.layer_dims = layer_dims
 
-
         super().__init__(no_of_workers, 0, self, config, layer_dims, communication_type)
-
 
     def subwork_circular_communication(self, workers):
         """
@@ -63,9 +61,7 @@ class PrimaryWorker(Worker):
                     ]
                 )
             else:
-                ray.get(
-                    [worker.process_ring.remote(update_id) for worker in workers]
-                )
+                ray.get([worker.process_ring.remote(update_id) for worker in workers])
             update_id -= 1
 
         update_id = 1
@@ -138,9 +134,7 @@ class PrimaryWorker(Worker):
         :return: Returns True on Completion
         :rtype: bool
         """
-        ray.get(
-            [worker.update_parameters.remote(learning_rate) for worker in workers]
-        )
+        ray.get([worker.update_parameters.remote(learning_rate) for worker in workers])
         return True
 
     def get_weights_biases(self):

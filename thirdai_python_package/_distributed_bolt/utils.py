@@ -17,7 +17,7 @@ def load_train_test_data(
     :type training_partition_data_id: int
     :raises ValueError: Invalied Dataset Format
     :return: returns training and testing data
-    :rtype: [BoltDataset, BoltDataset, BoltDataset, BoltDataset] 
+    :rtype: [BoltDataset, BoltDataset, BoltDataset, BoltDataset]
     """
     train_filename = config["dataset"]["train_data"][training_partition_data_id]
     test_filename = config["dataset"]["test_data"]

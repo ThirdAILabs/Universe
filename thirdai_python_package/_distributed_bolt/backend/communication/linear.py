@@ -20,7 +20,7 @@ class Linear:
         :type batch_no: int
         :return: shows completion
         :rtype: bool
-        """   
+        """
         self.model.calculate_gradients(batch_no)
         return True
 

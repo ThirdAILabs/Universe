@@ -133,7 +133,7 @@ class Worker:
 
         :return: Model Gradients
         :rtype: numpy.ndarray
-        """ 
+        """
         return self.model.get_calculated_gradients()
 
     def return_params(self):
