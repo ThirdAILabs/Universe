@@ -3,16 +3,22 @@ import time
 
 
 class Trainer:
-    """This class implements a trainer"""
+    """
+    This class implements a trainer
+    """
 
     def __init__(self, workers, primary_worker, logging, communication_type):
-        """Initializes the Trainer
+        """
+        Initializes the Trainer
 
-        Args:
-            workers (List[Ray Actor]): List of all the workers which includes the primary worker
-            primary_worker (Ray Actor): Primary Actor
-            logging (Logging): Logs the Training using circular communication pattern
-            communication_type: Type of communcation which Trainer would be using
+        :param workers: List of all the workers which includes the primary worker
+        :type workers: List[ray.actor]
+        :param primary_worker: Primary Actor
+        :type primary_worker: ray.actor
+        :param logging:  Logs the Training using circular communication pattern
+        :type logging: logging
+        :param communication_type: Type of communcation which Trainer would be using
+        :type communication_type: string
         """
 
         self.workers = workers
@@ -33,10 +39,11 @@ class Trainer:
         self.averaging_and_communication_time = 0
 
     def calculate_gradients(self, batch_no):
-        """Call calculate_gradients function on each of the worker
+        """
+        Call calculate_gradients function on each of the worker
 
-        Args:
-            batch_id (Integer): Batch Id for this particular training
+        :param batch_no: Batch Id for this particular training
+        :type batch_no: Integer
         """
         start_calculating_gradients_time = time.time()
         ray.get(
@@ -45,7 +52,8 @@ class Trainer:
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
 
     def communicate(self):
-        """This functions calls primary worker to complete the communication
+        """
+        This functions calls primary worker to complete the communication
         and then asks all the worker to recieve the updated gradients in their networks
         """
         start_communication_time = time.time()
@@ -60,21 +68,24 @@ class Trainer:
         ray.get([worker.finish_training.remote() for worker in self.workers])
 
     def update_parameters(self, learning_rate):
-        """Calls primary worker for updating parameters across all nodes
+        """
+        Calls primary worker for updating parameters across all nodes
 
-        Args:
-            learning_rate (float): Learning rate for training
+        :param learning_rate: Learning rate for training
+        :type learning_rate: float
         """
         start_update_parameter_time = time.time()
         ray.get(self.primary_worker.subwork_update_parameters.remote(learning_rate, self.workers))
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def log_training(self, batch_no, epoch):
-        """Logs the training after every batch
+        """
+        Logs the training after every batch
 
-        Args:
-            batch_no (Integer): Batch index for current training
-            epoch (Integer): Current training epoch
+        :param batch_no: Batch index for current training
+        :type batch_no: int
+        :param epoch: Current training epoch
+        :type epoch: int
         """
         self.logging.info(
             "Epoch No: "

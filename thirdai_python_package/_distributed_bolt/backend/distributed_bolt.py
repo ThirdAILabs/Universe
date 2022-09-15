@@ -7,7 +7,9 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 
 
 class DistributedBolt:
-    """Implements all the user level Distributed Bolt APIs."""
+    """
+    Implements all the user level Distributed Bolt APIs
+    """
 
     def __init__(
         self,
@@ -18,15 +20,24 @@ class DistributedBolt:
         num_of_batches,
         communication_type,
     ):
-        """Initializes the DistributeBolt class.
-
-        Args:
-            workers (List[Ray Actor]): Store all the workers including primary
-            logger (Logging): gives the Logger
-            epochs (int): number of epochs
-            primary_worker (Ray Actor): Primary Worker
-            num_of_batches (int): number of training batches
         """
+        Initializes the DistributeBolt class.
+
+        :param workers: Store all the workers including primary
+        :type workers: [ray.actor]
+        :param logger: gives the Logger
+        :type logger: logging
+        :param epochs: number of epochs
+        :type epochs: int
+        :param primary_worker: Primary Worker
+        :type primary_worker: ray.actor
+        :param num_of_batches: number of training batches
+        :type num_of_batches: int
+        :param communication_type: Type of Communication
+        :type communication_type: string
+        :raises ValueError: If communication method does not exist
+        """
+
 
         self.logger = logger
         self.workers = workers
@@ -45,11 +56,8 @@ class DistributedBolt:
             )
 
     def train(self) -> None:
-        """Trains the network using the communication type choosen.
-
-        Args:
-            circular (Optional[bool], optional): True, if circular communication is required.
-                    False, if linear communication is required.. Defaults to True.
+        """
+        Trains the network using the communication type choosen.
         """
         comm = Trainer(
             self.workers, self.primary_worker, self.logging, self.communication_type
@@ -68,10 +76,11 @@ class DistributedBolt:
         comm.finish_training()
 
     def predict(self):
-        """Calls network.predict() on worker of head node and returns the predictions.
+        """
+        Calls network.predict() on worker of head node and returns the predictions.
 
-        Returns:
-            InferenceMetricData: Tuples of metrics and activations
+        :return: Tuples of metrics and activations
+        :rtype: InferenceMetricData
         """
 
         assert len(self.workers) > 0, "No workers are initialized now."

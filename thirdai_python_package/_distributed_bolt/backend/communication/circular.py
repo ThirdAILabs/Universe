@@ -19,17 +19,19 @@ class Circular:
         self.b_gradients = []
 
     def set_friend(self, friend):
-        """This function assigns each of the worker their friend to which
+        """
+        This function assigns each of the worker their friend to which
         they will be communicating their gradients. Look at this link:
         https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/
 
-        Args:
-            friend (_type_): storing the friend for this worker
-        """
+        :param friend: storing the friend for this worker
+        :type friend: ray.actor
+        """        
         self.friend = friend
 
     def calculate_gradients_partitions(self):
-        """Calculate the partitions for distributed training called only
+        """
+        Calculate the partitions for distributed training called only
         in case of circular communication
         """
         for w_layers in self.w_gradients:
@@ -71,7 +73,8 @@ class Circular:
             self.b_partitions.append(partition_start_end_list)
 
     def calculate_gradients(self, batch_no: int):
-        """This functions calls the API 'calculateGradientSingleNode',
+        """
+        This functions calls the API 'calculateGradientSingleNode',
         which calculates the gradients for the network managed by
         this particular worker. The calculateGradientSingleNode trains
         the network and calculates the gradient for the particular
@@ -82,11 +85,8 @@ class Circular:
         size of block of gradients which are communicated between a worker
         and its friend.
 
-        Args:
-            batch_no (int): training batch to calculate gradients on.
-
-        Returns:
-            _type_: _description_
+        :param batch_no: training batch to calculate gradients on
+        :type batch_no: int
         """
         self.model.calculate_gradients(batch_no)
 
@@ -98,11 +98,12 @@ class Circular:
         self.calculate_gradients_partitions()
 
     def receive_gradients(self) -> bool:
-        """This function is called by the primary_worker to make set the updated
+        """
+        This function is called by the primary_worker to make set the updated
         gradients to the network.
 
-        Returns:
-            bool: returns True, after functions complete
+        :return: returns True, after functions complete
+        :rtype: bool
         """
         self.model.set_gradients(self.w_gradients, self.b_gradients)
         return True
@@ -113,13 +114,16 @@ class Circular:
         reduce,
         avg_gradients,
     ):
-        """Update the partitions with the partitioned array received from its friend
+        """
+        Update the partitions with the partitioned array received from its friend
 
-        Args:
-            partition_id (int): Partition index for partition to be updated
-            reduce (Optional[bool], optional): This bool determines whether we need
-            to reduce or gather, True: reduce, False: Gather. Defaults to True.
-            avg_gradients (Optional[bool], optional): _description_. Defaults to False.
+        :param partition_id: Partition index for partition to be updated
+        :type partition_id: int
+        :param reduce: This bool determines whether we need
+                        to reduce or gather, True: reduce, False: Gather. Defaults to True.
+        :type reduce: Optional[bool], optional
+        :param avg_gradients: Defaults to False.
+        :type avg_gradients: Optional[bool], optional
         """
         for i in range(len(self.friend_weight_gradient_list)):
 
@@ -160,7 +164,8 @@ class Circular:
         reduce: Optional[bool] = True,
         avg_gradients: Optional[bool] = False,
     ):
-        """The function first calculates the partition index range on which it will
+        """
+        The function first calculates the partition index range on which it will
         work, then get the graidnets on that range from its friend worker and sums
         it to the partition the partition the current worker.
 
@@ -168,14 +173,13 @@ class Circular:
         their friend nodes, and those friend node communicate with their friends
         and the communication there by happens in a circle.
 
-        Args:
-            update_id (int): This id is use to calculate the partition to work on.
-            reduce (Optional[bool], optional): This bool determines whether we need
-            to reduce or gather, True: reduce, False: Gather. Defaults to True.
-            avg_gradients (Optional[bool], optional): _description_. Defaults to False.
-
-        Returns:
-            _type_: _description_
+        :param update_id: This id is use to calculate the partition to work on.
+        :type update_id: int
+        :param reduce: This bool determines whether we need, 
+                    to reduce or gather, True: reduce, False: Gather. defaults to True
+        :type reduce: Optional[bool], optional
+        :param avg_gradients: _description_, defaults to False
+        :type avg_gradients: Optional[bool], optional
         """
 
         partition_id = (update_id + self.id - 1) % self.total_nodes
@@ -188,13 +192,13 @@ class Circular:
         self.update_partitions(partition_id, reduce, avg_gradients)
 
     def receive_array_partitions(self, update_id: int):
-        """This function returns the array partition to the worker it is called by.
+        """
+        This function returns the array partition to the worker it is called by.
 
-        Args:
-            update_id (int): This id is use to calculate the partition to work on.
-
-        Returns:
-            _type_: _description_
+        :param update_id: This id is use to calculate the partition to work on.
+        :type update_id: int
+        :return: gradients subarray
+        :rtype: numpy.ndarray
         """
         partition_id = (update_id + self.id) % self.total_nodes
 
