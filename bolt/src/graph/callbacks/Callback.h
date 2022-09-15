@@ -10,9 +10,6 @@ using BoltGraphPtr = std::shared_ptr<BoltGraph>;
 
 class TrainState;
 
-class Callback;
-using CallbackPtr = std::shared_ptr<Callback>;
-
 /**
  * This class represents a generic Callback interface. Implementing this
  * interface allows you to call various methods at different steps during the
@@ -66,6 +63,8 @@ class Callback {
 
   virtual ~Callback() = default;
 };
+
+using CallbackPtr = std::shared_ptr<Callback>;
 
 /**
  * This class serves as a helpful intermediary between models and callbacks by

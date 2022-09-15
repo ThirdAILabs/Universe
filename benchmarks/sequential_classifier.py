@@ -4,7 +4,7 @@ import pathlib
 from thirdai import bolt
 from thirdai import setup_logging
 
-from ..utils import (
+from utils import (
     config_get_required,
     find_full_filepath,
     log_metrics,
