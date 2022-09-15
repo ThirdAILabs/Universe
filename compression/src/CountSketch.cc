@@ -285,5 +285,11 @@ CountSketch<T>::CountSketch(std::stringstream& input_stream) {
   }
 }
 
+template <class T>
+uint32_t CountSketch<T>::serialized_size() const {
+  uint32_t serialized_size = 0;
+  return serialized_size;
+}
+
 template class CountSketch<float>;
 }  // namespace thirdai::compression

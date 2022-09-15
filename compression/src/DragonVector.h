@@ -62,6 +62,8 @@ class DragonVector final : public CompressedVector<T> {
 
   std::stringstream serialize() const final;
 
+  uint32_t serialized_size() const final;
+
  private:
   /*
    * If we add a lot of compression schemes, we should have a sparse vector

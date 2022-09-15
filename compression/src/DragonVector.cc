@@ -226,10 +226,30 @@ DragonVector<T>::DragonVector(std::stringstream& input_stream) {
   _indices.resize(sketch_size);
   _values.resize(sketch_size);
 
+  // Reading the indices and the values array (5)
   input_stream.read(reinterpret_cast<char*>(_indices.data()),
                     sizeof(uint32_t) * sketch_size);
   input_stream.read(reinterpret_cast<char*>(_values.data()),
                     sizeof(T) * sketch_size);
+}
+
+template <class T>
+uint32_t DragonVector<T>::serialized_size() const {
+  uint32_t serialized_size = 0;
+  // Compression scheme (1)
+  std::string compression_scheme = "dragon";
+  serialized_size +=
+      sizeof(uint32_t) + sizeof(char) * compression_scheme.size();
+
+  // Uncompressed size, seed_for_hashing (2,3)
+  serialized_size += 2 * sizeof(uint32_t);
+
+  // Size of indices and values array (4)
+  serialized_size += 2 * sizeof(uint32_t);
+
+  // The indices and the values array (5)
+  serialized_size += _indices.size() * (sizeof(uint32_t) + sizeof(T));
+  return serialized_size;
 }
 
 template class DragonVector<float>;
