@@ -248,10 +248,8 @@ class TrainState {
     if (validation_metrics.count(metric_name) != 0) {
       return validation_metrics[metric_name];
     }
-    throw std::invalid_argument(
-        "Could not find metric name '" + metric_name +
-        "' in list of computed train metrics. This must not have been passed "
-        "in the train config.");
+    throw std::invalid_argument("Could not find metric name '" + metric_name +
+                                "' in list of computed validation metrics. ");
   }
 
  private:
