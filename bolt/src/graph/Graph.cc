@@ -66,7 +66,7 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
   std::string model_summary =
       summarize(/* print = */ print_when_done, /* detailed = */ false);
-  log::info(model_summary);
+  logging::info(model_summary);
 }
 
 MetricData BoltGraph::train(
@@ -133,8 +133,8 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        log::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
-                  train_metrics.summary());
+        logging::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
+                      train_metrics.summary());
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -149,7 +149,7 @@ MetricData BoltGraph::train(
           _epoch_count, dataset_context.numBatches(), epoch_time,
           train_metrics.summary());
 
-      log::info(logline);
+      logging::info(logline);
 
       if (bar) {
         bar->close(logline);
@@ -416,7 +416,7 @@ InferenceResult BoltGraph::predict(
   std::string logline =
       fmt::format("test | complete |  batches {} | time {}ms | {}",
                   predict_context.numBatches(), test_time, metrics.summary());
-  log::info(logline);
+  logging::info(logline);
   if (bar) {
     bar->close(logline);
   }
