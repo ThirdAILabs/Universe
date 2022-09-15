@@ -33,7 +33,7 @@ class TabularPairGram : public Block {
       std::string str_val(input_row[col]);
       auto col_processor = _metadata->column_metadata[col];
       if (!col_processor.isLabel()) {
-        uint32_t unigram = col_processor.getUnigram()
+        uint32_t unigram = col_processor.getUnigram(str_val, col_salt)
       }
     }
   }
