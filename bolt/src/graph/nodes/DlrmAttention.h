@@ -212,7 +212,7 @@ class DlrmAttentionNode final
             << _embedding_node->name() << ") -> " << name()
             << "(DLRMDotProductFeatureInteraction): output_dim="
             << _compiled_state->_output_dim << " num_embedding_chunks="
-            << _compiled_state->_num_embedding_chunks;
+            << _compiled_state->_num_embedding_chunks << "\n";
   }
 
   // Return a short all lowercase string representing the type of this node for
