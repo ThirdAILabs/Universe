@@ -184,6 +184,12 @@ MetricData BoltGraph::train(
       train_state.updateValidationMetrics(val_metrics);
     }
 
+    if (not train_config.save_prefix().empty()) {
+      const std::string checkpoint_path =
+          train_config.save_prefix() + ".last.bolt";
+      save(checkpoint_path);
+    }
+
     callbacks.onEpochEnd(*this, train_state);
     if (train_state.stop_training) {
       break;
