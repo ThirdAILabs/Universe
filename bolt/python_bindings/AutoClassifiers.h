@@ -207,11 +207,12 @@ class TabularClassifier final
           "Cannot call featurizeInputForInference on TabularClasssifier before "
           "training.");
     }
-    if (values.size() != _metadata->numColumns() - 1) {
+    uint32_t num_non_label_columns = _metadata->non_label_columns.size();
+    if (values.size() != num_non_label_columns) {
       throw std::invalid_argument(
           "Passed in an input of size " + std::to_string(values.size()) +
           " but needed a vector of size " +
-          std::to_string(_metadata->numColumns() - 1) +
+          std::to_string(num_non_label_columns) +
           ". predict_single expects a vector of values in the same format as "
           "the original csv but without the label present.");
     }
@@ -224,8 +225,9 @@ class TabularClassifier final
       original format. since we are only creating an input vector here the
       label is not relevant, thus we add some bogus here in the label's column
     */
-    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
-                            /* value = */ " ");
+    encodable_values.insert(
+        encodable_values.begin() + _metadata->label_column->col_num,
+        /* value = */ " ");
 
     BoltVector input;
     if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
@@ -262,20 +264,23 @@ class TabularClassifier final
   void createBatchProcessor() {
     if (!_metadata) {
       throw std::runtime_error(
-          "Cannot call createBatchProcessor for tabular classifier with "
-          "metadata as nullptr.");
+          "Cannot call createBatchProcessor for tabular classifier without the "
+          "computed metadata.");
     }
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
         std::make_shared<dataset::TabularPairGram>(
-            _metadata, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
+            _metadata->non_label_columns,
+            dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
 
+    // TODO(david): refactor this copy eventually
+    auto class_to_id_copy = _metadata->label_column->class_to_class_id;
     _classname_to_id_lookup =
-        dataset::ThreadSafeVocabulary::make(_metadata->getClassToIdMap(),
+        dataset::ThreadSafeVocabulary::make(std::move(class_to_id_copy),
                                             /* fixed= */ true);
 
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
-        dataset::StringLookupCategoricalBlock::make(_metadata->getLabelCol(),
-                                                    _classname_to_id_lookup)};
+        dataset::StringLookupCategoricalBlock::make(
+            _metadata->label_column->col_num, _classname_to_id_lookup)};
 
     _batch_processor = dataset::GenericBatchProcessor::make(
         /* input_blocks = */ input_blocks,

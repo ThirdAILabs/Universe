@@ -19,12 +19,23 @@ struct TabularColumn {
   virtual std::exception_ptr computeUnigram(const std::string& str_val,
                                             uint32_t& unigram) const = 0;
 
-  virtual bool isLabel() const { return false; }
-
   virtual ~TabularColumn() = default;
 
   uint32_t col_num;
+
+ protected:
+  // Private constructor for cereal, for use by derived classes
+  TabularColumn() {}
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(col_num);
+  }
 };
+
+using TabularColumnPtr = std::shared_ptr<TabularColumn>;
 
 struct NumericColumn : public TabularColumn {
   NumericColumn(uint32_t _col_num, double _min, double _max,
@@ -93,7 +104,7 @@ struct NumericColumn : public TabularColumn {
       value = std::stod(str_val);
     } catch (std::invalid_argument& e) {
       return std::make_exception_ptr(std::invalid_argument(
-          "Could not process column " + std::to_string(col) +
+          "Could not process column " + std::to_string(col_num) +
           " as type 'numeric.' Received value: '" + str_val + ".'"));
     }
     double binsize = max - min / num_bins;
@@ -103,6 +114,15 @@ struct NumericColumn : public TabularColumn {
       bin = static_cast<uint32_t>(std::round((value - min) / binsize));
     }
     return nullptr;
+  }
+
+  // Private constructor for cereal.
+  NumericColumn() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TabularColumn>(this), min, max, num_bins);
   }
 };
 
@@ -119,6 +139,16 @@ struct CategoricalColumn : public TabularColumn {
                                                 unique_category.size());
     return nullptr;
   }
+
+ private:
+  // Private constructor for cereal.
+  CategoricalColumn() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TabularColumn>(this));
+  }
 };
 
 struct LabelColumn : public TabularColumn {
@@ -128,22 +158,22 @@ struct LabelColumn : public TabularColumn {
   LabelColumn(uint32_t _col_num, std::vector<std::string> class_names)
       : TabularColumn(_col_num),
         n_classes(class_names.size()),
-        _class_id_to_class(std::move(class_names)) {
-    for (uint32_t class_id = 0; class_id < _class_id_to_class.size();
+        class_id_to_class(std::move(class_names)) {
+    for (uint32_t class_id = 0; class_id < class_id_to_class.size();
          class_id++) {
-      _class_to_class_id[_class_id_to_class[class_id]] = class_id;
+      class_to_class_id[class_id_to_class[class_id]] = class_id;
     }
   }
 
   void update(const std::string& str_val) final {
-    uint32_t class_id = _class_id_to_class.size();
+    uint32_t class_id = class_id_to_class.size();
     if (class_id == n_classes) {
       throw std::invalid_argument("Expected " + std::to_string(n_classes) +
                                   " classes but found an additional class: '" +
                                   str_val + ".'");
     }
-    _class_to_class_id[str_val] = class_id;
-    _class_id_to_class.push_back(str_val);
+    class_to_class_id[str_val] = class_id;
+    class_id_to_class.push_back(str_val);
   }
 
   std::exception_ptr computeUnigram(const std::string& str_val,
@@ -154,27 +184,56 @@ struct LabelColumn : public TabularColumn {
         "Shouldn't compute unigram of LabelColumn, not supported. "));
   }
 
-  bool isLabel() const { return true; }
-
   uint32_t n_classes;
-  std::unordered_map<std::string, uint32_t> _class_to_class_id;
-  std::vector<std::string> _class_id_to_class;
+  std::unordered_map<std::string, uint32_t> class_to_class_id;
+  std::vector<std::string> class_id_to_class;
+
+ private:
+  // Private constructor for cereal.
+  LabelColumn() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TabularColumn>(this), n_classes,
+            class_to_class_id, class_id_to_class);
+  }
 };
 
 /**
  * @brief This class stores metadata about a tabular csv dataset. This
  * includes column datatype information, min/max information for numeric
- * columns, etc. This metadata is used in the TabularPairgram block to featurize
+ * columns, etc. This metadata is used in the TabularClassifier to featurize
  * future tabular datasets.
  */
 struct TabularMetadata {
-  TabularMetadata(std::vector<TabularColumn> _column_metadata,
+  TabularMetadata(const std::vector<TabularColumnPtr>& _column_metadata,
                   std::unordered_map<uint32_t, std::string> _col_to_name)
-      : column_metadata(std::move(_column_metadata)),
-        col_to_name(std::move(_col_to_name)) {}
+      : col_to_name(std::move(_col_to_name)) {
+    for (const auto& tabular_column : _column_metadata) {
+      if (auto casted_label_column =
+              std::dynamic_pointer_cast<LabelColumn>(tabular_column)) {
+        label_column = casted_label_column;
+      } else {
+        non_label_columns.push_back(tabular_column);
+      }
+    }
+  }
 
-  std::vector<TabularColumn> column_metadata;
+  std::shared_ptr<LabelColumn> label_column;
+  std::vector<TabularColumnPtr> non_label_columns;
   std::unordered_map<uint32_t, std::string> col_to_name;
+
+ private:
+  // Private constructor for cereal
+  TabularMetadata() {}
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(label_column, non_label_columns, col_to_name);
+  }
 };
 
 /**
@@ -204,11 +263,12 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
               "Specified multiple label columns, only one accepted.");
         }
         found_label_column = true;
-        _column_metadata.push_back(LabelColumn(col, n_classes));
+        _column_metadata.push_back(
+            std::make_shared<LabelColumn>(col, n_classes));
       } else if (col_type == "categorical") {
-        _column_metadata.push_back(CategoricalColumn(col));
+        _column_metadata.push_back(std::make_shared<CategoricalColumn>(col));
       } else if (col_type == "numeric") {
-        _column_metadata.push_back(NumericColumn(col));
+        _column_metadata.push_back(std::make_shared<NumericColumn>(col));
       } else {
         throw std::invalid_argument(
             "Received datatype '" + col_type +
@@ -234,7 +294,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
     verifyNumColumns(values);
     for (uint32_t col = 0; col < values.size(); col++) {
       std::string str_value(values[col]);
-      _column_metadata[col].update(str_value);
+      _column_metadata[col]->update(str_value);
     }
   }
 
@@ -253,7 +313,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
   }
 
   char _delimiter;
-  std::vector<TabularColumn> _column_metadata;
+  std::vector<TabularColumnPtr> _column_metadata;
   std::unordered_map<uint32_t, std::string> _col_to_name;
 };
 

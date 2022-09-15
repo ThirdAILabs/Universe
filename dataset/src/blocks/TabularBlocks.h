@@ -13,7 +13,7 @@ namespace thirdai::dataset {
  */
 class TabularPairGram : public Block {
  public:
-  TabularPairGram(std::vector<TabularColumn> column_metadata,
+  TabularPairGram(std::vector<TabularColumnPtr> column_metadata,
                   uint32_t output_range)
       : _column_metadata(column_metadata), _output_range(output_range) {}
 
@@ -29,7 +29,7 @@ class TabularPairGram : public Block {
       SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigram_hashes;
     for (const auto& tabular_column : _column_metadata) {
-      uint32_t col_num = tabular_column.col_num;
+      uint32_t col_num = tabular_column->col_num;
       if (col_num >= input_row.size()) {
         return std::make_exception_ptr(std::invalid_argument(
             "TabularColumn operates on a column not present in the input "
@@ -38,13 +38,11 @@ class TabularPairGram : public Block {
             std::to_string(input_row.size()) + " columns."));
       }
       std::string str_val(input_row[col_num]);
-      if (!tabular_column.isLabel()) {
-        uint32_t unigram;
-        if (auto err = tabular_column.computeUnigram(str_val, unigram)) {
-          return err;
-        }
-        unigram_hashes.push_back(unigram);
+      uint32_t unigram;
+      if (auto err = tabular_column->computeUnigram(str_val, unigram)) {
+        return err;
       }
+      unigram_hashes.push_back(unigram);
     }
 
     std::vector<uint32_t> pairgram_hashes =
@@ -61,7 +59,7 @@ class TabularPairGram : public Block {
   }
 
  private:
-  std::vector<TabularColumn> _column_metadata;
+  std::vector<TabularColumnPtr> _column_metadata;
   uint32_t _output_range;
 };
 
