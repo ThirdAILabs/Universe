@@ -40,24 +40,24 @@ class TabularPairGram : public Block {
       std::string str_val(input_row[col_num]);
       if (!tabular_column.isLabel()) {
         uint32_t unigram;
-        if (auto err = col_processor.computeUnigram(str_val, unigram)) {
+        if (auto err = tabular_column.computeUnigram(str_val, unigram)) {
           return err;
         }
         unigram_hashes.push_back(unigram);
       }
-
-      std::vector<uint32_t> pairgram_hashes =
-          TextEncodingUtils::computeRawPairgramsFromUnigrams(unigram_hashes,
-                                                             _output_range);
-
-      TextEncodingUtils::sumRepeatedIndices(
-          pairgram_hashes, /* base_value = */ 1.0,
-          [&](uint32_t pairgram, float value) {
-            vec.addSparseFeatureToSegment(pairgram, value);
-          });
-
-      return nullptr;
     }
+
+    std::vector<uint32_t> pairgram_hashes =
+        TextEncodingUtils::computeRawPairgramsFromUnigrams(unigram_hashes,
+                                                           _output_range);
+
+    TextEncodingUtils::sumRepeatedIndices(
+        pairgram_hashes, /* base_value = */ 1.0,
+        [&](uint32_t pairgram, float value) {
+          vec.addSparseFeatureToSegment(pairgram, value);
+        });
+
+    return nullptr;
   }
 
  private:
