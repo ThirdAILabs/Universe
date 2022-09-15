@@ -117,6 +117,23 @@ struct BoltVector {
     return active_neurons[second_max_id];
   }
 
+  void sortActiveNeurons() {  // NOLINT: clang-tidy thinks this should be const.
+    assert(!isDense());
+
+    std::vector<std::pair<uint32_t, float>> contents;
+    contents.reserve(len);
+    for (uint32_t i = 0; i < len; i++) {
+      contents.emplace_back(active_neurons[i], activations[i]);
+    }
+
+    std::sort(contents.begin(), contents.end());
+
+    for (uint32_t i = 0; i < len; i++) {
+      active_neurons[i] = contents[i].first;
+      activations[i] = contents[i].second;
+    }
+  }
+
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
                                      const std::vector<float>& values) {
     assert(indices.size() == values.size());
