@@ -82,7 +82,7 @@ def train_distributed_bolt_check(request):
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
-# @pytest.mark.xfail
+@pytest.mark.xfail
 @pytest.mark.parametrize(
     "train_distributed_bolt_check", ["linear", "circular"], indirect=True
 )
