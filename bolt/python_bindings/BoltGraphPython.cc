@@ -52,7 +52,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("set", &ParameterReference::set, py::arg("new_params"),
            "Either takes in a numpy array and copies its contents into the "
            "parameters held in the ParameterReference object. Or takes in a "
-           "python dictionary which represents a compressed vector object.");
+           "python dictionary which represents a compressed vector object.")
+      .def_static(
+          "concat", &ParameterReference::concat, py::arg("compressed_vectors"),
+          "Takes in a list of compressed vector objects and returns a "
+          "concatenated compressed vector object. Concatenation is non-lossy "
+          "in nature but comes at the cost of a higher memory footprint. "
+          "Note: Only concatenate compressed vectors of the same type with "
+          "the same hyperparamters.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT

@@ -50,4 +50,15 @@ inline py::bytes convertCompressedVectorToString(
   return bytes_compressed_vector;
 }
 
+inline std::vector<std::unique_ptr<CompressedVector<float>>>
+convertPyListToCompressedVectors(const py::list& py_compressed_vectors) {
+  int num_vectors = py_compressed_vectors.size();
+  std::vector<std::unique_ptr<CompressedVector<float>>> compressed_vectors;
+  compressed_vectors.reserve(num_vectors);
+  for (int i = 0; i < num_vectors; i++) {
+    compressed_vectors.push_back(convertStringToCompressedVector(
+        py::cast<py::bytes>(py_compressed_vectors[i])));
+  }
+  return compressed_vectors;
+}
 }  // namespace thirdai::compression::python
