@@ -91,7 +91,8 @@ class ParameterReference {
           concatenated_compressed_vector);
     }
     throw std::invalid_argument(
-        "Cannot concat compressed vectors from unsupported data type");
+        "Cannot concat compressed vectors from unsupported data type, expects "
+        "list of compressed vectors.");
   }
 
  private:

@@ -67,6 +67,8 @@ inline std::unique_ptr<CompressedVector<T>> concat(
     }
     return std::make_unique<CountSketch<float>>(concatenated_count_sketch);
   }
-  throw std::invalid_argument("Valid compression scheme not specified");
+  throw std::invalid_argument(
+      "Valid compression scheme not specified, supports dragon or "
+      "count_sketch.");
 }
 }  // namespace thirdai::compression
