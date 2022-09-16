@@ -271,8 +271,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           [](float learning_rate, uint32_t epochs) {
             // Wrapping the C++ make function to by default include the
             // KeyboardInterrupt callback.
-            auto checkInterrupt = std::make_shared<KeyboardInterruptCallback>();
-            std::vector<CallbackPtr> defaultCallbacks = {checkInterrupt};
+            auto check_interrupt =
+                std::make_shared<KeyboardInterruptCallback>();
+            std::vector<CallbackPtr> defaultCallbacks = {check_interrupt};
 
             return TrainConfig::makeConfig(learning_rate, epochs,
                                            defaultCallbacks);
@@ -294,8 +295,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             // Configure KeyboardInterrupt callback to be present by default.
             // Since we are resetting callbacks by this builder pattern method,
             // we're resetting the callbacks list.
-            auto checkInterrupt = std::make_shared<KeyboardInterruptCallback>();
-            modifiedCallbacks.push_back(checkInterrupt);
+            auto check_interrupt =
+                std::make_shared<KeyboardInterruptCallback>();
+            modifiedCallbacks.push_back(check_interrupt);
 
             return train_config.withCallbacks(modifiedCallbacks);
           },
