@@ -9,10 +9,11 @@
 #include <cstdlib>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
-class TrendBlock : public Block {
+class TrendBlock final : public Block {
  public:
   /**
    * Constructor.
@@ -45,26 +46,30 @@ class TrendBlock : public Block {
 
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
              size_t count_col, uint32_t lookahead, uint32_t lookback,
-             uint32_t period, GraphPtr graph = nullptr,
-             size_t max_n_neighbors = 0)
+             uint32_t period)
       : TrendBlock(has_count_col, id_col, timestamp_col, count_col, lookahead,
                    lookback, period,
                    std::make_shared<CountHistoryIndex>(
-                       /* n_rows = */ 5, /* range_pow = */ 22),
-                   std::move(graph), max_n_neighbors) {}
+                       /* n_rows = */ 5, /* range_pow = */ 22)) {}
 
   uint32_t featureDim() const final {
-    uint32_t multiplier = _max_n_neighbors + 1;
-    return (_lookback_periods)*multiplier;
+    return _lookback_periods;
   };
 
-  bool isDense() const final { return _max_n_neighbors == 0; };
+  bool isDense() const final { return true; };
 
   uint32_t expectedNumColumns() const final { return _expected_num_cols; };
 
   void prepareForBatch(const std::vector<std::string_view>& first_row) final {
     uint32_t timestamp = timestampFromInputRow(first_row);
     _index->handleLifetime(timestamp);
+  }
+
+  ResponsibleColumnAndInputKey explainFeature(uint32_t index_within_block, std::optional<std::unordered_map<uint32_t, std::string>> num_to_name, std::vector<std::string_view> columnar_sample) const override {
+    (void) index_within_block;
+    (void) num_to_name;
+    (void) columnar_sample;
+    throw std::invalid_argument("Not implemented yet lol");
   }
 
  protected:
@@ -182,7 +187,6 @@ class TrendBlock : public Block {
   size_t _count_col;
   size_t _expected_num_cols;
   std::shared_ptr<CountHistoryIndex> _index;
-  size_t _max_n_neighbors;
 };
 
 }  // namespace thirdai::dataset

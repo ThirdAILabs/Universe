@@ -75,6 +75,18 @@ target_link_libraries(
 )
 
 add_executable(
+  trend_block_test
+  TrendBlockTests.cc
+)
+
+target_link_libraries(
+  trend_block_test
+  PRIVATE
+  gtest_main
+  hash_function_lib
+)
+
+add_executable(
   thread_safe_vocabulary_tests
   ThreadSafeVocabularyTests.cc
 )
@@ -177,6 +189,7 @@ set(DATASET_TESTS
   categorical_block_test
   date_block_test
   text_block_test
+  trend_block_test
   thread_safe_vocabulary_tests
   user_item_history_block_tests
   block_batch_processor_test
