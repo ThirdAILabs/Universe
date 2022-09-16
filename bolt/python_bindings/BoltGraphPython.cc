@@ -9,6 +9,7 @@
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/DotProduct.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -197,6 +198,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "total size of the embedding block.\n")
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
            "Tells the graph which token input to use for this Embedding Node.");
+
+  py::class_<DotProductNode, DotProductNodePtr, Node>(graph_submodule,
+                                                      "DotProduct")
+      .def(py::init(&DotProductNode::make))
+      .def("__call__", &DotProductNode::setPredecessors, py::arg("lhs"),
+           py::arg("rhs"));
 
   graph_submodule.def("TokenInput", &Input::makeTokenInput, py::arg("dim"),
                       py::arg("num_tokens_range"));

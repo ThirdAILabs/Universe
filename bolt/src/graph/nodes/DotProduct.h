@@ -2,18 +2,33 @@
 
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <memory>
 
 namespace thirdai::bolt {
 
-class DotProductNode final : public Node {
- public:
+class DotProductNode final
+    : public Node,
+      public std::enable_shared_from_this<DotProductNode> {
+ private:
   DotProductNode() : _compiled(false) {}
+
+ public:
+  static std::shared_ptr<DotProductNode> make() {
+    return std::shared_ptr<DotProductNode>(new DotProductNode());
+  }
 
   uint32_t outputDim() const final { return 1; }
 
   bool isInputNode() const final { return false; }
 
   void initOptimizer() final {}
+
+  std::shared_ptr<DotProductNode> setPredecessors(NodePtr lhs, NodePtr rhs) {
+    _lhs = std::move(lhs);
+    _rhs = std::move(rhs);
+
+    return shared_from_this();
+  }
 
  protected:
   void compileImpl() final { _compiled = true; }
@@ -25,18 +40,12 @@ class DotProductNode final : public Node {
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
                                      bool use_sparsity) final {
-    (void)batch_size;
     (void)use_sparsity;
-    throw exceptions::NodeStateMachineError(
-        "Should never call prepareForBatchProcessing on Input (instead should "
-        "call setInputs).");
+    _outputs = BoltBatch(/* dim= */ 1, /* batch_size=*/batch_size,
+                         /* is_dense= */ true);
   }
 
-  uint32_t numNonzerosInOutputImpl() const final {
-    throw std::logic_error(
-        "Cannot know ahead of time the number of nonzeros "
-        "in the output of an Input layer.");
-  }
+  uint32_t numNonzerosInOutputImpl() const final { throw 1; }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     (void)labels;
@@ -223,5 +232,7 @@ class DotProductNode final : public Node {
 
   std::optional<BoltBatch> _outputs;
 };
+
+using DotProductNodePtr = std::shared_ptr<DotProductNode>;
 
 }  // namespace thirdai::bolt
