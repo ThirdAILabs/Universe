@@ -51,7 +51,8 @@ class PrimaryWorker(Worker):
         :type workers: List[ray.actor]
         """
 
-        update_id = 0
+        # update_id imples here, the different stages of circular communication
+        update_id = self.total_nodes
         for node in range(self.total_nodes - 1):
             if node == self.total_nodes - 2:
                 ray.get(
@@ -64,7 +65,8 @@ class PrimaryWorker(Worker):
                 ray.get([worker.process_ring.remote(update_id) for worker in workers])
             update_id -= 1
 
-        update_id = 1
+        # + 1, because it is the partition for the candidates giving the partitions
+        update_id = self.total_nodes + 1
         for node in range(self.total_nodes - 1):
             ray.get(
                 [
