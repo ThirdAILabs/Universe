@@ -12,17 +12,24 @@ namespace thirdai::dataset {
  */
 class TabularPairGram : public Block {
  public:
-  TabularPairGram(std::shared_ptr<TabularMetadata>& metadata,
-                  uint32_t output_range)
-      : _metadata(metadata), _output_range(output_range) {}
+  TabularPairGram(uint32_t output_range,
+                  std::vector<TabularDataType> column_dtypes,
+                  std::unordered_map<uint32_t, double> col_to_max_val,
+                  std::unordered_map<uint32_t, double> col_to_min_val,
+                  std::optional<std::unordered_map<uint32_t, uint32_t>>
+                      col_to_num_bins = std::nullopt)
+      : _output_range(output_range),
+        _column_dtypes(std::move(column_dtypes)),
+        _col_to_max_val(std::move(col_to_max_val)),
+        _col_to_min_val(std::move(col_to_min_val)),
+        _col_to_num_bins(std::move(col_to_num_bins)) {}
 
   uint32_t featureDim() const final { return _output_range; };
 
   bool isDense() const final { return false; };
 
   uint32_t expectedNumColumns() const final {
-    // metadata includes the label which this block doesn't need
-    return _metadata->numColumns() - 1;
+    return _column_dtypes.size() - 1;
   };
 
  protected:
@@ -36,7 +43,7 @@ class TabularPairGram : public Block {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       std::string str_val(input_row[col]);
-      switch (_metadata->colType(col)) {
+      switch (colType(col)) {
         case TabularDataType::Numeric: {
           std::exception_ptr err;
           uint32_t unigram = getNumericHashValue(col, str_val, err);
@@ -89,15 +96,14 @@ class TabularPairGram : public Block {
   }
 
   double getColBinsize(uint32_t col) {
-    return (_metadata->colMax(col) - _metadata->colMin(col)) /
-           _metadata->numBins(col);
+    return (colMax(col) - colMin(col)) / numBins(col);
   }
 
   uint32_t getColBin(uint32_t col, const std::string& str_val,
                      std::exception_ptr& exception_ptr) {
     // map empty values to their own bin
     if (str_val.empty()) {
-      return _metadata->numBins(col);
+      return numBins(col);
     }
     double value;
     try {
@@ -117,13 +123,43 @@ class TabularPairGram : public Block {
     if (binsize == 0) {
       return 0;
     }
-    return static_cast<uint32_t>(
-        std::round((value - _metadata->colMin(col)) / binsize));
+    return static_cast<uint32_t>(std::round((value - colMin(col)) / binsize));
+  }
+
+  TabularDataType colType(uint32_t col) { return _column_dtypes[col]; }
+
+  double colMax(uint32_t col) { return _col_to_max_val[col]; }
+
+  double colMin(uint32_t col) { return _col_to_min_val[col]; }
+
+  static constexpr uint32_t DEFAULT_NUM_BINS = 10;
+
+  uint32_t numBins(uint32_t col) {
+    if (_col_to_num_bins) {
+      return (*_col_to_num_bins)[col];
+    }
+    return DEFAULT_NUM_BINS;
+  }
+
+  // Private constructor for Cereal
+  TabularPairGram() {}
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_output_range, _column_dtypes, _col_to_max_val, _col_to_min_val,
+            _col_to_num_bins);
   }
 
  private:
-  std::shared_ptr<TabularMetadata> _metadata;
   uint32_t _output_range;
+  std::vector<TabularDataType> _column_dtypes;
+  std::unordered_map<uint32_t, double> _col_to_max_val;
+  std::unordered_map<uint32_t, double> _col_to_min_val;
+
+  // one additional bin is reserved for empty values
+  std::optional<std::unordered_map<uint32_t, uint32_t>> _col_to_num_bins;
 };
 
 }  // namespace thirdai::dataset

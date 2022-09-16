@@ -236,7 +236,7 @@ class TabularClassifier final
   }
 
   std::string getClassName(uint32_t neuron_id) final {
-    return _classname_to_id_lookup->getString(neuron_id);
+    return _metadata->getClassToIdMap()->getString(neuron_id);
   }
 
   uint32_t defaultBatchSize() const final { return 256; }
@@ -269,13 +269,9 @@ class TabularClassifier final
         std::make_shared<dataset::TabularPairGram>(
             _metadata, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
 
-    _classname_to_id_lookup =
-        dataset::ThreadSafeVocabulary::make(_metadata->getClassToIdMap(),
-                                            /* fixed= */ true);
-
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
-        dataset::StringLookupCategoricalBlock::make(_metadata->getLabelCol(),
-                                                    _classname_to_id_lookup)};
+        dataset::StringLookupCategoricalBlock::make(
+            _metadata->getLabelCol(), _metadata->getClassToIdMap())};
 
     _batch_processor = dataset::GenericBatchProcessor::make(
         /* input_blocks = */ input_blocks,
@@ -316,11 +312,10 @@ class TabularClassifier final
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<AutoClassifierBase>(this),
-            _classname_to_id_lookup, _metadata, _column_datatypes);
+    archive(cereal::base_class<AutoClassifierBase>(this), _metadata,
+            _column_datatypes);
   }
 
-  dataset::ThreadSafeVocabularyPtr _classname_to_id_lookup;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
   dataset::GenericBatchProcessorPtr _batch_processor;
   std::vector<std::string> _column_datatypes;
