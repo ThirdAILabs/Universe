@@ -21,25 +21,15 @@ class TrendBlock : public Block {
    */
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
              size_t count_col, uint32_t lookahead, uint32_t lookback,
-             uint32_t period, std::shared_ptr<CountHistoryIndex> index,
-             GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
+             uint32_t period, std::shared_ptr<CountHistoryIndex> index)
       : _lookahead_periods(lookahead / period),
         _lookback_periods(lookback / period),
-        _period_seconds(period * TimeUtils::SECONDS_IN_DAY),
+        _period_seconds(period * TimeObject::SECONDS_IN_DAY),
         _has_count_col(has_count_col),
         _id_col(id_col),
         _timestamp_col(timestamp_col),
         _count_col(count_col),
-        _index(std::move(index)),
-        _graph(std::move(graph)),
-        _max_n_neighbors(max_n_neighbors) {
-    if (_graph != nullptr && _max_n_neighbors == 0) {
-      throw std::invalid_argument(
-          "Provided a graph but `max_n_neighbors` is "
-          "set to 0. This means "
-          "graph information will not be used at all.");
-    }
-
+        _index(std::move(index)) {
     if (lookback % period != 0 || lookahead % period != 0) {
       std::stringstream error_ss;
       error_ss << "lookback and lookahead arguments must be a multiple of "
@@ -89,14 +79,6 @@ class TrendBlock : public Block {
 
     uint32_t offset = 0;
     offset = addFeaturesForId(id, timestamp, vec, offset);
-    if (_graph && _graph->count(id_str) > 0) {
-      auto& neighbors = _graph->at(id_str);
-      size_t included_nbrs = std::min(_max_n_neighbors, neighbors.size());
-      for (size_t i = 0; i < included_nbrs; i++) {
-        uint32_t neighbor_id = idHash(neighbors[i]);
-        offset = addFeaturesForId(neighbor_id, timestamp, vec, offset);
-      }
-    }
 
     return nullptr;
   }
@@ -121,8 +103,8 @@ class TrendBlock : public Block {
 
   uint32_t timestampFromInputRow(
       const std::vector<std::string_view>& input_row) const {
-    std::tm time = TimeUtils::timeStringToTimeObject(input_row[_timestamp_col]);
-    return TimeUtils::timeToEpoch(&time, 0) / _period_seconds;
+    TimeObject time(input_row[_timestamp_col]);
+    return time.secondsSinceEpoch() / _period_seconds;
   }
 
   float countFromInputRow(
@@ -200,7 +182,6 @@ class TrendBlock : public Block {
   size_t _count_col;
   size_t _expected_num_cols;
   std::shared_ptr<CountHistoryIndex> _index;
-  GraphPtr _graph;
   size_t _max_n_neighbors;
 };
 

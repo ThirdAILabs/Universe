@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dataset/src/encodings/count_history/CountMinSketch.h>
+#include <dataset/src/utils/CountMinSketch.h>
 #include <atomic>
 #include <limits>
 #include <stdexcept>
