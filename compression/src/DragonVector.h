@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <memory>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::compression {
 

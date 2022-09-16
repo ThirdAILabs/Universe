@@ -80,6 +80,20 @@ class ParameterReference {
             compression_density, seed_for_hashing, sample_population_size));
   }
 
+  static py::bytes concat(const py::object& compressed_vectors) {
+    if (py::isinstance<py::list>(compressed_vectors)) {
+      using CompressedVector = thirdai::compression::CompressedVector<float>;
+      std::unique_ptr<CompressedVector> concatenated_compressed_vector =
+          thirdai::compression::concat(
+              thirdai::compression::python::convertPyListToCompressedVectors(
+                  compressed_vectors));
+      return thirdai::compression::python::convertCompressedVectorToString(
+          concatenated_compressed_vector);
+    }
+    throw std::invalid_argument(
+        "Cannot concat compressed vectors from unsupported data type");
+  }
+
  private:
   static uint64_t dimensionProduct(const std::vector<uint32_t>& dimensions) {
     uint64_t product = 1;
