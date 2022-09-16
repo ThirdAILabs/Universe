@@ -6,6 +6,7 @@
 #include "ProcessorUtils.h"
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cmath>
 #include <limits>
 
@@ -32,7 +33,6 @@ class TabularMetadata {
       : _column_dtypes(std::move(column_dtypes)),
         _col_to_max_val(std::move(col_to_max_val)),
         _col_to_min_val(std::move(col_to_min_val)),
-        _class_to_class_id(std::move(class_to_class_id)),
         _col_to_num_bins(std::move(col_to_num_bins)) {
     auto itr = std::find(_column_dtypes.begin(), _column_dtypes.end(),
                          TabularDataType::Label);
@@ -41,15 +41,19 @@ class TabularMetadata {
     } else {
       throw std::invalid_argument("No label col passed in.");
     }
+
+    _class_to_class_id =
+        ThreadSafeVocabulary::make(std::move(class_to_class_id),
+                                   /* fixed= */ true);
   }
 
   uint32_t getLabelCol() const { return _label_col_index; }
 
+  std::vector<TabularDataType> getDatatypes() { return _column_dtypes; }
+
   uint32_t numColumns() const { return _column_dtypes.size(); }
 
-  std::unordered_map<std::string, uint32_t> getClassToIdMap() {
-    return _class_to_class_id;
-  }
+  ThreadSafeVocabularyPtr getClassToIdMap() { return _class_to_class_id; }
 
   TabularDataType colType(uint32_t col) { return _column_dtypes[col]; }
 
@@ -81,7 +85,7 @@ class TabularMetadata {
   std::vector<TabularDataType> _column_dtypes;
   std::unordered_map<uint32_t, double> _col_to_max_val;
   std::unordered_map<uint32_t, double> _col_to_min_val;
-  std::unordered_map<std::string, uint32_t> _class_to_class_id;
+  ThreadSafeVocabularyPtr _class_to_class_id;
 
   // one additional bin is reserved for empty values
   std::optional<std::unordered_map<uint32_t, uint32_t>> _col_to_num_bins;

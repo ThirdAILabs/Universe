@@ -149,10 +149,20 @@ class TabularClassifier final
                 /* sparsity= */ std::nullopt,
                 /* output_activation= */ ActivationFunction::Softmax),
             ReturnMode::ClassName),
-        _classname_to_id_lookup(nullptr),
         _metadata(nullptr),
         _batch_processor(nullptr),
         _column_datatypes(std::move(column_datatypes)) {}
+
+  TabularClassifier(uint32_t internal_model_dim, uint32_t n_classes,
+                    std::shared_ptr<dataset::TabularMetadata> metadata)
+      : AutoClassifierBase(
+            createAutotunedModel(
+                internal_model_dim, n_classes,
+                /* sparsity= */ std::nullopt,
+                /* output_activation= */ ActivationFunction::Softmax),
+            ReturnMode::ClassName),
+        _metadata(metadata),
+        _batch_processor(nullptr) {}
 
   void save(const std::string& filename) {
     std::ofstream filestream =
@@ -180,7 +190,14 @@ class TabularClassifier final
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
                      std::optional<uint64_t> max_in_memory_batches) final {
-    processTabularMetadata(data_loader, max_in_memory_batches);
+    if (!_metadata) {
+      processTabularMetadata(data_loader, max_in_memory_batches);
+    } else {
+      std::cout << "Metadata about the dataset has already been calculated and "
+                   "thus will be reused for train(..). Please use a new "
+                   "TabularClassifier for any new dataset."
+                << std::endl;
+    }
 
     createBatchProcessor();
 
@@ -236,7 +253,7 @@ class TabularClassifier final
   }
 
   std::string getClassName(uint32_t neuron_id) final {
-    return _classname_to_id_lookup->getString(neuron_id);
+    return _metadata->getClassToIdMap()->getString(neuron_id);
   }
 
   uint32_t defaultBatchSize() const final { return 256; }
@@ -269,13 +286,9 @@ class TabularClassifier final
         std::make_shared<dataset::TabularPairGram>(
             _metadata, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
 
-    _classname_to_id_lookup =
-        dataset::ThreadSafeVocabulary::make(_metadata->getClassToIdMap(),
-                                            /* fixed= */ true);
-
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
-        dataset::StringLookupCategoricalBlock::make(_metadata->getLabelCol(),
-                                                    _classname_to_id_lookup)};
+        dataset::StringLookupCategoricalBlock::make(
+            _metadata->getLabelCol(), _metadata->getClassToIdMap())};
 
     _batch_processor = dataset::GenericBatchProcessor::make(
         /* input_blocks = */ input_blocks,
@@ -309,18 +322,16 @@ class TabularClassifier final
   // Private constructor for cereal.
   TabularClassifier()
       : AutoClassifierBase(nullptr, ReturnMode::NumpyArray),
-        _classname_to_id_lookup(nullptr),
         _metadata(nullptr),
         _batch_processor(nullptr) {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<AutoClassifierBase>(this),
-            _classname_to_id_lookup, _metadata, _column_datatypes);
+    archive(cereal::base_class<AutoClassifierBase>(this), _metadata,
+            _column_datatypes);
   }
 
-  dataset::ThreadSafeVocabularyPtr _classname_to_id_lookup;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
   dataset::GenericBatchProcessorPtr _batch_processor;
   std::vector<std::string> _column_datatypes;

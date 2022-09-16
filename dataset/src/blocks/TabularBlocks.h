@@ -12,7 +12,7 @@ namespace thirdai::dataset {
  */
 class TabularPairGram : public Block {
  public:
-  TabularPairGram(std::shared_ptr<TabularMetadata>& metadata,
+  TabularPairGram(std::shared_ptr<TabularMetadata> metadata,
                   uint32_t output_range)
       : _metadata(metadata), _output_range(output_range) {}
 

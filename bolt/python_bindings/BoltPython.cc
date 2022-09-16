@@ -12,6 +12,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/DataLoader.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -225,6 +226,11 @@ void createBoltSubmodule(py::module_& module) {
       py::init<uint32_t, uint32_t, std::vector<std::string>>(),
       py::arg("internal_model_dim"), py::arg("n_classes"),
       py::arg("column_datatypes"));
+
+  tabular_classifier.def(
+      py::init<uint32_t, uint32_t, std::shared_ptr<dataset::TabularMetadata>>(),
+      py::arg("internal_model_dim"), py::arg("n_classes"),
+      py::arg("tabular_metadata"));
 
   defineAutoClassifierCommonMethods(tabular_classifier);
 
