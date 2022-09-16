@@ -2,4 +2,7 @@ thirdai.search
 ===================================
 
 .. automodule:: thirdai.search
-    :members:
+   :imported-members:
+   :members:
+   :undoc-members:
+   :show-inheritance:

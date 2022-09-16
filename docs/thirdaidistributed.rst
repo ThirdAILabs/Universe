@@ -1,8 +1,9 @@
 thirdai.distributed_bolt
 ===================================
 
-
-
 .. automodule:: thirdai.distributed_bolt
-    :members:
+   :imported-members:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 

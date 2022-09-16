@@ -15,8 +15,11 @@ contain complete documentation for each of the submodules within thirdai.
 .. toctree::
    :maxdepth: 2
 
+   thirdaibase
+   thirdaidataset
    thirdaisearch
    thirdaibolt
+   thirdaiboltgraph
    thirdaidistributed
    distributed_tutorial
    

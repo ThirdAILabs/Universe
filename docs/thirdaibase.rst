@@ -1,7 +1,7 @@
-thirdai.bolt
+thirdai
 ===================================
 
-.. automodule:: thirdai.bolt
+.. automodule:: thirdai
    :imported-members:
    :members:
    :undoc-members:
