@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script will build Universe, build the docs, and then use credentials 
+# stored on blade to ssh into the T2 Micro docs machine, delete the old docs, 
+# and then copy the built docs in their place.
+
 BASEDIR=$(dirname "$0")
 
 cd $BASEDIR/..
