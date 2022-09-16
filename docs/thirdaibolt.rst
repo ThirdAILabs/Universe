@@ -2,7 +2,3 @@ thirdai.bolt
 ===================================
 
 .. automodule:: thirdai.bolt
-   :imported-members:
-   :members:
-   :undoc-members:
-   :show-inheritance:

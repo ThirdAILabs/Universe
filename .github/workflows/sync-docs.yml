@@ -38,7 +38,9 @@ jobs:
         run: bin/build.py -f THIRDAI_BUILD_LICENSE
 
       - name: Build docs
-        run: (cd docs && make html)
+        run: |
+          pip3 install sphinx sphinx_rtd_theme
+          (cd docs && make html)
 
       - name: Remove current docs
         run: ssh ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }} "rm -rf /home/ubuntu/html"
