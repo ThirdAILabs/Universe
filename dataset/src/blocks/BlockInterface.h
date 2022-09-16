@@ -138,15 +138,25 @@ class Block {
   virtual uint32_t expectedNumColumns() const = 0;
 
   /**
-   * Returns column name and keyword responsible from that column.
-   * index: index within the block so that we can get exact keyword responsible.
-   * num_to_name: column number to column name map, (optional) because some of
-   * the blocks don't need it like TabularBlock which has this map in its
-   * metadata.
+   * For a given index, get the keyword which falls in that index when build the
+   * segmented feature vector.
+   *
+   * Arguments:
+   * index_within_block : index within the block so that we can get exact
+   * keyword responsible.
+   * col_num_to_name: column number to column name map,
+   * (optional) because some of the blocks don't need it like TabularBlock which
+   * has this map in its metadata.
+   * columnar_sample: the string_view of input string so that we process the
+   * keywords when we call explainFeature method rather than storing that in
+   * buildsegment , which may affect thread safety.
+   *
+   * Returns:
+   * column name and keyword responsible for the given index from that column.
    */
   virtual ResponsibleColumnAndInputKey explainFeature(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
       std::vector<std::string_view> columnar_sample) const = 0;
 
   virtual ~Block() = default;
