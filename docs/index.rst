@@ -17,9 +17,12 @@ contain complete documentation for each of the submodules within thirdai.
 
    thirdaibase
    thirdaidataset
+   thirdaidatasetblocks
+   thirdaihashing
    thirdaisearch
    thirdaibolt
    thirdaiboltgraph
+   thirdaiboltgraphcallbacks
    thirdaidistributed
    distributed_tutorial
    
