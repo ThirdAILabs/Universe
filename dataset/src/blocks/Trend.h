@@ -2,7 +2,7 @@
 
 #include "BlockInterface.h"
 #include <hashing/src/MurmurHash.h>
-#include <dataset/src/encodings/count_history/CountHistoryIndex.h>
+#include <dataset/src/utils/CountHistoryIndex.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <sys/types.h>
 #include <cmath>
