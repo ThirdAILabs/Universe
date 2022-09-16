@@ -255,14 +255,10 @@ class AutoClassifierBase {
       float learning_rate, uint32_t max_in_memory_batches) {
     TrainConfig train_config = getTrainConfig(learning_rate, /* epochs= */ 1);
 
-    while (1) {
-      auto [data, labels] = dataset->loadInMemory(max_in_memory_batches);
+    while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
+      auto& [data, labels] = datasets.value();
 
       _model->train({data}, labels, train_config);
-
-      if (data->numBatches() < max_in_memory_batches) {
-        break;
-      }
     }
 
     dataset->restart();
