@@ -16,14 +16,18 @@ contain complete documentation for each of the submodules within thirdai.
    :maxdepth: 2
 
    thirdaibase
-   thirdaidataset
-   thirdaidatasetblocks
-   thirdaihashing
-   thirdaisearch
+
    thirdaibolt
    thirdaiboltgraph
    thirdaiboltgraphcallbacks
+
+   thirdaidataset
+   thirdaidatasetblocks
+
    thirdaidistributed
    distributed_tutorial
    
+   thirdaihashing
+   
+   thirdaisearch
 
