@@ -1,7 +1,7 @@
 import sys
 
 try:
-    from thirdai._distributed_bolt.backend.worker import Worker
+    from thirdai._distributed_bolt.backend.communication.circular import Circular as Worker
 except ImportError:
     pass
 
@@ -13,7 +13,7 @@ import numpy as np
 @pytest.mark.xfail
 def test_all_reduce_circular_communication():
     num_workers = 20
-    workers = [Worker(num_workers, i, None) for i in range(num_workers)]
+    workers = [Worker(None, i, None, num_workers) for i in range(num_workers)]
 
     for i in range(num_workers):
         workers[i].set_friend(workers[(i - 1) % num_workers])
