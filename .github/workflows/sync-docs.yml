@@ -34,5 +34,14 @@ jobs:
           name: id_rsa
           known_hosts: ${{ secrets.DOC_HOSTING_KNOWN_HOSTS }}
 
-      - name: ssh
-        run: ssh ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }}
+      - name: Build Universe
+        run: bin/build.py -f THIRDAI_BUILD_LICENSE
+
+      - name: Build docs
+        run: (cd docs && make html)
+
+      - name: Remove current docs
+        run: ssh ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }} "rm -rf /home/ubuntu/html"
+
+      - name: Copy built docs
+        run: scp -r ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }}:/home/ubuntu/
