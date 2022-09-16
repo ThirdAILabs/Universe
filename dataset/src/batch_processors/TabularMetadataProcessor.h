@@ -29,36 +29,33 @@ class TabularMetadata {
                   std::unordered_map<std::string, uint32_t> class_to_class_id,
                   std::optional<std::unordered_map<uint32_t, uint32_t>>
                       col_to_num_bins = std::nullopt)
-      : _column_dtypes(std::move(column_dtypes),
+      : _column_dtypes(std::move(column_dtypes)),
         _col_to_max_val(std::move(col_to_max_val)),
         _col_to_min_val(std::move(col_to_min_val)),
         _class_to_class_id(std::move(class_to_class_id)),
         _col_to_num_bins(std::move(col_to_num_bins)) {
-    auto _label_col_index = std::find(
-        _column_dtypes.begin(), _column_dtypes.end(), TabularDataType::Label);
-    if (_label_col_index == _column_dtypes.end()) {
+    auto itr = std::find(_column_dtypes.begin(), _column_dtypes.end(),
+                         TabularDataType::Label);
+    if (itr != _column_dtypes.end()) {
+      _label_col_index = std::distance(_column_dtypes.begin(), itr);
+    } else {
       throw std::invalid_argument("No label col passed in.");
     }
   }
 
-  uint32_t getLabelCol() const {
-    return _label_col_index; }
+  uint32_t getLabelCol() const { return _label_col_index; }
 
-  uint32_t numColumns() const {
-    return _column_dtypes.size(); }
+  uint32_t numColumns() const { return _column_dtypes.size(); }
 
   std::unordered_map<std::string, uint32_t> getClassToIdMap() {
     return _class_to_class_id;
   }
 
-  TabularDataType colType(uint32_t col) {
-    return _column_dtypes[col]; }
+  TabularDataType colType(uint32_t col) { return _column_dtypes[col]; }
 
-  double colMax(uint32_t col) {
-    return _col_to_max_val[col]; }
+  double colMax(uint32_t col) { return _col_to_max_val[col]; }
 
-  double colMin(uint32_t col) {
-    return _col_to_min_val[col]; }
+  double colMin(uint32_t col) { return _col_to_min_val[col]; }
 
   static constexpr uint32_t DEFAULT_NUM_BINS = 10;
 
