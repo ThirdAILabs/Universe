@@ -172,14 +172,13 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &MockBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  py::enum_<TabularDataType>(internal_dataset_submodule, "TabularDataType")
+  py::enum_<TabularDataType>(dataset_submodule, "TabularDataType")
       .value("Label", TabularDataType::Label)
       .value("Categorical", TabularDataType::Categorical)
       .value("Numeric", TabularDataType::Numeric);
 
   py::class_<TabularMetadata, std::shared_ptr<TabularMetadata>>(
-      internal_dataset_submodule, "TabularMetadata",
-      "Metadata for a tabular dataset.")
+      dataset_submodule, "TabularMetadata", "Metadata for a tabular dataset.")
       .def(py::init<std::vector<TabularDataType>,
                     std::unordered_map<uint32_t, double>,
                     std::unordered_map<uint32_t, double>,
