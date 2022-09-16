@@ -1,7 +1,9 @@
 import sys
 
 try:
-    from thirdai._distributed_bolt.backend.communication.circular import Circular as Worker
+    from thirdai._distributed_bolt.backend.communication.circular import (
+        Circular as Worker,
+    )
 except ImportError:
     pass
 

@@ -8,6 +8,8 @@
 import sys
 import pytest
 import os
+import multiprocessing
+
 
 try:
     import thirdai.distributed_bolt as db
@@ -82,8 +84,6 @@ def train_distributed_bolt_check(request):
     "train_distributed_bolt_check", ["linear", "circular"], indirect=True
 )
 def test_distributed_bolt_on_mock_cluster(train_distributed_bolt_check):
-    import multiprocessing
-
     if multiprocessing.cpu_count() < 2:
         assert False, "not enough cpus for distributed training"
 
