@@ -32,11 +32,11 @@ autodoc_mock_imports = ["ray"]
 extensions = ["sphinx.ext.autodoc"]
 
 autodoc_default_options = {
-    'members': True,
-    'member-order': 'alphabetical',
-    'imported-members': True,
-    'undoc-members': True,
-    'show-inheritance': True
+    "members": True,
+    "member-order": "alphabetical",
+    "imported-members": True,
+    "undoc-members": True,
+    "show-inheritance": True,
 }
 
 # Add any paths that contain templates here, relative to this directory.
