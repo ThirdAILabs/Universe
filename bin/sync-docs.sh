@@ -4,6 +4,8 @@
 # stored on blade to ssh into the T2 Micro docs machine, delete the old docs, 
 # and then copy the built docs in their place.
 
+# TODO(josh): Make this deployment happen on every push to main
+
 BASEDIR=$(dirname "$0")
 
 cd $BASEDIR/..
