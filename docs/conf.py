@@ -19,16 +19,25 @@
 
 project = "thirdai"
 copyright = "2022, t"
-# Alphabetized by last name
-author = " Josh Engels, Benito Geordie, Vihan Lakshman, Tharun Medini, Nicholas Meisburger, Anshumali Shrivastava, David Torres, Patrick Yan, Henry Zhang"
+author = "ThirdAI Engineering"
 
 
 # -- General configuration ---------------------------------------------------
+
+autodoc_mock_imports = ["ray"]
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ["sphinx.ext.autodoc"]
+
+autodoc_default_options = {
+    "members": True,
+    "member-order": "alphabetical",
+    "imported-members": True,
+    "undoc-members": True,
+    "show-inheritance": True,
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
