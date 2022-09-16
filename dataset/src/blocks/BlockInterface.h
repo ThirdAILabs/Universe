@@ -137,6 +137,10 @@ class Block {
    */
   virtual uint32_t expectedNumColumns() const = 0;
 
+  virtual void prepareForBatch(const std::vector<std::string_view>& first_row) {
+    (void)first_row;
+  }
+
   /**
    * Returns column name and keyword responsible from that column.
    * index: index within the block so that we can get exact keyword responsible.
