@@ -61,6 +61,9 @@ def train_distributed_bolt_check(request):
         "default_config.txt",
     )
 
+    if ray.is_initialized():
+        ray.shutdown()
+
     head = db.FullyConnectedNetwork(
         num_workers=2,
         config_filename=config_filename,
@@ -79,7 +82,7 @@ def train_distributed_bolt_check(request):
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
-@pytest.mark.xfail
+# @pytest.mark.xfail
 @pytest.mark.parametrize(
     "train_distributed_bolt_check", ["linear", "circular"], indirect=True
 )
