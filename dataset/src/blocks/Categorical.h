@@ -32,13 +32,15 @@ class CategoricalBlock : public Block {
 
   ResponsibleColumnAndInputKey explainFeature(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
-      std::vector<std::string_view> /*columnar_sample*/) const final {
-    if (num_to_name == std::nullopt) {
+      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
+      std::vector<std::string_view> columnar_sample) const final {
+    (void)columnar_sample;
+    if (col_num_to_name == std::nullopt) {
       throw std::invalid_argument(
           "map of col num to col name is missing in categorical block.");
     }
-    return {num_to_name->at(_col), getResponsibleCategory(index_within_block)};
+    return {col_num_to_name->at(_col),
+            getResponsibleCategory(index_within_block)};
   }
 
   virtual std::string getResponsibleCategory(uint32_t index) const = 0;

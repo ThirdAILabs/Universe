@@ -133,9 +133,13 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         input_blocks, label_blocks, has_header, delimiter, parallel);
   }
 
+  /*
+  For given index in input fetch the block responsible and get the column name
+  and the exact keyword responsible for it.
+  */
   ResponsibleColumnAndInputKey getResponsibleColumnAndInputKey(
       uint32_t feature_index,
-      const std::unordered_map<uint32_t, std::string>& num_to_name,
+      const std::unordered_map<uint32_t, std::string>& col_num_to_name,
       const std::vector<std::string_view>& columnar_sample) {
     auto iter = std::upper_bound(_block_feature_offsets.begin(),
                                  _block_feature_offsets.end(), feature_index);
@@ -144,7 +148,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     uint32_t index_within_block =
         feature_index -
         _block_feature_offsets[iter - _block_feature_offsets.begin() - 1];
-    return block->explainFeature(index_within_block, num_to_name,
+    return block->explainFeature(index_within_block, col_num_to_name,
                                  columnar_sample);
   }
 
@@ -224,7 +228,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
    */
   std::vector<std::shared_ptr<Block>> _input_blocks;
   std::vector<std::shared_ptr<Block>> _label_blocks;
-
+  /*
+  The offsets which are essential to fetch the exact block responsible for given
+  index for Root cause analysis.
+  */
   std::vector<uint32_t> _block_feature_offsets;
 };
 

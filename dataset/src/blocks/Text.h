@@ -22,13 +22,13 @@ class TextBlock : public Block {
 
   ResponsibleColumnAndInputKey explainFeature(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
       std::vector<std::string_view> columnar_sample) const final {
-    if (num_to_name == std::nullopt) {
+    if (col_num_to_name == std::nullopt) {
       throw std::invalid_argument(
           "map of col num to col name is missing in text block.");
     }
-    return {num_to_name->at(_col),
+    return {col_num_to_name->at(_col),
             getWordResponsible(index_within_block, columnar_sample.at(_col))};
   }
 

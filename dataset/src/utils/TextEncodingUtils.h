@@ -29,7 +29,8 @@ class TextEncodingUtils {
       const std::string_view sentence) {
     std::vector<uint32_t> unigrams;
     forEachWordHash(sentence,
-                    [&](uint32_t word_hash, const std::string_view& /*word*/) {
+                    [&](uint32_t word_hash, const std::string_view& word) {
+                      (void)word;
                       unigrams.push_back(word_hash);
                     });
     return unigrams;
@@ -42,7 +43,8 @@ class TextEncodingUtils {
       const std::string_view sentence, uint32_t output_range) {
     std::vector<uint32_t> unigrams;
     forEachWordHash(sentence,
-                    [&](uint32_t word_hash, const std::string_view& /*word*/) {
+                    [&](uint32_t word_hash, const std::string_view& word) {
+                      (void)word;
                       unigrams.push_back(word_hash % output_range);
                     });
     return unigrams;
