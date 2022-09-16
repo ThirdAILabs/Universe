@@ -161,7 +161,7 @@ class TabularClassifier final
                 /* sparsity= */ std::nullopt,
                 /* output_activation= */ ActivationFunction::Softmax),
             ReturnMode::ClassName),
-        _metadata(metadata),
+        _metadata(std::move(metadata)),
         _batch_processor(nullptr) {}
 
   void save(const std::string& filename) {

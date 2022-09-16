@@ -189,7 +189,7 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("col_to_min_val"), py::arg("class_to_class_id"),
            py::arg("col_to_num_bins") = std::nullopt);
 
-  py::class_<TabularPairGram, Block>(
+  py::class_<TabularPairGram, Block, std::shared_ptr<TabularPairGram>>(
       block_submodule, "TabularPairGram",
       "Given some metadata about a tabular dataset, assign unique "
       "categories "
