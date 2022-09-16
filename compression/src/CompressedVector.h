@@ -40,6 +40,8 @@ class CompressedVector {
    */
   void extend(const CompressedVector<T>& vec);
 
+  virtual void extend(std::unique_ptr<CompressedVector<T>> vec) = 0;
+
   /*
    * Returns a std::vector formed by decompressing the compressed vector. This
    * method should be implemented by all the schemes.
