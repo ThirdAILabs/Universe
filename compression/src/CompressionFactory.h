@@ -29,9 +29,6 @@ inline std::unique_ptr<CompressedVector<T>> compress(
       seed_for_hashing_indices.push_back(i + seed_for_hashing);
       seed_for_sign.push_back(i + seed_for_hashing);
     }
-    // printvector("CompressionFactory: seed_for_hashing",
-    // seed_for_hashing_indices);
-    // printvector("CompressionFactory: seed_for_sign", seed_for_sign);
 
     return std::make_unique<CountSketch<T>>(
         values, size, compression_density, num_sketches,
@@ -70,6 +67,6 @@ inline std::unique_ptr<CompressedVector<T>> concat(
     }
     return std::make_unique<CountSketch<float>>(concatenated_count_sketch);
   }
-  throw std::logic_error("Valid compression scheme not specified");
+  throw std::invalid_argument("Valid compression scheme not specified");
 }
 }  // namespace thirdai::compression

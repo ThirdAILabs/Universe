@@ -87,12 +87,6 @@ def test_get_set_values():
     new_first_layer_biases = np.ravel(first_layer.biases.get())
     new_first_layer_weights = np.ravel(first_layer.weights.get())
 
-    # c1 = bolt.graph.ParameterReference.concat([compressed_weights] * 2)
-
-    # print(first_layer.weights.get())
-    # first_layer.weights.set(c1)
-    # print(first_layer.weights.get())
-
     # checking whether the gradients are correct
     for i, values in enumerate(new_first_layer_weights):
         if values != 0:
@@ -176,8 +170,3 @@ def test_compressed_training():
         predict_config=predict_config,
     )
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
-
-
-# test_get_set_values()
-# test_concat_values()
-# test_compressed_training()
