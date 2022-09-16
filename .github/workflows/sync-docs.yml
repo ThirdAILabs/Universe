@@ -44,4 +44,4 @@ jobs:
         run: ssh ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }} "rm -rf /home/ubuntu/html"
 
       - name: Copy built docs
-        run: scp -r ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }}:/home/ubuntu/
+        run: scp -r docs/_build/html ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }}:/home/ubuntu/
