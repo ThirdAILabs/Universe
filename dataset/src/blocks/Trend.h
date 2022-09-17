@@ -10,6 +10,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset {
 
@@ -75,10 +76,38 @@ class TrendBlock final : public Block {
 
   ResponsibleColumnAndInputKey explainFeature(uint32_t index_within_block, std::optional<std::unordered_map<uint32_t, std::string>> num_to_name, std::vector<std::string_view> columnar_sample) const override {
     (void) index_within_block;
-    (void) num_to_name;
     (void) columnar_sample;
     throw std::invalid_argument("Not implemented yet lol");
+    if (num_to_name == std::nullopt) {
+      throw std::invalid_argument(
+          "map of col num to col name is missing in categorical block.");
+    }
 
+    std::string id_str(columnar_sample[_id_col]);
+    uint32_t id = idHash(id_str);
+    uint32_t period_timestamp = timestampFromInputRow(columnar_sample);
+    
+    std::vector<float> counts;
+
+    forEachFeatureForId(id, period_timestamp, [&](float each_count) {
+      counts.push_back(each_count);
+    });
+
+    std::string movement;
+    if (counts.at(index_within_block) < 0) {
+      movement = "lower than usual";
+    } else if (counts.at(index_within_block) > 0) {
+      movement = "higher than usual";
+    } else {
+      movement = "same as usual";
+    }
+
+    uint64_t n_periods_ago = _lookahead_periods + _lookback_periods - index_within_block;
+    uint64_t period_timestamp_at_idx = period_timestamp - n_periods_ago;
+    std::string start_time_str = TimeObject(period_timestamp_at_idx * _period_seconds).string();
+    std::string end_time_str = TimeObject((period_timestamp_at_idx + 1) * _period_seconds).string();
+
+    return {num_to_name->at(_count_col), "between " + start_time_str + " and " + end_time_str + " value is " + movement};
   }
 
  protected:
@@ -91,7 +120,9 @@ class TrendBlock final : public Block {
     float count = countFromInputRow(input_row);
     _index->index(id, timestamp, count);
     
-    addFeaturesForId(id, timestamp, vec);
+    forEachFeatureForId(id, timestamp, [&](float each_count) {
+      vec.addDenseFeatureToSegment(each_count);
+    });
     
     return nullptr;
   }
@@ -131,8 +162,9 @@ class TrendBlock final : public Block {
     return count;
   }
 
-  void addFeaturesForId(uint32_t id, uint32_t timestamp,
-                            SegmentedFeatureVector& vec) {
+  template<typename LambdaT>
+  void forEachFeatureForId(uint32_t id, uint32_t timestamp,
+                            LambdaT lambda) const {
     std::vector<float> counts(_lookback_periods);
     float mean = 0;
     fillCountsAndMean(id, timestamp, counts, mean);
@@ -144,13 +176,13 @@ class TrendBlock final : public Block {
     
     for (const auto& count : counts) {
       if (!std::isnan(count)) {
-        vec.addDenseFeatureToSegment(count);
+        lambda(count);        
       }
     }
   }
 
   void fillCountsAndMean(uint32_t id, uint32_t timestamp,
-                         std::vector<float>& counts, float& mean) {
+                         std::vector<float>& counts, float& mean) const {
     mean = 0;
     for (uint32_t i = 0; i < _lookback_periods; i++) {
       auto look_back = _lookahead_periods + i;
