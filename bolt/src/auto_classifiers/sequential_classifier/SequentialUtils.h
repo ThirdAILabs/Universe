@@ -62,6 +62,9 @@ struct Schema {
     for (const auto& [seq_col_name, _1, _2] : sequential) {
       col_names.insert(seq_col_name);
     }
+    for (const auto& [dense_seq_col_name, _1, _2, _3] : dense_sequential) {
+      col_names.insert(dense_seq_col_name);
+    }
     return col_names;
   }
 

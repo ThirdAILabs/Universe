@@ -202,6 +202,7 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       /* static_text= */ {"static_text"},
       /* static_categorical= */ {{"static_categorical", 4}},
       /* sequential= */ {{"target", 2, 3}},
+      /* dense_sequential= */ {},
       /* multi_class_delim= */ ' ');
 
   assertSuccessfulLoadSave(model);
@@ -341,6 +342,7 @@ TEST(SequentialClassifierTest, TestNeverMultiClassUser) {
       /* static_text= */ {},
       /* static_categorical= */ {},
       /* sequential= */ {},
+      /* dense_sequential= */ {},
       /* multi_class_delim= */ ' ');
 
   /*
