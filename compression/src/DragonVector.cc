@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -201,6 +202,57 @@ std::stringstream DragonVector<T>::serialize() const {
   output_stream.write(reinterpret_cast<const char*>(values_data),
                       sizeof(T) * _values.size());
   return output_stream;
+}
+
+template <class T>
+char* DragonVector<T>::arrSerialize() const {
+  char* serialized_data = new char[serialized_size()];
+  size_t curr_pos = 0;
+
+  std::string st = "data";
+  char* data = const_cast<char*>(st.data());
+  data[0] = 'c';
+
+  // Writing compression scheme (1)
+  std::string compression_scheme = "dragon";
+  uint32_t size = static_cast<uint32_t>(compression_scheme.size());
+
+  std::memcpy(serialized_data, reinterpret_cast<char*>(&size),
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+  std::memcpy(serialized_data + curr_pos, compression_scheme.c_str(), size);
+  curr_pos += size;
+
+  // Writing uncompressed size, seed_for_hashing (2,3)
+  std::memcpy(serialized_data + curr_pos,
+              reinterpret_cast<const char*>(&_uncompressed_size),
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+  std::memcpy(serialized_data + curr_pos,
+              reinterpret_cast<const char*>(&_seed_for_hashing),
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+
+  // Writing size of indices, values vectors (4)
+  uint32_t sketch_size = this->size();
+  std::memcpy(serialized_data + curr_pos, reinterpret_cast<char*>(&sketch_size),
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+
+  // Writing the indices and values vectors to the array (5)
+  const uint32_t* indices_data = _indices.data();
+  std::memcpy(serialized_data + curr_pos,
+              reinterpret_cast<const char*>(indices_data),
+              sizeof(uint32_t) * _indices.size());
+  curr_pos += sizeof(uint32_t) * _indices.size();
+  const T* values_data = _values.data();
+  std::memcpy(serialized_data + curr_pos,
+              reinterpret_cast<const char*>(values_data),
+              sizeof(T) * _values.size());
+  curr_pos += sizeof(T) * _values.size();
+  std::cout << "curr pos at the end of serialization is " << curr_pos
+            << std::endl;
+  return serialized_data;
 }
 
 template <class T>

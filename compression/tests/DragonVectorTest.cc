@@ -77,6 +77,8 @@ TEST_F(DragonVectorTest, ExtendDragonVectorTest) {
 }
 
 TEST_F(DragonVectorTest, SerializeDragonVectorTest) {
+  char* arr = _vec.arrSerialize();
+  std::cout << "arr: " << arr[4] << std::endl;
   std::stringstream ss = _vec.serialize();
 
   DragonVector<float> deserialized_vec = DragonVector<float>(ss);

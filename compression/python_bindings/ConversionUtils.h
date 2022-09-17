@@ -33,6 +33,10 @@ inline std::vector<T> makeVectorFrom1dNumpyArray(
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
+// pybind automatically converts py::bytes to a std::string object
+// This has an implicit copy but is the only way of converting bytes to string.
+// We may want to look at taking char array from python and initializing a
+// stringstream from it or generating a compressed vector directly from it
 inline std::unique_ptr<CompressedVector<float>> convertStringToCompressedVector(
     const std::string& compressed_vector) {
   if (compressed_vector[4] == 'd') {
