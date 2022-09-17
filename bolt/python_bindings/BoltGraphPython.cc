@@ -9,6 +9,7 @@
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/DlrmAttention.h>
 #include <bolt/src/graph/nodes/DotProduct.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -221,6 +222,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("gamma_regularizer"),
            "Sets the scaling factor the the normalization configuration.");
 
+  py::class_<DlrmAttentionNode, DlrmAttentionNodePtr, Node>(graph_submodule,
+                                                            "DlrmAttention")
+      .def(py::init())
+      .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
+           py::arg("embedding_layer"));
+
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
                   py::arg("epochs"))
@@ -231,7 +238,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"))
-      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"));
+      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      .def("with_validation", &TrainConfig::withValidation,
+           py::arg("validation_data"), py::arg("validation_labels"),
+           py::arg("predict_config"));
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)
@@ -538,25 +548,25 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
                      &TrainState::rebuild_hash_tables_batch)
       .def_readwrite("reconstruct_hash_functions_batch",
                      &TrainState::reconstruct_hash_functions_batch)
-      .def_readwrite("stop_training", &TrainState::stop_training);
+      .def_readwrite("stop_training", &TrainState::stop_training)
+      .def_readonly("epoch_times", &TrainState::epoch_times)
+      .def("get_train_metrics", &TrainState::getTrainMetrics,
+           py::arg("metric_name"))
+      .def("get_validation_metrics", &TrainState::getValidationMetrics,
+           py::arg("metric_name"));
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
       .def(
-          py::init<std::vector<dataset::BoltDatasetPtr>,
-                   dataset::BoltDatasetPtr, PredictConfig, std::string,
-                   uint32_t, double>(),
-          py::arg("validation_data"), py::arg("validation_labels"),
-          py::arg("predict_config"), py::arg("model_save_path"),
+          py::init<std::string, std::string, uint32_t, double>(),
+          py::arg("monitored_metric"), py::arg("model_save_path"),
           py::arg("patience"), py::arg("min_delta"),
           "This callback is intended to stop training early based on prediction"
           " results from a given validation set. Saves the best model to "
           "model_save_path.\n"
           "Arguments:\n"
-          " * validation_data: Data input as passed to predict.\n"
-          " * validation_labels: Label input as passed to predict.\n"
-          " * predict_config: PredictConfig. Configurations for evaluation on "
-          "the given validation data. must include metrics\n"
+          " * monitored_metric: The metric to monitor for early stopping. The "
+          "metric is assumed to be associated with validation data.\n"
           " * model_save_path: string. The file path to save the model that "
           "scored the best on the validation set\n"
           " * patience: int. The nuber of epochs with no improvement in "
