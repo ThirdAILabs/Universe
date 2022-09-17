@@ -105,7 +105,8 @@ class DotProductNode final
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
-    summary << name() << " (DotProduct)\n";
+    summary << "(" << _lhs->name() << ", " << _rhs->name() << ") -> " << name()
+            << " (DotProduct)\n";
   }
 
   std::string type() const final { return "dot_product"; }
