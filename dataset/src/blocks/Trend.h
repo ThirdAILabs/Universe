@@ -75,24 +75,16 @@ class TrendBlock final : public Block {
   }
 
   ResponsibleColumnAndInputKey explainFeature(uint32_t index_within_block, std::optional<std::unordered_map<uint32_t, std::string>> num_to_name, std::vector<std::string_view> columnar_sample) const override {
-    (void) index_within_block;
-    (void) columnar_sample;
-    throw std::invalid_argument("Not implemented yet lol");
-    if (num_to_name == std::nullopt) {
-      throw std::invalid_argument(
-          "map of col num to col name is missing in categorical block.");
-    }
-
     std::string id_str(columnar_sample[_id_col]);
     uint32_t id = idHash(id_str);
     uint32_t period_timestamp = timestampFromInputRow(columnar_sample);
     
     std::vector<float> counts;
-
+    
     forEachFeatureForId(id, period_timestamp, [&](float each_count) {
       counts.push_back(each_count);
     });
-
+    
     std::string movement;
     if (counts.at(index_within_block) < 0) {
       movement = "lower than usual";
@@ -106,7 +98,7 @@ class TrendBlock final : public Block {
     uint64_t period_timestamp_at_idx = period_timestamp - n_periods_ago;
     std::string start_time_str = TimeObject(period_timestamp_at_idx * _period_seconds).string();
     std::string end_time_str = TimeObject((period_timestamp_at_idx + 1) * _period_seconds).string();
-
+    
     return {num_to_name->at(_count_col), "between " + start_time_str + " and " + end_time_str + " value is " + movement};
   }
 

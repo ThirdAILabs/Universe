@@ -33,11 +33,7 @@ class TimeObject {
     throw std::invalid_argument(error_ss.str());
   }
 
-  explicit TimeObject(const long seconds_since_epoch) : _time_object() {
-    auto* tm_ptr = std::gmtime(&seconds_since_epoch);
-    _time_object = *tm_ptr;
-    delete tm_ptr;
-  }
+  explicit TimeObject(const long seconds_since_epoch) : _time_object(*std::gmtime(&seconds_since_epoch)) {}
 
   /**
    * Theres an STL function that does this (std::mktime)
@@ -57,7 +53,10 @@ class TimeObject {
   std::string string() const {
     std::stringstream ss;
     ss << 1900 + _time_object.tm_year << '-';
-    ss << _time_object.tm_mon << '-';
+    if (_time_object.tm_mon < 9) {
+      ss << '0';
+    }
+    ss << _time_object.tm_mon + 1 << '-';
     if (_time_object.tm_mday < 10) {
       ss << '0';
     }

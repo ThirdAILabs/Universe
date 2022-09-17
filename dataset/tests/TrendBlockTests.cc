@@ -12,6 +12,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <string>
 #include <unordered_map>
 #include <valarray>
 #include <vector>
@@ -150,6 +151,29 @@ TEST_F(TrendBlockTests, PrepareBatchWorks) {
   auto vec_3_entries = vectorEntries(vecs_3[1]);
   ASSERT_EQ(vec_3_entries.size(), 1);
   ASSERT_EQ(vec_3_entries.at(0), 5); // As opposed to 15
+}
+
+TEST_F(TrendBlockTests, TryExplain) {
+  TrendBlock block(
+      /* has_count_col = */ true, /* id_col = */ 0,
+      /* timestamp_col = */ 1, /* count_col = */ 2,
+      /* lookahead = */ 0, /* lookback = */ 12, /* period = */ 3);
+  
+  std::string zero = "0";
+  std::string timestamp = "2022-02-02";
+  std::string_view zero_view = {zero.data(), zero.length()};
+  std::string_view timestamp_view = {timestamp.data(), timestamp.length()};
+  std::vector<std::string_view> row = {zero_view, timestamp_view, zero_view};
+  
+  std::unordered_map<uint32_t, std::string> num_to_name = {
+    {0, "user"},
+    {1, "timestamp"},
+    {2, "count"},
+  };
+
+  auto a = block.explainFeature(/* index_within_block= */ 1, num_to_name, row);
+  std::cout << a.column_name << std::endl;
+  std::cout << a.input_key << std::endl;
 }
 
 }  // namespace thirdai::dataset
