@@ -236,6 +236,124 @@ std::stringstream CountSketch<T>::serialize() const {
 }
 
 template <class T>
+char* CountSketch<T>::arrSerialize() const {
+  char* serialized_data = new char[serialized_size()];
+  size_t curr_pos = 0;
+
+  // Writing compression scheme (1)
+  std::string compression_scheme = "count_sketch";
+  uint32_t size = static_cast<uint32_t>(compression_scheme.size());
+  std::memcpy(serialized_data, reinterpret_cast<char*>(&size),
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+  std::memcpy(serialized_data, compression_scheme.c_str(), size);
+  curr_pos += size;
+
+  // Writing uncompressed size (2)
+  std::memcpy(serialized_data,
+              reinterpret_cast<const char*>(&_uncompressed_size),
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+
+  // Writing number of count sketches (3)
+  uint32_t num_sketches = numSketches();
+  std::memcpy(serialized_data, reinterpret_cast<char*>(&num_sketches),
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+
+  // Writing Seeds for hashing indices (4)
+  std::memcpy(serialized_data,
+              reinterpret_cast<const char*>(_seed_for_hashing_indices.data()),
+              sizeof(uint32_t) * num_sketches);
+  curr_pos += sizeof(uint32_t) * num_sketches;
+
+  // Writing Seeds for sign (5)
+  std::memcpy(serialized_data,
+              reinterpret_cast<const char*>(_seed_for_sign.data()),
+              sizeof(uint32_t) * num_sketches);
+  curr_pos += sizeof(uint32_t) * num_sketches;
+
+  // Writing size of count sketch (6)
+  uint32_t sketch_size = this->size();
+  std::memcpy(serialized_data, reinterpret_cast<char*>(&sketch_size),
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+
+  // Writing Count Sketch Vectors (7)
+  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
+    std::memcpy(
+        serialized_data,
+        reinterpret_cast<const char*>(_count_sketches[num_sketch].data()),
+        sizeof(T) * sketch_size);
+    curr_pos += sizeof(T) * sketch_size;
+  }
+  return serialized_data;
+}
+
+template <class T>
+CountSketch<T>::CountSketch(char* serialized_data) {
+  size_t curr_pos = 0;
+
+  // Reading the compression scheme (1)
+  uint32_t string_size;
+  std::string compression_scheme;
+  std::memcpy(reinterpret_cast<char*>(&string_size), serialized_data + curr_pos,
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+  char* buff(new char[string_size]);
+  std::memcpy(reinterpret_cast<char*>(buff), serialized_data + curr_pos,
+              string_size);
+  curr_pos += string_size;
+  compression_scheme.assign(buff, string_size);
+
+  // Reading uncompressed_size (2)
+  uint32_t uncompressed_size;
+  std::memcpy(reinterpret_cast<char*>(&uncompressed_size),
+              serialized_data + curr_pos, sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+  _uncompressed_size = uncompressed_size;  // NOLINT
+
+  // Reading number of count sketches (3)
+  uint32_t num_sketches;
+  std::memcpy(reinterpret_cast<char*>(&num_sketches),
+              serialized_data + curr_pos, sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+
+  // Reading seed for hashing indices (4)
+  _seed_for_hashing_indices.resize(num_sketches);
+  std::memcpy(reinterpret_cast<char*>(_seed_for_hashing_indices.data()),
+              serialized_data + curr_pos, sizeof(uint32_t) * num_sketches);
+  curr_pos += sizeof(uint32_t) * num_sketches;
+
+  // Reading seed for sign (5)
+  _seed_for_sign.resize(num_sketches);
+  std::memcpy(reinterpret_cast<char*>(_seed_for_sign.data()),
+              serialized_data + curr_pos, sizeof(uint32_t) * num_sketches);
+  curr_pos += sizeof(uint32_t) * num_sketches;
+
+  // Reading size of count_sketch (6)
+  uint32_t sketch_size = this->size();
+  std::memcpy(reinterpret_cast<char*>(&sketch_size), serialized_data + curr_pos,
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+
+  // Reading Count Sketch Vectors (7)
+  _count_sketches.resize(num_sketches);
+  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
+    _count_sketches[num_sketch].resize(sketch_size);
+    std::memcpy(reinterpret_cast<char*>(_count_sketches[num_sketch].data()),
+                serialized_data + curr_pos, sizeof(T) * sketch_size);
+    curr_pos += sizeof(T) * sketch_size;
+  }
+
+  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
+    _hasher_index.push_back(
+        UniversalHash(_seed_for_hashing_indices[num_sketch]));
+    _hasher_sign.push_back(UniversalHash(_seed_for_sign[num_sketch]));
+  }
+}
+
+template <class T>
 CountSketch<T>::CountSketch(std::stringstream& input_stream) {
   // Reading the compression scheme (1)
   uint32_t string_size;

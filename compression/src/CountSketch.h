@@ -36,6 +36,8 @@ class CountSketch final : public CompressedVector<T> {
 
   explicit CountSketch(std::stringstream& input_stream);
 
+  explicit CountSketch(char* serialized_data);
+
   T get(uint32_t index) const final;
 
   void set(uint32_t index, T value) final;
@@ -102,6 +104,8 @@ class CountSketch final : public CompressedVector<T> {
   }
 
   std::stringstream serialize() const final;
+
+  char* arrSerialize() const final;
 
   uint32_t serialized_size() const final;
 

@@ -49,7 +49,7 @@ inline std::unique_ptr<CompressedVector<float>> convertStringToCompressedVector(
 
 inline py::bytes convertCompressedVectorToString(
     const std::unique_ptr<CompressedVector<float>>& compressed_vector) {
-  py::bytes bytes_compressed_vector(compressed_vector->serialize().str());
+  py::bytes bytes_compressed_vector(compressed_vector->arrSerialize());
   // an implicit copy being made here because of conversion from string to bytes
   return bytes_compressed_vector;
 }

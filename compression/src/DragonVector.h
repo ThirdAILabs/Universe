@@ -70,7 +70,7 @@ class DragonVector final : public CompressedVector<T> {
 
   std::stringstream serialize() const final;
 
-  char* arrSerialize() const;
+  char* arrSerialize() const final;
 
   uint32_t serialized_size() const final;
 

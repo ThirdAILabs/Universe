@@ -54,6 +54,8 @@ class CompressedVector {
 
   virtual std::stringstream serialize() const = 0;
 
+  virtual char* arrSerialize() const = 0;
+
   virtual uint32_t serialized_size() const = 0;
 };
 

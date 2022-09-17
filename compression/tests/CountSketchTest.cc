@@ -115,8 +115,9 @@ TEST_F(CountSketchTest, AddCountSketchTest) {
 }
 
 TEST_F(CountSketchTest, SerializeCountSketchTest) {
-  std::stringstream ss = _vec.serialize();
-  CountSketch<float> deserialized_vec = CountSketch<float>(ss);
+  char* serialized_data = _vec.arrSerialize();
+
+  CountSketch<float> deserialized_vec(serialized_data);
   ASSERT_EQ(deserialized_vec.size(), _vec.size());
   ASSERT_EQ(deserialized_vec.uncompressedSize(), _vec.uncompressedSize());
   uint32_t num_sketches = deserialized_vec.numSketches();

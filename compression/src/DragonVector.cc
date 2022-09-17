@@ -173,10 +173,6 @@ template <class T>
 std::stringstream DragonVector<T>::serialize() const {
   std::stringstream output_stream;
 
-  std::string st = "data";
-  char* data = const_cast<char*>(st.data());
-  data[0] = 'c';
-
   // Writing compression scheme (1)
   std::string compression_scheme = "dragon";
   uint32_t size = static_cast<uint32_t>(compression_scheme.size());
@@ -208,10 +204,6 @@ template <class T>
 char* DragonVector<T>::arrSerialize() const {
   char* serialized_data = new char[serialized_size()];
   size_t curr_pos = 0;
-
-  std::string st = "data";
-  char* data = const_cast<char*>(st.data());
-  data[0] = 'c';
 
   // Writing compression scheme (1)
   std::string compression_scheme = "dragon";
