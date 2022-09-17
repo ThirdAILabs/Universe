@@ -256,6 +256,55 @@ char* DragonVector<T>::arrSerialize() const {
 }
 
 template <class T>
+DragonVector<T>::DragonVector(char* serialized_data) {
+  size_t curr_pos = 0;
+
+  // Reading the compression scheme (1)
+  uint32_t string_size;
+  std::string compression_scheme;
+
+  std::memcpy(reinterpret_cast<char*>(&string_size), serialized_data + curr_pos,
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+  char* buff(new char[string_size]);
+  std::memcpy(reinterpret_cast<char*>(buff), serialized_data + curr_pos,
+              string_size);
+  curr_pos += string_size;
+  compression_scheme.assign(buff, string_size);
+
+  // Reading uncompressed size, seed_for_hashing (2,3)
+  uint32_t uncompressed_size;
+  uint32_t seed_for_hashing;
+  std::memcpy(reinterpret_cast<char*>(&uncompressed_size),
+              serialized_data + curr_pos, sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+
+  std::memcpy(reinterpret_cast<char*>(&seed_for_hashing),
+              serialized_data + curr_pos, sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+
+  _uncompressed_size = uncompressed_size;  // NOLINT
+  _seed_for_hashing = seed_for_hashing;    // NOLINT
+
+  // Reading size of indices and values array (4)
+  uint32_t sketch_size;
+  std::memcpy(reinterpret_cast<char*>(&sketch_size), serialized_data + curr_pos,
+              sizeof(uint32_t));
+  curr_pos += sizeof(uint32_t);
+  _indices.resize(sketch_size);
+  _values.resize(sketch_size);
+
+  // Reading the indices and the values array (5)
+  std::memcpy(reinterpret_cast<char*>(_indices.data()),
+              serialized_data + curr_pos, sizeof(uint32_t) * sketch_size);
+  curr_pos += sizeof(uint32_t) * sketch_size;
+  std::memcpy(reinterpret_cast<char*>(_values.data()),
+              serialized_data + curr_pos, sizeof(T) * sketch_size);
+  curr_pos += sizeof(uint32_t) * sketch_size;
+  std::cout << "curr_pos in deserialize : " << curr_pos << std::endl;
+}
+
+template <class T>
 DragonVector<T>::DragonVector(std::stringstream& input_stream) {
   // Reading the compression scheme (1)
   uint32_t string_size;

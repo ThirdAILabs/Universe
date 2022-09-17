@@ -34,6 +34,8 @@ class DragonVector final : public CompressedVector<T> {
 
   explicit DragonVector(std::stringstream& input_stream);
 
+  explicit DragonVector(char* serialized_data);
+
   T get(uint32_t index) const final;
 
   void set(uint32_t index, T value) final;
