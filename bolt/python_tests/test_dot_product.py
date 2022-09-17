@@ -54,7 +54,7 @@ def test_dot_product():
 
     model = create_model(n_classes)
 
-    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=1)
+    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=1)
     predict_cfg = bolt.graph.PredictConfig.make().return_activations()
 
     for _ in range(20):

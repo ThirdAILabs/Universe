@@ -75,7 +75,7 @@ class DotProductNode final
     BoltVector& a = _lhs->getOutputVector(vec_index);
     BoltVector& b = _rhs->getOutputVector(vec_index);
 
-    float grad = (*_outputs)[vec_index].activations[0];
+    float grad = (*_outputs)[vec_index].gradients[0];
 
     if (a.isDense()) {
       if (b.isDense()) {
