@@ -44,6 +44,14 @@ class TrendBlock final : public Block {
     _index->setTimestampLifetime(_lookahead_periods + _lookback_periods);
   }
 
+  static auto make(bool has_count_col, size_t id_col, size_t timestamp_col,
+             size_t count_col, uint32_t lookahead, uint32_t lookback,
+             uint32_t period, std::shared_ptr<CountHistoryIndex> index) {
+              return std::make_shared<TrendBlock>(has_count_col, id_col, timestamp_col,
+             count_col, lookahead, lookback,
+             period, index);
+             }
+
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
              size_t count_col, uint32_t lookahead, uint32_t lookback,
              uint32_t period)
@@ -70,6 +78,7 @@ class TrendBlock final : public Block {
     (void) num_to_name;
     (void) columnar_sample;
     throw std::invalid_argument("Not implemented yet lol");
+
   }
 
  protected:
@@ -81,10 +90,9 @@ class TrendBlock final : public Block {
     uint32_t timestamp = timestampFromInputRow(input_row);
     float count = countFromInputRow(input_row);
     _index->index(id, timestamp, count);
-
-    uint32_t offset = 0;
-    offset = addFeaturesForId(id, timestamp, vec, offset);
-
+    
+    addFeaturesForId(id, timestamp, vec);
+    
     return nullptr;
   }
 
@@ -123,25 +131,22 @@ class TrendBlock final : public Block {
     return count;
   }
 
-  uint32_t addFeaturesForId(uint32_t id, uint32_t timestamp,
-                            SegmentedFeatureVector& vec, uint32_t offset) {
+  void addFeaturesForId(uint32_t id, uint32_t timestamp,
+                            SegmentedFeatureVector& vec) {
     std::vector<float> counts(_lookback_periods);
     float mean = 0;
     fillCountsAndMean(id, timestamp, counts, mean);
-
+    
     if (_lookback_periods > 1 && mean != 0) {
       center(counts, mean);
       l2Normalize(counts);
     }
-
-    uint32_t idx = 0;
+    
     for (const auto& count : counts) {
       if (!std::isnan(count)) {
-        vec.addSparseFeatureToSegment(offset + idx, count);
+        vec.addDenseFeatureToSegment(count);
       }
-      idx++;
     }
-    return offset + idx;
   }
 
   void fillCountsAndMean(uint32_t id, uint32_t timestamp,
@@ -188,5 +193,7 @@ class TrendBlock final : public Block {
   size_t _expected_num_cols;
   std::shared_ptr<CountHistoryIndex> _index;
 };
+
+using TrendBlockPtr = std::shared_ptr<TrendBlock>;
 
 }  // namespace thirdai::dataset

@@ -2,7 +2,9 @@
 
 #include <dataset/src/utils/CountMinSketch.h>
 #include <atomic>
+#include <iostream>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 
 namespace thirdai::dataset {
@@ -17,6 +19,11 @@ class CountHistoryIndex {
         _start_timestamp(0),
         _index_lifetime(indexLifetime(range_pow)),
         _n_indexed(0) {}
+
+  static auto makeDefault() {
+    return std::make_shared<CountHistoryIndex>(
+                       /* n_rows = */ 5, /* range_pow = */ 22);
+  }
 
   void setTimestampLifetime(uint32_t lifetime) {
     _timestamp_lifetime = lifetime;
@@ -87,4 +94,6 @@ class CountHistoryIndex {
   uint32_t _index_lifetime;
   std::atomic_uint32_t _n_indexed;
 };
+
+using CountHistoryIndexPtr = std::shared_ptr<CountHistoryIndex>;
 }  // namespace thirdai::dataset

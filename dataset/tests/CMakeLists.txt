@@ -84,6 +84,7 @@ target_link_libraries(
   PRIVATE
   gtest_main
   hash_function_lib
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
