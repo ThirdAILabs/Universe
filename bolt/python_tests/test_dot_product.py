@@ -5,6 +5,7 @@ from sklearn.metrics import roc_auc_score
 
 pytestmark = [pytest.mark.unit]
 
+
 def generate_dataset(n_classes, n_samples, batch_size):
     possible_one_hot_encodings = np.eye(n_classes)
 
@@ -29,12 +30,17 @@ def generate_dataset(n_classes, n_samples, batch_size):
     return lhs_dataset, rhs_dataset, labels_dataset, labels_np
 
 
-def create_model(input_dim):
+def create_model(input_dim, lhs_sparsity, rhs_sparsity):
     lhs_input = bolt.graph.Input(input_dim)
     rhs_input = bolt.graph.Input(input_dim)
 
-    lhs_hidden = bolt.graph.FullyConnected(dim=100, activation="relu")(lhs_input)
-    rhs_hidden = bolt.graph.FullyConnected(dim=100, activation="relu")(rhs_input)
+    lhs_hidden = bolt.graph.FullyConnected(
+        dim=200, sparsity=lhs_sparsity, activation="relu"
+    )(lhs_input)
+
+    rhs_hidden = bolt.graph.FullyConnected(
+        dim=200, sparsity=rhs_sparsity, activation="relu"
+    )(rhs_input)
 
     dot = bolt.graph.DotProduct()(lhs_hidden, rhs_hidden)
 
@@ -44,21 +50,45 @@ def create_model(input_dim):
 
     return model
 
-def test_dot_product():
+
+def run_dot_product_test(lhs_sparsity, rhs_sparsity):
     n_classes = 100
     n_samples = 2000
     batch_size = 100
-    
-    train_rhs_data, train_lhs_data, train_labels, _ = generate_dataset(n_classes, n_samples, batch_size)
-    test_rhs_data, test_lhs_data, test_labels, test_labels_np = generate_dataset(n_classes, n_samples, batch_size)
 
-    model = create_model(n_classes)
+    train_rhs_data, train_lhs_data, train_labels, _ = generate_dataset(
+        n_classes, n_samples, batch_size
+    )
+    test_rhs_data, test_lhs_data, test_labels, test_labels_np = generate_dataset(
+        n_classes, n_samples, batch_size
+    )
 
-    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=1)
-    predict_cfg = bolt.graph.PredictConfig.make().return_activations()
+    model = create_model(n_classes, lhs_sparsity, rhs_sparsity)
 
-    for _ in range(20):
-      model.train([train_lhs_data, train_rhs_data], train_labels, train_cfg)
-      _, activations = model.predict([test_lhs_data, test_rhs_data], test_labels, predict_cfg)
+    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=20).silence()
+    predict_cfg = bolt.graph.PredictConfig.make().return_activations().silence()
 
-      print(roc_auc_score(test_labels_np, activations[:,0]))
+    model.train([train_lhs_data, train_rhs_data], train_labels, train_cfg)
+    _, activations = model.predict(
+        [test_lhs_data, test_rhs_data], test_labels, predict_cfg
+    )
+
+    roc_auc = roc_auc_score(test_labels_np, activations[:, 0])
+
+    assert roc_auc >= 0.8
+
+
+def test_dot_product_dense_dense_embeddings():
+    run_dot_product_test(lhs_sparsity=1.0, rhs_sparsity=1.0)
+
+
+def test_dot_product_dense_sparse_embeddings():
+    run_dot_product_test(lhs_sparsity=1.0, rhs_sparsity=0.2)
+
+
+def test_dot_product_sparse_dense_embeddings():
+    run_dot_product_test(lhs_sparsity=0.2, rhs_sparsity=1.0)
+
+
+def test_dot_product_sparse_sparse_embeddings():
+    run_dot_product_test(lhs_sparsity=0.2, rhs_sparsity=0.2)
