@@ -9,6 +9,7 @@
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/DlrmAttention.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -213,6 +214,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("scale", &NormalizationLayerConfig::setScalingFactor,
            py::arg("gamma_regularizer"),
            "Sets the scaling factor the the normalization configuration.");
+
+  py::class_<DlrmAttentionNode, DlrmAttentionNodePtr, Node>(graph_submodule,
+                                                            "DlrmAttention")
+      .def(py::init())
+      .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
+           py::arg("embedding_layer"));
 
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
