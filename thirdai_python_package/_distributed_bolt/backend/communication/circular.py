@@ -3,12 +3,12 @@ from typing import Tuple, Any, Optional, Dict, List
 
 
 class Circular:
-    def __init__(self, model, id, primary_worker, total_nodes):
+    def __init__(self, model, id, primary_worker, num_workers):
 
         self.model = model
         self.id = id
         self.primary_worker = primary_worker
-        self.total_nodes = total_nodes
+        self.num_workers = num_workers
 
         self.friend = None  # this variable is set up in set_friend
         self.w_partitions = []
@@ -35,11 +35,11 @@ class Circular:
         in case of circular communication
         """
         for w_gradients in self.w_gradients:
-            partition_length = int(len(w_gradients) / self.total_nodes)
-            remaining_length = len(w_gradients) % self.total_nodes
+            partition_length = int(len(w_gradients) / self.num_workers)
+            remaining_length = len(w_gradients) % self.num_workers
             partition_start_end_list = []
             current_index = 0
-            for i in range(self.total_nodes):
+            for i in range(self.num_workers):
                 if i < remaining_length:
                     partition_start_end_list.append(
                         (current_index, current_index + partition_length + 1)
@@ -54,11 +54,11 @@ class Circular:
             self.w_partitions.append(partition_start_end_list)
 
         for b_layers in self.b_gradients:
-            partition_length = int(len(b_layers) / self.total_nodes)
-            remaining_length = len(b_layers) % self.total_nodes
+            partition_length = int(len(b_layers) / self.num_workers)
+            remaining_length = len(b_layers) % self.num_workers
             partition_start_end_list = []
             current_index = 0
-            for i in range(self.total_nodes):
+            for i in range(self.num_workers):
                 if i < remaining_length:
                     partition_start_end_list.append(
                         (current_index, current_index + partition_length + 1)
@@ -144,11 +144,11 @@ class Circular:
                     if avg_gradients:
                         self.w_gradients[i][l_weight_idx:r_weight_idx] = (
                             self.w_gradients[i][l_weight_idx:r_weight_idx]
-                            / self.total_nodes
+                            / self.num_workers
                         )
                         self.b_gradients[i][l_bias_idx:r_bias_idx] = (
                             self.b_gradients[i][l_bias_idx:r_bias_idx]
-                            / self.total_nodes
+                            / self.num_workers
                         )
                 else:
                     self.w_gradients[i][
@@ -182,7 +182,7 @@ class Circular:
         :type avg_gradients: Optional[bool], optional
         """
 
-        partition_id = (update_id + self.id - 1) % self.total_nodes
+        partition_id = (update_id + self.id - 1) % self.num_workers
 
         get_ray_object = self.friend.receive_array_partitions.remote(update_id)
         (
@@ -200,7 +200,7 @@ class Circular:
         :return: gradients subarray
         :rtype: numpy.ndarray
         """
-        partition_id = (update_id + self.id) % self.total_nodes
+        partition_id = (update_id + self.id) % self.num_workers
 
         w_gradient_subarray = []
         b_gradient_subarray = []

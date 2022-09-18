@@ -20,7 +20,7 @@ class Worker:
 
     def __init__(
         self,
-        total_nodes: int,
+        num_workers: int,
         id: int,
         primary_worker,
         config,
@@ -30,8 +30,8 @@ class Worker:
         """
         Initializes the worker to run
 
-        :param total_nodes: total number of nodes
-        :type total_nodes: int
+        :param num_workers: total number of nodes
+        :type num_workers: int
         :param id: id of this particular worker
         :type id: int
         :param primary_worker: Primary Worker
@@ -45,16 +45,16 @@ class Worker:
         """
 
         self.model = FullyConnectedNetworkSingleNode(
-            config, total_nodes, layer_dims, id
+            config, num_workers, layer_dims, id
         )
         # Set up variables
-        self.total_nodes = total_nodes
+        self.num_workers = num_workers
         self.id = id
         self.primary_worker = primary_worker
         self.communication_type = communication_type
 
         self.comm = (
-            comm.Circular(self.model, self.id, self.primary_worker, self.total_nodes)
+            comm.Circular(self.model, self.id, self.primary_worker, self.num_workers)
             if self.communication_type == "circular"
             else comm.Linear(self.model, self.id, self.primary_worker)
         )

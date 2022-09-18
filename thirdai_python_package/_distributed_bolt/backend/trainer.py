@@ -95,12 +95,5 @@ class Trainer:
         :type epoch: int
         """
         self.logging.info(
-            "Epoch No: "
-            + str(epoch)
-            + ", Batch No: "
-            + str(batch_no)
-            + ", Bolt Computation Time: "
-            + str(self.bolt_computation_time)
-            + ", Averaging and Communcation Time: "
-            + str(self.averaging_and_communication_time)
+            f"Epoch No: {epoch}, Batch No: {batch_no}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
         )

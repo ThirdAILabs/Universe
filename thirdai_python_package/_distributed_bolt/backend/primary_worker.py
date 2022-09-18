@@ -22,15 +22,15 @@ class PrimaryWorker(Worker):
     """
 
     def __init__(
-        self, layer_dims: List[int], no_of_workers: int, config, communication_type
+        self, layer_dims: List[int], num_workers: int, config, communication_type
     ):
         """
         Initializes the Primary Worker Class
 
         :param layer_dims: List of layer dimensions.
         :type layer_dims: List[int]
-        :param no_of_workers: number of workers in training
-        :type no_of_workers: int
+        :param num_workers: number of workers in training
+        :type num_workers: int
         :param config: configuration file dictionary
         :type config: TOML File
         :param communication_type: Type of Communication
@@ -38,7 +38,7 @@ class PrimaryWorker(Worker):
         """
         self.layer_dims = layer_dims
 
-        super().__init__(no_of_workers, 0, self, config, layer_dims, communication_type)
+        super().__init__(num_workers, 0, self, config, layer_dims, communication_type)
 
     def subwork_circular_communication(self, workers):
         """
@@ -52,9 +52,9 @@ class PrimaryWorker(Worker):
         """
 
         # update_id imples here, the different stages of circular communication
-        update_id = self.total_nodes
-        for node in range(self.total_nodes - 1):
-            if node == self.total_nodes - 2:
+        update_id = self.num_workers
+        for node in range(self.num_workers - 1):
+            if node == self.num_workers - 2:
                 ray.get(
                     [
                         worker.process_ring.remote(update_id, avg_gradients=True)
@@ -66,8 +66,8 @@ class PrimaryWorker(Worker):
             update_id -= 1
 
         # + 1, because it is the partition for the candidates giving the partitions
-        update_id = self.total_nodes + 1
-        for node in range(self.total_nodes - 1):
+        update_id = self.num_workers + 1
+        for node in range(self.num_workers - 1):
             ray.get(
                 [
                     worker.process_ring.remote(update_id, reduce=False)

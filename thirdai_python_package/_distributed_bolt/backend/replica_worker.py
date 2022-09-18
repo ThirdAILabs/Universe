@@ -26,7 +26,7 @@ class ReplicaWorker(Worker):
 
     def __init__(
         self,
-        no_of_workers: int,
+        num_workers: int,
         id: int,
         primary_worker,
         config,
@@ -36,8 +36,8 @@ class ReplicaWorker(Worker):
         """
         Calls the constructor for Worker
 
-        :param no_of_workers: number of workers
-        :type no_of_workers: int
+        :param num_workers: number of workers
+        :type num_workers: int
         :param id: id for this particular replica worker
         :type id: int
         :param primary_worker: primary_worker
@@ -50,5 +50,5 @@ class ReplicaWorker(Worker):
         :type communication_type: string
         """
         super().__init__(
-            no_of_workers, id, primary_worker, config, layer_dims, communication_type
+            num_workers, id, primary_worker, config, layer_dims, communication_type
         )
