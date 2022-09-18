@@ -51,7 +51,7 @@ def create_model(input_dim, lhs_sparsity, rhs_sparsity):
     return model
 
 
-def run_dot_product_test(lhs_sparsity, rhs_sparsity):
+def run_dot_product_test(lhs_sparsity, rhs_sparsity, acc_threshold):
     n_classes = 100
     n_samples = 2000
     batch_size = 100
@@ -75,20 +75,20 @@ def run_dot_product_test(lhs_sparsity, rhs_sparsity):
 
     roc_auc = roc_auc_score(test_labels_np, activations[:, 0])
 
-    assert roc_auc >= 0.8
+    assert roc_auc >= acc_threshold
 
 
 def test_dot_product_dense_dense_embeddings():
-    run_dot_product_test(lhs_sparsity=1.0, rhs_sparsity=1.0)
+    run_dot_product_test(lhs_sparsity=1.0, rhs_sparsity=1.0, acc_threshold=0.8)
 
 
 def test_dot_product_dense_sparse_embeddings():
-    run_dot_product_test(lhs_sparsity=1.0, rhs_sparsity=0.2)
+    run_dot_product_test(lhs_sparsity=1.0, rhs_sparsity=0.2, acc_threshold=0.8)
 
 
 def test_dot_product_sparse_dense_embeddings():
-    run_dot_product_test(lhs_sparsity=0.2, rhs_sparsity=1.0)
+    run_dot_product_test(lhs_sparsity=0.2, rhs_sparsity=1.0, acc_threshold=0.8)
 
 
 def test_dot_product_sparse_sparse_embeddings():
-    run_dot_product_test(lhs_sparsity=0.2, rhs_sparsity=0.2)
+    run_dot_product_test(lhs_sparsity=0.2, rhs_sparsity=0.2, acc_threshold=0.7)

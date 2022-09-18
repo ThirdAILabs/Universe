@@ -188,13 +188,13 @@ class DotProductNode final
     a.sortActiveNeurons();
     b.sortActiveNeurons();
 
-    float total = 0;
+    float total = 0.0;
 
     uint32_t a_index = 0;
     uint32_t b_index = 0;
     while (a_index < a.len && b_index < b.len) {
       if (a.active_neurons[a_index] == b.active_neurons[b_index]) {
-        total += a.active_neurons[a_index] * b.active_neurons[b_index];
+        total += a.activations[a_index] * b.activations[b_index];
         a_index++;
         b_index++;
       } else if (a.active_neurons[a_index] < b.active_neurons[b_index]) {
