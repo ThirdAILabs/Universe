@@ -21,6 +21,12 @@ inline std::unique_ptr<CompressedVector<T>> compress(
                                              sample_population_size);
   }
   if (compression_scheme == "count_sketch") {
+    /*
+     * Count sketches is a stack of multiple sketches and requires a seed for
+     * each of the sketches. Rather than asking the caller to give seeds for all
+     * the sketches, we get the seeds for the sketches by incrementing the input
+     * seed.
+     */
     uint32_t num_sketches = sample_population_size;
     std::vector<uint32_t> seed_for_hashing_indices;
     std::vector<uint32_t> seed_for_sign;
@@ -34,7 +40,9 @@ inline std::unique_ptr<CompressedVector<T>> compress(
         values, size, compression_density, num_sketches,
         seed_for_hashing_indices, seed_for_sign);
   }
-  throw std::logic_error("Compression Scheme is invalid");
+  throw std::logic_error(
+      "The provided compression scheme is invalid. The compression module "
+      "supports dragon and count_sketch.");
 }
 
 template <class T>
