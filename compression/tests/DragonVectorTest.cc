@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <memory>
 #include <random>
-#include <sstream>
 #include <vector>
 namespace thirdai::compression::tests {
 

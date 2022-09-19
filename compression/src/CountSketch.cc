@@ -6,8 +6,6 @@
 #include <cmath>
 #include <cstddef>
 #include <iostream>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -185,7 +183,7 @@ std::vector<T> CountSketch<T>::decompress() const {
 }
 
 /*
- * Serialization function for the dragon vector. The order of serialization is:
+ * The order of serialization for count sketch is as follows:
  * 1) An enum for compression scheme
  * 2) Uncompressed Size of the vector
  * 3) Number of count_sketches

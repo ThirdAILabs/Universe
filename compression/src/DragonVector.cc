@@ -7,8 +7,6 @@
 #include <cstddef>
 #include <cstring>
 #include <iostream>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -68,14 +66,15 @@ template <class T>
 void DragonVector<T>::sketch(const T* values, T threshold, uint32_t size,
                              uint32_t sketch_size) {
   UniversalHash hash_function = UniversalHash(_seed_for_hashing);
-// TODO(TSK-567): MSVC complains about sharing values in the below block.
-// Disabling short term to get builds green.
-//
-//     D:\a\Universe\Universe\compression\src\DragonVector.cc(68,9): error
-//     C3028: 'thirdai::compression::DragonVector<float>::_values': only a
-//     variable or static data member can be used in a data-sharing clause
-//     [D:\a\Universe\Universe\build\_thirdai.vcxproj]
-//
+
+  /*
+   * TODO(TSK-567): MSVC complains about sharing values in the below block.
+   * Disabling short term to get builds green.
+   *    D:\a\Universe\Universe\compression\src\DragonVector.cc(68,9): error
+   *    C3028: 'thirdai::compression::DragonVector<float>::_values': only a
+   *    variable or static data member can be used in a data-sharing clause
+   *    [D:\a\Universe\Universe\build\_thirdai.vcxproj]
+   */
 #pragma omp parallel for default(none) \
     shared(values, sketch_size, threshold, size, hash_function)
 
@@ -160,7 +159,7 @@ CompressionScheme DragonVector<T>::type() const {
 }
 
 /*
- * Serialization function for the dragon vector. The order of serialization is:
+ * The order of serialization for dragon vector is as follows:
  * 1) An enum representing compression scheme
  * 2) Uncompressed Size of the vector
  * 3) Seed for hashing

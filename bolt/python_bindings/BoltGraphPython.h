@@ -37,6 +37,8 @@ using SerializedCompressedVector =
     py::array_t<char, py::array::c_style | py::array::forcecast>;
 
 class ParameterReference {
+  using CompressedVector = thirdai::compression::CompressedVector<float>;
+
  public:
   ParameterReference(float* params, std::vector<uint32_t> dimensions)
       : _params(params), _dimensions(std::move(dimensions)) {
@@ -61,7 +63,6 @@ class ParameterReference {
       checkNumpyArrayDimensions(_dimensions, new_params);
       std::copy(new_array.data(), new_array.data() + _total_dim, _params);
     } else if (py::isinstance<SerializedCompressedVector>(new_params)) {
-      using CompressedVector = thirdai::compression::CompressedVector<float>;
       std::unique_ptr<CompressedVector> compressed_vector =
           thirdai::compression::python::deserializeCompressedVector(
               py::cast<SerializedCompressedVector>(new_params).data());
@@ -79,8 +80,6 @@ class ParameterReference {
                                       float compression_density,
                                       uint32_t seed_for_hashing,
                                       uint32_t sample_population_size) {
-    using CompressedVector = thirdai::compression::CompressedVector<float>;
-
     std::unique_ptr<CompressedVector> compressed_vector =
         thirdai::compression::compress(
             _params, static_cast<uint32_t>(_total_dim), compression_scheme,
@@ -102,8 +101,6 @@ class ParameterReference {
   static SerializedCompressedVector concat(
       const py::object& compressed_vectors) {
     if (py::isinstance<py::list>(compressed_vectors)) {
-      using CompressedVector = thirdai::compression::CompressedVector<float>;
-
       std::unique_ptr<CompressedVector> concatenated_compressed_vector =
           thirdai::compression::concat(
               thirdai::compression::python::convertPyListToCompressedVectors(

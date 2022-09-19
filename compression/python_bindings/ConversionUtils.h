@@ -12,7 +12,6 @@
 #include <pybind11/stl.h>
 #include <cstdint>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 
 namespace py = pybind11;

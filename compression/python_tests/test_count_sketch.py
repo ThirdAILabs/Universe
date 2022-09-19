@@ -108,6 +108,3 @@ def test_compressed_count_sketch_training():
         predict_config=predict_config,
     )
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
-
-
-test_compressed_count_sketch_training()
