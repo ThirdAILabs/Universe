@@ -56,7 +56,11 @@ class Worker:
         self.comm = (
             comm.Circular(self.model, self.id, self.primary_worker, self.num_workers)
             if self.communication_type == "circular"
-            else comm.Linear(self.model, self.id, self.primary_worker)
+            else
+             comm.Linear(self.model, self.id, self.primary_worker)
+            if self.communication_type == "linear"
+            else
+                comm.Tree(self.id, self.model, self.primary_worker, self.num_workers)
         )
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
@@ -101,6 +105,9 @@ class Worker:
         """
         return self.comm.receive_array_partitions(update_id)
 
+    def add_child_gradients(self, child_worker, avg_gradients: Optional[bool]= False):
+        self.comm.add_child_gradients(child_worker, avg_gradients)
+    
     def calculate_gradients(self, batch_no: int):
         """
         This function is called only when the mode of communication is
@@ -134,7 +141,7 @@ class Worker:
         :return: Model Gradients
         :rtype: numpy.ndarray
         """
-        return self.model.get_calculated_gradients()
+        return self.comm.get_calculated_gradients()
 
     def return_params(self):
         """

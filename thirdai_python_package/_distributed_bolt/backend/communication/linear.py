@@ -6,6 +6,7 @@ class Linear:
         self.model = model
         self.id = id
         self.primary_worker = primary_worker
+        self.w_gradients, self.b_gradients = self.model.get_calculated_gradients()
 
     def calculate_gradients(self, batch_no):
         """
@@ -23,6 +24,9 @@ class Linear:
         """
         self.model.calculate_gradients(batch_no)
         return True
+
+    def get_calculated_gradients(self):
+        return self.model.get_calculated_gradients()
 
     def receive_gradients(self):
         """

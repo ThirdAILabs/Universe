@@ -15,8 +15,11 @@ class Circular:
         self.b_partitions = []
         self.friend_bias_gradient_list = []
         self.friend_weight_gradient_list = []
-        self.w_gradients = []
-        self.b_gradients = []
+        self.w_gradients, self.b_gradients = self.model.get_calculated_gradients()
+
+
+    def get_calculated_gradients(self):
+        return self.model.get_calculated_gradients()
 
     def set_friend(self, friend):
         """

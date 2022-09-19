@@ -1,3 +1,4 @@
+from curses.panel import update_panels
 import numpy as np
 import ray
 import time
@@ -37,8 +38,23 @@ class PrimaryWorker(Worker):
         :type communication_type: string
         """
         self.layer_dims = layer_dims
-
+        self.num_workers = num_workers
         super().__init__(num_workers, 0, self, config, layer_dims, communication_type)
+
+    def subwork_tree_communication(self, workers):
+        current_depth = int(np.log2(self.num_workers))
+        current_size = self.num_workers
+        while current_depth >= 0:
+            upper_layer_size = int(np.power(2, current_depth))
+            for i in range(upper_layer_size, current_size):
+                if current_depth > 0:
+                    ray.get(workers[i-upper_layer_size].add_child_gradients.remote(workers[i]))
+                else:
+                    ray.get(workers[i-upper_layer_size].add_child_gradients.remote(workers[i], avg_gradients=True))
+                    
+            current_size = upper_layer_size
+            current_depth -= 1
+        
 
     def subwork_circular_communication(self, workers):
         """
