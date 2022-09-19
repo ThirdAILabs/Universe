@@ -4,7 +4,10 @@ from thirdai.bolt import MlflowCallback
 from test_callbacks import train_model_with_callback
 
 
-MLFLOW_LINK = "http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com"
+MLFLOW_LINK = (
+    "http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com"
+)
+
 
 @pytest.mark.unit
 def test_mlflow_callback():
@@ -38,5 +41,3 @@ def test_mlflow_callback():
         assert actual == expected
 
     client.delete_run(run_id)
-
-

@@ -77,4 +77,3 @@ class MlflowCallback(graph.callbacks.Callback):
 
     def get_run_id(self):
         return self.run_id
-        
