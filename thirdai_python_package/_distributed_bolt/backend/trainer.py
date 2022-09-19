@@ -47,7 +47,7 @@ class Trainer:
         :type batch_id: int
         :param learning_rate: Learning rate for the training
         :type learning_rate: float
-        """        
+        """
         self._calculate_gradients(batch_id)
         self._communicate()
         self._update_parameters(learning_rate)
