@@ -5,7 +5,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.integration]
 import numpy as np
 from thirdai import bolt, dataset
 
-np.set_printoptions(suppress=True)
 from utils import (
     gen_numpy_training_data,
     build_single_node_bolt_dag_model,
@@ -56,117 +55,137 @@ def set_compressed_dragon_gradients(model, compressed_weight_grads):
     return model
 
 
-# We will get a compressed vector of gradients and then check whether the values are right
-def test_get_set_values():
-    model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+def combine_compressed_gradients(compressed_weight_grads):
+    num_layers = len(compressed_weight_grads[0])
+    combined_compressed_grad = []
+    for layer in range(num_layers):
+        ls_grads = [grads[layer] for grads in compressed_weight_grads]
+        concatenated_grads = bolt.graph.ParameterReference.concat(ls_grads)
+        combined_compressed_grad.append(concatenated_grads)
+    return combined_compressed_grad
 
-    first_layer = model.get_layer("fc_1")
 
-    old_first_layer_biases = np.ravel(first_layer.biases.get())
-    old_first_layer_weights = np.ravel(first_layer.weights.get())
+def get_bias_grads(model):
+    compressed_bias_grads = []
+    layer1 = model.get_layer("fc_1")
+    layer2 = model.get_layer("fc_2")
+    compressed_bias_grads.append(layer1.bias_gradients.get())
+    compressed_bias_grads.append(layer2.bias_gradients.get())
+    return compressed_bias_grads
 
-    # getting the compressed gradients
-    compressed_weights = first_layer.weights.compress(
-        compression_scheme="dragon",
-        compression_density=0.2,
-        seed_for_hashing=1,
-        sample_population_size=50,
+
+def combine_bias_grads(bias_grads):
+    num_layers = len(bias_grads[0])
+    combine_bias_grads = []
+    for layer in range(num_layers):
+        bias_grad = np.sum(np.vstack([x[layer] for x in bias_grads]), axis=0) / len(
+            bias_grads
+        )
+        combine_bias_grads.append(bias_grad)
+    return combine_bias_grads
+
+
+def set_bias_grads(model, bias_grads):
+    layer1 = model.get_layer("fc_1")
+    layer2 = model.get_layer("fc_2")
+    layer1.bias_gradients.set(bias_grads[0])
+    layer2.bias_gradients.set(bias_grads[1])
+    return model
+
+
+def init_weights(model_init, model):
+    layer1_weights = model.get_layer("fc_1").weights
+    layer2_weights = model.get_layer("fc_2").weights
+    layer1_biases = model.get_layer("fc_1").biases
+    layer2_biases = model.get_layer("fc_2").biases
+
+    layer1_weights.set(model_init.get_layer("fc_1").weights.get())
+    layer2_weights.set(model_init.get_layer("fc_2").weights.get())
+    layer1_biases.set(model_init.get_layer("fc_1").biases.get())
+    layer2_biases.set(model_init.get_layer("fc_2").biases.get())
+    return model
+
+
+def test_distributed_training(
+    num_models,
+    train_data,
+    train_labels,
+    input_layer_dim,
+    hidden_layer_dim,
+    output_layer_dim,
+    is_numpy_data=True,
+):
+
+    models = []
+
+    model_init = build_single_node_bolt_dag_model(
+        train_data=train_data,
+        train_labels=train_labels,
+        sparsity=0.2,
+        learning_rate=LEARNING_RATE,
+        input_layer_dim=input_layer_dim,
+        hidden_layer_dim=hidden_layer_dim,
+        output_layer_dim=output_layer_dim,
+        is_numpy_data=is_numpy_data,
     )
 
-    compressed_biases = first_layer.biases.compress(
-        compression_scheme="dragon",
-        compression_density=0.2,
-        seed_for_hashing=1,
-        sample_population_size=10,
-    )
+    for model_id in range(num_models):
+        model = build_single_node_bolt_dag_model(
+            train_data=train_data,
+            train_labels=train_labels,
+            sparsity=0.2,
+            learning_rate=LEARNING_RATE,
+            input_layer_dim=input_layer_dim,
+            hidden_layer_dim=hidden_layer_dim,
+            output_layer_dim=output_layer_dim,
+            is_numpy_data=is_numpy_data,
+        )
+        models.append(init_weights(model_init=model_init, model=model))
 
-    first_layer.weights.set(compressed_weights)
-    first_layer.biases.set(compressed_biases)
+    total_batches = models[0].numTrainingBatch()
 
-    new_first_layer_biases = np.ravel(first_layer.biases.get())
-    new_first_layer_weights = np.ravel(first_layer.weights.get())
+    for epochs in range(5):
+        for batch_num in range(total_batches):
+            compressed_grads = []
+            bias_grads = []
+            for model in models:
+                model.calculateGradientSingleNode(batch_num)
+                compressed_weight_grads = get_compressed_dragon_gradients(
+                    model,
+                    compression_density=0.25,
+                    seed_for_hashing=np.random.randint(100),
+                )
+                compressed_grads.append(compressed_weight_grads)
+                bias_grads.append(get_bias_grads(model))
 
-    # checking whether the gradients are correct
-    for i, values in enumerate(new_first_layer_weights):
-        if values != 0:
-            assert old_first_layer_weights[i] == new_first_layer_weights[i]
+            combined_grads = combine_compressed_gradients(compressed_grads)
+            combined_bias = combine_bias_grads(bias_grads=bias_grads)
+            for i, model in enumerate(models):
+                models[i] = set_compressed_dragon_gradients(
+                    model=models[i], compressed_weight_grads=combined_grads
+                )
+                models[i] = set_bias_grads(model=models[i], bias_grads=combined_bias)
+                models[i].updateParametersSingleNode()
 
-    for i, values in enumerate(new_first_layer_biases):
-        if values != 0:
-            assert old_first_layer_biases[i] == new_first_layer_biases[i]
-
-
-# Instead of the earlier set function, set currently accepts a compressed vector
-# if the compressed argument is True.
-def test_concat_values():
-    model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
-
-    first_layer = model.get_layer("fc_1")
-    old_first_layer_weights = np.ravel(first_layer.weights.get())
-
-    # getting the compressed gradients
-    compressed_weights = first_layer.weights.compress(
-        compression_scheme="dragon",
-        compression_density=0.2,
-        seed_for_hashing=1,
-        sample_population_size=50,
-    )
-    concatenated_weights = bolt.graph.ParameterReference.concat(
-        [compressed_weights] * 2
-    )
-    first_layer.weights.set(concatenated_weights)
-    new_first_layer_weights = np.ravel(first_layer.weights.get())
-
-    for i, values in enumerate(new_first_layer_weights):
-        if values != 0:
-            assert 2 * old_first_layer_weights[i] == new_first_layer_weights[i]
+    for model in models:
+        model.finishTraining()
+    return models
 
 
-# We compress the weight gradients of the model, and then reconstruct the weight
-# gradients from the compressed dragon vector.
-def test_compressed_dragon_vector_training():
+# test_combine()
 
+
+def runner():
+    num_models = 2
     train_data, train_labels = gen_numpy_training_data(
         n_classes=10, n_samples=1000, convert_to_bolt_dataset=False
     )
     test_data, test_labels = gen_numpy_training_data(
         n_classes=10, n_samples=100, convert_to_bolt_dataset=False
     )
-
-    model = build_single_node_bolt_dag_model(
-        train_data=train_data,
-        train_labels=train_labels,
-        sparsity=0.2,
-        num_classes=10,
-        learning_rate=LEARNING_RATE,
-        hidden_layer_dim=30,
+    models = test_distributed_training(
+        num_models=num_models, train_data=train_data, train_labels=train_labels
     )
 
-    total_batches = model.numTrainingBatch()
 
-    predict_config = (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
-    )
-
-    for epochs in range(25):
-        for batch_num in range(total_batches):
-            model.calculateGradientSingleNode(batch_num)
-            compressed_weight_grads = get_compressed_dragon_gradients(
-                model,
-                compression_density=0.25,
-                seed_for_hashing=np.random.randint(100),
-            )
-            model = set_compressed_dragon_gradients(
-                model, compressed_weight_grads=compressed_weight_grads
-            )
-            model.updateParametersSingleNode()
-
-    model.finishTraining()
-    acc = model.predict(
-        test_data=dataset.from_numpy(test_data, batch_size=64),
-        test_labels=dataset.from_numpy(test_labels, batch_size=64),
-        predict_config=predict_config,
-    )
-    assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
+# test_compressed_training()
