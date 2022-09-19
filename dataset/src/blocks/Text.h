@@ -20,25 +20,30 @@ class TextBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
-  std::pair<std::string, std::string> explainIndex(
-      uint32_t index,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      final {
-    return std::make_pair(num_to_name->at(_col), getWordResponsible(index));
+  ResponsibleColumnAndInputKey explainFeature(
+      uint32_t index_within_block,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::vector<std::string_view> columnar_sample) const final {
+    if (num_to_name == std::nullopt) {
+      throw std::invalid_argument(
+          "map of col num to col name is missing in text block.");
+    }
+    return {num_to_name->at(_col),
+            getWordResponsible(index_within_block, columnar_sample.at(_col))};
   }
 
-  virtual std::string getWordResponsible(uint32_t index) const = 0;
+  virtual std::string getWordResponsible(
+      uint32_t index, std::string_view columnar_sample) const = 0;
 
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool store_map) final {
-    return encodeText(input_row.at(_col), vec, store_map);
+      SegmentedFeatureVector& vec) final {
+    return encodeText(input_row.at(_col), vec);
   }
 
   virtual std::exception_ptr encodeText(std::string_view text,
-                                        SegmentedFeatureVector& vec,
-                                        bool store_map) = 0;
+                                        SegmentedFeatureVector& vec) = 0;
 
   uint32_t _dim;
 
@@ -64,16 +69,15 @@ class PairGramTextBlock final : public TextBlock {
     return std::make_shared<PairGramTextBlock>(col, dim);
   }
 
-  std::string getWordResponsible(uint32_t index) const final {
+  std::string getWordResponsible(
+      uint32_t index, std::string_view /*columnar_sample*/) const final {
     (void)index;
     throw std::invalid_argument("not yet implemented for pairgram block.");
   }
 
  protected:
   std::exception_ptr encodeText(std::string_view text,
-                                SegmentedFeatureVector& vec,
-                                bool store_map) final {
-    (void)store_map;
+                                SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> pairgrams =
         TextEncodingUtils::computeRawPairgrams(text, _dim);
 
@@ -103,23 +107,19 @@ class UniGramTextBlock final : public TextBlock {
     return std::make_shared<UniGramTextBlock>(col, dim);
   }
 
-  std::string getWordResponsible(uint32_t index) const final {
-    return _index_to_word_map.at(index);
+  std::string getWordResponsible(uint32_t index,
+                                 std::string_view columnar_sample) const final {
+    auto [_, index_to_word_map] =
+        TextEncodingUtils::computeRawUnigramsWithRangeStoreMap(columnar_sample,
+                                                               _dim);
+    return index_to_word_map.at(index);
   }
 
  protected:
   std::exception_ptr encodeText(std::string_view text,
-                                SegmentedFeatureVector& vec,
-                                bool store_map) final {
-    std::vector<uint32_t> unigrams;
-    if (!store_map) {
-      unigrams = TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
-    } else {
-      auto unigram_map =
-          TextEncodingUtils::computeRawUnigramsWithRangeStoreMap(text, _dim);
-      unigrams = unigram_map.first;
-      _index_to_word_map = unigram_map.second;
-    }
+                                SegmentedFeatureVector& vec) final {
+    std::vector<uint32_t> unigrams =
+        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
 
     TextEncodingUtils::sumRepeatedIndices(
         unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
@@ -151,16 +151,15 @@ class CharKGramTextBlock final : public TextBlock {
     return std::make_shared<CharKGramTextBlock>(col, k, dim);
   }
 
-  std::string getWordResponsible(uint32_t index) const final {
+  std::string getWordResponsible(
+      uint32_t index, std::string_view /*columnar_sample*/) const final {
     (void)index;
     throw std::invalid_argument("not yet implemented for char-k block.");
   }
 
  protected:
   std::exception_ptr encodeText(std::string_view text,
-                                SegmentedFeatureVector& vec,
-                                bool store_map) final {
-    (void)store_map;
+                                SegmentedFeatureVector& vec) final {
     std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
 
     std::vector<uint32_t> char_k_grams;

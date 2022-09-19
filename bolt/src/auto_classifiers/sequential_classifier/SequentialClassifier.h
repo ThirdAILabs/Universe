@@ -150,14 +150,12 @@ class SequentialClassifier {
   std::tuple<std::vector<std::string>, std::vector<float>,
              std::vector<std::string>>
   explain(const std::unordered_map<std::string, std::string>& sample) {
-    BoltVector input_vector = getInputForSingleInference(sample);
-
-    auto [gradients_indices, gradients_ratios] =
-        _model->getInputGradientSingle({input_vector});
+    auto [input_vector, columnar_sample] = getInputForSingleInference(sample);
 
     auto result = getPercentExplanationWithColumnNames(
-        gradients_ratios, *gradients_indices, _single_inference_batch_processor,
-        _single_inference_col_nums.getColumnNumToColNameMap());
+        _model, input_vector, columnar_sample,
+        _single_inference_col_nums.getColumnNumToColNameMap(),
+        _single_inference_batch_processor);
 
     return result;
   }
@@ -185,7 +183,8 @@ class SequentialClassifier {
   }
 
  private:
-  BoltVector getInputForSingleInference(
+  std::pair<BoltVector, std::vector<std::string_view>>
+  getInputForSingleInference(
       const std::unordered_map<std::string, std::string>& sample) {
     std::vector<std::string_view> columnar_sample(
         _single_inference_col_nums.size());
@@ -195,10 +194,10 @@ class SequentialClassifier {
     }
 
     BoltVector input_vector;
-    _single_inference_batch_processor->makeInputVectorForInference(
-        columnar_sample, input_vector);
+    _single_inference_batch_processor->makeInputVector(columnar_sample,
+                                                       input_vector);
 
-    return input_vector;
+    return std::make_pair(input_vector, columnar_sample);
   }
   static float getLayerSparsity(uint32_t layer_size) {
     if (layer_size < 500) {

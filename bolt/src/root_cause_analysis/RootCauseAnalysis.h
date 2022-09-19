@@ -1,4 +1,7 @@
 #pragma once
+#include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/callbacks/Callback.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <optional>
@@ -43,15 +46,16 @@ entire columns.
 inline std::tuple<std::vector<std::string>, std::vector<float>,
                   std::vector<std::string>>
 getPercentExplanationWithColumnNames(
-    const std::vector<float>& gradients_ratio,
-    std::vector<uint32_t> gradients_indices,
+    const BoltGraphPtr& model, const BoltVector& input_vector,
+    const std::vector<std::string_view>& columnar_sample,
+    const std::unordered_map<uint32_t, std::string>& col_num_to_name,
     const std::shared_ptr<dataset::GenericBatchProcessor>&
-        generic_batch_processor,
-    const std::optional<std::unordered_map<uint32_t, std::string>>&
-        col_num_to_name = std::nullopt) {
+        generic_batch_processor) {
+  auto [gradients_indices, gradients_ratio] =
+      model->getInputGradientSingle({input_vector});
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
       sortGradientsBySignificance(gradients_ratio,
-                                  std::move(gradients_indices));
+                                  std::move(*gradients_indices));
   float ratio_sum = 0;
   for (float gradient_ratio : gradients_ratio) {
     ratio_sum += std::abs(gradient_ratio);
@@ -61,8 +65,8 @@ getPercentExplanationWithColumnNames(
   std::vector<std::string> words_responsible;
   for (const auto& col : gradients_ratio_with_indices) {
     auto [col_name, word_responsible] =
-        generic_batch_processor->getColumnNameAndKeyResponsibleWithinBlock(
-            col.second, col_num_to_name);
+        generic_batch_processor->getResponsibleColumnAndInputKey(
+            col.second, col_num_to_name, columnar_sample);
     words_responsible.push_back(word_responsible);
     column_names.push_back(col_name);
     gradient_significance.push_back((col.first / ratio_sum) * 100);

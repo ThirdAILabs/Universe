@@ -38,25 +38,29 @@ class DateBlock : public Block {
     return _col + 1;
   };
 
-  std::pair<std::string, std::string> explainIndex(
-      uint32_t index,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      final {
-    std::string response;
-    if (index > 77) {
+  ResponsibleColumnAndInputKey explainFeature(
+      uint32_t index_within_block,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::vector<std::string_view> /*columnar_sample*/) const final {
+    if (num_to_name == std::nullopt) {
       throw std::invalid_argument(
-          "index should not increase more than in date block.");
+          "map of col num to col name is missing in date block.");
     }
-    if (index < 7) {
+    std::string response;
+    if (index_within_block >= featureDim()) {
+      throw std::invalid_argument("index is out of bounds for date block.");
+    }
+    if (index_within_block < day_of_week_dim) {
       response = "day_of_week";
-    } else if (7 <= index && index < 19) {
+    } else if (index_within_block < (day_of_week_dim + month_of_year_dim)) {
       response = "month_of_year";
-    } else if (19 <= index && index < 24) {
+    } else if (index_within_block <
+               (day_of_week_dim + month_of_year_dim + week_of_month_dim)) {
       response = "week_of_month";
     } else {
       response = "week_of_year";
     }
-    return std::make_pair(num_to_name->at(_col), response);
+    return {num_to_name->at(_col), response};
   }
 
  protected:
@@ -67,8 +71,7 @@ class DateBlock : public Block {
 
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool store_map) final {
-    (void)store_map;
+      SegmentedFeatureVector& vec) final {
     TimeObject time;
 
     try {

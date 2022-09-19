@@ -74,21 +74,21 @@ class TabularClassifier {
     return _metadata->getClassIdToNames()[output.getHighestActivationId()];
   }
 
-  std::tuple<std::vector<std::string>, std::vector<float>,
-             std::vector<std::string>>
-  explain(std::vector<std::string>& values) {
-    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
-        makeTabularBatchProcessor();
-    BoltVector input = makeInputVector(values, batch_processor);
+  // std::tuple<std::vector<std::string>, std::vector<float>,
+  //            std::vector<std::string>>
+  // explain(std::vector<std::string>& values) {
+  //   std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+  //       makeTabularBatchProcessor();
+  //   BoltVector input = makeInputVector(values, batch_processor);
 
-    auto [gradients_indices, gradients_ratios] =
-        _classifier->getInputGradientSingle({input});
+  //   auto [gradients_indices, gradients_ratios] =
+  //       _classifier->getInputGradientSingle({input});
 
-    auto result = getPercentExplanationWithColumnNames(
-        gradients_ratios, *gradients_indices, batch_processor);
+  //   auto result = getPercentExplanationWithColumnNames(
+  //       gradients_ratios, *gradients_indices, batch_processor);
 
-    return result;
-  }
+  //   return result;
+  // }
 
   void save(const std::string& filename) {
     std::ofstream filestream =
@@ -132,8 +132,7 @@ class TabularClassifier {
                             /* value = */ " ");
 
     BoltVector input;
-    if (auto err = batch_processor->makeInputVectorForInference(
-            encodable_values, input)) {
+    if (auto err = batch_processor->makeInputVector(encodable_values, input)) {
       std::rethrow_exception(err);
     }
     return input;

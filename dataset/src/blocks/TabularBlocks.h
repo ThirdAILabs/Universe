@@ -24,23 +24,25 @@ class TabularPairGram : public Block {
 
   uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
 
-  std::pair<std::string, std::string> explainIndex(
-      uint32_t index,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      final {
+  ResponsibleColumnAndInputKey explainFeature(
+      uint32_t index_within_block,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::vector<std::string_view> /*columnar_sample*/) const final {
+    (void)index_within_block;
     (void)num_to_name;
-    auto [col_1_num, col_2_num] = getColNumColNum(index);
-    std::string col_name, word_responsible;
-    if (col_1_num == col_2_num) {
-      col_name = _metadata->getColNameFromNum(col_1_num);
-      word_responsible = _col_num_to_col_value[col_1_num];
-    } else {
-      col_name = _metadata->getColNameFromNum(col_1_num) +
-                 _metadata->getColNameFromNum(col_2_num);
-      word_responsible =
-          _col_num_to_col_value[col_1_num] + _col_num_to_col_value[col_2_num];
-    }
-    return std::make_pair(col_name, word_responsible);
+    //   auto [col_1_num, col_2_num] = getColNumColNum(index);
+    //   std::string col_name, word_responsible;
+    //   if (col_1_num == col_2_num) {
+    //     col_name = _metadata->getColNameFromNum(col_1_num);
+    //     word_responsible = _col_num_to_col_value[col_1_num];
+    //   } else {
+    //     col_name = _metadata->getColNameFromNum(col_1_num) +
+    //                _metadata->getColNameFromNum(col_2_num);
+    //     word_responsible =
+    //         _col_num_to_col_value[col_1_num] +
+    //         _col_num_to_col_value[col_2_num];
+    //   }
+    return {"abc", "abc"};
   }
 
  protected:
@@ -50,8 +52,7 @@ class TabularPairGram : public Block {
   // pairs of columns to pairgram together.
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool store_map) final {
-    std::unordered_map<uint32_t, uint32_t> hash_to_col_num;
+      SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       std::string str_val(input_row[col]);
@@ -59,10 +60,6 @@ class TabularPairGram : public Block {
         case TabularDataType::Numeric: {
           std::exception_ptr err;
           uint32_t unigram = _metadata->getNumericHashValue(col, str_val, err);
-          if (store_map) {
-            hash_to_col_num[unigram] = col;
-            _col_num_to_col_value[col] = str_val;
-          }
           if (err) {
             return err;
           }
@@ -71,10 +68,6 @@ class TabularPairGram : public Block {
         }
         case TabularDataType::Categorical: {
           uint32_t unigram = _metadata->getStringHashValue(str_val, col);
-          if (store_map) {
-            hash_to_col_num[unigram] = col;
-            _col_num_to_col_value[col] = str_val;
-          }
           unigram_hashes.push_back(unigram);
           break;
         }
@@ -87,17 +80,6 @@ class TabularPairGram : public Block {
         TextEncodingUtils::computeRawPairgramsFromUnigrams(unigram_hashes,
                                                            _output_range);
 
-    if (store_map) {
-      for (uint32_t i = 0; i < unigram_hashes.size(); i++) {
-        for (uint32_t j = 0; j <= i; j++) {
-          _hash_to_col_num_col_num[pairgram_hashes[((i * (i + 1)) / 2) + i +
-                                                   j]] = {
-              hash_to_col_num[unigram_hashes[i]],
-              hash_to_col_num[unigram_hashes[j]]};
-        }
-      }
-    }
-
     TextEncodingUtils::sumRepeatedIndices(
         pairgram_hashes, /* base_value = */ 1.0,
         [&](uint32_t pairgram, float value) {
@@ -108,9 +90,6 @@ class TabularPairGram : public Block {
   }
 
  private:
-  std::pair<uint32_t, uint32_t> getColNumColNum(uint32_t index) {
-    return _hash_to_col_num_col_num[index];
-  }
   std::shared_ptr<TabularMetadata> _metadata;
   uint32_t _output_range;
 

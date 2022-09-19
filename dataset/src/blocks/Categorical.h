@@ -6,6 +6,8 @@
 #include <exception>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset {
 
@@ -28,23 +30,24 @@ class CategoricalBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
-  std::pair<std::string, std::string> explainIndex(
-      uint32_t index,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name)
-      final {
-    return std::make_pair(num_to_name->at(_col),
-                          std::string(_categories[index]));
+  ResponsibleColumnAndInputKey explainFeature(
+      uint32_t index_within_block,
+      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
+      std::vector<std::string_view> /*columnar_sample*/) const final {
+    if (num_to_name == std::nullopt) {
+      throw std::invalid_argument(
+          "map of col num to col name is missing in categorical block.");
+    }
+    return {num_to_name->at(_col), getResponsibleCategory(index_within_block)};
   }
+
+  virtual std::string getResponsibleCategory(uint32_t index) const = 0;
 
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec, bool store_map) final {
-    _categories.clear();
+      SegmentedFeatureVector& vec) final {
     if (!_delimiter) {
-      if (store_map) {
-        _categories.push_back(input_row.at(_col));
-      }
       return encodeCategory(input_row.at(_col), vec);
     }
 
@@ -52,9 +55,6 @@ class CategoricalBlock : public Block {
     auto categories =
         ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
     for (auto category : categories) {
-      if (store_map) {
-        _categories.push_back(category);
-      }
       auto exception = encodeCategory(category, vec);
       if (exception) {
         return exception;
@@ -72,7 +72,6 @@ class CategoricalBlock : public Block {
  private:
   uint32_t _col;
   std::optional<char> _delimiter;
-  std::vector<std::string_view> _categories;
 };
 
 using CategoricalBlockPtr = std::shared_ptr<CategoricalBlock>;
@@ -87,6 +86,10 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
                    std::optional<char> delimiter = std::nullopt) {
     return std::make_shared<NumericalCategoricalBlock>(col, n_classes,
                                                        delimiter);
+  }
+
+  std::string getResponsibleCategory(uint32_t index) const final {
+    return std::to_string(index);
   }
 
  protected:
@@ -131,6 +134,10 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
   }
 
   ThreadSafeVocabularyPtr getVocabulary() const { return _vocab; }
+
+  std::string getResponsibleCategory(uint32_t index) const final {
+    return _vocab->getString(index);
+  }
 
  protected:
   std::exception_ptr encodeCategory(std::string_view category,

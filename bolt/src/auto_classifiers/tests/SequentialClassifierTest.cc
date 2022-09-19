@@ -89,8 +89,8 @@ std::vector<std::string> getWordsInTextColumn(const std::string& sentence) {
   return text_reasons;
 }
 
-void assert_column_names(std::vector<std::string> column_names,
-                         std::unordered_map<std::string, std::string> input) {
+void assertColumnNames(std::vector<std::string> column_names,
+                       std::unordered_map<std::string, std::string> input) {
   // here we should have 'timestamp' four times because we are using four values
   // in input from the timestamp. we should have 'sequential' three times
   // because we are tracking last three values in the schema. for remaining
@@ -121,8 +121,7 @@ void assert_column_names(std::vector<std::string> column_names,
   }
 }
 
-void assert_percentage_significance(
-    std::vector<float> percentage_significances) {
+void assertPercentageSignificance(std::vector<float> percentage_significances) {
   // assert the values are sorted in descending order of absolute values.
   bool isSorted = std::is_sorted(percentage_significances.begin(),
                                  percentage_significances.end(),
@@ -142,10 +141,9 @@ void assert_percentage_significance(
   ASSERT_GT(total_percentage_sum, 99.9);
 }
 
-void assert_words_within_block(
-    const std::vector<std::string>& column_names,
-    std::unordered_map<std::string, std::string> input,
-    const std::vector<std::string>& words_responsible) {
+void assertWordsWithinBlock(const std::vector<std::string>& column_names,
+                            std::unordered_map<std::string, std::string> input,
+                            const std::vector<std::string>& words_responsible) {
   std::vector<std::string> timestamp_reasons = {
       "day_of_week", "week_of_month", "month_of_year", "week_of_year"};
   // these sequential reasons based on values in the sequential column in train
@@ -369,16 +367,16 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
       classifier.explain(single_inference_input);
 
   // we will check how many times the column names are present in the vector.
-  assert_column_names(column_names, single_inference_input);
+  assertColumnNames(column_names, single_inference_input);
 
   // we will check the total percentage is close to 100 and the percentage
   // significance are sorted.
 
-  assert_percentage_significance(percentage_significances);
+  assertPercentageSignificance(percentage_significances);
 
   // we will check the words responsible are there in the input or not.
-  assert_words_within_block(column_names, single_inference_input,
-                            words_responsible);
+  assertWordsWithinBlock(column_names, single_inference_input,
+                         words_responsible);
 
   std::remove(TRAIN_FILE_NAME);
 }
