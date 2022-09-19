@@ -67,10 +67,7 @@ class DistributedBolt:
 
                 # Here we are asking every worker to calculate their gradients and return
                 # once they all calculate their gradients
-                trainer.calculate_gradients(batch_id)
-                trainer.communicate()
-                trainer.update_parameters(self.learning_rate)
-                trainer.log_training(batch_id, epoch)
+                trainer.train(epoch, batch_id, self.learning_rate)
 
         trainer.finish_training()
 

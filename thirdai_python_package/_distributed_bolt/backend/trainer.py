@@ -37,7 +37,23 @@ class Trainer:
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
-    def calculate_gradients(self, batch_no):
+    def train(self, epoch_id, batch_id, learning_rate):
+        """
+        Train the Model
+
+        :param epoch_id: Running Epoch
+        :type epoch_id: int
+        :param batch_id: Batch number to train on
+        :type batch_id: int
+        :param learning_rate: Learning rate for the training
+        :type learning_rate: float
+        """        
+        self._calculate_gradients(batch_id)
+        self._communicate()
+        self._update_parameters(learning_rate)
+        self._log_training(batch_id, epoch_id)
+
+    def _calculate_gradients(self, batch_no):
         """
         Call calculate_gradients function on each of the worker
 
@@ -50,7 +66,7 @@ class Trainer:
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
 
-    def communicate(self):
+    def _communicate(self):
         """
         Calls primary worker to complete the communication
         and then asks all the worker to recieve the updated gradients in their networks
@@ -70,7 +86,7 @@ class Trainer:
     def finish_training(self):
         ray.get([worker.finish_training.remote() for worker in self.workers])
 
-    def update_parameters(self, learning_rate):
+    def _update_parameters(self, learning_rate):
         """
         Calls primary worker for updating parameters across all nodes
 
@@ -85,7 +101,7 @@ class Trainer:
         )
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
-    def log_training(self, batch_no, epoch):
+    def _log_training(self, batch_no, epoch):
         """
         Logs the training after every batch
 
