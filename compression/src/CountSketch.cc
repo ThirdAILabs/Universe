@@ -250,7 +250,6 @@ void CountSketch<T>::serialize(char* serialized_data) const {
 
 template <class T>
 CountSketch<T>::CountSketch(const char* serialized_data) {
-  std::cout << "I am here" << std::endl;
   size_t curr_pos = 0;
 
   // Reading the compression scheme (1)
