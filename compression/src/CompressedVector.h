@@ -52,9 +52,7 @@ class CompressedVector {
 
   virtual ~CompressedVector() = default;
 
-  virtual std::stringstream serialize() const = 0;
-
-  virtual char* arrSerialize() const = 0;
+  virtual void serialize(char* serialized_data) const = 0;
 
   virtual uint32_t serialized_size() const = 0;
 };

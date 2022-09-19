@@ -115,8 +115,8 @@ TEST_F(CountSketchTest, AddCountSketchTest) {
 }
 
 TEST_F(CountSketchTest, SerializeCountSketchTest) {
-  char* serialized_data = _vec.arrSerialize();
-
+  char* serialized_data = new char[_vec.serialized_size()];
+  _vec.serialize(serialized_data);
   CountSketch<float> deserialized_vec(serialized_data);
   ASSERT_EQ(deserialized_vec.size(), _vec.size());
   ASSERT_EQ(deserialized_vec.uncompressedSize(), _vec.uncompressedSize());

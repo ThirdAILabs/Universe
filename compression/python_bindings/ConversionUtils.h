@@ -33,25 +33,38 @@ inline std::vector<T> makeVectorFrom1dNumpyArray(
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-// pybind automatically converts py::bytes to a std::string object
-// This has an implicit copy but is the only way of converting bytes to string.
-// We may want to look at taking char array from python and initializing a
-// stringstream from it or generating a compressed vector directly from it
-inline std::unique_ptr<CompressedVector<float>> convertStringToCompressedVector(
-    const std::string& compressed_vector) {
-  if (compressed_vector[4] == 'd') {
-    std::stringstream ss(compressed_vector);
-    DragonVector<float> dragon_vector = DragonVector<float>(ss);
+using SerializedCompressedVector =
+    py::array_t<char, py::array::c_style | py::array::forcecast>;
+
+inline std::unique_ptr<CompressedVector<float>> deserializeCompressedVector(
+    const char* compressed_vector) {
+  uint32_t compression_scheme_string_size;
+  std::string compression_scheme;
+  std::memcpy(reinterpret_cast<char*>(&compression_scheme_string_size),
+              compressed_vector, sizeof(uint32_t));
+  char* buff(new char[compression_scheme_string_size]);
+  std::memcpy(reinterpret_cast<char*>(buff),
+              compressed_vector + sizeof(uint32_t),
+              compression_scheme_string_size);
+  compression_scheme.assign(buff, compression_scheme_string_size);
+
+  if (compression_scheme == "dragon") {
+    DragonVector<float> dragon_vector = DragonVector<float>(compressed_vector);
     return std::make_unique<DragonVector<float>>(dragon_vector);
   }
-  throw std::logic_error("eff");
+  if (compression_scheme == "count_sketch") {
+    CountSketch<float> count_sketch = CountSketch<float>(compressed_vector);
+    return std::make_unique<CountSketch<float>>(count_sketch);
+  }
+  throw std::logic_error(
+      "Valid Compression Scheme could not be decoded from the serialized data. "
+      "The serialized data has been corrupted.");
 }
 
-inline py::bytes convertCompressedVectorToString(
-    const std::unique_ptr<CompressedVector<float>>& compressed_vector) {
-  py::bytes bytes_compressed_vector(compressed_vector->arrSerialize());
-  // an implicit copy being made here because of conversion from string to bytes
-  return bytes_compressed_vector;
+inline void serializeCompressedVector(
+    const std::unique_ptr<CompressedVector<float>>& compressed_vector,
+    char* serialized_data) {
+  compressed_vector->serialize(serialized_data);
 }
 
 inline std::vector<std::unique_ptr<CompressedVector<float>>>
@@ -60,8 +73,8 @@ convertPyListToCompressedVectors(const py::list& py_compressed_vectors) {
   std::vector<std::unique_ptr<CompressedVector<float>>> compressed_vectors;
   compressed_vectors.reserve(num_vectors);
   for (int i = 0; i < num_vectors; i++) {
-    compressed_vectors.push_back(convertStringToCompressedVector(
-        py::cast<py::bytes>(py_compressed_vectors[i])));
+    compressed_vectors.push_back(deserializeCompressedVector(
+        py::cast<SerializedCompressedVector>(py_compressed_vectors[i]).data()));
   }
   return compressed_vectors;
 }

@@ -32,9 +32,7 @@ class DragonVector final : public CompressedVector<T> {
                float compression_density, uint32_t seed_for_hashing,
                uint32_t sample_population_size);
 
-  explicit DragonVector(std::stringstream& input_stream);
-
-  explicit DragonVector(char* serialized_data);
+  explicit DragonVector(const char* serialized_data);
 
   T get(uint32_t index) const final;
 
@@ -68,9 +66,7 @@ class DragonVector final : public CompressedVector<T> {
 
   std::vector<T> decompress() const final;
 
-  std::stringstream serialize() const final;
-
-  char* arrSerialize() const final;
+  void serialize(char* serialized_data) const final;
 
   uint32_t serialized_size() const final;
 

@@ -77,8 +77,8 @@ TEST_F(DragonVectorTest, ExtendDragonVectorTest) {
 }
 
 TEST_F(DragonVectorTest, SerializeDragonVectorTest) {
-  char* serialized_data = _vec.arrSerialize();
-
+  char* serialized_data = new char[_vec.serialized_size()];
+  _vec.serialize(serialized_data);
   DragonVector<float> deserialized_vec(serialized_data);
 
   ASSERT_EQ(deserialized_vec.size(), _vec.size());
