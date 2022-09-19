@@ -46,11 +46,10 @@ class PrimaryWorker(Worker):
         current_size = self.num_workers
         while current_depth >= 0:
             upper_layer_size = int(np.power(2, current_depth))
-            for i in range(upper_layer_size, current_size):
-                if current_depth > 0:
-                    ray.get(workers[i-upper_layer_size].add_child_gradients.remote(workers[i]))
-                else:
-                    ray.get(workers[i-upper_layer_size].add_child_gradients.remote(workers[i], avg_gradients=True))
+            if current_depth > 0:
+                ray.get([workers[i-upper_layer_size].add_child_gradients.remote(workers[i]) for i in range(upper_layer_size, current_size)])
+            else:
+                ray.get([workers[i-upper_layer_size].add_child_gradients.remote(workers[i], avg_gradients=True) for i in range(upper_layer_size, current_size)])
                     
             current_size = upper_layer_size
             current_depth -= 1
