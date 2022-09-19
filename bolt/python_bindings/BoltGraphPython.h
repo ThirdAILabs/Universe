@@ -80,15 +80,17 @@ class ParameterReference {
                                       uint32_t seed_for_hashing,
                                       uint32_t sample_population_size) {
     using CompressedVector = thirdai::compression::CompressedVector<float>;
+
     std::unique_ptr<CompressedVector> compressed_vector =
         thirdai::compression::compress(
             _params, static_cast<uint32_t>(_total_dim), compression_scheme,
             compression_density, seed_for_hashing, sample_population_size);
+
     char* serialized_compressed_vector =
         new char[compressed_vector->serialized_size()];
+
     thirdai::compression::python::serializeCompressedVector(
         compressed_vector, serialized_compressed_vector);
-
     py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
       delete static_cast<char*>(ptr);
     });
@@ -101,10 +103,12 @@ class ParameterReference {
       const py::object& compressed_vectors) {
     if (py::isinstance<py::list>(compressed_vectors)) {
       using CompressedVector = thirdai::compression::CompressedVector<float>;
+
       std::unique_ptr<CompressedVector> concatenated_compressed_vector =
           thirdai::compression::concat(
               thirdai::compression::python::convertPyListToCompressedVectors(
                   compressed_vectors));
+
       char* serialized_compressed_vector =
           new char[concatenated_compressed_vector->serialized_size()];
       thirdai::compression::python::serializeCompressedVector(

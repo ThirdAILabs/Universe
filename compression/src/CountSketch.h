@@ -56,7 +56,7 @@ class CountSketch final : public CompressedVector<T> {
 
   uint32_t size() const;
 
-  std::string type() const final;
+  CompressionScheme type() const final;
 
   std::vector<std::vector<T>> sketches() const { return _count_sketches; }
 

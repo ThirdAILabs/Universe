@@ -155,13 +155,13 @@ std::vector<T> DragonVector<T>::decompress() const {
 }
 
 template <class T>
-std::string DragonVector<T>::type() const {
-  return "dragon";
+CompressionScheme DragonVector<T>::type() const {
+  return CompressionScheme::Dragon;
 }
 
 /*
  * Serialization function for the dragon vector. The order of serialization is:
- * 1) Size of compression scheme string + Compression Scheme
+ * 1) An enum representing compression scheme
  * 2) Uncompressed Size of the vector
  * 3) Seed for hashing
  * 4) Size of indices and values array (they are the same)
@@ -172,14 +172,10 @@ void DragonVector<T>::serialize(char* serialized_data) const {
   size_t curr_pos = 0;
 
   // Writing compression scheme (1)
-  std::string compression_scheme = "dragon";
-  uint32_t size = static_cast<uint32_t>(compression_scheme.size());
-
-  std::memcpy(serialized_data, reinterpret_cast<char*>(&size),
+  uint32_t compression_scheme = static_cast<uint32_t>(type());
+  std::memcpy(serialized_data, reinterpret_cast<char*>(&compression_scheme),
               sizeof(uint32_t));
   curr_pos += sizeof(uint32_t);
-  std::memcpy(serialized_data + curr_pos, compression_scheme.c_str(), size);
-  curr_pos += size;
 
   // Writing uncompressed size, seed_for_hashing (2,3)
   std::memcpy(serialized_data + curr_pos,
@@ -215,17 +211,11 @@ DragonVector<T>::DragonVector(const char* serialized_data) {
   size_t curr_pos = 0;
 
   // Reading the compression scheme (1)
-  uint32_t string_size;
-  std::string compression_scheme;
+  uint32_t compression_scheme;
 
-  std::memcpy(reinterpret_cast<char*>(&string_size), serialized_data + curr_pos,
-              sizeof(uint32_t));
+  std::memcpy(reinterpret_cast<char*>(&compression_scheme),
+              serialized_data + curr_pos, sizeof(uint32_t));
   curr_pos += sizeof(uint32_t);
-  char* buff(new char[string_size]);
-  std::memcpy(reinterpret_cast<char*>(buff), serialized_data + curr_pos,
-              string_size);
-  curr_pos += string_size;
-  compression_scheme.assign(buff, string_size);
 
   // Reading uncompressed size, seed_for_hashing (2,3)
   uint32_t uncompressed_size;

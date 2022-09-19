@@ -36,29 +36,31 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 using SerializedCompressedVector =
     py::array_t<char, py::array::c_style | py::array::forcecast>;
 
+// TODO(Shubh): Plant an enum instead of string for decoding compression scheme
 inline std::unique_ptr<CompressedVector<float>> deserializeCompressedVector(
     const char* compressed_vector) {
-  uint32_t compression_scheme_string_size;
-  std::string compression_scheme;
-  std::memcpy(reinterpret_cast<char*>(&compression_scheme_string_size),
-              compressed_vector, sizeof(uint32_t));
-  char* buff(new char[compression_scheme_string_size]);
-  std::memcpy(reinterpret_cast<char*>(buff),
-              compressed_vector + sizeof(uint32_t),
-              compression_scheme_string_size);
-  compression_scheme.assign(buff, compression_scheme_string_size);
+  /*
+   * We find the compression scheme from the char array and then pass the char
+   * array to the constructor of the respective class.
+   */
+  uint32_t compression_scheme;
+  std::memcpy(reinterpret_cast<char*>(&compression_scheme), compressed_vector,
+              sizeof(uint32_t));
 
-  if (compression_scheme == "dragon") {
-    DragonVector<float> dragon_vector = DragonVector<float>(compressed_vector);
-    return std::make_unique<DragonVector<float>>(dragon_vector);
+  CompressionScheme compression_scheme_enum =
+      static_cast<CompressionScheme>(compression_scheme);
+
+  switch (compression_scheme_enum) {
+    case CompressionScheme::Dragon:
+      return std::make_unique<DragonVector<float>>(compressed_vector);
+    case CompressionScheme::CountSketch:
+      return std::make_unique<CountSketch<float>>(compressed_vector);
+    default:
+      throw std::logic_error(
+          "Valid Compression Scheme could not be decoded from the serialized "
+          "data. "
+          "The serialized data has been corrupted.");
   }
-  if (compression_scheme == "count_sketch") {
-    CountSketch<float> count_sketch = CountSketch<float>(compressed_vector);
-    return std::make_unique<CountSketch<float>>(count_sketch);
-  }
-  throw std::logic_error(
-      "Valid Compression Scheme could not be decoded from the serialized data. "
-      "The serialized data has been corrupted.");
 }
 
 inline void serializeCompressedVector(

@@ -126,7 +126,7 @@ def test_concat_values():
 
 # We compress the weight gradients of the model, and then reconstruct the weight
 # gradients from the compressed dragon vector.
-def test_compressed_training():
+def test_compressed_dragon_vector_training():
 
     train_data, train_labels = gen_numpy_training_data(
         n_classes=10, n_samples=1000, convert_to_bolt_dataset=False
@@ -169,5 +169,4 @@ def test_compressed_training():
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
         predict_config=predict_config,
     )
-    print(acc[0]["categorical_accuracy"])
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD

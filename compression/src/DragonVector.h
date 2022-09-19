@@ -62,7 +62,7 @@ class DragonVector final : public CompressedVector<T> {
 
   uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
 
-  std::string type() const final;
+  CompressionScheme type() const final;
 
   std::vector<T> decompress() const final;
 
