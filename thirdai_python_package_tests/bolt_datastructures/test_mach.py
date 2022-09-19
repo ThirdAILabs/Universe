@@ -1,6 +1,9 @@
 from hashlib import new
-from thirdai import bolt
+import numpy as np
+from thirdai import bolt, dataset
 import pytest
+import time
+import os
 import shutil
 
 
@@ -24,7 +27,7 @@ def generate_random_easy_sparse(output_dim, num_true_labels_per_example, num_exa
         label_values.astype("float32"),
         label_offsets.astype("uint32"),
     )
-    
+
 
 def build_and_train_mach(
     num_train=10000,
