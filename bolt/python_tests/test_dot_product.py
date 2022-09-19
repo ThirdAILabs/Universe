@@ -1,7 +1,6 @@
 import pytest
 from thirdai import bolt, dataset
 import numpy as np
-from sklearn.metrics import roc_auc_score
 
 pytestmark = [pytest.mark.unit]
 
