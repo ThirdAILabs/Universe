@@ -8,6 +8,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -147,9 +148,8 @@ class SequentialClassifier {
     return results;
   }
 
-  std::tuple<std::vector<std::string>, std::vector<float>,
-             std::vector<std::string>>
-  explain(const std::unordered_map<std::string, std::string>& sample) {
+  std::vector<dataset::PercentageResponsibleColumnAndInputKey> explain(
+      const std::unordered_map<std::string, std::string>& sample) {
     auto [input_vector, columnar_sample] = getInputForSingleInference(sample);
 
     auto result = getPercentExplanationWithColumnNames(

@@ -11,7 +11,6 @@ namespace thirdai::bolt {
 using Blocks = std::vector<std::shared_ptr<dataset::Block>>;
 
 // Here High significance means having high value of absolute ratio.
-
 inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
     std::vector<float> gradients_ratio,
     std::vector<uint32_t> gradients_indices) {
@@ -30,20 +29,19 @@ inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
 }
 
 /*
-This function returns
-1. Column names: list of column names corresponding to the responsible token.
-2. Percentage Significance: list of values which tells us how much this token is
+This function returns vector of 'PercentageResponsibleColumnAndInputKey' which
+contains
+1. percentage_significance : value which tells us how much this token is
 responsible.
-3. Responsible token: The main thing in our RCA which gives us exact keyword is
-responsible for this.
+2. column_name : column name corresponding to the responsible token.
+3. key_word responsible : The main thing in our RCA which gives us exact keyword
+is responsible for this.
 
 we get the column name and responsible token from generic batch processor itself
-because that way, it will also be helpful tabular because it uses one block for
-entire columns.
+because that way, it will also be helpful for tabular because it uses one block
+for entire columns.
 */
-
-inline std::tuple<std::vector<std::string>, std::vector<float>,
-                  std::vector<std::string>>
+inline std::vector<dataset::PercentageResponsibleColumnAndInputKey>
 getPercentExplanationWithColumnNames(
     const BoltGraphPtr& model, const BoltVector& input_vector,
     const std::vector<std::string_view>& columnar_sample,
@@ -52,26 +50,29 @@ getPercentExplanationWithColumnNames(
         generic_batch_processor) {
   auto [gradients_indices, gradients_ratio] =
       model->getInputGradientSingle({input_vector});
+
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
       sortGradientsBySignificance(gradients_ratio,
                                   std::move(*gradients_indices));
+
   float ratio_sum = 0;
   for (float gradient_ratio : gradients_ratio) {
     ratio_sum += std::abs(gradient_ratio);
   }
-  std::vector<std::string> column_names;
-  std::vector<float> gradient_significance;
-  std::vector<std::string> words_responsible;
+
+  std::vector<dataset::PercentageResponsibleColumnAndInputKey>
+      responsible_column_and_input_keys;
+
   for (const auto& col : gradients_ratio_with_indices) {
-    auto [col_name, word_responsible] =
+    dataset::ResponsibleColumnAndInputKey column_name_and_input_key =
         generic_batch_processor->getResponsibleColumnAndInputKey(
             col.second, col_num_to_name, columnar_sample);
-    words_responsible.push_back(word_responsible);
-    column_names.push_back(col_name);
-    gradient_significance.push_back((col.first / ratio_sum) * 100);
+
+    responsible_column_and_input_keys.push_back(
+        {(col.first / ratio_sum) * 100, column_name_and_input_key});
   }
-  return std::make_tuple(column_names, gradient_significance,
-                         words_responsible);
+
+  return responsible_column_and_input_keys;
 }
 
 }  // namespace thirdai::bolt

@@ -359,12 +359,28 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
        "0,0,2022-08-29,hello,0,B", "0,1,2022-08-30,hello,1,A",
        "0,0,2022-08-31,hello,2,A", "0,1,2022-09-01,hello,3,B"});
 
-  auto classifier = getTrainedClassifier(TRAIN_FILE_NAME);
+  SequentialClassifier classifier = getTrainedClassifier(TRAIN_FILE_NAME);
 
-  auto single_inference_input = mockSequentialSampleForPredictSingle();
+  std::unordered_map<std::string, std::string> single_inference_input =
+      mockSequentialSampleForPredictSingle();
 
-  auto [column_names, percentage_significances, words_responsible] =
-      classifier.explain(single_inference_input);
+  std::vector<dataset::PercentageResponsibleColumnAndInputKey>
+      responsible_column_and_input_keys =
+          classifier.explain(single_inference_input);
+
+  std::vector<std::string> column_names;
+  std::vector<std::string> words_responsible;
+  std::vector<float> percentage_significances;
+
+  for (auto& responsible_column_and_input_key :
+       responsible_column_and_input_keys) {
+    percentage_significances.push_back(
+        responsible_column_and_input_key.percentage_significance);
+    column_names.push_back(
+        responsible_column_and_input_key.column_name_and_input_key.column_name);
+    words_responsible.push_back(
+        responsible_column_and_input_key.column_name_and_input_key.input_key);
+  }
 
   // we will check how many times the column names are present in the vector.
   assertColumnNames(column_names, single_inference_input);
