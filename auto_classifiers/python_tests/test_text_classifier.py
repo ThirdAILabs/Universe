@@ -1,9 +1,9 @@
 from thirdai import bolt
 import pytest
 import datasets
+import os
 import random
-from utils import (
-    remove_files,
+from auto_classifier_utils import (
     compute_accuracy_of_predictions,
     check_autoclassifier_predict_correctness,
 )
@@ -76,4 +76,4 @@ def test_text_classifier_clinc_dataset():
 
     check_autoclassifier_predict_correctness(new_classifier, test_samples, predictions)
 
-    remove_files([TRAIN_FILE, TEST_FILE, SAVE_FILE])
+    os.remove(SAVE_FILE)

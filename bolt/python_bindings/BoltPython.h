@@ -35,6 +35,6 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::python {
 
-void createBoltSubmodule(py::module_& module);
+py::module_  createBoltSubmodule(py::module_& module);
 
 }  // namespace thirdai::bolt::python

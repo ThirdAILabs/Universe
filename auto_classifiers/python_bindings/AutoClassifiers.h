@@ -4,7 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include <bolt/python_bindings/AutoClassifierBase.h>
+#include <auto_classifiers/python_bindings/AutoClassifierBase.h>
 #include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
