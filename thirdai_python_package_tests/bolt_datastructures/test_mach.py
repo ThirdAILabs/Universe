@@ -6,7 +6,6 @@ import time
 import os
 import shutil
 
-
 # Returns data and labels for learning the function f(a) = a, where a is
 # sparse (num_true_labels_per_example number of nonzeros).
 def generate_random_easy_sparse(output_dim, num_true_labels_per_example, num_examples):

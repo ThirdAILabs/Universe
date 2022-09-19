@@ -32,13 +32,12 @@ class MlflowCallback(graph.callbacks.Callback):
         experiment_args: Dict[str, Any] = {},
     ):
         super().__init__()
-        # TODO move tracking uri somewhere or pass it in
         mlflow.set_tracking_uri(tracking_uri)
-        experiment = mlflow.set_experiment(experiment_name)
-        run = mlflow.start_run(run_name=run_name)
+        self.experiment_id = mlflow.set_experiment(experiment_name)
+        self.run_id = mlflow.start_run(run_name=run_name).info.run_id
 
         print(
-            "Starting Mlflow run at: {tracking_uri}/#/experiments/{experiment.experiment_id}/runs/{run.info.run_id}"
+            f"\nStarting Mlflow run at: \n{tracking_uri}/#/experiments/{self.experiment_id}/runs/{self.run_id}\n"
         )
 
         mlflow.log_param("dataset", dataset_name)
@@ -47,9 +46,9 @@ class MlflowCallback(graph.callbacks.Callback):
             for k, v in vars(experiment_args).items():
                 mlflow.log_param(k, v)
 
-        # TODO(david): how to log the commit we are on?
         self._log_machine_info()
 
+        # TODO(david): how to log the commit we are on?
         # TODO(david): how to log the current file we ran this from?
         # TODO(david): what about credentials for this?
         # mlflow.log_artifact(__file__)
@@ -75,3 +74,7 @@ class MlflowCallback(graph.callbacks.Callback):
         for name, values in train_state.get_all_validation_metrics().items():
             mlflow.log_metric("val_" + name, values[-1])
         mlflow.log_metric("epoch_times", train_state.epoch_times[-1])
+
+    def get_run_id(self):
+        return self.run_id
+        
