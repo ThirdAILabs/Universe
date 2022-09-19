@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cstring>
 
 using UniversalHash = thirdai::hashing::UniversalHash;
 

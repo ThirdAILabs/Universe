@@ -5,6 +5,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.integration]
 import numpy as np
 from thirdai import bolt, dataset
 
+import time
+from tqdm import tqdm
+
 from utils import (
     gen_numpy_training_data,
     build_single_node_bolt_dag_model,
@@ -31,7 +34,7 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
             compression_scheme="dragon",
             compression_density=compression_density,
             seed_for_hashing=seed_for_hashing,
-            sample_population_size=50,
+            sample_population_size=10000,
         )
     )
 
@@ -40,7 +43,7 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
             compression_scheme="dragon",
             compression_density=compression_density,
             seed_for_hashing=seed_for_hashing,
-            sample_population_size=50,
+            sample_population_size=2000,
         )
     )
 
@@ -108,19 +111,21 @@ def init_weights(model_init, model):
 
 def test_distributed_training(
     num_models,
-    train_data,
-    train_labels,
+    ls_train_data,
+    ls_train_labels,
     input_layer_dim,
     hidden_layer_dim,
     output_layer_dim,
     is_numpy_data=True,
+    compression_density=0.2,
+    num_epochs=5
 ):
 
     models = []
 
     model_init = build_single_node_bolt_dag_model(
-        train_data=train_data,
-        train_labels=train_labels,
+        train_data=ls_train_data[0],
+        train_labels=ls_train_labels[0],
         sparsity=0.2,
         learning_rate=LEARNING_RATE,
         input_layer_dim=input_layer_dim,
@@ -131,9 +136,9 @@ def test_distributed_training(
 
     for model_id in range(num_models):
         model = build_single_node_bolt_dag_model(
-            train_data=train_data,
-            train_labels=train_labels,
-            sparsity=0.2,
+            train_data=ls_train_data[model_id],
+            train_labels=ls_train_labels[model_id],
+            sparsity=0.1,
             learning_rate=LEARNING_RATE,
             input_layer_dim=input_layer_dim,
             hidden_layer_dim=hidden_layer_dim,
@@ -142,30 +147,52 @@ def test_distributed_training(
         )
         models.append(init_weights(model_init=model_init, model=model))
 
-    total_batches = models[0].numTrainingBatch()
+    total_batches = min([models[x].numTrainingBatch() for x in range(num_models)])
+    print(f"{total_batches} batches")
 
-    for epochs in range(5):
+    for epochs in range(num_epochs):
+        print(f"epoch: {epochs}")
         for batch_num in range(total_batches):
             compressed_grads = []
             bias_grads = []
+
+            start_computation_time=0
+            end_computation_time=0
+
+            start_compression_time=0
+            end_compression_time=0
+
             for model in models:
+                start_computation_time=time.time()
                 model.calculateGradientSingleNode(batch_num)
+                end_computation_time+=time.time()-start_computation_time
+
+                start_compression_time=time.time()
                 compressed_weight_grads = get_compressed_dragon_gradients(
                     model,
-                    compression_density=0.25,
+                    compression_density=compression_density,
                     seed_for_hashing=np.random.randint(100),
                 )
+                end_compression_time+=time.time()-start_compression_time
+
                 compressed_grads.append(compressed_weight_grads)
                 bias_grads.append(get_bias_grads(model))
 
+            print(f"time for compression: {round(end_compression_time,4):<6}",end=" ")
+            start_compression_time=time.time()
             combined_grads = combine_compressed_gradients(compressed_grads)
             combined_bias = combine_bias_grads(bias_grads=bias_grads)
+            print(f"time for combining: {round(time.time()-start_compression_time,4):<6}", end=" ")
+            end_compression_time=0
             for i, model in enumerate(models):
+                start_compression_time=time.time()
                 models[i] = set_compressed_dragon_gradients(
                     model=models[i], compressed_weight_grads=combined_grads
                 )
+                end_compression_time+=time.time()-start_compression_time
                 models[i] = set_bias_grads(model=models[i], bias_grads=combined_bias)
                 models[i].updateParametersSingleNode()
+            print(f"Computation Time: {round(end_computation_time,4):<6} setting Time: {round(end_compression_time,4):<6}")
 
     for model in models:
         model.finishTraining()
