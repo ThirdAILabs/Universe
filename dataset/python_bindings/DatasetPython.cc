@@ -1,6 +1,7 @@
 #include "DatasetPython.h"
 #include "PyDataLoader.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/DataLoader.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
@@ -220,7 +221,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<uint32_t>(), py::arg("target_batch_size"))
       .def("next_batch", &DataLoader::nextBatch)
       .def("next_line", &DataLoader::nextLine)
-      .def("resource_name", &DataLoader::resourceName);
+      .def("resource_name", &DataLoader::resourceName)
+      .def("restart", &DataLoader::restart);
 
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleBufferConfig")
       .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
@@ -356,6 +358,8 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
       .def(py::init<uint32_t>(), py::arg("pairgram_range"))
+      .def(py::init<uint32_t, float>(), py::arg("pairgram_range"),
+           py::arg("masked_tokens_percentage"))
       .def("load", &MLMDatasetLoader::load, py::arg("filename"),
            py::arg("batch_size"));
 

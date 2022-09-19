@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <compression/src/CompressedVector.h>
 #include <compression/src/CompressionUtils.h>
+#include <compression/src/DragonVector.h>
 #include <sys/types.h>
 #include <cstddef>
 #include <cstdint>
@@ -72,6 +73,26 @@ TEST_F(DragonVectorTest, ExtendDragonVectorTest) {
     ASSERT_EQ(values[i], values[i + size_before_extend]);
   }
   ASSERT_EQ(_vec.uncompressedSize(), _uncompressed_size);
+}
+
+TEST_F(DragonVectorTest, SerializeDragonVectorTest) {
+  char* serialized_data = new char[_vec.serialized_size()];
+  _vec.serialize(serialized_data);
+  DragonVector<float> deserialized_vec(serialized_data);
+
+  ASSERT_EQ(deserialized_vec.size(), _vec.size());
+  ASSERT_EQ(deserialized_vec.uncompressedSize(), _vec.uncompressedSize());
+
+  std::vector<uint32_t> indices = _vec.indices();
+  std::vector<float> values = _vec.values();
+
+  std::vector<uint32_t> indices_deserialized = deserialized_vec.indices();
+  std::vector<float> values_deserialized = deserialized_vec.values();
+
+  for (size_t i = 0; i < indices.size(); i++) {
+    ASSERT_EQ(indices[i], indices_deserialized[i]);
+    ASSERT_EQ(values[i], values_deserialized[i]);
+  }
 }
 
 }  // namespace thirdai::compression::tests

@@ -21,7 +21,7 @@ class CommonNetworks {
           "CommonNetworks::FullyConnected: Must pass at least one layer.");
     }
 
-    auto input_layer = std::make_shared<Input>(input_dim);
+    auto input_layer = Input::make(input_dim);
     NodePtr prev_layer = input_layer;
 
     for (auto& layer : layers) {

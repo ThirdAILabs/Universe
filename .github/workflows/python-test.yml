@@ -29,11 +29,8 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
-      - name: Build python package
-        run: bin/build.py
-
-      - name: Install necessary python pacakges
-        run: python3 -m pip install numpy pytest toml mmh3 datasets torch transformers 'ray[default]' boto3 moto[s3]
+      - name: Build python package and install test dependencies
+        run: bin/build.py --extras test
 
       - name: Run python unit tests
         run: bin/python-test.sh -m unit
