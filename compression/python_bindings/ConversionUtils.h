@@ -35,25 +35,29 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 using SerializedCompressedVector =
     py::array_t<char, py::array::c_style | py::array::forcecast>;
 
-// TODO(Shubh): Plant an enum instead of string for decoding compression scheme
 inline std::unique_ptr<CompressedVector<float>> deserializeCompressedVector(
-    const char* compressed_vector) {
+    const char* serialized_compressed_vector) {
   /*
    * We find the compression scheme from the char array and then pass the char
    * array to the constructor of the respective class.
    */
   uint32_t compression_scheme;
-  std::memcpy(reinterpret_cast<char*>(&compression_scheme), compressed_vector,
-              sizeof(uint32_t));
+  std::memcpy(reinterpret_cast<char*>(&compression_scheme),
+              serialized_compressed_vector, sizeof(uint32_t));
 
   CompressionScheme compression_scheme_enum =
       static_cast<CompressionScheme>(compression_scheme);
 
   switch (compression_scheme_enum) {
-    case CompressionScheme::Dragon:
-      return std::make_unique<DragonVector<float>>(compressed_vector);
-    case CompressionScheme::CountSketch:
-      return std::make_unique<CountSketch<float>>(compressed_vector);
+    case CompressionScheme::Dragon: {
+      DragonVector<float> compressed_vector(serialized_compressed_vector);
+      return std::make_unique<DragonVector<float>>(
+          std::move(compressed_vector));
+    }
+    case CompressionScheme::CountSketch: {
+      CountSketch<float> compressed_vector(serialized_compressed_vector);
+      return std::make_unique<CountSketch<float>>(std::move(compressed_vector));
+    }
     default:
       throw std::logic_error(
           "Valid Compression Scheme could not be decoded from the serialized "

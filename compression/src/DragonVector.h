@@ -47,8 +47,8 @@ class DragonVector final : public CompressedVector<T> {
   void extend(const DragonVector<T>& vec);
 
   void extend(std::unique_ptr<CompressedVector<T>> vec) final {
-    DragonVector<T> other_vec =
-        *dynamic_cast<DragonVector<T>*>(std::move(vec.get()));
+    DragonVector<T> other_vec(
+        std::move(*dynamic_cast<DragonVector<T>*>(std::move(vec).get())));
     this->extend(std::move(other_vec));
   }
 
