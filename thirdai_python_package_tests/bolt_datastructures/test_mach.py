@@ -1,10 +1,8 @@
 from hashlib import new
-import numpy as np
-from thirdai import bolt, dataset
+from thirdai import bolt
 import pytest
-import time
-import os
 import shutil
+
 
 # Returns data and labels for learning the function f(a) = a, where a is
 # sparse (num_true_labels_per_example number of nonzeros).
@@ -26,7 +24,7 @@ def generate_random_easy_sparse(output_dim, num_true_labels_per_example, num_exa
         label_values.astype("float32"),
         label_offsets.astype("uint32"),
     )
-
+    
 
 def build_and_train_mach(
     num_train=10000,
@@ -74,82 +72,6 @@ def get_recall(result, test_y, num_true_labels_per_sample):
     recall = count / (len(test_y[2]) - 1)
     # print("Recall: ", recall)
     return recall
-
-
-@pytest.mark.unit
-def test_mlflow_callback():
-    mlflowcallback = bolt.MlflowCallback("test_mlflow_experiment", "test_run_name", "test_dataset")
-
-    N_CLASSES = 10
-    N_SAMPLES = 1000
-    BATCH_SIZE = 100
-    EPOCHS = 10
-
-    def gen_numpy_training_data(
-        n_classes=10,
-        n_samples=1000,
-        noise_std=0.1,
-        convert_to_bolt_dataset=True,
-        batch_size_for_conversion=64,
-    ):
-        possible_one_hot_encodings = np.eye(n_classes)
-        labels = np.random.choice(n_classes, size=n_samples).astype("uint32")
-        examples = possible_one_hot_encodings[labels]
-        noise = np.random.normal(0, noise_std, examples.shape)
-        examples = (examples + noise).astype("float32")
-        if convert_to_bolt_dataset:
-            examples = dataset.from_numpy(
-                examples, batch_size=batch_size_for_conversion
-            )
-            labels = dataset.from_numpy(labels, batch_size=batch_size_for_conversion)
-        return examples, labels
-
-    data, labels = gen_numpy_training_data(
-        n_classes=N_CLASSES,
-        n_samples=N_SAMPLES,
-        noise_std=0.3,
-        convert_to_bolt_dataset=True,
-        batch_size_for_conversion=BATCH_SIZE,
-    )
-
-    def get_simple_dag_model(
-        input_dim,
-        hidden_layer_dim,
-        hidden_layer_sparsity,
-        output_dim,
-        output_activation="softmax",
-        loss=bolt.CategoricalCrossEntropyLoss(),
-    ):
-        input_layer = bolt.graph.Input(dim=input_dim)
-
-        hidden_layer = bolt.graph.FullyConnected(
-            dim=hidden_layer_dim, sparsity=hidden_layer_sparsity, activation="relu"
-        )(input_layer)
-
-        output_layer = bolt.graph.FullyConnected(
-            dim=output_dim, activation=output_activation
-        )(hidden_layer)
-
-        model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-
-        model.compile(loss)
-
-        return model
-
-    model = get_simple_dag_model(
-        input_dim=N_CLASSES,
-        hidden_layer_dim=2000,
-        hidden_layer_sparsity=1.0,
-        output_dim=N_CLASSES,
-    )
-
-    train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=EPOCHS)
-        .with_metrics(["categorical_accuracy"])
-        .with_callbacks([mlflowcallback])
-    )
-
-    return model.train(data, labels, train_config)
 
 
 @pytest.mark.unit
