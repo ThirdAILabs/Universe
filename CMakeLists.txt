@@ -33,6 +33,8 @@ message("====================================")
 message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
 separate_arguments(FEATURE_FLAGS)
 message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
+message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
+message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
 
