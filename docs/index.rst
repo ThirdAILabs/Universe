@@ -17,23 +17,9 @@ contain complete documentation for each of the submodules within thirdai.
 .. toctree::
    :maxdepth: 2
 
-   thirdaibase
+   thirdai_python_api
+   tutorials
 
-   thirdaibolt
-   thirdaibolttypes
-   thirdaibolttemporal
-   thirdaiboltgraph
-   thirdaiboltgraphcallbacks
+   api/library_index
 
-   thirdaidataset
-   thirdaidatasetblocks
-
-   thirdaidistributed
-   distributed_tutorial
-   thirdailog
-
-   
-   thirdaihashing
-   
-   thirdaisearch
 

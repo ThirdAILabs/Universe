@@ -82,3 +82,7 @@ tags
 
 # Ignore log files
 *.log
+
+# Doxygen/doc artifacts
+docs/api
+docs/_build
