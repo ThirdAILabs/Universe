@@ -538,8 +538,10 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def_readonly("epoch_times", &TrainState::epoch_times)
       .def("get_train_metrics", &TrainState::getTrainMetrics,
            py::arg("metric_name"))
+      .def("get_all_train_metrics", &TrainState::getAllTrainMetrics)
       .def("get_validation_metrics", &TrainState::getValidationMetrics,
-           py::arg("metric_name"));
+           py::arg("metric_name"))
+      .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
