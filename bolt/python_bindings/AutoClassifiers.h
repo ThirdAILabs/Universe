@@ -193,7 +193,7 @@ class MultiLabelTextClassifier final
 
   BoltVector featurizeInputForInference(
       const std::vector<uint32_t>& input) final {
-    std::string sentence = tokensToSentence(input);
+    std::string sentence = joinTokensIntoString(input, /* delimiter= */ ' ');
 
     return dataset::TextEncodingUtils::computePairgrams(
         sentence, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
@@ -286,17 +286,6 @@ class MultiLabelTextClassifier final
       return 0.01;
     }
     return 0.05;
-  }
-
-  static std::string tokensToSentence(const std::vector<uint32_t>& tokens) {
-    std::stringstream sentence_ss;
-    for (uint32_t i = 0; i < tokens.size(); i++) {
-      if (i > 0) {
-        sentence_ss << ' ';
-      }
-      sentence_ss << tokens[i];
-    }
-    return sentence_ss.str();
   }
 
   float _threshold;
