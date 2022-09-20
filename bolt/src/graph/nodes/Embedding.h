@@ -89,6 +89,19 @@ class EmbeddingNode final : public Node,
         "EmbeddingNode is in an invalid internal state");
   }
 
+  void enableDistributedTraining() final {
+    // NOOP since the Embedding node always updates all of its parameters, so
+    // enabling distributed training doesn't change anything.
+  }
+
+  std::vector<float>& getRawEmbeddingBlock() {
+    return _embedding_layer->getRawEmbeddingBlock();
+  }
+
+  std::vector<float>& getRawEmbeddingBlockGradient() {
+    return _embedding_layer->getRawEmbeddingBlockGradient();
+  }
+
  private:
   void compileImpl() final {
     assert(_config.has_value());

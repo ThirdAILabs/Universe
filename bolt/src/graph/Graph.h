@@ -158,8 +158,12 @@ class BoltGraph {
   void updateSampling(uint32_t rebuild_hash_tables_batch,
                       uint32_t reconstruct_hash_functions_batch);
 
-  // This function make sure that the parameter updates are dense
-  // in distributed setting even when the training is sparse
+  // This function makes sure all layers in the graph are prepard for
+  // distributed training. This chiefly is relevant during paramemeter updates,
+  // when a layer needs to know that it cannot rely on its own tracking of which
+  // neurons were activated (since the gradient will also be aggregated from
+  // other machines), and so it should do a dense parameter update no matter
+  // what.
   void enableDistributedTraining();
 
   constexpr bool checkBatchInterval(uint32_t num_batches) const {

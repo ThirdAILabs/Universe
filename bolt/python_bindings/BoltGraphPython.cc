@@ -197,7 +197,30 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * log_embedding_block_size: Int (positive) The log base 2 of the "
            "total size of the embedding block.\n")
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
-           "Tells the graph which token input to use for this Embedding Node.");
+           "Tells the graph which token input to use for this Embedding Node.")
+      .def_property_readonly(
+          "weights",
+          [](EmbeddingNode& node) {
+            std::vector<float>& raw_embedding_block =
+                node.getRawEmbeddingBlock();
+            return ParameterReference(
+                raw_embedding_block.data(),
+                {static_cast<uint32_t>(raw_embedding_block.size())});
+          },
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight matrix.")
+      .def_property_readonly(
+          "weight_gradients",
+          [](EmbeddingNode& node) {
+            std::vector<float>& raw_embedding_block_gradient =
+                node.getRawEmbeddingBlockGradient();
+            return ParameterReference(
+                raw_embedding_block_gradient.data(),
+                {static_cast<uint32_t>(raw_embedding_block_gradient.size())});
+          },
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight gradients "
+          "matrix.");
 
   graph_submodule.def("TokenInput", &Input::makeTokenInput, py::arg("dim"),
                       py::arg("num_tokens_range"));
@@ -477,7 +500,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Possible operations to perform on the returned object include "
            "setting layer sparsity, freezing weights, or saving to a file");
 
-  py::class_<DistributedTrainingContext>(graph_submodule, "DistributedDataParallel")
+  py::class_<DistributedTrainingContext>(graph_submodule,
+                                         "DistributedDataParallel")
       .def(py::init<BoltGraphPtr, std::vector<dataset::BoltDatasetPtr>,
                     dataset::BoltDatasetPtr, TrainConfig>(),
            py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
@@ -485,8 +509,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("acumulateBatchGradient",
            &DistributedTrainingContext::acumulateBatchGradient,
            py::arg("batch_idx"))
-      .def("updateParameters",
-           &DistributedTrainingContext::updateParameters)
+      .def("updateParameters", &DistributedTrainingContext::updateParameters)
       .def("finishTraining", &DistributedTrainingContext::finishTraining);
 
   createCallbacksSubmodule(graph_submodule);

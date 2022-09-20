@@ -562,13 +562,7 @@ void BoltGraph::resetOutputGradients(uint32_t vec_index) {
 
 void BoltGraph::enableDistributedTraining() {
   for (NodePtr& node : _nodes) {
-    FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
-    if (fc_node != nullptr) {
-      fc_node->enableDistributedTraining();
-    } else {
-      throw thirdai::exceptions::NotImplemented(
-          "Only Implemented for Fully Connected Node");
-    }
+    node->enableDistributedTraining();
   }
 }
 

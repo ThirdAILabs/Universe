@@ -113,6 +113,10 @@ class SwitchNode final : public Node,
     return shared_from_this();
   }
 
+  void enableDistributedTraining() final {
+    // NOOP since the Switch node doesn't have any paramters
+  }
+
  private:
   void compileImpl() final {
     for (auto& layer : _layers) {
