@@ -106,10 +106,6 @@ MetricData BoltGraph::train(
     // some sort of RAII training context object whose destructor will
     // automatically delete the training state
     try {
-      if (train_config.verbose()) {
-        std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
-      }
-
       std::optional<ProgressBar> bar = makeOptionalProgressBar(
           /*make=*/train_config.verbose(),
           /*description=*/fmt::format("train epoch {}", _epoch_count),
