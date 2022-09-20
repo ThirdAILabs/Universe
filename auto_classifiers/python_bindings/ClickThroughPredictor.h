@@ -37,7 +37,8 @@ class ClickThroughPredictor {
 
     auto embedding = EmbeddingNode::make(
         /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
-        /* log_embedding_block_size= */ 20, /* reduction= */ "concatenate");
+        /* log_embedding_block_size= */ 20, /* reduction= */ "concatenation",
+        /* num_tokens_per_input= */ num_categorical_features);
     embedding->addInput(categorical_input);
 
     auto feature_interaction =
@@ -68,14 +69,21 @@ class ClickThroughPredictor {
              const NumpyArray<uint32_t>& categorical_features,
              const NumpyArray<uint32_t>& labels, uint32_t epochs,
              float learning_rate, uint32_t batch_size) {
-    auto dense_dataset =
-        dataset::numpy::numpyToBoltVectorDataset(dense_features, batch_size);
+    auto dense_dataset = dataset::numpy::denseNumpyToBoltVectorDataset(
+        dense_features, batch_size);
+    std::cout << "Dense: " << dense_dataset->numBatches() << " "
+              << dense_dataset->len() << std::endl;
 
-    auto categorical_dataset = dataset::numpy::numpyToBoltVectorDataset(
+    auto categorical_dataset = dataset::numpy::numpyTokensToBoltDataset(
         categorical_features, batch_size);
+    std::cout << "Cat: " << categorical_dataset->numBatches() << " "
+              << categorical_dataset->len() << std::endl;
 
     auto labels_dataset =
-        dataset::numpy::numpyToBoltVectorDataset(labels, batch_size);
+        dataset::numpy::numpyTokensToBoltDataset(labels, batch_size);
+
+    std::cout << "Labels: " << labels_dataset->numBatches() << " "
+              << labels_dataset->len() << std::endl;
 
     _model->train({dense_dataset, categorical_dataset}, labels_dataset,
                   TrainConfig::makeConfig(learning_rate, epochs));
@@ -83,10 +91,10 @@ class ClickThroughPredictor {
 
   py::tuple evaluate(const NumpyArray<float>& dense_features,
                      const NumpyArray<uint32_t>& categorical_features) {
-    auto dense_dataset = dataset::numpy::numpyToBoltVectorDataset(
+    auto dense_dataset = dataset::numpy::denseNumpyToBoltVectorDataset(
         dense_features, /* batch_size= */ 2048);
 
-    auto categorical_dataset = dataset::numpy::numpyToBoltVectorDataset(
+    auto categorical_dataset = dataset::numpy::numpyTokensToBoltDataset(
         categorical_features, /* batch_size= */ 2048);
 
     auto [metrics, output] =
