@@ -11,12 +11,13 @@ from typing import Tuple, Any, Optional, Dict, List
 
 
 class FullyConnectedNetwork(DistributedBolt):
-    """This class implements the public facing APIs for
+    """
+    This class implements the public facing APIs for
     Fully Connected Network Class.
 
-    Args:
-        DistributedBolt (Class): Implements the generic class for
-        Public Facing APIs which includes functions like train, predict
+    :param DistributedBolt: Implements the generic class for
+                Public Facing APIs which includes functions like train, predict
+    :type DistributedBolt: DistributedBolt
     """
 
     def __init__(
@@ -27,17 +28,22 @@ class FullyConnectedNetwork(DistributedBolt):
         communication_type: Optional[str] = "circular",
         cluster_address: Optional[str] = "auto",
     ):
-        """This function initializes this class, which provides wrapper over DistributedBolt and
+        """
+        This function initializes this class, which provides wrapper over DistributedBolt and
         implements the user facing FullyConnectedNetwork API.
 
-        Args:
-            num_workers (int): number of workers
-            config_filename (dict): configuration file for FullyConnectedNetwork
-            num_cpus_per_node (int): Number of CPUs per node
-
-        Raises:
-            ValueError: If number of training files is not equal to number of nodes
-            Exception: If ray initialization doesnot happens
+        :param num_workers: number of workers
+        :type num_workers: int
+        :param config_filename: configuration file for FullyConnectedNetwork
+        :type config_filename: Dict
+        :param num_cpus_per_node: Number of CPUs per node, defaults to -1
+        :type num_cpus_per_node: Optional[int], optional
+        :param communication_type: type of communication, defaults to "circular"
+        :type communication_type: Optional[str], optional
+        :param cluster_address: address to which cluster needed to add, defaults to "auto"
+        :type cluster_address: Optional[str], optional
+        :raises ValueError: If number of training files is not equal to number of nodes
+        :raises Exception: If ray initialization doesnot happens
         """
 
         self.logging = init_logging("distributed_fully_connected.log")
@@ -107,7 +113,7 @@ class FullyConnectedNetwork(DistributedBolt):
         # 100, as the ray queues the work load else.
         self.primary_worker = PrimaryWorker.options(
             num_cpus=num_cpus_per_worker, max_concurrency=100
-        ).remote(self.layer_dims, self.num_workers)
+        ).remote(self.layer_dims, self.num_workers, config, communication_type)
 
         self.replica_workers = [
             ReplicaWorker.options(
@@ -116,21 +122,15 @@ class FullyConnectedNetwork(DistributedBolt):
                 self.num_workers,
                 worker_id + 1,
                 self.primary_worker,
+                config,
+                self.layer_dims,
+                communication_type,
             )
             for worker_id in range(self.num_workers - 1)
         ]
 
         self.workers = [self.primary_worker]
         self.workers.extend(self.replica_workers)
-
-        ray.get(
-            [
-                worker.make_fully_connected_model.remote(config, self.layer_dims)
-                for worker in self.workers
-            ]
-        )
-
-        self.primary_worker.set_workers.remote(self.workers)
 
         self.num_of_batches = min(
             ray.get([worker.num_of_batches.remote() for worker in self.workers])

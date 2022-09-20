@@ -33,6 +33,8 @@ message("====================================")
 message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
 separate_arguments(FEATURE_FLAGS)
 message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
+message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
+message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
 
@@ -238,6 +240,11 @@ file(
    compression/src/*.cc
  )
 
+file(
+  GLOB_RECURSE UTILS_SOURCES
+  utils/*.cc
+)
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and
 # Debug builds, but not our ASan builds. This means that for now we can't run
 # ASan from python, but honestly this is more trouble than it's worth so for
@@ -259,6 +266,7 @@ pybind11_add_module(_thirdai
   ${WRAPPER_SOURCES}
   ${DATASET_SOURCES}
   ${COMPRESSION_SOURCES}
+  ${UTILS_SOURCES}
 )
 
 target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)

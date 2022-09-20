@@ -50,6 +50,14 @@ class MetricAggregator {
 
   MetricData getOutput() { return _output; }
 
+  std::vector<double>& getSingleOutput(const std::string& metric_name) {
+    if (_output.count(metric_name) != 0) {
+      return _output[metric_name];
+    }
+    throw std::invalid_argument("Could not find metric name '" + metric_name +
+                                "' in list of computed metrics.");
+  }
+
   InferenceMetricData getOutputFromInference() {
     InferenceMetricData data;
     for (const auto& metric : _output) {

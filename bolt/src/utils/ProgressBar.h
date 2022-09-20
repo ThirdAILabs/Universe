@@ -26,7 +26,7 @@ class ProgressBar {
         _prev_steps(0),
         _prev_percent(0),
         _max_steps(max_steps) {
-    std::cout << description << "\n" << std::endl;
+    std::cout << description << ":\n" << std::endl;
     std::cout << OPEN;
     for (uint32_t i = 0; i < BAR_SIZE; i++) {
       std::cout << TODO;
