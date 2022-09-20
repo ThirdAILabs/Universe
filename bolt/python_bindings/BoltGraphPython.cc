@@ -509,13 +509,13 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             std::stringstream ss;
             model.save_stream(ss);
             std::string binary_model = ss.str();
-            return py::tuple(py::bytes(binary_model));
+            return py::make_tuple(py::bytes(binary_model));
           },
           [](const py::tuple& t) {  // __setstate__
             if (t.size() != 1) {
               throw std::runtime_error(
                   "Pickled model is not in the correct state (should be a "
-                  "tuple of length 1)!");
+                  "tuple of length 1, but found a tuple of length " + std::to_string(t.size()));
             }
 
             // TODO(Josh): Ideally make sure the type is bytes

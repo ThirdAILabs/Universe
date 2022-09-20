@@ -49,7 +49,7 @@ class PrimaryWorker(Worker):
             self,
             model_to_wrap,
             train_file_name,
-            train_config,
+            # train_config,
             communication_type,
         )
 

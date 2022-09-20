@@ -55,16 +55,14 @@ class RayTrainingCluster:
         )
 
         # TODO(Josh): investigate this max concurrency thing
-        self.primary_worker = PrimaryWorker.options(
+        self.primary_worker_config = PrimaryWorker.options(
             num_cpus=num_cpus_to_use, max_concurrency=100
         )
 
-        self.replica_workers = [
+        self.replica_worker_configs = [
             ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=100)
             for _ in range(self.num_workers - 1)
         ]
-
-        self.workers = [self.primary_worker] + self.replica_workers
 
 
 class DistributedDataParallel:
@@ -95,7 +93,7 @@ class DistributedDataParallel:
 
         self.logging.info("Training has started!")
 
-        cluster.primary_worker.remote(
+        self.primary_worker = cluster.primary_worker_config.remote(
             cluster.num_workers,
             model,
             train_file_names[0],
@@ -103,23 +101,24 @@ class DistributedDataParallel:
             cluster.communication_type,
         )
 
-        for worker_id, worker_node in enumerate(cluster.replica_workers):
-            worker_node.remote(
+        self.replica_workers = []
+        for worker_id, replica_worker_config in enumerate(cluster.replica_worker_configs):
+            self.replica_workers.append(replica_worker_config.remote(
                 cluster.num_workers,
                 worker_id + 1,
-                cluster.primary_worker,
+                self.primary_worker,
                 model,
                 train_file_names[worker_id + 1],
                 # train_config,
                 cluster.communication_type,
-            )
+            ))
 
         self.num_of_batches = min(
-            ray.get([worker.num_of_batches().remote() for worker in cluster.workers])
+            ray.get([worker.num_of_batches.remote() for worker in self.replica_workers])
         )
 
     def train(self):
         pass
 
     def get_model(self):
-        return self.cluster.primary_worker.model().remote()
+        return self.cluster.primary_worker.model.remote()
