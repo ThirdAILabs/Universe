@@ -17,7 +17,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/DenseArray.h>
-#include <dataset/src/blocks/TabularBlocks.h>
+#include <dataset/src/blocks/TabularPairGram.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -316,7 +316,7 @@ class TabularClassifier final
            (batch_cnt++ < batches_to_use)) {
     }
 
-    _metadata = metadata_batch_processor->getMetadata();
+    _metadata = metadata_batch_processor->getTabularMetadata();
   }
 
   // Private constructor for cereal.
@@ -332,7 +332,7 @@ class TabularClassifier final
             _column_datatypes);
   }
 
-  std::shared_ptr<dataset::TabularMetadata> _metadata;
+  dataset::TabularMetadataPtr _metadata;
   dataset::GenericBatchProcessorPtr _batch_processor;
   std::vector<std::string> _column_datatypes;
 };
