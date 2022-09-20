@@ -1,14 +1,8 @@
 cmake_minimum_required(VERSION 3.4...3.18)
 
-# Pick up modules added by thirdai
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-
-if (NOT WIN32)
-  set(CMAKE_CXX_COMPILER "g++")
-  set(CMAKE_C_COMPILER "gcc")
-  message("Not using MSVC (we should not be on Windows then), forcing GCC and G++")
-else()
+if(WIN32)
   # Set this to use static linking by default, see
   # https://cmake.org/cmake/help/latest/prop_tgt/MSVC_RUNTIME_LIBRARY.html
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -20,6 +14,12 @@ set(ENV{LD_PRELOAD} "")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
+
+# See [1] https://gcc.gnu.org/wiki/Visibility
+#     [2] https://stackoverflow.com/a/31157258/4565794
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 # Project versioning
 find_package(Git REQUIRED)
@@ -33,6 +33,8 @@ message("====================================")
 message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
 separate_arguments(FEATURE_FLAGS)
 message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
+message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
+message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
 
@@ -40,11 +42,18 @@ if (MSVC)
   if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
   endif()
-  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp:llvm /w")
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
+
+  # We create an interface to plant compile flags and be cohesive with the rest
+  # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile
+  # flags narrowing it to just the required targets.
+
+  add_library(_thirdai_windows_llvm_openmp INTERFACE)
+  target_compile_options(_thirdai_windows_llvm_openmp INTERFACE "/openmp:llvm")
+  add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 else()
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   add_compile_options(
-    -fopenmp
-    -fPIC
     -Wall
     -Wextra
     -Werror
@@ -82,9 +91,7 @@ else()
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
   )
 
-  add_link_options(
-    -fopenmp
-  )
+  find_package(OpenMP REQUIRED)
 endif()
 
 # Add feature flags passed in from python
@@ -120,7 +127,6 @@ endif()
 
 set(THIRDAI_GTEST_DISCOVERY_TIMEOUT 5 CACHE STRING "Timeout for GoogleTest discovery, configurable from command-line.")
 
-find_package(OpenMP REQUIRED)
 
 # Header only dependencies
 include_directories(deps/pybind11/include)
@@ -129,10 +135,12 @@ include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 include_directories(deps/googletest/googletest/include)
 include_directories(deps/googletest/googlemock/include)
+include_directories(deps/spdlog/include)
 
 # Source dependencies
 add_subdirectory(deps/pybind11)
 add_subdirectory(deps/googletest)
+add_subdirectory(deps/spdlog)
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
@@ -186,6 +194,7 @@ add_subdirectory(hashing)
 add_subdirectory(hashtable)
 add_subdirectory(utils)
 add_subdirectory(wrappers)
+add_subdirectory(compression)
 
 # Only add the licensing subdirectory if the corresponding flag is set
 if (${LICENSE_BUILD_FLAG_FOUND})
@@ -226,6 +235,16 @@ file (
   dataset/src/*.cc
 )
 
+file(
+   GLOB_RECURSE COMPRESSION_SOURCES
+   compression/src/*.cc
+ )
+
+file(
+  GLOB_RECURSE UTILS_SOURCES
+  utils/*.cc
+)
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and
 # Debug builds, but not our ASan builds. This means that for now we can't run
 # ASan from python, but honestly this is more trouble than it's worth so for
@@ -245,7 +264,11 @@ pybind11_add_module(_thirdai
   ${DATASET_SOURCES}
   ${WRAPPER_SOURCES}
   ${DATASET_SOURCES}
+  ${COMPRESSION_SOURCES}
+  ${UTILS_SOURCES}
 )
+
+target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
 
 if (${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})

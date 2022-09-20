@@ -1,5 +1,5 @@
 from thirdai import bolt, dataset
-from thirdai.dataset import DataPipeline, blocks, text_encodings
+from thirdai.dataset import DataPipeline, blocks
 
 # Uncomment the following line when used on a machine with valid mlflow credentials
 import mlflow
@@ -80,10 +80,8 @@ class CookieMonster:
             pipeline = DataPipeline(
                 file,
                 batch_size=batch_size,
-                input_blocks=[
-                    blocks.Text(1, text_encodings.PairGram(self.input_dimension))
-                ],
-                label_blocks=[blocks.Categorical(0, label_dim)],
+                input_blocks=[blocks.TextPairGram(col=1, dim=self.input_dimension)],
+                label_blocks=[blocks.NumericalId(col=0, n_classes=label_dim)],
                 delimiter=",",
             )
             data, label = pipeline.load_in_memory()

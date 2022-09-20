@@ -82,6 +82,31 @@ def gen_single_sparse_node(num_classes, sparsity=0.5):
     return model
 
 
+def get_simple_dag_model(
+    input_dim,
+    hidden_layer_dim,
+    hidden_layer_sparsity,
+    output_dim,
+    output_activation="softmax",
+    loss=bolt.CategoricalCrossEntropyLoss(),
+):
+    input_layer = bolt.graph.Input(dim=input_dim)
+
+    hidden_layer = bolt.graph.FullyConnected(
+        dim=hidden_layer_dim, sparsity=hidden_layer_sparsity, activation="relu"
+    )(input_layer)
+
+    output_layer = bolt.graph.FullyConnected(
+        dim=output_dim, activation=output_activation
+    )(hidden_layer)
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+
+    model.compile(loss)
+
+    return model
+
+
 def get_simple_concat_model(
     hidden_layer_top_dim,
     hidden_layer_bottom_dim,
@@ -138,16 +163,70 @@ def remove_files(files):
         os.remove(file)
 
 
-def compute_accuracy_with_file(test_labels, pred_file):
-    with open(pred_file) as pred:
-        pred_lines = pred.readlines()
-
-    predictions = [x[:-1] for x in pred_lines]
-
+def compute_accuracy_of_predictions(test_labels, predictions):
     assert len(predictions) == len(test_labels)
     return sum(
         (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
     ) / len(predictions)
+
+
+def build_simple_hidden_layer_model(
+    input_dim=10,
+    hidden_dim=10,
+    output_dim=10,
+):
+    input_layer = bolt.graph.Input(dim=input_dim)
+
+    hidden_layer = bolt.graph.FullyConnected(
+        dim=hidden_dim,
+        activation="relu",
+    )(input_layer)
+
+    output_layer = bolt.graph.FullyConnected(dim=output_dim, activation="softmax")(
+        hidden_layer
+    )
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+
+    return model
+
+
+def build_single_node_bolt_dag_model(
+    train_data,
+    train_labels,
+    sparsity,
+    num_classes,
+    learning_rate=0.0001,
+    hidden_layer_dim=2000,
+):
+    data = dataset.from_numpy(train_data, batch_size=64)
+    labels = dataset.from_numpy(train_labels, batch_size=64)
+
+    input_layer = bolt.graph.Input(dim=num_classes)
+    hidden_layer = bolt.graph.FullyConnected(
+        dim=hidden_layer_dim,
+        sparsity=sparsity,
+        activation="relu",
+    )(input_layer)
+    output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
+        hidden_layer
+    )
+
+    train_config = (
+        bolt.graph.TrainConfig.make(learning_rate=learning_rate, epochs=3)
+        .silence()
+        .with_rebuild_hash_tables(3000)
+        .with_reconstruct_hash_functions(10000)
+    )
+    model = bolt.graph.DistributedModel(
+        inputs=[input_layer],
+        output=output_layer,
+        train_data=[data],
+        train_labels=labels,
+        train_config=train_config,
+        loss=bolt.CategoricalCrossEntropyLoss(),
+    )
+    return model
 
 
 # Builds, trains, and does prediction on a model using numpy data and numpy
@@ -199,3 +278,27 @@ def build_train_and_predict_single_hidden_layer(
         predict_config.enable_sparse_inference()
 
     return model.predict(data, labels, predict_config)
+
+
+# This function checks that the the results of predict_single and predict batch
+# match the original predictions.
+def check_autoclassifier_predict_correctness(
+    classifier, test_samples, original_predictions
+):
+    for sample, original_prediction in zip(test_samples, original_predictions):
+        single_prediction = classifier.predict(sample)
+        assert single_prediction == original_prediction
+
+    for samples, predictions in batch_predictions(test_samples, original_predictions):
+        batched_prediction = classifier.predict_batch(samples)
+        for prediction, original_prediction in zip(batched_prediction, predictions):
+            assert prediction == original_prediction
+
+
+def batch_predictions(original_predictions, samples, batch_size=10):
+    batches = []
+    for i in range(0, len(original_predictions), batch_size):
+        batches.append(
+            (original_predictions[i : i + batch_size], samples[i : i + batch_size])
+        )
+    return batches

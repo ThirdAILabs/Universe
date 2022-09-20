@@ -1,8 +1,6 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
-#include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <cmath>
 #include <memory>
 
@@ -24,6 +22,10 @@ class DenseArrayBlock : public Block {
    */
   DenseArrayBlock(uint32_t start_col, uint32_t dim)
       : _start_col(start_col), _dim(dim) {}
+
+  static auto make(uint32_t start_col, uint32_t dim) {
+    return std::make_shared<DenseArrayBlock>(start_col, dim);
+  }
 
   uint32_t featureDim() const final { return _dim; };
 

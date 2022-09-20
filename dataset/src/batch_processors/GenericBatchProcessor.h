@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
@@ -121,6 +125,14 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
                                      BoltVector& vector) {
     return makeVector(sample, vector, _label_blocks, _label_blocks_dense);
+  }
+
+  static std::shared_ptr<GenericBatchProcessor> make(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
+      char delimiter = ',', bool parallel = true) {
+    return std::make_shared<GenericBatchProcessor>(
+        input_blocks, label_blocks, has_header, delimiter, parallel);
   }
 
  private:

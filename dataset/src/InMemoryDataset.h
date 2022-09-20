@@ -29,6 +29,8 @@ class DatasetBase {
 
   virtual uint64_t numBatches() const = 0;
 
+  virtual ~DatasetBase() = default;
+
  private:
   friend class cereal::access;
   template <class Archive>
