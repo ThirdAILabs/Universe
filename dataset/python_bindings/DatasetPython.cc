@@ -179,12 +179,24 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<TabularMetadata, std::shared_ptr<TabularMetadata>>(
       dataset_submodule, "TabularMetadata", "Metadata for a tabular dataset.")
-      .def(py::init<std::vector<TabularDataType>,
-                    std::unordered_map<uint32_t, std::pair<double, double>>,
-                    std::unordered_map<std::string, uint32_t>,
-                    std::optional<std::unordered_map<uint32_t, uint32_t>>>(),
-           py::arg("column_dtypes"), py::arg("col_to_max_val"),
-           py::arg("col_to_min_val"), py::arg("class_to_class_id"),
+      .def(py::init(
+               [](std::vector<TabularDataType> column_dtypes,
+                  std::unordered_map<uint32_t, std::pair<double, double>>
+                      col_min_maxes,
+                  std::unordered_map<std::string, uint32_t> class_name_to_id,
+                  std::vector<std::string> column_names = {},
+                  std::optional<std::unordered_map<uint32_t, uint32_t>>
+                      col_to_num_bins = std::nullopt) {
+                 return std::make_shared<TabularMetadata>(
+                     column_dtypes, col_min_maxes,
+                     ThreadSafeVocabulary::make(std::move(class_name_to_id),
+                                                /* fixed = */ true),
+                     column_names, col_to_num_bins);
+               }),
+           py::arg("column_dtypes"), py::arg("col_min_maxes"),
+           py::arg("class_name_to_id") =
+               std::unordered_map<std::string, uint32_t>(),
+           py::arg("column_names") = std::vector<std::string>(),
            py::arg("col_to_num_bins") = std::nullopt);
 
   py::class_<TabularPairGram, Block, std::shared_ptr<TabularPairGram>>(
