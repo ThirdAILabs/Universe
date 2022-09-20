@@ -5,7 +5,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.integration]
 import numpy as np
 from thirdai import bolt, dataset
 
-np.set_printoptions(suppress=True)
 from utils import (
     gen_numpy_training_data,
     build_single_node_bolt_dag_model,
@@ -17,9 +16,8 @@ OUTPUT_DIM = 10
 LEARNING_RATE = 0.002
 ACCURACY_THRESHOLD = 0.8
 
-# A compressed dragon vector is a dictionary at the moment.
-# It has the following keys: "compression_scheme", "original_size", "sketch_size"
-# "seed_for_hashing", "compression_density", "indices", "values"
+# A compressed dragon vector is exposed as a char array at this moment
+# hence, it is not interpretable at Python end
 
 
 def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing):

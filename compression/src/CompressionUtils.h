@@ -3,7 +3,6 @@
 #include <hashing/src/UniversalHash.h>
 #include <algorithm>
 #include <cstdint>
-#include <iostream>
 #include <memory>
 #include <random>
 #include <string>

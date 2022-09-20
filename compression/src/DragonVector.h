@@ -47,9 +47,9 @@ class DragonVector final : public CompressedVector<T> {
   void extend(const DragonVector<T>& vec);
 
   void extend(std::unique_ptr<CompressedVector<T>> vec) final {
-    DragonVector<T> other_vec(
-        std::move(*dynamic_cast<DragonVector<T>*>(std::move(vec).get())));
-    this->extend(std::move(other_vec));
+    DragonVector<T>* ptr_to_vector_to_extend =
+        dynamic_cast<DragonVector<T>*>(vec.get());
+    this->extend(*ptr_to_vector_to_extend);
   }
 
   std::vector<uint32_t> indices() const { return _indices; }

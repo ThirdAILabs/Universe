@@ -18,24 +18,13 @@ namespace py = pybind11;
 
 namespace thirdai::compression::python {
 
-template <class T>
-inline std::vector<T> makeVectorFrom1dNumpyArray(
-    const py::array_t<T>& py_array);
-
-// TODO(Shubh): Profiling this function to see if copying is a bottleneck.
-template <class T>
-inline std::vector<T> makeVectorFrom1dNumpyArray(
-    const py::array_t<T>& py_array) {
-  return std::vector<T>(py_array.data(), py_array.data() + py_array.size());
-}
-
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 using SerializedCompressedVector =
     py::array_t<char, py::array::c_style | py::array::forcecast>;
 
-inline std::unique_ptr<CompressedVector<float>> deserializeCompressedVector(
+inline std::unique_ptr<CompressedVector<float>> deserialize(
     const char* serialized_compressed_vector) {
   /*
    * We find the compression scheme from the char array and then pass the char
@@ -50,13 +39,11 @@ inline std::unique_ptr<CompressedVector<float>> deserializeCompressedVector(
 
   switch (compression_scheme_enum) {
     case CompressionScheme::Dragon: {
-      DragonVector<float> compressed_vector(serialized_compressed_vector);
       return std::make_unique<DragonVector<float>>(
-          std::move(compressed_vector));
+          serialized_compressed_vector);
     }
     case CompressionScheme::CountSketch: {
-      CountSketch<float> compressed_vector(serialized_compressed_vector);
-      return std::make_unique<CountSketch<float>>(std::move(compressed_vector));
+      return std::make_unique<CountSketch<float>>(serialized_compressed_vector);
     }
     default:
       throw std::logic_error(
@@ -66,7 +53,7 @@ inline std::unique_ptr<CompressedVector<float>> deserializeCompressedVector(
   }
 }
 
-inline void serializeCompressedVector(
+inline void serialize(
     const std::unique_ptr<CompressedVector<float>>& compressed_vector,
     char* serialized_data) {
   compressed_vector->serialize(serialized_data);
@@ -78,7 +65,7 @@ convertPyListToCompressedVectors(const py::list& py_compressed_vectors) {
   std::vector<std::unique_ptr<CompressedVector<float>>> compressed_vectors;
   compressed_vectors.reserve(num_vectors);
   for (int i = 0; i < num_vectors; i++) {
-    compressed_vectors.push_back(deserializeCompressedVector(
+    compressed_vectors.push_back(deserialize(
         py::cast<SerializedCompressedVector>(py_compressed_vectors[i]).data()));
   }
   return compressed_vectors;
