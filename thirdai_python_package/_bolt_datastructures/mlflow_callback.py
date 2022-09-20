@@ -13,6 +13,7 @@ class MlflowCallback(graph.callbacks.Callback):
     logs params for the existing experiment.
 
     Args:
+        tracking_uri: The uri that hosts the MLflow experiments. 
         experiment_name: The name of the associated experiment (top-level
             header in Mlflow). Groups together runs with similar intent.
         run_name: Describes the run. Should include any details that don't

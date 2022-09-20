@@ -173,6 +173,7 @@ setup(
             "pytest",
             "boto3",
             "moto",
+            "mlflow",
             "datasets",
             "torch",
             "toml",
