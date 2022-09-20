@@ -97,14 +97,14 @@ class ClickThroughPredictor {
               ->addPredecessor(top_mlp_output);
     }
 
-    auto output = FullyConnectedNode::makeDense(/* dim= */ 2,
-                                                /* activation= */ "softmax");
+    auto output = FullyConnectedNode::makeDense(/* dim= */ 1,
+                                                /* activation= */ "sigmoid");
     output->addPredecessor(top_mlp_output);
 
     _model = std::make_shared<BoltGraph>(
         /* inputs= */ std::vector<InputPtr>{dense_input, categorical_input},
         /* output= */ output);
-    _model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
+    _model->compile(std::make_shared<BinaryCrossEntropyLoss>());
   }
 
   void train(const NumpyArray<float>& dense_features,
@@ -177,7 +177,7 @@ class ClickThroughPredictor {
     BoltVector output = _model->predictSingle(
         {dense_input, categorical_input}, /* use_sparse_inference= */ false);
 
-    return output.activations[1];
+    return output.activations[0];
   }
 
   void save(const std::string& filename) {
