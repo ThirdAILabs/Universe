@@ -217,7 +217,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
   py::class_<DlrmAttentionNode, DlrmAttentionNodePtr, Node>(graph_submodule,
                                                             "DlrmAttention")
-      .def(py::init())
+      .def(py::init(&DlrmAttentionNode::make))
       .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
            py::arg("embedding_layer"));
 

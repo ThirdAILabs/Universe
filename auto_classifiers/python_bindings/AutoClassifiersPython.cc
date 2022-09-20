@@ -1,5 +1,6 @@
 #include "AutoClassifiersPython.h"
 #include "BinaryTextClassifier.h"
+#include "ClickThroughPredictor.h"
 #include "MultiLabelTextClassifer.h"
 #include "TabularClassifier.h"
 #include "TextClassifier.h"
@@ -92,6 +93,18 @@ void defineAutoClassifeirsInModule(py::module_& bolt_submodule) {
       py::arg("use_sparse_inference") = true);
 
   defineAutoClassifierCommonMethods(binary_text_classifier);
+
+  /**
+   * Click Through Predictor
+   */
+  py::class_<ClickThroughPredictor>(bolt_submodule, "ClickThroughPredictor")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("num_dense_features"),
+           py::arg("num_categorical_features"))
+      .def("train", &ClickThroughPredictor::train, py::arg("dense_features"),
+           py::arg("categorical_features"), py::arg("labels"),
+           py::arg("epochs"), py::arg("learning_rate"), py::arg("batch_size"))
+      .def("evaluate", &ClickThroughPredictor::evaluate,
+           py::arg("dense_features"), py::arg("categorical_features"));
 }
 
 }  // namespace thirdai::bolt::python
