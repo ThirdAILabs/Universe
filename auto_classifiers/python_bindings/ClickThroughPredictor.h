@@ -127,7 +127,7 @@ class ClickThroughPredictor {
     BoltVector output = _model->predictSingle(
         {dense_input, categorical_input}, /* use_sparse_inference= */ false);
 
-    return output.activations[0];
+    return output.activations[1];
   }
 
  private:
