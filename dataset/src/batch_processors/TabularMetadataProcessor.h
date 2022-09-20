@@ -51,7 +51,7 @@ class TabularMetadata {
         _class_name_to_id(std::move(class_name_to_id)),
         _column_names(std::move(column_names)),
         _col_to_num_bins(std::move(col_to_num_bins)) {
-    if (_column_names.empty() &&
+    if (!_column_names.empty() &&
         _column_names.size() != _column_dtypes.size()) {
       throw std::invalid_argument(
           "A non-empty column_names input should have the same number of "
