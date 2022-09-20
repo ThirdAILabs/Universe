@@ -301,7 +301,8 @@ def test_failure_on_too_many_labels():
     )
 
     with pytest.raises(
-        ValueError, match=r"\[ThreadSafeVocabulary\] Expected 1 unique strings but found more."
+        ValueError,
+        match=r"\[ThreadSafeVocabulary\] Expected 1 unique strings but found more.",
     ):
         classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
 
