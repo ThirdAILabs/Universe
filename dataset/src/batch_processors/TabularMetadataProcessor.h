@@ -60,9 +60,9 @@ class TabularMetadata {
     verifyInputs();
   }
 
-  ThreadSafeVocabularyPtr getClassToIdMap() { return _class_name_to_id; }
-
   uint32_t getLabelCol() const { return *_label_col; }
+
+  ThreadSafeVocabularyPtr getClassToIdMap() { return _class_name_to_id; }
 
   uint32_t numColumns() const { return _column_dtypes.size(); }
 
@@ -240,7 +240,6 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
     std::vector<std::string_view> column_names =
         ProcessorUtils::parseCsvRow(header, _delimiter);
     verifyNumColumns(column_names);
-    std::unordered_map<uint32_t, std::string> col_to_col_name;
     for (auto col_name : column_names) {
       _column_names.push_back(std::string(col_name));
     }
@@ -277,8 +276,8 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
   void processNumeric(const std::string& str_value, uint32_t col) {
     // TODO(david) handle nan/inf/large number cases
 
-    // we want to process empty values and put them in their own bin later,
-    // thus we don't fail here
+    // we want to process empty values and put them in their own bin later, thus
+    // we don't fail here
     if (str_value.empty()) {
       return;
     }

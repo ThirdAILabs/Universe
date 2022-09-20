@@ -311,7 +311,7 @@ class TabularClassifier final
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<AutoClassifierBase>(this), _metadata,
-            _batch_processor, _column_datatypes);
+            _column_datatypes);
   }
 
   dataset::TabularMetadataPtr _metadata;
