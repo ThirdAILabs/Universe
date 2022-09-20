@@ -55,7 +55,7 @@ def set_compressed_dragon_gradients(model, compressed_weight_grads):
 
 
 # We will get a compressed vector of gradients and then check whether the values are right
-def test_get_set_values():
+def test_get_set_values_dragon_vector():
     model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
@@ -97,7 +97,7 @@ def test_get_set_values():
 
 # Instead of the earlier set function, set currently accepts a compressed vector
 # if the compressed argument is True.
-def test_concat_values():
+def test_concat_values_dragon_vector():
     model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
