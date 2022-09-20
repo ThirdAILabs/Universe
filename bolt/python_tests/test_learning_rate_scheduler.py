@@ -7,7 +7,7 @@ pytestmark = [pytest.mark.unit]
 N_CLASSES = 10
 
 
-def get_model_with_scheduler(
+def train_model_with_scheduler(
     epochs, base_learning_rate, lr_schedule, lambda_schedule, custom_scheduler=False
 ):
 
@@ -39,14 +39,14 @@ def get_model_with_scheduler(
 
     model.train(train_data, train_labels, train_config)
 
-    return learning_rate_scheduler, model
+    return learning_rate_scheduler
 
 
 @pytest.mark.unit
 def test_multiplicative_lr_scheduler():
 
     lr_schedule = bolt.graph.callbacks.MultiplicativeLR(gamma=0.5)
-    learning_rate_scheduler, _ = get_model_with_scheduler(
+    learning_rate_scheduler = train_model_with_scheduler(
         base_learning_rate=0.01,
         epochs=2,
         lr_schedule=lr_schedule,
@@ -59,7 +59,7 @@ def test_multiplicative_lr_scheduler():
 @pytest.mark.unit
 def test_exponential_lr_scheduler():
     lr_schedule = bolt.graph.callbacks.ExponentialLR(gamma=0.5)
-    learning_rate_scheduler, _ = get_model_with_scheduler(
+    learning_rate_scheduler = train_model_with_scheduler(
         base_learning_rate=0.001,
         epochs=2,
         lr_schedule=lr_schedule,
@@ -74,7 +74,7 @@ def test_exponential_lr_scheduler():
 @pytest.mark.unit
 def test_multistep_lr_scheduler():
     lr_schedule = bolt.graph.callbacks.MultiStepLR(gamma=0.2, milestones=[2, 4])
-    learning_rate_scheduler, _ = get_model_with_scheduler(
+    learning_rate_scheduler = train_model_with_scheduler(
         base_learning_rate=0.001,
         epochs=4,
         lr_schedule=lr_schedule,
@@ -87,13 +87,16 @@ def test_multistep_lr_scheduler():
 @pytest.mark.unit
 def test_custom_lr_scheduler():
 
-    lambda_schedule = lambda learning_rate, epoch: learning_rate * 0.1
+    # lambda_schedule = lambda learning_rate, epoch: learning_rate * 0.1
+    lr_schedule = bolt.graph.callbacks.LambdaSchedule(
+        lambda learning_rate, epoch: learning_rate * 0.1
+    )
 
-    learning_rate_scheduler, _ = get_model_with_scheduler(
+    learning_rate_scheduler = train_model_with_scheduler(
         base_learning_rate=0.001,
         epochs=5,
         lr_schedule=None,
-        lambda_schedule=lambda_schedule,
+        lambda_schedule=lr_schedule,
         custom_scheduler=True,
     )
 

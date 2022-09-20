@@ -46,6 +46,7 @@ class MultiStepLR final : public LRSchedule {
   float _gamma;
   std::vector<uint32_t> _milestones;
 };
+using MultiStepLRPtr = std::shared_ptr<MultiStepLR>;
 
 /**
  * @brief Schedules per-epoch learning rate using a multiplicative factor
@@ -63,6 +64,7 @@ class MultiplicativeLR final : public LRSchedule {
  private:
   float _gamma;
 };
+using MultiplicativeLRPtr = std::shared_ptr<MultiplicativeLR>;
 
 /**
  * @brief Schedules per-epoch learning rate using an exponential factor
@@ -80,28 +82,41 @@ class ExponentialLR final : public LRSchedule {
  private:
   float _gamma;
 };
+using ExponentialLRPtr = std::shared_ptr<ExponentialLR>;
+
+/**
+ * @brief Schedules per-epoch learning rate using a lambda function.
+ * @param schedule: A function pointer for scheduling the learning rate
+ *        The function pointer has the following signature:
+ *        float schedule(float learning_rate, uint32_t epoch);
+ */
+class LambdaSchedule : public LRSchedule {
+ public:
+  explicit LambdaSchedule(std::function<float(float, uint32_t)> schedule)
+      : _schedule(std::move(schedule)) {}
+
+  float getNextLR(float current_learning_rate, const uint32_t epoch) final {
+    return _schedule(current_learning_rate, epoch);
+  }
+
+ private:
+  std::function<float(float, uint32_t)> _schedule;
+};
+using LambdaSchedulePtr = std::shared_ptr<LambdaSchedule>;
 
 /**
  * @brief This callback is intended to schedule learning rate changes during
  * training.
- * @param schedule: a custom function pointer or a pre-set LRSchedule pointer
- * for scheduling the learning rate.
- * schedule function signature:
- * float schedule(float learning_rate, uint32_t epoch);
+ * @param schedule: a LRSchedule pointer for scheduling the learning rate. The
+ * schedule is eithe pre-set or is a custom lambda function.
  */
 class LearningRateScheduler final : public Callback {
  public:
   LearningRateScheduler()
-      : _schedule(std::nullopt),
-        _lambda_scheduler(std::nullopt),
-        _final_learning_rate(std::nullopt) {}
+      : _schedule(std::nullopt), _final_learning_rate(std::nullopt) {}
 
   explicit LearningRateScheduler(LRSchedulePtr schedule)
       : _schedule(schedule), _final_learning_rate(std::nullopt) {}
-
-  explicit LearningRateScheduler(std::function<float(float, uint32_t)> schedule)
-      : _lambda_scheduler(std::move(schedule)),
-        _final_learning_rate(std::nullopt) {}
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
     (void)model;
@@ -111,9 +126,6 @@ class LearningRateScheduler final : public Callback {
     if (_schedule) {
       train_state.learning_rate =
           (*_schedule)->getNextLR(current_learning_rate, current_epoch);
-    } else if (!_schedule && _lambda_scheduler) {
-      train_state.learning_rate =
-          (*_lambda_scheduler)(current_learning_rate, current_epoch);
     }
   }
 
@@ -126,15 +138,11 @@ class LearningRateScheduler final : public Callback {
 
  private:
   std::optional<LRSchedulePtr> _schedule;
-  std::optional<std::function<float(float, uint32_t)>> _lambda_scheduler;
 
   // Tracking the final learning rate for testing purposes
   std::optional<float> _final_learning_rate;
 };
 
-using MultiplicativeLRPtr = std::shared_ptr<MultiplicativeLR>;
-using ExponentialLRPtr = std::shared_ptr<ExponentialLR>;
-using MultiStepLRPtr = std::shared_ptr<MultiStepLR>;
 using LearningRateSchedulerPtr = std::shared_ptr<LearningRateScheduler>;
 
 }  // namespace thirdai::bolt

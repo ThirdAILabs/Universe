@@ -565,17 +565,19 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
            "the learning rate by a factor of gamma for every milestone"
            "specified in the vector of milestones. \n");
 
+  py::class_<LambdaSchedule, LambdaSchedulePtr, LRSchedule>(callbacks_submodule,
+                                                            "LambdaSchedule")
+      .def(py::init<const std::function<float(float, uint32_t)>&>(),
+           py::arg("schedule"),
+           "The Lambda scheduler changes the learning rate depending "
+           "on a custom lambda function."
+           "Arguments:\n"
+           " * schedule: learning rate schedule function with signature \n"
+           "         float schedule(float learning_rate, uint32_t epoch)\n");
+
   py::class_<LearningRateScheduler, LearningRateSchedulerPtr, Callback>(
       callbacks_submodule, "LearningRateScheduler")
       .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
-      .def(py::init<const std::function<float(float, uint32_t)>&>(),
-           py::arg("schedule"),
-           "The learning rate scheduler callback schedules learning rate "
-           "per-epoch changes"
-           "changes based on the schedule function.\n"
-           "Arguments:\n"
-           " * schedule: learning rate schedule function with the signature \n"
-           "         float schedule(float learning_rate, uint32_t epoch)\n")
       .def(py::init<>(),
            "Initializes the learning rate scheduler with the identity"
            " function as the scheduler (i.e., static learning rate across "
