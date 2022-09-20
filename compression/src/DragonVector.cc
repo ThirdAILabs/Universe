@@ -251,9 +251,7 @@ template <class T>
 uint32_t DragonVector<T>::serialized_size() const {
   uint32_t serialized_size = 0;
   // Compression scheme (1)
-  std::string compression_scheme = "dragon";
-  serialized_size +=
-      sizeof(uint32_t) + sizeof(char) * compression_scheme.size();
+  serialized_size += sizeof(uint32_t);
 
   // Uncompressed size, seed_for_hashing (2,3)
   serialized_size += 2 * sizeof(uint32_t);
