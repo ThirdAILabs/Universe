@@ -34,11 +34,11 @@ class MlflowCallback(graph.callbacks.Callback):
     ):
         super().__init__()
         mlflow.set_tracking_uri(tracking_uri)
-        self.experiment_id = mlflow.set_experiment(experiment_name)
-        self.run_id = mlflow.start_run(run_name).info.run_id
+        experiment_id = mlflow.set_experiment(experiment_name)
+        run_id = mlflow.start_run(run_name).info.run_id
 
         print(
-            f"\nStarting Mlflow run at: \n{tracking_uri}/#/experiments/{self.experiment_id}/runs/{self.run_id}\n"
+            f"\nStarting Mlflow run at: \n{tracking_uri}/#/experiments/{experiment_id}/runs/{run_id}\n"
         )
 
         mlflow.log_param("dataset", dataset_name)
@@ -75,6 +75,3 @@ class MlflowCallback(graph.callbacks.Callback):
         for name, values in train_state.get_all_validation_metrics().items():
             mlflow.log_metric("val_" + name, values[-1])
         mlflow.log_metric("epoch_times", train_state.epoch_times[-1])
-
-    def get_run_id(self):
-        return self.run_id
