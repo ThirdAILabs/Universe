@@ -171,6 +171,7 @@ setup(
         # installable from a wheel on an m1
         "test": [
             "pytest",
+            "pytest-mock",
             "boto3",
             "moto",
             "mlflow",

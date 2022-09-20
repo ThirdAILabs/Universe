@@ -13,7 +13,7 @@ class MlflowCallback(graph.callbacks.Callback):
     logs params for the existing experiment.
 
     Args:
-        tracking_uri: The uri that hosts the MLflow experiments. 
+        tracking_uri: The uri that hosts the MLflow experiments.
         experiment_name: The name of the associated experiment (top-level
             header in Mlflow). Groups together runs with similar intent.
         run_name: Describes the run. Should include any details that don't
@@ -35,7 +35,7 @@ class MlflowCallback(graph.callbacks.Callback):
         super().__init__()
         mlflow.set_tracking_uri(tracking_uri)
         self.experiment_id = mlflow.set_experiment(experiment_name)
-        self.run_id = mlflow.start_run(run_name=run_name).info.run_id
+        self.run_id = mlflow.start_run(run_name).info.run_id
 
         print(
             f"\nStarting Mlflow run at: \n{tracking_uri}/#/experiments/{self.experiment_id}/runs/{self.run_id}\n"
@@ -44,7 +44,7 @@ class MlflowCallback(graph.callbacks.Callback):
         mlflow.log_param("dataset", dataset_name)
 
         if experiment_args:
-            for k, v in vars(experiment_args).items():
+            for k, v in experiment_args.items():
                 mlflow.log_param(k, v)
 
         self._log_machine_info()
