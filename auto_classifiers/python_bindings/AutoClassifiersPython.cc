@@ -98,13 +98,15 @@ void defineAutoClassifeirsInModule(py::module_& bolt_submodule) {
    * Click Through Predictor
    */
   py::class_<ClickThroughPredictor>(bolt_submodule, "ClickThroughPredictor")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("num_dense_features"),
-           py::arg("num_categorical_features"))
+      .def(py::init<const std::string&, uint32_t, uint32_t>(), py::arg("size"),
+           py::arg("num_dense_features"), py::arg("num_categorical_features"))
       .def("train", &ClickThroughPredictor::train, py::arg("dense_features"),
            py::arg("categorical_features"), py::arg("labels"),
            py::arg("epochs"), py::arg("learning_rate"), py::arg("batch_size"))
       .def("evaluate", &ClickThroughPredictor::evaluate,
-           py::arg("dense_features"), py::arg("categorical_features"));
+           py::arg("dense_features"), py::arg("categorical_features"))
+      .def("save", &ClickThroughPredictor::save, py::arg("filename"))
+      .def_static("load", &ClickThroughPredictor::load, py::arg("filename"));
 }
 
 }  // namespace thirdai::bolt::python

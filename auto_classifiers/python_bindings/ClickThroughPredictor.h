@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
+#include <cereal/types/memory.hpp>
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
@@ -23,8 +26,44 @@ using thirdai::dataset::numpy::NumpyArray;
 
 class ClickThroughPredictor {
  public:
-  ClickThroughPredictor(uint32_t num_dense_features,
+  class ClickThroughPredictorConfig {
+   public:
+    explicit ClickThroughPredictorConfig(const std::string& size) {
+      if (size == "small") {
+        _log_embedding_block_size = 20;
+        _top_mlp_layer_dim = 300;
+        _top_mlp_layer_sparsity = 0.4;
+      } else if (size == "medium") {
+        _log_embedding_block_size = 24;
+        _top_mlp_layer_dim = 500;
+        _top_mlp_layer_sparsity = 0.4;
+      } else if (size == "large") {
+        _log_embedding_block_size = 27;
+        _top_mlp_layer_dim = 1000;
+        _top_mlp_layer_sparsity = 0.3;
+      } else {
+        throw std::invalid_argument(
+            "Invalid size parameter '" + size +
+            "'. Please use 'small', 'medium', or 'large'.");
+      }
+    }
+
+    uint32_t logEmbeddingBlockSize() const { return _log_embedding_block_size; }
+
+    uint32_t topMlpLayerDim() const { return _top_mlp_layer_dim; }
+
+    float topMlpLayerSparsity() const { return _top_mlp_layer_sparsity; }
+
+   private:
+    uint32_t _log_embedding_block_size;
+    uint32_t _top_mlp_layer_dim;
+    float _top_mlp_layer_sparsity;
+  };
+
+  ClickThroughPredictor(const std::string& size, uint32_t num_dense_features,
                         uint32_t num_categorical_features) {
+    ClickThroughPredictorConfig config(size);
+
     auto dense_input = Input::make(num_dense_features);
     auto bottom_layer =
         FullyConnectedNode::makeDense(/* dim= */ 32, /* activation =*/"relu");
@@ -37,7 +76,8 @@ class ClickThroughPredictor {
 
     auto embedding = EmbeddingNode::make(
         /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
-        /* log_embedding_block_size= */ 20, /* reduction= */ "concatenation",
+        /* log_embedding_block_size= */ config.logEmbeddingBlockSize(),
+        /* reduction= */ "concatenation",
         /* num_tokens_per_input= */ num_categorical_features);
     embedding->addInput(categorical_input);
 
@@ -50,7 +90,9 @@ class ClickThroughPredictor {
     for (uint32_t i = 0; i < 3; i++) {
       top_mlp_output =
           FullyConnectedNode::make(
-              /* dim= */ 500, /* sparsity= */ 0.4, /* activation= */ "relu",
+              /* dim= */ config.topMlpLayerDim(),
+              /* sparsity= */ config.topMlpLayerSparsity(),
+              /* activation= */ "relu",
               /* sampling_config= */ std::make_shared<RandomSamplingConfig>())
               ->addPredecessor(top_mlp_output);
     }
@@ -89,8 +131,8 @@ class ClickThroughPredictor {
                   TrainConfig::makeConfig(learning_rate, epochs));
   }
 
-  py::tuple evaluate(const NumpyArray<float>& dense_features,
-                     const NumpyArray<uint32_t>& categorical_features) {
+  py::object evaluate(const NumpyArray<float>& dense_features,
+                      const NumpyArray<uint32_t>& categorical_features) {
     auto dense_dataset = dataset::numpy::denseNumpyToBoltVectorDataset(
         dense_features, /* batch_size= */ 2048);
 
@@ -101,8 +143,8 @@ class ClickThroughPredictor {
         _model->predict({dense_dataset, categorical_dataset}, nullptr,
                         PredictConfig::makeConfig().returnActivations());
 
-    // This returns a tuple of (metrics, activations) since the output is dense,
-    // we are only interested in the activations here.
+    // This returns a tuple of (metrics, activations) since the output is
+    // dense, we are only interested in the activations here.
     return constructNumpyActivationsArrays(metrics, output)[1];
   }
 
@@ -138,7 +180,35 @@ class ClickThroughPredictor {
     return output.activations[1];
   }
 
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<ClickThroughPredictor> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<ClickThroughPredictor> deserialize_into(
+        new ClickThroughPredictor());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
+
  private:
+  // Private constructor for cereal.
+  ClickThroughPredictor() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_model);
+  }
+
   BoltGraphPtr _model;
 };
 
