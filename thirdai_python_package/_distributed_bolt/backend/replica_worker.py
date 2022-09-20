@@ -3,6 +3,7 @@ import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
 from thirdai._distributed_bolt.backend.worker import Worker
+from thirdai._thirdai import bolt
 
 
 @ray.remote(max_restarts=2)
@@ -27,10 +28,11 @@ class ReplicaWorker(Worker):
     def __init__(
         self,
         num_workers: int,
+        model_to_wrap: bolt.graph.Model,
+        train_file_name: str,
+        train_config: bolt.graph.TrainConfig,
         id: int,
         primary_worker,
-        config,
-        layer_dims,
         communication_type,
     ):
         """
@@ -50,5 +52,11 @@ class ReplicaWorker(Worker):
         :type communication_type: string
         """
         super().__init__(
-            num_workers, id, primary_worker, config, layer_dims, communication_type
+            num_workers,
+            id,
+            primary_worker,
+            model_to_wrap,
+            train_file_name,
+            train_config,
+            communication_type,
         )

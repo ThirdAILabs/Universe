@@ -3,6 +3,16 @@ from typing import Tuple, Any, Optional, Dict, List
 import logging
 
 
+def parse_dataset(train_file_name):
+    # TODO
+    pass
+
+
+def wrap_model(model_to_wrap, train_file_name, train_config):
+    # TODO
+    pass
+
+
 def load_train_test_data(
     config: Dict[str, Any], total_nodes, training_partition_data_id
 ):

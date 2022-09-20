@@ -3,6 +3,7 @@ import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
 from thirdai._distributed_bolt.backend.worker import Worker
+from thirdai._thirdai import bolt
 
 
 @ray.remote(max_restarts=2)
@@ -22,7 +23,12 @@ class PrimaryWorker(Worker):
     """
 
     def __init__(
-        self, layer_dims: List[int], num_workers: int, config, communication_type
+        self,
+        num_workers: int,
+        model_to_wrap: bolt.graph.Model,
+        train_file_name: str,
+        train_config: bolt.graph.TrainConfig,
+        communication_type,
     ):
         """
         Initializes the Primary Worker Class
@@ -36,9 +42,16 @@ class PrimaryWorker(Worker):
         :param communication_type: Type of Communication
         :type communication_type: string
         """
-        self.layer_dims = layer_dims
 
-        super().__init__(num_workers, 0, self, config, layer_dims, communication_type)
+        super().__init__(
+            num_workers,
+            0,
+            self,
+            model_to_wrap,
+            train_file_name,
+            train_config,
+            communication_type,
+        )
 
     def subwork_circular_communication(self, workers):
         """

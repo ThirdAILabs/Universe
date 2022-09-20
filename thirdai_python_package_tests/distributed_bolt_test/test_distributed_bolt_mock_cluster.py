@@ -9,6 +9,7 @@ import sys
 import pytest
 import os
 import multiprocessing
+from thirdai import bolt
 
 
 try:
@@ -44,6 +45,22 @@ def setup_module():
         os.system("mv mnist.t mnist_data/")
 
 
+def get_model():
+    input_layer = bolt.graph.Input(dim=784)
+
+    hidden_layer = bolt.graph.FullyConnected(dim=256, sparsity=0.5, activation="Relu")(
+        input_layer
+    )
+
+    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(hidden_layer)
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+
+    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+
+    return model
+
+
 @pytest.fixture(scope="module")
 def train_distributed_bolt_check(request):
     # Initilizing a mock cluster with two node
@@ -55,38 +72,41 @@ def train_distributed_bolt_check(request):
     )
     cluster.add_node(num_cpus=1)
 
-    # Configuration file the training
-    config_filename = os.path.join(
-        os.path.dirname(__file__),  # Directory where this .py file is
-        "default_config.txt",
-    )
-
-    if ray.is_initialized():
-        ray.shutdown()
-
-    head = db.FullyConnectedNetwork(
+    model = get_model()
+    dataset_paths = ["mnist_data/xaa", "mnist_data/xab"]
+    train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
+    training_cluster = db.RayTrainingCluster(
         num_workers=2,
-        config_filename=config_filename,
-        num_cpus_per_node=1,
+        requested_cpus_per_node=1,
         communication_type=request.param,
         cluster_address=cluster.address,
     )
-    head.train()
-    metrics = head.predict()
+
+    distributed_model = db.DistributedDataParallel(
+        cluster=training_cluster,
+        model=model,
+        train_config=train_config,
+        train_file_names=dataset_paths,
+    )
+    distributed_model.train()
+
+    # TODO(josh): prediction and get metrics
 
     # shutting down the ray and cluster
     ray.shutdown()
     cluster.shutdown()
 
-    yield metrics
+    # yield metrics
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
-@pytest.mark.xfail
+# @pytest.mark.xfail
 @pytest.mark.parametrize(
     "train_distributed_bolt_check", ["linear", "circular"], indirect=True
 )
 def test_distributed_bolt_on_mock_cluster(train_distributed_bolt_check):
+    import multiprocessing
+
     if multiprocessing.cpu_count() < 2:
         assert False, "not enough cpus for distributed training"
 

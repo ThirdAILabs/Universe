@@ -5,7 +5,9 @@ from typing import Tuple, Any, Optional, Dict, List
 from thirdai._distributed_bolt._models.fully_connected_network_model import (
     FullyConnectedNetworkSingleNode,
 )
+from thirdai._thirdai import bolt
 import thirdai._distributed_bolt.backend.communication as comm
+from ..utils import wrap_model, parse_dataset
 
 
 class Worker:
@@ -21,32 +23,20 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
+        model_to_wrap: bolt.graph,
+        train_file_name: str,
+        train_config: bolt.graph.TrainConfig,
         id: int,
         primary_worker,
-        config,
-        layer_dims,
         communication_type,
     ):
         """
-        Initializes the worker to run
-
-        :param num_workers: total number of nodes
-        :type num_workers: int
-        :param id: id of this particular worker
-        :type id: int
-        :param primary_worker: Primary Worker
-        :type primary_worker: ray.actor
-        :param config: configuration file for setting up the network
-        :type config: Dict
-        :param layer_dims: dimensions for network
-        :type layer_dims: List[int]
-        :param communication_type: type of communication
-        :type communication_type: string
+        Initializes the worker, including wrapping the passed in model in a
+        DistributedWrapper with the dataset read in.
         """
 
-        self.model = FullyConnectedNetworkSingleNode(
-            config, num_workers, layer_dims, id
-        )
+        self.dataset = parse_dataset(train_file_name)
+        self.model = wrap_model(model_to_wrap, train_file_name, train_config)
         # Set up variables
         self.num_workers = num_workers
         self.id = id
@@ -194,7 +184,7 @@ class Worker:
         """
         This function returns the total number of batches the workers have.
         """
-        return self.model.num_of_batches()
+        return len(self.dataset)
 
     def finish_training(self):
         self.model.finish_training()
