@@ -1,5 +1,8 @@
 #include "AutoClassifiersPython.h"
-#include "AutoClassifiers.h"
+#include "BinaryTextClassifier.h"
+#include "MultiLabelTextClassifer.h"
+#include "TabularClassifier.h"
+#include "TextClassifier.h"
 
 namespace thirdai::bolt::python {
 
