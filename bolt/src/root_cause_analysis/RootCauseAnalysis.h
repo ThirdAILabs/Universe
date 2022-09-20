@@ -51,7 +51,7 @@ getPercentExplanationWithColumnNames(
     const std::shared_ptr<dataset::GenericBatchProcessor>&
         generic_batch_processor) {
   auto [gradients_indices, gradients_ratio] =
-      model->getInputGradientSingle({input_vector});
+      model->getInputGradientSingle({input_vector},true,1);
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
       sortGradientsBySignificance(gradients_ratio,
                                   std::move(*gradients_indices));
