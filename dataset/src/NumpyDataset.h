@@ -116,14 +116,12 @@ inline BoltDatasetPtr numpyTokensToBoltDataset(
     const NumpyArray<uint32_t>& tokens, uint64_t batch_size) {
   const py::buffer_info tokens_buf = tokens.request();
 
-  auto shape = tokens_buf.shape;
-  if (shape.size() != 1 && shape.size() != 2) {
+  if (tokens.ndim() != 1 && tokens.ndim() != 2) {
     throw std::invalid_argument("Expected 1D or 2D array of tokens.");
   }
 
-  uint64_t total_num_tokens = tokens_buf.shape.at(0);
-  uint64_t tokens_per_vector = shape.size() == 1 ? 1 : shape.at(1);
-  uint64_t num_vectors = total_num_tokens / tokens_per_vector;
+  uint64_t num_vectors = tokens_buf.shape.at(0);
+  uint64_t tokens_per_vector = tokens.ndim() == 1 ? 1 : tokens.shape(1);
 
   uint64_t num_batches = (num_vectors + batch_size - 1) / batch_size;
 
