@@ -192,11 +192,6 @@ class TabularClassifier final
                      std::optional<uint64_t> max_in_memory_batches) final {
     if (!_metadata) {
       processTabularMetadata(data_loader, max_in_memory_batches);
-    } else {
-      std::cout << "Metadata about the dataset has already been calculated and "
-                   "thus will be reused for train(..). Please use a new "
-                   "TabularClassifier for any new dataset."
-                << std::endl;
     }
 
     createBatchProcessor();

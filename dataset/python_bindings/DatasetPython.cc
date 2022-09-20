@@ -13,7 +13,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
-#include <dataset/src/blocks/TabularBlocks.h>
+#include <dataset/src/blocks/TabularPairGram.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
@@ -180,8 +180,7 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<TabularMetadata, std::shared_ptr<TabularMetadata>>(
       dataset_submodule, "TabularMetadata", "Metadata for a tabular dataset.")
       .def(py::init<std::vector<TabularDataType>,
-                    std::unordered_map<uint32_t, double>,
-                    std::unordered_map<uint32_t, double>,
+                    std::unordered_map<uint32_t, std::pair<double, double>>,
                     std::unordered_map<std::string, uint32_t>,
                     std::optional<std::unordered_map<uint32_t, uint32_t>>>(),
            py::arg("column_dtypes"), py::arg("col_to_max_val"),
