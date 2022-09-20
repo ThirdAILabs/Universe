@@ -16,9 +16,8 @@ OUTPUT_DIM = 10
 LEARNING_RATE = 0.002
 ACCURACY_THRESHOLD = 0.8
 
-# A compressed dragon vector is a dictionary at the moment.
-# It has the following keys: "compression_scheme", "original_size", "sketch_size"
-# "seed_for_hashing", "compression_density", "indices", "values"
+# A compressed dragon vector is exposed as a char array at this moment
+# hence, it is not interpretable at Python end
 
 
 def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing):
@@ -56,14 +55,14 @@ def set_compressed_dragon_gradients(model, compressed_weight_grads):
 
 
 # We will get a compressed vector of gradients and then check whether the values are right
-def test_get_values():
+def test_get_set_values_dragon_vector():
     model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     first_layer = model.get_layer("fc_1")
 
-    first_layer_biases = np.ravel(first_layer.biases.get())
-    first_layer_weights = np.ravel(first_layer.weights.get())
+    old_first_layer_biases = np.ravel(first_layer.biases.get())
+    old_first_layer_weights = np.ravel(first_layer.weights.get())
 
     # getting the compressed gradients
     compressed_weights = first_layer.weights.compress(
@@ -80,26 +79,30 @@ def test_get_values():
         sample_population_size=10,
     )
 
+    first_layer.weights.set(compressed_weights)
+    first_layer.biases.set(compressed_biases)
+
+    new_first_layer_biases = np.ravel(first_layer.biases.get())
+    new_first_layer_weights = np.ravel(first_layer.weights.get())
+
     # checking whether the gradients are correct
-    for i, indices in enumerate(compressed_weights["indices"]):
-        if indices != 0:
-            assert first_layer_weights[indices] == compressed_weights["values"][i]
+    for i, values in enumerate(new_first_layer_weights):
+        if values != 0:
+            assert old_first_layer_weights[i] == new_first_layer_weights[i]
 
-    for i, indices in enumerate(compressed_biases["indices"]):
-        if indices != 0:
-            assert first_layer_biases[indices] == compressed_biases["values"][i]
-
-    assert compressed_weights["original_size"] == first_layer_weights.shape[0]
-    assert compressed_biases["original_size"] == first_layer_biases.shape[0]
+    for i, values in enumerate(new_first_layer_biases):
+        if values != 0:
+            assert old_first_layer_biases[i] == new_first_layer_biases[i]
 
 
 # Instead of the earlier set function, set currently accepts a compressed vector
 # if the compressed argument is True.
-def test_set_values():
+def test_concat_values_dragon_vector():
     model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     first_layer = model.get_layer("fc_1")
+    old_first_layer_weights = np.ravel(first_layer.weights.get())
 
     # getting the compressed gradients
     compressed_weights = first_layer.weights.compress(
@@ -108,33 +111,20 @@ def test_set_values():
         seed_for_hashing=1,
         sample_population_size=50,
     )
-
-    compressed_biases = first_layer.biases.compress(
-        compression_scheme="dragon",
-        compression_density=0.2,
-        seed_for_hashing=1,
-        sample_population_size=5,
+    concatenated_weights = bolt.graph.ParameterReference.concat(
+        [compressed_weights] * 2
     )
+    first_layer.weights.set(concatenated_weights)
+    new_first_layer_weights = np.ravel(first_layer.weights.get())
 
-    first_layer.weights.set(compressed_weights)
-    first_layer.biases.set(compressed_biases)
-
-    reconstructed_biases = np.ravel(first_layer.biases.get())
-    reconstructed_weights = np.ravel(first_layer.weights.get())
-
-    # checking whether the gradients are correct
-    for i, indices in enumerate(compressed_weights["indices"]):
-        if indices != 0:
-            assert reconstructed_weights[indices] == compressed_weights["values"][i]
-
-    for i, indices in enumerate(compressed_biases["indices"]):
-        if indices != 0:
-            assert reconstructed_biases[indices] == compressed_biases["values"][i]
+    for i, values in enumerate(new_first_layer_weights):
+        if values != 0:
+            assert 2 * old_first_layer_weights[i] == new_first_layer_weights[i]
 
 
 # We compress the weight gradients of the model, and then reconstruct the weight
 # gradients from the compressed dragon vector.
-def test_compressed_training():
+def test_compressed_dragon_vector_training():
 
     train_data, train_labels = gen_numpy_training_data(
         n_classes=10, n_samples=1000, convert_to_bolt_dataset=False

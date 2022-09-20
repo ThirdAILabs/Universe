@@ -10,7 +10,6 @@ from thirdai import bolt, dataset
 from utils import (
     gen_numpy_training_data,
     build_single_node_bolt_dag_model,
-    build_simple_hidden_layer_model,
 )
 
 HIDDEN_DIM = 10

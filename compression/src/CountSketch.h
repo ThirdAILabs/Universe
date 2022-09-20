@@ -6,6 +6,7 @@
 #include <compression/src/CompressionUtils.h>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <random>
 
@@ -34,6 +35,8 @@ class CountSketch final : public CompressedVector<T> {
               std::vector<uint32_t> seed_for_hashing_indices,
               std::vector<uint32_t> seed_for_sign, uint32_t _uncompressed_size);
 
+  explicit CountSketch(const char* serialized_data);
+
   T get(uint32_t index) const final;
 
   void set(uint32_t index, T value) final;
@@ -42,13 +45,19 @@ class CountSketch final : public CompressedVector<T> {
 
   void extend(const CountSketch<T>& other_sketch);
 
+  void extend(std::unique_ptr<CompressedVector<T>> vec) final {
+    CountSketch<T>* ptr_to_vector_to_extend =
+        dynamic_cast<CountSketch<T>*>(vec.get());
+    this->extend(*ptr_to_vector_to_extend);
+  }
+
   void add(const CountSketch<T>& other_sketch);
 
   uint32_t numSketches() const;
 
   uint32_t size() const;
 
-  std::string type() const final;
+  CompressionScheme type() const final;
 
   std::vector<std::vector<T>> sketches() const { return _count_sketches; }
 
@@ -60,38 +69,9 @@ class CountSketch final : public CompressedVector<T> {
 
   std::vector<T> decompress() const final;
 
-  // TODO(Shubh): Remove these print methods while merging
-  void printCountsketch() const {
-    std::cout << "printing the count sketch" << std::endl;
-    for (size_t i = 0; i < _count_sketches.size(); i++) {
-      for (size_t j = 0; j < _count_sketches[0].size(); j++) {
-        std::cout << _count_sketches[i][j] << " ";
-      }
-      std::cout << std::endl;
-    }
+  void serialize(char* serialized_data) const final;
 
-    std::cout << "seed for hashing\n";
-    for (size_t i = 0; i < _seed_for_hashing_indices.size(); i++) {
-      std::cout << _seed_for_hashing_indices[i] << " ";
-    }
-    std::cout << std::endl;
-
-    std::cout << "seed for sign\n";
-    for (size_t i = 0; i < _seed_for_sign.size(); i++) {
-      std::cout << _seed_for_sign[i] << " ";
-    }
-    std::cout << std::endl;
-
-    std::cout << "uncompressed size: " << _uncompressed_size << std::endl;
-  }
-
-  static void printvector(const std::string& name, std::vector<T> vec) {
-    std::cout << name << std::endl;
-    for (auto i : vec) {
-      std::cout << i << " ";
-    }
-    std::cout << std::endl;
-  }
+  uint32_t serialized_size() const final;
 
  private:
   std::vector<std::vector<T>> _count_sketches;

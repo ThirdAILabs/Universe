@@ -9,6 +9,8 @@
 
 namespace thirdai::compression {
 
+enum class CompressionScheme { Dragon = 0, CountSketch = 1 };
+
 template <class T>
 class CompressedVector {
  public:
@@ -39,15 +41,27 @@ class CompressedVector {
    */
   void extend(const CompressedVector<T>& vec);
 
+  virtual void extend(std::unique_ptr<CompressedVector<T>> vec) = 0;
+
   /*
    * Returns a std::vector formed by decompressing the compressed vector. This
    * method should be implemented by all the schemes.
    */
   virtual std::vector<T> decompress() const = 0;
 
-  virtual std::string type() const = 0;
+  virtual CompressionScheme type() const = 0;
 
   virtual ~CompressedVector() = default;
+
+  /*
+   * We pass a pointer to a char array to serialize function. The memory for
+   * storing this array is allocated by the user before the serialize method is
+   * called. This shifts the burden of managing the memory to the caller and
+   * also makes it easier to work with memory leaks.
+   */
+  virtual void serialize(char* serialized_data) const = 0;
+
+  virtual uint32_t serialized_size() const = 0;
 };
 
 }  // namespace thirdai::compression

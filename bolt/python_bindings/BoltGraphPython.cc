@@ -39,9 +39,6 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "ParameterReference and acts as a reference to them, modifying this "
            "array will modify the parameters.")
 
-      // TODO(Shubh): Should work with a custom serializer rather than python
-      // dictionaries. Or we should make a Compressed vector module at python
-      // end to deal with this
       .def("compress", &ParameterReference::compress,
            py::arg("compression_scheme"), py::arg("compression_density"),
            py::arg("seed_for_hashing"), py::arg("sample_population_size"),
@@ -53,7 +50,22 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("set", &ParameterReference::set, py::arg("new_params"),
            "Either takes in a numpy array and copies its contents into the "
            "parameters held in the ParameterReference object. Or takes in a "
-           "python dictionary which represents a compressed vector object.");
+           "python dictionary which represents a compressed vector object.")
+      /*
+       * TODO(Shubh):We should make a Compressed vector module at python
+       * end to deal with concat function. Since, compressed vectors have an
+       * underlying parameter reference, I think that until we have a seperate
+       * copmression module, concat can be planted in ParameterReference.
+       * Concatenating compressed vectors with the same underlying parameter
+       * reference is the same as "concatenating" the parameter references.
+       */
+      .def_static(
+          "concat", &ParameterReference::concat, py::arg("compressed_vectors"),
+          "Takes in a list of compressed vector objects and returns a "
+          "concatenated compressed vector object. Concatenation is non-lossy "
+          "in nature but comes at the cost of a higher memory footprint. "
+          "Note: Only concatenate compressed vectors of the same type with "
+          "the same hyperparamters.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT

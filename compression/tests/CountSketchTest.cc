@@ -112,4 +112,25 @@ TEST_F(CountSketchTest, AddCountSketchTest) {
     ASSERT_EQ(2 * decompressed_vector[i], _vec.get(i));
   }
 }
+
+TEST_F(CountSketchTest, SerializeCountSketchTest) {
+  std::unique_ptr<char[]> serialized_data(new char[_vec.serialized_size()]);
+  _vec.serialize(serialized_data.get());
+  CountSketch<float> deserialized_vec(serialized_data.get());
+  ASSERT_EQ(deserialized_vec.size(), _vec.size());
+  ASSERT_EQ(deserialized_vec.uncompressedSize(), _vec.uncompressedSize());
+  uint32_t num_sketches = deserialized_vec.numSketches();
+  uint32_t sketch_size = deserialized_vec.size();
+
+  std::vector<std::vector<float>> deserialized_sketches =
+      deserialized_vec.sketches();
+  std::vector<std::vector<float>> original_sketches = _vec.sketches();
+
+  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
+    for (uint32_t index = 0; index < sketch_size; index++) {
+      ASSERT_EQ(deserialized_sketches[num_sketch][index],
+                original_sketches[num_sketch][index]);
+    }
+  }
+}
 }  // namespace thirdai::compression::tests

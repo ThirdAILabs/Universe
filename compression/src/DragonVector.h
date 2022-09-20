@@ -5,6 +5,7 @@
 #include <compression/src/CompressionUtils.h>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <random>
 
@@ -32,6 +33,8 @@ class DragonVector final : public CompressedVector<T> {
                float compression_density, uint32_t seed_for_hashing,
                uint32_t sample_population_size);
 
+  explicit DragonVector(const char* serialized_data);
+
   T get(uint32_t index) const final;
 
   void set(uint32_t index, T value) final;
@@ -44,6 +47,12 @@ class DragonVector final : public CompressedVector<T> {
 
   void extend(const DragonVector<T>& vec);
 
+  void extend(std::unique_ptr<CompressedVector<T>> vec) final {
+    DragonVector<T>* ptr_to_vector_to_extend =
+        dynamic_cast<DragonVector<T>*>(vec.get());
+    this->extend(*ptr_to_vector_to_extend);
+  }
+
   std::vector<uint32_t> indices() const { return _indices; }
 
   std::vector<T> values() const { return _values; }
@@ -54,9 +63,13 @@ class DragonVector final : public CompressedVector<T> {
 
   uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
 
-  std::string type() const final;
+  CompressionScheme type() const final;
 
   std::vector<T> decompress() const final;
+
+  void serialize(char* serialized_data) const final;
+
+  uint32_t serialized_size() const final;
 
  private:
   /*
