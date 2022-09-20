@@ -109,7 +109,7 @@ class ClickThroughPredictor {
 
   void train(const NumpyArray<float>& dense_features,
              const NumpyArray<uint32_t>& categorical_features,
-             const NumpyArray<uint32_t>& labels, uint32_t epochs,
+             const NumpyArray<float>& labels, uint32_t epochs,
              float learning_rate, uint32_t batch_size) {
     auto dense_dataset = dataset::numpy::denseNumpyToBoltVectorDataset(
         dense_features, batch_size);
@@ -122,7 +122,7 @@ class ClickThroughPredictor {
               << categorical_dataset->len() << std::endl;
 
     auto labels_dataset =
-        dataset::numpy::numpyTokensToBoltDataset(labels, batch_size);
+        dataset::numpy::denseNumpyToBoltVectorDataset(labels, batch_size);
 
     std::cout << "Labels: " << labels_dataset->numBatches() << " "
               << labels_dataset->len() << std::endl;
