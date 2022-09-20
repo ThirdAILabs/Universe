@@ -1,5 +1,7 @@
 #pragma once
 
+#include <bolt/src/graph/ExecutionConfig.h>
+#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>
@@ -192,6 +194,24 @@ inline py::tuple constructPythonInferenceTuple(py::dict&& py_metric_data,
       active_neurons,
       /* activation_handle = */ activation_handle,
       /* active_neuron_handle = */ active_neuron_handle);
+}
+
+inline py::tuple constructNumpyActivationsArrays(
+    InferenceMetricData& metrics, InferenceOutputTracker& output) {
+  uint32_t num_samples = output.numSamples();
+  uint32_t inference_dim = output.numNonzerosInOutput();
+
+  const uint32_t* active_neurons_ptr = output.getNonowningActiveNeuronPointer();
+  const float* activations_ptr = output.getNonowningActivationPointer();
+
+  py::object output_handle = py::cast(std::move(output));
+
+  return constructPythonInferenceTuple(
+      py::cast(metrics), /* num_samples= */ num_samples,
+      /* inference_dim= */ inference_dim, /* activations= */ activations_ptr,
+      /* active_neurons= */ active_neurons_ptr,
+      /* activation_handle= */ output_handle,
+      /* active_neuron_handle= */ output_handle);
 }
 
 inline static py::array_t<float, py::array::c_style | py::array::forcecast>

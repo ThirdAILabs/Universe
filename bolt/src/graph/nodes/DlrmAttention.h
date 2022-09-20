@@ -32,8 +32,13 @@ namespace thirdai::bolt {
 class DlrmAttentionNode final
     : public Node,
       public std::enable_shared_from_this<DlrmAttentionNode> {
- public:
+ private:
   DlrmAttentionNode() : _compiled_state(std::nullopt), _compiled(false) {}
+
+ public:
+  static std::shared_ptr<DlrmAttentionNode> make() {
+    return std::shared_ptr<DlrmAttentionNode>(new DlrmAttentionNode());
+  }
 
   uint32_t outputDim() const final {
     if (getState() == NodeState::Constructed) {
