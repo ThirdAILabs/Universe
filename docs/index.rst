@@ -33,3 +33,6 @@ contain complete documentation for each of the submodules within thirdai.
    
    thirdaisearch
 
+   api/library_index
+
+

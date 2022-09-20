@@ -29,7 +29,15 @@ autodoc_mock_imports = ["ray"]
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.todo",
+    "breathe",
+    "exhale",
+    "recommonmark",
+    "sphinx.ext.autodoc",
+    "sphinxarg.ext",
+]
 
 autodoc_default_options = {
     "members": True,
@@ -45,7 +53,15 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "build",
+    "doxygen",
+    "venv",
+    "README.md",
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -59,3 +75,52 @@ html_theme = "sphinx_rtd_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+
+# -- Extension configuration -------------------------------------------------
+
+breathe_projects = {"thirdai": "./doxygen/xml"}
+breathe_default_project = "thirdai"
+
+doxygen_config = """
+INPUT                = ../bolt ../hashtable ../hashing ../search
+EXCLUDE_PATTERNS    += */deps/*
+EXCLUDE_PATTERNS    += */tests/* 
+EXCLUDE_PATTERNS    += */python_bindings/* 
+EXCLUDE_PATTERNS    += */python_tests/*
+EXCLUDE_PATTERNS    += *.md *.txt 
+FILE_PATTERNS       += *.cu
+EXTENSION_MAPPING   += cu=C++ inc=C++
+ENABLE_PREPROCESSING = YES
+JAVADOC_AUTOBRIEF    = YES
+WARN_IF_UNDOCUMENTED = NO
+"""
+
+exhale_args = {
+    "containmentFolder": "./api",
+    "rootFileName": "library_index.rst",
+    "rootFileTitle": "Library API",
+    "doxygenStripFromPath": "..",
+    "createTreeView": True,
+    "exhaleExecutesDoxygen": True,
+    "exhaleDoxygenStdin": doxygen_config.strip(),
+}
+
+primary_domain = "cpp"
+highlight_language = "cpp"
+
+# A trick to include
+
+# A trick to include markdown files from outside the source directory using
+# 'mdinclude'. Warning: all other markdown files not included via 'mdinclude'
+# will be rendered using recommonmark as recommended by Sphinx
+from m2r import MdInclude
+
+
+def setup(app):
+    # from m2r to make `mdinclude` work
+    app.add_config_value("no_underscore_emphasis", False, "env")
+    app.add_config_value("m2r_parse_relative_links", False, "env")
+    app.add_config_value("m2r_anonymous_references", False, "env")
+    app.add_config_value("m2r_disable_inline_math", False, "env")
+    app.add_directive("mdinclude", MdInclude)
