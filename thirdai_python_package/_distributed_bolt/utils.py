@@ -136,3 +136,43 @@ def get_num_cpus():
     except (ImportError):
         print("Could not find num_cpus, setting num_cpus to DEFAULT=1")
         return 1
+
+
+def get_gradients(wrapped_model):
+    """
+    :return: list of gradients, in order of node traversal. The order is
+    guarenteed to be the same for all nodes because the model is compiled before
+    being distributed.
+    """
+    nodes = wrapped_model.model.nodes
+    gradients = []
+    for node in nodes:
+        print(node.name)
+        if hasattr(node, "weight_gradients"):
+            print("Has weight gradients")
+            gradients.append(node.w_gradients.copy())
+        if hasattr(node, "bias_gradients"):
+            print("Has bias gradients")
+            gradients.append(node.b_gradients.copy())
+
+    return gradients
+
+
+def set_gradients(wrapped_model, gradients):
+    """
+    This function sets the gradients in the current network to the
+    gradients provided, in the same order as get_gradients
+    """
+    nodes = wrapped_model.model.nodes
+    gradient_position = 0
+    for node in nodes:
+        print(node.name)
+        if hasattr(node, "weight_gradients"):
+            print("Has weight gradients")
+            node.w_gradients.set(gradients[gradient_position])
+            gradient_position += 1
+        if hasattr(node, "bias_gradients"):
+            node.b_gradients.set(gradients[gradient_position])
+            gradient_position += 1
+
+    return gradients

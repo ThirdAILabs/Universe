@@ -1,7 +1,7 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
 #include "PyCallback.h"
-#include <bolt/src/graph/DistributedTrainingContext.h>
+#include <bolt/src/graph/DistributedTrainingWrapper.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
@@ -57,7 +57,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
                                      "InferenceOutput");
 
-  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
+  py::class_<Node, NodePtr>(graph_submodule, "Node")
+      .def_property_readonly("name", [](Node& node) { return node.name(); });
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
                                                               "FullyConnected")
@@ -498,19 +499,29 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "assigned name. As such, must be called after compile. You can "
            "determine which layer is which by printing a graph summary. "
            "Possible operations to perform on the returned object include "
-           "setting layer sparsity, freezing weights, or saving to a file");
+           "setting layer sparsity, freezing weights, or saving to a file")
+      .def("nodes", &BoltGraph::getNodeTraversalOrder,
+           "Returns a list of all Nodes that make up the graph in traversal "
+           "order. This list is guaranetted to be static after a model is "
+           "compiled.");
 
-  py::class_<DistributedTrainingContext>(graph_submodule,
-                                         "DistributedDataParallel")
+  py::class_<DistributedTrainingWrapper>(graph_submodule,
+                                         "DistributedTrainingWrapper")
       .def(py::init<BoltGraphPtr, std::vector<dataset::BoltDatasetPtr>,
                     dataset::BoltDatasetPtr, TrainConfig>(),
            py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
            py::arg("train_config"))
-      .def("acumulateBatchGradient",
-           &DistributedTrainingContext::acumulateBatchGradient,
+      .def("accumulate_batch_gradient",
+           &DistributedTrainingWrapper::accumulateBatchGradient,
            py::arg("batch_idx"))
-      .def("updateParameters", &DistributedTrainingContext::updateParameters)
-      .def("finishTraining", &DistributedTrainingContext::finishTraining);
+      .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
+      .def("finish_training", &DistributedTrainingWrapper::finishTraining)
+      .def_property_readonly(
+          "model",
+          [](DistributedTrainingWrapper& node) { return node.getModel(); },
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight gradients "
+          "matrix.");
 
   createCallbacksSubmodule(graph_submodule);
 }

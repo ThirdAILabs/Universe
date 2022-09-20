@@ -4,6 +4,7 @@
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
@@ -12,9 +13,9 @@
 
 namespace thirdai::bolt {
 
-class DistributedTrainingContext {
+class DistributedTrainingWrapper {
  public:
-  DistributedTrainingContext(
+  DistributedTrainingWrapper(
       BoltGraphPtr bolt_graph,
       const std::vector<dataset::BoltDatasetPtr>& train_data,
       const dataset::BoltDatasetPtr& train_labels, TrainConfig train_config)
@@ -28,7 +29,7 @@ class DistributedTrainingContext {
     _bolt_graph->enableDistributedTraining();
   }
 
-  void acumulateBatchGradient(uint32_t batch_idx) {
+  void accumulateBatchGradient(uint32_t batch_idx) {
     _train_context.setInputs(batch_idx, _bolt_graph->_inputs);
     const BoltBatch& batch_labels = _train_context.labels()->at(batch_idx);
     _bolt_graph->processTrainingBatch(batch_labels, _metric_aggregator);
@@ -44,6 +45,8 @@ class DistributedTrainingContext {
         _train_config.getReconstructHashFunctionsBatchInterval(
             _train_context.batchSize(), _train_context.len()));
   }
+
+  BoltGraphPtr getModel() { return _bolt_graph; }
 
   void finishTraining() { _bolt_graph->cleanupAfterBatchProcessing(); }
 

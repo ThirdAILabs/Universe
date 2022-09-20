@@ -23,10 +23,10 @@
 
 namespace thirdai::bolt {
 
-class DistributedTrainingContext;
+class DistributedTrainingWrapper;
 
 class BoltGraph {
-  friend class DistributedTrainingContext;
+  friend class DistributedTrainingWrapper;
 
  public:
   /*
