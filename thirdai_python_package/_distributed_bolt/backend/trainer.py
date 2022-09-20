@@ -37,7 +37,7 @@ class Trainer:
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
-    def train(self, epoch_id, batch_id, learning_rate):
+    def train(self, epoch_id, batch_id):
         """
         Train the Model
 
@@ -45,24 +45,25 @@ class Trainer:
         :type epoch_id: int
         :param batch_id: Batch number to train on
         :type batch_id: int
-        :param learning_rate: Learning rate for the training
-        :type learning_rate: float
         """
-        self._calculate_gradients(batch_id)
+        self._accumulate_batch_gradient(batch_id)
         self._communicate()
-        self._update_parameters(learning_rate)
+        self._update_parameters()
         self._log_training(batch_id, epoch_id)
 
-    def _calculate_gradients(self, batch_no):
+    def _accumulate_batch_gradient(self, batch_no):
         """
-        Call calculate_gradients function on each of the worker
+        Call accumulate_batch_gradient function on each of the worker
 
         :param batch_no: Batch Id for this particular training
         :type batch_no: Integer
         """
         start_calculating_gradients_time = time.time()
         ray.get(
-            [worker.calculate_gradients.remote(batch_no) for worker in self.workers]
+            [
+                worker.accumulate_batch_gradient.remote(batch_no)
+                for worker in self.workers
+            ]
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
 
@@ -86,18 +87,13 @@ class Trainer:
     def finish_training(self):
         ray.get([worker.finish_training.remote() for worker in self.workers])
 
-    def _update_parameters(self, learning_rate):
+    def _update_parameters(self):
         """
         Calls primary worker for updating parameters across all nodes
-
-        :param learning_rate: Learning rate for training
-        :type learning_rate: float
         """
         start_update_parameter_time = time.time()
         ray.get(
-            self.primary_worker.subwork_update_parameters.remote(
-                learning_rate, self.workers
-            )
+            self.primary_worker.subwork_update_parameters.remote(self.workers)
         )
         self.bolt_computation_time += time.time() - start_update_parameter_time
 

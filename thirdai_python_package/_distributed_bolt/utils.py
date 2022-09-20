@@ -3,14 +3,19 @@ from typing import Tuple, Any, Optional, Dict, List
 import logging
 
 
-def parse_dataset(train_file_name):
-    # TODO
-    pass
+# TODO(Josh): Fix batch size
+# TODO(Josh): Fix this method in general
+def parse_dataset(train_filename, batch_size=256):
+    return dataset.load_bolt_svm_dataset(
+        train_filename,
+        batch_size,
+    )
 
 
-def wrap_model(model_to_wrap, train_file_name, train_config):
-    # TODO
-    pass
+def wrap_model(model_to_wrap, train_data, train_labels, train_config):
+    return bolt.DistributedTrainingWrapper(
+        model_to_wrap, train_data, train_labels, train_config
+    )
 
 
 def load_train_test_data(
@@ -154,16 +159,13 @@ def get_gradients(wrapped_model):
     guarenteed to be the same for all nodes because the model is compiled before
     being distributed.
     """
-    nodes = wrapped_model.model.nodes
+    nodes = wrapped_model.model.nodes()
     gradients = []
     for node in nodes:
-        print(node.name)
         if hasattr(node, "weight_gradients"):
-            print("Has weight gradients")
-            gradients.append(node.w_gradients.copy())
+            gradients.append(node.weight_gradients.copy())
         if hasattr(node, "bias_gradients"):
-            print("Has bias gradients")
-            gradients.append(node.b_gradients.copy())
+            gradients.append(node.bias_gradients.copy())
 
     return gradients
 
@@ -173,16 +175,14 @@ def set_gradients(wrapped_model, gradients):
     This function sets the gradients in the current network to the
     gradients provided, in the same order as get_gradients
     """
-    nodes = wrapped_model.model.nodes
+    nodes = wrapped_model.model.nodes()
     gradient_position = 0
     for node in nodes:
-        print(node.name)
         if hasattr(node, "weight_gradients"):
-            print("Has weight gradients")
-            node.w_gradients.set(gradients[gradient_position])
+            node.weight_gradients.set(gradients[gradient_position])
             gradient_position += 1
         if hasattr(node, "bias_gradients"):
-            node.b_gradients.set(gradients[gradient_position])
+            node.bias_gradients.set(gradients[gradient_position])
             gradient_position += 1
 
     return gradients

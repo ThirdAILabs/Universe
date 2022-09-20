@@ -1,5 +1,5 @@
 import ray
-
+from ...utils import set_gradients
 
 class Linear:
     def __init__(self, model, id, primary_worker):
@@ -7,7 +7,7 @@ class Linear:
         self.id = id
         self.primary_worker = primary_worker
 
-    def calculate_gradients(self, batch_no):
+    def accumulate_batch_gradient(self, batch_no):
         """
         This functions calls the API 'calculateGradientSingleNode',
         which calculates the gradients for the network managed by
@@ -21,7 +21,7 @@ class Linear:
         :return: shows completion
         :rtype: bool
         """
-        self.model.calculate_gradients(batch_no)
+        self.model.accumulate_batch_gradient(batch_no)
         return True
 
     def receive_gradients(self):
@@ -33,10 +33,11 @@ class Linear:
         :rtype: bool
         """
         if self.id is 0:
-            self.w_gradients, self.b_gradients = self.primary_worker.gradients_avg()
+            self.gradients = self.primary_worker.gradients_avg()
         else:
-            self.w_gradients, self.b_gradients = ray.get(
+            self.gradients = ray.get(
                 self.primary_worker.gradients_avg.remote()
             )
-        self.model.set_gradients(self.w_gradients, self.b_gradients)
+        
+        set_gradients(self.model, self.gradients)
         return True

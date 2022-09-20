@@ -29,7 +29,7 @@ class Circular:
         """
         self.friend = friend
 
-    def calculate_gradients_partitions(self):
+    def accumulate_batch_gradient_partitions(self):
         """
         Calculate the partitions for distributed training called only
         in case of circular communication
@@ -72,7 +72,7 @@ class Circular:
 
             self.b_partitions.append(partition_start_end_list)
 
-    def calculate_gradients(self, batch_no: int):
+    def accumulate_batch_gradient(self, batch_no: int):
         """
         This functions calls the API 'calculateGradientSingleNode',
         which calculates the gradients for the network managed by
@@ -88,14 +88,14 @@ class Circular:
         :param batch_no: training batch to calculate gradients on
         :type batch_no: int
         """
-        self.model.calculate_gradients(batch_no)
+        self.model.accumulate_batch_gradient(batch_no)
 
         self.w_partitions = []
         self.b_partitions = []
 
         self.w_gradients, self.b_gradients = self.model.get_calculated_gradients()
 
-        self.calculate_gradients_partitions()
+        self.accumulate_batch_gradient_partitions()
 
     def receive_gradients(self) -> bool:
         """

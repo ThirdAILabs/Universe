@@ -45,10 +45,10 @@ class PrimaryWorker(Worker):
 
         super().__init__(
             num_workers,
-            0,
-            self,
             model_to_wrap,
             train_file_name,
+            0,
+            self,
             # train_config,
             communication_type,
         )
@@ -104,52 +104,34 @@ class PrimaryWorker(Worker):
         )
 
         # Here we are initializing the w_average_gradients for storing the sum
-        self.w_gradients_avg = np.array(
-            [
-                np.zeros((self.layer_dims[layer_no + 1], self.layer_dims[layer_no]))
-                for layer_no in range(len(self.layer_dims) - 1)
-            ]
-        )
-        self.b_gradients_avg = np.array(
-            [
-                np.zeros((self.layer_dims[layer_no + 1]))
-                for layer_no in range(len(self.layer_dims) - 1)
-            ]
-        )
+        self.gradient_averages = [np.array(gradients_list[0][i]) for i in range(len(gradients_list[0]))]
 
-        # summing all the gradients
-        for w_gradients, b_gradients in gradients_list:
-            self.w_gradients_avg += w_gradients
-            self.b_gradients_avg += b_gradients
+        for worker_id in range(1, len(gradients_list)):
+            for gradient_id in range(len(self.gradient_averages)):
+                self.gradient_averages[gradient_id] += gradients_list[worker_id][gradient_id]
 
-        # averaging the gradients
-        self.w_gradients_avg = np.divide(self.w_gradients_avg, len(workers))
-        self.b_gradients_avg = np.divide(self.b_gradients_avg, len(workers))
+        for gradient_id in range(len(self.gradient_averages)):
+            self.gradient_averages[gradient_id] /= len(workers)
 
     def gradients_avg(self):
         """
         This function is called by the workers to get the gradients back from PrimaryWorker.
         Calling this function returns the averaged gradients which is already calculated
         by the PrimaryWorker.
-
-        :return: returns tuple of weight gradient average and bias gradient average
-        :rtype: Tuple[numpy.ndarray, numpy.ndarray]
         """
-        return self.w_gradients_avg, self.b_gradients_avg
+        return self.gradient_averages
 
-    def subwork_update_parameters(self, learning_rate: float, workers) -> bool:
+    def subwork_update_parameters(self, workers) -> bool:
         """
         This function calls every worker to update their parameters(weight and biases) with the
         updated gradients(which they receive from the PrimaryWorker)
 
-        :param learning_rate: learning_rate for the training
-        :type learning_rate: float
         :param workers: List of workers including primary worker
         :type workers: List[ray.worker]
         :return: Returns True on Completion
         :rtype: bool
         """
-        ray.get([worker.update_parameters.remote(learning_rate) for worker in workers])
+        ray.get([worker.update_parameters.remote() for worker in workers])
         return True
 
     def get_weights_biases(self):

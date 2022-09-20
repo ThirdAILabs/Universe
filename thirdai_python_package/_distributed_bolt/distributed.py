@@ -1,6 +1,6 @@
-import string
-from thirdai._thirdai import bolt, dataset
-from thirdai._distributed_bolt.backend.distributed_bolt import DistributedBolt
+from thirdai._thirdai import bolt
+from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
+from thirdai._distributed_bolt.backend.trainer import Trainer
 import ray
 import textwrap
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
@@ -21,6 +21,17 @@ class RayTrainingCluster:
         self.logging = init_logging("distributed_fully_connected.log")
         self.logging.info("Building Ray training cluster")
         self.communication_type = communication_type
+
+        if self.communication_type not in AVAILABLE_METHODS:
+            raise ValueError(
+                textwrap.dedent(
+                    """
+                        Currently only two modes of communication is supported.
+                        Use: "circular" or "linear". 
+                    """
+                )
+            )
+
         self.num_workers = num_workers
 
         # setting OMP_NUM_THREADS to number of num_cpus
@@ -102,23 +113,53 @@ class DistributedDataParallel:
         )
 
         self.replica_workers = []
-        for worker_id, replica_worker_config in enumerate(cluster.replica_worker_configs):
-            self.replica_workers.append(replica_worker_config.remote(
-                cluster.num_workers,
-                worker_id + 1,
-                self.primary_worker,
-                model,
-                train_file_names[worker_id + 1],
-                # train_config,
-                cluster.communication_type,
-            ))
+        for worker_id, replica_worker_config in enumerate(
+            cluster.replica_worker_configs
+        ):
+            self.replica_workers.append(
+                replica_worker_config.remote(
+                    cluster.num_workers,
+                    model,
+                    train_file_names[worker_id + 1],
+                    worker_id + 1,
+                    self.primary_worker,
+                    # train_config,
+                    cluster.communication_type,
+                )
+            )
+
+        self.workers = [self.primary_worker] + self.replica_workers
 
         self.num_of_batches = min(
-            ray.get([worker.num_of_batches.remote() for worker in self.replica_workers])
+            ray.get([worker.num_of_batches.remote() for worker in self.workers])
         )
 
-    def train(self):
-        pass
+        print("Num batches,", self.num_of_batches)
+
+        self.logging.info(
+            f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
+        )
+
+    def train(self) -> None:
+        """
+        Trains the network using the communication type choosen.
+        """
+        trainer = Trainer(
+            self.workers,
+            self.primary_worker,
+            self.logging,
+            self.cluster.communication_type,
+        )
+
+        # TODO(Josh): Fix epochs
+        for epoch in range(1):
+            for batch_id in range(self.num_of_batches):
+
+                # Here we are asking every worker to calculate their gradients and return
+                # once they all calculate their gradients
+                trainer.train(epoch, batch_id)
+
+        trainer.finish_training()
 
     def get_model(self):
         return self.cluster.primary_worker.model.remote()

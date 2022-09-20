@@ -104,9 +104,7 @@ def train_distributed_bolt_check(request):
 # @pytest.mark.parametrize(
 #     "train_distributed_bolt_check", ["linear", "circular"], indirect=True
 # )
-@pytest.mark.parametrize(
-    "train_distributed_bolt_check", ["linear"], indirect=True
-)
+@pytest.mark.parametrize("train_distributed_bolt_check", ["linear"], indirect=True)
 def test_distributed_bolt_on_mock_cluster(train_distributed_bolt_check):
     import multiprocessing
 

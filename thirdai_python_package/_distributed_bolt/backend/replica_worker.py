@@ -53,10 +53,10 @@ class ReplicaWorker(Worker):
         """
         super().__init__(
             num_workers,
-            id,
-            primary_worker,
             model_to_wrap,
             train_file_name,
+            id,
+            primary_worker,
             # train_config,
             communication_type,
         )

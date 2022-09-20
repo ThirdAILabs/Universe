@@ -37,7 +37,7 @@ def test_all_reduce_circular_communication():
         circular_communicating_workers[i].b_gradients = [
             (i + 1) * np.ones(bias_matrix_shape)
         ]
-        circular_communicating_workers[i].calculate_gradients_partitions()
+        circular_communicating_workers[i].accumulate_batch_gradient_partitions()
 
         # summing the gradients
         weight_all_reduced += circular_communicating_workers[i].w_gradients[0]

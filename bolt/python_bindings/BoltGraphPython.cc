@@ -526,7 +526,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             return BoltGraph::load_stream(input_stream);
           }));
 
-  py::class_<DistributedTrainingWrapper>(graph_submodule,
+  py::class_<DistributedTrainingWrapper>(bolt_submodule,
                                          "DistributedTrainingWrapper")
       .def(py::init<BoltGraphPtr, std::vector<dataset::BoltDatasetPtr>,
                     dataset::BoltDatasetPtr, TrainConfig>(),
