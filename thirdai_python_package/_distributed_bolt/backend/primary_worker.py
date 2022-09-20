@@ -27,7 +27,7 @@ class PrimaryWorker(Worker):
         num_workers: int,
         model_to_wrap: bolt.graph.Model,
         train_file_name: str,
-        train_config: bolt.graph.TrainConfig,
+        # train_config: bolt.graph.TrainConfig,
         communication_type,
     ):
         """

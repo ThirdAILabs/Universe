@@ -30,7 +30,7 @@ class ReplicaWorker(Worker):
         num_workers: int,
         model_to_wrap: bolt.graph.Model,
         train_file_name: str,
-        train_config: bolt.graph.TrainConfig,
+        # train_config: bolt.graph.TrainConfig,
         id: int,
         primary_worker,
         communication_type,

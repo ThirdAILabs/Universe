@@ -2,8 +2,6 @@ import string
 from thirdai._thirdai import bolt, dataset
 from thirdai._distributed_bolt.backend.distributed_bolt import DistributedBolt
 import ray
-import os
-import toml
 import textwrap
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
@@ -22,7 +20,7 @@ class RayTrainingCluster:
 
         self.logging = init_logging("distributed_fully_connected.log")
         self.logging.info("Building Ray training cluster")
-
+        self.communication_type = communication_type
         self.num_workers = num_workers
 
         # setting OMP_NUM_THREADS to number of num_cpus
@@ -86,7 +84,7 @@ class DistributedDataParallel:
         self.cluster = cluster
         self.logging = cluster.logging
 
-        if len(train_file_names != cluster.num_workers):
+        if len(train_file_names) != cluster.num_workers:
             raise ValueError(
                 "Received ",
                 len(train_file_names),
@@ -98,21 +96,21 @@ class DistributedDataParallel:
         self.logging.info("Training has started!")
 
         cluster.primary_worker.remote(
-            self.num_workers,
+            cluster.num_workers,
             model,
-            train_file_names[worker_id + 1],
-            train_config,
+            train_file_names[0],
+            # train_config,
             cluster.communication_type,
         )
 
         for worker_id, worker_node in enumerate(cluster.replica_workers):
             worker_node.remote(
-                self.num_workers,
+                cluster.num_workers,
                 worker_id + 1,
                 cluster.primary_worker,
                 model,
                 train_file_names[worker_id + 1],
-                train_config,
+                # train_config,
                 cluster.communication_type,
             )
 

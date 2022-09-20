@@ -750,21 +750,29 @@ void BoltGraph::serialize(Archive& archive) {
           _epoch_count, _batch_cnt);
 }
 
-void BoltGraph::save(const std::string& filename) {
+void BoltGraph::save(const std::string& filename) const {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(filestream);
+}
+
+void BoltGraph::save_stream(std::ostream& output_stream) const {
   if (!graphCompiled()) {
     throw exceptions::NodeStateMachineError(
         "Cannot save graph that is not compiled.");
   }
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  cereal::BinaryOutputArchive oarchive(filestream);
+  cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
 
 std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  cereal::BinaryInputArchive iarchive(filestream);
+  return load_stream(filestream);
+}
+
+std::unique_ptr<BoltGraph> BoltGraph::load_stream(std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
   std::unique_ptr<BoltGraph> deserialize_into(new BoltGraph());
   iarchive(*deserialize_into);
   return deserialize_into;

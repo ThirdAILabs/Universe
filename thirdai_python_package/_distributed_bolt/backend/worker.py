@@ -25,7 +25,7 @@ class Worker:
         num_workers: int,
         model_to_wrap: bolt.graph,
         train_file_name: str,
-        train_config: bolt.graph.TrainConfig,
+        # train_config: bolt.graph.TrainConfig,
         id: int,
         primary_worker,
         communication_type,
@@ -34,6 +34,9 @@ class Worker:
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
+
+        # TODO(Josh): Fix this
+        train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)        
 
         self.dataset = parse_dataset(train_file_name)
         self.model = wrap_model(model_to_wrap, train_file_name, train_config)

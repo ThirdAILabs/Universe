@@ -503,7 +503,28 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("nodes", &BoltGraph::getNodeTraversalOrder,
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
-           "compiled.");
+           "compiled.")
+      .def(py::pickle(
+          [](const BoltGraph& model) {
+            std::stringstream ss;
+            model.save_stream(ss);
+            std::string binary_model = ss.str();
+            return py::tuple(py::bytes(binary_model));
+          },
+          [](const py::tuple& t) {  // __setstate__
+            if (t.size() != 1) {
+              throw std::runtime_error(
+                  "Pickled model is not in the correct state (should be a "
+                  "tuple of length 1)!");
+            }
+
+            // TODO(Josh): Ideally make sure the type is bytes
+
+            // TODO(Josh): clean this up
+            std::string binary_model = t[0].cast<std::string>();
+            std::istringstream input_stream(binary_model);
+            return BoltGraph::load_stream(input_stream);
+          }));
 
   py::class_<DistributedTrainingWrapper>(graph_submodule,
                                          "DistributedTrainingWrapper")
