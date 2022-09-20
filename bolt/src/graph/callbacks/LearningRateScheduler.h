@@ -112,11 +112,8 @@ using LambdaSchedulePtr = std::shared_ptr<LambdaSchedule>;
  */
 class LearningRateScheduler final : public Callback {
  public:
-  LearningRateScheduler()
-      : _schedule(std::nullopt), _final_learning_rate(std::nullopt) {}
-
   explicit LearningRateScheduler(LRSchedulePtr schedule)
-      : _schedule(schedule), _final_learning_rate(std::nullopt) {}
+      : _schedule(std::move(schedule)), _final_learning_rate(std::nullopt) {}
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
     (void)model;
@@ -125,7 +122,7 @@ class LearningRateScheduler final : public Callback {
     float current_learning_rate = train_state.learning_rate;
     if (_schedule) {
       train_state.learning_rate =
-          (*_schedule)->getNextLR(current_learning_rate, current_epoch);
+          _schedule->getNextLR(current_learning_rate, current_epoch);
     }
   }
 
@@ -137,7 +134,7 @@ class LearningRateScheduler final : public Callback {
   float getFinalLR() const { return *_final_learning_rate; }
 
  private:
-  std::optional<LRSchedulePtr> _schedule;
+  LRSchedulePtr _schedule;
 
   // Tracking the final learning rate for testing purposes
   std::optional<float> _final_learning_rate;

@@ -585,10 +585,6 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
   py::class_<LearningRateScheduler, LearningRateSchedulerPtr, Callback>(
       callbacks_submodule, "LearningRateScheduler")
       .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
-      .def(py::init<>(),
-           "Initializes the learning rate scheduler with the identity"
-           " function as the scheduler (i.e., static learning rate across "
-           "epochs).\n")
       .def("get_final_lr", &LearningRateScheduler::getFinalLR);
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(

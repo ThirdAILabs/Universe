@@ -86,8 +86,6 @@ def test_multistep_lr_scheduler():
 
 @pytest.mark.unit
 def test_custom_lr_scheduler():
-
-    # lambda_schedule = lambda learning_rate, epoch: learning_rate * 0.1
     lr_schedule = bolt.graph.callbacks.LambdaSchedule(
         lambda learning_rate, epoch: learning_rate * 0.1
     )
