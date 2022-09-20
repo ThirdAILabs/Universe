@@ -35,7 +35,7 @@ class MlflowCallback(graph.callbacks.Callback):
         super().__init__()
         mlflow.set_tracking_uri(tracking_uri)
         experiment_id = mlflow.set_experiment(experiment_name)
-        run_id = mlflow.start_run(run_name).info.run_id
+        run_id = mlflow.start_run(run_name=run_name).info.run_id
 
         print(
             f"\nStarting Mlflow run at: \n{tracking_uri}/#/experiments/{experiment_id}/runs/{run_id}\n"

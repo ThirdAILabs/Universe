@@ -1,7 +1,7 @@
 import pytest
 from thirdai.bolt import MlflowCallback
 from test_callbacks import train_model_with_callback
-
+import mlflow
 
 MOCK_TRACKING_URI = "dummy link"
 MOCK_EXPERIMENT_NAME = "dummy experiment"
@@ -33,7 +33,7 @@ def test_mlflow_callback(mocker):
 
     set_tracking_uri_mock.assert_called_once_with(MOCK_TRACKING_URI)
     set_experiment_mock.assert_called_once_with(MOCK_EXPERIMENT_NAME)
-    start_run_mock.assert_called_once_with(MOCK_RUN_NAME)
+    start_run_mock.assert_called_once_with(run_name=MOCK_RUN_NAME)
     log_param_mock.assert_has_calls(
         [
             mocker.call("dataset", MOCK_DATASET_NAME),
