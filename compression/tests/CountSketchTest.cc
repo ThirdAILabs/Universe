@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <compression/src/CompressedVector.h>
+#include <compression/src/CompressionFactory.h>
 #include <compression/src/CompressionUtils.h>
 #include <compression/src/CountSketch.h>
 #include <sys/types.h>

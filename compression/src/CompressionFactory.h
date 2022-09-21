@@ -55,9 +55,14 @@ inline std::unique_ptr<CompressedVector<T>> concat(
     std::vector<std::unique_ptr<CompressedVector<T>>> compressed_vectors) {
   // We take the compressed vector at the 0th index and concatenate all other
   // compressed vectors to it.
+
+  std::unique_ptr<CompressedVector<T>> initial_vector(
+      std::move(compressed_vectors[0]));
+
   for (size_t i = 1; i < compressed_vectors.size(); i++) {
-    compressed_vectors[0].get()->extend(std::move(compressed_vectors[i]));
+    initial_vector->extend(std::move(compressed_vectors[i]));
   }
-  return std::move(compressed_vectors[0]);
+
+  return initial_vector;
 }
 }  // namespace thirdai::compression
