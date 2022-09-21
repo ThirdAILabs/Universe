@@ -38,8 +38,6 @@ def write_dataset_to_csv(dataset, filename, return_labels=False):
 
 
 def download_clinc_dataset():
-    if os.path.exists(TRAIN_FILE) or os.path.exists(TEST_FILE):
-        return
     clinc_dataset = datasets.load_dataset("clinc_oos", "small")
     write_dataset_to_csv(clinc_dataset["train"], TRAIN_FILE)
     labels = write_dataset_to_csv(clinc_dataset["test"], TEST_FILE, return_labels=True)
@@ -81,3 +79,5 @@ def test_text_classifier_clinc_dataset():
     check_autoclassifier_predict_correctness(new_classifier, test_samples, predictions)
 
     os.remove(SAVE_FILE)
+    os.remove(TRAIN_FILE)
+    os.remove(TEST_FILE)
