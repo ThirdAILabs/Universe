@@ -37,46 +37,10 @@ class PrimaryWorker(Worker):
         :type communication_type: string
         """
         self.layer_dims = layer_dims
-
+        self.num_workers = num_workers
         super().__init__(num_workers, 0, self, config, layer_dims, communication_type)
 
-    def subwork_circular_communication(self, workers):
-        """
-        This function first call the workers to compute the gradients on their network
-        and then implements Baidu's All Ring All Reduce algorithm for communication.
-        Read more about that here:
-        https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
-
-        :param workers: List of all the actor including primary worker
-        :type workers: List[ray.actor]
-        """
-
-        # update_id imples here, the different stages of circular communication
-        update_id = self.num_workers
-        for node in range(self.num_workers - 1):
-            if node == self.num_workers - 2:
-                ray.get(
-                    [
-                        worker.process_ring.remote(update_id, avg_gradients=True)
-                        for worker in workers
-                    ]
-                )
-            else:
-                ray.get([worker.process_ring.remote(update_id) for worker in workers])
-            update_id -= 1
-
-        # + 1, because it is the partition for the candidates giving the partitions
-        update_id = self.num_workers + 1
-        for node in range(self.num_workers - 1):
-            ray.get(
-                [
-                    worker.process_ring.remote(update_id, reduce=False)
-                    for worker in workers
-                ]
-            )
-            update_id -= 1
-
-    def subwork_linear_communication(self, workers):
+    def average_aggregated_gradients(self, gradients_list_ref):
         """
         This function implements the linear way of communicating between the node.
         In this way of communication, each of the worker calculates their gradients,
@@ -86,9 +50,7 @@ class PrimaryWorker(Worker):
         :param workers: batch number for the particular worker with worker id (id).
         :type workers: int
         """
-        gradients_list = ray.get(
-            [worker.get_calculated_gradients.remote() for worker in workers]
-        )
+        gradients_list = ray.get(gradients_list_ref)
 
         # Here we are initializing the w_average_gradients for storing the sum
         self.w_gradients_avg = np.array(
@@ -110,8 +72,8 @@ class PrimaryWorker(Worker):
             self.b_gradients_avg += b_gradients
 
         # averaging the gradients
-        self.w_gradients_avg = np.divide(self.w_gradients_avg, len(workers))
-        self.b_gradients_avg = np.divide(self.b_gradients_avg, len(workers))
+        self.w_gradients_avg = np.divide(self.w_gradients_avg, self.num_workers)
+        self.b_gradients_avg = np.divide(self.b_gradients_avg, self.num_workers)
 
     def gradients_avg(self):
         """
@@ -123,21 +85,6 @@ class PrimaryWorker(Worker):
         :rtype: Tuple[numpy.ndarray, numpy.ndarray]
         """
         return self.w_gradients_avg, self.b_gradients_avg
-
-    def subwork_update_parameters(self, learning_rate: float, workers) -> bool:
-        """
-        This function calls every worker to update their parameters(weight and biases) with the
-        updated gradients(which they receive from the PrimaryWorker)
-
-        :param learning_rate: learning_rate for the training
-        :type learning_rate: float
-        :param workers: List of workers including primary worker
-        :type workers: List[ray.worker]
-        :return: Returns True on Completion
-        :rtype: bool
-        """
-        ray.get([worker.update_parameters.remote(learning_rate) for worker in workers])
-        return True
 
     def get_weights_biases(self):
         """

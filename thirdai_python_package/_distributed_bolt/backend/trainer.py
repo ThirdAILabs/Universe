@@ -1,5 +1,6 @@
 import ray
 import time
+import numpy as np
 
 
 class Trainer:
@@ -23,6 +24,7 @@ class Trainer:
         """
 
         self.workers = workers
+        self.num_workers = len(workers)
         self.primary_worker = primary_worker
         self.logging = logging
         self.communication_type = communication_type
@@ -36,6 +38,73 @@ class Trainer:
                 )
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
+
+
+    def subwork_circular_communication(self):
+        """
+        This function first call the workers to compute the gradients on their network
+        and then implements Baidu's All Ring All Reduce algorithm for communication.
+        Read more about that here:
+        https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
+
+        :param workers: List of all the actor including primary worker
+        :type workers: List[ray.actor]
+        """
+
+        # update_id imples here, the different stages of circular communication
+        update_id = self.num_workers
+        for node in range(self.num_workers - 1):
+            if node == self.num_workers - 2:
+                ray.get(
+                    [
+                        worker.process_ring.remote(update_id, avg_gradients=True)
+                        for worker in self.workers
+                    ]
+                )
+            else:
+                ray.get([worker.process_ring.remote(update_id) for worker in self.workers])
+            update_id -= 1
+
+        # + 1, because it is the partition for the candidates giving the partitions
+        update_id = self.num_workers + 1
+        for node in range(self.num_workers - 1):
+            ray.get(
+                [
+                    worker.process_ring.remote(update_id, reduce=False)
+                    for worker in self.workers
+                ]
+            )
+            update_id -= 1
+
+    def subwork_linear_communication(self):
+        """
+        This function implements the linear way of communicating between the node.
+        In this way of communication, each of the worker calculates their gradients,
+        send their gradients to the supervisor and the supervisor sums the gradients,
+        averages it and and send the gradients back to the workers.
+
+        :param workers: batch number for the particular worker with worker id (id).
+        :type workers: int
+        """
+        gradients_list_ref = [worker.get_calculated_gradients.remote() for worker in self.workers]
+
+        ray.get(self.primary_worker.average_aggregated_gradients.remote(gradients_list_ref))
+
+        del gradients_list_ref
+
+    def subwork_update_parameters(self, learning_rate: float) -> bool:
+        """
+        This function calls every worker to update their parameters(weight and biases) with the
+        updated gradients(which they receive from the PrimaryWorker)
+
+        :param learning_rate: learning_rate for the training
+        :type learning_rate: float
+        :param workers: List of workers including primary worker
+        :type workers: List[ray.worker]
+        :return: Returns True on Completion
+        :rtype: bool
+        """
+        ray.get([worker.update_parameters.remote(learning_rate) for worker in self.workers])
 
     def train(self, epoch_id, batch_id, learning_rate):
         """
@@ -66,6 +135,9 @@ class Trainer:
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
 
+
+    
+
     def _communicate(self):
         """
         Calls primary worker to complete the communication
@@ -73,13 +145,9 @@ class Trainer:
         """
         start_communication_time = time.time()
         if self.communication_type == "linear":
-            ray.get(
-                self.primary_worker.subwork_linear_communication.remote(self.workers)
-            )
+            self.subwork_linear_communication()
         elif self.communication_type == "circular":
-            ray.get(
-                self.primary_worker.subwork_circular_communication.remote(self.workers)
-            )
+            self.subwork_circular_communication()
         ray.get([worker.receive_gradients.remote() for worker in self.workers])
         self.averaging_and_communication_time += time.time() - start_communication_time
 
@@ -94,11 +162,9 @@ class Trainer:
         :type learning_rate: float
         """
         start_update_parameter_time = time.time()
-        ray.get(
-            self.primary_worker.subwork_update_parameters.remote(
-                learning_rate, self.workers
+        self.subwork_update_parameters(
+                learning_rate
             )
-        )
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def _log_training(self, batch_no, epoch):

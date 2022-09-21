@@ -112,12 +112,12 @@ class FullyConnectedNetwork(DistributedBolt):
         # that this particular worker can run. Setting it a large value like
         # 100, as the ray queues the work load else.
         self.primary_worker = PrimaryWorker.options(
-            num_cpus=num_cpus_per_worker, max_concurrency=100
+            num_cpus=num_cpus_per_worker, max_concurrency=2
         ).remote(self.layer_dims, self.num_workers, config, communication_type)
 
         self.replica_workers = [
             ReplicaWorker.options(
-                num_cpus=num_cpus_per_worker, max_concurrency=100
+                num_cpus=num_cpus_per_worker, max_concurrency=2
             ).remote(
                 self.num_workers,
                 worker_id + 1,
