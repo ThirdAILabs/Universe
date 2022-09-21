@@ -6,10 +6,10 @@ import textwrap
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from .utils import get_num_cpus, init_logging
-from typing import Tuple, Any, Optional, Dict, List
+from typing import Optional, List
 
 
-class RayTrainingCluster:
+class RayTrainingClusterConfig:
     def __init__(
         self,
         num_workers: int,
@@ -53,7 +53,7 @@ class RayTrainingCluster:
                 )
             )
 
-        self.logging.info("Ray Initialized")
+        self.logging.info("Connected to Ray cluster!")
 
         num_cpus_on_this_node = get_num_cpus()
         if requested_cpus_per_node != -1:
@@ -84,47 +84,47 @@ class DistributedDataParallel:
 
     def __init__(
         self,
-        cluster: RayTrainingCluster,
+        cluster_config: RayTrainingClusterConfig,
         model: bolt.graph.Model,
         train_config: bolt.graph.TrainConfig,
         train_file_names: List[str],
     ):
 
-        self.cluster = cluster
-        self.logging = cluster.logging
+        self.communication_type = cluster_config.communication_type
+        self.logging = cluster_config.logging
 
-        if len(train_file_names) != cluster.num_workers:
+        if len(train_file_names) != cluster_config.num_workers:
             raise ValueError(
                 "Received ",
                 len(train_file_names),
                 " training datasets. Expected ",
-                cluster.num_workers,
+                cluster_config.num_workers,
                 " datasets, one for each node.",
             )
 
         self.logging.info("Training has started!")
 
-        self.primary_worker = cluster.primary_worker_config.remote(
-            cluster.num_workers,
+        self.primary_worker = cluster_config.primary_worker_config.remote(
+            cluster_config.num_workers,
             model,
             train_file_names[0],
             # train_config,
-            cluster.communication_type,
+            cluster_config.communication_type,
         )
 
         self.replica_workers = []
         for worker_id, replica_worker_config in enumerate(
-            cluster.replica_worker_configs
+            cluster_config.replica_worker_configs
         ):
             self.replica_workers.append(
                 replica_worker_config.remote(
-                    cluster.num_workers,
+                    cluster_config.num_workers,
                     model,
                     train_file_names[worker_id + 1],
                     worker_id + 1,
                     self.primary_worker,
                     # train_config,
-                    cluster.communication_type,
+                    cluster_config.communication_type,
                 )
             )
 
@@ -148,7 +148,7 @@ class DistributedDataParallel:
             self.workers,
             self.primary_worker,
             self.logging,
-            self.cluster.communication_type,
+            self.communication_type,
         )
 
         # TODO(Josh): Fix epochs

@@ -45,6 +45,7 @@ def setup_module():
         os.system("mv mnist.t mnist_data/")
 
 
+# TODO(Josh): use utils for this
 def get_model():
     input_layer = bolt.graph.Input(dim=784)
 
@@ -64,33 +65,32 @@ def get_model():
 @pytest.fixture(scope="module")
 def train_distributed_bolt_check(request):
     # Initilizing a mock cluster with two node
-    cluster = Cluster(
+    mini_cluster = Cluster(
         initialize_head=True,
         head_node_args={
             "num_cpus": 1,
         },
     )
-    cluster.add_node(num_cpus=1)
+    mini_cluster.add_node(num_cpus=1)
 
     model = get_model()
     dataset_paths = ["mnist_data/xaa", "mnist_data/xab"]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
-    training_cluster = db.RayTrainingCluster(
+    cluster_config = db.RayTrainingClusterConfig(
         num_workers=2,
         requested_cpus_per_node=1,
         communication_type=request.param,
-        cluster_address=cluster.address,
+        cluster_address=mini_cluster.address,
     )
 
     distributed_model = db.DistributedDataParallel(
-        cluster=training_cluster,
+        cluster_config=cluster_config,
         model=model,
         train_config=train_config,
         train_file_names=dataset_paths,
     )
     distributed_model.train()
 
-    # TODO(josh): prediction and get metrics
     model = distributed_model.get_model()
 
     predict_config = (
@@ -103,13 +103,8 @@ def train_distributed_bolt_check(request):
         test_data=test_data, test_labels=test_labels, predict_config=predict_config
     )
 
-    print("HEREREREREE", metrics[0]["categorical_accuracy"])
-
-    assert metrics[0]["categorical_accuracy"] >= 0.9
-
-    # shutting down the ray and cluster
     ray.shutdown()
-    cluster.shutdown()
+    mini_cluster.shutdown()
 
     yield metrics
 

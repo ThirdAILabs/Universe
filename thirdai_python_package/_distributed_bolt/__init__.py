@@ -1,1 +1,1 @@
-from .distributed import DistributedDataParallel, RayTrainingCluster
+from .distributed import DistributedDataParallel, RayTrainingClusterConfig

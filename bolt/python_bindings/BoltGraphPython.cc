@@ -17,9 +17,46 @@
 #include <bolt/src/graph/nodes/Switch.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/functional.h>
+#include <pybind11/pytypes.h>
 #include <optional>
 
 namespace thirdai::bolt::python {
+
+struct membuf : std::streambuf {
+  membuf(char* begin, char* end) { this->setg(begin, begin, end); }
+};
+
+// This function defines the pickle method for a type, assuming that type
+// has a static load method that takes in an istream and a save method that
+// takes in an ostream. 
+// Pybind pickling reference:
+// https://pybind11.readthedocs.io/en/stable/advanced/classes.html#pickling-support
+// py::bytes -> char*:
+// https://github.com/pybind/pybind11/issues/2517
+// char* -> istream:
+// https://stackoverflow.com/questions/7781898/get-an-istream-from-a-char
+template <typename TypeToSerialize>
+pybind11::detail::initimpl::pickle_factory<
+    std::function<py::bytes(const TypeToSerialize&)>,
+    std::function<std::unique_ptr<TypeToSerialize>(py::bytes)>>
+getPickleFunction() {
+  return py::pickle<std::function<py::bytes(const TypeToSerialize&)>,
+                    std::function<std::unique_ptr<TypeToSerialize>(py::bytes)>>(
+      [](const TypeToSerialize& model) {
+        std::stringstream ss;
+        model.save_stream(ss);
+        std::string binary_model = ss.str();
+        return py::bytes(binary_model);
+      },
+      [](const py::bytes& binary_model_python) {  // __setstate__
+        py::buffer_info info(py::buffer(binary_model_python).request());
+        char* binary_model = reinterpret_cast<char*>(info.ptr);
+        membuf sbuf(binary_model, binary_model + info.size);
+        std::istream in(&sbuf);
+        return TypeToSerialize::load_stream(in);
+      });
+}
+
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
@@ -258,7 +295,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"));
+           py::arg("predict_config"))
+    //   .def(getPickleFunction<TrainConfig>());
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)
@@ -504,27 +542,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
            "compiled.")
-      .def(py::pickle(
-          [](const BoltGraph& model) {
-            std::stringstream ss;
-            model.save_stream(ss);
-            std::string binary_model = ss.str();
-            return py::make_tuple(py::bytes(binary_model));
-          },
-          [](const py::tuple& t) {  // __setstate__
-            if (t.size() != 1) {
-              throw std::runtime_error(
-                  "Pickled model is not in the correct state (should be a "
-                  "tuple of length 1, but found a tuple of length " + std::to_string(t.size()));
-            }
-
-            // TODO(Josh): Ideally make sure the type is bytes
-
-            // TODO(Josh): clean this up
-            std::string binary_model = t[0].cast<std::string>();
-            std::istringstream input_stream(binary_model);
-            return BoltGraph::load_stream(input_stream);
-          }));
+      .def(getPickleFunction<BoltGraph>());
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,
                                          "DistributedTrainingWrapper")
