@@ -65,7 +65,7 @@ class RayTrainingClusterConfig:
             f"Using {num_cpus_to_use} cpus / node (user requested {requested_cpus_per_node})"
         )
 
-        # TODO(Josh): investigate this max concurrency thing
+        # TODO(Josh/Pratik): investigate the correct setting for max concurrency
         self.primary_worker_config = PrimaryWorker.options(
             num_cpus=num_cpus_to_use, max_concurrency=100
         )
@@ -92,6 +92,7 @@ class DistributedDataParallel:
 
         self.communication_type = cluster_config.communication_type
         self.logging = cluster_config.logging
+        self.train_config = train_config
 
         if len(train_file_names) != cluster_config.num_workers:
             raise ValueError(
@@ -134,8 +135,6 @@ class DistributedDataParallel:
             ray.get([worker.num_of_batches.remote() for worker in self.workers])
         )
 
-        print("Num batches,", self.num_of_batches)
-
         self.logging.info(
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
         )
@@ -151,8 +150,7 @@ class DistributedDataParallel:
             self.communication_type,
         )
 
-        # TODO(Josh): Fix epochs
-        for epoch in range(1):
+        for epoch in range(self.train_config.num_epochs):
             for batch_id in range(self.num_of_batches):
 
                 # Here we are asking every worker to calculate their gradients and return

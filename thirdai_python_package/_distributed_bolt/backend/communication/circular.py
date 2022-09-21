@@ -2,6 +2,7 @@ import ray
 from typing import Optional
 from ...utils import get_gradients, set_gradients
 
+
 class Circular:
     def __init__(self, model, id, primary_worker, num_workers):
 
@@ -139,7 +140,9 @@ class Circular:
 
         partition_id = (update_id + self.id - 1) % self.num_workers
 
-        self.friend_gradients = ray.get(self.friend.receive_array_partitions.remote(update_id))
+        self.friend_gradients = ray.get(
+            self.friend.receive_array_partitions.remote(update_id)
+        )
         self.update_partitions(partition_id, reduce, avg_gradients)
 
     def receive_array_partitions(self, update_id: int):
@@ -157,7 +160,7 @@ class Circular:
         gradient_subarray = []
         for (l_idx, r_idx), gradient in zip(our_partitions, self.gradients):
             if r_idx > l_idx:
-                gradient_subarray.append(gradient[l_idx: r_idx])
+                gradient_subarray.append(gradient[l_idx:r_idx])
             else:
                 gradient_subarray.append(None)
 

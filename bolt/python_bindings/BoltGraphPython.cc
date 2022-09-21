@@ -261,7 +261,15 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
            py::arg("predict_config"))
-      .def(getPickleFunction<TrainConfig>());
+      .def_property_readonly(
+          "num_epochs",
+          [](TrainConfig& config) { return config.epochs(); },
+          "Returns the number of epochs a model with this TrainConfig will train for.")
+      .def_property_readonly(
+          "learning_rate",
+          [](TrainConfig& config) { return config.learningRate(); },
+          "Returns the learning rate a model with this TrainConfig will train with.")
+    .def(getPickleFunction<TrainConfig>());
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)

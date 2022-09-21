@@ -64,12 +64,17 @@ class PrimaryWorker(Worker):
         :type workers: List[ray.actor]
         """
 
-        for update_id, reduce in [(self.num_workers, True), (self.num_workers + 1, False)]:
+        for update_id, reduce in [
+            (self.num_workers, True),
+            (self.num_workers + 1, False),
+        ]:
             for node in range(self.num_workers - 1):
-                should_avg_gradients = (node == self.num_workers - 2)
+                should_avg_gradients = node == self.num_workers - 2
                 ray.get(
                     [
-                        worker.process_ring.remote(update_id, avg_gradients=should_avg_gradients, reduce=reduce)
+                        worker.process_ring.remote(
+                            update_id, avg_gradients=should_avg_gradients, reduce=reduce
+                        )
                         for worker in workers
                     ]
                 )
