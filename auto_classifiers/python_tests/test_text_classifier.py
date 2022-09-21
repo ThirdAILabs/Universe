@@ -38,6 +38,8 @@ def write_dataset_to_csv(dataset, filename, return_labels=False):
 
 
 def download_clinc_dataset():
+    if os.path.exists(TRAIN_FILE) or os.path.exists(TEST_FILE):
+        return
     clinc_dataset = datasets.load_dataset("clinc_oos", "small")
     write_dataset_to_csv(clinc_dataset["train"], TRAIN_FILE)
     labels = write_dataset_to_csv(clinc_dataset["test"], TEST_FILE, return_labels=True)
