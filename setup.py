@@ -171,11 +171,14 @@ setup(
         # installable from a wheel on an m1
         "test": [
             "pytest",
+            "pytest-mock",
             "boto3",
             "moto",
+            "mlflow",
             "datasets",
             "torch",
             "toml",
+            "psutil",
             "transformers",
             "cryptography<=36.0.2",
             "tokenizers==0.11.6",

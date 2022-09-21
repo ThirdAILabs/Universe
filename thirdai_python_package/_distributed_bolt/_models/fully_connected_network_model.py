@@ -5,23 +5,25 @@ from ..utils import contruct_dag_model
 
 
 class FullyConnectedNetworkSingleNode:
-    """This class implements the APIs to create, train and predict on a network
+    """
+    This class implements the APIs to create, train and predict on a network
     which workers are running. Currently, It only supports FullyConnectedNetwork.
     However, It could easily be extended to other models too. The functions
     defined here run on each of the node while distributing.
+
     """
 
     def __init__(self, config: Dict, total_nodes: int, layer_dims: List[int], id: int):
         """
 
-        Args:
-            config (Dict): Configuration File for the network
-            total_nodes (int): Total number of workers
-            layers (List[int]): array containing dimensions for each layer
-            id (int): Model Id
-
-        Raises:
-            ValueError: Loading Dataset
+        :param config: Configuration File for the network
+        :type config: Dict
+        :param total_nodes: Total number of workers
+        :type total_nodes: int
+        :param layer_dims: array containing dimensions for each layer
+        :type layer_dims: List[int]
+        :param id: Model Id
+        :type id: int
         """
         self.layer_dims = layer_dims
 
@@ -70,20 +72,22 @@ class FullyConnectedNetworkSingleNode:
             self.node_name_list.append("fc_" + str(i + 1))
 
     def calculate_gradients(self, batch_no: int):
-        """This function trains the network and calculate gradients for the
-            network of the model for the batch id, batch_no
+        """
+        This function trains the network and calculate gradients for the
+        network of the model for the batch id, batch_no
 
-        Args:
-            batch_no (int): This function trains the network and calculate gradients for the
+        :param batch_no: This function trains the network and calculate gradients for the
                 network of the model for the batch id, batch_no
+        :type batch_no: int
         """
         self.network.calculateGradientSingleNode(batch_no)
 
     def get_calculated_gradients(self):
-        """Returns the calculated gradients.
+        """
+        Returns the calculated gradients.
 
-        Returns:
-            _type_: tuple of weight and bias gradients.
+        :return: tuple of weight and bias gradients.
+        :rtype: Tuple
         """
         w_gradients = []
         b_gradients = []
@@ -99,12 +103,14 @@ class FullyConnectedNetworkSingleNode:
         return (w_gradients, b_gradients)
 
     def set_gradients(self, w_gradients, b_gradients):
-        """This function set the gradient in the current network with the updated
+        """
+        This function set the gradient in the current network with the updated
             gradients provided.
 
-        Args:
-            w_gradients __type__: weight gradients to update the network with
-            b_gradients __type__: bias gradients to update the network with
+        :param w_gradients: weight gradients to update the network with
+        :type w_gradients: numpy.ndarray
+        :param b_gradients: bias gradients to update the network with
+        :type b_gradients: numpy.ndarray
         """
         for layer_num in range(len(w_gradients)):
             self.network.get_layer(self.node_name_list[layer_num]).weight_gradients.set(
@@ -115,10 +121,11 @@ class FullyConnectedNetworkSingleNode:
             )
 
     def get_parameters(self):
-        """This function returns the weight and bias parameters from the network
+        """
+        This function returns the weight and bias parameters from the network
 
-        Returns:
-            __type__: returns a tuple of weight and bias parameters
+        :return: returns a tuple of weight and bias parameters
+        :rtype: Tuple(numpy.ndarray, numpy.ndarray)
         """
         weights = []
         biases = []
@@ -130,12 +137,14 @@ class FullyConnectedNetworkSingleNode:
         return weights, biases
 
     def set_parameters(self, weights, biases):
-        """This function set the weight and bias parameter in the current network with
-            the updated weights provided.
+        """
+        This function set the weight and bias parameter in the current network with
+        the updated weights provided.
 
-        Args:
-            weights: weights parameter to update the network with
-            biases: bias parameter to update the gradient with
+        :param weights: weights parameter to update the network with
+        :type weights: numpy.ndarray
+        :param biases: bias parameter to update the gradient with
+        :type biases: numpy.ndarray
         """
         for layer_num in range(len(weights)):
             self.network.get_layer(self.node_name_list[layer_num]).weights.set(
@@ -146,19 +155,21 @@ class FullyConnectedNetworkSingleNode:
             )
 
     def update_parameters(self, learning_rate: float):
-        """This function update the network parameters using the gradients stored and
+        """
+        This function update the network parameters using the gradients stored and
             learning rate provided.
 
-        Args:
-            learning_rate (float): Learning Rate for the network
+        :param learning_rate: Learning Rate for the network
+        :type learning_rate: float
         """
         self.network.updateParametersSingleNode()
 
     def num_of_batches(self) -> int:
-        """return the number of training batches present for this particular network
+        """
+        return the number of training batches present for this particular network
 
-        Returns:
-            int: number of batches
+        :return: number of batches
+        :rtype: int
         """
         return self.network.numTrainingBatch()
 
@@ -166,10 +177,11 @@ class FullyConnectedNetworkSingleNode:
         self.network.finishTraining()
 
     def predict(self):
-        """return the prediction for this particular network
+        """
+        return the prediction for this particular network
 
-        Returns:
-            InferenceMetricData: tuple of matric and activations
+        :return: tuple of metric and activations
+        :rtype: _type_
         """
         predict_config = (
             bolt.graph.PredictConfig.make().with_metrics(self.test_metrics).silence()

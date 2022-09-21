@@ -4,7 +4,7 @@ import pytest
 import os
 import pandas as pd
 import platform
-from utils import (
+from auto_classifier_utils import (
     compute_accuracy_of_predictions,
     check_autoclassifier_predict_correctness,
 )
@@ -107,6 +107,8 @@ def test_tabular_classifier_census_income_dataset():
     check_autoclassifier_predict_correctness(
         new_classifier, single_test_samples, predictions
     )
+
+    os.remove(SAVE_FILE)
 
 
 def create_single_test_samples():

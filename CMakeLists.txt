@@ -33,6 +33,8 @@ message("====================================")
 message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
 separate_arguments(FEATURE_FLAGS)
 message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
+message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
+message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
 
@@ -255,6 +257,7 @@ pybind11_add_module(_thirdai
   dataset/python_bindings/DatasetPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
+  auto_classifiers/python_bindings/AutoClassifiersPython.cc
   ${BOLT_SOURCES} 
   ${SEARCH_SOURCES} 
   ${HASHING_SOURCES}

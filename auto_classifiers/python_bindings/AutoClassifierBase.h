@@ -5,6 +5,7 @@
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
@@ -371,5 +372,79 @@ class AutoClassifierBase {
     return py::make_tuple(active_neurons_array, activations_array);
   }
 };
+
+inline float autotunedHiddenLayerSparsity(uint64_t layer_dim) {
+  if (layer_dim < 300) {
+    return 1.0;
+  }
+  if (layer_dim < 1500) {
+    return 0.2;
+  }
+  if (layer_dim < 4000) {
+    return 0.1;
+  }
+  if (layer_dim < 10000) {
+    return 0.05;
+  }
+  if (layer_dim < 30000) {
+    return 0.01;
+  }
+  return 0.005;
+}
+
+inline BoltGraphPtr createAutotunedModel(uint32_t internal_model_dim,
+                                         uint32_t n_classes,
+                                         std::optional<float> sparsity,
+                                         ActivationFunction output_activation) {
+  auto input_layer =
+      Input::make(dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
+
+  auto hidden_layer = FullyConnectedNode::makeAutotuned(
+      /* dim= */ internal_model_dim,
+      /* sparsity= */
+      sparsity.value_or(autotunedHiddenLayerSparsity(internal_model_dim)),
+      /* activation= */ "relu");
+  hidden_layer->addPredecessor(input_layer);
+
+  FullyConnectedNodePtr output_layer;
+  std::shared_ptr<LossFunction> loss;
+
+  if (output_activation == ActivationFunction::Softmax) {
+    output_layer = FullyConnectedNode::makeDense(
+        /* dim= */ n_classes,
+        /* activation= */ "softmax");
+    loss = std::make_shared<CategoricalCrossEntropyLoss>();
+  } else if (output_activation == ActivationFunction::Sigmoid) {
+    loss = std::make_shared<BinaryCrossEntropyLoss>();
+    output_layer = FullyConnectedNode::makeDense(
+        /* dim= */ n_classes,
+        /* activation= */ "sigmoid");
+  } else {
+    throw std::invalid_argument(
+        "Output activation in createAutotunedModel must be Softmax or "
+        "Sigmoid.");
+  }
+
+  output_layer->addPredecessor(hidden_layer);
+
+  auto model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
+                                           output_layer);
+
+  model->compile(loss, /* print_when_done= */ false);
+
+  return model;
+}
+
+inline std::string joinTokensIntoString(const std::vector<uint32_t>& tokens,
+                                        char delimiter) {
+  std::stringstream sentence_ss;
+  for (uint32_t i = 0; i < tokens.size(); i++) {
+    if (i > 0) {
+      sentence_ss << delimiter;
+    }
+    sentence_ss << tokens[i];
+  }
+  return sentence_ss.str();
+}
 
 }  // namespace thirdai::bolt::python
