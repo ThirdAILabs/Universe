@@ -1,9 +1,9 @@
 from thirdai import bolt
 import pytest
 import datasets
+import os
 import random
-from utils import (
-    remove_files,
+from auto_classifier_utils import (
     compute_accuracy_of_predictions,
     check_autoclassifier_predict_correctness,
 )
@@ -38,6 +38,8 @@ def write_dataset_to_csv(dataset, filename, return_labels=False):
 
 
 def download_clinc_dataset():
+    if os.path.exists(TRAIN_FILE) or os.path.exists(TEST_FILE):
+        return
     clinc_dataset = datasets.load_dataset("clinc_oos", "small")
     write_dataset_to_csv(clinc_dataset["train"], TRAIN_FILE)
     labels = write_dataset_to_csv(clinc_dataset["test"], TEST_FILE, return_labels=True)
@@ -78,4 +80,4 @@ def test_text_classifier_clinc_dataset():
 
     check_autoclassifier_predict_correctness(new_classifier, test_samples, predictions)
 
-    remove_files([TRAIN_FILE, TEST_FILE, SAVE_FILE])
+    os.remove(SAVE_FILE)

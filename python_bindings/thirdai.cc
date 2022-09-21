@@ -1,6 +1,7 @@
 // Code to create thirdai modules
 #include <bolt/python_bindings/BoltPython.h>
 #include <hashing/python_bindings/HashingPython.h>
+#include <auto_classifiers/python_bindings/AutoClassifiersPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <utils/Logging.h>
@@ -64,7 +65,9 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   thirdai::hashing::python::createHashingSubmodule(m);
 
-  thirdai::bolt::python::createBoltSubmodule(m);
+  auto bolt_submodule = thirdai::bolt::python::createBoltSubmodule(m);
+
+  thirdai::bolt::python::defineAutoClassifeirsInModule(bolt_submodule);
 
   thirdai::search::python::createSearchSubmodule(m);
 }
