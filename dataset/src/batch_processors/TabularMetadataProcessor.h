@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
 #include <dataset/src/BatchProcessor.h>
