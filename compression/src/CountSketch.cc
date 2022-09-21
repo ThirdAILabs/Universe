@@ -1,5 +1,6 @@
 #include "CountSketch.h"
 #include "CompressedVector.h"
+#include "Serializer.h"
 #include <hashing/src/UniversalHash.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -189,107 +190,63 @@ std::vector<T> CountSketch<T>::decompress() const {
  * 3) Number of count_sketches
  * 4) Seeds for hashing indices
  * 5) Seeds for sign
- * 6) Size of each of the count sketch (same for each count sketch)
- * 7) Count Sketch Vectors
+ * 6) Count Sketch Vectors
+ * While writing vectors, we first write the size and then the contents.
  */
 template <class T>
 void CountSketch<T>::serialize(char* serialized_data) const {
-  size_t curr_pos = 0;
+  serializer::BinaryOutputHelper outputHelper(serialized_data);
 
   // Writing compression scheme (1)
   uint32_t compression_scheme = static_cast<uint32_t>(type());
-  std::memcpy(serialized_data, reinterpret_cast<char*>(&compression_scheme),
-              sizeof(uint32_t));
-  curr_pos += sizeof(uint32_t);
+  outputHelper.write(&compression_scheme);
 
   // Writing uncompressed size (2)
-  std::memcpy(serialized_data + curr_pos,
-              reinterpret_cast<const char*>(&_uncompressed_size),
-              sizeof(uint32_t));
-  curr_pos += sizeof(uint32_t);
+  outputHelper.write(&_uncompressed_size);
 
   // Writing number of count sketches (3)
   uint32_t num_sketches = numSketches();
-  std::memcpy(serialized_data + curr_pos,
-              reinterpret_cast<char*>(&num_sketches), sizeof(uint32_t));
-  curr_pos += sizeof(uint32_t);
+  outputHelper.write(&num_sketches);
 
   // Writing Seeds for hashing indices (4)
-  std::memcpy(serialized_data + curr_pos,
-              reinterpret_cast<const char*>(_seed_for_hashing_indices.data()),
-              sizeof(uint32_t) * num_sketches);
-  curr_pos += sizeof(uint32_t) * num_sketches;
+  outputHelper.writeVector(_seed_for_hashing_indices);
 
   // Writing Seeds for sign (5)
-  std::memcpy(serialized_data + curr_pos,
-              reinterpret_cast<const char*>(_seed_for_sign.data()),
-              sizeof(uint32_t) * num_sketches);
-  curr_pos += sizeof(uint32_t) * num_sketches;
+  outputHelper.writeVector(_seed_for_sign);
 
-  // Writing size of count sketch (6)
-  uint32_t sketch_size = this->size();
-  std::memcpy(serialized_data + curr_pos, reinterpret_cast<char*>(&sketch_size),
-              sizeof(uint32_t));
-  curr_pos += sizeof(uint32_t);
-
-  // Writing Count Sketch Vectors (7)
+  // Writing Count Sketch Vectors (6)
   for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
-    std::memcpy(
-        serialized_data + curr_pos,
-        reinterpret_cast<const char*>(_count_sketches[num_sketch].data()),
-        sizeof(T) * sketch_size);
-    curr_pos += sizeof(T) * sketch_size;
+    outputHelper.writeVector(_count_sketches[num_sketch]);
   }
 }
 
 template <class T>
 CountSketch<T>::CountSketch(const char* serialized_data) {
-  size_t curr_pos = 0;
+  serializer::BinaryInputHelper inputHelper(serialized_data);
 
   // Reading the compression scheme (1)
   uint32_t compression_scheme;
-  std::memcpy(reinterpret_cast<char*>(&compression_scheme),
-              serialized_data + curr_pos, sizeof(uint32_t));
-  curr_pos += sizeof(uint32_t);
+  inputHelper.read(&compression_scheme);
 
   // Reading uncompressed_size (2)
   uint32_t uncompressed_size;
-  std::memcpy(reinterpret_cast<char*>(&uncompressed_size),
-              serialized_data + curr_pos, sizeof(uint32_t));
-  curr_pos += sizeof(uint32_t);
+  inputHelper.read(&uncompressed_size);
   _uncompressed_size = uncompressed_size;  // NOLINT
 
   // Reading number of count sketches (3)
   uint32_t num_sketches;
-  std::memcpy(reinterpret_cast<char*>(&num_sketches),
-              serialized_data + curr_pos, sizeof(uint32_t));
-  curr_pos += sizeof(uint32_t);
+  inputHelper.read(&num_sketches);
 
   // Reading seed for hashing indices (4)
-  _seed_for_hashing_indices.resize(num_sketches);
-  std::memcpy(reinterpret_cast<char*>(_seed_for_hashing_indices.data()),
-              serialized_data + curr_pos, sizeof(uint32_t) * num_sketches);
-  curr_pos += sizeof(uint32_t) * num_sketches;
+  inputHelper.readVector(_seed_for_hashing_indices);
 
   // Reading seed for sign (5)
-  _seed_for_sign.resize(num_sketches);
-  std::memcpy(reinterpret_cast<char*>(_seed_for_sign.data()),
-              serialized_data + curr_pos, sizeof(uint32_t) * num_sketches);
-  curr_pos += sizeof(uint32_t) * num_sketches;
+  inputHelper.readVector(_seed_for_sign);
 
-  // Reading size of count_sketch (6)
-  uint32_t sketch_size = this->size();
-  std::memcpy(reinterpret_cast<char*>(&sketch_size), serialized_data + curr_pos,
-              sizeof(uint32_t));
-  curr_pos += sizeof(uint32_t);
-
-  // Reading Count Sketch Vectors (7)
+  // Reading Count Sketch Vectors (6)
   _count_sketches.resize(num_sketches);
   for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
-    _count_sketches[num_sketch].resize(sketch_size);
-    std::memcpy(reinterpret_cast<char*>(_count_sketches[num_sketch].data()),
-                serialized_data + curr_pos, sizeof(T) * sketch_size);
-    curr_pos += sizeof(T) * sketch_size;
+    inputHelper.readVector(_count_sketches[num_sketch]);
   }
 
   for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
@@ -302,28 +259,23 @@ CountSketch<T>::CountSketch(const char* serialized_data) {
 template <class T>
 uint32_t CountSketch<T>::serialized_size() const {
   uint32_t serialized_size = 0;
-
   // Compression scheme (1)
   serialized_size += sizeof(uint32_t);
 
-  // Uncompressed_size (2)
+  // Uncompressed size (2)
   serialized_size += sizeof(uint32_t);
 
   // Number of count sketches
   serialized_size += sizeof(uint32_t);
 
   // Seeds for hashing indices
-  serialized_size += sizeof(uint32_t) * numSketches();
+  serialized_size += sizeof(uint32_t) + sizeof(uint32_t) * numSketches();
 
-  // Seeds for hashing sign
-  serialized_size += sizeof(uint32_t) * numSketches();
+  // Seeds for hashing indices
+  serialized_size += sizeof(uint32_t) + sizeof(uint32_t) * numSketches();
 
-  // Size of count sketch
-  serialized_size += sizeof(uint32_t);
-
-  // Count Sketch Vectors
-  serialized_size += sizeof(T) * size() * numSketches();
-
+  // CountSketch Vectors
+  serialized_size += numSketches() * (sizeof(uint32_t) + sizeof(T) * size());
   return serialized_size;
 }
 
