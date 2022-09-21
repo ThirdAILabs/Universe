@@ -139,6 +139,21 @@ MetricData BoltGraph::train(
                         updates, train_metrics.summary());
         }
 
+        if (validation && updates % validation->validate_every() == 0) {
+          // This is not ideal and will have to be changed to be cleaned in the
+          // future.
+          // TODO(jerin-thirdai)
+
+          cleanupAfterBatchProcessing();
+          std::string label =
+              fmt::format("valid | epoch {} | batch {}", epoch, batch_idx);
+          auto [val_metrics, _] =
+              namedPredict(label, validation->data(), validation->labels(),
+                           validation->config());
+          prepareToProcessBatches(dataset_context.batchSize(),
+                                  /* use_sparsity=*/true);
+        }
+
         callbacks.onBatchEnd(*this, train_state);
       }
 
