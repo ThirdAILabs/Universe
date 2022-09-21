@@ -243,6 +243,10 @@ class TrainState {
     return train_metric_aggregator.getSingleOutput(metric_name);
   }
 
+  MetricData getAllTrainMetrics() {
+    return train_metric_aggregator.getOutput();
+  }
+
   const std::vector<double>& getValidationMetrics(
       const std::string& metric_name) {
     if (validation_metrics.count(metric_name) != 0) {
@@ -251,6 +255,8 @@ class TrainState {
     throw std::invalid_argument("Could not find metric name '" + metric_name +
                                 "' in list of computed validation metrics. ");
   }
+
+  const auto& getAllValidationMetrics() { return validation_metrics; }
 
  private:
   MetricAggregator train_metric_aggregator;
