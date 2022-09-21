@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "Embedding.h"
 #include "FullyConnected.h"
 #include <bolt/src/graph/Node.h>
@@ -33,7 +37,8 @@ class DlrmAttentionNode final
     : public Node,
       public std::enable_shared_from_this<DlrmAttentionNode> {
  private:
-  DlrmAttentionNode() : _compiled_state(std::nullopt), _compiled(false) {}
+  DlrmAttentionNode()
+      : _prececessors_set_state(std::nullopt), _compiled(false) {}
 
  public:
   static std::shared_ptr<DlrmAttentionNode> make() {
@@ -47,7 +52,7 @@ class DlrmAttentionNode final
           "setting predecessors.");
     }
 
-    return _compiled_state->_output_dim;
+    return _prececessors_set_state->_output_dim;
   }
 
   bool isInputNode() const final { return false; }
@@ -73,7 +78,7 @@ class DlrmAttentionNode final
     uint32_t embedding_chunk_size =
         _embedding_node->outputDim() / num_embedding_chunks;
 
-    _compiled_state = CompiledState(
+    _prececessors_set_state = PredecessorsSetState(
         /* num_embedding_chunks= */ num_embedding_chunks,
         /* output_dim= */ output_dim,
         /* embedding_chunk_size= */ embedding_chunk_size);
@@ -92,7 +97,7 @@ class DlrmAttentionNode final
   void prepareForBatchProcessingImpl(uint32_t batch_size,
                                      bool use_sparsity) final {
     (void)use_sparsity;
-    _outputs = BoltBatch(/* dim= */ _compiled_state->_output_dim,
+    _outputs = BoltBatch(/* dim= */ _prececessors_set_state->_output_dim,
                          /* batch_size= */ batch_size,
                          /* is_dense= */ true);
   }
@@ -111,10 +116,11 @@ class DlrmAttentionNode final
     // Compute interactions between outputs of fully connected layer and
     // embeddings.
 
-    uint32_t embedding_chunk_size = _compiled_state->_embedding_chunk_size;
+    uint32_t embedding_chunk_size =
+        _prececessors_set_state->_embedding_chunk_size;
 
-    for (uint32_t emb_idx = 0; emb_idx < _compiled_state->_num_embedding_chunks;
-         emb_idx++) {
+    for (uint32_t emb_idx = 0;
+         emb_idx < _prececessors_set_state->_num_embedding_chunks; emb_idx++) {
       if (fc_output.isDense()) {
         output_vector.activations[emb_idx] =
             fcOutputEmbeddingDotProduct</* FC_OUTPUT_DENSE= */ true>(
@@ -134,11 +140,13 @@ class DlrmAttentionNode final
     // for dense computations, however it requires computing every pairwise dot
     // product twice?
 
-    uint32_t output_idx = _compiled_state->_num_embedding_chunks;
+    uint32_t output_idx = _prececessors_set_state->_num_embedding_chunks;
     for (uint32_t emb_idx_1 = 0;
-         emb_idx_1 < _compiled_state->_num_embedding_chunks; emb_idx_1++) {
+         emb_idx_1 < _prececessors_set_state->_num_embedding_chunks;
+         emb_idx_1++) {
       for (uint32_t emb_idx_2 = emb_idx_1 + 1;
-           emb_idx_2 < _compiled_state->_num_embedding_chunks; emb_idx_2++) {
+           emb_idx_2 < _prececessors_set_state->_num_embedding_chunks;
+           emb_idx_2++) {
         output_vector.activations[output_idx++] = embeddingDotProduct(
             embedding_output.activations + emb_idx_1 * embedding_chunk_size,
             embedding_output.activations + emb_idx_2 * embedding_chunk_size,
@@ -154,10 +162,11 @@ class DlrmAttentionNode final
 
     BoltVector& output_vector = (*_outputs)[vec_index];
 
-    uint32_t embedding_chunk_size = _compiled_state->_embedding_chunk_size;
+    uint32_t embedding_chunk_size =
+        _prececessors_set_state->_embedding_chunk_size;
 
-    for (uint32_t emb_idx = 0; emb_idx < _compiled_state->_num_embedding_chunks;
-         emb_idx++) {
+    for (uint32_t emb_idx = 0;
+         emb_idx < _prececessors_set_state->_num_embedding_chunks; emb_idx++) {
       float dot_product_gradient = output_vector.gradients[emb_idx];
 
       uint64_t embedding_offset = emb_idx * embedding_chunk_size;
@@ -173,11 +182,13 @@ class DlrmAttentionNode final
       }
     }
 
-    uint32_t output_idx = _compiled_state->_num_embedding_chunks;
+    uint32_t output_idx = _prececessors_set_state->_num_embedding_chunks;
     for (uint32_t emb_idx_1 = 0;
-         emb_idx_1 < _compiled_state->_num_embedding_chunks; emb_idx_1++) {
+         emb_idx_1 < _prececessors_set_state->_num_embedding_chunks;
+         emb_idx_1++) {
       for (uint32_t emb_idx_2 = emb_idx_1 + 1;
-           emb_idx_2 < _compiled_state->_num_embedding_chunks; emb_idx_2++) {
+           emb_idx_2 < _prececessors_set_state->_num_embedding_chunks;
+           emb_idx_2++) {
         float dot_product_gradient = output_vector.gradients[output_idx++];
 
         uint64_t emb_1_offset = emb_idx_1 * embedding_chunk_size;
@@ -216,8 +227,8 @@ class DlrmAttentionNode final
     summary << "(" << _fully_connected_node->name() << ", "
             << _embedding_node->name() << ") -> " << name()
             << "(DLRMDotProductFeatureInteraction): output_dim="
-            << _compiled_state->_output_dim << " num_embedding_chunks="
-            << _compiled_state->_num_embedding_chunks << "\n";
+            << _prececessors_set_state->_output_dim << " num_embedding_chunks="
+            << _prececessors_set_state->_num_embedding_chunks << "\n";
   }
 
   // Return a short all lowercase string representing the type of this node for
@@ -226,16 +237,18 @@ class DlrmAttentionNode final
 
   NodeState getState() const final {
     bool predecessors_set = _fully_connected_node && _embedding_node;
-    if (!predecessors_set && !_compiled_state && !_compiled && !_outputs) {
+    if (!predecessors_set && !_prececessors_set_state && !_compiled &&
+        !_outputs) {
       return NodeState::Constructed;
     }
-    if (predecessors_set && _compiled_state && !_compiled && !_outputs) {
+    if (predecessors_set && _prececessors_set_state && !_compiled &&
+        !_outputs) {
       return NodeState::PredecessorsSet;
     }
-    if (predecessors_set && _compiled_state && _compiled && !_outputs) {
+    if (predecessors_set && _prececessors_set_state && _compiled && !_outputs) {
       return NodeState::Compiled;
     }
-    if (predecessors_set && _compiled_state && _compiled && _outputs) {
+    if (predecessors_set && _prececessors_set_state && _compiled && _outputs) {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
@@ -292,9 +305,10 @@ class DlrmAttentionNode final
   FullyConnectedNodePtr _fully_connected_node;
   EmbeddingNodePtr _embedding_node;
 
-  struct CompiledState {
-    explicit CompiledState(uint32_t num_embedding_chunks, uint32_t output_dim,
-                           uint32_t embedding_chunk_size)
+  struct PredecessorsSetState {
+    explicit PredecessorsSetState(uint32_t num_embedding_chunks,
+                                  uint32_t output_dim,
+                                  uint32_t embedding_chunk_size)
         : _num_embedding_chunks(num_embedding_chunks),
           _output_dim(output_dim),
           _embedding_chunk_size(embedding_chunk_size) {}
@@ -302,13 +316,29 @@ class DlrmAttentionNode final
     uint32_t _num_embedding_chunks;
     uint32_t _output_dim;
     uint32_t _embedding_chunk_size;
+
+   private:
+    friend class cereal::access;
+    template <class Archive>
+    void serialize(Archive archive) {
+      archive(_num_embedding_chunks, _output_dim, _embedding_chunk_size);
+    }
   };
-  std::optional<CompiledState> _compiled_state;
+  std::optional<PredecessorsSetState> _prececessors_set_state;
 
   bool _compiled;
   std::optional<BoltBatch> _outputs;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive archive) {
+    archive(_fully_connected_node, _embedding_node, _prececessors_set_state,
+            _compiled);
+  }
 };
 
 using DlrmAttentionNodePtr = std::shared_ptr<DlrmAttentionNode>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::DlrmAttentionNode);
