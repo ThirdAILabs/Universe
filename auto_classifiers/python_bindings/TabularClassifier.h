@@ -42,6 +42,17 @@ class TabularClassifier final
         _batch_processor(nullptr),
         _column_datatypes(std::move(column_datatypes)) {}
 
+  TabularClassifier(uint32_t internal_model_dim, uint32_t n_classes,
+                    std::shared_ptr<dataset::TabularMetadata> metadata)
+      : AutoClassifierBase(
+            createAutotunedModel(
+                internal_model_dim, n_classes,
+                /* sparsity= */ std::nullopt,
+                /* output_activation= */ ActivationFunction::Softmax),
+            ReturnMode::ClassName),
+        _metadata(std::move(metadata)),
+        _batch_processor(nullptr) {}
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -68,7 +79,9 @@ class TabularClassifier final
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
                      std::optional<uint64_t> max_in_memory_batches) final {
-    processTabularMetadata(data_loader, max_in_memory_batches);
+    if (!_metadata) {
+      processTabularMetadata(data_loader, max_in_memory_batches);
+    }
 
     createBatchProcessor();
 
