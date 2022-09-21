@@ -57,6 +57,21 @@ class StreamingGenericDatasetLoader
             std::move(processor), shuffle, config) {}
 
   /**
+   * Constructor that takes in a pointer to GenericBatchProcessor so we can pass
+   * this pointer to both the base class constructor and this class's member
+   * variable initializer.
+   */
+  StreamingGenericDatasetLoader(
+      std::shared_ptr<DataLoader> loader,
+      std::shared_ptr<GenericBatchProcessor> processor, bool shuffle = false,
+      DatasetShuffleConfig config = DatasetShuffleConfig())
+      : StreamingDataset(loader, processor),
+        _processor(std::move(processor)),
+        _buffer(config.seed, loader->getMaxBatchSize()),
+        _shuffle(shuffle),
+        _batch_buffer_size(config.n_batches) {}
+
+  /**
    * This constructor does not accept a data loader and
    * defaults to a simple file loader.
    */
@@ -107,22 +122,6 @@ class StreamingGenericDatasetLoader
   uint32_t getLabelDim() { return _processor->getLabelDim(); }
 
  private:
-  /**
-   * Private constructor that takes in a pointer to
-   * GenericBatchProcessor so we can pass this pointer to both
-   * the base class constructor and this class's member variable
-   * initializer.
-   */
-  StreamingGenericDatasetLoader(
-      std::shared_ptr<DataLoader> loader,
-      std::shared_ptr<GenericBatchProcessor> processor, bool shuffle = false,
-      DatasetShuffleConfig config = DatasetShuffleConfig())
-      : StreamingDataset(loader, processor),
-        _processor(std::move(processor)),
-        _buffer(config.seed, loader->getMaxBatchSize()),
-        _shuffle(shuffle),
-        _batch_buffer_size(config.n_batches) {}
-
   void prefillShuffleBuffer() {
     size_t n_prefill_batches = _batch_buffer_size - 1;
     size_t n_added = 0;
