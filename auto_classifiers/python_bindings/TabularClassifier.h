@@ -9,7 +9,7 @@
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/blocks/TabularBlocks.h>
+#include <dataset/src/blocks/TabularPairGram.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exceptions/src/Exceptions.h>
