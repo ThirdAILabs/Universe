@@ -1,7 +1,7 @@
 from typing import Optional
 from thirdai._thirdai import bolt
 import thirdai._distributed_bolt.backend.communication as comm
-from ..utils import wrap_model, parse_dataset, get_gradients
+from ..utils import wrap_model, parse_svm_dataset, get_gradients
 
 
 class Worker:
@@ -30,7 +30,9 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
 
-        self.train_data, self.train_labels = parse_dataset(train_file_name, batch_size)
+        self.train_data, self.train_labels = parse_svm_dataset(
+            train_file_name, batch_size
+        )
         self.model = wrap_model(
             model_to_wrap, [self.train_data], self.train_labels, train_config
         )

@@ -162,5 +162,5 @@ class DistributedDataParallel:
 
         trainer.finish_training()
 
-    def get_model(self):
-        return ray.get(self.primary_worker.model.remote())
+    def get_model(self, worker_id=0):
+        return ray.get(self.workers[worker_id].model.remote())

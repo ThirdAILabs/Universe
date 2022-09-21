@@ -2,9 +2,7 @@ from thirdai._thirdai import bolt, dataset
 import logging
 
 
-# TODO(Josh): Fix batch size
-# TODO(Josh): Fix this method in general
-def parse_dataset(train_filename, batch_size):
+def parse_svm_dataset(train_filename, batch_size):
     return dataset.load_bolt_svm_dataset(
         train_filename,
         batch_size,

@@ -20,6 +20,9 @@ except ImportError:
     pass
 
 
+# This is some duplicate code with the mnist loading in test_mnist, but
+# putting it somewhere both tests can read is more trouble than just having
+# the loading code twice
 def setup_module():
     import os
 
@@ -45,8 +48,7 @@ def setup_module():
         os.system("mv mnist.t mnist_data/")
 
 
-# TODO(Josh): use utils for this
-def get_model():
+def get_mnist_model():
     input_layer = bolt.graph.Input(dim=784)
 
     hidden_layer = bolt.graph.FullyConnected(dim=256, sparsity=0.5, activation="Relu")(
@@ -73,7 +75,7 @@ def train_distributed_bolt_check(request):
     )
     mini_cluster.add_node(num_cpus=1)
 
-    model = get_model()
+    model = get_mnist_model()
     dataset_paths = ["mnist_data/xaa", "mnist_data/xab"]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
     cluster_config = db.RayTrainingClusterConfig(
@@ -92,7 +94,8 @@ def train_distributed_bolt_check(request):
     )
     distributed_model.train()
 
-    model = distributed_model.get_model()
+    model_node_1 = distributed_model.get_model(worker_id=0)
+    model_node_2 = distributed_model.get_model(worker_id=1)
 
     predict_config = (
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
@@ -100,15 +103,26 @@ def train_distributed_bolt_check(request):
     test_data, test_labels = dataset.load_bolt_svm_dataset(
         "mnist_data/mnist.t", batch_size=256
     )
-    metrics = model.predict(
+    metrics_node_1 = model_node_1.predict(
         test_data=test_data, test_labels=test_labels, predict_config=predict_config
+    )
+    metrics_node_2 = model_node_2.predict(
+        test_data=test_data, test_labels=test_labels, predict_config=predict_config
+    )
+
+    # This is a weak check that the parameters are the same on the two nodes
+    assert (
+        abs(
+            metrics_node_1[0]["categorical_accuracy"]
+            - metrics_node_2[0]["categorical_accuracy"]
+        )
+        < 0.001
     )
 
     ray.shutdown()
     mini_cluster.shutdown()
 
-    print(metrics)
-    yield metrics
+    yield metrics_node_1
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
