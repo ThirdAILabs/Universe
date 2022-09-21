@@ -51,6 +51,9 @@ class TabularMetadata {
         _class_name_to_id(std::move(class_name_to_id)),
         _column_names(std::move(column_names)),
         _col_to_num_bins(std::move(col_to_num_bins)) {
+    // column names are for future RCA module but we aren't necessary for
+    // anything else. Here we check that if we provide column_names that they
+    // are the same length as column_dtypes
     if (!_column_names.empty() &&
         _column_names.size() != _column_dtypes.size()) {
       throw std::invalid_argument(
