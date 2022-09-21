@@ -42,8 +42,8 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
                        /* num_tokens_per_input= */ n_tokens)
                        ->addInput(token_input);
 
-  auto dlrm_attention = std::make_shared<DlrmAttentionNode>()->setPredecessors(
-      fc_hidden, embedding);
+  auto dlrm_attention =
+      DlrmAttentionNode::make()->setPredecessors(fc_hidden, embedding);
 
   auto output = FullyConnectedNode::makeDense(
                     /* dim= */ 2, /* activation= */ "softmax")
