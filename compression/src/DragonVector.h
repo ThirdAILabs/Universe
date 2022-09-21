@@ -4,6 +4,7 @@
 #include "CompressionUtils.h"
 #include <compression/src/CompressionUtils.h>
 #include <cstddef>
+#include <cstring>
 #include <cstdint>
 #include <memory>
 #include <random>

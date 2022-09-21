@@ -6,6 +6,7 @@
 #include <compression/src/CompressionUtils.h>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <random>
 
