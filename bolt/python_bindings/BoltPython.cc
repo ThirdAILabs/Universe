@@ -1,8 +1,5 @@
 #include "BoltPython.h"
-#include "AutoClassifierBase.h"
-#include "AutoClassifiers.h"
 #include "BoltGraphPython.h"
-#include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
@@ -25,36 +22,7 @@
 
 namespace thirdai::bolt::python {
 
-template <typename CLASSIFIER>
-void defineAutoClassifierCommonMethods(py::class_<CLASSIFIER>& py_class) {
-  py_class
-      .def("train",
-           py::overload_cast<const std::string&, uint32_t, float,
-                             std::optional<uint32_t>, std::optional<uint32_t>>(
-               &CLASSIFIER::train),
-           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt)
-      .def("train",
-           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&,
-                             uint32_t, float, std::optional<uint32_t>>(
-               &CLASSIFIER::train),
-           py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("max_in_memory_batches") = std::nullopt)
-      .def("evaluate",
-           py::overload_cast<const std::string&>(&CLASSIFIER::evaluate),
-           py::arg("filename"))
-      .def("evaluate",
-           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&>(
-               &CLASSIFIER::evaluate),
-           py::arg("data_source"))
-      .def("predict", &CLASSIFIER::predict, py::arg("input"))
-      .def("predict_batch", &CLASSIFIER::predictBatch, py::arg("inputs"))
-      .def("save", &CLASSIFIER::save, py::arg("filename"))
-      .def_static("load", &CLASSIFIER::load, py::arg("filename"));
-}
-
-void createBoltSubmodule(py::module_& module) {
+py::module_ createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
 #if THIRDAI_EXPOSE_ALL
@@ -126,6 +94,7 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
   /**
+<<<<<<< HEAD
    * Text Classifier Definition
    */
   py::class_<TextClassifier> text_classifier(bolt_submodule, "TextClassifier");
@@ -249,6 +218,8 @@ void createBoltSubmodule(py::module_& module) {
   defineAutoClassifierCommonMethods(binary_text_classifier);
 
   /**
+=======
+>>>>>>> tabular-metadata
    * Sequential Classifier
    */
   py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
@@ -280,6 +251,8 @@ void createBoltSubmodule(py::module_& module) {
       .def_static("load", &SequentialClassifier::load, py::arg("filename"));
 
   createBoltGraphSubmodule(bolt_submodule);
+
+  return bolt_submodule;
 }
 
 }  // namespace thirdai::bolt::python
