@@ -22,9 +22,7 @@ class TabularPairGram : public Block {
 
   bool isDense() const final { return false; };
 
-  uint32_t expectedNumColumns() const final {
-    return _metadata->numColumns() - 1;
-  };
+  uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
 
  protected:
   // TODO(david) We should always include all unigrams but if the number of
