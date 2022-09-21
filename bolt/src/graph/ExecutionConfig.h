@@ -210,7 +210,7 @@ class TrainState {
              uint32_t data_len)
       : learning_rate(train_config.learningRate()),
         epoch(train_config.epochs()),
-        batch_index(0),
+        batch_cnt(0),
         verbose(train_config.verbose()),
         rebuild_hash_tables_batch(
             train_config.getRebuildHashTablesBatchInterval(batch_size,
@@ -223,7 +223,7 @@ class TrainState {
 
   float learning_rate;
   uint32_t epoch;
-  uint64_t batch_index;
+  uint64_t batch_cnt;
   bool verbose;
 
   uint32_t rebuild_hash_tables_batch;
