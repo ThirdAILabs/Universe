@@ -27,7 +27,7 @@ class PrimaryWorker(Worker):
         num_workers: int,
         model_to_wrap: bolt.graph.Model,
         train_file_name: str,
-        # train_config: bolt.graph.TrainConfig,
+        train_config: bolt.graph.TrainConfig,
         communication_type,
     ):
         """
@@ -44,13 +44,13 @@ class PrimaryWorker(Worker):
         """
 
         super().__init__(
-            num_workers,
-            model_to_wrap,
-            train_file_name,
-            0,
-            self,
-            # train_config,
-            communication_type,
+            num_workers=num_workers,
+            model_to_wrap=model_to_wrap,
+            train_file_name=train_file_name,
+            id=0,
+            primary_worker=self,
+            train_config=train_config,
+            communication_type=communication_type,
         )
 
     def subwork_circular_communication(self, workers):

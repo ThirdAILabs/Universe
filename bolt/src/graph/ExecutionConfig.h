@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Datasets.h>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -180,7 +183,42 @@ class TrainConfig {
     return std::max<uint32_t>(reconstruct_param / batch_size, 1);
   }
 
+  void save(const std::string& filename) const {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    save_stream(filestream);
+  }
+
+  void save_stream(std::ostream& output_stream) const {
+    if (_callbacks.numCallbacks() != 0) {
+      throw std::runtime_error(
+          "Cannot serialize a training config that has callbacks.");
+    }
+    if (_validation_context.has_value()) {
+      throw std::runtime_error(
+          "Cannot serialize a training config that has a validation context.");
+    }
+    cereal::BinaryOutputArchive oarchive(output_stream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<TrainConfig> load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    return load_stream(filestream);
+  }
+
+  static std::unique_ptr<TrainConfig> load_stream(std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    std::unique_ptr<TrainConfig> deserialize_into(new TrainConfig());
+    iarchive(*deserialize_into);
+    return deserialize_into;
+  }
+
  private:
+  // Private constructor for cereal.
+  TrainConfig() : TrainConfig(0, 0){};
+
   TrainConfig(float learning_rate, uint32_t epochs)
       : _epochs(epochs),
         _learning_rate(learning_rate),
@@ -190,6 +228,18 @@ class TrainConfig {
         _reconstruct_hash_functions(std::nullopt),
         _callbacks({}),
         _validation_context(std::nullopt) {}
+
+  friend class cereal::access;
+  // We don't serialize the callbacks because they might be arbitrary functions
+  // from python. Instead, we throw an error in the save method if the callbacks
+  // are nonempty.
+  // For now, we also don't serialize the validation context, and similarly
+  // check this in the save method.
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_epochs, _learning_rate, _metric_names, _verbose,
+            _rebuild_hash_tables, _reconstruct_hash_functions);
+  }
 
   uint32_t _epochs;
   float _learning_rate;
@@ -203,6 +253,8 @@ class TrainConfig {
 
   std::optional<ValidationContext> _validation_context;
 };
+
+using TrainConfigPtr = std::shared_ptr<TrainConfig>;
 
 class TrainState {
  public:

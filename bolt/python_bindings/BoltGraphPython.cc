@@ -22,41 +22,6 @@
 
 namespace thirdai::bolt::python {
 
-struct membuf : std::streambuf {
-  membuf(char* begin, char* end) { this->setg(begin, begin, end); }
-};
-
-// This function defines the pickle method for a type, assuming that type
-// has a static load method that takes in an istream and a save method that
-// takes in an ostream. 
-// Pybind pickling reference:
-// https://pybind11.readthedocs.io/en/stable/advanced/classes.html#pickling-support
-// py::bytes -> char*:
-// https://github.com/pybind/pybind11/issues/2517
-// char* -> istream:
-// https://stackoverflow.com/questions/7781898/get-an-istream-from-a-char
-template <typename TypeToSerialize>
-pybind11::detail::initimpl::pickle_factory<
-    std::function<py::bytes(const TypeToSerialize&)>,
-    std::function<std::unique_ptr<TypeToSerialize>(py::bytes)>>
-getPickleFunction() {
-  return py::pickle<std::function<py::bytes(const TypeToSerialize&)>,
-                    std::function<std::unique_ptr<TypeToSerialize>(py::bytes)>>(
-      [](const TypeToSerialize& model) {
-        std::stringstream ss;
-        model.save_stream(ss);
-        std::string binary_model = ss.str();
-        return py::bytes(binary_model);
-      },
-      [](const py::bytes& binary_model_python) {  // __setstate__
-        py::buffer_info info(py::buffer(binary_model_python).request());
-        char* binary_model = reinterpret_cast<char*>(info.ptr);
-        membuf sbuf(binary_model, binary_model + info.size);
-        std::istream in(&sbuf);
-        return TypeToSerialize::load_stream(in);
-      });
-}
-
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
@@ -282,7 +247,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
            py::arg("embedding_layer"));
 
-  py::class_<TrainConfig>(graph_submodule, "TrainConfig")
+  py::class_<TrainConfig, TrainConfigPtr>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
@@ -296,7 +261,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
            py::arg("predict_config"))
-    //   .def(getPickleFunction<TrainConfig>());
+      .def(getPickleFunction<TrainConfig>());
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)

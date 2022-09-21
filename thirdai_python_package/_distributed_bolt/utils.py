@@ -14,7 +14,10 @@ def parse_dataset(train_filename, batch_size=256):
 
 def wrap_model(model_to_wrap, train_data, train_labels, train_config):
     return bolt.DistributedTrainingWrapper(
-        model_to_wrap, train_data, train_labels, train_config
+        model=model_to_wrap,
+        train_data=train_data,
+        train_labels=train_labels,
+        train_config=train_config,
     )
 
 

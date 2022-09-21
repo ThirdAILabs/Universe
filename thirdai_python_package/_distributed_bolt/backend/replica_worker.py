@@ -30,7 +30,7 @@ class ReplicaWorker(Worker):
         num_workers: int,
         model_to_wrap: bolt.graph.Model,
         train_file_name: str,
-        # train_config: bolt.graph.TrainConfig,
+        train_config: bolt.graph.TrainConfig,
         id: int,
         primary_worker,
         communication_type,
@@ -52,11 +52,11 @@ class ReplicaWorker(Worker):
         :type communication_type: string
         """
         super().__init__(
-            num_workers,
-            model_to_wrap,
-            train_file_name,
-            id,
-            primary_worker,
-            # train_config,
-            communication_type,
+            num_workers=num_workers,
+            model_to_wrap=model_to_wrap,
+            train_file_name=train_file_name,
+            id=id,
+            primary_worker=primary_worker,
+            train_config=train_config,
+            communication_type=communication_type,
         )

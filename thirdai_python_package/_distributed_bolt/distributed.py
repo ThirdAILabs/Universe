@@ -105,11 +105,11 @@ class DistributedDataParallel:
         self.logging.info("Training has started!")
 
         self.primary_worker = cluster_config.primary_worker_config.remote(
-            cluster_config.num_workers,
-            model,
-            train_file_names[0],
-            # train_config,
-            cluster_config.communication_type,
+            num_workers=cluster_config.num_workers,
+            model_to_wrap=model,
+            train_file_name=train_file_names[0],
+            train_config=train_config,
+            communication_type=cluster_config.communication_type,
         )
 
         self.replica_workers = []
@@ -118,13 +118,13 @@ class DistributedDataParallel:
         ):
             self.replica_workers.append(
                 replica_worker_config.remote(
-                    cluster_config.num_workers,
-                    model,
-                    train_file_names[worker_id + 1],
-                    worker_id + 1,
-                    self.primary_worker,
-                    # train_config,
-                    cluster_config.communication_type,
+                    num_workers=cluster_config.num_workers,
+                    model_to_wrap=model,
+                    train_file_name=train_file_names[worker_id + 1],
+                    train_config=train_config,
+                    id=worker_id + 1,
+                    primary_worker=self.primary_worker,
+                    communication_type=cluster_config.communication_type,
                 )
             )
 
