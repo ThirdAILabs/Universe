@@ -1,6 +1,7 @@
 import ray
 from ...utils import set_gradients
 
+
 class Linear:
     def __init__(self, model, id, primary_worker):
         self.model = model
@@ -35,9 +36,7 @@ class Linear:
         if self.id is 0:
             self.gradients = self.primary_worker.gradients_avg()
         else:
-            self.gradients = ray.get(
-                self.primary_worker.gradients_avg.remote()
-            )
-        
+            self.gradients = ray.get(self.primary_worker.gradients_avg.remote())
+
         set_gradients(self.model, self.gradients)
         return True

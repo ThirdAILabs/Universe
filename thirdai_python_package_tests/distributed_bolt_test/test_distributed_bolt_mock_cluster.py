@@ -9,7 +9,7 @@ import sys
 import pytest
 import os
 import multiprocessing
-from thirdai import bolt
+from thirdai import bolt, dataset
 
 
 try:
@@ -91,12 +91,27 @@ def train_distributed_bolt_check(request):
     distributed_model.train()
 
     # TODO(josh): prediction and get metrics
+    model = distributed_model.get_model()
+
+    predict_config = (
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+    )
+    test_data, test_labels = dataset.load_bolt_svm_dataset(
+        "mnist_data/mnist.t", batch_size=256
+    )
+    metrics = model.predict(
+        test_data=test_data, test_labels=test_labels, predict_config=predict_config
+    )
+
+    print("HEREREREREE", metrics[0]["categorical_accuracy"])
+
+    assert metrics[0]["categorical_accuracy"] >= 0.9
 
     # shutting down the ray and cluster
     ray.shutdown()
     cluster.shutdown()
 
-    # yield metrics
+    yield metrics
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")

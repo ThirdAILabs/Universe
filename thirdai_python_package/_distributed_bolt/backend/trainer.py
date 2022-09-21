@@ -92,9 +92,7 @@ class Trainer:
         Calls primary worker for updating parameters across all nodes
         """
         start_update_parameter_time = time.time()
-        ray.get(
-            self.primary_worker.subwork_update_parameters.remote(self.workers)
-        )
+        ray.get(self.primary_worker.subwork_update_parameters.remote(self.workers))
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def _log_training(self, batch_no, epoch):

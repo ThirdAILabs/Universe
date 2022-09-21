@@ -104,11 +104,15 @@ class PrimaryWorker(Worker):
         )
 
         # Here we are initializing the w_average_gradients for storing the sum
-        self.gradient_averages = [np.array(gradients_list[0][i]) for i in range(len(gradients_list[0]))]
+        self.gradient_averages = [
+            np.array(gradients_list[0][i]) for i in range(len(gradients_list[0]))
+        ]
 
         for worker_id in range(1, len(gradients_list)):
             for gradient_id in range(len(self.gradient_averages)):
-                self.gradient_averages[gradient_id] += gradients_list[worker_id][gradient_id]
+                self.gradient_averages[gradient_id] += gradients_list[worker_id][
+                    gradient_id
+                ]
 
         for gradient_id in range(len(self.gradient_averages)):
             self.gradient_averages[gradient_id] /= len(workers)

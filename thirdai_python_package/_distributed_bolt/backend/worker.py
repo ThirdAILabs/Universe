@@ -162,5 +162,5 @@ class Worker:
     def finish_training(self):
         self.model.finish_training()
 
-    def predict(self):
-        return self.model.predict()
+    def model(self):
+        return self.model.model

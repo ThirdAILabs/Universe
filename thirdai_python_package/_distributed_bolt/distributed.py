@@ -162,4 +162,4 @@ class DistributedDataParallel:
         trainer.finish_training()
 
     def get_model(self):
-        return self.cluster.primary_worker.model.remote()
+        return ray.get(self.primary_worker.model.remote())
