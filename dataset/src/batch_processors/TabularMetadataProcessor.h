@@ -67,8 +67,6 @@ class TabularMetadata {
 
   ThreadSafeVocabularyPtr getClassToIdMap() { return _class_name_to_id; }
 
-  std::vector<TabularDataType> getDatatypes() { return _column_dtypes; }
-
   uint32_t numColumns() const { return _column_dtypes.size(); }
 
   TabularDataType colType(uint32_t col) { return _column_dtypes[col]; }

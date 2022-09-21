@@ -172,6 +172,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &MockBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
+#if THIRDAI_EXPOSE_ALL
   py::enum_<TabularDataType>(dataset_submodule, "TabularDataType")
       .value("Label", TabularDataType::Label)
       .value("Categorical", TabularDataType::Categorical)
@@ -211,6 +212,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &TabularPairGram::isDense,
            "Returns false since text blocks always produce sparse "
            "features.");
+#endif
 
   py::class_<PyBlockBatchProcessor>(
       internal_dataset_submodule, "BatchProcessor",
