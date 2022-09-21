@@ -1,7 +1,5 @@
 import numpy as np
 import ray
-import time
-from typing import Tuple, Any, Optional, Dict, List
 from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
 
@@ -29,6 +27,7 @@ class PrimaryWorker(Worker):
         train_file_name: str,
         train_config: bolt.graph.TrainConfig,
         communication_type,
+        batch_size,
     ):
         """
         Initializes the Primary Worker Class
@@ -51,6 +50,7 @@ class PrimaryWorker(Worker):
             primary_worker=self,
             train_config=train_config,
             communication_type=communication_type,
+            batch_size=batch_size,
         )
 
     def subwork_circular_communication(self, workers):

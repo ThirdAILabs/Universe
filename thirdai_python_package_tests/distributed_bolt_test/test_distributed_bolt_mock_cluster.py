@@ -9,6 +9,8 @@ import sys
 import pytest
 from thirdai import bolt, dataset
 
+pytestmark = [pytest.mark.distributed]
+
 
 try:
     import thirdai.distributed_bolt as db
@@ -86,6 +88,7 @@ def train_distributed_bolt_check(request):
         model=model,
         train_config=train_config,
         train_file_names=dataset_paths,
+        batch_size=256,
     )
     distributed_model.train()
 

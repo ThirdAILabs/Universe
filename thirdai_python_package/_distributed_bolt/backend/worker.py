@@ -1,10 +1,4 @@
-from numpy import partition
-import ray
-import time
-from typing import Tuple, Any, Optional, Dict, List
-from thirdai._distributed_bolt._models.fully_connected_network_model import (
-    FullyConnectedNetworkSingleNode,
-)
+from typing import Optional
 from thirdai._thirdai import bolt
 import thirdai._distributed_bolt.backend.communication as comm
 from ..utils import wrap_model, parse_dataset, get_gradients
@@ -28,14 +22,15 @@ class Worker:
         id: int,
         primary_worker,
         train_config: bolt.graph.TrainConfig,
-        communication_type,
+        communication_type: str,
+        batch_size: int,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
 
-        self.train_data, self.train_labels = parse_dataset(train_file_name)
+        self.train_data, self.train_labels = parse_dataset(train_file_name, batch_size)
         self.model = wrap_model(
             model_to_wrap, [self.train_data], self.train_labels, train_config
         )

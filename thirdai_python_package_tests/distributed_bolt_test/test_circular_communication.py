@@ -10,6 +10,8 @@ except ImportError:
 import pytest
 import numpy as np
 
+pytestmark = [pytest.mark.distributed]
+
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
 def test_all_reduce_circular_communication():
@@ -26,7 +28,7 @@ def test_all_reduce_circular_communication():
     weight_matrix_shapes = [(3, 60), (18,)]
 
     weights_all_reduced_gt = [np.zeros(shape) for shape in weight_matrix_shapes]
-    # setting up gradients for each worker
+    # Set up mock initial gradients for each worker
     for i in range(num_workers):
         circular_communicating_workers[i].gradients = [
             np.random.randint(100, size=shape).astype("float32")

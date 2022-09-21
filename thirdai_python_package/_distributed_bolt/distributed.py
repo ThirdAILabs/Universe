@@ -88,6 +88,7 @@ class DistributedDataParallel:
         model: bolt.graph.Model,
         train_config: bolt.graph.TrainConfig,
         train_file_names: List[str],
+        batch_size: int,
     ):
 
         self.communication_type = cluster_config.communication_type
@@ -111,6 +112,7 @@ class DistributedDataParallel:
             train_file_name=train_file_names[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
+            batch_size=batch_size,
         )
 
         self.replica_workers = []
@@ -126,6 +128,7 @@ class DistributedDataParallel:
                     id=worker_id + 1,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
+                    batch_size=batch_size,
                 )
             )
 
