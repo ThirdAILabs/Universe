@@ -64,30 +64,16 @@ class PrimaryWorker(Worker):
         :type workers: List[ray.actor]
         """
 
-        # update_id imples here, the different stages of circular communication
-        update_id = self.num_workers
-        for node in range(self.num_workers - 1):
-            if node == self.num_workers - 2:
+        for update_id, reduce in [(self.num_workers, True), (self.num_workers + 1, False)]:
+            for node in range(self.num_workers - 1):
+                should_avg_gradients = (node == self.num_workers - 2)
                 ray.get(
                     [
-                        worker.process_ring.remote(update_id, avg_gradients=True)
+                        worker.process_ring.remote(update_id, avg_gradients=should_avg_gradients, reduce=reduce)
                         for worker in workers
                     ]
                 )
-            else:
-                ray.get([worker.process_ring.remote(update_id) for worker in workers])
-            update_id -= 1
-
-        # + 1, because it is the partition for the candidates giving the partitions
-        update_id = self.num_workers + 1
-        for node in range(self.num_workers - 1):
-            ray.get(
-                [
-                    worker.process_ring.remote(update_id, reduce=False)
-                    for worker in workers
-                ]
-            )
-            update_id -= 1
+                update_id -= 1
 
     def subwork_linear_communication(self, workers):
         """

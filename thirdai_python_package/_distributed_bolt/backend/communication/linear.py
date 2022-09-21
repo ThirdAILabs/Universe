@@ -10,9 +10,9 @@ class Linear:
 
     def accumulate_batch_gradient(self, batch_no):
         """
-        This functions calls the API 'calculateGradientSingleNode',
+        This functions calls the API 'accumulate_batch_gradient',
         which calculates the gradients for the network managed by
-        this particular worker. The calculateGradientSingleNode trains
+        this particular worker. The accumulate_batch_gradient trains
         the network and calculates the gradient for the particular
         training batch with batch no. batch_no and with loss function
         specified in the config.

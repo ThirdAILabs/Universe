@@ -1,6 +1,6 @@
 import ray
-from typing import Tuple, Any, Optional, Dict, List
-
+from typing import Optional
+from ...utils import get_gradients, set_gradients
 
 class Circular:
     def __init__(self, model, id, primary_worker, num_workers):
@@ -11,12 +11,9 @@ class Circular:
         self.num_workers = num_workers
 
         self.friend = None  # this variable is set up in set_friend
-        self.w_partitions = []
-        self.b_partitions = []
-        self.friend_bias_gradient_list = []
-        self.friend_weight_gradient_list = []
-        self.w_gradients = []
-        self.b_gradients = []
+        self.partitions = []
+        self.friend_gradients = []
+        self.gradients = []
 
     def set_friend(self, friend):
         """
@@ -29,14 +26,10 @@ class Circular:
         """
         self.friend = friend
 
-    def accumulate_batch_gradient_partitions(self):
-        """
-        Calculate the partitions for distributed training called only
-        in case of circular communication
-        """
-        for w_gradients in self.w_gradients:
-            partition_length = int(len(w_gradients) / self.num_workers)
-            remaining_length = len(w_gradients) % self.num_workers
+    def calculate_gradient_partitions(self):
+        for gradient in self.gradients:
+            partition_length = int(len(gradient) / self.num_workers)
+            remaining_length = len(gradient) % self.num_workers
             partition_start_end_list = []
             current_index = 0
             for i in range(self.num_workers):
@@ -51,32 +44,13 @@ class Circular:
                     )
                     current_index += partition_length
 
-            self.w_partitions.append(partition_start_end_list)
-
-        for b_layers in self.b_gradients:
-            partition_length = int(len(b_layers) / self.num_workers)
-            remaining_length = len(b_layers) % self.num_workers
-            partition_start_end_list = []
-            current_index = 0
-            for i in range(self.num_workers):
-                if i < remaining_length:
-                    partition_start_end_list.append(
-                        (current_index, current_index + partition_length + 1)
-                    )
-                    current_index += partition_length + 1
-                else:
-                    partition_start_end_list.append(
-                        (current_index, current_index + partition_length)
-                    )
-                    current_index += partition_length
-
-            self.b_partitions.append(partition_start_end_list)
+            self.partitions.append(partition_start_end_list)
 
     def accumulate_batch_gradient(self, batch_no: int):
         """
-        This functions calls the API 'calculateGradientSingleNode',
+        This functions calls the API 'accumulate_batch_gradient',
         which calculates the gradients for the network managed by
-        this particular worker. The calculateGradientSingleNode trains
+        this particular worker. The accumulate_batch_gradient trains
         the network and calculates the gradient for the particular
         training batch with batch no. batch_no and with loss function
         specified in the config.
@@ -90,22 +64,21 @@ class Circular:
         """
         self.model.accumulate_batch_gradient(batch_no)
 
-        self.w_partitions = []
-        self.b_partitions = []
+        self.partitions = []
+        self.gradients = get_gradients(self.model)
 
-        self.w_gradients, self.b_gradients = self.model.get_calculated_gradients()
-
-        self.accumulate_batch_gradient_partitions()
+        self.calculate_gradient_partitions()
 
     def receive_gradients(self) -> bool:
         """
-        This function is called by the primary_worker to make set the updated
-        gradients to the network.
+        This function is called by the primary_worker to set the updated
+        gradients to the network (after the circular communication has
+        finished).
 
         :return: returns True, after functions complete
         :rtype: bool
         """
-        self.model.set_gradients(self.w_gradients, self.b_gradients)
+        set_gradients(self.model, self.gradients)
         return True
 
     def update_partitions(
@@ -125,38 +98,20 @@ class Circular:
         :param avg_gradients: Defaults to False.
         :type avg_gradients: Optional[bool], optional
         """
-        for i in range(len(self.friend_weight_gradient_list)):
+        for i in range(len(self.friend_gradients)):
 
             # Getting the indices of the partition to work on
-            l_weight_idx, r_weight_idx = self.w_partitions[i][partition_id]
-            l_bias_idx, r_bias_idx = self.b_partitions[i][partition_id]
+            l_idx, r_idx = self.partitions[i][partition_id]
 
-            if r_weight_idx > l_weight_idx:
+            if r_idx > l_idx:
 
                 # arrays should be numpy arrays for the following operation, otherwise it will just get appened to the list
                 if reduce:
-                    self.w_gradients[i][
-                        l_weight_idx:r_weight_idx
-                    ] += self.friend_weight_gradient_list[i]
-                    self.b_gradients[i][
-                        l_bias_idx:r_bias_idx
-                    ] += self.friend_bias_gradient_list[i]
+                    self.gradients[i][l_idx:r_idx] += self.friend_gradients[i]
                     if avg_gradients:
-                        self.w_gradients[i][l_weight_idx:r_weight_idx] = (
-                            self.w_gradients[i][l_weight_idx:r_weight_idx]
-                            / self.num_workers
-                        )
-                        self.b_gradients[i][l_bias_idx:r_bias_idx] = (
-                            self.b_gradients[i][l_bias_idx:r_bias_idx]
-                            / self.num_workers
-                        )
+                        self.gradients[i][l_idx:r_idx] /= self.num_workers
                 else:
-                    self.w_gradients[i][
-                        l_weight_idx:r_weight_idx
-                    ] = self.friend_weight_gradient_list[i]
-                    self.b_gradients[i][
-                        l_bias_idx:r_bias_idx
-                    ] = self.friend_bias_gradient_list[i]
+                    self.gradients[i][l_idx:r_idx] = self.friend_gradients[i]
 
     def process_ring(
         self,
@@ -184,11 +139,7 @@ class Circular:
 
         partition_id = (update_id + self.id - 1) % self.num_workers
 
-        get_ray_object = self.friend.receive_array_partitions.remote(update_id)
-        (
-            self.friend_weight_gradient_list,
-            self.friend_bias_gradient_list,
-        ) = ray.get(get_ray_object)
+        self.friend_gradients = ray.get(self.friend.receive_array_partitions.remote(update_id))
         self.update_partitions(partition_id, reduce, avg_gradients)
 
     def receive_array_partitions(self, update_id: int):
@@ -201,19 +152,13 @@ class Circular:
         :rtype: numpy.ndarray
         """
         partition_id = (update_id + self.id) % self.num_workers
+        our_partitions = [partition[partition_id] for partition in self.partitions]
 
-        w_gradient_subarray = []
-        b_gradient_subarray = []
-        for i in range(len(self.w_partitions)):
+        gradient_subarray = []
+        for (l_idx, r_idx), gradient in zip(our_partitions, self.gradients):
+            if r_idx > l_idx:
+                gradient_subarray.append(gradient[l_idx: r_idx])
+            else:
+                gradient_subarray.append(None)
 
-            # Getting the indices of the partition to work on
-            l_weight_idx, r_weight_idx = self.w_partitions[i][partition_id]
-            l_bias_idx, r_bias_idx = self.b_partitions[i][partition_id]
-
-            if r_weight_idx > l_weight_idx:
-                w_gradient_subarray.append(
-                    self.w_gradients[i][l_weight_idx:r_weight_idx]
-                )
-                b_gradient_subarray.append(self.b_gradients[i][l_bias_idx:r_bias_idx])
-
-        return w_gradient_subarray, b_gradient_subarray
+        return gradient_subarray

@@ -106,15 +106,15 @@ def train_distributed_bolt_check(request):
     ray.shutdown()
     mini_cluster.shutdown()
 
+    print(metrics)
     yield metrics
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
 # @pytest.mark.xfail
-# @pytest.mark.parametrize(
-#     "train_distributed_bolt_check", ["linear", "circular"], indirect=True
-# )
-@pytest.mark.parametrize("train_distributed_bolt_check", ["linear"], indirect=True)
+@pytest.mark.parametrize(
+    "train_distributed_bolt_check", ["circular"], indirect=True
+)
 def test_distributed_bolt_on_mock_cluster(train_distributed_bolt_check):
     import multiprocessing
 
