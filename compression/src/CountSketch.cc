@@ -214,7 +214,7 @@ void CountSketch<T>::serialize(char* serialized_data) const {
   // Writing Seeds for sign (5)
   outputHelper.writeVector(_seed_for_sign);
 
-  // Writing Count Sketch Vectors (7)
+  // Writing Count Sketch Vectors (6)
   for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
     outputHelper.writeVector(_count_sketches[num_sketch]);
   }
@@ -243,7 +243,7 @@ CountSketch<T>::CountSketch(const char* serialized_data) {
   // Reading seed for sign (5)
   inputHelper.readVector(_seed_for_sign);
 
-  // Reading Count Sketch Vectors (7)
+  // Reading Count Sketch Vectors (6)
   _count_sketches.resize(num_sketches);
   for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
     inputHelper.readVector(_count_sketches[num_sketch]);
