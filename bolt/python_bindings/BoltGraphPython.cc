@@ -8,6 +8,7 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
+#include <bolt/src/graph/callbacks/LearningRateScheduler.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/DlrmAttention.h>
 #include <bolt/src/graph/nodes/Embedding.h>
@@ -559,8 +560,48 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def_readonly("epoch_times", &TrainState::epoch_times)
       .def("get_train_metrics", &TrainState::getTrainMetrics,
            py::arg("metric_name"))
+      .def("get_all_train_metrics", &TrainState::getAllTrainMetrics)
       .def("get_validation_metrics", &TrainState::getValidationMetrics,
-           py::arg("metric_name"));
+           py::arg("metric_name"))
+      .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
+
+  py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule,  // NOLINT
+                                        "LRSchedule");        // NOLINT
+
+  py::class_<MultiplicativeLR, MultiplicativeLRPtr, LRSchedule>(
+      callbacks_submodule, "MultiplicativeLR")
+      .def(py::init<float>(), py::arg("gamma"),
+           "The Multiplicative learning rate scheduler "
+           "multiplies the current learning rate by gamma every epoch.\n");
+
+  py::class_<ExponentialLR, ExponentialLRPtr, LRSchedule>(callbacks_submodule,
+                                                          "ExponentialLR")
+      .def(py::init<float>(), py::arg("gamma"),
+           "The exponential learning rate scheduler decays the learning"
+           "rate by an exponential factor of gamma for every epoch.\n");
+
+  py::class_<MultiStepLR, MultiStepLRPtr, LRSchedule>(callbacks_submodule,
+                                                      "MultiStepLR")
+      .def(py::init<float, std::vector<uint32_t>>(), py::arg("gamma"),
+           py::arg("milestones"),
+           "The Multi-step learning rate scheduler changes"
+           "the learning rate by a factor of gamma for every milestone"
+           "specified in the vector of milestones. \n");
+
+  py::class_<LambdaSchedule, LambdaSchedulePtr, LRSchedule>(callbacks_submodule,
+                                                            "LambdaSchedule")
+      .def(py::init<const std::function<float(float, uint32_t)>&>(),
+           py::arg("schedule"),
+           "The Lambda scheduler changes the learning rate depending "
+           "on a custom lambda function."
+           "Arguments:\n"
+           " * schedule: learning rate schedule function with signature \n"
+           "         float schedule(float learning_rate, uint32_t epoch)\n");
+
+  py::class_<LearningRateScheduler, LearningRateSchedulerPtr, Callback>(
+      callbacks_submodule, "LearningRateScheduler")
+      .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
+      .def("get_final_lr", &LearningRateScheduler::getFinalLR);
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
