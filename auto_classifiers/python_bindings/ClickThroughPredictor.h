@@ -3,10 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/memory.hpp>
-#include <bolt/python_bindings/ConversionUtils.h>
-#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/DlrmAttention.h>
 #include <bolt/src/graph/nodes/Embedding.h>
@@ -14,7 +11,6 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <dataset/src/NumpyDataset.h>
 #include <pybind11/pybind11.h>
-#include <algorithm>
 #include <limits>
 #include <stdexcept>
 
@@ -113,26 +109,19 @@ class ClickThroughPredictor {
              float learning_rate, uint32_t batch_size) {
     auto dense_dataset = dataset::numpy::denseNumpyToBoltVectorDataset(
         dense_features, batch_size);
-    std::cout << "Dense: " << dense_dataset->numBatches() << " "
-              << dense_dataset->len() << std::endl;
 
     auto categorical_dataset = dataset::numpy::numpyTokensToBoltDataset(
         categorical_features, batch_size);
-    std::cout << "Cat: " << categorical_dataset->numBatches() << " "
-              << categorical_dataset->len() << std::endl;
 
     auto labels_dataset =
         dataset::numpy::denseNumpyToBoltVectorDataset(labels, batch_size);
-
-    std::cout << "Labels: " << labels_dataset->numBatches() << " "
-              << labels_dataset->len() << std::endl;
 
     _model->train({dense_dataset, categorical_dataset}, labels_dataset,
                   TrainConfig::makeConfig(learning_rate, epochs));
   }
 
-  py::object evaluate(const NumpyArray<float>& dense_features,
-                      const NumpyArray<uint32_t>& categorical_features) {
+  NumpyArray<float> evaluate(const NumpyArray<float>& dense_features,
+                             const NumpyArray<uint32_t>& categorical_features) {
     auto dense_dataset = dataset::numpy::denseNumpyToBoltVectorDataset(
         dense_features, /* batch_size= */ 2048);
 
@@ -143,9 +132,12 @@ class ClickThroughPredictor {
         _model->predict({dense_dataset, categorical_dataset}, nullptr,
                         PredictConfig::makeConfig().returnActivations());
 
-    // This returns a tuple of (metrics, activations) since the output is
-    // dense, we are only interested in the activations here.
-    return constructNumpyActivationsArrays(metrics, output)[1];
+    uint32_t num_samples = output.numSamples();
+    const float* activations = output.getNonowningActivationPointer();
+    py::object activation_handle = py::cast(std::move(output));
+
+    return NumpyArray<float>({num_samples}, {sizeof(float)}, activations,
+                             activation_handle);
   }
 
   float predict(const NumpyArray<float>& dense_features,
