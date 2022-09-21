@@ -34,9 +34,16 @@ jobs:
       - name: Build Universe
         run: bin/build.py -f THIRDAI_BUILD_LICENSE
 
+      - name: Install document prerequisites
+        run: |
+          # Install doxygen
+          apt-get install doxygen -y
+
+          # Install requirements
+          pip3 install -r docs/requirements.txt
+
       - name: Build docs
         run: |
-          pip3 install sphinx sphinx_rtd_theme
           (cd docs && make html)
 
       - name: Remove current docs
