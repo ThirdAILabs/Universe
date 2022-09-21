@@ -47,8 +47,6 @@ class Trainer:
         Read more about that here:
         https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
 
-        :param workers: List of all the actor including primary worker
-        :type workers: List[ray.actor]
         """
 
         # update_id imples here, the different stages of circular communication
@@ -82,9 +80,6 @@ class Trainer:
         In this way of communication, each of the worker calculates their gradients,
         send their gradients to the supervisor and the supervisor sums the gradients,
         averages it and and send the gradients back to the workers.
-
-        :param workers: batch number for the particular worker with worker id (id).
-        :type workers: int
         """
         gradients_list_ref = [worker.get_calculated_gradients.remote() for worker in self.workers]
 
@@ -99,10 +94,6 @@ class Trainer:
 
         :param learning_rate: learning_rate for the training
         :type learning_rate: float
-        :param workers: List of workers including primary worker
-        :type workers: List[ray.worker]
-        :return: Returns True on Completion
-        :rtype: bool
         """
         ray.get([worker.update_parameters.remote(learning_rate) for worker in self.workers])
 

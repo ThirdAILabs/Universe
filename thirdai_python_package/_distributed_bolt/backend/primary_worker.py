@@ -44,12 +44,12 @@ class PrimaryWorker(Worker):
         """
         This function implements the linear way of communicating between the node.
         In this way of communication, each of the worker calculates their gradients,
-        send their gradients to the supervisor and the supervisor sums the gradients,
-        averages it and and send the gradients back to the workers.
+        send their gradients to the trainer and here, the primary-worker sums the gradients,
+        averages it
 
-        :param workers: batch number for the particular worker with worker id (id).
-        :type workers: int
-        """
+        :param gradients_list_ref: _description_
+        :type gradients_list_ref: _type_
+        """        
         gradients_list = ray.get(gradients_list_ref)
 
         # Here we are initializing the w_average_gradients for storing the sum
