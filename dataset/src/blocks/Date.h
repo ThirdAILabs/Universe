@@ -38,30 +38,25 @@ class DateBlock : public Block {
     return _col + 1;
   };
 
-  ResponsibleColumnAndInputKey explainFeature(
+  ResponsibleColumnAndInputKey explainIndex(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
-      std::vector<std::string_view> columnar_sample) const final {
-    (void)columnar_sample;
-    if (col_num_to_name == std::nullopt) {
-      throw std::invalid_argument(
-          "map of col num to col name is missing in date block.");
-    }
-    std::string response;
+      const std::vector<std::string_view>& input_row) const final {
+    (void)input_row;
+    std::string explanation;
     if (index_within_block >= featureDim()) {
       throw std::invalid_argument("index is out of bounds for date block.");
     }
     if (index_within_block < day_of_week_dim) {
-      response = "day_of_week";
+      explanation = "day_of_week";
     } else if (index_within_block < (day_of_week_dim + month_of_year_dim)) {
-      response = "month_of_year";
+      explanation = "month_of_year";
     } else if (index_within_block <
                (day_of_week_dim + month_of_year_dim + week_of_month_dim)) {
-      response = "week_of_month";
+      explanation = "week_of_month";
     } else {
-      response = "week_of_year";
+      explanation = "week_of_year";
     }
-    return {col_num_to_name->at(_col), response};
+    return {_col, explanation};
   }
 
  protected:

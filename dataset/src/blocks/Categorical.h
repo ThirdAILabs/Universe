@@ -30,20 +30,15 @@ class CategoricalBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
-  ResponsibleColumnAndInputKey explainFeature(
+  ResponsibleColumnAndInputKey explainIndex(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
-      std::vector<std::string_view> columnar_sample) const final {
-    (void)columnar_sample;
-    if (col_num_to_name == std::nullopt) {
-      throw std::invalid_argument(
-          "map of col num to col name is missing in categorical block.");
-    }
-    return {col_num_to_name->at(_col),
-            getResponsibleCategory(index_within_block)};
+      const std::vector<std::string_view>& input_row) const final {
+    return {_col, getResponsibleCategory(index_within_block, input_row[_col])};
   }
 
-  virtual std::string getResponsibleCategory(uint32_t index) const = 0;
+  virtual std::string getResponsibleCategory(
+      uint32_t index_within_block,
+      const std::string_view& category_value) const = 0;
 
  protected:
   std::exception_ptr buildSegment(
@@ -90,8 +85,11 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
                                                        delimiter);
   }
 
-  std::string getResponsibleCategory(uint32_t index) const final {
-    return std::to_string(index);
+  std::string getResponsibleCategory(
+      uint32_t index_within_block,
+      const std::string_view& category_value) const final {
+    (void)category_value;
+    return std::to_string(index_within_block);
   }
 
  protected:
@@ -137,7 +135,9 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
 
   ThreadSafeVocabularyPtr getVocabulary() const { return _vocab; }
 
-  std::string getResponsibleCategory(uint32_t index) const final {
+  std::string getResponsibleCategory(
+      uint32_t index, const std::string_view& category_value) const final {
+    (void)category_value;
     return _vocab->getString(index);
   }
 

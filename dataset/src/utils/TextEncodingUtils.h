@@ -50,18 +50,15 @@ class TextEncodingUtils {
     return unigrams;
   }
 
-  static std::pair<std::vector<uint32_t>,
-                   std::unordered_map<uint32_t, std::string>>
-  computeRawUnigramsWithRangeStoreMap(const std::string_view sentence,
-                                      uint32_t output_range) {
-    std::vector<uint32_t> unigrams;
+  static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
+      const std::string_view sentence, uint32_t output_range) {
     std::unordered_map<uint32_t, std::string> index_to_word;
     forEachWordHash(sentence,
                     [&](uint32_t word_hash, const std::string_view& word) {
-                      unigrams.push_back(word_hash % output_range);
+                      (void)word_hash;
                       index_to_word[word_hash % output_range] = word;
                     });
-    return std::make_pair(unigrams, index_to_word);
+    return index_to_word;
   }
 
   /**

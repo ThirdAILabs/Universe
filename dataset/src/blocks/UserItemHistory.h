@@ -153,17 +153,12 @@ class UserItemHistoryBlock final : public Block {
         n_unique_items, item_col_delimiter);
   }
 
-  ResponsibleColumnAndInputKey explainFeature(
+  ResponsibleColumnAndInputKey explainIndex(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
-      std::vector<std::string_view> columnar_sample) const final {
-    (void)columnar_sample;
-    if (col_num_to_name == std::nullopt) {
-      throw std::invalid_argument(
-          "map of col num to col name is missing in UserItemHistory block.");
-    }
-    return {col_num_to_name->at(_item_col),
-            _item_id_lookup->getString(index_within_block)};
+      const std::vector<std::string_view>& input_row) const final {
+    (void)input_row;
+
+    return {_item_col, _item_id_lookup->getString(index_within_block)};
   }
 
  protected:
