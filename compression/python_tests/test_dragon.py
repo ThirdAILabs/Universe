@@ -19,10 +19,10 @@ OUTPUT_DIM = 10
 LEARNING_RATE = 0.002
 ACCURACY_THRESHOLD = 0.8
 
-# A compressed dragon vector is exposed as a char array at this moment
-# hence, it is not interpretable at Python end
+# A compressed vector is exposed as a char array
+# and hence, it is not interpretable at Python end
 
-# We will get a compressed vector of gradients and then check whether the values are right
+
 def test_get_set_values_dragon_vector():
     model = build_simple_hidden_layer_model(
         input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
@@ -65,8 +65,6 @@ def test_get_set_values_dragon_vector():
             assert old_first_layer_biases[i] == new_first_layer_biases[i]
 
 
-# Instead of the earlier set function, set currently accepts a compressed vector
-# if a compression scheme is specified
 def test_concat_values_dragon_vector():
     model = build_simple_hidden_layer_model(
         input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
@@ -95,7 +93,7 @@ def test_concat_values_dragon_vector():
             assert 2 * old_first_layer_weights[i] == new_first_layer_weights[i]
 
 
-# We compress the weight gradients of the model, and then train the
+# Compress the weight gradients of the model, and then train the
 # model using the compressed gradients
 def test_compressed_dragon_vector_training():
 
