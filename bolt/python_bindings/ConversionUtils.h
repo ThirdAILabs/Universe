@@ -233,10 +233,10 @@ struct membuf : std::streambuf {
 template <typename SERIALIZE_T>
 pybind11::detail::initimpl::pickle_factory<
     std::function<py::bytes(const SERIALIZE_T&)>,
-    std::function<std::shared_ptr<SERIALIZE_T>(
+    std::function<std::unique_ptr<SERIALIZE_T>(
         py::bytes)>> inline static getPickleFunction() {
   return py::pickle<std::function<py::bytes(const SERIALIZE_T&)>,
-                    std::function<std::shared_ptr<SERIALIZE_T>(py::bytes)>>(
+                    std::function<std::unique_ptr<SERIALIZE_T>(py::bytes)>>(
       [](const SERIALIZE_T& model) {
         std::stringstream ss;
         model.save_stream(ss);

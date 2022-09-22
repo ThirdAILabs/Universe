@@ -254,8 +254,6 @@ class TrainConfig {
   std::optional<ValidationContext> _validation_context;
 };
 
-using TrainConfigPtr = std::shared_ptr<TrainConfig>;
-
 class TrainState {
  public:
   TrainState(const TrainConfig& train_config, uint32_t batch_size,
