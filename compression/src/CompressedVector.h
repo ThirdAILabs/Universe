@@ -4,9 +4,6 @@
 #include <compression/src/CompressionUtils.h>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
-#include <random>
-#include <stdexcept>
 #include <string>
 
 namespace thirdai::compression {
@@ -53,8 +50,6 @@ class CompressedVector {
    *  add: lossy but memory footprint does not change.
    */
   void extend(const CompressedVector<T>& vec);
-
-  virtual void extend(std::unique_ptr<CompressedVector<T>> vec) = 0;
 
   /*
    * Returns a std::vector formed by decompressing the compressed vector. This

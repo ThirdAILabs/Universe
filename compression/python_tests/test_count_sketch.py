@@ -1,6 +1,4 @@
 import pytest
-import sys
-import matplotlib.pyplot as plt
 
 pytestmark = [pytest.mark.unit, pytest.mark.integration]
 
@@ -14,11 +12,8 @@ from utils import (
     set_compressed_weight_gradients,
 )
 
-HIDDEN_DIM = 10
-OUTPUT_DIM = 10
 LEARNING_RATE = 0.002
 ACCURACY_THRESHOLD = 0.8
-
 
 # We compress the weight gradients of the model, and then reconstruct the weight
 # gradients from the compressed dragon vector.

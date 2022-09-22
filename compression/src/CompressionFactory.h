@@ -6,11 +6,19 @@
 #include "DragonVector.h"
 #include <compression/src/CompressionUtils.h>
 #include <cstddef>
-#include <memory>
 #include <stdexcept>
 #include <variant>
 namespace thirdai::compression {
 
+/*
+ * We are using visitor patterns to deal with runtime polymorphism of compressed
+ * vector objects. Using visitor pattern also makes sure that we don't have to
+ * change the object implementations whenever we want to add a new feature.
+ * For example, we have a binary operation called extend that operates on two
+ * compressed vectors of the same type. Adding two compressed vector of
+ * different classes should throw an error. Using visitor pattern, we can handle
+ * these exceptions without modifying the existing classes.
+ */
 template <class T>
 class ExtendVisitor {
  public:
@@ -116,6 +124,12 @@ template <class T>
 inline std::variant<DragonVector<T>, CountSketch<T>> concat(
     std::vector<std::variant<DragonVector<T>, CountSketch<T>>>
         compressed_vectors) {
+  if (compressed_vectors.empty()) {
+    throw std::logic_error("No compressed vectors provided for concatenating.");
+  }
+  // We initialize a compressed vector from the first element of the input
+  // vector, and then keep on extending it with the rest of the elements.
+
   std::variant<DragonVector<T>, CountSketch<T>> initial_compressed_vector(
       compressed_vectors[0]);
   size_t num_vectors = compressed_vectors.size();

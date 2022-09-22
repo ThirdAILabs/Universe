@@ -5,14 +5,10 @@
 #include <compression/src/DragonVector.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
-#include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
-#include <pybind11/stl.h>
 #include <cstdint>
-#include <memory>
-#include <stdexcept>
 #include <variant>
 
 namespace py = pybind11;

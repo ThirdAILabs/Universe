@@ -4,15 +4,12 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <compression/python_bindings/ConversionUtils.h>
-#include <compression/src/CompressedVector.h>
 #include <compression/src/CompressionFactory.h>
-#include <compression/src/DragonVector.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
-#include <memory>
 #include <stdexcept>
 #include <variant>
 
@@ -113,7 +110,7 @@ class ParameterReference {
         thirdai::compression::python::convertPyListToCompressedVectors<float>(
             py_compressed_vectors, compression_scheme);
     FloatCompressedVector concatenated_compressed_vector =
-        thirdai::compression::concat(compressed_vectors);
+        thirdai::compression::concat(std::move(compressed_vectors));
 
     uint32_t serialized_size =
         std::visit(thirdai::compression::SizeVisitor<float>(),

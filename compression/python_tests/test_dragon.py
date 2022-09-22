@@ -13,6 +13,7 @@ from utils import (
     set_compressed_weight_gradients,
 )
 
+INPUT_DIM = 10
 HIDDEN_DIM = 10
 OUTPUT_DIM = 10
 LEARNING_RATE = 0.002
@@ -23,7 +24,9 @@ ACCURACY_THRESHOLD = 0.8
 
 # We will get a compressed vector of gradients and then check whether the values are right
 def test_get_set_values_dragon_vector():
-    model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
+    model = build_simple_hidden_layer_model(
+        input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
+    )
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     first_layer = model.get_layer("fc_1")
@@ -63,9 +66,11 @@ def test_get_set_values_dragon_vector():
 
 
 # Instead of the earlier set function, set currently accepts a compressed vector
-# if the compressed argument is True.
+# if a compression scheme is specified
 def test_concat_values_dragon_vector():
-    model = build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10)
+    model = build_simple_hidden_layer_model(
+        input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
+    )
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     first_layer = model.get_layer("fc_1")
@@ -90,22 +95,22 @@ def test_concat_values_dragon_vector():
             assert 2 * old_first_layer_weights[i] == new_first_layer_weights[i]
 
 
-# We compress the weight gradients of the model, and then reconstruct the weight
-# gradients from the compressed dragon vector.
+# We compress the weight gradients of the model, and then train the
+# model using the compressed gradients
 def test_compressed_dragon_vector_training():
 
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=10, n_samples=1000, convert_to_bolt_dataset=False
+        n_classes=OUTPUT_DIM, n_samples=1000, convert_to_bolt_dataset=False
     )
     test_data, test_labels = gen_numpy_training_data(
-        n_classes=10, n_samples=100, convert_to_bolt_dataset=False
+        n_classes=OUTPUT_DIM, n_samples=100, convert_to_bolt_dataset=False
     )
 
     model = build_single_node_bolt_dag_model(
         train_data=train_data,
         train_labels=train_labels,
         sparsity=0.2,
-        num_classes=10,
+        num_classes=OUTPUT_DIM,
         learning_rate=LEARNING_RATE,
         hidden_layer_dim=30,
     )

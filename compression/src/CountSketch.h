@@ -45,12 +45,6 @@ class CountSketch final : public CompressedVector<T> {
 
   void extend(const CountSketch<T>& other_sketch);
 
-  void extend(std::unique_ptr<CompressedVector<T>> vec) final {
-    CountSketch<T>* ptr_to_vector_to_extend =
-        dynamic_cast<CountSketch<T>*>(vec.get());
-    this->extend(*ptr_to_vector_to_extend);
-  }
-
   void add(const CountSketch<T>& other_sketch);
 
   uint32_t numSketches() const;
