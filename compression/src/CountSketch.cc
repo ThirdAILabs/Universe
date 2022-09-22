@@ -138,9 +138,8 @@ void CountSketch<T>::extend(const CountSketch<T>& other_sketch) {
                       std::end(other_sketch._hasher_sign));
 }
 
-// dimension of _count_sketches should be the same. We assume the user knows
-// that you should never add count sketches with different underlying hash
-// functions.
+// Dimension of _count_sketches should be the same. Adding count sketches with
+// different underlying hash functions will give weird results.
 template <class T>
 void CountSketch<T>::add(const CountSketch<T>& other_sketch) {
   uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
