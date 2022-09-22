@@ -136,7 +136,7 @@ class FullyConnectedNetwork(DistributedBolt):
             ray.get([worker.num_of_batches.remote() for worker in self.workers])
         )
 
-        ray.get([worker.synchronize_parameters.remote() for worker in self.workers])
+        ray.get(self.primary_worker.synchronize_parameters_serially.remote(self.workers))
         super().__init__(
             self.workers,
             self.logging,

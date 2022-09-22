@@ -108,6 +108,9 @@ class Worker:
     def add_child_gradients(self, child_worker, avg_gradients: Optional[bool]= False):
         self.comm.add_child_gradients(child_worker, avg_gradients)
     
+    def receive_parent_gradients(self, worker):
+        self.comm.receive_parent_gradients(worker)
+    
     def calculate_gradients(self, batch_no: int):
         """
         This function is called only when the mode of communication is
@@ -155,7 +158,7 @@ class Worker:
         """
         return self.model.get_parameters()
 
-    def synchronize_parameters(self) -> bool:
+    def synchronize_parameters(self, gradient_ref) -> bool:
         """
         This function is called by primary_worker to all the workers whose id
         is not equal to 0. This function gets the initialized random weight
@@ -166,9 +169,8 @@ class Worker:
         :rtype: bool
         """
         if self.id != 0:
-            weights, biases = ray.get(self.primary_worker.get_weights_biases.remote())
+            weights, biases = gradient_ref
             self.model.set_parameters(weights, biases)
-        return True
 
     def receive_gradients(self) -> bool:
         """

@@ -35,6 +35,16 @@ def load_train_test_data(
             test_filename, batch_size, delimiter
         )
         return train_x, train_y, test_x, test_y
+    elif config["dataset"]["format"].lower() == "mlm": 
+        pairgram_range = config["dataset"]["pairgram_range"]
+        mlm_loader = dataset.MLMDatasetLoader(pairgram_range=pairgram_range)
+        train_data = mlm_loader.load(filename=train_filename, batch_size=batch_size)
+        test_data = mlm_loader.load(filename=test_filename, batch_size=batch_size)
+
+        train_input, _, train_labels = train_data
+        test_input, _, test_labels = test_data
+
+        return train_input, train_labels, test_input, test_labels
     else:
         raise ValueError("Invalid dataset format specified")
 

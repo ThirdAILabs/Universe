@@ -2,7 +2,8 @@ from typing import Dict, List, Optional
 from thirdai._thirdai import bolt, dataset
 from thirdai._distributed_bolt.utils import load_train_test_data
 from ..utils import contruct_dag_model
-
+from thirdai import setup_logging
+from collections import namedtuple
 
 class FullyConnectedNetworkSingleNode:
     """
@@ -38,6 +39,7 @@ class FullyConnectedNetworkSingleNode:
         self.rebuild = config["params"]["rebuild"]
         self.learning_rate = config["params"]["learning_rate"]
         self.epochs = config["params"]["epochs"]
+        self.train_metrics = config["params"]["train_metrics"]
 
         if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
             self.loss = bolt.CategoricalCrossEntropyLoss()
@@ -55,6 +57,7 @@ class FullyConnectedNetworkSingleNode:
             .silence()
             .with_rebuild_hash_tables(self.rehash)
             .with_reconstruct_hash_functions(self.rebuild)
+            .with_metrics(self.train_metrics)
         )
 
         inputs, output_node = contruct_dag_model(config)
@@ -70,6 +73,11 @@ class FullyConnectedNetworkSingleNode:
         self.node_name_list = []
         for i in range(len(self.layer_dims) - 1):
             self.node_name_list.append("fc_" + str(i + 1))
+
+        # TODO(pratkpranav): Bring args from somewhere.
+        Args = namedtuple('Args', 'log_to_stderr log_file log_level')
+        args = Args(log_to_stderr=False, log_file="/tmp/thirdai-distributed-worker.log", log_level="info")
+        setup_logging(args.log_to_stderr, args.log_file, args.log_level)
 
     def calculate_gradients(self, batch_no: int):
         """

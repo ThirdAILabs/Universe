@@ -27,15 +27,16 @@ void setupLogging(bool log_to_stderr = DEFAULT_LOG_TO_STDERR,
 // syntax at call sites thirdai::log::info or thirdai::log::warn. When within
 // the thirdai namespace, one may simply use log::info or log::warn, omitting
 // thirdai.
-#define DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(level) \
+#define DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(function) \
   template <class... Args>                             \
-  void level(Args... args) {                           \
+  void function(Args... args) {                           \
     auto logger = spdlog::get(NAME);                   \
     if (!logger) {                                     \
       return;                                          \
     }                                                  \
-    logger->level(args...);                            \
+    logger->function(args...);                            \
   }
+
 
 // Function definitions via macros
 DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(trace)
@@ -45,6 +46,10 @@ DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(warn)
 DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(error)
 DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(critical)
 
+DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(flush)
+
 #undef DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION
+
+
 
 }  // namespace thirdai::logging

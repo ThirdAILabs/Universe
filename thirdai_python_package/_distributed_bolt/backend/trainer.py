@@ -84,7 +84,6 @@ class Trainer:
             ray.get(
                 self.primary_worker.subwork_tree_communication.remote(self.workers)
             )
-        ray.get([worker.receive_gradients.remote() for worker in self.workers])
         self.averaging_and_communication_time += time.time() - start_communication_time
 
     def finish_training(self):

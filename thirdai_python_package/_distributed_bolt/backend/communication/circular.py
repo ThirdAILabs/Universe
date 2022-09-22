@@ -187,13 +187,15 @@ class Circular:
 
         partition_id = (update_id + self.id - 1) % self.num_workers
 
-        get_ray_object = self.friend.receive_array_partitions.remote(update_id)
+        get_ray_object = ray.get(self.friend.receive_array_partitions.remote(update_id))
         (
             self.friend_weight_gradient_list,
             self.friend_bias_gradient_list,
         ) = ray.get(get_ray_object)
         self.update_partitions(partition_id, reduce, avg_gradients)
+        del get_ray_object
 
+                
     def receive_array_partitions(self, update_id: int):
         """
         This function returns the array partition to the worker it is called by.
@@ -219,4 +221,4 @@ class Circular:
                 )
                 b_gradient_subarray.append(self.b_gradients[i][l_bias_idx:r_bias_idx])
 
-        return w_gradient_subarray, b_gradient_subarray
+        return ray.put((w_gradient_subarray, b_gradient_subarray))

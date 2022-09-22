@@ -54,6 +54,17 @@ class PrimaryWorker(Worker):
             current_size = upper_layer_size
             current_depth -= 1
         
+        self.receive_parent_gradients(self)
+        current_depth = 1
+        current_size = 1
+        while current_depth <= int(np.log2(self.num_workers))+1:
+            lower_layer_size = min(int(np.power(2, current_depth)),self.num_workers)
+            ray.get([workers[i].receive_parent_gradients.remote(workers[i-current_size]) for i in range(current_size, lower_layer_size)])
+            current_size = lower_layer_size
+            current_depth += 1
+
+        
+        
 
     def subwork_circular_communication(self, workers):
         """
@@ -90,6 +101,7 @@ class PrimaryWorker(Worker):
                 ]
             )
             update_id -= 1
+        ray.get([worker.receive_gradients.remote() for worker in workers])
 
     def subwork_linear_communication(self, workers):
         """
@@ -128,6 +140,8 @@ class PrimaryWorker(Worker):
         self.w_gradients_avg = np.divide(self.w_gradients_avg, len(workers))
         self.b_gradients_avg = np.divide(self.b_gradients_avg, len(workers))
 
+        ray.get([worker.receive_gradients.remote() for worker in workers])
+
     def gradients_avg(self):
         """
         This function is called by the workers to get the gradients back from PrimaryWorker.
@@ -153,6 +167,11 @@ class PrimaryWorker(Worker):
         """
         ray.get([worker.update_parameters.remote(learning_rate) for worker in workers])
         return True
+
+    def synchronize_parameters_serially(self, workers) -> bool:
+        gradient_ref = ray.put(self.get_weights_biases())
+        ray.get([worker.synchronize_parameters.remote(gradient_ref) for worker in workers])
+        del gradient_ref
 
     def get_weights_biases(self):
         """

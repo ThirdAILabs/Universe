@@ -7,10 +7,10 @@ format = "svm"
 
 [params]
 loss_fn = "CategoricalCrossEntropyLoss"
-train_metrics = []
+train_metrics = ["mean_squared_error"]
 test_metrics = ["categorical_accuracy"]
 learning_rate = 0.0001
-epochs = 1
+epochs = 100
 batch_size = 250
 rehash = 6400
 rebuild = 128000

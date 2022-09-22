@@ -18,12 +18,10 @@ class Tree:
         return True
     
 
-    def receive_gradients(self):
-        if self.id is 0:
-            self.w_gradients, self.b_gradients = self.primary_worker.get_calculated_gradients()
-        else:
+    def receive_parent_gradients(self, worker):
+        if self.id != 0:
             self.w_gradients, self.b_gradients = ray.get(
-                self.primary_worker.get_calculated_gradients.remote()
+                worker.get_calculated_gradients.remote()
             )
         self.model.set_gradients(self.w_gradients, self.b_gradients)
         return True

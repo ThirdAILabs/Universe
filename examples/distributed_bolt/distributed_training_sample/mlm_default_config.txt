@@ -1,0 +1,37 @@
+job = "MLM Fully Connected"
+[[nodes]]
+type = "Input"
+name = "first"
+dim = 100000
+
+[[nodes]]
+type = "FullyConnected"
+name = "second"
+pred = "first"
+dim = 2
+activation = "ReLU"
+sparsity = 1
+
+[[nodes]]
+type = "FullyConnected"
+name = "third"
+pred = "second"
+dim = 30224
+activation = "Softmax"
+sparsity = 0.005
+
+[dataset]
+train_data = [ "/share/data/BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt", "/share/data/BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"]
+test_data = "/share/data/BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
+pairgram_range = 100000
+format = "mlm"
+
+[params]
+loss_fn = "CategoricalCrossEntropyLoss"
+train_metrics = ["mean_squared_error"]
+test_metrics = [ "categorical_accuracy",]
+learning_rate = 0.0001
+epochs = 1
+batch_size = 10000
+rehash = 6400
+rebuild = 128000
