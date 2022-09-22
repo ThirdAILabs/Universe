@@ -66,6 +66,13 @@ class ThreadSafeVocabulary {
 
     _uid_to_string.resize(_string_to_uid.size());
     for (auto& [string, uid] : _string_to_uid) {
+      if (uid >= _vocab_size) {
+        throw std::invalid_argument(
+            "[ThreadSafeVocabulary] The provided string_to_uid_map contains a "
+            "uid out of the valid range. Provided uid: " +
+            std::to_string(uid) + " but expected a uid in the range 0 to " +
+            std::to_string(_vocab_size) + " - 1");
+      }
       _uid_to_string[uid] = string;
     }
   }
@@ -106,7 +113,7 @@ class ThreadSafeVocabulary {
 
   static std::shared_ptr<ThreadSafeVocabulary> make(
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map, bool fixed,
-      uint32_t vocab_size = 0) {
+      std::optional<uint32_t> vocab_size = std::nullopt) {
     return std::make_shared<ThreadSafeVocabulary>(std::move(string_to_uid_map),
                                                   fixed, vocab_size);
   }

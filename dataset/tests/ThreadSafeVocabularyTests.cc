@@ -177,4 +177,14 @@ TEST(ThreadSafeVocabularyTests, SeenAllStringsBehavior) {
       vocab.getUid(unseen_strings.front()), std::invalid_argument);
 }
 
+TEST(ThreadSafeVocabularyTests, CreatedWithInvalidMap) {
+  std::unordered_map<std::string, uint32_t> string_to_uid_map = {
+      {"string", 175}};
+
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      ThreadSafeVocabulary::make(std::move(string_to_uid_map),
+                                 /* fixed = */ true),
+      std::invalid_argument);
+}
+
 }  // namespace thirdai::dataset
