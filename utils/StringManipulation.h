@@ -16,9 +16,9 @@ inline std::string lower(const std::string& str) {
 }
 
 /**
- * Creates a copy of the original string where all characters are lowercase.
+ * Creates a copy of the original stringview where all characters are lowercase.
  */
-inline std::string lower(std::string_view str) {
+inline std::string lower(const std::string_view str) {
   std::string lower_name;
   for (char c : str) {
     lower_name.push_back(std::tolower(c));
