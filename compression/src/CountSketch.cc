@@ -21,8 +21,9 @@ CountSketch<T>::CountSketch(const std::vector<T>& vector_to_compress,
                             std::vector<uint32_t> seed_for_sign)
     : CountSketch(vector_to_compress.data(),
                   static_cast<uint32_t>(vector_to_compress.size()),
-                  compression_density, num_sketches, seed_for_hashing_indices,
-                  seed_for_sign) {}
+                  compression_density, num_sketches,
+                  std::move(seed_for_hashing_indices),
+                  std::move(seed_for_sign)) {}
 
 template <class T>
 CountSketch<T>::CountSketch(const T* values_to_compress, uint32_t size,

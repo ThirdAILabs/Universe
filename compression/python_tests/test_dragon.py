@@ -6,11 +6,8 @@ import numpy as np
 from thirdai import bolt, dataset
 
 from utils import (
-    gen_numpy_training_data,
-    build_single_node_bolt_dag_model,
     build_simple_hidden_layer_model,
-    get_compressed_weight_gradients,
-    set_compressed_weight_gradients,
+    compressed_training,
 )
 
 INPUT_DIM = 10
@@ -96,50 +93,11 @@ def test_concat_values_dragon_vector():
 # Compress the weight gradients of the model, and then train the
 # model using the compressed gradients
 def test_compressed_dragon_vector_training():
-
-    train_data, train_labels = gen_numpy_training_data(
-        n_classes=OUTPUT_DIM, n_samples=1000, convert_to_bolt_dataset=False
-    )
-    test_data, test_labels = gen_numpy_training_data(
-        n_classes=OUTPUT_DIM, n_samples=100, convert_to_bolt_dataset=False
-    )
-
-    model = build_single_node_bolt_dag_model(
-        train_data=train_data,
-        train_labels=train_labels,
-        sparsity=0.2,
-        num_classes=OUTPUT_DIM,
-        learning_rate=LEARNING_RATE,
-        hidden_layer_dim=30,
-    )
-
-    total_batches = model.numTrainingBatch()
-
-    predict_config = (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
-    )
-
-    for epochs in range(25):
-        for batch_num in range(total_batches):
-            model.calculateGradientSingleNode(batch_num)
-            compressed_weight_grads = get_compressed_weight_gradients(
-                model,
-                compression_scheme="dragon",
-                compression_density=0.25,
-                seed_for_hashing=np.random.randint(100),
-                sample_population_size=100,
-            )
-            model = set_compressed_weight_gradients(
-                model,
-                compressed_weight_grads=compressed_weight_grads,
-                compression_scheme="dragon",
-            )
-            model.updateParametersSingleNode()
-
-    model.finishTraining()
-    acc = model.predict(
-        test_data=dataset.from_numpy(test_data, batch_size=64),
-        test_labels=dataset.from_numpy(test_labels, batch_size=64),
-        predict_config=predict_config,
+    acc = compressed_training(
+        compression_scheme="dragon",
+        compression_density=0.2,
+        sample_population_size=100,
+        hidden_dim=30,
+        epochs=25,
     )
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
