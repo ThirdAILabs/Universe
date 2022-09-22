@@ -49,7 +49,7 @@ class PrimaryWorker(Worker):
 
         :param gradients_list_ref: _description_
         :type gradients_list_ref: _type_
-        """        
+        """
         gradients_list = ray.get(gradients_list_ref)
 
         # Here we are initializing the w_average_gradients for storing the sum

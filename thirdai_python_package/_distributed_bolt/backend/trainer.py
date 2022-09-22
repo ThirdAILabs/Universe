@@ -39,7 +39,6 @@ class Trainer:
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
-
     def subwork_circular_communication(self):
         """
         This function first call the workers to compute the gradients on their network
@@ -60,7 +59,9 @@ class Trainer:
                     ]
                 )
             else:
-                ray.get([worker.process_ring.remote(update_id) for worker in self.workers])
+                ray.get(
+                    [worker.process_ring.remote(update_id) for worker in self.workers]
+                )
             update_id -= 1
 
         # + 1, because it is the partition for the candidates giving the partitions
@@ -81,9 +82,13 @@ class Trainer:
         send their gradients to the supervisor and the supervisor sums the gradients,
         averages it and and send the gradients back to the workers.
         """
-        gradients_list_ref = [worker.get_calculated_gradients.remote() for worker in self.workers]
+        gradients_list_ref = [
+            worker.get_calculated_gradients.remote() for worker in self.workers
+        ]
 
-        ray.get(self.primary_worker.average_aggregated_gradients.remote(gradients_list_ref))
+        ray.get(
+            self.primary_worker.average_aggregated_gradients.remote(gradients_list_ref)
+        )
 
         del gradients_list_ref
 
@@ -95,7 +100,9 @@ class Trainer:
         :param learning_rate: learning_rate for the training
         :type learning_rate: float
         """
-        ray.get([worker.update_parameters.remote(learning_rate) for worker in self.workers])
+        ray.get(
+            [worker.update_parameters.remote(learning_rate) for worker in self.workers]
+        )
 
     def train(self, epoch_id, batch_id, learning_rate):
         """
@@ -126,9 +133,6 @@ class Trainer:
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
 
-
-    
-
     def _communicate(self):
         """
         Calls primary worker to complete the communication
@@ -153,9 +157,7 @@ class Trainer:
         :type learning_rate: float
         """
         start_update_parameter_time = time.time()
-        self.subwork_update_parameters(
-                learning_rate
-            )
+        self.subwork_update_parameters(learning_rate)
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def _log_training(self, batch_no, epoch):
