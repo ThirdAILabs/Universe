@@ -247,7 +247,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
            py::arg("embedding_layer"));
 
-  py::class_<TrainConfig>(graph_submodule, "TrainConfig")
+  py::class_<TrainConfig, TrainConfigPtr>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
@@ -279,7 +279,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("silence", &PredictConfig::silence)
       .def("return_activations", &PredictConfig::returnActivations);
 
-  py::class_<BoltGraph>(graph_submodule, "Model")
+  py::class_<BoltGraph, BoltGraphPtr>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"

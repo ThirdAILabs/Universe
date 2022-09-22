@@ -6,6 +6,7 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Datasets.h>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 
@@ -88,6 +89,9 @@ class ValidationContext {
   dataset::BoltDatasetPtr _labels;
   PredictConfig _config;
 };
+
+class TrainConfig;
+using TrainConfigPtr = std::shared_ptr<TrainConfig>;
 
 class TrainConfig {
  public:
@@ -202,15 +206,15 @@ class TrainConfig {
     oarchive(*this);
   }
 
-  static std::unique_ptr<TrainConfig> load(const std::string& filename) {
+  static TrainConfigPtr load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     return load_stream(filestream);
   }
 
-  static std::unique_ptr<TrainConfig> load_stream(std::istream& input_stream) {
+  static TrainConfigPtr load_stream(std::istream& input_stream) {
     cereal::BinaryInputArchive iarchive(input_stream);
-    std::unique_ptr<TrainConfig> deserialize_into(new TrainConfig());
+    std::shared_ptr<TrainConfig> deserialize_into(new TrainConfig());
     iarchive(*deserialize_into);
     return deserialize_into;
   }

@@ -112,4 +112,5 @@ def test_early_stop_checkpoint_with_loss():
         early_stop_score, last_model_score, rel_tol=0.0001
     )
 
+
 test_early_stop_checkpoint_with_accuracy()

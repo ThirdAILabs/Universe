@@ -6,6 +6,7 @@
 #include "nodes/FullyConnected.h"
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
@@ -765,15 +766,15 @@ void BoltGraph::save_stream(std::ostream& output_stream) const {
   oarchive(*this);
 }
 
-std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {
+BoltGraphPtr BoltGraph::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-std::unique_ptr<BoltGraph> BoltGraph::load_stream(std::istream& input_stream) {
+BoltGraphPtr BoltGraph::load_stream(std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
-  std::unique_ptr<BoltGraph> deserialize_into(new BoltGraph());
+  std::shared_ptr<BoltGraph> deserialize_into(new BoltGraph());
   iarchive(*deserialize_into);
   return deserialize_into;
 }

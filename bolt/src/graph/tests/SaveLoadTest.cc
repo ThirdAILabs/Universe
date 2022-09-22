@@ -1,5 +1,6 @@
 #include "TestDatasetGenerators.h"
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -68,7 +69,7 @@ class ModelWithLayers {
   std::shared_ptr<ConcatenateNode> concat;
   std::shared_ptr<FullyConnectedNode> output;
 
-  std::unique_ptr<BoltGraph> model;
+  BoltGraphPtr model;
 };
 
 TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
