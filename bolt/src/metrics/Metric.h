@@ -26,20 +26,24 @@ class Metric {
  public:
   // Computes and updates the value of the metric given the sample.
   // For instance this may update the accuracy.
-  virtual void computeMetric(const BoltVector& output,
-                             const BoltVector& labels) = 0;
+  virtual void record(const BoltVector& output, const BoltVector& labels) = 0;
 
-  // Returns the value of the metric and resets it. For instance this would be
-  // called at the end of each epoch.
-  virtual double getMetricAndReset(bool verbose) = 0;
+  // Gets the value of the scalar tracked by this metric.
+  virtual double value() = 0;
+
+  // Resets the metric.
+  virtual void reset() = 0;
+
+  // Summarizes the metric as a string
+  virtual std::string summary() = 0;
+
+  // Returns the name of the metric
+  virtual std::string name() = 0;
 
   // returns whether its better if the metric is smaller. for example, with a
   // an accuracy related metric this would return false since larger is better
   // (larger means more accurate)
   virtual bool smallerIsBetter() const = 0;
-
-  // Returns the name of the metric.
-  virtual std::string getName() = 0;
 
   virtual ~Metric() = default;
 };
@@ -52,7 +56,7 @@ class CategoricalAccuracy final : public Metric {
  public:
   CategoricalAccuracy() : _correct(0), _num_samples(0) {}
 
-  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+  void record(const BoltVector& output, const BoltVector& labels) final {
     float max_act = -std::numeric_limits<float>::max();
     std::optional<uint32_t> max_act_index = std::nullopt;
     for (uint32_t i = 0; i < output.len; i++) {
@@ -90,20 +94,25 @@ class CategoricalAccuracy final : public Metric {
     _num_samples++;
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double value() final {
     double acc = static_cast<double>(_correct) / _num_samples;
-    if (verbose) {
-      std::cout << "Accuracy: " << acc << " (" << _correct << "/"
-                << _num_samples << ")" << std::endl;
-    }
-    _correct = 0;
-    _num_samples = 0;
     return acc;
   }
 
-  static constexpr const char* name = "categorical_accuracy";
+  void reset() final {
+    _correct = 0;
+    _num_samples = 0;
+  }
 
-  std::string getName() final { return name; }
+  static constexpr const char* NAME = "categorical_accuracy";
+
+  std::string name() final { return NAME; }
+
+  std::string summary() final {
+    std::stringstream stream;
+    stream << NAME << ": " << value();
+    return stream.str();
+  }
 
   bool smallerIsBetter() const final { return false; }
 
@@ -116,7 +125,7 @@ class MeanSquaredErrorMetric final : public Metric {
  public:
   MeanSquaredErrorMetric() : _mse(0), _num_samples(0) {}
 
-  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+  void record(const BoltVector& output, const BoltVector& labels) final {
     float error;
     if (output.isDense()) {
       if (labels.isDense()) {
@@ -137,19 +146,25 @@ class MeanSquaredErrorMetric final : public Metric {
     _num_samples++;
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double value() final {
     double error = _mse / _num_samples;
-    if (verbose) {
-      std::cout << "MSE: " << error << std::endl;
-    }
-    _mse = 0;
-    _num_samples = 0;
     return error;
   }
 
-  static constexpr const char* name = "mean_squared_error";
+  void reset() final {
+    _mse = 0;
+    _num_samples = 0;
+  }
 
-  std::string getName() final { return name; }
+  static constexpr const char* NAME = "mean_squared_error";
+
+  std::string name() final { return NAME; }
+
+  std::string summary() final {
+    std::stringstream stream;
+    stream << NAME << ": " << value();
+    return stream.str();
+  }
 
   bool smallerIsBetter() const final { return true; }
 
@@ -215,7 +230,7 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   WeightedMeanAbsolutePercentageError()
       : _sum_of_deviations(0.0), _sum_of_truths(0.0) {}
 
-  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+  void record(const BoltVector& output, const BoltVector& labels) final {
     // Calculate |actual - predicted| and |actual|.
     float sum_of_squared_differences = 0.0;
     float sum_of_squared_label_elems = 0.0;
@@ -233,23 +248,27 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
         _sum_of_truths, std::sqrt(sum_of_squared_label_elems));
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double value() final {
     double wmape = _sum_of_deviations /
                    std::max(_sum_of_truths.load(std::memory_order_relaxed),
                             std::numeric_limits<float>::epsilon());
-    if (verbose) {
-      std::cout << "Weighted Mean Absolute Percentage Error: "
-                << std::setprecision(3) << wmape << " (" << wmape * 100 << "%)"
-                << std::endl;
-    }
-    _sum_of_deviations = 0.0;
-    _sum_of_truths = 0.0;
     return wmape;
   }
 
-  static constexpr const char* name = "weighted_mean_absolute_percentage_error";
+  void reset() final {
+    _sum_of_deviations = 0.0;
+    _sum_of_truths = 0.0;
+  }
 
-  std::string getName() final { return name; }
+  static constexpr const char* NAME = "weighted_mean_absolute_percentage_error";
+
+  std::string name() final { return NAME; }
+
+  std::string summary() final {
+    std::stringstream stream;
+    stream << NAME << ": " << value();
+    return stream.str();
+  }
 
   bool smallerIsBetter() const final { return true; }
 
@@ -262,7 +281,7 @@ class RecallAtK : public Metric {
  public:
   explicit RecallAtK(uint32_t k) : _k(k), _matches(0), _label_count(0) {}
 
-  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+  void record(const BoltVector& output, const BoltVector& labels) final {
     auto top_k = output.findKLargestActivations(_k);
 
     uint32_t matches = 0;
@@ -280,18 +299,23 @@ class RecallAtK : public Metric {
     _label_count.fetch_add(countLabels(labels));
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double value() final {
     double metric = static_cast<double>(_matches) / _label_count;
-    if (verbose) {
-      std::cout << "Recall@" << _k << ": " << std::setprecision(3) << metric
-                << std::endl;
-    }
-    _matches = 0;
-    _label_count = 0;
     return metric;
   }
 
-  std::string getName() final { return "recall@" + std::to_string(_k); }
+  void reset() final {
+    _matches = 0;
+    _label_count = 0;
+  }
+
+  std::string name() final { return "recall@" + std::to_string(_k); }
+
+  std::string summary() final {
+    std::stringstream stream;
+    stream << "Recall@" << _k << ": " << std::setprecision(3) << value();
+    return stream.str();
+  }
 
   bool smallerIsBetter() const final { return false; }
 
@@ -349,7 +373,7 @@ class FMeasure final : public Metric {
         _false_positive(0),
         _false_negative(0) {}
 
-  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+  void record(const BoltVector& output, const BoltVector& labels) final {
     auto predictions = output.getThresholdedNeurons(
         /* activation_threshold = */ _threshold,
         /* return_at_least_one = */ true,
@@ -376,7 +400,12 @@ class FMeasure final : public Metric {
     }
   }
 
-  double getMetricAndReset(bool verbose) final {
+  double value() final {
+    auto [precision, recall, f_measure] = metrics();
+    return f_measure;
+  }
+
+  std::tuple<double, double, double> metrics() {
     double prec = static_cast<double>(_true_positive) /
                   (_true_positive + _false_positive);
     double recall = static_cast<double>(_true_positive) /
@@ -389,24 +418,32 @@ class FMeasure final : public Metric {
       f_measure = (2 * prec * recall) / (prec + recall);
     }
 
-    if (verbose) {
-      std::cout << "Precision (t=" << _threshold << "): " << prec << std::endl;
-      std::cout << "Recall (t=" << _threshold << "): " << recall << std::endl;
-      std::cout << "F-Measure (t=" << _threshold << "): " << f_measure
-                << std::endl;
-    }
+    return {prec, recall, f_measure};
+  }
+
+  void reset() final {
     _true_positive = 0;
     _false_positive = 0;
     _false_negative = 0;
-    return f_measure;
   }
 
-  static constexpr const char* name = "f_measure";
+  static constexpr const char* NAME = "f_measure";
 
-  std::string getName() final {
+  std::string name() final {
     std::stringstream name_ss;
-    name_ss << name << '(' << _threshold << ')';
+    name_ss << NAME << '(' << _threshold << ')';
     return name_ss.str();
+  }
+
+  std::string summary() final {
+    auto [precision, recall, f_measure] = metrics();
+    std::stringstream stream;
+    stream << "precision(t=" << _threshold << "):" << precision;
+    stream << ", "
+           << "recall(t=" << _threshold << "):" << recall;
+    stream << ", "
+           << "f-measure(t=" << _threshold << "):" << f_measure;
+    return stream.str();
   }
 
   bool smallerIsBetter() const final { return false; }
@@ -447,13 +484,13 @@ class FMeasure final : public Metric {
 };
 
 static std::shared_ptr<Metric> makeMetric(const std::string& name) {
-  if (name == CategoricalAccuracy::name) {
+  if (name == CategoricalAccuracy::NAME) {
     return std::make_shared<CategoricalAccuracy>();
   }
-  if (name == WeightedMeanAbsolutePercentageError::name) {
+  if (name == WeightedMeanAbsolutePercentageError::NAME) {
     return std::make_shared<WeightedMeanAbsolutePercentageError>();
   }
-  if (name == MeanSquaredErrorMetric::name) {
+  if (name == MeanSquaredErrorMetric::NAME) {
     return std::make_shared<MeanSquaredErrorMetric>();
   }
   if (FMeasure::isFMeasure(name)) {

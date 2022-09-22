@@ -17,7 +17,7 @@ def train_model_with_callback(callback):
     data, labels = gen_numpy_training_data(
         n_classes=N_CLASSES,
         n_samples=N_SAMPLES,
-        noise_std=0.1,
+        noise_std=0.3,
         convert_to_bolt_dataset=True,
         batch_size_for_conversion=BATCH_SIZE,
     )
@@ -35,7 +35,7 @@ def train_model_with_callback(callback):
         .with_callbacks([callback])
     )
 
-    model.train(data, labels, train_config)
+    return model.train(data, labels, train_config)
 
 
 class CountCallback(bolt.graph.callbacks.Callback):
@@ -48,22 +48,22 @@ class CountCallback(bolt.graph.callbacks.Callback):
         self.batch_begin_count = 0
         self.batch_end_count = 0
 
-    def on_train_begin(self, model):
+    def on_train_begin(self, model, train_state):
         self.train_begin_count += 1
 
-    def on_train_end(self, model):
+    def on_train_end(self, model, train_state):
         self.train_end_count += 1
 
-    def on_epoch_begin(self, model):
+    def on_epoch_begin(self, model, train_state):
         self.epoch_begin_count += 1
 
-    def on_epoch_end(self, model):
+    def on_epoch_end(self, model, train_state):
         self.epoch_end_count += 1
 
-    def on_batch_begin(self, model):
+    def on_batch_begin(self, model, train_state):
         self.batch_begin_count += 1
 
-    def on_batch_end(self, model):
+    def on_batch_end(self, model, train_state):
         self.batch_end_count += 1
 
 
@@ -85,7 +85,7 @@ class SaveOnFifthEpoch(bolt.graph.callbacks.Callback):
         super().__init__()
         self.epoch_count = 0
 
-    def on_epoch_end(self, model):
+    def on_epoch_end(self, model, train_state):
         self.epoch_count += 1
         if self.epoch_count == 5:
             model.save(SAVE_FILENAME)
@@ -106,13 +106,10 @@ class StopOnFifthEpoch(bolt.graph.callbacks.Callback):
         super().__init__()
         self.epoch_count = 0
 
-    def on_epoch_end(self, model):
+    def on_epoch_end(self, model, train_state):
         self.epoch_count += 1
-
-    def should_stop_training(self):
         if self.epoch_count == 5:
-            return True
-        return False
+            train_state.stop_training = True
 
 
 def test_callbacks_stop_correctly():
@@ -121,3 +118,26 @@ def test_callbacks_stop_correctly():
     train_model_with_callback(stop_on_fifth_callback)
 
     assert stop_on_fifth_callback.epoch_count == 5
+
+
+class CollectTrainAccuracy(bolt.graph.callbacks.Callback):
+    def __init__(self):
+        super().__init__()
+        self.accuracies = []
+
+    def on_train_end(self, model, train_state):
+        self.accuracies = train_state.get_train_metrics("categorical_accuracy")
+
+
+def test_train_state_correctly_updates_metrics():
+    collect_accuracy_callback = CollectTrainAccuracy()
+
+    train_result = train_model_with_callback(collect_accuracy_callback)
+    actual_accuracies = train_result["categorical_accuracy"]
+
+    collected_accuracies = collect_accuracy_callback.accuracies
+
+    assert len(actual_accuracies) == len(collected_accuracies)
+
+    for collected_acc, actual_acc in zip(actual_accuracies, collected_accuracies):
+        assert collected_acc == actual_acc
