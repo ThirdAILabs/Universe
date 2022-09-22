@@ -23,7 +23,7 @@ class ModelConfig {
   bolt::BoltGraphPtr createModel(
       std::vector<bolt::InputPtr> inputs, const std::string& option,
       const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) {
+          user_specified_parameters) const {
     if (_input_names.size() != inputs.size()) {
       throw std::invalid_argument(
           "Expected number of inputs does not match number of inputs returned "

@@ -79,4 +79,6 @@ class DatasetConfig {
   virtual ~DatasetConfig() = default;
 };
 
+using DatasetConfigPtr = std::unique_ptr<DatasetConfig>;
+
 }  // namespace thirdai::automl::deployment_config
