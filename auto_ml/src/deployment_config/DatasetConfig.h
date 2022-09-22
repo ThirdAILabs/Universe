@@ -21,6 +21,8 @@ class DatasetLoader {
   virtual std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
       uint32_t max_in_memory_batches) = 0;
 
+  virtual void restart() = 0;
+
   virtual ~DatasetLoader() = default;
 };
 
@@ -42,6 +44,8 @@ class GenericDatasetLoader final : public DatasetLoader {
         InputDatasets{data}, labels);
   }
 
+  void restart() final { _dataset.restart(); }
+
  private:
   dataset::StreamingGenericDatasetLoader _dataset;
 };
@@ -60,7 +64,7 @@ class DatasetState {
   virtual DatasetLoaderPtr getDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader) = 0;
 
-  virtual BoltVector featurizeInput(const std::string& input) = 0;
+  virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
 
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 

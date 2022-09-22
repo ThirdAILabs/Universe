@@ -33,7 +33,7 @@ class BasicClassificationDatasetState final : public DatasetState {
         data_loader, _labeled_batch_processor, _shuffle);
   }
 
-  BoltVector featurizeInput(const std::string& input) final {
+  std::vector<BoltVector> featurizeInput(const std::string& input) final {
     BoltVector output;
 
     std::vector<std::string_view> input_vector = {
@@ -42,7 +42,7 @@ class BasicClassificationDatasetState final : public DatasetState {
             _unlabeled_batch_processor->makeInputVector(input_vector, output)) {
       std::rethrow_exception(exception);
     }
-    return output;
+    return {std::move(output)};
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {
