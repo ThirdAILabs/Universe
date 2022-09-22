@@ -33,7 +33,8 @@ class TimeObject {
     throw std::invalid_argument(error_ss.str());
   }
 
-  explicit TimeObject(const long seconds_since_epoch) : _time_object(*std::gmtime(&seconds_since_epoch)) {}
+  explicit TimeObject(const long seconds_since_epoch)
+      : _time_object(*std::gmtime(&seconds_since_epoch)) {}
 
   /**
    * Theres an STL function that does this (std::mktime)
@@ -83,7 +84,6 @@ class TimeObject {
   }
 
  private:
-
   int daysFrom1970ToYear() const {
     int years_since_1970 = yearsSince1900() - 70;
     return years_since_1970 * 365 +

@@ -59,7 +59,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> batch_inputs(rows.size());
     std::vector<BoltVector> batch_labels(rows.size());
-    
+
     auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
     for (auto& block : _input_blocks) {
       block->prepareForBatch(first_row);

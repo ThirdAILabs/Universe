@@ -31,7 +31,9 @@ using CategoricalPair = std::pair<std::string, uint32_t>;
 // A tuple of (column name, num unique classes, track last N)
 using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
 // A tuple of (column name, num unique classes, track last N)
-using DenseSequentialQuadruplet = std::tuple<std::string, /* lookahead= */ uint32_t, /* lookback= */ uint32_t, /* period= */ uint32_t>;
+using DenseSequentialQuadruplet =
+    std::tuple<std::string, /* lookahead= */ uint32_t, /* lookback= */ uint32_t,
+               /* period= */ uint32_t>;
 
 /**
  * Stores the dataset configuration.
@@ -94,7 +96,8 @@ struct DataState {
   std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
       history_collections_by_id;
 
-  std::unordered_map<uint32_t, dataset::CountHistoryIndexPtr> count_histories_by_id;
+  std::unordered_map<uint32_t, dataset::CountHistoryIndexPtr>
+      count_histories_by_id;
 
   DataState() {}
 
@@ -222,10 +225,12 @@ class Pipeline {
                               schema.timestamp_col_name, state, col_nums,
                               for_training, schema.multi_class_delim));
     }
-    
-    for (uint32_t dense_seq_idx = 0; dense_seq_idx < schema.dense_sequential.size(); dense_seq_idx++) {
-      input_blocks.push_back(
-          makeDenseSequentialBlock(dense_seq_idx, schema.user, schema.dense_sequential[dense_seq_idx], schema.timestamp_col_name, state, col_nums, for_training));
+
+    for (uint32_t dense_seq_idx = 0;
+         dense_seq_idx < schema.dense_sequential.size(); dense_seq_idx++) {
+      input_blocks.push_back(makeDenseSequentialBlock(
+          dense_seq_idx, schema.user, schema.dense_sequential[dense_seq_idx],
+          schema.timestamp_col_name, state, col_nums, for_training));
     }
 
     return input_blocks;
@@ -244,27 +249,25 @@ class Pipeline {
   }
 
   static dataset::TrendBlockPtr makeDenseSequentialBlock(
-    uint32_t dense_sequential_block_id, const CategoricalPair& user,
-    const DenseSequentialQuadruplet& dense_sequential,
-    const std::string& timestamp_col_name, DataState& state,
-    const ColumnNumberMap& col_nums, bool for_training
-  ) {
+      uint32_t dense_sequential_block_id, const CategoricalPair& user,
+      const DenseSequentialQuadruplet& dense_sequential,
+      const std::string& timestamp_col_name, DataState& state,
+      const ColumnNumberMap& col_nums, bool for_training) {
     const auto& [user_col_name, _] = user;
     const auto& [qty_col_name, lookahead, lookback, period] = dense_sequential;
-    
+
     auto& user_qty_history =
         state.count_histories_by_id[dense_sequential_block_id];
     // Reset history if for training to prevent test data from leaking in.
     if (!user_qty_history || for_training) {
-      user_qty_history =
-          dataset::CountHistoryIndex::makeDefault();
+      user_qty_history = dataset::CountHistoryIndex::makeDefault();
     }
 
     return dataset::TrendBlock::make(
-        /* has_count_col= */ true, /* id_col= */ col_nums.at(user_col_name), 
-        /* timestamp_col= */ col_nums.at(timestamp_col_name), 
-        /* count_col= */ col_nums.at(qty_col_name),
-        lookahead, lookback, period, user_qty_history);
+        /* has_count_col= */ true, /* id_col= */ col_nums.at(user_col_name),
+        /* timestamp_col= */ col_nums.at(timestamp_col_name),
+        /* count_col= */ col_nums.at(qty_col_name), lookahead, lookback, period,
+        user_qty_history);
   }
 
   // We pass in an ID because sequential blocks can corrupt each other's states.

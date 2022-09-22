@@ -215,7 +215,8 @@ void createBoltSubmodule(py::module_& module) {
                const std::vector<std::string>&,
                const std::vector<std::pair<std::string, uint32_t>>&,
                const std::vector<std::tuple<std::string, uint32_t, uint32_t>>&,
-               const std::vector<std::tuple<std::string, uint32_t, uint32_t, uint32_t>>&,
+               const std::vector<
+                   std::tuple<std::string, uint32_t, uint32_t, uint32_t>>&,
                std::optional<char>>(),
            py::arg("user"), py::arg("target"), py::arg("timestamp"),
            py::arg("static_text") = std::vector<std::string>(),
@@ -223,8 +224,8 @@ void createBoltSubmodule(py::module_& module) {
                std::vector<std::pair<std::string, uint32_t>>(),
            py::arg("sequential") =
                std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
-           py::arg("dense_sequential") =
-               std::vector<std::tuple<std::string, uint32_t, uint32_t, uint32_t>>(),
+           py::arg("dense_sequential") = std::vector<
+               std::tuple<std::string, uint32_t, uint32_t, uint32_t>>(),
            py::arg("multi_class_delim") = std::nullopt)
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),

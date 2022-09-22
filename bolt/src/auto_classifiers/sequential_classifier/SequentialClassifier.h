@@ -41,13 +41,13 @@ class SequentialClassifier {
    * sequential column name, the number of unique classes, and
    * the number of previous values to track.
    */
-  SequentialClassifier(CategoricalPair user, CategoricalPair target,
-                       std::string timestamp,
-                       std::vector<std::string> static_text = {},
-                       std::vector<CategoricalPair> static_categorical = {},
-                       std::vector<SequentialTriplet> sequential = {},
-                       std::vector<DenseSequentialQuadruplet> dense_sequential = {},
-                       std::optional<char> multi_class_delim = std::nullopt) {
+  SequentialClassifier(
+      CategoricalPair user, CategoricalPair target, std::string timestamp,
+      std::vector<std::string> static_text = {},
+      std::vector<CategoricalPair> static_categorical = {},
+      std::vector<SequentialTriplet> sequential = {},
+      std::vector<DenseSequentialQuadruplet> dense_sequential = {},
+      std::optional<char> multi_class_delim = std::nullopt) {
     _schema.user = std::move(user);
     _schema.target = std::move(target);
     _schema.timestamp_col_name = std::move(timestamp);
