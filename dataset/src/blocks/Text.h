@@ -123,9 +123,6 @@ class UniGramTextBlock final : public TextBlock {
 
     return nullptr;
   }
-
- private:
-  std::unordered_map<uint32_t, std::string> _index_to_word_map;
 };
 
 using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;

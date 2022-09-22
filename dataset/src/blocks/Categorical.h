@@ -36,6 +36,11 @@ class CategoricalBlock : public Block {
     return {_col, getResponsibleCategory(index_within_block, input_row[_col])};
   }
 
+  /*
+  Although as of now we don't need the category_value to get the responsible
+  category, in future it might be helpful, so passing the value as we do in text
+  block.
+  */
   virtual std::string getResponsibleCategory(
       uint32_t index_within_block,
       const std::string_view& category_value) const = 0;

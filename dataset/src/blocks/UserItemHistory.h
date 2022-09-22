@@ -171,7 +171,6 @@ class UserItemHistoryBlock final : public Block {
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
       uint32_t user_id = _user_id_lookup->getUid(user_str);
-
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_ids = getItemIds(item_str);

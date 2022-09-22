@@ -175,12 +175,12 @@ class TextEncodingUtils {
         // of a word.
         uint32_t len = i - start_of_word_offset;
 
-        std::string_view r_word = sentence.substr(start_of_word_offset, len);
+        std::string_view word_view(sentence.data() + start_of_word_offset, len);
 
         // Hash the word using the recorded start offset and the current index.
         uint32_t word_hash =
             computeUnigram(sentence.data() + start_of_word_offset, len);
-        word_processor(word_hash, r_word);
+        word_processor(word_hash, word_view);
         prev_is_space = true;
       }
     }
@@ -189,11 +189,11 @@ class TextEncodingUtils {
       // last word we need to hash.
       uint32_t len = sentence.size() - start_of_word_offset;
 
-      std::string_view r_word = sentence.substr(start_of_word_offset, len);
+      std::string_view word_view(sentence.data() + start_of_word_offset, len);
 
       uint32_t word_hash =
           computeUnigram(sentence.data() + start_of_word_offset, len);
-      word_processor(word_hash, r_word);
+      word_processor(word_hash, word_view);
     }
   }
 
