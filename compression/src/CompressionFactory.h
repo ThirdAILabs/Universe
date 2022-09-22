@@ -118,6 +118,9 @@ inline std::variant<DragonVector<T>, CountSketch<T>> compress(
                             seed_for_hashing_indices, seed_for_sign);
     }
   }
+  throw std::invalid_argument(
+      "Compression Scheme not supported. Only supports dragon and "
+      "count_sketch");
 }
 
 template <class T>

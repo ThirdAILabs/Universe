@@ -9,6 +9,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <cstdint>
+#include <stdexcept>
 #include <variant>
 
 namespace py = pybind11;
@@ -31,6 +32,10 @@ std::variant<DragonVector<T>, CountSketch<T>> convertToCompressedVector(
     case CompressionScheme::CountSketch:
       return CountSketch<T>(serialized_compressed_vector);
   }
+
+  throw std::invalid_argument(
+      "Compression Scheme not supported. Only supports dragon and "
+      "count_sketch");
 }
 
 template <class T>
