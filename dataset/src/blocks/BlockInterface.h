@@ -31,6 +31,12 @@ struct PercentageResponsibleColumnAndInputKey {
   ResponsibleColumnAndInputKey column_name_and_input_key;
 };
 
+struct PercentageResponsibleColumnNameAndInputKey {
+  float percentage_significance;
+  std::string column_name;
+  std::string input_key;
+};
+
 /**
  * Segmented feature vector abstract class.
  * A vector representation that can be extended with

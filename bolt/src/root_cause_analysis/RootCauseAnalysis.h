@@ -45,7 +45,6 @@ inline std::vector<dataset::PercentageResponsibleColumnAndInputKey>
 getPercentExplanationWithColumnNames(
     const BoltGraphPtr& model, const BoltVector& input_vector,
     const std::vector<std::string_view>& columnar_sample,
-    const std::unordered_map<uint32_t, std::string>& col_num_to_name,
     const std::shared_ptr<dataset::GenericBatchProcessor>&
         generic_batch_processor) {
   auto [gradients_indices, gradients_ratio] =
@@ -65,8 +64,7 @@ getPercentExplanationWithColumnNames(
 
   for (const auto& col : gradients_ratio_with_indices) {
     dataset::ResponsibleColumnAndInputKey column_name_and_input_key =
-        generic_batch_processor->getResponsibleColumnAndInputKey(
-            col.second, col_num_to_name, columnar_sample);
+        generic_batch_processor->explainIndex(col.second, columnar_sample);
 
     responsible_column_and_input_keys.push_back(
         {(col.first / ratio_sum) * 100, column_name_and_input_key});

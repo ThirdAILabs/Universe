@@ -364,7 +364,7 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
   std::unordered_map<std::string, std::string> single_inference_input =
       mockSequentialSampleForPredictSingle();
 
-  std::vector<dataset::PercentageResponsibleColumnAndInputKey>
+  std::vector<dataset::PercentageResponsibleColumnNameAndInputKey>
       responsible_column_and_input_keys =
           classifier.explain(single_inference_input);
 
@@ -376,10 +376,8 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
        responsible_column_and_input_keys) {
     percentage_significances.push_back(
         responsible_column_and_input_key.percentage_significance);
-    column_names.push_back(
-        responsible_column_and_input_key.column_name_and_input_key.column_name);
-    words_responsible.push_back(
-        responsible_column_and_input_key.column_name_and_input_key.input_key);
+    column_names.push_back(responsible_column_and_input_key.column_name);
+    words_responsible.push_back(responsible_column_and_input_key.input_key);
   }
 
   // we will check how many times the column names are present in the vector.

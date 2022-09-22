@@ -7,10 +7,10 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/Metric.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <bolt/src/metrics/Metric.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -160,16 +160,30 @@ class SequentialClassifier {
     return _model->summarize(/* print= */ false, /* detailed= */ true);
   }
 
-  std::vector<dataset::PercentageResponsibleColumnAndInputKey> explain(
+  std::vector<dataset::PercentageResponsibleColumnNameAndInputKey> explain(
       const std::unordered_map<std::string, std::string>& sample) {
     auto [input_vector, columnar_sample] = getInputForSingleInference(sample);
 
     auto result = getPercentExplanationWithColumnNames(
         _model, input_vector, columnar_sample,
-        _single_inference_col_nums.getColumnNumToColNameMap(),
         _single_inference_batch_processor);
 
-    return result;
+    std::vector<dataset::PercentageResponsibleColumnNameAndInputKey>
+        explanations;
+
+    auto column_num_to_name =
+        _single_inference_col_nums.getColumnNumToColNameMap();
+
+    explanations.reserve(result.size());
+    for (const auto& response : result) {
+      explanations.push_back(
+          {response.percentage_significance,
+           column_num_to_name.at(
+               response.column_name_and_input_key.column_number),
+           response.column_name_and_input_key.input_key});
+    }
+
+    return explanations;
   }
 
   void save(const std::string& filename) {
