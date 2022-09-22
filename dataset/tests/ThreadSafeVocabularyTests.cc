@@ -177,7 +177,7 @@ TEST(ThreadSafeVocabularyTests, SeenAllStringsBehavior) {
       vocab.getUid(unseen_strings.front()), std::invalid_argument);
 }
 
-TEST(ThreadSafeVocabularyTests, CreatedWithInvalidMap) {
+TEST(ThreadSafeVocabularyTests, UidOutOfRangeThrowsError) {
   std::unordered_map<std::string, uint32_t> string_to_uid_map = {
       {"string", 175}};
 
