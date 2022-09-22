@@ -78,7 +78,7 @@ class SerializeVisitor {
 };
 
 template <class T>
-inline std::variant<DragonVector<T>, CountSketch<T>> compressVariant(
+inline std::variant<DragonVector<T>, CountSketch<T>> compress(
     const T* values, uint32_t size, const std::string& compression_scheme,
     float compression_density, uint32_t seed_for_hashing,
     uint32_t sample_population_size) {
@@ -113,68 +113,7 @@ inline std::variant<DragonVector<T>, CountSketch<T>> compressVariant(
 }
 
 template <class T>
-inline std::unique_ptr<CompressedVector<T>> compress(
-    const T* values, uint32_t size, const std::string& compression_scheme,
-    float compression_density, uint32_t seed_for_hashing,
-    uint32_t sample_population_size) {
-  if (compression_scheme == "dragon") {
-    return std::make_unique<DragonVector<T>>(values, size, compression_density,
-                                             seed_for_hashing,
-                                             sample_population_size);
-  }
-  if (compression_scheme == "count_sketch") {
-    /*
-     * Count sketches is a stack of multiple sketches and requires a seed for
-     * each of the sketches. Rather than asking the caller to give seeds for all
-     * the sketches, we get the seeds for the sketches by incrementing the input
-     * seed.
-     */
-    uint32_t num_sketches = sample_population_size;
-    std::vector<uint32_t> seed_for_hashing_indices;
-    std::vector<uint32_t> seed_for_sign;
-
-    for (uint32_t i = 0; i < num_sketches; i++) {
-      seed_for_hashing_indices.push_back(i + seed_for_hashing);
-      seed_for_sign.push_back(i + seed_for_hashing);
-    }
-
-    return std::make_unique<CountSketch<T>>(
-        values, size, compression_density, num_sketches,
-        seed_for_hashing_indices, seed_for_sign);
-  }
-  throw std::logic_error(
-      "The provided compression scheme is invalid. The compression module "
-      "supports dragon and count_sketch.");
-}
-
-template <class T>
-inline DragonVector<T> concat(
-    const std::vector<DragonVector<T>>& compressed_dragon_vectors) {
-  DragonVector<T> initial_dragon_vector =
-      compressed_dragon_vectors[0];  // a copy being made of 0th vector
-
-  for (size_t i = 1; i < compressed_dragon_vectors.size(); i++) {
-    initial_dragon_vector.extend(compressed_dragon_vectors[i]);
-  }
-
-  return std::move(initial_dragon_vector);
-}
-
-template <class T>
-inline CountSketch<T> concat(
-    const std::vector<CountSketch<T>>& compressed_count_sketches) {
-  CountSketch<T> initial_count_sketch =
-      compressed_count_sketches[0];  // a copy being made of 0th vector
-
-  for (size_t i = 1; i < compressed_count_sketches.size(); i++) {
-    initial_count_sketch.extend(compressed_count_sketches[i]);
-  }
-
-  return std::move(initial_count_sketch);
-}
-
-template <class T>
-inline std::variant<DragonVector<T>, CountSketch<T>> concatVariant(
+inline std::variant<DragonVector<T>, CountSketch<T>> concat(
     std::vector<std::variant<DragonVector<T>, CountSketch<T>>>
         compressed_vectors) {
   std::variant<DragonVector<T>, CountSketch<T>> initial_compressed_vector(

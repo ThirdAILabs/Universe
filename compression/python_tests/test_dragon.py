@@ -9,6 +9,8 @@ from utils import (
     gen_numpy_training_data,
     build_single_node_bolt_dag_model,
     build_simple_hidden_layer_model,
+    get_compressed_weight_gradients,
+    set_compressed_weight_gradients,
 )
 
 HIDDEN_DIM = 10
@@ -18,41 +20,6 @@ ACCURACY_THRESHOLD = 0.8
 
 # A compressed dragon vector is exposed as a char array at this moment
 # hence, it is not interpretable at Python end
-
-
-def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing):
-    compressed_weight_grads = []
-    layer1 = model.get_layer("fc_1")
-    layer2 = model.get_layer("fc_2")
-
-    compressed_weight_grads.append(
-        layer1.weight_gradients.compress(
-            compression_scheme="dragon",
-            compression_density=compression_density,
-            seed_for_hashing=seed_for_hashing,
-            sample_population_size=50,
-        )
-    )
-
-    compressed_weight_grads.append(
-        layer2.weight_gradients.compress(
-            compression_scheme="dragon",
-            compression_density=compression_density,
-            seed_for_hashing=seed_for_hashing,
-            sample_population_size=50,
-        )
-    )
-
-    return compressed_weight_grads
-
-
-def set_compressed_dragon_gradients(model, compressed_weight_grads):
-    layer1 = model.get_layer("fc_1")
-    layer2 = model.get_layer("fc_2")
-    layer1.weight_gradients.set(compressed_weight_grads[0], compression_scheme="dragon")
-    layer2.weight_gradients.set(compressed_weight_grads[1], compression_scheme="dragon")
-    return model
-
 
 # We will get a compressed vector of gradients and then check whether the values are right
 def test_get_set_values_dragon_vector():
@@ -152,13 +119,17 @@ def test_compressed_dragon_vector_training():
     for epochs in range(25):
         for batch_num in range(total_batches):
             model.calculateGradientSingleNode(batch_num)
-            compressed_weight_grads = get_compressed_dragon_gradients(
+            compressed_weight_grads = get_compressed_weight_gradients(
                 model,
+                compression_scheme="dragon",
                 compression_density=0.25,
                 seed_for_hashing=np.random.randint(100),
+                sample_population_size=100,
             )
-            model = set_compressed_dragon_gradients(
-                model, compressed_weight_grads=compressed_weight_grads
+            model = set_compressed_weight_gradients(
+                model,
+                compressed_weight_grads=compressed_weight_grads,
+                compression_scheme="dragon",
             )
             model.updateParametersSingleNode()
 

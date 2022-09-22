@@ -6,6 +6,7 @@
 #include <compression/python_bindings/ConversionUtils.h>
 #include <compression/src/CompressedVector.h>
 #include <compression/src/CompressionFactory.h>
+#include <compression/src/DragonVector.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
@@ -38,11 +39,9 @@ using SerializedCompressedVector =
     py::array_t<char, py::array::c_style | py::array::forcecast>;
 
 class ParameterReference {
-  using FloatCompressedVector = thirdai::compression::CompressedVector<float>;
-  using FloatDragonVector = thirdai::compression::DragonVector<float>;
-  using FloatCountSketch = thirdai::compression::CountSketch<float>;
-
-  using VariantVector = std::variant<FloatDragonVector, FloatCountSketch>;
+  using FloatCompressedVector =
+      std::variant<thirdai::compression::DragonVector<float>,
+                   thirdai::compression::CountSketch<float>>;
 
  public:
   ParameterReference(float* params, std::vector<uint32_t> dimensions)
@@ -73,14 +72,11 @@ class ParameterReference {
 
     const char* serialized_data =
         py::cast<SerializedCompressedVector>(new_params).data();
-
-    VariantVector compressed_vector =
+    FloatCompressedVector compressed_vector =
         thirdai::compression::python::convertToCompressedVector<float>(
             serialized_data, compression_scheme.value());
-
     std::vector<float> full_gradients = std::visit(
         thirdai::compression::DecompressVisitor<float>(), compressed_vector);
-
     std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
               _params);
   }
@@ -89,7 +85,7 @@ class ParameterReference {
                                       float compression_density,
                                       uint32_t seed_for_hashing,
                                       uint32_t sample_population_size) {
-    VariantVector compressed_vector = thirdai::compression::compressVariant(
+    FloatCompressedVector compressed_vector = thirdai::compression::compress(
         _params, static_cast<uint32_t>(_total_dim), compression_scheme,
         compression_density, seed_for_hashing, sample_population_size);
 
@@ -113,11 +109,11 @@ class ParameterReference {
   static SerializedCompressedVector concat(
       const py::object& py_compressed_vectors,
       const std::string& compression_scheme) {
-    std::vector<VariantVector> compressed_vectors =
-        thirdai::compression::python::convertPyListToCompressedVector<float>(
+    std::vector<FloatCompressedVector> compressed_vectors =
+        thirdai::compression::python::convertPyListToCompressedVectors<float>(
             py_compressed_vectors, compression_scheme);
-    VariantVector concatenated_compressed_vector =
-        thirdai::compression::concatVariant(compressed_vectors);
+    FloatCompressedVector concatenated_compressed_vector =
+        thirdai::compression::concat(compressed_vectors);
 
     uint32_t serialized_size =
         std::visit(thirdai::compression::SizeVisitor<float>(),
@@ -135,53 +131,6 @@ class ParameterReference {
 
     return SerializedCompressedVector(
         serialized_size, serialized_compressed_vector, free_when_done);
-
-    // if (compression_scheme == "dragon") {
-    //   std::vector<FloatDragonVector> dragon_vectors =
-    //       thirdai::compression::python::convertPyListToDragonVectors<float>(
-    //           compressed_vectors);
-
-    //   FloatDragonVector concatenated_dragon_vector =
-    //       thirdai::compression::concat(dragon_vectors);
-
-    //   char* serialized_dragon_vector =
-    //       new char[concatenated_dragon_vector.serialized_size()];
-
-    //   concatenated_dragon_vector.serialize(serialized_dragon_vector);
-
-    //   py::capsule free_when_done(serialized_dragon_vector, [](void* ptr) {
-    //     delete static_cast<char*>(ptr);
-    //   });
-
-    //   return SerializedCompressedVector(
-    //       concatenated_dragon_vector.serialized_size(),
-    //       serialized_dragon_vector, free_when_done);
-    // }
-
-    // if (compression_scheme == "count_sketch") {
-    //   std::vector<FloatCountSketch> count_sketchs =
-    //       thirdai::compression::python::convertPyListToCountSketches<float>(
-    //           compressed_vectors);
-
-    //   FloatCountSketch concatenated_count_sketch =
-    //       thirdai::compression::concat(count_sketchs);
-
-    //   char* serialized_count_sketch =
-    //       new char[concatenated_count_sketch.serialized_size()];
-
-    //   concatenated_count_sketch.serialize(serialized_count_sketch);
-
-    //   py::capsule free_when_done(serialized_count_sketch, [](void* ptr) {
-    //     delete static_cast<char*>(ptr);
-    //   });
-
-    //   return SerializedCompressedVector(
-    //       concatenated_count_sketch.serialized_size(),
-    //       serialized_count_sketch, free_when_done);
-    // }
-    throw std::invalid_argument(
-        "Cannot concat compressed vectors from unsupported data type, expects "
-        "list of compressed vectors.");
   }
 
  private:
