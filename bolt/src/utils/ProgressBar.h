@@ -12,7 +12,6 @@ class ProgressBar {
   static constexpr uint32_t BAR_SIZE = 50;
   uint32_t _prev_ticks, _prev_steps, _prev_percent;
   const uint32_t _max_steps;
-  bool _verbose;
 
  public:
   ProgressBar(const ProgressBar&) = delete;
@@ -22,15 +21,12 @@ class ProgressBar {
   ProgressBar& operator=(const ProgressBar&) = delete;
   ProgressBar& operator=(ProgressBar&&) = delete;
 
-  explicit ProgressBar(uint32_t max_steps, bool verbose = true)
+  explicit ProgressBar(const std::string& description, uint32_t max_steps)
       : _prev_ticks(0),
         _prev_steps(0),
         _prev_percent(0),
-        _max_steps(max_steps),
-        _verbose(verbose) {
-    if (!_verbose) {
-      return;
-    }
+        _max_steps(max_steps) {
+    std::cout << description << ":\n" << std::endl;
     std::cout << OPEN;
     for (uint32_t i = 0; i < BAR_SIZE; i++) {
       std::cout << TODO;
@@ -39,9 +35,6 @@ class ProgressBar {
   }
 
   void increment() {
-    if (!_verbose) {
-      return;
-    }
     uint32_t new_percent = (++_prev_steps) * 100.0 / _max_steps;
     if (new_percent == _prev_percent) {
       return;
@@ -67,5 +60,9 @@ class ProgressBar {
 
     _prev_ticks = new_ticks;
     _prev_percent = new_percent;
+  }
+
+  void close(const std::string& comment) {
+    std::cout << "\n\n" << comment << "\n" << std::endl;
   }
 };

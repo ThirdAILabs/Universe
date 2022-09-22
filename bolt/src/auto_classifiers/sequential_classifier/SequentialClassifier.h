@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/variant.hpp>
 #include "SequentialUtils.h"
 #include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
@@ -9,12 +10,15 @@
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <bolt/src/metrics/Metric.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
+#include <variant>
 
 namespace thirdai::bolt::sequential_classifier {
 
@@ -62,9 +66,9 @@ class SequentialClassifier {
             _schema, _state, _single_inference_col_nums);
   }
 
-  void train(const std::string& train_filename, uint32_t epochs,
-             float learning_rate,
-             std::vector<std::string> metrics = {"recall@1"}) {
+  MetricData train(const std::string& train_filename, uint32_t epochs,
+                   float learning_rate,
+                   std::vector<std::string> metrics = {"recall@1"}) {
     auto pipeline = Pipeline::buildForFile(_schema, _state, train_filename,
                                            /* delimiter = */ ',',
                                            /* for_training = */ true);
@@ -93,10 +97,10 @@ class SequentialClassifier {
                                 /* epochs= */ epochs)
             .withMetrics(std::move(metrics));
 
-    _model->train({train_data}, train_labels, train_config);
+    return _model->train({train_data}, train_labels, train_config);
   }
 
-  InferenceResult predict(
+  InferenceMetricData predict(
       const std::string& test_filename,
       std::vector<std::string> metrics = {"recall@1"},
       const std::optional<std::string>& output_filename = std::nullopt,
@@ -145,7 +149,15 @@ class SequentialClassifier {
       output_file->close();
     }
 
-    return results;
+    return results.first;
+  }
+
+  std::string summarizeModel() {
+    if (!_model) {
+      throw std::runtime_error("Called sumarizeModel() before training.");
+    }
+
+    return _model->summarize(/* print= */ false, /* detailed= */ true);
   }
 
   std::vector<dataset::PercentageResponsibleColumnAndInputKey> explain(

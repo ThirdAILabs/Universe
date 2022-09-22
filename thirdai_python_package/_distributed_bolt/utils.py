@@ -8,10 +8,16 @@ def load_train_test_data(
 ):
     """
     Returns datasets as boltdatasets
-    Arguments:
-        config: config dict for training
-        total_nodes: Total number of nodes to train on.
-        id: Id of the node, which want the dataset
+
+    :param config: config dict for training
+    :type config: Dict[str, Any]
+    :param total_nodes: Total number of nodes to train on
+    :type total_nodes: int
+    :param training_partition_data_id: Id of the node, which want the dataset
+    :type training_partition_data_id: int
+    :raises ValueError: Invalied Dataset Format
+    :return: returns training and testing data
+    :rtype: [BoltDataset, BoltDataset, BoltDataset, BoltDataset]
     """
     train_filename = config["dataset"]["train_data"][training_partition_data_id]
     test_filename = config["dataset"]["test_data"]

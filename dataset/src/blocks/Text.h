@@ -20,20 +20,14 @@ class TextBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
-  ResponsibleColumnAndInputKey explainFeature(
+  ResponsibleColumnAndInputKey explainIndex(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
-      std::vector<std::string_view> columnar_sample) const final {
-    if (col_num_to_name == std::nullopt) {
-      throw std::invalid_argument(
-          "map of col num to col name is missing in text block.");
-    }
-    return {col_num_to_name->at(_col),
-            getWordResponsible(index_within_block, columnar_sample.at(_col))};
+      const std::vector<std::string_view>& input_row) const final {
+    return {_col, getResponsibleWord(index_within_block, input_row.at(_col))};
   }
 
-  virtual std::string getWordResponsible(
-      uint32_t index, std::string_view columnar_sample) const = 0;
+  virtual std::string getResponsibleWord(
+      uint32_t index, const std::string_view& text) const = 0;
 
  protected:
   std::exception_ptr buildSegment(
@@ -69,10 +63,12 @@ class PairGramTextBlock final : public TextBlock {
     return std::make_shared<PairGramTextBlock>(col, dim);
   }
 
-  std::string getWordResponsible(
-      uint32_t index, std::string_view /*columnar_sample*/) const final {
+  std::string getResponsibleWord(uint32_t index,
+                                 const std::string_view& text) const final {
     (void)index;
-    throw std::invalid_argument("not yet implemented for pairgram block.");
+    (void)text;
+    throw std::invalid_argument(
+        "Explain Index is not yet implemented for pairgram block.");
   }
 
  protected:
@@ -107,11 +103,10 @@ class UniGramTextBlock final : public TextBlock {
     return std::make_shared<UniGramTextBlock>(col, dim);
   }
 
-  std::string getWordResponsible(uint32_t index,
-                                 std::string_view columnar_sample) const final {
-    auto [_, index_to_word_map] =
-        TextEncodingUtils::computeRawUnigramsWithRangeStoreMap(columnar_sample,
-                                                               _dim);
+  std::string getResponsibleWord(uint32_t index,
+                                 const std::string_view& text) const final {
+    std::unordered_map<uint32_t, std::string> index_to_word_map =
+        TextEncodingUtils::buildUnigramHashToWordMap(text, _dim);
     return index_to_word_map.at(index);
   }
 
@@ -128,9 +123,6 @@ class UniGramTextBlock final : public TextBlock {
 
     return nullptr;
   }
-
- private:
-  std::unordered_map<uint32_t, std::string> _index_to_word_map;
 };
 
 using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;
@@ -151,10 +143,12 @@ class CharKGramTextBlock final : public TextBlock {
     return std::make_shared<CharKGramTextBlock>(col, k, dim);
   }
 
-  std::string getWordResponsible(
-      uint32_t index, std::string_view /*columnar_sample*/) const final {
+  std::string getResponsibleWord(uint32_t index,
+                                 const std::string_view& text) const final {
     (void)index;
-    throw std::invalid_argument("not yet implemented for char-k block.");
+    (void)text;
+    throw std::invalid_argument(
+        "Explain Index is not yet implemented for char-k block.");
   }
 
  protected:

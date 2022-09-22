@@ -25,20 +25,23 @@ class DenseArrayBlock : public Block {
   DenseArrayBlock(uint32_t start_col, uint32_t dim)
       : _start_col(start_col), _dim(dim) {}
 
+  static auto make(uint32_t start_col, uint32_t dim) {
+    return std::make_shared<DenseArrayBlock>(start_col, dim);
+  }
+
   uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return true; };
 
   uint32_t expectedNumColumns() const final { return _start_col + _dim; };
 
-  ResponsibleColumnAndInputKey explainFeature(
+  ResponsibleColumnAndInputKey explainIndex(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
-      std::vector<std::string_view> columnar_sample) const final {
+      const std::vector<std::string_view>& columnar_sample) const final {
     (void)columnar_sample;
     (void)index_within_block;
-    (void)col_num_to_name;
-    throw std::invalid_argument("not yet implemented in dense array block!");
+    throw std::invalid_argument(
+        "Explain feature is not yet implemented in dense array block!");
   }
 
  protected:

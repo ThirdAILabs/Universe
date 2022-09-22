@@ -16,27 +16,47 @@ class MetricAggregator {
   // Loss function metrics are only supported during training. See comments in
   // loss function for why. A nullptr is passed in during testing to indicate
   // that it is not avilable.
-  explicit MetricAggregator(const std::vector<std::string>& metrics,
-                            bool verbose = true)
-      : _verbose(verbose) {
+  explicit MetricAggregator(const std::vector<std::string>& metrics) {
     for (const auto& name : metrics) {
       _metrics.push_back(makeMetric(name));
     }
   }
 
   void processSample(const BoltVector& output, const BoltVector& labels) {
-    for (auto& m : _metrics) {
-      m->computeMetric(output, labels);
+    for (auto& metric : _metrics) {
+      metric->record(output, labels);
     }
   }
 
   void logAndReset() {
-    for (auto& m : _metrics) {
-      _output[m->getName()].push_back(m->getMetricAndReset(_verbose));
+    for (auto& metric : _metrics) {
+      _output[metric->name()].push_back(metric->value());
+      metric->reset();
     }
   }
 
+  std::string summary() {
+    std::stringstream stream;
+    stream << "{";
+    for (size_t i = 0; i < _metrics.size(); i++) {
+      if (i != 0) {
+        stream << ", ";
+      }
+      stream << _metrics[i]->summary();
+    }
+    stream << "}";
+    return stream.str();
+  }
+
   MetricData getOutput() { return _output; }
+
+  std::vector<double>& getSingleOutput(const std::string& metric_name) {
+    if (_output.count(metric_name) != 0) {
+      return _output[metric_name];
+    }
+    throw std::invalid_argument("Could not find metric name '" + metric_name +
+                                "' in list of computed metrics.");
+  }
 
   InferenceMetricData getOutputFromInference() {
     InferenceMetricData data;
@@ -51,7 +71,6 @@ class MetricAggregator {
  private:
   std::vector<std::shared_ptr<Metric>> _metrics;
   MetricData _output;
-  bool _verbose;
 };
 
 }  // namespace thirdai::bolt

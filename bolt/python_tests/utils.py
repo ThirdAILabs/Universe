@@ -163,18 +163,6 @@ def remove_files(files):
         os.remove(file)
 
 
-def compute_accuracy_with_file(test_labels, pred_file):
-    with open(pred_file) as pred:
-        pred_lines = pred.readlines()
-
-    predictions = [x[:-1] for x in pred_lines]
-
-    assert len(predictions) == len(test_labels)
-    return sum(
-        (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
-    ) / len(predictions)
-
-
 def build_simple_hidden_layer_model(
     input_dim=10,
     hidden_dim=10,

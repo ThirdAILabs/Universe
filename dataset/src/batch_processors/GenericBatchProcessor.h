@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
@@ -134,22 +138,18 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
   /*
-  For given index in input fetch the block responsible and get the column name
+  For given index in input fetch the block responsible and get the column number
   and the exact keyword responsible for it.
   */
-  ResponsibleColumnAndInputKey getResponsibleColumnAndInputKey(
-      uint32_t feature_index,
-      const std::unordered_map<uint32_t, std::string>& col_num_to_name,
-      const std::vector<std::string_view>& columnar_sample) {
+  ResponsibleColumnAndInputKey explainIndex(
+      uint32_t feature_index, const std::vector<std::string_view>& input_row) {
     auto iter = std::upper_bound(_block_feature_offsets.begin(),
                                  _block_feature_offsets.end(), feature_index);
-    std::shared_ptr<Block> block =
-        _input_blocks[iter - _block_feature_offsets.begin() - 1];
+    auto block_idx = iter - _block_feature_offsets.begin() - 1;
+    std::shared_ptr<Block> relevant_block = _input_blocks[block_idx];
     uint32_t index_within_block =
-        feature_index -
-        _block_feature_offsets[iter - _block_feature_offsets.begin() - 1];
-    return block->explainFeature(index_within_block, col_num_to_name,
-                                 columnar_sample);
+        feature_index - _block_feature_offsets[block_idx];
+    return relevant_block->explainIndex(index_within_block, input_row);
   }
 
  private:

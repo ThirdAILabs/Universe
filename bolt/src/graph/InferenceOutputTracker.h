@@ -87,6 +87,20 @@ class InferenceOutputTracker {
     return _active_neurons->data();
   }
 
+  uint32_t* activeNeuronsForSample(uint32_t index) {
+    if (!_active_neurons.has_value()) {
+      return nullptr;
+    }
+    return _active_neurons->data() + index * _num_nonzeros_per_sample;
+  }
+
+  float* activationsForSample(uint32_t index) {
+    if (!_activations.has_value()) {
+      return nullptr;
+    }
+    return _activations->data() + index * _num_nonzeros_per_sample;
+  }
+
   uint32_t numNonzerosInOutput() const { return _num_nonzeros_per_sample; }
 
   uint32_t numSamples() const { return _num_samples; }

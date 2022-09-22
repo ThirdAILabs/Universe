@@ -19,6 +19,8 @@ class DataLoader {
 
   virtual std::string resourceName() const = 0;
 
+  virtual void restart() = 0;
+
   uint32_t getMaxBatchSize() const { return _target_batch_size; }
 
   virtual ~DataLoader() = default;
@@ -60,6 +62,11 @@ class SimpleFileDataLoader final : public DataLoader {
       return line;
     }
     return std::nullopt;
+  }
+
+  void restart() final {
+    _file.clear();
+    _file.seekg(0, std::ios::beg);
   }
 
   std::string resourceName() const final { return _filename; }

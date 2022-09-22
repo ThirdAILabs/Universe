@@ -7,6 +7,7 @@ __all__ = [
     "distributed_bolt",
     "set_thirdai_license_path",
     "set_global_num_threads",
+    "setup_logging",
 ]
 
 # Include these so we can use them just by import the top level.
@@ -15,6 +16,7 @@ import thirdai.search
 import thirdai.dataset
 import thirdai.hashing
 
+from thirdai._thirdai import setup_logging
 
 # Relay __version__ from C++
 from thirdai._thirdai import __version__
