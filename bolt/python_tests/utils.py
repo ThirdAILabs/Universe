@@ -191,16 +191,17 @@ def build_simple_hidden_layer_model(
     return model
 
 
-def build_single_node_bolt_dag_model(
+def simple_bolt_model_in_distributed_training_wrapper(
     train_data,
     train_labels,
     sparsity,
     num_classes,
     learning_rate=0.0001,
     hidden_layer_dim=2000,
+    batch_size=64,
 ):
-    data = dataset.from_numpy(train_data, batch_size=64)
-    labels = dataset.from_numpy(train_labels, batch_size=64)
+    data = dataset.from_numpy(train_data, batch_size=batch_size)
+    labels = dataset.from_numpy(train_labels, batch_size=batch_size)
 
     input_layer = bolt.graph.Input(dim=num_classes)
     hidden_layer = bolt.graph.FullyConnected(
@@ -218,15 +219,14 @@ def build_single_node_bolt_dag_model(
         .with_rebuild_hash_tables(3000)
         .with_reconstruct_hash_functions(10000)
     )
-    model = bolt.graph.DistributedModel(
-        inputs=[input_layer],
-        output=output_layer,
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model.compile(bolt.CategoricalCrossEntropyLoss())
+    return bolt.DistributedTrainingWrapper(
+        model=model,
         train_data=[data],
         train_labels=labels,
         train_config=train_config,
-        loss=bolt.CategoricalCrossEntropyLoss(),
     )
-    return model
 
 
 # Builds, trains, and does prediction on a model using numpy data and numpy

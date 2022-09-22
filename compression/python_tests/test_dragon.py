@@ -7,7 +7,7 @@ from thirdai import bolt, dataset
 
 from utils import (
     gen_numpy_training_data,
-    build_single_node_bolt_dag_model,
+    simple_bolt_model_in_distributed_training_wrapper,
     build_simple_hidden_layer_model,
 )
 
@@ -21,10 +21,12 @@ ACCURACY_THRESHOLD = 0.8
 # "seed_for_hashing", "compression_density", "indices", "values"
 
 
-def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing):
+def get_compressed_dragon_gradients(
+    wrapped_model, compression_density, seed_for_hashing
+):
     compressed_weight_grads = []
-    layer1 = model.get_layer("fc_1")
-    layer2 = model.get_layer("fc_2")
+    layer1 = wrapped_model.model.get_layer("fc_1")
+    layer2 = wrapped_model.model.get_layer("fc_2")
 
     compressed_weight_grads.append(
         layer1.weight_gradients.compress(
@@ -47,12 +49,12 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
     return compressed_weight_grads
 
 
-def set_compressed_dragon_gradients(model, compressed_weight_grads):
-    layer1 = model.get_layer("fc_1")
-    layer2 = model.get_layer("fc_2")
+def set_compressed_dragon_gradients(wrapped_model, compressed_weight_grads):
+    layer1 = wrapped_model.model.get_layer("fc_1")
+    layer2 = wrapped_model.model.get_layer("fc_2")
     layer1.weight_gradients.set(compressed_weight_grads[0])
     layer2.weight_gradients.set(compressed_weight_grads[1])
-    return model
+    return wrapped_model
 
 
 # We will get a compressed vector of gradients and then check whether the values are right
@@ -143,36 +145,38 @@ def test_compressed_training():
         n_classes=10, n_samples=100, convert_to_bolt_dataset=False
     )
 
-    model = build_single_node_bolt_dag_model(
+    batch_size = 64
+    total_train_batches = len(train_data) // 64
+
+    wrapped_model = simple_bolt_model_in_distributed_training_wrapper(
         train_data=train_data,
         train_labels=train_labels,
         sparsity=0.2,
         num_classes=10,
         learning_rate=LEARNING_RATE,
         hidden_layer_dim=30,
+        batch_size=batch_size,
     )
-
-    total_batches = model.numTrainingBatch()
 
     predict_config = (
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
 
     for epochs in range(25):
-        for batch_num in range(total_batches):
-            model.calculateGradientSingleNode(batch_num)
+        for batch_num in range(total_train_batches):
+            wrapped_model.accumulate_batch_gradient(batch_num)
             compressed_weight_grads = get_compressed_dragon_gradients(
-                model,
+                wrapped_model,
                 compression_density=0.25,
                 seed_for_hashing=np.random.randint(100),
             )
-            model = set_compressed_dragon_gradients(
-                model, compressed_weight_grads=compressed_weight_grads
+            wrapped_model = set_compressed_dragon_gradients(
+                wrapped_model, compressed_weight_grads=compressed_weight_grads
             )
-            model.updateParametersSingleNode()
+            wrapped_model.update_parameters()
 
-    model.finishTraining()
-    acc = model.predict(
+    wrapped_model.finish_training()
+    acc = wrapped_model.model.predict(
         test_data=dataset.from_numpy(test_data, batch_size=64),
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
         predict_config=predict_config,

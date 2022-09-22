@@ -8,6 +8,7 @@
 import sys
 import pytest
 from thirdai import bolt, dataset
+import numpy as np
 
 pytestmark = [pytest.mark.distributed]
 
@@ -103,26 +104,22 @@ def train_distributed_bolt_check(request):
     test_data, test_labels = dataset.load_bolt_svm_dataset(
         "mnist_data/mnist.t", batch_size=256
     )
-    metrics_node_1 = model_node_1.predict(
-        test_data=test_data, test_labels=test_labels, predict_config=predict_config
-    )
-    metrics_node_2 = model_node_2.predict(
+    metrics = model_node_1.predict(
         test_data=test_data, test_labels=test_labels, predict_config=predict_config
     )
 
-    # This is a weak check that the parameters are the same on the two nodes
-    assert (
-        abs(
-            metrics_node_1[0]["categorical_accuracy"]
-            - metrics_node_2[0]["categorical_accuracy"]
-        )
-        < 0.001
-    )
+    nodes_1 = model_node_1.nodes()
+    nodes_2 = model_node_2.nodes()
+    for layer_1, layer_2 in zip(nodes_1, nodes_2):
+        if hasattr(layer_1, "weights"):
+            assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
+
+    print(metrics)
 
     ray.shutdown()
     mini_cluster.shutdown()
 
-    yield metrics_node_1
+    yield metrics
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
