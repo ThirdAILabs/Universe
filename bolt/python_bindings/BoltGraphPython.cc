@@ -19,6 +19,7 @@
 #include <dataset/src/Datasets.h>
 #include <pybind11/functional.h>
 #include <optional>
+#include <string>
 
 namespace thirdai::bolt::python {
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
@@ -49,6 +50,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "for dragon compression or the number of sketches needed for "
            "count_sketch")
       .def("set", &ParameterReference::set, py::arg("new_params"),
+           py::arg("compression_scheme") = std::optional<std::string>{},
            "Either takes in a numpy array and copies its contents into the "
            "parameters held in the ParameterReference object. Or takes in a "
            "python dictionary which represents a compressed vector object.")
@@ -62,6 +64,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
        */
       .def_static(
           "concat", &ParameterReference::concat, py::arg("compressed_vectors"),
+          py::arg("compression_scheme"),
           "Takes in a list of compressed vector objects and returns a "
           "concatenated compressed vector object. Concatenation is non-lossy "
           "in nature but comes at the cost of a higher memory footprint. "

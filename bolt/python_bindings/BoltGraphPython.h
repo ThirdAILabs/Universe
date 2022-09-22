@@ -13,6 +13,7 @@
 #include <pybind11/pytypes.h>
 #include <memory>
 #include <stdexcept>
+#include <variant>
 
 namespace py = pybind11;
 
@@ -38,6 +39,10 @@ using SerializedCompressedVector =
 
 class ParameterReference {
   using FloatCompressedVector = thirdai::compression::CompressedVector<float>;
+  using FloatDragonVector = thirdai::compression::DragonVector<float>;
+  using FloatCountSketch = thirdai::compression::CountSketch<float>;
+
+  using VariantVector = std::variant<FloatDragonVector, FloatCountSketch>;
 
  public:
   ParameterReference(float* params, std::vector<uint32_t> dimensions)
@@ -57,66 +62,123 @@ class ParameterReference {
 
   ParameterArray get() const { return ParameterArray(_dimensions, _params); }
 
-  void set(const py::object& new_params) {
-    if (py::isinstance<ParameterArray>(new_params)) {
+  void set(const py::object& new_params,
+           const std::optional<std::string>& compression_scheme) {
+    if (!compression_scheme) {
       ParameterArray new_array = py::cast<ParameterArray>(new_params);
       checkNumpyArrayDimensions(_dimensions, new_params);
       std::copy(new_array.data(), new_array.data() + _total_dim, _params);
-    } else if (py::isinstance<SerializedCompressedVector>(new_params)) {
-      std::unique_ptr<FloatCompressedVector> compressed_vector =
-          thirdai::compression::python::deserialize(
-              py::cast<SerializedCompressedVector>(new_params).data());
-
-      std::vector<float> full_gradients = compressed_vector->decompress();
-      std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
-                _params);
-    } else {
-      throw std::invalid_argument(
-          "Cannot set parameters from an unsupported Python datatype");
+      return;
     }
+
+    const char* serialized_data =
+        py::cast<SerializedCompressedVector>(new_params).data();
+
+    VariantVector compressed_vector =
+        thirdai::compression::python::convertToCompressedVector<float>(
+            serialized_data, compression_scheme.value());
+
+    std::vector<float> full_gradients = std::visit(
+        thirdai::compression::DecompressVisitor<float>(), compressed_vector);
+
+    std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
+              _params);
   }
 
   SerializedCompressedVector compress(const std::string& compression_scheme,
                                       float compression_density,
                                       uint32_t seed_for_hashing,
                                       uint32_t sample_population_size) {
-    std::unique_ptr<FloatCompressedVector> compressed_vector =
-        thirdai::compression::compress(
-            _params, static_cast<uint32_t>(_total_dim), compression_scheme,
-            compression_density, seed_for_hashing, sample_population_size);
+    VariantVector compressed_vector = thirdai::compression::compressVariant(
+        _params, static_cast<uint32_t>(_total_dim), compression_scheme,
+        compression_density, seed_for_hashing, sample_population_size);
 
-    char* serialized_compressed_vector =
-        new char[compressed_vector->serialized_size()];
+    uint32_t serialized_size = std::visit(
+        thirdai::compression::SizeVisitor<float>(), compressed_vector);
 
-    thirdai::compression::python::serialize(compressed_vector,
-                                            serialized_compressed_vector);
+    char* serialized_compressed_vector = new char[serialized_size];
+
+    std::visit(thirdai::compression::SerializeVisitor<float>(
+                   serialized_compressed_vector),
+               compressed_vector);
+
     py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
       delete static_cast<char*>(ptr);
     });
-    return SerializedCompressedVector(compressed_vector->serialized_size(),
-                                      serialized_compressed_vector,
-                                      free_when_done);
+
+    return SerializedCompressedVector(
+        serialized_size, serialized_compressed_vector, free_when_done);
   }
 
   static SerializedCompressedVector concat(
-      const py::object& compressed_vectors) {
-    if (py::isinstance<py::list>(compressed_vectors)) {
-      std::unique_ptr<FloatCompressedVector> concatenated_compressed_vector =
-          thirdai::compression::concat(
-              thirdai::compression::python::convertPyListToCompressedVectors(
-                  compressed_vectors));
+      const py::object& py_compressed_vectors,
+      const std::string& compression_scheme) {
+    std::vector<VariantVector> compressed_vectors =
+        thirdai::compression::python::convertPyListToCompressedVector<float>(
+            py_compressed_vectors, compression_scheme);
+    VariantVector concatenated_compressed_vector =
+        thirdai::compression::concatVariant(compressed_vectors);
 
-      char* serialized_compressed_vector =
-          new char[concatenated_compressed_vector->serialized_size()];
-      thirdai::compression::python::serialize(concatenated_compressed_vector,
-                                              serialized_compressed_vector);
-      py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
-        delete static_cast<char*>(ptr);
-      });
-      return SerializedCompressedVector(
-          concatenated_compressed_vector->serialized_size(),
-          serialized_compressed_vector, free_when_done);
-    }
+    uint32_t serialized_size =
+        std::visit(thirdai::compression::SizeVisitor<float>(),
+                   concatenated_compressed_vector);
+
+    char* serialized_compressed_vector = new char[serialized_size];
+
+    std::visit(thirdai::compression::SerializeVisitor<float>(
+                   serialized_compressed_vector),
+               concatenated_compressed_vector);
+
+    py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
+      delete static_cast<char*>(ptr);
+    });
+
+    return SerializedCompressedVector(
+        serialized_size, serialized_compressed_vector, free_when_done);
+
+    // if (compression_scheme == "dragon") {
+    //   std::vector<FloatDragonVector> dragon_vectors =
+    //       thirdai::compression::python::convertPyListToDragonVectors<float>(
+    //           compressed_vectors);
+
+    //   FloatDragonVector concatenated_dragon_vector =
+    //       thirdai::compression::concat(dragon_vectors);
+
+    //   char* serialized_dragon_vector =
+    //       new char[concatenated_dragon_vector.serialized_size()];
+
+    //   concatenated_dragon_vector.serialize(serialized_dragon_vector);
+
+    //   py::capsule free_when_done(serialized_dragon_vector, [](void* ptr) {
+    //     delete static_cast<char*>(ptr);
+    //   });
+
+    //   return SerializedCompressedVector(
+    //       concatenated_dragon_vector.serialized_size(),
+    //       serialized_dragon_vector, free_when_done);
+    // }
+
+    // if (compression_scheme == "count_sketch") {
+    //   std::vector<FloatCountSketch> count_sketchs =
+    //       thirdai::compression::python::convertPyListToCountSketches<float>(
+    //           compressed_vectors);
+
+    //   FloatCountSketch concatenated_count_sketch =
+    //       thirdai::compression::concat(count_sketchs);
+
+    //   char* serialized_count_sketch =
+    //       new char[concatenated_count_sketch.serialized_size()];
+
+    //   concatenated_count_sketch.serialize(serialized_count_sketch);
+
+    //   py::capsule free_when_done(serialized_count_sketch, [](void* ptr) {
+    //     delete static_cast<char*>(ptr);
+    //   });
+
+    //   return SerializedCompressedVector(
+    //       concatenated_count_sketch.serialized_size(),
+    //       serialized_count_sketch, free_when_done);
+    // }
     throw std::invalid_argument(
         "Cannot concat compressed vectors from unsupported data type, expects "
         "list of compressed vectors.");

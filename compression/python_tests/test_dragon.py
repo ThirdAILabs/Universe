@@ -49,8 +49,8 @@ def get_compressed_dragon_gradients(model, compression_density, seed_for_hashing
 def set_compressed_dragon_gradients(model, compressed_weight_grads):
     layer1 = model.get_layer("fc_1")
     layer2 = model.get_layer("fc_2")
-    layer1.weight_gradients.set(compressed_weight_grads[0])
-    layer2.weight_gradients.set(compressed_weight_grads[1])
+    layer1.weight_gradients.set(compressed_weight_grads[0], compression_scheme="dragon")
+    layer2.weight_gradients.set(compressed_weight_grads[1], compression_scheme="dragon")
     return model
 
 
@@ -79,8 +79,8 @@ def test_get_set_values_dragon_vector():
         sample_population_size=10,
     )
 
-    first_layer.weights.set(compressed_weights)
-    first_layer.biases.set(compressed_biases)
+    first_layer.weights.set(compressed_weights, compression_scheme="dragon")
+    first_layer.biases.set(compressed_biases, compression_scheme="dragon")
 
     new_first_layer_biases = np.ravel(first_layer.biases.get())
     new_first_layer_weights = np.ravel(first_layer.weights.get())
@@ -112,9 +112,10 @@ def test_concat_values_dragon_vector():
         sample_population_size=50,
     )
     concatenated_weights = bolt.graph.ParameterReference.concat(
-        [compressed_weights] * 2
+        [compressed_weights] * 2, compression_scheme="dragon"
     )
-    first_layer.weights.set(concatenated_weights)
+    first_layer.weights.set(concatenated_weights, compression_scheme="dragon")
+
     new_first_layer_weights = np.ravel(first_layer.weights.get())
 
     for i, values in enumerate(new_first_layer_weights):

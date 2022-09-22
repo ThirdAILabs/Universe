@@ -6,10 +6,23 @@
 #include <cstdint>
 #include <memory>
 #include <random>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai::compression {
 
 enum class CompressionScheme { Dragon = 0, CountSketch = 1 };
+
+inline CompressionScheme convertStringToEnum(
+    const std::string& compression_scheme) {
+  if (compression_scheme == "dragon") {
+    return CompressionScheme::Dragon;
+  }
+  if (compression_scheme == "count_sketch") {
+    return CompressionScheme::CountSketch;
+  }
+  throw std::invalid_argument("Invalid compression scheme specified.");
+}
 
 template <class T>
 class CompressedVector {
