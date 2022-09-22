@@ -60,9 +60,9 @@ class DenseArrayBlockConfig final : public BlockConfig {
   HyperParameterPtr<uint32_t> _dim;
 };
 
-class TextBlock final : public BlockConfig {
+class TextBlockConfig final : public BlockConfig {
  public:
-  TextBlock(bool use_pairgrams, HyperParameterPtr<uint32_t> range)
+  TextBlockConfig(bool use_pairgrams, HyperParameterPtr<uint32_t> range)
       : _use_pairgrams(use_pairgrams), _range(std::move(range)) {}
 
   dataset::BlockPtr getBlock(
