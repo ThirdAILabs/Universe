@@ -61,8 +61,7 @@ template <class T>
 T CountSketch<T>::get(uint32_t index) const {
   T estimated_value = 0;
   uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
-  for (size_t num_sketch = 0; num_sketch < _count_sketches.size();
-       num_sketch++) {
+  for (uint32_t num_sketch = 0; num_sketch < numSketches(); num_sketch++) {
     uint32_t hashed_index =
         _hasher_index[num_sketch].gethash(index) % sketch_size;
     uint32_t hashed_sign = _hasher_sign[num_sketch].gethash(index) % 2;
@@ -79,8 +78,7 @@ T CountSketch<T>::get(uint32_t index) const {
 template <class T>
 void CountSketch<T>::set(uint32_t index, T value) {
   uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
-  for (size_t num_sketch = 0; num_sketch < _count_sketches.size();
-       num_sketch++) {
+  for (uint32_t num_sketch = 0; num_sketch < numSketches(); num_sketch++) {
     uint32_t hashed_index =
         _hasher_index[num_sketch].gethash(index) % sketch_size;
     uint32_t hashed_sign = _hasher_sign[num_sketch].gethash(index) % 2;
@@ -122,8 +120,7 @@ template <class T>
 void CountSketch<T>::add(const CountSketch<T>& other_sketch) {
   uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
 
-  for (size_t num_sketch = 0; num_sketch < _count_sketches.size();
-       num_sketch++) {
+  for (uint32_t num_sketch = 0; num_sketch < numSketches(); num_sketch++) {
     for (uint32_t i = 0; i < sketch_size; i++) {
       _count_sketches[num_sketch][i] +=
           other_sketch._count_sketches[num_sketch][i];
@@ -187,16 +184,16 @@ void CountSketch<T>::serialize(char* serialized_data) const {
   // Writing seed for hashing indices (4)
   std::vector<uint32_t> seed_for_hashing_indices;
   seed_for_hashing_indices.reserve(num_sketches);
-  for (size_t i = 0; i < _hasher_index.size(); i++) {
-    seed_for_hashing_indices.emplace_back(_hasher_index[i].seed());
+  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
+    seed_for_hashing_indices.emplace_back(_hasher_index[num_sketch].seed());
   }
   outputHelper.writeVector(seed_for_hashing_indices);
 
   // Writing seed for sign (5)
   std::vector<uint32_t> seed_for_sign;
   seed_for_sign.reserve(num_sketches);
-  for (size_t i = 0; i < _hasher_sign.size(); i++) {
-    seed_for_sign.emplace_back(_hasher_sign[i].seed());
+  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
+    seed_for_sign.emplace_back(_hasher_sign[num_sketch].seed());
   }
   outputHelper.writeVector(seed_for_sign);
 
