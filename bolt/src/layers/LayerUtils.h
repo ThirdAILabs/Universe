@@ -4,6 +4,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/SRP.h>
+#include <utils/StringManipulation.h>
 #include <cctype>
 #include <stdexcept>
 #include <string>
@@ -36,10 +37,7 @@ static std::string activationFunctionToStr(ActivationFunction act_func) {
 
 static ActivationFunction getActivationFunction(
     const std::string& act_func_name) {
-  std::string lower_name;
-  for (char c : act_func_name) {
-    lower_name.push_back(std::tolower(c));
-  }
+  std::string lower_name = utils::lower(act_func_name);
   if (lower_name == "relu") {
     return ActivationFunction::ReLU;
   }
