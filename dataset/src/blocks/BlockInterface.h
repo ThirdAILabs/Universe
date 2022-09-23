@@ -21,20 +21,18 @@ class TextBlockTest;
 
 using BlockPtr = std::shared_ptr<Block>;
 
-struct ResponsibleInputs {
+/**
+ * 1. percentage_significance : value which tells us how much this token is
+ * responsible.
+ * 2. column_number : column number corresponding to the responsible token.
+ * 3. key_word responsible : The main thing in our RCA which gives us exact
+ * keyword is responsible for this.
+ */
+struct Explanation {
+  float percentage_significance = 0;
   uint32_t column_number;
   std::string keyword;
-};
-
-struct PercentageResponsibleColumnAndInputKey {
-  float percentage_significance;
-  ResponsibleInputs column_name_and_input_key;
-};
-
-struct PercentageResponsibleColumnNameAndInputKey {
-  float percentage_significance;
-  std::string column_name;
-  std::string input_key;
+  std::string column_name = " ";
 };
 
 /**
@@ -162,7 +160,7 @@ class Block {
    * Returns:
    * column number and keyword responsible for the given index from that column.
    */
-  virtual ResponsibleInputs explainIndex(
+  virtual Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const = 0;
 

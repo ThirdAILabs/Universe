@@ -2,6 +2,7 @@
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
@@ -364,9 +365,8 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
   std::unordered_map<std::string, std::string> single_inference_input =
       mockSequentialSampleForPredictSingle();
 
-  std::vector<dataset::PercentageResponsibleColumnNameAndInputKey>
-      responsible_column_and_input_keys =
-          classifier.explain(single_inference_input);
+  std::vector<dataset::Explanation> responsible_column_and_input_keys =
+      classifier.explain(single_inference_input);
 
   std::vector<std::string> column_names;
   std::vector<std::string> words_responsible;
@@ -377,7 +377,7 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
     percentage_significances.push_back(
         responsible_column_and_input_key.percentage_significance);
     column_names.push_back(responsible_column_and_input_key.column_name);
-    words_responsible.push_back(responsible_column_and_input_key.input_key);
+    words_responsible.push_back(responsible_column_and_input_key.keyword);
   }
 
   // we will check how many times the column names are present in the vector.

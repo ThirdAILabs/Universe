@@ -24,7 +24,7 @@ class TabularPairGram : public Block {
 
   uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
 
-  ResponsibleInputs explainIndex(
+  Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& columnar_sample) const final {
     (void)columnar_sample;

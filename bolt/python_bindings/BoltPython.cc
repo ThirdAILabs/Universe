@@ -123,7 +123,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
            py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
       .def("save", &SequentialClassifier::save, py::arg("filename"))
       .def_static("load", &SequentialClassifier::load, py::arg("filename"))
-      .def("explain", &SequentialClassifier::explain, py::arg("input_sample"));
+      .def("explain", &SequentialClassifier::explain, py::arg("input_sample"),
+           py::arg("neuron_to_explain") = std::optional<uint32_t>());
 
   createBoltGraphSubmodule(bolt_submodule);
 

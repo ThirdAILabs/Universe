@@ -261,14 +261,16 @@ BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
   return label_vector;
 }
 
-/*
-Here getInputGradientsSingle returns
-1. Indices : the indices corresponding to which we are returning gradients in
-the input vector(we only return indices if input is sparse).
-2. gradients ratios: (gradient_value)/(value_in_inputvector) , this is for
-normalising the gradients.
-*/
-
+/**
+ * @brief For given input get the input gradients when backpropagated the loss
+ * with respect to the mentioned label by user.
+ *
+ * @returns
+ * 1. Indices : the indices corresponding to which we are returning gradients in
+ * the input vector(we only return indices if input is sparse).
+ * 2. gradients ratios: (gradient_value)/(input_value) , this is for
+ * normalizing the gradients.
+ */
 std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
 BoltGraph::getInputGradientSingle(
     std::vector<BoltVector>&& input_data,

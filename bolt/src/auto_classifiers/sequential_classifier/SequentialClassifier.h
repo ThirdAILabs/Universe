@@ -160,30 +160,23 @@ class SequentialClassifier {
     return _model->summarize(/* print= */ false, /* detailed= */ true);
   }
 
-  std::vector<dataset::PercentageResponsibleColumnNameAndInputKey> explain(
-      const std::unordered_map<std::string, std::string>& sample) {
+  std::vector<dataset::Explanation> explain(
+      const std::unordered_map<std::string, std::string>& sample,
+      std::optional<uint32_t> neuron_to_explain = std::nullopt) {
     auto [input_vector, columnar_sample] = getInputForSingleInference(sample);
 
     auto result = getPercentExplanationWithColumnNames(
         _model, input_vector, columnar_sample,
-        _single_inference_batch_processor);
-
-    std::vector<dataset::PercentageResponsibleColumnNameAndInputKey>
-        explanations;
+        _single_inference_batch_processor, neuron_to_explain);
 
     auto column_num_to_name =
         _single_inference_col_nums.getColumnNumToColNameMap();
 
-    explanations.reserve(result.size());
-    for (const auto& response : result) {
-      explanations.push_back(
-          {response.percentage_significance,
-           column_num_to_name.at(
-               response.column_name_and_input_key.column_number),
-           response.column_name_and_input_key.keyword});
+    for (auto& response : result) {
+      response.column_name = column_num_to_name[response.column_number];
     }
 
-    return explanations;
+    return result;
   }
 
   void save(const std::string& filename) {
