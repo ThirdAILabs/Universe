@@ -13,6 +13,17 @@
 using UniversalHash = thirdai::hashing::UniversalHash;
 
 namespace thirdai::compression {
+
+/*
+ * Count-sketch algorithm:
+ * https://stackoverflow.com/questions/6811351/explaining-the-count-sketch-algorithm
+ * https://en.wikipedia.org/wiki/Count_sketch
+ *
+ * NOTE: We are using mean instead of the median to get an estimator for the
+ * element.
+ * TODO: Run accuracy and performance benchmarks for Count-median sketch vs
+ * Count-mean sketch
+ */
 template <class T>
 class CountSketch final : public CompressedVector<T> {
  public:

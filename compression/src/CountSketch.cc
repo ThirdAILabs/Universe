@@ -36,7 +36,11 @@ CountSketch<T>::CountSketch(const T* values_to_compress, uint32_t size,
   uint32_t sketch_size =
       std::max(static_cast<uint32_t>(compression_density * size),
                static_cast<uint32_t>(1));
-
+  /*
+   * TODO(Shubh):  Forcing sketch size to be odd was giving better accuracies
+   * than even sketch sizes.  Hence, sketch sizes are forced to be odd. We need
+   * to look more into why this happens.
+   */
   sketch_size = sketch_size % 2 == 0 ? sketch_size + 1 : sketch_size;
   _count_sketches.assign(num_sketches, std::vector<T>(sketch_size, 0));
   for (uint32_t i = 0; i < num_sketches; i++) {
