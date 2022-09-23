@@ -78,7 +78,8 @@ struct Schema {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(user, target, timestamp_col_name, static_text_col_names,
-            static_categorical, sequential, dense_sequential, multi_class_delim);
+            static_categorical, sequential, dense_sequential,
+            multi_class_delim);
   }
 };
 

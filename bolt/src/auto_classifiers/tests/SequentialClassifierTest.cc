@@ -196,15 +196,17 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
     throws an error since it would have exceeded the expected number of
     unique classes.
   */
-  writeRowsToFile(TRAIN_FILE_NAME,
-                  {"user,target,timestamp,static_text,static_categorical,count",
-                   "0,0,2022-08-29,hello,0,0", "0,1,2022-08-30,hello,1,1",
-                   "0,0,2022-08-31,hello,2,2", "0,1,2022-09-01,hello,3,3",
-                   "0,0 1,2022-09-02,hello,0 1,4", "0,1 0,2022-09-03,hello,1 2,5"});
+  writeRowsToFile(
+      TRAIN_FILE_NAME,
+      {"user,target,timestamp,static_text,static_categorical,count",
+       "0,0,2022-08-29,hello,0,0", "0,1,2022-08-30,hello,1,1",
+       "0,0,2022-08-31,hello,2,2", "0,1,2022-09-01,hello,3,3",
+       "0,0 1,2022-09-02,hello,0 1,4", "0,1 0,2022-09-03,hello,1 2,5"});
 
-  writeRowsToFile(TEST_FILE_NAME,
-                  {"user,target,timestamp,static_text,static_categorical,count",
-                   "0,0 1,2022-09-04,hello,2 3,6", "0,1 0,2022-09-05,hello,3 0,7"});
+  writeRowsToFile(
+      TEST_FILE_NAME,
+      {"user,target,timestamp,static_text,static_categorical,count",
+       "0,0 1,2022-09-04,hello,2 3,6", "0,1 0,2022-09-05,hello,3 0,7"});
 
   std::unordered_map<std::string, std::string> predict_single_sample = {
       {"user", "0"},
@@ -222,10 +224,10 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       /* static_text= */ {"static_text"},
       /* static_categorical= */ {{"static_categorical", 4}},
       /* sequential= */ {{"target", 2, 3}},
-      /* dense_sequential= */ {{
-        "count", 
-        /* history_lag= */ 1, 
-        /* history_length= */ 5, 
+      /* dense_sequential= */
+      {{"count",
+        /* history_lag= */ 1,
+        /* history_length= */ 5,
         /* period_days= */ 2}},
       /* multi_class_delim= */ ' ');
 
@@ -264,10 +266,10 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
       /* static_text= */ {"static_text"},
       /* static_categorical= */ {{"static_categorical", 4}},
       /* sequential= */ {{"target", 2, 3}},
-      /* dense_sequential= */ {{
-        "count", 
-        /* history_lag= */ 1, 
-        /* history_length= */ 5, 
+      /* dense_sequential= */
+      {{"count",
+        /* history_lag= */ 1,
+        /* history_length= */ 5,
         /* period_days= */ 2}});
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
@@ -440,41 +442,49 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
 }
 
 TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
+  std::tuple<std::string, uint32_t, uint32_t, uint32_t>
+      dense_sequential_config_0 = {"count0",
+                                   /* history_lag= */ 1,
+                                   /* history_length= */ 5,
+                                   /* period_days= */ 2};
 
-  std::tuple<std::string, uint32_t, uint32_t, uint32_t> dense_sequential_config_0 = {
-    "count0", 
-    /* history_lag= */ 1, 
-    /* history_length= */ 5, 
-    /* period_days= */ 2
-  };
-
-  std::tuple<std::string, uint32_t, uint32_t, uint32_t> dense_sequential_config_1 = {
-    "count1", 
-    /* history_lag= */ 5, 
-    /* history_length= */ 2, 
-    /* period_days= */ 7
-  };
+  std::tuple<std::string, uint32_t, uint32_t, uint32_t>
+      dense_sequential_config_1 = {"count1",
+                                   /* history_lag= */ 5,
+                                   /* history_length= */ 2,
+                                   /* period_days= */ 7};
 
   SequentialClassifier model(
       /* user= */ {"user", 1},
       /* target= */ {"target", 2},
       /* timestamp= */ "timestamp",
-      /* static_text= */ {"static_text"},
-      /* static_categorical= */ {{"static_categorical", 4}},
+      /* static_text= */ {},
+      /* static_categorical= */ {},
       /* sequential= */ {{"target", 2, 3}},
-      /* dense_sequential= */ {dense_sequential_config_0, dense_sequential_config_1});
+      /* dense_sequential= */
+      {dense_sequential_config_0, dense_sequential_config_1});
+
+  /*
+    Train before getting state because state is only built once
+    we call .train(), .predict(), or .explain()
+  */
+  writeRowsToFile(TRAIN_FILE_NAME,
+                  {"user,target,timestamp,count0,count1", "0,0,2022-09-04,6,3",
+                   "0,1,2022-09-05,7,9"});
+  model.train(TRAIN_FILE_NAME, /* epochs= */ 1, /* learning_rate= */ 0.01);
 
   auto state = SequentialClassifierTextFixture::getState(model);
 
   auto count_history_0 = state.count_histories_by_id[0];
   ASSERT_EQ(count_history_0->historyLag(), 1);
   ASSERT_EQ(count_history_0->historyLength(), 5);
-  ASSERT_EQ(count_history_0->periodSeconds(), 2 * dataset::TimeObject::SECONDS_IN_DAY);
+  ASSERT_EQ(count_history_0->periodSeconds(),
+            2 * dataset::TimeObject::SECONDS_IN_DAY);
 
   auto count_history_1 = state.count_histories_by_id[1];
   ASSERT_EQ(count_history_1->historyLag(), 5);
   ASSERT_EQ(count_history_1->historyLength(), 2);
-  ASSERT_EQ(count_history_1->periodSeconds(), 7 * dataset::TimeObject::SECONDS_IN_DAY);
-  
+  ASSERT_EQ(count_history_1->periodSeconds(),
+            7 * dataset::TimeObject::SECONDS_IN_DAY);
 }
 }  // namespace thirdai::bolt::sequential_classifier::tests

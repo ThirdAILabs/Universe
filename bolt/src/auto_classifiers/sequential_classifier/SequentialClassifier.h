@@ -309,7 +309,6 @@ class SequentialClassifier {
 };
 
 class SequentialClassifierTextFixture {
-  
  public:
   static DataState getState(const SequentialClassifier& model) {
     return model._state;

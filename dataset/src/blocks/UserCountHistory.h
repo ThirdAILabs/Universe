@@ -27,7 +27,13 @@ class UserCountHistoryBlock final : public Block {
     _history->removeOutdatedCounts(time.secondsSinceEpoch());
   }
 
-  ResponsibleInputs explainIndex(
+  //
+  float percentage_significance;
+  uint32_t column_number;
+  std::string keyword;
+  std::string column_name;
+
+  Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const final {
     auto [user, time_seconds, val] = getUserTimeVal(input_row);
@@ -49,8 +55,12 @@ class UserCountHistoryBlock final : public Block {
     std::string start_time_str = TimeObject(start_timestamp).string();
     std::string end_time_str = TimeObject(end_timestamp).string();
 
-    return {_count_col, "between " + start_time_str + " and " + end_time_str +
-                            " value is " + movement};
+    Explanation explanation;
+    explanation.column_number = _count_col;
+    explanation.keyword = "between " + start_time_str + " and " + end_time_str +
+                          " value is " + movement;
+
+    return explanation;
   }
 
   static auto make(size_t user_col, size_t count_col, size_t timestamp_col,
