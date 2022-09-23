@@ -70,7 +70,7 @@ class ParameterReference {
     const char* serialized_data =
         py::cast<SerializedCompressedVector>(new_params).data();
     FloatCompressedVector compressed_vector =
-        thirdai::compression::python::convertToCompressedVector<float>(
+        thirdai::compression::python::deserializeCompressedVector<float>(
             serialized_data, compression_scheme.value());
     std::vector<float> full_gradients = std::visit(
         thirdai::compression::DecompressVisitor<float>(), compressed_vector);

@@ -19,7 +19,7 @@ using SerializedCompressedVector =
     py::array_t<char, py::array::c_style | py::array::forcecast>;
 
 template <class T>
-std::variant<DragonVector<T>, CountSketch<T>> convertToCompressedVector(
+std::variant<DragonVector<T>, CountSketch<T>> deserializeCompressedVector(
     const char* serialized_compressed_vector,
     const std::string& compression_scheme) {
   CompressionScheme compression_scheme_enum =
