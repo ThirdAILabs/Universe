@@ -1,4 +1,3 @@
-import mlflow
 import os
 import platform
 import socket
@@ -33,6 +32,8 @@ class MlflowCallback(graph.callbacks.Callback):
         experiment_args: Dict[str, Any] = {},
     ):
         super().__init__()
+        import mlflow  # import inside class to not force another package dependency
+
         mlflow.set_tracking_uri(tracking_uri)
         experiment_id = mlflow.set_experiment(experiment_name)
         run_id = mlflow.start_run(run_name=run_name).info.run_id
@@ -55,6 +56,8 @@ class MlflowCallback(graph.callbacks.Callback):
         # mlflow.log_artifact(__file__)
 
     def _log_machine_info(self):
+        import mlflow  # import inside class to not force another package dependency
+
         machine_info = {
             "load_before_experiment": os.getloadavg()[2],
             "platform": platform.platform(),
@@ -70,8 +73,25 @@ class MlflowCallback(graph.callbacks.Callback):
         mlflow.log_params(machine_info)
 
     def on_epoch_end(self, model, train_state):
+        import mlflow  # import inside class to not force another package dependency
+
         for name, values in train_state.get_all_train_metrics().items():
             mlflow.log_metric(name, values[-1])
         for name, values in train_state.get_all_validation_metrics().items():
             mlflow.log_metric("val_" + name, values[-1])
         mlflow.log_metric("epoch_times", train_state.epoch_times[-1])
+
+    def log_additional_metric(self, key, value):
+        import mlflow  # import inside class to not force another package dependency
+
+        mlflow.log_metric(key, value)
+
+    def log_additional_param(self, key, value):
+        import mlflow  # import inside class to not force another package dependency
+
+        mlflow.log_param(key, value)
+
+    def end_run(self):
+        import mlflow  # import inside class to not force another package dependency
+
+        mlflow.end_run()
