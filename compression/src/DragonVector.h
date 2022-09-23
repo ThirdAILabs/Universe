@@ -15,13 +15,7 @@ template <class T>
 class DragonVector final : public CompressedVector<T> {
  public:
   // defining the constructors for the class
-  DragonVector<T>() {}
 
-  /*
-   * If we are constructing a dragon vector from (indices,values) then we need
-   * to know the size of the original vector. Keeping track of the original size
-   * is important when we want to decompress a vector.
-   */
   DragonVector(const std::vector<T>& vector_to_compress,
                float compression_density, uint32_t seed_for_hashing,
                uint32_t sample_population_size);

@@ -16,11 +16,8 @@ namespace thirdai::compression {
 template <class T>
 class CountSketch final : public CompressedVector<T> {
  public:
-  CountSketch<T>() {}
-
   // Assumes the number of seeds supplied is equal to num_sketches
   // Or seed_for_hashing_indices==num_sketches
-
   CountSketch(const std::vector<T>& vector_to_compress,
               float compression_density, uint32_t num_sketches,
               std::vector<uint32_t> seed_for_hashing_indices,
