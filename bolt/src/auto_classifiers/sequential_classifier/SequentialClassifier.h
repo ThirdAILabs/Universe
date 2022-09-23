@@ -159,16 +159,14 @@ class SequentialClassifier {
   std::vector<dataset::Explanation> explain(
       const std::unordered_map<std::string, std::string>& sample,
       std::optional<uint32_t> neuron_to_explain = std::nullopt) {
-
     auto input_row = inputMapToInputRow(sample);
 
-    auto processor = Pipeline::buildSingleInferenceBatchProcessor(_schema, _state,
-                                                 _single_inference_col_nums);
+    auto processor = Pipeline::buildSingleInferenceBatchProcessor(
+        _schema, _state, _single_inference_col_nums);
 
     auto result = getPercentExplanationWithColumnNames(
         _model, makeInputForSingleInference(processor, input_row), input_row,
-        processor,neuron_to_explain);
-
+        processor, neuron_to_explain);
 
     auto column_num_to_name =
         _single_inference_col_nums.getColumnNumToColNameMap();
@@ -201,12 +199,12 @@ class SequentialClassifier {
 
     auto input_row = inputMapToInputRow(sample);
 
-    auto processor = Pipeline::buildSingleInferenceBatchProcessor(_schema, _state,
-                                                 _single_inference_col_nums);
+    auto processor = Pipeline::buildSingleInferenceBatchProcessor(
+        _schema, _state, _single_inference_col_nums);
 
-    auto output =
-        _model->predictSingle({makeInputForSingleInference(processor, input_row)},
-                              /* use_sparse_inference= */ false);
+    auto output = _model->predictSingle(
+        {makeInputForSingleInference(processor, input_row)},
+        /* use_sparse_inference= */ false);
 
     return outputVectorToTopKResults(output, k);
   }
