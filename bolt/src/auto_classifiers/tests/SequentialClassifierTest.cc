@@ -70,16 +70,6 @@ void assertFailsTraining(SequentialClassifier& model) {
   std::remove(TRAIN_FILE_NAME);
 }
 
-SequentialClassifier makeSequentialClassifierForMockData() {
-  CategoricalPair user = {"user", 5};
-  CategoricalPair target = {"target", 5};
-  std::string timestamp = "timestamp";
-  std::vector<std::string> static_text = {"static_text"};
-  std::vector<CategoricalPair> static_categorical = {{"static_categorical", 5}};
-  std::vector<SequentialTriplet> sequential = {{"target", 5, 3}};
-  return {user, target, timestamp, static_text, static_categorical, sequential};
-}
-
 /**
  * @brief Tests that sequential classifier works when:
  * 1) Target and static categorical columns have multiple classes
