@@ -89,13 +89,23 @@ class CountHistoryMap {
     auto timestamp_periods = timestampPeriods(timestamp);
 
     std::vector<float> history(_lookback_periods);
-    for (int64_t period = 0; period <= _lookback_periods; period++) {
+    for (int64_t period = 0; period < _lookback_periods; period++) {
       int64_t period_delta =
           period - _lookahead_periods - _lookback_periods + 1;
       auto cms_key = cmsKey(key, timestamp_periods + period_delta);
       history[period] = _recent.query(cms_key) + _old.query(cms_key);
     }
     return history;
+  }
+
+  std::pair<int64_t, int64_t> getHistoryTimeRangeAtIndex(
+      int64_t current_timestamp, int64_t idx) const {
+    int64_t start_period_offset = -_lookahead_periods - _lookback_periods + 1;
+    int64_t start_timestamp_offset = start_period_offset * _period_seconds;
+    int64_t history_start_timestamp =
+        current_timestamp + start_timestamp_offset;
+    return {history_start_timestamp + idx * _period_seconds,
+            history_start_timestamp + (idx + 1) * _period_seconds};
   }
 
   void removeOutdatedCounts(int64_t timestamp) {
@@ -110,6 +120,14 @@ class CountHistoryMap {
   uint32_t historyLength() const { return _lookback_periods; }
 
   static constexpr uint32_t DEFAULT_PERIOD_SECONDS = TimeObject::SECONDS_IN_DAY;
+
+  static auto make(uint32_t lookahead_periods, uint32_t lookback_periods,
+                   uint32_t period_seconds = DEFAULT_PERIOD_SECONDS,
+                   uint32_t sketch_rows = 5, uint32_t sketch_range = 1 << 22) {
+    return std::make_shared<CountHistoryMap>(lookahead_periods,
+                                             lookback_periods, period_seconds,
+                                             sketch_rows, sketch_range);
+  }
 
  private:
   int64_t expiryTimestamp() const {

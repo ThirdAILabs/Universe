@@ -8,8 +8,8 @@ namespace thirdai::dataset {
 
 class UserCountHistoryBlock final : public Block {
  public:
-  UserCountHistoryBlock(size_t user_col, size_t count_col, size_t timestamp_col,
-                        CountHistoryMapPtr history)
+  UserCountHistoryBlock(uint32_t user_col, uint32_t count_col,
+                        uint32_t timestamp_col, CountHistoryMapPtr history)
       : _user_col(user_col),
         _count_col(count_col),
         _timestamp_col(timestamp_col),
@@ -27,26 +27,47 @@ class UserCountHistoryBlock final : public Block {
     _history->removeOutdatedCounts(time.secondsSinceEpoch());
   }
 
+  ResponsibleInputs explainIndex(
+      uint32_t index_within_block,
+      const std::vector<std::string_view>& input_row) const final {
+    auto [user, time_seconds, val] = getUserTimeVal(input_row);
+
+    auto counts = getProcessedCounts(user, time_seconds);
+
+    std::string movement;
+    if (counts.at(index_within_block) < 0) {
+      movement = "lower than usual";
+    } else if (counts.at(index_within_block) > 0) {
+      movement = "higher than usual";
+    } else {
+      movement = "same as usual";
+    }
+
+    auto [start_timestamp, end_timestamp] =
+        _history->getHistoryTimeRangeAtIndex(time_seconds, index_within_block);
+
+    std::string start_time_str = TimeObject(start_timestamp).string();
+    std::string end_time_str = TimeObject(end_timestamp).string();
+
+    return {_count_col, "between " + start_time_str + " and " + end_time_str +
+                            " value is " + movement};
+  }
+
+  static auto make(size_t user_col, size_t count_col, size_t timestamp_col,
+                   CountHistoryMapPtr history) {
+    return std::make_shared<UserCountHistoryBlock>(user_col, count_col,
+                                                   timestamp_col, history);
+  }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec) final {
-    auto user = std::string(input_row.at(_user_col));
-
-    auto time = TimeObject(input_row.at(_timestamp_col));
-    int64_t time_seconds = time.secondsSinceEpoch();
-
-    char* end;
-    float val = std::strtof(input_row.at(_count_col).data(), &end);
+    auto [user, time_seconds, val] = getUserTimeVal(input_row);
 
     _history->index(user, time_seconds, val);
 
-    auto counts = _history->getHistory(user, time_seconds);
-
-    if (counts.size() > 1) {
-      center(counts);
-      l2normalize(counts);
-    }
+    auto counts = getProcessedCounts(user, time_seconds);
 
     for (auto count : counts) {
       vec.addDenseFeatureToSegment(count);
@@ -55,6 +76,30 @@ class UserCountHistoryBlock final : public Block {
   }
 
  private:
+  std::tuple<std::string, int64_t, float> getUserTimeVal(
+      const std::vector<std::string_view>& input_row) const {
+    auto user = std::string(input_row.at(_user_col));
+
+    auto time = TimeObject(input_row.at(_timestamp_col));
+    int64_t time_seconds = time.secondsSinceEpoch();
+
+    char* end;
+    float val = std::strtof(input_row.at(_count_col).data(), &end);
+
+    return {std::move(user), time_seconds, val};
+  }
+
+  std::vector<float> getProcessedCounts(const std::string& user,
+                                        int64_t timestamp_seconds) const {
+    auto counts = _history->getHistory(user, timestamp_seconds);
+
+    if (counts.size() > 1) {
+      center(counts);
+      l2normalize(counts);
+    }
+    return counts;
+  }
+
   static void center(std::vector<float>& counts) {
     float mean = 0.0;
     for (auto count : counts) {
@@ -71,15 +116,18 @@ class UserCountHistoryBlock final : public Block {
     for (auto count : counts) {
       sum_of_squares += count * count;
     }
+    if (sum_of_squares == 0.0) {
+      return;
+    }
     float l2norm = std::sqrt(sum_of_squares);
     for (auto& count : counts) {
       count /= l2norm;
     }
   }
 
-  size_t _user_col;
-  size_t _count_col;
-  size_t _timestamp_col;
+  uint32_t _user_col;
+  uint32_t _count_col;
+  uint32_t _timestamp_col;
   CountHistoryMapPtr _history;
 };
 
