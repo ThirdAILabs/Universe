@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/vector.hpp>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <limits>
@@ -10,7 +13,11 @@
 
 namespace thirdai::dataset {
 
+class CountHistoryMap;
+
 class CountMinSketch {
+  friend CountHistoryMap;
+
  public:
   CountMinSketch(uint32_t n_rows, uint32_t range)
       : _n_rows(n_rows),
@@ -49,13 +56,23 @@ class CountMinSketch {
   size_t _range;
   std::vector<float> _sketch;
   std::vector<uint32_t> _seeds;
+
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  CountMinSketch() {}
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_n_rows, _range, _sketch, _seeds);
+  }
 };
 
-class UserCountHistory {
+class CountHistoryMap {
  public:
-  UserCountHistory(uint32_t lookahead_periods, uint32_t lookback_periods,
-                   uint32_t period_seconds = DEFAULT_PERIOD_SECONDS,
-                   uint32_t sketch_rows = 5, uint32_t sketch_range = 1 << 22)
+  CountHistoryMap(uint32_t lookahead_periods, uint32_t lookback_periods,
+                  uint32_t period_seconds = DEFAULT_PERIOD_SECONDS,
+                  uint32_t sketch_rows = 5, uint32_t sketch_range = 1 << 22)
       : _period_seconds(period_seconds),
         _lookahead_periods(lookahead_periods),
         _lookback_periods(lookback_periods),
@@ -63,19 +80,19 @@ class UserCountHistory {
         _recent(sketch_rows, sketch_range),
         _old(sketch_rows, sketch_range) {}
 
-  void index(const std::string& user, int64_t timestamp, float val) {
-    auto cms_key = cmsKey(user, timestampPeriods(timestamp));
+  void index(const std::string& key, int64_t timestamp, float val) {
+    auto cms_key = cmsKey(key, timestampPeriods(timestamp));
     _recent.increment(cms_key, val);
   }
 
-  std::vector<float> getHistory(const std::string& user, int64_t timestamp) {
+  std::vector<float> getHistory(const std::string& key, int64_t timestamp) {
     auto timestamp_periods = timestampPeriods(timestamp);
 
     std::vector<float> history(_lookback_periods);
     for (int64_t period = 0; period <= _lookback_periods; period++) {
       int64_t period_delta =
           period - _lookahead_periods - _lookback_periods + 1;
-      auto cms_key = cmsKey(user, timestamp_periods + period_delta);
+      auto cms_key = cmsKey(key, timestamp_periods + period_delta);
       history[period] = _recent.query(cms_key) + _old.query(cms_key);
     }
     return history;
@@ -90,6 +107,8 @@ class UserCountHistory {
     _start_timestamp = timestamp;
   }
 
+  uint32_t historyLength() const { return _lookback_periods; }
+
   static constexpr uint32_t DEFAULT_PERIOD_SECONDS = TimeObject::SECONDS_IN_DAY;
 
  private:
@@ -102,9 +121,9 @@ class UserCountHistory {
     return timestamp / _period_seconds;
   }
 
-  static inline std::string cmsKey(const std::string& user,
+  static inline std::string cmsKey(const std::string& key,
                                    int64_t timestamp_periods) {
-    return user + "_" + std::to_string(timestamp_periods);
+    return key + "_" + std::to_string(timestamp_periods);
   }
 
   uint32_t _period_seconds;
@@ -113,7 +132,18 @@ class UserCountHistory {
   int64_t _start_timestamp;
   CountMinSketch _recent;
   CountMinSketch _old;
+
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  CountHistoryMap() {}
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_period_seconds, _lookahead_periods, _lookback_periods,
+            _start_timestamp, _recent, _old);
+  }
 };
 
-using CountHistoryPtr = std::shared_ptr<UserCountHistory>;
+using CountHistoryMapPtr = std::shared_ptr<CountHistoryMap>;
 }  // namespace thirdai::dataset
