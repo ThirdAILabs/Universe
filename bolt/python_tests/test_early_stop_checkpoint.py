@@ -34,12 +34,15 @@ def train_models(
     train_config = (
         bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=20)
         .with_metrics([metric_name])
+        .with_validation(
+            validation_data=[valid_data],
+            validation_labels=valid_labels,
+            predict_config=predict_config,
+        )
         .with_callbacks(
             [
                 bolt.graph.callbacks.EarlyStopCheckpoint(
-                    validation_data=[valid_data],
-                    validation_labels=valid_labels,
-                    predict_config=predict_config,
+                    monitored_metric=metric_name,
                     model_save_path=save_loc,
                     patience=2,
                     min_delta=0,
@@ -59,7 +62,7 @@ def train_models(
 # validation scores for the best model saved and the last model
 def run_early_stop_test(loss, output_activation, metric_name):
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=50, noise_std=0.3
+        n_classes=N_CLASSES, n_samples=1000, noise_std=0.3
     )
     valid_data, valid_labels = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000, noise_std=0.3

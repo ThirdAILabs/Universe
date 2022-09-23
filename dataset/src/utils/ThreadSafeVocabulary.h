@@ -18,7 +18,7 @@ namespace thirdai::dataset {
  * to strings and vice versa.
  *
  * You can fix this vocabulary (prevent new strings from being
- * added) by calling the fix() method. Doing so will make this
+ * added) by calling the fixVocab() method. Doing so will make this
  * data structure more efficient in parallel settings.
  *
  * This object is safe to be used by multiple functions / objects
@@ -40,32 +40,41 @@ class ThreadSafeVocabulary {
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map, bool fixed,
       std::optional<uint32_t> max_vocab_size = std::nullopt)
       : _fixed(fixed), _string_to_uid(std::move(string_to_uid_map)) {
-    if (!_fixed && !max_vocab_size) {
-      throw std::invalid_argument(
-          "[ThreadSafeVocabulary] max_vocab_size must be supplied "
-          "if fixed = false.");
-    }
-
     if (_fixed) {
       _vocab_size = _string_to_uid.size();
     } else {
+      if (!max_vocab_size) {
+        throw std::invalid_argument(
+            "[ThreadSafeVocabulary] max_vocab_size must be supplied "
+            "if fixed = false.");
+      }
+      if (max_vocab_size.value() < _string_to_uid.size()) {
+        std::stringstream error_ss;
+        error_ss << "[ThreadSafeVocabulary] Invoked unfixed vocabulary with "
+                    "string_to_uid_map "
+                    "with more elements than max_vocab_size ("
+                 << _string_to_uid.size() << " vs. " << max_vocab_size.value()
+                 << ").";
+        throw std::invalid_argument(error_ss.str());
+      }
       _vocab_size = max_vocab_size.value();
+
+      // we reserve here to preallocate enough memory for max_vocab_size since
+      // the map is not fixed and we might have more elements
+      _string_to_uid.reserve(_vocab_size);
+      _uid_to_string.reserve(_vocab_size);
     }
 
-    if (_vocab_size < _string_to_uid.size()) {
-      std::stringstream error_ss;
-      error_ss << "[ThreadSafeVocabulary] Invoked fixed vocabulary with "
-                  "string_to_uid_map "
-                  "with more elements than max_vocab_size ("
-               << string_to_uid_map.size() << " vs. " << _vocab_size << ").";
-      throw std::invalid_argument(error_ss.str());
-    }
-
-    _uid_to_string.reserve(_vocab_size);
-    _string_to_uid.reserve(_vocab_size);
-
+    // resize here so we can access 0 to map.size() - 1 uids with [] syntax
     _uid_to_string.resize(_string_to_uid.size());
     for (auto& [string, uid] : _string_to_uid) {
+      if (uid >= _vocab_size) {
+        throw std::invalid_argument(
+            "[ThreadSafeVocabulary] The provided string_to_uid_map contains a "
+            "uid out of the valid range. Provided uid: " +
+            std::to_string(uid) + " but expected a uid in the range 0 to " +
+            std::to_string(_vocab_size) + " - 1");
+      }
       _uid_to_string[uid] = string;
     }
   }
@@ -106,7 +115,7 @@ class ThreadSafeVocabulary {
 
   static std::shared_ptr<ThreadSafeVocabulary> make(
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map, bool fixed,
-      uint32_t vocab_size = 0) {
+      std::optional<uint32_t> vocab_size = std::nullopt) {
     return std::make_shared<ThreadSafeVocabulary>(std::move(string_to_uid_map),
                                                   fixed, vocab_size);
   }

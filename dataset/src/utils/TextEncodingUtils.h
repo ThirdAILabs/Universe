@@ -246,17 +246,6 @@ class TextEncodingUtils {
       idx_val_processor(indices.back(), summed_val);
     }
   }
-
-  /**
-   * Creates a copy of the original string where all characters are lowercase.
-   */
-  inline static std::string makeLowerCase(const std::string_view original) {
-    std::string lower_case_text(original);
-    for (auto& c : lower_case_text) {
-      c = std::tolower(c);
-    }
-    return lower_case_text;
-  }
 };
 
 }  // namespace thirdai::dataset
