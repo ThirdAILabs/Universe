@@ -30,7 +30,7 @@ class CategoricalBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
-  ResponsibleColumnAndInputKey explainIndex(
+  ResponsibleInputs explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const final {
     return {_col, getResponsibleCategory(index_within_block, input_row[_col])};
