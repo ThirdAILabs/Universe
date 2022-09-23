@@ -9,6 +9,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <chrono>
 #include <optional>
@@ -59,9 +60,6 @@ class SequentialClassifier {
     _schema.multi_class_delim = multi_class_delim;
 
     _single_inference_col_nums = ColumnNumberMap(_schema);
-    _single_inference_batch_processor =
-        Pipeline::buildSingleInferenceBatchProcessor(
-            _schema, _state, _single_inference_col_nums);
   }
 
   MetricData train(const std::string& train_filename, uint32_t epochs,
@@ -137,6 +135,12 @@ class SequentialClassifier {
 
     auto [test_data, test_labels] = pipeline.loadInMemory();
 
+    for (const auto& batch : *test_data) {
+      for (const auto& vec : batch) {
+        std::cout << vec << std::endl;
+      }
+    }
+
     PredictConfig config = PredictConfig::makeConfig()
                                .withMetrics(std::move(metrics))
                                .withOutputCallback(print_predictions_callback);
@@ -164,9 +168,12 @@ class SequentialClassifier {
 
     auto input_row = inputMapToInputRow(sample);
 
+    auto processor = Pipeline::buildSingleInferenceBatchProcessor(_schema, _state,
+                                                 _single_inference_col_nums);
+
     auto result = getPercentExplanationWithColumnNames(
-        _model, makeInputForSingleInference(input_row), input_row,
-        _single_inference_batch_processor,neuron_to_explain);
+        _model, makeInputForSingleInference(processor, input_row), input_row,
+        processor,neuron_to_explain);
 
 
     auto column_num_to_name =
@@ -200,8 +207,11 @@ class SequentialClassifier {
 
     auto input_row = inputMapToInputRow(sample);
 
+    auto processor = Pipeline::buildSingleInferenceBatchProcessor(_schema, _state,
+                                                 _single_inference_col_nums);
+
     auto output =
-        _model->predictSingle({makeInputForSingleInference(input_row)},
+        _model->predictSingle({makeInputForSingleInference(processor, input_row)},
                               /* use_sparse_inference= */ false);
 
     return outputVectorToTopKResults(output, k);
@@ -222,10 +232,6 @@ class SequentialClassifier {
     std::unique_ptr<SequentialClassifier> deserialize_into(
         new SequentialClassifier());
     iarchive(*deserialize_into);
-    deserialize_into->_single_inference_batch_processor =
-        Pipeline::buildSingleInferenceBatchProcessor(
-            deserialize_into->_schema, deserialize_into->_state,
-            deserialize_into->_single_inference_col_nums);
     return deserialize_into;
   }
 
@@ -262,10 +268,11 @@ class SequentialClassifier {
     return input_row;
   }
 
-  BoltVector makeInputForSingleInference(
+  static BoltVector makeInputForSingleInference(
+      const dataset::GenericBatchProcessorPtr& processor,
       std::vector<std::string_view>& input_row) {
     BoltVector input_vector;
-    _single_inference_batch_processor->makeInputVector(input_row, input_vector);
+    processor->makeInputVector(input_row, input_vector);
     return input_vector;
   }
 
@@ -291,7 +298,6 @@ class SequentialClassifier {
   BoltGraphPtr _model;
 
   ColumnNumberMap _single_inference_col_nums;
-  dataset::GenericBatchProcessorPtr _single_inference_batch_processor;
 
   // Private constructor for cereal
   SequentialClassifier() {}
