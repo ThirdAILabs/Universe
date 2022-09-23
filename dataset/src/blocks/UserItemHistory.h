@@ -153,17 +153,13 @@ class UserItemHistoryBlock final : public Block {
         n_unique_items, item_col_delimiter);
   }
 
-  ResponsibleColumnAndInputKey explainFeature(
+  // TODO(YASH): See whether length of history makes sense in explanations.
+  ResponsibleInputs explainIndex(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
-      std::vector<std::string_view> columnar_sample) const final {
-    (void)columnar_sample;
-    if (col_num_to_name == std::nullopt) {
-      throw std::invalid_argument(
-          "map of col num to col name is missing in UserItemHistory block.");
-    }
-    return {col_num_to_name->at(_item_col),
-            _item_id_lookup->getString(index_within_block)};
+      const std::vector<std::string_view>& input_row) const final {
+    (void)input_row;
+
+    return {_item_col, _item_id_lookup->getString(index_within_block)};
   }
 
  protected:
@@ -176,7 +172,6 @@ class UserItemHistoryBlock final : public Block {
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
       uint32_t user_id = _user_id_lookup->getUid(user_str);
-
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_ids = getItemIds(item_str);

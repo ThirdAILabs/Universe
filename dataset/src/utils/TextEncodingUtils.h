@@ -50,18 +50,19 @@ class TextEncodingUtils {
     return unigrams;
   }
 
-  static std::pair<std::vector<uint32_t>,
-                   std::unordered_map<uint32_t, std::string>>
-  computeRawUnigramsWithRangeStoreMap(const std::string_view sentence,
-                                      uint32_t output_range) {
-    std::vector<uint32_t> unigrams;
+  /**
+   * Get the word_hash to word map, which we can use it for RCA. Its better to
+   * write seperate function than to overload the already existing function.
+   */
+  static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
+      const std::string_view sentence, uint32_t output_range) {
     std::unordered_map<uint32_t, std::string> index_to_word;
     forEachWordHash(sentence,
                     [&](uint32_t word_hash, const std::string_view& word) {
-                      unigrams.push_back(word_hash % output_range);
+                      (void)word_hash;
                       index_to_word[word_hash % output_range] = word;
                     });
-    return std::make_pair(unigrams, index_to_word);
+    return index_to_word;
   }
 
   /**
@@ -178,12 +179,12 @@ class TextEncodingUtils {
         // of a word.
         uint32_t len = i - start_of_word_offset;
 
-        std::string_view r_word = sentence.substr(start_of_word_offset, len);
+        std::string_view word_view(sentence.data() + start_of_word_offset, len);
 
         // Hash the word using the recorded start offset and the current index.
         uint32_t word_hash =
             computeUnigram(sentence.data() + start_of_word_offset, len);
-        word_processor(word_hash, r_word);
+        word_processor(word_hash, word_view);
         prev_is_space = true;
       }
     }
@@ -192,11 +193,11 @@ class TextEncodingUtils {
       // last word we need to hash.
       uint32_t len = sentence.size() - start_of_word_offset;
 
-      std::string_view r_word = sentence.substr(start_of_word_offset, len);
+      std::string_view word_view(sentence.data() + start_of_word_offset, len);
 
       uint32_t word_hash =
           computeUnigram(sentence.data() + start_of_word_offset, len);
-      word_processor(word_hash, r_word);
+      word_processor(word_hash, word_view);
     }
   }
 

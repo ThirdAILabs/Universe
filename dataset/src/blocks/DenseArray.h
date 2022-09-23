@@ -35,14 +35,13 @@ class DenseArrayBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _start_col + _dim; };
 
-  ResponsibleColumnAndInputKey explainFeature(
+  ResponsibleInputs explainIndex(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> col_num_to_name,
-      std::vector<std::string_view> columnar_sample) const final {
+      const std::vector<std::string_view>& columnar_sample) const final {
     (void)columnar_sample;
     (void)index_within_block;
-    (void)col_num_to_name;
-    throw std::invalid_argument("not yet implemented in dense array block!");
+    throw std::invalid_argument(
+        "Explain feature is not yet implemented in dense array block!");
   }
 
  protected:
