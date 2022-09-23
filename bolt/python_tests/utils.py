@@ -321,7 +321,6 @@ def set_compressed_weight_gradients(
     layer2.weight_gradients.set(
         compressed_weight_grads[1], compression_scheme=compression_scheme
     )
-    return model
 
 
 def compressed_training(

@@ -20,6 +20,12 @@ namespace thirdai::compression::serializer {
  *
  * Note: These are just helper classes and do not "own" the data as such and
  * meant to be used locally by a function.
+ *
+ * Why not cereal?
+ * From the docs: "cereal archives operate on either an std::ostream or
+ * std::istream object". After writing data on a stream, we need to transfer the
+ * data to python without copying. This is hard to implement with streams.
+ * TODO(Shubh): Transfer cereal data to python without copying.
  */
 class BinaryInputHelper {
  public:
