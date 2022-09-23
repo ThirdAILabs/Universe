@@ -20,7 +20,11 @@
 
 namespace thirdai::bolt::sequential_classifier {
 
+class SequentialClassifierTextFixture;
+
 class SequentialClassifier {
+  friend SequentialClassifierTextFixture;
+
  public:
   /**
    * @brief Construct a new Sequential Classifier object
@@ -308,6 +312,14 @@ class SequentialClassifier {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_schema, _state, _model, _single_inference_col_nums);
+  }
+};
+
+class SequentialClassifierTextFixture {
+  
+ public:
+  static DataState getState(const SequentialClassifier& model) {
+    return model._state;
   }
 };
 

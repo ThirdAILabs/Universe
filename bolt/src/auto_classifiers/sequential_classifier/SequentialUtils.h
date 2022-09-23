@@ -33,9 +33,9 @@ using CategoricalPair = std::pair<std::string, uint32_t>;
 using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
 // A tuple of (column name, num unique classes, track last N)
 using DenseSequentialQuadruplet =
-    std::tuple<std::string, /* lookahead_periods= */ uint32_t,
-               /* lookback_periods= */ uint32_t,
-               /* period_seconds= */ uint32_t>;
+    std::tuple<std::string, /* history_lag= */ uint32_t,
+               /* history_length= */ uint32_t,
+               /* period_days= */ uint32_t>;
 
 /**
  * Stores the dataset configuration.
@@ -78,7 +78,7 @@ struct Schema {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(user, target, timestamp_col_name, static_text_col_names,
-            static_categorical, sequential, multi_class_delim);
+            static_categorical, sequential, dense_sequential, multi_class_delim);
   }
 };
 
@@ -108,7 +108,7 @@ struct DataState {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(vocabs_by_column, history_collections_by_id);
+    archive(vocabs_by_column, history_collections_by_id, count_histories_by_id);
   }
 };
 
@@ -264,8 +264,8 @@ class Pipeline {
       const std::string& timestamp_col_name, DataState& state,
       const ColumnNumberMap& col_nums, bool for_training) {
     const auto& [user_col_name, _] = user;
-    const auto& [qty_col_name, lookahead_periods, lookback_periods,
-                 period_days] = dense_sequential;
+    const auto& [qty_col_name, history_lag, history_length, period_days] =
+        dense_sequential;
     auto period_seconds = dataset::TimeObject::SECONDS_IN_DAY * period_days;
 
     auto& user_qty_history =
@@ -273,7 +273,7 @@ class Pipeline {
     // Reset history if for training to prevent test data from leaking in.
     if (!user_qty_history || for_training) {
       user_qty_history = dataset::CountHistoryMap::make(
-          lookahead_periods, lookback_periods, period_seconds);
+          history_lag, history_length, period_seconds);
     }
 
     return dataset::UserCountHistoryBlock::make(

@@ -10,15 +10,15 @@ namespace thirdai::dataset {
 static BoltBatch processBatch(BlockPtr block,
                               const std::vector<std::string>& input_rows) {
   GenericBatchProcessor processor(
-      /* input_blocks= */ {block}, /* label_blocks= */ {},
+      /* input_blocks= */ {std::move(block)}, /* label_blocks= */ {},
       /* has_header= */ false, /* delimiter= */ ',', /* parallel= */ false);
   auto [batch, _] = processor.createBatch(input_rows);
   return std::move(batch);
 }
 
 TEST(UserCountHistoryBlockTest, ExplanationWorks) {
-  auto count_history = CountHistoryMap::make(/* lookahead_periods= */ 1,
-                                             /* lookback_periods= */ 5);
+  auto count_history = CountHistoryMap::make(/* history_lag= */ 1,
+                                             /* history_length= */ 5);
 
   auto block =
       UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
@@ -56,8 +56,8 @@ TEST(UserCountHistoryBlockTest, ExplanationWorks) {
 }
 
 TEST(UserCountHistoryBlockTest, NoNormalizeWhenLookbackPeriodsEqualsOne) {
-  auto count_history = CountHistoryMap::make(/* lookahead_periods= */ 1,
-                                             /* lookback_periods= */ 1);
+  auto count_history = CountHistoryMap::make(/* history_lag= */ 1,
+                                             /* history_length= */ 1);
 
   auto block =
       UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
@@ -78,8 +78,8 @@ TEST(UserCountHistoryBlockTest, NoNormalizeWhenLookbackPeriodsEqualsOne) {
 }
 
 TEST(UserCountHistoryBlockTest, NormalizeWhenLookbackPeriodsGreaterThanOne) {
-  auto count_history = CountHistoryMap::make(/* lookahead_periods= */ 1,
-                                             /* lookback_periods= */ 5);
+  auto count_history = CountHistoryMap::make(/* history_lag= */ 1,
+                                             /* history_length= */ 5);
 
   auto block =
       UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,

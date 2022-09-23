@@ -70,12 +70,12 @@ class CountMinSketch {
 
 class CountHistoryMap {
  public:
-  CountHistoryMap(uint32_t lookahead_periods, uint32_t lookback_periods,
+  CountHistoryMap(uint32_t history_lag, uint32_t history_length,
                   uint32_t period_seconds = DEFAULT_PERIOD_SECONDS,
                   uint32_t sketch_rows = 5, uint32_t sketch_range = 1 << 22)
       : _period_seconds(period_seconds),
-        _lookahead_periods(lookahead_periods),
-        _lookback_periods(lookback_periods),
+        _history_lag(history_lag),
+        _history_length(history_length),
         _start_timestamp(std::numeric_limits<int64_t>::min()),
         _recent(sketch_rows, sketch_range),
         _old(sketch_rows, sketch_range) {}
@@ -88,10 +88,9 @@ class CountHistoryMap {
   std::vector<float> getHistory(const std::string& key, int64_t timestamp) {
     auto timestamp_periods = timestampPeriods(timestamp);
 
-    std::vector<float> history(_lookback_periods);
-    for (int64_t period = 0; period < _lookback_periods; period++) {
-      int64_t period_delta =
-          period - _lookahead_periods - _lookback_periods + 1;
+    std::vector<float> history(_history_length);
+    for (int64_t period = 0; period < _history_length; period++) {
+      int64_t period_delta = period - _history_lag - _history_length + 1;
       auto cms_key = cmsKey(key, timestamp_periods + period_delta);
       history[period] = _recent.query(cms_key) + _old.query(cms_key);
     }
@@ -101,7 +100,7 @@ class CountHistoryMap {
   std::pair<int64_t, int64_t> getHistoryTimeRangeAtIndex(
       int64_t current_timestamp, int64_t idx) const {
     int64_t start_period_offset = 0;
-    start_period_offset -= (_lookahead_periods + _lookback_periods - 1);
+    start_period_offset -= (_history_lag + _history_length - 1);
     int64_t start_timestamp_offset = start_period_offset * _period_seconds;
     int64_t history_start_timestamp =
         current_timestamp + start_timestamp_offset;
@@ -118,21 +117,22 @@ class CountHistoryMap {
     _start_timestamp = timestamp;
   }
 
-  uint32_t historyLength() const { return _lookback_periods; }
+  uint32_t historyLag() const { return _history_lag; }
+  uint32_t historyLength() const { return _history_length; }
+  uint32_t periodSeconds() const { return _period_seconds; }
 
   static constexpr uint32_t DEFAULT_PERIOD_SECONDS = TimeObject::SECONDS_IN_DAY;
 
-  static auto make(uint32_t lookahead_periods, uint32_t lookback_periods,
+  static auto make(uint32_t history_lag, uint32_t history_length,
                    uint32_t period_seconds = DEFAULT_PERIOD_SECONDS,
                    uint32_t sketch_rows = 5, uint32_t sketch_range = 1 << 22) {
-    return std::make_shared<CountHistoryMap>(lookahead_periods,
-                                             lookback_periods, period_seconds,
-                                             sketch_rows, sketch_range);
+    return std::make_shared<CountHistoryMap>(
+        history_lag, history_length, period_seconds, sketch_rows, sketch_range);
   }
 
  private:
   int64_t expiryTimestamp() const {
-    int64_t lifetime_periods = _lookahead_periods + _lookback_periods;
+    int64_t lifetime_periods = _history_lag + _history_length;
     return _start_timestamp + lifetime_periods * _period_seconds;
   }
 
@@ -146,8 +146,8 @@ class CountHistoryMap {
   }
 
   uint32_t _period_seconds;
-  uint32_t _lookahead_periods;
-  uint32_t _lookback_periods;
+  uint32_t _history_lag;
+  uint32_t _history_length;
   int64_t _start_timestamp;
   CountMinSketch _recent;
   CountMinSketch _old;
@@ -159,8 +159,8 @@ class CountHistoryMap {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_period_seconds, _lookahead_periods, _lookback_periods,
-            _start_timestamp, _recent, _old);
+    archive(_period_seconds, _history_lag, _history_length, _start_timestamp,
+            _recent, _old);
   }
 };
 
