@@ -28,8 +28,8 @@ def test_get_set_values_dragon_vector():
 
     first_layer = model.get_layer("fc_1")
 
-    old_first_layer_biases = np.ravel(first_layer.biases.get())
-    old_first_layer_weights = np.ravel(first_layer.weights.get())
+    old_first_layer_biases = first_layer.biases.copy().flatten()
+    old_first_layer_weights = first_layer.weights.copy().flatten()
 
     # getting the compressed gradients
     compressed_weights = first_layer.weights.compress(
@@ -49,8 +49,8 @@ def test_get_set_values_dragon_vector():
     first_layer.weights.set(compressed_weights, compression_scheme="dragon")
     first_layer.biases.set(compressed_biases, compression_scheme="dragon")
 
-    new_first_layer_biases = np.ravel(first_layer.biases.get())
-    new_first_layer_weights = np.ravel(first_layer.weights.get())
+    new_first_layer_biases = first_layer.biases.copy().flatten()
+    new_first_layer_weights = first_layer.weights.copy().flatten()
 
     # checking whether the gradients are correct
     for i, values in enumerate(new_first_layer_weights):
@@ -69,7 +69,7 @@ def test_concat_values_dragon_vector():
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     first_layer = model.get_layer("fc_1")
-    old_first_layer_weights = np.ravel(first_layer.weights.get())
+    old_first_layer_weights = first_layer.weights.copy().flatten()
 
     # getting the compressed gradients
     compressed_weights = first_layer.weights.compress(
@@ -83,7 +83,7 @@ def test_concat_values_dragon_vector():
     )
     first_layer.weights.set(concatenated_weights, compression_scheme="dragon")
 
-    new_first_layer_weights = np.ravel(first_layer.weights.get())
+    new_first_layer_weights = first_layer.weights.copy().flatten()
 
     for i, values in enumerate(new_first_layer_weights):
         if values != 0:
