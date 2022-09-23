@@ -3,10 +3,12 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -57,29 +59,44 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   defOptionParameter<std::string>(submodule);
   defOptionParameter<std::shared_ptr<bolt::LossFunction>>(submodule);
   defOptionParameter<bolt::SamplingConfigPtr>(submodule);
-}
 
-template <typename T>
-HyperParameterPtr<T> makeConstantParamter(T value) {
-  return std::make_unique<ConstantParameter<T>>(value);
+  submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
+                py::arg("name"), py::arg("type"));
 }
 
 template <typename T>
 void defConstantParameter(py::module_& submodule) {
-  submodule.def("ConstantParameter", &makeConstantParamter<T>,
+  submodule.def("ConstantParameter", &ConstantParameter<T>::make,
                 py::arg("value").noconvert());
 }
 
 template <typename T>
-HyperParameterPtr<T> makeOptionParamter(
-    std::unordered_map<std::string, T> values) {
-  return std::make_unique<OptionParameter<T>>(std::move(values));
+void defOptionParameter(py::module_& submodule) {
+  submodule.def("OptionParameter", &OptionParameter<T>::make,
+                py::arg("values").noconvert());
 }
 
-template <typename T>
-void defOptionParameter(py::module_& submodule) {
-  submodule.def("OptionParameter", &makeOptionParamter<T>,
-                py::arg("values").noconvert());
+py::object makeUserSpecifiedParameter(const std::string& name,
+                                      const py::object& type) {
+  if (py::str(type).cast<std::string>() == "<class 'bool'>") {
+    return py::cast(UserSpecifiedParameter<bool>::make(name));
+  }
+
+  if (py::str(type).cast<std::string>() == "<class 'int'>") {
+    return py::cast(UserSpecifiedParameter<uint32_t>::make(name));
+  }
+
+  if (py::str(type).cast<std::string>() == "<class 'float'>") {
+    return py::cast(UserSpecifiedParameter<float>::make(name));
+  }
+
+  if (py::str(type).cast<std::string>() == "<class 'str'>") {
+    return py::cast(UserSpecifiedParameter<std::string>::make(name));
+  }
+
+  throw std::invalid_argument("Invalid type '" +
+                              py::str(type).cast<std::string>() +
+                              "' passed to UserSpecifiedParameter.");
 }
 
 }  // namespace thirdai::automl::deployment_config::python

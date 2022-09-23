@@ -9,6 +9,9 @@ namespace thirdai::automl::deployment_config {
 
 class UserParameterInput {
  public:
+  explicit UserParameterInput(bool bool_val)
+      : _bool_param(bool_val), _type(ParameterType::Boolean) {}
+
   explicit UserParameterInput(uint32_t int_val)
       : _int_param(int_val), _type(ParameterType::Integer) {}
 
@@ -17,6 +20,14 @@ class UserParameterInput {
 
   explicit UserParameterInput(std::string str_val)
       : _str_param(std::move(str_val)), _type(ParameterType::String) {}
+
+  bool getBooleanParam() const {
+    if (_type != ParameterType::Boolean) {
+      throw std::invalid_argument(
+          "Expected boolean parameter but received other type.");
+    }
+    return _bool_param;
+  }
 
   uint32_t getIntegerParam() const {
     if (_type != ParameterType::Integer) {
@@ -44,12 +55,13 @@ class UserParameterInput {
 
  private:
   union {
+    bool _bool_param;
     uint32_t _int_param;
     float _float_param;
     std::string _str_param;
   };
 
-  enum ParameterType { Integer, Float, String };
+  enum ParameterType { Boolean, Integer, Float, String };
   ParameterType _type;
 };
 
@@ -71,7 +83,7 @@ class ConstantParameter final : public HyperParameter<T> {
  public:
   explicit ConstantParameter(T value) : _value(std::move(value)) {}
 
-  static auto make(T value) {
+  static HyperParameterPtr<T> make(T value) {
     return std::make_unique<ConstantParameter<T>>(std::move(value));
   }
 
@@ -93,7 +105,7 @@ class OptionParameter final : public HyperParameter<T> {
   explicit OptionParameter(std::unordered_map<std::string, T> values)
       : _values(std::move(values)) {}
 
-  static auto make(std::unordered_map<std::string, T> values) {
+  static HyperParameterPtr<T> make(std::unordered_map<std::string, T> values) {
     return std::make_unique<OptionParameter<T>>(std::move(values));
   }
 
@@ -116,14 +128,14 @@ class OptionParameter final : public HyperParameter<T> {
 template <typename T>
 class UserSpecifiedParameter final : public HyperParameter<T> {
   static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, float> ||
-                    std::is_same_v<T, std::string>,
+                    std::is_same_v<T, std::string> || std::is_same_v<T, bool>,
                 "User specified parameter must be uint32_t or float.");
 
  public:
   explicit UserSpecifiedParameter(std::string param_name)
       : _param_name(std::move(param_name)) {}
 
-  static auto make(std::string param_name) {
+  static HyperParameterPtr<T> make(std::string param_name) {
     return std::make_unique<UserSpecifiedParameter<T>>(std::move(param_name));
   }
 
@@ -136,6 +148,9 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
                                "' not specified by user.");
     }
 
+    if constexpr (std::is_same<T, bool>::value) {
+      return user_specified_parameters.at(_param_name).getBooleanParam();
+    }
     if constexpr (std::is_same<T, uint32_t>::value) {
       return user_specified_parameters.at(_param_name).getIntegerParam();
     }
