@@ -211,7 +211,7 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       {"timestamp", "2022-09-06"},
       {"static_text", "hello"},
       {"static_categorical", "0 1"},
-      // {"count", "8"},
+      {"count", "8"},
   };
 
   SequentialClassifier model(
@@ -221,12 +221,11 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       /* static_text= */ {"static_text"},
       /* static_categorical= */ {{"static_categorical", 4}},
       /* sequential= */ {{"target", 2, 3}},
-      // /* dense_sequential= */ {{
-      //   "count", 
-      //   /* history_lag= */ 1, 
-      //   /* history_length= */ 5, 
-      //   /* period_days= */ 2}},
-      /* dense_sequential= */ {},
+      /* dense_sequential= */ {{
+        "count", 
+        /* history_lag= */ 1, 
+        /* history_length= */ 5, 
+        /* period_days= */ 2}},
       /* multi_class_delim= */ ' ');
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
