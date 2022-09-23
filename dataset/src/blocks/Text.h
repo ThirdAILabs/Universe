@@ -21,10 +21,14 @@ class TextBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
-  ResponsibleInputs explainIndex(
+  Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const final {
-    return {_col, getResponsibleWord(index_within_block, input_row.at(_col))};
+    Explanation explanation;
+    explanation.column_number = _col;
+    explanation.keyword =
+        getResponsibleWord(index_within_block, input_row.at(_col));
+    return explanation;
   }
 
   virtual std::string getResponsibleWord(

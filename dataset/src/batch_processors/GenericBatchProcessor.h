@@ -146,8 +146,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   For given index in input fetch the block responsible and get the column number
   and the exact keyword responsible for it.
   */
-  ResponsibleInputs explainIndex(
-      uint32_t feature_index, const std::vector<std::string_view>& input_row) {
+  Explanation explainIndex(uint32_t feature_index,
+                           const std::vector<std::string_view>& input_row) {
     auto iter = std::upper_bound(_block_feature_offsets.begin(),
                                  _block_feature_offsets.end(), feature_index);
     auto relevant_block_idx = iter - _block_feature_offsets.begin() - 1;

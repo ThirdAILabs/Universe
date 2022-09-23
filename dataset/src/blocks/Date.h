@@ -38,25 +38,28 @@ class DateBlock : public Block {
     return _col + 1;
   };
 
-  ResponsibleInputs explainIndex(
+  Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const final {
     (void)input_row;
-    std::string explanation;
+    std::string reason;
+    Explanation explanation;
     if (index_within_block >= featureDim()) {
       throw std::invalid_argument("index is out of bounds for date block.");
     }
     if (index_within_block < day_of_week_dim) {
-      explanation = "day_of_week";
+      reason = "day_of_week";
     } else if (index_within_block < (day_of_week_dim + month_of_year_dim)) {
-      explanation = "month_of_year";
+      reason = "month_of_year";
     } else if (index_within_block <
                (day_of_week_dim + month_of_year_dim + week_of_month_dim)) {
-      explanation = "week_of_month";
+      reason = "week_of_month";
     } else {
-      explanation = "week_of_year";
+      reason = "week_of_year";
     }
-    return {_col, explanation};
+    explanation.column_number = _col;
+    explanation.keyword = reason;
+    return explanation;
   }
 
  protected:
