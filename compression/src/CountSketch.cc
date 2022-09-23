@@ -2,6 +2,7 @@
 #include "CompressedVector.h"
 #include "Serializer.h"
 #include <hashing/src/UniversalHash.h>
+#include <_types/_uint32_t.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cmath>
@@ -15,24 +16,23 @@ using UniversalHash = thirdai::hashing::UniversalHash;
 namespace thirdai::compression {
 
 template <class T>
-CountSketch<T>::CountSketch(const std::vector<T>& vector_to_compress,
-                            float compression_density, uint32_t num_sketches,
-                            std::vector<uint32_t> seed_for_hashing_indices,
-                            std::vector<uint32_t> seed_for_sign)
+CountSketch<T>::CountSketch(
+    const std::vector<T>& vector_to_compress, float compression_density,
+    uint32_t num_sketches,
+    const std::vector<uint32_t>& seed_for_hashing_indices,
+    const std::vector<uint32_t>& seed_for_sign)
     : CountSketch(vector_to_compress.data(),
                   static_cast<uint32_t>(vector_to_compress.size()),
-                  compression_density, num_sketches,
-                  std::move(seed_for_hashing_indices),
-                  std::move(seed_for_sign)) {}
+                  compression_density, num_sketches, (seed_for_hashing_indices),
+                  (seed_for_sign)) {}
 
 template <class T>
-CountSketch<T>::CountSketch(const T* values_to_compress, uint32_t size,
-                            float compression_density, uint32_t num_sketches,
-                            std::vector<uint32_t> seed_for_hashing_indices,
-                            std::vector<uint32_t> seed_for_sign)
-    : _seed_for_hashing_indices(std::move(seed_for_hashing_indices)),
-      _seed_for_sign(std::move(seed_for_sign)),
-      _uncompressed_size(size) {
+CountSketch<T>::CountSketch(
+    const T* values_to_compress, uint32_t size, float compression_density,
+    uint32_t num_sketches,
+    const std::vector<uint32_t>& seed_for_hashing_indices,
+    const std::vector<uint32_t>& seed_for_sign)
+    : _uncompressed_size(size) {
   uint32_t sketch_size =
       std::max(static_cast<uint32_t>(compression_density * size),
                static_cast<uint32_t>(1));
@@ -44,8 +44,8 @@ CountSketch<T>::CountSketch(const T* values_to_compress, uint32_t size,
   sketch_size = sketch_size % 2 == 0 ? sketch_size + 1 : sketch_size;
   _count_sketches.assign(num_sketches, std::vector<T>(sketch_size, 0));
   for (uint32_t i = 0; i < num_sketches; i++) {
-    _hasher_index.push_back(UniversalHash(_seed_for_hashing_indices[i]));
-    _hasher_sign.push_back(UniversalHash(_seed_for_sign[i]));
+    _hasher_index.push_back(UniversalHash(seed_for_hashing_indices[i]));
+    _hasher_sign.push_back(UniversalHash(seed_for_sign[i]));
   }
   sketch(values_to_compress, size);
 }
@@ -96,8 +96,6 @@ void CountSketch<T>::set(uint32_t index, T value) {
 template <class T>
 void CountSketch<T>::clear() {
   _count_sketches.clear();
-  _seed_for_hashing_indices.clear();
-  _seed_for_sign.clear();
   _hasher_sign.clear();
   _hasher_index.clear();
   _uncompressed_size = 0;
@@ -108,15 +106,6 @@ void CountSketch<T>::extend(const CountSketch<T>& other_sketch) {
   _count_sketches.insert(std::end(_count_sketches),
                          std::begin(other_sketch._count_sketches),
                          std::end(other_sketch._count_sketches));
-
-  _seed_for_hashing_indices.insert(
-      std::end(_seed_for_hashing_indices),
-      std::begin(other_sketch._seed_for_hashing_indices),
-      std::end(other_sketch._seed_for_hashing_indices));
-
-  _seed_for_sign.insert(std::end(_seed_for_sign),
-                        std::begin(other_sketch._seed_for_sign),
-                        std::end(other_sketch._seed_for_sign));
 
   _hasher_index.insert(std::end(_hasher_index),
                        std::begin(other_sketch._hasher_index),
@@ -195,11 +184,21 @@ void CountSketch<T>::serialize(char* serialized_data) const {
   uint32_t num_sketches = numSketches();
   outputHelper.write(&num_sketches);
 
-  // Writing Seeds for hashing indices (4)
-  outputHelper.writeVector(_seed_for_hashing_indices);
+  // Writing seed for hashing indices (4)
+  std::vector<uint32_t> seed_for_hashing_indices;
+  seed_for_hashing_indices.reserve(num_sketches);
+  for (size_t i = 0; i < _hasher_index.size(); i++) {
+    seed_for_hashing_indices.emplace_back(_hasher_index[i].seed());
+  }
+  outputHelper.writeVector(seed_for_hashing_indices);
 
-  // Writing Seeds for sign (5)
-  outputHelper.writeVector(_seed_for_sign);
+  // Writing seed for sign (5)
+  std::vector<uint32_t> seed_for_sign;
+  seed_for_sign.reserve(num_sketches);
+  for (size_t i = 0; i < _hasher_sign.size(); i++) {
+    seed_for_sign.emplace_back(_hasher_sign[i].seed());
+  }
+  outputHelper.writeVector(seed_for_sign);
 
   // Writing Count Sketch Vectors (6)
   for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
@@ -216,19 +215,21 @@ CountSketch<T>::CountSketch(const char* serialized_data) {
   inputHelper.read(&compression_scheme);
 
   // Reading uncompressed_size (2)
-  uint32_t uncompressed_size;
-  inputHelper.read(&uncompressed_size);
-  _uncompressed_size = uncompressed_size;  // NOLINT
+  inputHelper.read(&_uncompressed_size);
 
   // Reading number of count sketches (3)
   uint32_t num_sketches;
   inputHelper.read(&num_sketches);
 
   // Reading seed for hashing indices (4)
-  inputHelper.readVector(_seed_for_hashing_indices);
+  std::vector<uint32_t> seed_for_hashing_indices;
+  seed_for_hashing_indices.reserve(num_sketches);
+  inputHelper.readVector(seed_for_hashing_indices);
 
   // Reading seed for sign (5)
-  inputHelper.readVector(_seed_for_sign);
+  std::vector<uint32_t> seed_for_sign;
+  seed_for_sign.reserve(num_sketches);
+  inputHelper.readVector(seed_for_sign);
 
   // Reading Count Sketch Vectors (6)
   _count_sketches.resize(num_sketches);
@@ -238,8 +239,8 @@ CountSketch<T>::CountSketch(const char* serialized_data) {
 
   for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
     _hasher_index.push_back(
-        UniversalHash(_seed_for_hashing_indices[num_sketch]));
-    _hasher_sign.push_back(UniversalHash(_seed_for_sign[num_sketch]));
+        UniversalHash(seed_for_hashing_indices[num_sketch]));
+    _hasher_sign.push_back(UniversalHash(seed_for_sign[num_sketch]));
   }
 }
 

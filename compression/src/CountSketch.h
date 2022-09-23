@@ -32,13 +32,13 @@ class CountSketch final : public CompressedVector<T> {
   // Or seed_for_hashing_indices==num_sketches
   CountSketch(const std::vector<T>& vector_to_compress,
               float compression_density, uint32_t num_sketches,
-              std::vector<uint32_t> seed_for_hashing_indices,
-              std::vector<uint32_t> seed_for_sign);
+              const std::vector<uint32_t>& seed_for_hashing_indices,
+              const std::vector<uint32_t>& seed_for_sign);
 
   CountSketch(const T* values_to_compress, uint32_t size,
               float compression_density, uint32_t num_sketches,
-              std::vector<uint32_t> seed_for_hashing_indices,
-              std::vector<uint32_t> seed_for_sign);
+              const std::vector<uint32_t>& seed_for_hashing_indices,
+              const std::vector<uint32_t>& seed_for_sign);
 
   explicit CountSketch(const char* serialized_data);
 
@@ -60,10 +60,6 @@ class CountSketch final : public CompressedVector<T> {
 
   std::vector<std::vector<T>> sketches() const { return _count_sketches; }
 
-  std::vector<uint32_t> indexSeeds() const { return _seed_for_hashing_indices; }
-
-  std::vector<uint32_t> signSeeds() const { return _seed_for_sign; }
-
   uint32_t uncompressedSize() const final { return _uncompressed_size; }
 
   std::vector<T> decompress() const final;
@@ -74,8 +70,6 @@ class CountSketch final : public CompressedVector<T> {
 
  private:
   std::vector<std::vector<T>> _count_sketches;
-  std::vector<uint32_t> _seed_for_hashing_indices;
-  std::vector<uint32_t> _seed_for_sign;
   std::vector<UniversalHash> _hasher_index;
   std::vector<UniversalHash> _hasher_sign;
   uint32_t _uncompressed_size;
