@@ -160,9 +160,8 @@ class SequentialClassifier {
 
   std::vector<dataset::PercentageResponsibleColumnNameAndInputKey> explain(
       const std::unordered_map<std::string, std::string>& sample) {
-
     auto input_row = inputMapToInputRow(sample);
-    
+
     auto result = getPercentExplanationWithColumnNames(
         _model, makeInputForSingleInference(input_row), input_row,
         _single_inference_batch_processor);
@@ -183,6 +182,8 @@ class SequentialClassifier {
     }
 
     return explanations;
+  }
+
   /**
    * @brief Computes the top k classes and their probabilities.
    *
@@ -204,8 +205,9 @@ class SequentialClassifier {
 
     auto input_row = inputMapToInputRow(sample);
 
-    auto output = _model->predictSingle({makeInputForSingleInference(input_row)},
-                                        /* use_sparse_inference= */ false);
+    auto output =
+        _model->predictSingle({makeInputForSingleInference(input_row)},
+                              /* use_sparse_inference= */ false);
 
     return outputVectorToTopKResults(output, k);
   }
@@ -265,7 +267,8 @@ class SequentialClassifier {
     return input_row;
   }
 
-  BoltVector makeInputForSingleInference(const std::vector<std::string_view>& input_row) {
+  BoltVector makeInputForSingleInference(
+      std::vector<std::string_view>& input_row) {
     BoltVector input_vector;
     _single_inference_batch_processor->makeInputVector(input_row, input_vector);
     return input_vector;
