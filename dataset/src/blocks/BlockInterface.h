@@ -22,17 +22,20 @@ class TextBlockTest;
 using BlockPtr = std::shared_ptr<Block>;
 
 /**
+ * Helpful struct to keep all types of explanations required at one place.
+ *
  * 1. percentage_significance : value which tells us how much this token is
  * responsible.
  * 2. column_number : column number corresponding to the responsible token.
- * 3. key_word responsible : The main thing in our RCA which gives us exact
+ * 3. keyword : The main thing in our RCA which gives us exact
  * keyword is responsible for this.
+ * 4. column_name : if the classifer has map we can return column_name also.
  */
 struct Explanation {
-  float percentage_significance = 0;
+  float percentage_significance;
   uint32_t column_number;
   std::string keyword;
-  std::string column_name = " ";
+  std::string column_name;
 };
 
 /**
@@ -153,7 +156,7 @@ class Block {
    * Arguments:
    * index_within_block : index within the block so that we can get exact
    * keyword responsible.
-   * columnar_sample: the string_view of input string so that we process the
+   * input_row: the string_view of input string so that we process the
    * keywords when we call explainIndex method rather than storing that in
    * buildsegment , which may affect thread safety.
    *
