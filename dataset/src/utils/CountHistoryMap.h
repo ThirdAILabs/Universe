@@ -100,7 +100,6 @@ class CountHistoryMap {
 
   std::pair<int64_t, int64_t> getHistoryTimeRangeAtIndex(
       int64_t current_timestamp, int64_t idx) const {
-
     int64_t start_period_offset = 0;
     start_period_offset -= (_lookahead_periods + _lookback_periods - 1);
     int64_t start_timestamp_offset = start_period_offset * _period_seconds;

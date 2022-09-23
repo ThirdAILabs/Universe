@@ -131,4 +131,6 @@ class UserCountHistoryBlock final : public Block {
   CountHistoryMapPtr _history;
 };
 
+using UserCountHistoryBlockPtr = std::shared_ptr<UserCountHistoryBlock>;
+
 }  // namespace thirdai::dataset
