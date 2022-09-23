@@ -5,6 +5,7 @@
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <exception>
+#include <stdexcept>
 #include <string_view>
 
 namespace thirdai::automl::deployment_config {
@@ -60,7 +61,7 @@ class BasicClassificationDatasetConfig final : public DatasetConfig {
   BasicClassificationDatasetConfig(BlockConfigPtr data_block,
                                    BlockConfigPtr label_block,
                                    HyperParameterPtr<bool> shuffle,
-                                   HyperParameterPtr<char> delimiter)
+                                   HyperParameterPtr<std::string> delimiter)
       : _data_block(std::move(data_block)),
         _label_block(std::move(label_block)),
         _shuffle(std::move(shuffle)),
@@ -80,17 +81,24 @@ class BasicClassificationDatasetConfig final : public DatasetConfig {
         /* column= */ 0, option, user_specified_parameters);
 
     bool shuffle = _shuffle->resolve(option, user_specified_parameters);
-    char delimiter = _delimiter->resolve(option, user_specified_parameters);
+    std::string delimiter =
+        _delimiter->resolve(option, user_specified_parameters);
+    if (delimiter.size() != 1) {
+      throw std::invalid_argument(
+          "Expected delimiter to be a single character but recieved: '" +
+          delimiter + "'.");
+    }
 
     return std::make_unique<BasicClassificationDatasetState>(
-        data_block, unlabeled_data_block, label_block, shuffle, delimiter);
+        data_block, unlabeled_data_block, label_block, shuffle,
+        delimiter.at(0));
   }
 
  private:
   BlockConfigPtr _data_block;
   BlockConfigPtr _label_block;
   HyperParameterPtr<bool> _shuffle;
-  HyperParameterPtr<char> _delimiter;
+  HyperParameterPtr<std::string> _delimiter;
 };
 
 }  // namespace thirdai::automl::deployment_config

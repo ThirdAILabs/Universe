@@ -15,8 +15,8 @@ class UserParameterInput {
   explicit UserParameterInput(float float_val)
       : _float_param(float_val), _type(ParameterType::Float) {}
 
-  explicit UserParameterInput(char char_val)
-      : _char_param(char_val), _type(ParameterType::Char) {}
+  explicit UserParameterInput(std::string str_val)
+      : _str_param(std::move(str_val)), _type(ParameterType::String) {}
 
   uint32_t getIntegerParam() const {
     if (_type != ParameterType::Integer) {
@@ -34,22 +34,22 @@ class UserParameterInput {
     return _float_param;
   }
 
-  char getCharParam() const {
-    if (_type != ParameterType::Char) {
+  std::string getStringParam() const {
+    if (_type != ParameterType::String) {
       throw std::invalid_argument(
-          "Expected char parameter but received other type.");
+          "Expected string parameter but received other type.");
     }
-    return _char_param;
+    return _str_param;
   }
 
  private:
   union {
     uint32_t _int_param;
     float _float_param;
-    char _char_param;
+    std::string _str_param;
   };
 
-  enum ParameterType { Integer, Float, Char };
+  enum ParameterType { Integer, Float, String };
   ParameterType _type;
 };
 
@@ -116,7 +116,7 @@ class OptionParameter final : public HyperParameter<T> {
 template <typename T>
 class UserSpecifiedParameter final : public HyperParameter<T> {
   static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, float> ||
-                    std::is_same_v<T, char>,
+                    std::is_same_v<T, std::string>,
                 "User specified parameter must be uint32_t or float.");
 
  public:
@@ -142,8 +142,8 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
     if constexpr (std::is_same<T, float>::value) {
       return user_specified_parameters.at(_param_name).getFloatParam();
     }
-    if constexpr (std::is_same<T, char>::value) {
-      return user_specified_parameters.at(_param_name).getCharParam();
+    if constexpr (std::is_same<T, std::string>::value) {
+      return user_specified_parameters.at(_param_name).getStringParam();
     }
   }
 
