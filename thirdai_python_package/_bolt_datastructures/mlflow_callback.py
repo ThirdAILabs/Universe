@@ -1,7 +1,6 @@
 import os
 import platform
 import socket
-import psutil
 from typing import Dict, Any
 from thirdai._thirdai.bolt import graph
 
@@ -57,6 +56,7 @@ class MlflowCallback(graph.callbacks.Callback):
 
     def _log_machine_info(self):
         import mlflow  # import inside class to not force another package dependency
+        import psutil
 
         machine_info = {
             "load_before_experiment": os.getloadavg()[2],
