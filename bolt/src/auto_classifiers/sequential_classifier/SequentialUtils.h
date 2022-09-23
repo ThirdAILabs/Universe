@@ -141,6 +141,13 @@ class ColumnNumberMap {
 
  private:
   std::unordered_map<std::string, uint32_t> _name_to_num;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_name_to_num);
+  }
 };
 
 class Pipeline {
@@ -180,7 +187,8 @@ class Pipeline {
 
   static dataset::GenericBatchProcessorPtr buildSingleInferenceBatchProcessor(
       const Schema& schema, DataState& state, const ColumnNumberMap& col_nums) {
-    auto input_blocks = buildInputBlocks(schema, state, col_nums, false);
+    auto input_blocks =
+        buildInputBlocks(schema, state, col_nums, /* for_training= */ false);
     return dataset::GenericBatchProcessor::make(
         /* input_blocks= */ input_blocks, /* label_blocks= */ {});
   }
