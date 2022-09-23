@@ -152,12 +152,12 @@ target_link_libraries(
 )
 
 add_executable(
-  text_processing_tests
-  TextProcessingTests.cc
+  mlm_batch_processor_tests
+  MlmBatchProcessorTests.cc
 )
 
 target_link_libraries(
-  text_processing_tests
+  mlm_batch_processor_tests
   PRIVATE
   gtest_main
   dataset_core_lib
@@ -165,7 +165,7 @@ target_link_libraries(
 )
 
 target_link_libraries(
-  text_processing_tests
+  mlm_batch_processor_tests
   PUBLIC
   OpenMP::OpenMP_CXX
 )
@@ -194,7 +194,7 @@ set(DATASET_TESTS
   user_item_history_block_tests
   block_batch_processor_test
   generic_batch_processor_test
-  text_processing_tests
+  mlm_batch_processor_tests
   save_load_dataset_test
   streaming_generic_dataset_loader_tests
 )

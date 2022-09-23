@@ -21,13 +21,13 @@ class MockBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _column + 1; };
 
-  ResponsibleColumnAndInputKey explainFeature(
+  ResponsibleInputs explainIndex(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
-      std::vector<std::string_view> /*columnar_sample*/) const final {
+      const std::vector<std::string_view>& columnar_sample) const final {
+    (void)columnar_sample;
     (void)index_within_block;
-    (void)num_to_name;
-    throw std::invalid_argument("not yet implemented in mock block!");
+    throw std::invalid_argument(
+        "Explain feature is not yet implemented in mock block!");
   }
 
  protected:

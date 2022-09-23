@@ -1,0 +1,57 @@
+experiment_identifier = "Netflix (Leave 10 out)"
+dataset_identifier = "netflix"
+model_identifier = "sequential_classifier_v0"
+
+epochs = 20
+learning_rate = 0.0001
+
+train_dataset_path = "netflix/netflix_leave_10_out_train.csv"
+test_dataset_path = "netflix/netflix_leave_10_out_test.csv"
+prediction_file_path = "predictions.txt"
+
+timestamp = "timestamp"
+
+[user]
+col_name = "userId"
+n_classes = 301898
+
+[target]
+col_name = "movieId"
+n_classes = 17770
+delimiter = " "
+
+[[sequential]]
+col_name = "movieId"
+n_classes = 17770
+track_last_n = 1
+delimiter = " "
+
+[[sequential]]
+col_name = "movieId"
+n_classes = 17770
+track_last_n = 2
+delimiter = " "
+
+[[sequential]]
+col_name = "movieId"
+n_classes = 17770
+track_last_n = 5
+delimiter = " "
+
+[[sequential]]
+col_name = "movieId"
+n_classes = 17770
+track_last_n = 10
+delimiter = " "
+
+[[sequential]]
+col_name = "movieId"
+n_classes = 17770
+track_last_n = 25
+delimiter = " "
+
+[[sequential]]
+col_name = "movieId"
+n_classes = 17770
+track_last_n = 50
+delimiter = " "

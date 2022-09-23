@@ -21,7 +21,18 @@ class TextBlockTest;
 
 using BlockPtr = std::shared_ptr<Block>;
 
-struct ResponsibleColumnAndInputKey {
+struct ResponsibleInputs {
+  uint32_t column_number;
+  std::string keyword;
+};
+
+struct PercentageResponsibleColumnAndInputKey {
+  float percentage_significance;
+  ResponsibleInputs column_name_and_input_key;
+};
+
+struct PercentageResponsibleColumnNameAndInputKey {
+  float percentage_significance;
   std::string column_name;
   std::string input_key;
 };
@@ -142,16 +153,22 @@ class Block {
   }
 
   /**
-   * Returns column name and keyword responsible from that column.
-   * index: index within the block so that we can get exact keyword responsible.
-   * num_to_name: column number to column name map, (optional) because some of
-   * the blocks don't need it like TabularBlock which has this map in its
-   * metadata.
+   * For a given index, get the keyword which falls in that index when building
+   * the segmented feature vector.
+   *
+   * Arguments:
+   * index_within_block : index within the block so that we can get exact
+   * keyword responsible.
+   * columnar_sample: the string_view of input string so that we process the
+   * keywords when we call explainIndex method rather than storing that in
+   * buildsegment , which may affect thread safety.
+   *
+   * Returns:
+   * column number and keyword responsible for the given index from that column.
    */
-  virtual ResponsibleColumnAndInputKey explainFeature(
+  virtual ResponsibleInputs explainIndex(
       uint32_t index_within_block,
-      std::optional<std::unordered_map<uint32_t, std::string>> num_to_name,
-      std::vector<std::string_view> columnar_sample) const = 0;
+      const std::vector<std::string_view>& input_row) const = 0;
 
   virtual ~Block() = default;
 

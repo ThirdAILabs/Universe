@@ -8,7 +8,9 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
+#include <bolt/src/graph/callbacks/LearningRateScheduler.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/DlrmAttention.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -214,6 +216,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("gamma_regularizer"),
            "Sets the scaling factor the the normalization configuration.");
 
+  py::class_<DlrmAttentionNode, DlrmAttentionNodePtr, Node>(graph_submodule,
+                                                            "DlrmAttention")
+      .def(py::init())
+      .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
+           py::arg("embedding_layer"));
+
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
                   py::arg("epochs"))
@@ -224,7 +232,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"))
-      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"));
+      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      .def("with_validation", &TrainConfig::withValidation,
+           py::arg("validation_data"), py::arg("validation_labels"),
+           py::arg("predict_config"));
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)
@@ -522,26 +533,74 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def("on_epoch_begin", &Callback::onEpochBegin)
       .def("on_epoch_end", &Callback::onEpochEnd)
       .def("on_batch_begin", &Callback::onBatchBegin)
-      .def("on_batch_end", &Callback::onBatchEnd)
-      .def("should_stop_training", &Callback::shouldStopTraining);
+      .def("on_batch_end", &Callback::onBatchEnd);
+
+  py::class_<TrainState>(callbacks_submodule, "TrainState")
+      .def_readwrite("learning_rate", &TrainState::learning_rate)
+      .def_readwrite("verbose", &TrainState::verbose)
+      .def_readwrite("rebuild_hash_tables_batch",
+                     &TrainState::rebuild_hash_tables_batch)
+      .def_readwrite("reconstruct_hash_functions_batch",
+                     &TrainState::reconstruct_hash_functions_batch)
+      .def_readwrite("stop_training", &TrainState::stop_training)
+      .def_readonly("epoch_times", &TrainState::epoch_times)
+      .def("get_train_metrics", &TrainState::getTrainMetrics,
+           py::arg("metric_name"))
+      .def("get_all_train_metrics", &TrainState::getAllTrainMetrics)
+      .def("get_validation_metrics", &TrainState::getValidationMetrics,
+           py::arg("metric_name"))
+      .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
+
+  py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule,  // NOLINT
+                                        "LRSchedule");        // NOLINT
+
+  py::class_<MultiplicativeLR, MultiplicativeLRPtr, LRSchedule>(
+      callbacks_submodule, "MultiplicativeLR")
+      .def(py::init<float>(), py::arg("gamma"),
+           "The Multiplicative learning rate scheduler "
+           "multiplies the current learning rate by gamma every epoch.\n");
+
+  py::class_<ExponentialLR, ExponentialLRPtr, LRSchedule>(callbacks_submodule,
+                                                          "ExponentialLR")
+      .def(py::init<float>(), py::arg("gamma"),
+           "The exponential learning rate scheduler decays the learning"
+           "rate by an exponential factor of gamma for every epoch.\n");
+
+  py::class_<MultiStepLR, MultiStepLRPtr, LRSchedule>(callbacks_submodule,
+                                                      "MultiStepLR")
+      .def(py::init<float, std::vector<uint32_t>>(), py::arg("gamma"),
+           py::arg("milestones"),
+           "The Multi-step learning rate scheduler changes"
+           "the learning rate by a factor of gamma for every milestone"
+           "specified in the vector of milestones. \n");
+
+  py::class_<LambdaSchedule, LambdaSchedulePtr, LRSchedule>(callbacks_submodule,
+                                                            "LambdaSchedule")
+      .def(py::init<const std::function<float(float, uint32_t)>&>(),
+           py::arg("schedule"),
+           "The Lambda scheduler changes the learning rate depending "
+           "on a custom lambda function."
+           "Arguments:\n"
+           " * schedule: learning rate schedule function with signature \n"
+           "         float schedule(float learning_rate, uint32_t epoch)\n");
+
+  py::class_<LearningRateScheduler, LearningRateSchedulerPtr, Callback>(
+      callbacks_submodule, "LearningRateScheduler")
+      .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
+      .def("get_final_lr", &LearningRateScheduler::getFinalLR);
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
       .def(
-          py::init<std::vector<dataset::BoltDatasetPtr>,
-                   dataset::BoltDatasetPtr, PredictConfig, std::string,
-                   uint32_t, double>(),
-          py::arg("validation_data"), py::arg("validation_labels"),
-          py::arg("predict_config"), py::arg("model_save_path"),
+          py::init<std::string, std::string, uint32_t, double>(),
+          py::arg("monitored_metric"), py::arg("model_save_path"),
           py::arg("patience"), py::arg("min_delta"),
           "This callback is intended to stop training early based on prediction"
           " results from a given validation set. Saves the best model to "
           "model_save_path.\n"
           "Arguments:\n"
-          " * validation_data: Data input as passed to predict.\n"
-          " * validation_labels: Label input as passed to predict.\n"
-          " * predict_config: PredictConfig. Configurations for evaluation on "
-          "the given validation data. must include metrics\n"
+          " * monitored_metric: The metric to monitor for early stopping. The "
+          "metric is assumed to be associated with validation data.\n"
           " * model_save_path: string. The file path to save the model that "
           "scored the best on the validation set\n"
           " * patience: int. The nuber of epochs with no improvement in "

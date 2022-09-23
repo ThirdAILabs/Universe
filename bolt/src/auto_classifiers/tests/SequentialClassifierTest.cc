@@ -8,6 +8,7 @@
 #include <fstream>
 #include <optional>
 #include <random>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -25,7 +26,10 @@ void writeRowsToFile(const std::string& filename,
   }
 }
 
-void assertSuccessfulLoadSave(SequentialClassifier& model) {
+void assertSuccessfulLoadSave(
+    SequentialClassifier& model,
+    const std::unordered_map<std::string, std::string>& predict_single_sample,
+    uint32_t n_targets) {
   model.train(TRAIN_FILE_NAME, /* epochs= */ 5, /* learning_rate= */ 0.01);
 
   // Save before making original prediction so both calls to predict() use the
@@ -35,16 +39,31 @@ void assertSuccessfulLoadSave(SequentialClassifier& model) {
 
   auto original_model_results =
       model.predict(TEST_FILE_NAME, /* metrics= */ {"recall@1"});
+  auto original_model_single_output =
+      model.predictSingle(predict_single_sample, n_targets);
 
   auto loaded_model_results =
       loaded_model->predict(TEST_FILE_NAME, /* metrics= */ {"recall@1"});
+  auto loaded_model_single_output =
+      loaded_model->predictSingle(predict_single_sample, n_targets);
 
-  ASSERT_EQ(original_model_results.first["recall@1"],
-            loaded_model_results.first["recall@1"]);
+  ASSERT_EQ(original_model_results["recall@1"],
+            loaded_model_results["recall@1"]);
 
   std::remove(TRAIN_FILE_NAME);
   std::remove(TEST_FILE_NAME);
   std::remove(MODEL_SAVE_FILE_NAME);
+
+  ASSERT_EQ(original_model_single_output.size(),
+            loaded_model_single_output.size());
+  for (uint32_t i = 0; i < original_model_single_output.size(); i++) {
+    auto& [original_class_name, original_activation] =
+        original_model_single_output[i];
+    auto& [loaded_class_name, loaded_activation] =
+        loaded_model_single_output[i];
+    ASSERT_EQ(original_class_name, loaded_class_name);
+    ASSERT_EQ(original_activation, loaded_activation);
+  }
 }
 
 void assertFailsTraining(SequentialClassifier& model) {
@@ -53,16 +72,6 @@ void assertFailsTraining(SequentialClassifier& model) {
       std::invalid_argument);
 
   std::remove(TRAIN_FILE_NAME);
-}
-
-std::unordered_map<std::string, std::string>
-mockSequentialSampleForPredictSingle() {
-  return {{"user", "0"},
-          {"target", "0"},
-          {"timestamp", "2022-09-01"},
-          {"static_text", "hello world"},
-          {"static_categorical", "0"},
-          {"sequential", "B"}};
 }
 
 SequentialClassifier getTrainedClassifier(const char* train_file_name) {
@@ -195,6 +204,14 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
                   {"user,target,timestamp,static_text,static_categorical",
                    "0,0 1,2022-09-04,hello,2 3", "0,1 0,2022-09-05,hello,3 0"});
 
+  std::unordered_map<std::string, std::string> predict_single_sample = {
+      {"user", "0"},
+      {"target", "0 1"},
+      {"timestamp", "2022-09-06"},
+      {"static_text", "hello"},
+      {"static_categorical", "0 1"},
+  };
+
   SequentialClassifier model(
       /* user= */ {"user", 1},
       /* target= */ {"target", 2},
@@ -205,7 +222,7 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       /* dense_sequential= */ {},
       /* multi_class_delim= */ ' ');
 
-  assertSuccessfulLoadSave(model);
+  assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
 
 /**
@@ -224,6 +241,14 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
                    "0,0,2022-09-02,hello,0", "0,1,2022-09-03,hello,1",
                    "0,0,2022-09-04,hello,2", "0,1,2022-09-05,hello,3"});
 
+  std::unordered_map<std::string, std::string> predict_single_sample = {
+      {"user", "0"},
+      {"target", "0"},
+      {"timestamp", "2022-09-06"},
+      {"static_text", "hello"},
+      {"static_categorical", "0"},
+  };
+
   SequentialClassifier model(
       /* user= */ {"user", 1},
       /* target= */ {"target", 2},
@@ -232,7 +257,7 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
       /* static_categorical= */ {{"static_categorical", 4}},
       /* sequential= */ {{"target", 2, 3}});
 
-  assertSuccessfulLoadSave(model);
+  assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
 
 /**
@@ -361,12 +386,31 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
        "0,0,2022-08-29,hello,0,B", "0,1,2022-08-30,hello,1,A",
        "0,0,2022-08-31,hello,2,A", "0,1,2022-09-01,hello,3,B"});
 
-  auto classifier = getTrainedClassifier(TRAIN_FILE_NAME);
+  SequentialClassifier classifier = getTrainedClassifier(TRAIN_FILE_NAME);
 
-  auto single_inference_input = mockSequentialSampleForPredictSingle();
+  std::unordered_map<std::string, std::string> single_inference_input = {
+      {"user", "0"},
+      {"target", "0"},
+      {"timestamp", "2022-09-01"},
+      {"static_text", "hello world"},
+      {"static_categorical", "0"},
+      {"sequential", "B"}};
 
-  auto [column_names, percentage_significances, words_responsible] =
-      classifier.explain(single_inference_input);
+  std::vector<dataset::PercentageResponsibleColumnNameAndInputKey>
+      responsible_column_and_input_keys =
+          classifier.explain(single_inference_input);
+
+  std::vector<std::string> column_names;
+  std::vector<std::string> words_responsible;
+  std::vector<float> percentage_significances;
+
+  for (auto& responsible_column_and_input_key :
+       responsible_column_and_input_keys) {
+    percentage_significances.push_back(
+        responsible_column_and_input_key.percentage_significance);
+    column_names.push_back(responsible_column_and_input_key.column_name);
+    words_responsible.push_back(responsible_column_and_input_key.input_key);
+  }
 
   // we will check how many times the column names are present in the vector.
   assertColumnNames(column_names, single_inference_input);

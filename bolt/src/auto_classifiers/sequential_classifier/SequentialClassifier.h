@@ -6,13 +6,16 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/Metric.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::bolt::sequential_classifier {
@@ -63,9 +66,9 @@ class SequentialClassifier {
             _schema, _state, _single_inference_col_nums);
   }
 
-  void train(const std::string& train_filename, uint32_t epochs,
-             float learning_rate,
-             std::vector<std::string> metrics = {"recall@1"}) {
+  MetricData train(const std::string& train_filename, uint32_t epochs,
+                   float learning_rate,
+                   std::vector<std::string> metrics = {"recall@1"}) {
     auto pipeline = Pipeline::buildForFile(_schema, _state, train_filename,
                                            /* delimiter = */ ',',
                                            /* for_training = */ true);
@@ -94,10 +97,10 @@ class SequentialClassifier {
                                 /* epochs= */ epochs)
             .withMetrics(std::move(metrics));
 
-    _model->train({train_data}, train_labels, train_config);
+    return _model->train({train_data}, train_labels, train_config);
   }
 
-  InferenceResult predict(
+  InferenceMetricData predict(
       const std::string& test_filename,
       std::vector<std::string> metrics = {"recall@1"},
       const std::optional<std::string>& output_filename = std::nullopt,
@@ -146,20 +149,69 @@ class SequentialClassifier {
       output_file->close();
     }
 
-    return results;
+    return results.first;
   }
 
-  std::tuple<std::vector<std::string>, std::vector<float>,
-             std::vector<std::string>>
-  explain(const std::unordered_map<std::string, std::string>& sample) {
-    auto [input_vector, columnar_sample] = getInputForSingleInference(sample);
+  std::string summarizeModel() {
+    if (!_model) {
+      throw std::runtime_error("Called sumarizeModel() before training.");
+    }
+
+    return _model->summarize(/* print= */ false, /* detailed= */ true);
+  }
+
+  std::vector<dataset::PercentageResponsibleColumnNameAndInputKey> explain(
+      const std::unordered_map<std::string, std::string>& sample) {
+    auto input_row = inputMapToInputRow(sample);
 
     auto result = getPercentExplanationWithColumnNames(
-        _model, input_vector, columnar_sample,
-        _single_inference_col_nums.getColumnNumToColNameMap(),
+        _model, makeInputForSingleInference(input_row), input_row,
         _single_inference_batch_processor);
 
-    return result;
+    std::vector<dataset::PercentageResponsibleColumnNameAndInputKey>
+        explanations;
+
+    auto column_num_to_name =
+        _single_inference_col_nums.getColumnNumToColNameMap();
+
+    explanations.reserve(result.size());
+    for (const auto& response : result) {
+      explanations.push_back(
+          {response.percentage_significance,
+           column_num_to_name.at(
+               response.column_name_and_input_key.column_number),
+           response.column_name_and_input_key.keyword});
+    }
+
+    return explanations;
+  }
+
+  /**
+   * @brief Computes the top k classes and their probabilities.
+   *
+   * @param sample A map from strings to strings, where the keys are column
+   * names as specified in the SequentialClassifier schema and the values are
+   * the values of the respective columns.
+   * @param k The number of top results to return.
+   * @return std::vector<std::pair<std::string, float>> A vector of
+   * (class name. probability) pairs.
+   */
+  std::vector<std::pair<std::string, float>> predictSingle(
+      const std::unordered_map<std::string, std::string>& sample,
+      uint32_t k = 1) {
+    if (k < 1) {
+      throw std::invalid_argument(
+          "[SequentialClassifier::predictSingle] k must be greater than or "
+          "equal to 1.");
+    }
+
+    auto input_row = inputMapToInputRow(sample);
+
+    auto output =
+        _model->predictSingle({makeInputForSingleInference(input_row)},
+                              /* use_sparse_inference= */ false);
+
+    return outputVectorToTopKResults(output, k);
   }
 
   void save(const std::string& filename) {
@@ -177,26 +229,14 @@ class SequentialClassifier {
     std::unique_ptr<SequentialClassifier> deserialize_into(
         new SequentialClassifier());
     iarchive(*deserialize_into);
+    deserialize_into->_single_inference_batch_processor =
+        Pipeline::buildSingleInferenceBatchProcessor(
+            deserialize_into->_schema, deserialize_into->_state,
+            deserialize_into->_single_inference_col_nums);
     return deserialize_into;
   }
 
  private:
-  std::pair<BoltVector, std::vector<std::string_view>>
-  getInputForSingleInference(
-      const std::unordered_map<std::string, std::string>& sample) {
-    std::vector<std::string_view> columnar_sample(
-        _single_inference_col_nums.size());
-    for (const auto& [col_name, col_value] : sample) {
-      uint32_t col_num = _single_inference_col_nums.at(col_name);
-      columnar_sample[col_num] = col_value.data();
-    }
-
-    BoltVector input_vector;
-    _single_inference_batch_processor->makeInputVector(columnar_sample,
-                                                       input_vector);
-
-    return std::make_pair(input_vector, columnar_sample);
-  }
   static float getLayerSparsity(uint32_t layer_size) {
     if (layer_size < 500) {
       return 1.0;
@@ -219,6 +259,40 @@ class SequentialClassifier {
     return 0.005;
   }
 
+  std::vector<std::string_view> inputMapToInputRow(
+      const std::unordered_map<std::string, std::string>& input_map) {
+    std::vector<std::string_view> input_row(_single_inference_col_nums.size());
+    for (const auto& [col_name, col_value] : input_map) {
+      uint32_t col_num = _single_inference_col_nums.at(col_name);
+      input_row[col_num] = col_value.data();
+    }
+    return input_row;
+  }
+
+  BoltVector makeInputForSingleInference(
+      std::vector<std::string_view>& input_row) {
+    BoltVector input_vector;
+    _single_inference_batch_processor->makeInputVector(input_row, input_vector);
+    return input_vector;
+  }
+
+  std::vector<std::pair<std::string, float>> outputVectorToTopKResults(
+      const BoltVector& output, uint32_t k) {
+    auto top_k_activations = output.findKLargestActivations(k);
+
+    std::vector<std::pair<std::string, float>> result;
+    result.reserve(k);
+
+    while (!top_k_activations.empty()) {
+      auto [activation, id] = top_k_activations.top();
+      result.push_back(
+          {_state.vocabs_by_column[_schema.target.first]->getString(id),
+           activation});
+      top_k_activations.pop();
+    }
+    return result;
+  }
+
   Schema _schema;
   DataState _state;
   BoltGraphPtr _model;
@@ -233,7 +307,7 @@ class SequentialClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_schema, _state, _model);
+    archive(_schema, _state, _model, _single_inference_col_nums);
   }
 };
 
