@@ -180,7 +180,7 @@ class SequentialClassifier {
           {response.percentage_significance,
            column_num_to_name.at(
                response.column_name_and_input_key.column_number),
-           response.column_name_and_input_key.input_key});
+           response.column_name_and_input_key.keyword});
     }
 
     return explanations;

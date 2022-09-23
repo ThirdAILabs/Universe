@@ -63,7 +63,7 @@ getPercentExplanationWithColumnNames(
       responsible_column_and_input_keys;
 
   for (const auto& col : gradients_ratio_with_indices) {
-    dataset::ResponsibleColumnAndInputKey column_name_and_input_key =
+    dataset::ResponsibleInputs column_name_and_input_key =
         generic_batch_processor->explainIndex(col.second, columnar_sample);
 
     responsible_column_and_input_keys.push_back(

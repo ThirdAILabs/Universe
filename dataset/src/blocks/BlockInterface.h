@@ -28,7 +28,7 @@ struct ResponsibleInputs {
 
 struct PercentageResponsibleColumnAndInputKey {
   float percentage_significance;
-  ResponsibleColumnAndInputKey column_name_and_input_key;
+  ResponsibleInputs column_name_and_input_key;
 };
 
 struct PercentageResponsibleColumnNameAndInputKey {
