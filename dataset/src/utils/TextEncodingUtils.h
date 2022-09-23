@@ -50,6 +50,10 @@ class TextEncodingUtils {
     return unigrams;
   }
 
+  /**
+   * Get the word_hash to word map, which we can use it for RCA. Its better to
+   * write seperate function than to overload the already existing function.
+   */
   static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
       const std::string_view sentence, uint32_t output_range) {
     std::unordered_map<uint32_t, std::string> index_to_word;

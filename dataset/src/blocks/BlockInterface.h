@@ -21,9 +21,9 @@ class TextBlockTest;
 
 using BlockPtr = std::shared_ptr<Block>;
 
-struct ResponsibleColumnAndInputKey {
+struct ResponsibleInputs {
   uint32_t column_number;
-  std::string input_key;
+  std::string keyword;
 };
 
 /**
@@ -151,7 +151,7 @@ class Block {
    * Returns:
    * column number and keyword responsible for the given index from that column.
    */
-  virtual ResponsibleColumnAndInputKey explainIndex(
+  virtual ResponsibleInputs explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const = 0;
 

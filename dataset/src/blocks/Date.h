@@ -38,7 +38,7 @@ class DateBlock : public Block {
     return _col + 1;
   };
 
-  ResponsibleColumnAndInputKey explainIndex(
+  ResponsibleInputs explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const final {
     (void)input_row;
