@@ -2,6 +2,7 @@
 #include "AutoClassifierBase.h"
 #include "AutoClassifiers.h"
 #include "BoltGraphPython.h"
+#include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
@@ -270,6 +271,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
            py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
+      .def("predict_single", &SequentialClassifier::predictSingle,
+           py::arg("sample"), py::arg("k") = 1)
       .def("save", &SequentialClassifier::save, py::arg("filename"))
       .def_static("load", &SequentialClassifier::load, py::arg("filename"));
 
