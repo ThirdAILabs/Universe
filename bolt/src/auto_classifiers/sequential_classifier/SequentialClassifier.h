@@ -56,9 +56,6 @@ class SequentialClassifier {
     _schema.multi_class_delim = multi_class_delim;
 
     _single_inference_col_nums = ColumnNumberMap(_schema);
-    _single_inference_batch_processor =
-        Pipeline::buildSingleInferenceBatchProcessor(
-            _schema, _state, _single_inference_col_nums);
   }
 
   MetricData train(const std::string& train_filename, uint32_t epochs,
@@ -134,6 +131,12 @@ class SequentialClassifier {
 
     auto [test_data, test_labels] = pipeline.loadInMemory();
 
+    for (const auto& batch : *test_data) {
+      for (const auto& vec : batch) {
+        std::cout << vec << std::endl;
+      }
+    }
+
     PredictConfig config = PredictConfig::makeConfig()
                                .withMetrics(std::move(metrics))
                                .withOutputCallback(print_predictions_callback);
@@ -177,7 +180,11 @@ class SequentialClassifier {
     auto input_row = inputMapToInputRow(sample);
 
     BoltVector input_vector;
-    _single_inference_batch_processor->makeInputVector(input_row, input_vector);
+    Pipeline::buildSingleInferenceBatchProcessor(_schema, _state,
+                                                 _single_inference_col_nums)
+        ->makeInputVector(input_row, input_vector);
+
+    std::cout << input_vector << std::endl;
 
     auto output = _model->predictSingle({input_vector},
                                         /* use_sparse_inference= */ false);
@@ -200,10 +207,6 @@ class SequentialClassifier {
     std::unique_ptr<SequentialClassifier> deserialize_into(
         new SequentialClassifier());
     iarchive(*deserialize_into);
-    deserialize_into->_single_inference_batch_processor =
-        Pipeline::buildSingleInferenceBatchProcessor(
-            deserialize_into->_schema, deserialize_into->_state,
-            deserialize_into->_single_inference_col_nums);
     return deserialize_into;
   }
 
@@ -262,7 +265,6 @@ class SequentialClassifier {
   BoltGraphPtr _model;
 
   ColumnNumberMap _single_inference_col_nums;
-  dataset::GenericBatchProcessorPtr _single_inference_batch_processor;
 
   // Private constructor for cereal
   SequentialClassifier() {}
