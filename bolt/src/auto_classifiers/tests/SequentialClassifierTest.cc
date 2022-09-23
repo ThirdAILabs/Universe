@@ -74,16 +74,6 @@ void assertFailsTraining(SequentialClassifier& model) {
   std::remove(TRAIN_FILE_NAME);
 }
 
-std::unordered_map<std::string, std::string>
-mockSequentialSampleForPredictSingle() {
-  return {{"user", "0"},
-          {"target", "0"},
-          {"timestamp", "2022-09-01"},
-          {"static_text", "hello world"},
-          {"static_categorical", "0"},
-          {"sequential", "B"}};
-}
-
 SequentialClassifier getTrainedClassifier(const char* train_file_name) {
   SequentialClassifier classifier(
       /* user= */ {"user", 1},
@@ -396,8 +386,13 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
 
   SequentialClassifier classifier = getTrainedClassifier(TRAIN_FILE_NAME);
 
-  std::unordered_map<std::string, std::string> single_inference_input =
-      mockSequentialSampleForPredictSingle();
+  std::unordered_map<std::string, std::string> single_inference_input = {
+      {"user", "0"},
+      {"target", "0"},
+      {"timestamp", "2022-09-01"},
+      {"static_text", "hello world"},
+      {"static_categorical", "0"},
+      {"sequential", "B"}};
 
   std::vector<dataset::PercentageResponsibleColumnNameAndInputKey>
       responsible_column_and_input_keys =
