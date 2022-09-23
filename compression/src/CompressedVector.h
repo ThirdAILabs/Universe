@@ -12,10 +12,14 @@ enum class CompressionScheme { Dragon = 0, CountSketch = 1 };
 
 inline CompressionScheme convertStringToEnum(
     const std::string& compression_scheme) {
-  if (compression_scheme == "dragon") {
+  std::string lower_name;
+  for (char c : compression_scheme) {
+    lower_name.push_back(std::tolower(c));
+  }
+  if (lower_name == "dragon") {
     return CompressionScheme::Dragon;
   }
-  if (compression_scheme == "count_sketch") {
+  if (lower_name == "count_sketch") {
     return CompressionScheme::CountSketch;
   }
   throw std::invalid_argument("Invalid compression scheme specified.");

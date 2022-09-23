@@ -90,8 +90,8 @@ def test_concat_values_dragon_vector():
             assert 2 * old_first_layer_weights[i] == new_first_layer_weights[i]
 
 
-# Compress the weight gradients of the model, and then train the
-# model using the compressed gradients
+# Tests compressed training using dragon vectors by compressing and
+# decompressing weights between every batch update
 def test_compressed_dragon_vector_training():
     acc = compressed_training(
         compression_scheme="dragon",

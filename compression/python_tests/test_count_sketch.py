@@ -12,8 +12,8 @@ from utils import (
 LEARNING_RATE = 0.002
 ACCURACY_THRESHOLD = 0.8
 
-# Compress the weight gradients of the model using count sketches, and then
-# train the model using compressed gradients
+# Tests compressed training by compressing and decompressing weights between
+# every batch update
 def test_compressed_count_sketch_training():
     num_sketches = 1
     compression_density = 0.2
