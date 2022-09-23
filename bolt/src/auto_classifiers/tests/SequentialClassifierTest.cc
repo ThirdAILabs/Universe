@@ -26,15 +26,6 @@ void writeRowsToFile(const std::string& filename,
   }
 }
 
-std::unordered_map<std::string, std::string>
-mockSequentialSampleForPredictSingle() {
-  return {{"user", "0"},
-          {"target", "0"},
-          {"timestamp", "2022-09-06"},
-          {"static_text", "hello"},
-          {"static_categorical", "0"}};
-}
-
 void assertSuccessfulLoadSave(
     SequentialClassifier& model,
     const std::unordered_map<std::string, std::string>& predict_single_sample,
