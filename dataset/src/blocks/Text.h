@@ -2,6 +2,7 @@
 
 #include "BlockInterface.h"
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <utils/StringManipulation.h>
 #include <memory>
 
 namespace thirdai::dataset {
@@ -121,7 +122,7 @@ class CharKGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
+    std::string lower_case_text = utils::lower(text);
 
     std::vector<uint32_t> char_k_grams;
 
