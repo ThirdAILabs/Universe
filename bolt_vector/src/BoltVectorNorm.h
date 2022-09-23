@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <utils/StringManipulation.h>
 #include <cmath>
 #include <numeric>
 #include <stdexcept>
@@ -28,11 +29,7 @@ static std::string LPNormToStr(LPNorm norm) {
 }
 
 static LPNorm getNorm(const std::string& norm_order) {
-  std::string lower_case_norm_order;
-  for (char c : norm_order) {
-    lower_case_norm_order.push_back(std::tolower(c));
-  }
-
+  std::string lower_case_norm_order = utils::lower(norm_order);
   if (lower_case_norm_order == "l-1") {
     return LPNorm::L1;
   }
