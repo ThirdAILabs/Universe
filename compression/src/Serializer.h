@@ -7,8 +7,7 @@
 namespace thirdai::compression::serializer {
 
 /*
- * These are helper classes for serializing compressed vector objects. They can
- * also be used by serialize function of other classes as well.
+ * These are helper classes to serialize and deserialize c++ objects.
  *
  * InputHelper takes in a char array that already has serialized data stored in
  * it and helps in reading data from it.
