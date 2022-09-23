@@ -131,12 +131,6 @@ class SequentialClassifier {
 
     auto [test_data, test_labels] = pipeline.loadInMemory();
 
-    for (const auto& batch : *test_data) {
-      for (const auto& vec : batch) {
-        std::cout << vec << std::endl;
-      }
-    }
-
     PredictConfig config = PredictConfig::makeConfig()
                                .withMetrics(std::move(metrics))
                                .withOutputCallback(print_predictions_callback);
@@ -183,8 +177,6 @@ class SequentialClassifier {
     Pipeline::buildSingleInferenceBatchProcessor(_schema, _state,
                                                  _single_inference_col_nums)
         ->makeInputVector(input_row, input_vector);
-
-    std::cout << input_vector << std::endl;
 
     auto output = _model->predictSingle({input_vector},
                                         /* use_sparse_inference= */ false);
