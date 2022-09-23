@@ -25,15 +25,6 @@ DragonVector<T>::DragonVector(const std::vector<T>& vector_to_compress,
                    sample_population_size) {}
 
 template <class T>
-DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
-                              std::vector<T> values, uint32_t uncompressed_size,
-                              uint32_t seed_for_hashing)
-    : _indices(std::move(indices)),
-      _values(std::move(values)),
-      _uncompressed_size(uncompressed_size),
-      _seed_for_hashing(seed_for_hashing) {}
-
-template <class T>
 DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
                               float compression_density,
                               uint32_t seed_for_hashing,

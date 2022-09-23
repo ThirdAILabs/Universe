@@ -363,7 +363,7 @@ def compressed_training(
                 seed_for_hashing=np.random.randint(100),
                 sample_population_size=sample_population_size,
             )
-            model = set_compressed_weight_gradients(
+            set_compressed_weight_gradients(
                 model,
                 compressed_weight_grads=compressed_weight_grads,
                 compression_scheme=compression_scheme,

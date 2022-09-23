@@ -47,22 +47,6 @@ CountSketch<T>::CountSketch(const T* values_to_compress, uint32_t size,
 }
 
 template <class T>
-CountSketch<T>::CountSketch(std::vector<std::vector<T>> count_sketches,
-                            std::vector<uint32_t> seed_for_hashing_indices,
-                            std::vector<uint32_t> seed_for_sign,
-                            uint32_t _uncompressed_size)
-    : _count_sketches(std::move(count_sketches)),
-      _seed_for_hashing_indices(std::move(seed_for_hashing_indices)),
-      _seed_for_sign(std::move(seed_for_sign)),
-      _uncompressed_size(_uncompressed_size) {
-  uint32_t num_sketches = static_cast<uint32_t>(_count_sketches.size());
-  for (uint32_t i = 0; i < num_sketches; i++) {
-    _hasher_index.push_back(UniversalHash(_seed_for_hashing_indices[i]));
-    _hasher_sign.push_back(UniversalHash(_seed_for_sign[i]));
-  }
-}
-
-template <class T>
 void CountSketch<T>::sketch(const T* values_to_compress, uint32_t size) {
   for (uint32_t index = 0; index < size; index++) {
     set(index, values_to_compress[index]);

@@ -50,7 +50,7 @@ convertPyListToCompressedVectors(const py::list& py_compressed_vectors,
     const char* serialized_data =
         py::cast<SerializedCompressedVector>(py_compressed_vectors[i]).data();
     compressed_vectors.emplace_back(
-        convertToCompressedVector<T>(serialized_data, compression_scheme));
+        deserializeCompressedVector<T>(serialized_data, compression_scheme));
   }
   return compressed_vectors;
 }

@@ -31,10 +31,6 @@ class CountSketch final : public CompressedVector<T> {
               std::vector<uint32_t> seed_for_hashing_indices,
               std::vector<uint32_t> seed_for_sign);
 
-  CountSketch(std::vector<std::vector<T>> count_sketches,
-              std::vector<uint32_t> seed_for_hashing_indices,
-              std::vector<uint32_t> seed_for_sign, uint32_t _uncompressed_size);
-
   explicit CountSketch(const char* serialized_data);
 
   T get(uint32_t index) const final;

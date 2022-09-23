@@ -26,9 +26,6 @@ class DragonVector final : public CompressedVector<T> {
                float compression_density, uint32_t seed_for_hashing,
                uint32_t sample_population_size);
 
-  DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
-               uint32_t uncompressed_size, uint32_t seed_for_hashing);
-
   DragonVector(const T* values_to_compress, uint32_t size,
                float compression_density, uint32_t seed_for_hashing,
                uint32_t sample_population_size);
