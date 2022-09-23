@@ -1,9 +1,12 @@
 #include "BoltPython.h"
 #include "BoltGraphPython.h"
+<<<<<<< HEAD
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/auto_classifiers/TabularClassifier.h>
 #include <bolt/src/auto_classifiers/TextClassifier.h>
+=======
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
@@ -12,7 +15,10 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <dataset/src/DataLoader.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <pybind11/cast.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
@@ -24,7 +30,7 @@
 
 namespace thirdai::bolt::python {
 
-void createBoltSubmodule(py::module_& module) {
+py::module_ createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
 #if THIRDAI_EXPOSE_ALL
@@ -95,6 +101,7 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
+<<<<<<< HEAD
   py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
            py::arg("n_classes"),
@@ -219,18 +226,37 @@ void createBoltSubmodule(py::module_& module) {
                     const std::vector<std::string>&,
                     const std::vector<SeqClassCategoricalTuple>&,
                     const std::vector<SeqClassSequentialTuple>&>(),
+=======
+  /**
+   * Sequential Classifier
+   */
+  py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
+                                   "Autoclassifier for sequential predictions.")
+      .def(py::init<
+               const std::pair<std::string, uint32_t>&,
+               const std::pair<std::string, uint32_t>&, const std::string&,
+               const std::vector<std::string>&,
+               const std::vector<std::pair<std::string, uint32_t>>&,
+               const std::vector<std::tuple<std::string, uint32_t, uint32_t>>&,
+               std::optional<char>>(),
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
            py::arg("user"), py::arg("target"), py::arg("timestamp"),
            py::arg("static_text") = std::vector<std::string>(),
            py::arg("static_categorical") =
                std::vector<std::pair<std::string, uint32_t>>(),
            py::arg("sequential") =
-               std::vector<std::tuple<std::string, uint32_t, uint32_t>>())
+               std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
+           py::arg("multi_class_delim") = std::nullopt)
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))
+#if THIRDAI_EXPOSE_ALL
+      .def("summarizeModel", &SequentialClassifier::summarizeModel)
+#endif
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
            py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
+<<<<<<< HEAD
       .def("predict_single",
            [](SequentialClassifier& model,
               const std::unordered_map<std::string, std::string>& sample) {
@@ -289,8 +315,14 @@ void createBoltSubmodule(py::module_& module) {
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
+=======
+      .def("save", &SequentialClassifier::save, py::arg("filename"))
+      .def_static("load", &SequentialClassifier::load, py::arg("filename"));
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
 
   createBoltGraphSubmodule(bolt_submodule);
+
+  return bolt_submodule;
 }
 
 }  // namespace thirdai::bolt::python

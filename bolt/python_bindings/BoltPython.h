@@ -5,7 +5,6 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
-#include <bolt/src/auto_classifiers/MultiLabelTextClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -36,6 +35,6 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::python {
 
-void createBoltSubmodule(py::module_& module);
+py::module_ createBoltSubmodule(py::module_& module);
 
 }  // namespace thirdai::bolt::python

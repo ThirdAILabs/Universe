@@ -25,6 +25,7 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
+<<<<<<< HEAD
   _hyper_parameters["hidden_layer_sparsity"] =
       std::to_string(hidden_layer_sparsity);
 
@@ -33,12 +34,17 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
   _hyper_parameters["input_dim"] = std::to_string(input_dim);
 
   auto hidden_layer = std::make_shared<FullyConnectedNode>(
+=======
+  auto input_layer = Input::make(input_dim);
+
+  auto hidden_layer = FullyConnectedNode::makeAutotuned(
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
       /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
       /* activation= */ "relu");
 
   hidden_layer->addPredecessor(input_layer);
 
-  auto output_layer = std::make_shared<FullyConnectedNode>(
+  auto output_layer = FullyConnectedNode::makeDense(
       /* dim= */ n_classes, /* activation= */ "softmax");
 
   _hyper_parameters["output_layer_size"] = std::to_string(n_classes);

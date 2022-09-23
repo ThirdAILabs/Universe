@@ -96,16 +96,22 @@ class UserItemHistoryBlock final : public Block {
         _track_last_n(item_history_collection->maxItemsPerHistory()),
         _user_id_lookup(std::move(user_id_map)),
         _item_id_lookup(std::move(item_id_map)),
+<<<<<<< HEAD
         _records(std::move(item_history_collection)),
         _item_col_delimiter(item_col_delimiter) {
     if (_user_id_lookup->vocabSize() > _records->numHistories()) {
+=======
+        _per_user_history(std::move(item_history_collection)),
+        _item_col_delimiter(item_col_delimiter) {
+    if (_user_id_lookup->vocabSize() > _per_user_history->numHistories()) {
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
       std::stringstream error_ss;
       error_ss << "[UserItemHistoryBlock] Invoked with incompatible "
                   "user_id_map and item_history_collection. There are "
                << _user_id_lookup->vocabSize()
                << " users in user_id_map "
                   "but item_history_collection only has enough space for "
-               << _records->numHistories() << " users.";
+               << _per_user_history->numHistories() << " users.";
       throw std::invalid_argument(error_ss.str());
     }
   }
@@ -120,7 +126,12 @@ class UserItemHistoryBlock final : public Block {
         _track_last_n(track_last_n),
         _user_id_lookup(ThreadSafeVocabulary::make(n_unique_users)),
         _item_id_lookup(ThreadSafeVocabulary::make(n_unique_items)),
+<<<<<<< HEAD
         _records(ItemHistoryCollection::make(n_unique_users, track_last_n)),
+=======
+        _per_user_history(
+            ItemHistoryCollection::make(n_unique_users, track_last_n)),
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
         _item_col_delimiter(item_col_delimiter) {}
 
   uint32_t featureDim() const final { return _item_id_lookup->vocabSize(); }
@@ -162,16 +173,21 @@ class UserItemHistoryBlock final : public Block {
       auto timestamp_str = std::string(input_row.at(_timestamp_col));
 
       uint32_t user_id = _user_id_lookup->getUid(user_str);
-      int64_t epoch_timestamp = TimeObject(timestamp_str).secondsSinceEpoch();
+      int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
       auto item_ids = getItemIds(item_str);
 
 #pragma omp critical(user_item_history_block)
       {
+<<<<<<< HEAD
         encodeTrackedItems(user_id, epoch_timestamp, vec);
         for (const auto& item_id : item_ids) {
           _records->add(user_id, item_id, epoch_timestamp);
         }
+=======
+        extendVectorWithUserHistory(user_id, timestamp_seconds, vec);
+        addItemsToUserHistory(user_id, timestamp_seconds, item_ids);
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
       }
     } catch (...) {
       return std::current_exception();
@@ -196,19 +212,31 @@ class UserItemHistoryBlock final : public Block {
     return item_id_strs;
   }
 
+<<<<<<< HEAD
   void encodeTrackedItems(uint32_t user_id, int64_t epoch_timestamp,
                           SegmentedFeatureVector& vec) {
+=======
+  void extendVectorWithUserHistory(uint32_t user_id, int64_t timestamp_seconds,
+                                   SegmentedFeatureVector& vec) {
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
     uint32_t added = 0;
 
-    for (const auto& item : _records->at(user_id)) {
+    for (const auto& item : _per_user_history->at(user_id)) {
       if (added >= _track_last_n) {
         break;
       }
 
-      if (item.timestamp <= epoch_timestamp) {
+      if (item.timestamp <= timestamp_seconds) {
         vec.addSparseFeatureToSegment(item.item, 1.0);
         added++;
       }
+    }
+  }
+
+  void addItemsToUserHistory(uint32_t user_id, int64_t timestamp_seconds,
+                             std::vector<uint32_t>& item_ids) {
+    for (const auto& item_id : item_ids) {
+      _per_user_history->add(user_id, item_id, timestamp_seconds);
     }
   }
 
@@ -220,7 +248,11 @@ class UserItemHistoryBlock final : public Block {
   ThreadSafeVocabularyPtr _user_id_lookup;
   ThreadSafeVocabularyPtr _item_id_lookup;
 
+<<<<<<< HEAD
   std::shared_ptr<ItemHistoryCollection> _records;
+=======
+  std::shared_ptr<ItemHistoryCollection> _per_user_history;
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
 
   std::optional<char> _item_col_delimiter;
 };

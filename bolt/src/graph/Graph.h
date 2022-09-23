@@ -24,7 +24,6 @@
 namespace thirdai::bolt {
 
 class DistributedTrainingContext;
-using GraphCallback = std::function<void()>;
 
 class BoltGraph {
   friend class DistributedTrainingContext;
@@ -40,9 +39,7 @@ class BoltGraph {
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
         _epoch_count(0),
-        _batch_cnt(0),
-        _per_batch_callback(std::nullopt),
-        _per_epoch_callback(std::nullopt) {
+        _batch_cnt(0) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
@@ -74,6 +71,9 @@ class BoltGraph {
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            bool use_sparse_inference);
 
+  BoltBatch predictSingleBatch(std::vector<BoltBatch>&& test_data,
+                               bool use_sparse_inference);
+
   BoltVector getLabelVectorExplainPrediction(
       uint32_t vec_id, bool explain_prediction_using_highest_activation);
 
@@ -101,13 +101,7 @@ class BoltGraph {
 
   NodePtr getNodeByName(const std::string& node_name) const;
 
-  void registerPerBatchCallback(GraphCallback callback) {
-    _per_batch_callback = std::move(callback);
-  }
-
-  void registerPerEpochCallback(GraphCallback callback) {
-    _per_epoch_callback = std::move(callback);
-  }
+  uint32_t outputDim() const { return _output->outputDim(); }
 
  private:
   // Private constructor for cereal.
@@ -182,18 +176,6 @@ class BoltGraph {
 
   bool graphCompiled() const { return _loss != nullptr; }
 
-  void perBatchCallback() {
-    if (_per_batch_callback) {
-      _per_batch_callback.value()();
-    }
-  }
-
-  void perEpochCallback() {
-    if (_per_epoch_callback) {
-      _per_epoch_callback.value()();
-    }
-  }
-
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;
 
@@ -212,11 +194,10 @@ class BoltGraph {
 
   std::shared_ptr<LossFunction> _loss;
 
+  // TODO(blaise/david): Factor out _epoch_count and _batch_cnt and put
+  // them in TrainState
   uint32_t _epoch_count;
   uint32_t _batch_cnt;
-
-  std::optional<GraphCallback> _per_batch_callback;
-  std::optional<GraphCallback> _per_epoch_callback;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

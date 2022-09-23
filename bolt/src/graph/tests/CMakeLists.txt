@@ -84,6 +84,22 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(dag_dlrm_attention_test DlrmAttentionNodeTests.cc)
+target_link_libraries(
+  dag_dlrm_attention_test
+  PRIVATE
+  bolt_graph_lib
+  gtest_main
+)
+
+add_executable(predict_single_test PredictSingleTest.cc)
+target_link_libraries(
+  predict_single_test
+  PRIVATE
+  bolt_graph_lib
+  gtest_main
+)
+
 include(GoogleTest)
 
 set(DAG_TESTS
@@ -97,6 +113,8 @@ set(DAG_TESTS
   save_load_test
   switch_node_test
   dag_dlrm_test
+  dag_dlrm_attention_test
+  predict_single_test
 )
 
 foreach(DAG_TEST IN LISTS DAG_TESTS)

@@ -43,4 +43,4 @@ jobs:
           sudo pip3 install black
       - name: Check Python format 
         run: |
-          black . --check --exclude /deps/
+          black . --check --exclude "build|.venv|venv|.env|env|deps"

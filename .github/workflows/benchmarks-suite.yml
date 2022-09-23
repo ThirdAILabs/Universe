@@ -33,11 +33,15 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - name: Build docker
-        run: bin/docker-build.sh
+        run: bin/docker-benchmarking-build.sh
 
       - name: Build Package and Run Benchmark
+<<<<<<< HEAD
         run: >
           docker run --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --rm --mount type=bind,source=/share/data,target=/data --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build /bin/bash -c "
           python3 /Universe/bin/build.py -f THIRDAI_EXPOSE_ALL; 
           python3 /Universe/bin/benchmark_bolt.py -m engine -l /Universe/benchmarks/bolt_benchmarks/configs/amazon_polarity.txt /Universe/benchmarks/bolt_benchmarks/configs/amzn670k.txt /Universe/benchmarks/bolt_benchmarks/configs/criteo_dlrm.txt; 
           python3 /Universe/bin/benchmark_bolt.py -m text_classifier -l /Universe/benchmarks/text_classifier_benchmarks/configs/yelp_reviews.txt"   
+=======
+        run: bin/docker-benchmarking-run.sh "python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_configs/amazon_polarity.txt /Universe/benchmarks/bolt_configs/amzn670k.txt /Universe/benchmarks/bolt_configs/criteo_dlrm.txt"   
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50

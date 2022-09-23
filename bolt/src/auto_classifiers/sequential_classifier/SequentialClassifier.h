@@ -1,13 +1,18 @@
 #pragma once
 
+#include <cereal/types/variant.hpp>
 #include "SequentialUtils.h"
 #include <bolt/src/graph/CommonNetworks.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+<<<<<<< HEAD
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
+=======
+#include <bolt/src/metrics/Metric.h>
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -15,6 +20,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 
 namespace thirdai::bolt::sequential_classifier {
 
@@ -42,6 +48,7 @@ class SequentialClassifier {
    * sequential column name, the number of unique classes, and
    * the number of previous values to track.
    */
+<<<<<<< HEAD
   SequentialClassifier(
       const CategoricalPair& user, const CategoricalTuple& target,
       const std::string& timestamp,
@@ -59,11 +66,26 @@ class SequentialClassifier {
     _single_inference_batch_processor =
         Pipeline::buildSingleInferenceBatchProcessor(
             _schema, _state, _single_inference_col_nums);
+=======
+  SequentialClassifier(CategoricalPair user, CategoricalPair target,
+                       std::string timestamp,
+                       std::vector<std::string> static_text = {},
+                       std::vector<CategoricalPair> static_categorical = {},
+                       std::vector<SequentialTriplet> sequential = {},
+                       std::optional<char> multi_class_delim = std::nullopt) {
+    _schema.user = std::move(user);
+    _schema.target = std::move(target);
+    _schema.timestamp_col_name = std::move(timestamp);
+    _schema.static_text_col_names = std::move(static_text);
+    _schema.static_categorical = std::move(static_categorical);
+    _schema.sequential = std::move(sequential);
+    _schema.multi_class_delim = multi_class_delim;
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
   }
 
-  void train(const std::string& train_filename, uint32_t epochs,
-             float learning_rate,
-             std::vector<std::string> metrics = {"recall@1"}) {
+  MetricData train(const std::string& train_filename, uint32_t epochs,
+                   float learning_rate,
+                   std::vector<std::string> metrics = {"recall@1"}) {
     auto pipeline = Pipeline::buildForFile(_schema, _state, train_filename,
                                            /* delimiter = */ ',',
                                            /* for_training = */ true);
@@ -73,12 +95,14 @@ class SequentialClassifier {
     if (!_model) {
       _model = CommonNetworks::FullyConnected(
           pipeline.getInputDim(),
-          {FullyConnectedNode::make(/* dim= */ 512, /* activation= */ "relu"),
-           FullyConnectedNode::make(pipeline.getLabelDim(), output_sparsity,
-                                    /* activation= */ "softmax",
-                                    /* num_tables= */ 64,
-                                    /* hashes_per_table= */ 4,
-                                    /* reservoir_size= */ 64)});
+          {FullyConnectedNode::makeDense(/* dim= */ 512,
+                                         /* activation= */ "relu"),
+           FullyConnectedNode::makeExplicitSamplingConfig(
+               pipeline.getLabelDim(), output_sparsity,
+               /* activation= */ "softmax",
+               /* num_tables= */ 64,
+               /* hashes_per_table= */ 4,
+               /* reservoir_size= */ 64)});
       _model->compile(
           CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
     }
@@ -90,10 +114,10 @@ class SequentialClassifier {
                                 /* epochs= */ epochs)
             .withMetrics(std::move(metrics));
 
-    _model->train({train_data}, train_labels, train_config);
+    return _model->train({train_data}, train_labels, train_config);
   }
 
-  InferenceResult predict(
+  InferenceMetricData predict(
       const std::string& test_filename,
       std::vector<std::string> metrics = {"recall@1"},
       const std::optional<std::string>& output_filename = std::nullopt,
@@ -115,9 +139,14 @@ class SequentialClassifier {
       if (!output_file) {
         return;
       }
+<<<<<<< HEAD
       auto class_ids = output.findKLargestActivationsK(print_top_k);
       auto [target_col_name, _1, _2] = _schema.target;
       auto target_lookup = _state.vocabs_by_column[target_col_name];
+=======
+      auto class_ids = output.findKLargestActivations(print_top_k);
+      auto target_lookup = _state.vocabs_by_column[_schema.target.first];
+>>>>>>> 56f2b447317f6447c102498eb69c1187140b7e50
 
       uint32_t first = true;
       while (!class_ids.empty()) {
@@ -143,7 +172,15 @@ class SequentialClassifier {
       output_file->close();
     }
 
-    return results;
+    return results.first;
+  }
+
+  std::string summarizeModel() {
+    if (!_model) {
+      throw std::runtime_error("Called sumarizeModel() before training.");
+    }
+
+    return _model->summarize(/* print= */ false, /* detailed= */ true);
   }
 
   BoltVector predictSingle(
