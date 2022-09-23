@@ -155,6 +155,16 @@ class SequentialClassifier {
     return _model->summarize(/* print= */ false, /* detailed= */ true);
   }
 
+  /**
+   * @brief Computes the top k classes and their probabilities.
+   * 
+   * @param sample A map from strings to strings, where the keys are column names
+   * as specified in the SequentialClassifier schema and the values are the values 
+   * of the respective columns.
+   * @param k The number of top results to return.
+   * @return std::vector<std::pair<std::string, float>> A vector of 
+   * (class name. probability) pairs.
+   */
   std::vector<std::pair<std::string, float>> predictSingle(
       const std::unordered_map<std::string, std::string>& sample,
       uint32_t k = 1) {
