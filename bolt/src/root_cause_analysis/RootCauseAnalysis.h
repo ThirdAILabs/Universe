@@ -62,12 +62,12 @@ getPercentExplanationWithColumnNames(
   std::vector<dataset::PercentageResponsibleColumnAndInputKey>
       responsible_column_and_input_keys;
 
-  for (const auto& col : gradients_ratio_with_indices) {
+  for (const auto& [ratio, index] : gradients_ratio_with_indices) {
     dataset::ResponsibleInputs column_name_and_input_key =
-        generic_batch_processor->explainIndex(col.second, columnar_sample);
+        generic_batch_processor->explainIndex(index, columnar_sample);
 
     responsible_column_and_input_keys.push_back(
-        {(col.first / ratio_sum) * 100, column_name_and_input_key});
+        {(ratio / ratio_sum) * 100, column_name_and_input_key});
   }
 
   return responsible_column_and_input_keys;
