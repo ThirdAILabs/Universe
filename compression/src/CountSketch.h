@@ -42,7 +42,7 @@ class CountSketch final : public CompressedVector<T> {
 
   uint32_t numSketches() const;
 
-  uint32_t size() const;
+  uint32_t size() const final;
 
   CompressionScheme type() const final;
 
@@ -52,7 +52,7 @@ class CountSketch final : public CompressedVector<T> {
 
   std::vector<uint32_t> signSeeds() const { return _seed_for_sign; }
 
-  uint32_t uncompressedSize() const { return _uncompressed_size; }
+  uint32_t uncompressedSize() const final { return _uncompressed_size; }
 
   std::vector<T> decompress() const final;
 

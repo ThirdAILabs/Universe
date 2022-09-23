@@ -44,9 +44,9 @@ class DragonVector final : public CompressedVector<T> {
 
   uint32_t seedForHashing() const { return _seed_for_hashing; }
 
-  uint32_t uncompressedSize() const { return _uncompressed_size; }
+  uint32_t uncompressedSize() const final { return _uncompressed_size; }
 
-  uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
+  uint32_t size() const final { return static_cast<uint32_t>(_indices.size()); }
 
   CompressionScheme type() const final;
 

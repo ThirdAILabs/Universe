@@ -63,6 +63,10 @@ class CompressedVector {
 
   virtual CompressionScheme type() const = 0;
 
+  virtual uint32_t uncompressedSize() const = 0;
+
+  virtual uint32_t size() const = 0;
+
   virtual ~CompressedVector() = default;
 
   /*
