@@ -24,8 +24,9 @@ class DragonVectorTest : public testing::Test {
     for (uint32_t i = 0; i < _uncompressed_size; i++) {
       _original_vec.push_back(static_cast<float>(dist(_rng)) / 64.0);
     }
-    _vec = DragonVector<float>(_original_vec, _compression_density,
-                               _seed_for_hashing, sample_population_size);
+    _vec = DragonVector<float>(/* vector_to_compress = */ _original_vec,
+                               _compression_density, _seed_for_hashing,
+                               sample_population_size);
   }
 };
 

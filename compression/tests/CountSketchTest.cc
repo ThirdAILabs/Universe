@@ -28,9 +28,10 @@ class CountSketchTest : public testing::Test {
       _original_vec.push_back(static_cast<float>(dist(_rng)) / 64.0);
     }
 
-    _vec = CountSketch<float>(_original_vec, _compression_density, 1,
-                              std::vector({_seed_for_hashing_index}),
-                              std::vector({_seed_for_sign}));
+    _vec = CountSketch<float>(
+        /* vector_to_compress = */ _original_vec, _compression_density,
+        /* num_sketches = */ 1, std::vector({_seed_for_hashing_index}),
+        std::vector({_seed_for_sign}));
   }
 };
 
@@ -57,25 +58,6 @@ TEST_F(CountSketchTest, ConstructorCountSketchTest) {
 
   for (size_t i = 0; i < test_count_sketch.size(); i++) {
     ASSERT_EQ(test_count_sketch[i], count_sketch[i]);
-  }
-}
-
-TEST_F(CountSketchTest, GetSetCountSketchTest) {
-  UniversalHash hash_for_index = UniversalHash(_seed_for_hashing_index);
-  UniversalHash hash_for_sign = UniversalHash(_seed_for_sign);
-
-  std::vector<float> decompressed_vector(_uncompressed_size, 0);
-  std::vector<float> count_sketch = _vec.sketches()[0];
-
-  for (uint32_t i = 0; i < _uncompressed_size; i++) {
-    uint32_t hashed_sign = hash_for_sign.gethash(i) % 2;
-    uint32_t hashed_index = hash_for_index.gethash((i)) % count_sketch.size();
-    if (hashed_sign == 0) {
-      decompressed_vector[i] = -count_sketch[hashed_index];
-    } else {
-      decompressed_vector[i] = count_sketch[hashed_index];
-    }
-    ASSERT_EQ(decompressed_vector[i], _vec.get(i));
   }
 }
 
