@@ -23,7 +23,7 @@ using BlockConfigPtr = std::unique_ptr<BlockConfig>;
 class NumericalCategoricalBlockConfig final : public BlockConfig {
  public:
   NumericalCategoricalBlockConfig(HyperParameterPtr<uint32_t> n_classes,
-                                  HyperParameterPtr<char> delimiter)
+                                  HyperParameterPtr<std::string> delimiter)
       : _n_classes(std::move(n_classes)), _delimiter(std::move(delimiter)) {}
 
   dataset::BlockPtr getBlock(
@@ -31,15 +31,21 @@ class NumericalCategoricalBlockConfig final : public BlockConfig {
       const std::unordered_map<std::string, UserParameterInput>&
           user_specified_parameters) const final {
     uint32_t n_classes = _n_classes->resolve(option, user_specified_parameters);
-    char delimiter = _n_classes->resolve(option, user_specified_parameters);
+    std::string delimiter =
+        _delimiter->resolve(option, user_specified_parameters);
+    if (delimiter.size() != 1) {
+      throw std::invalid_argument(
+          "Expected delimiter to be a single character but recieved: '" +
+          delimiter + "'.");
+    }
 
     return dataset::NumericalCategoricalBlock::make(column, n_classes,
-                                                    delimiter);
+                                                    delimiter.at(0));
   }
 
  private:
   HyperParameterPtr<uint32_t> _n_classes;
-  HyperParameterPtr<char> _delimiter;
+  HyperParameterPtr<std::string> _delimiter;
 };
 
 class DenseArrayBlockConfig final : public BlockConfig {

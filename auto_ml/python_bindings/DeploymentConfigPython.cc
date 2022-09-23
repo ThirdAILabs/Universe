@@ -6,6 +6,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <unordered_map>
 
@@ -36,48 +37,49 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
       submodule, "SamplingConfigHyperParameter");
 
-  submodule.def("test", [](const py::object& obj) {
-    std::cout << "Testing: " << py::str(obj) << std::endl;
-    if (py::isinstance<py::str>(obj)) {
-      std::cout << "is str" << std::endl;
-    }
-    if (py::isinstance<py::int_>(obj)) {
-      std::cout << "is int" << std::endl;
-    }
-    if (py::isinstance<py::float_>(obj)) {
-      std::cout << "is float" << std::endl;
-    }
-    if (py::isinstance<bolt::SamplingConfig>(obj)) {
-      std::cout << "is sampling config" << std::endl;
-    }
-    if (py::isinstance<bolt::LossFunction>(obj)) {
-      std::cout << "is loss function" << std::endl;
-    }
-  });
+  /**
+   * Do not change the order of these overloads. Because bool is a sublclass of
+   * int in python, it must be declared first or calling this function with a
+   * bool will result in the uint32_t function being called. Pybind guarentees
+   * that overloads are tried in the order they were registered so this is safe
+   * to do.
+   */
+  defConstantParameter<bool>(submodule);
+  defConstantParameter<uint32_t>(submodule);
+  defConstantParameter<float>(submodule);
+  defConstantParameter<std::string>(submodule);
+  defConstantParameter<std::shared_ptr<bolt::LossFunction>>(submodule);
+  defConstantParameter<bolt::SamplingConfigPtr>(submodule);
+
+  defOptionParameter<bool>(submodule);
+  defOptionParameter<uint32_t>(submodule);
+  defOptionParameter<float>(submodule);
+  defOptionParameter<std::string>(submodule);
+  defOptionParameter<std::shared_ptr<bolt::LossFunction>>(submodule);
+  defOptionParameter<bolt::SamplingConfigPtr>(submodule);
 }
 
-template<typename P, typename T>
-py::object castToHyperParameterPyObject(std::unique_ptr<P<T>> )
+template <typename T>
+HyperParameterPtr<T> makeConstantParamter(T value) {
+  return std::make_unique<ConstantParameter<T>>(value);
+}
 
-py::object createConstantParameter(const py::object& obj) {
-  if (py::isinstance<py::str>(obj)) {
-    std::string str = obj.cast<std::string>();
-    if (str.length() == 1) {
-      return std::make_unique<ConstantParameter<char>>(str[0]);
-    }
-  }
-  if (py::isinstance<py::int_>(obj)) {
-    std::cout << "is int" << std::endl;
-  }
-  if (py::isinstance<py::float_>(obj)) {
-    std::cout << "is float" << std::endl;
-  }
-  if (py::isinstance<bolt::SamplingConfig>(obj)) {
-    std::cout << "is sampling config" << std::endl;
-  }
-  if (py::isinstance<bolt::LossFunction>(obj)) {
-    std::cout << "is loss function" << std::endl;
-  }
+template <typename T>
+void defConstantParameter(py::module_& submodule) {
+  submodule.def("ConstantParameter", &makeConstantParamter<T>,
+                py::arg("value").noconvert());
+}
+
+template <typename T>
+HyperParameterPtr<T> makeOptionParamter(
+    std::unordered_map<std::string, T> values) {
+  return std::make_unique<OptionParameter<T>>(std::move(values));
+}
+
+template <typename T>
+void defOptionParameter(py::module_& submodule) {
+  submodule.def("OptionParameter", &makeOptionParamter<T>,
+                py::arg("values").noconvert());
 }
 
 }  // namespace thirdai::automl::deployment_config::python
