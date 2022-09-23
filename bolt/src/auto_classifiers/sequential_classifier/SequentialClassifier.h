@@ -135,12 +135,6 @@ class SequentialClassifier {
 
     auto [test_data, test_labels] = pipeline.loadInMemory();
 
-    for (const auto& batch : *test_data) {
-      for (const auto& vec : batch) {
-        std::cout << vec << std::endl;
-      }
-    }
-
     PredictConfig config = PredictConfig::makeConfig()
                                .withMetrics(std::move(metrics))
                                .withOutputCallback(print_predictions_callback);
