@@ -127,7 +127,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
            py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
       .def("predict_single", &SequentialClassifier::predictSingle,
-           py::arg("sample"), py::arg("k") = 1,
+           py::arg("input_sample"), py::arg("top_k") = 1,
            "Computes the top k classes and their probabilities for a single "
            "input sample. "
            "Returns a list of (class name. probability) pairs\n"

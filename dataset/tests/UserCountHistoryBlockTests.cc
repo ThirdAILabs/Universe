@@ -92,6 +92,17 @@ TEST(UserCountHistoryBlockTest, NormalizeWhenLookbackPeriodsGreaterThanOne) {
 
   auto batch = processBatch(block, input_rows);
 
+  // First vector's raw counts should be 0. Ensure that it is not normalized to
+  // nan.
+  auto first_vector = batch[0];
+
+  ASSERT_TRUE(first_vector.isDense());
+  ASSERT_EQ(first_vector.len, 5);
+  for (uint32_t pos = 0; pos < first_vector.len; pos++) {
+    ASSERT_FALSE(std::isnan(first_vector.activations[pos]));
+  }
+
+  // Last vector should have counts from samples 0-4.
   auto last_vector = batch[5];
 
   ASSERT_TRUE(last_vector.isDense());
@@ -115,6 +126,29 @@ TEST(UserCountHistoryBlockTest, NormalizeWhenLookbackPeriodsGreaterThanOne) {
 
   l2norm = std::sqrt(l2norm);
   ASSERT_NEAR(l2norm, 1.0, 0.00001);
+}
+
+TEST(UserCountHistoryBlockTest, NotNumbersTreatedAsZero) {
+  auto count_history = CountHistoryMap::make(/* history_lag= */ 0,
+                                             /* history_length= */ 1);
+
+  auto block =
+      UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
+                                  /* timestamp_col= */ 2, count_history);
+
+  std::vector<std::string> input_rows = {
+      {"user,nan,2022-02-02"},
+      {"user,NaN,2022-02-03"},
+      {"user,inf,2022-02-04"},
+      {"user,-inf,2022-02-05"},
+  };
+
+  auto batch = processBatch(block, input_rows);
+
+  for (const auto& vector : batch) {
+    ASSERT_EQ(vector.len, 1);
+    ASSERT_EQ(vector.activations[0], 0.0);
+  }
 }
 
 }  // namespace thirdai::dataset

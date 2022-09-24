@@ -170,7 +170,7 @@ class SequentialClassifier {
     auto processor = Pipeline::buildSingleInferenceBatchProcessor(
         _schema, _state, _single_inference_col_nums);
 
-    auto result = getPercentExplanationWithColumnNames(
+    auto result = getSignificanceSortedExplanations(
         _model, makeInputForSingleInference(processor, input_row), input_row,
         processor, neuron_to_explain);
 
