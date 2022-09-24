@@ -158,10 +158,7 @@ class UserItemHistoryBlock final : public Block {
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const final {
     (void)input_row;
-    Explanation explanation;
-    explanation.column_number = _item_col;
-    explanation.keyword = _item_id_lookup->getString(index_within_block);
-    return explanation;
+    return {_item_col, _item_id_lookup->getString(index_within_block)};
   }
 
  protected:

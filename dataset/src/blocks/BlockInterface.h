@@ -32,8 +32,12 @@ using BlockPtr = std::shared_ptr<Block>;
  * 4. column_name : if the classifer has map we can return column_name also.
  */
 struct Explanation {
-  float percentage_significance;
+  Explanation(uint32_t column_number, std::string keyword)
+      : column_number(column_number), keyword(std::move(keyword)) {}
+
   uint32_t column_number;
+  float percentage_significance = 0.0;
+  // The following fields default to empty strings.
   std::string keyword;
   std::string column_name;
 };

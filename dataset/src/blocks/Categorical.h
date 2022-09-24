@@ -33,11 +33,7 @@ class CategoricalBlock : public Block {
   Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const final {
-    Explanation explanation;
-    explanation.column_number = _col;
-    explanation.keyword =
-        getResponsibleCategory(index_within_block, input_row[_col]);
-    return explanation;
+    return {_col, getResponsibleCategory(index_within_block, input_row[_col])};
   }
 
   /*
