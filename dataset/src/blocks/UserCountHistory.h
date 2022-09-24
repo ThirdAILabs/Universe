@@ -50,12 +50,10 @@ class UserCountHistoryBlock final : public Block {
     std::string start_time_str = TimeObject(start_timestamp).string();
     std::string end_time_str = TimeObject(end_timestamp).string();
 
-    Explanation explanation;
-    explanation.column_number = _count_col;
-    explanation.keyword = "between " + start_time_str + " and " + end_time_str +
-                          " value is " + movement;
+    auto keyword = "between " + start_time_str + " and " + end_time_str +
+                   " value is " + movement;
 
-    return explanation;
+    return {_count_col, keyword};
   }
 
   static auto make(size_t user_col, size_t count_col, size_t timestamp_col,
