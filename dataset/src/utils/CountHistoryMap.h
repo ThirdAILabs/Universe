@@ -107,8 +107,8 @@ class CountHistoryMap {
     int64_t start_timestamp_offset = start_period_offset * _period_seconds;
     int64_t history_start_timestamp =
         current_timestamp + start_timestamp_offset;
-    return {history_start_timestamp + idx * _period_seconds,
-            history_start_timestamp + (idx + 1) * _period_seconds};
+    return {history_start_timestamp + period_idx * _period_seconds,
+            history_start_timestamp + (period_idx + 1) * _period_seconds};
   }
 
   void removeOutdatedCounts(int64_t timestamp) {
