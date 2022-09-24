@@ -137,7 +137,7 @@ void assertPercentageSignificance(std::vector<float> percentage_significances) {
   bool isSorted = std::is_sorted(percentage_significances.begin(),
                                  percentage_significances.end(),
                                  [](float value1, float value2) {
-                                   return std::abs(value1) >= std::abs(value2);
+                                   return std::abs(value1) > std::abs(value2);
                                  });
 
   ASSERT_TRUE(isSorted);
