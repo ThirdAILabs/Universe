@@ -90,6 +90,9 @@ class UserCountHistoryBlock final : public Block {
 
     char* end;
     float val = std::strtof(input_row.at(_count_col).data(), &end);
+    if (std::isnan(val) || std::isinf(val)) {
+      val = 0.0;
+    }
 
     return {std::move(user), time_seconds, val};
   }
