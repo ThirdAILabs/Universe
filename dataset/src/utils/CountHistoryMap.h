@@ -44,6 +44,9 @@ class CountMinSketch {
  private:
   template <typename ForEachBucketLambdaT>
   void forEachBucket(const std::string& key, ForEachBucketLambdaT lambda) {
+    static_assert(std::is_convertible<ForEachBucketLambdaT,
+                                      std::function<void(float&)>>::value);
+
     for (size_t row_idx = 0; row_idx < _n_rows; ++row_idx) {
       uint32_t start_of_row = row_idx * _range;
       auto hash = hashing::MurmurHash(key.data(), key.size(), _seeds[row_idx]);
@@ -86,7 +89,7 @@ class CountHistoryMap {
   }
 
   std::vector<float> getHistory(const std::string& key, int64_t timestamp) {
-    auto timestamp_periods = timestampPeriods(timestamp);
+    int64_t timestamp_periods = timestampPeriods(timestamp);
 
     std::vector<float> history(_history_length);
     for (int64_t period = 0; period < _history_length; period++) {
@@ -97,8 +100,8 @@ class CountHistoryMap {
     return history;
   }
 
-  std::pair<int64_t, int64_t> getHistoryTimeRangeAtIndex(
-      int64_t current_timestamp, int64_t idx) const {
+  std::pair<int64_t, int64_t> getHistoryTimeRangeAtPeriodIndex(
+      int64_t current_timestamp, int64_t period_idx) const {
     int64_t start_period_offset = 0;
     start_period_offset -= (_history_lag + _history_length - 1);
     int64_t start_timestamp_offset = start_period_offset * _period_seconds;
