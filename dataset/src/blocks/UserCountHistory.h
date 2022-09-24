@@ -27,18 +27,12 @@ class UserCountHistoryBlock final : public Block {
     _history->removeOutdatedCounts(time.secondsSinceEpoch());
   }
 
-  //
-  float percentage_significance;
-  uint32_t column_number;
-  std::string keyword;
-  std::string column_name;
-
   Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) const final {
-    auto [user, time_seconds, val] = getUserTimeVal(input_row);
+    auto [user, time_seconds, _] = getUserTimeVal(input_row);
 
-    auto counts = getProcessedCounts(user, time_seconds);
+    auto counts = getNormalizedRecentCountHistory(user, time_seconds);
 
     std::string movement;
     if (counts.at(index_within_block) < 0) {
@@ -77,7 +71,7 @@ class UserCountHistoryBlock final : public Block {
 
     _history->index(user, time_seconds, val);
 
-    auto counts = getProcessedCounts(user, time_seconds);
+    auto counts = getNormalizedRecentCountHistory(user, time_seconds);
 
     for (auto count : counts) {
       vec.addDenseFeatureToSegment(count);
@@ -99,8 +93,8 @@ class UserCountHistoryBlock final : public Block {
     return {std::move(user), time_seconds, val};
   }
 
-  std::vector<float> getProcessedCounts(const std::string& user,
-                                        int64_t timestamp_seconds) const {
+  std::vector<float> getNormalizedRecentCountHistory(
+      const std::string& user, int64_t timestamp_seconds) const {
     auto counts = _history->getHistory(user, timestamp_seconds);
 
     if (counts.size() > 1) {
