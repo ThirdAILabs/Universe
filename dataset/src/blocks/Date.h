@@ -43,7 +43,6 @@ class DateBlock : public Block {
       const std::vector<std::string_view>& input_row) const final {
     (void)input_row;
     std::string reason;
-    Explanation explanation;
     if (index_within_block >= featureDim()) {
       throw std::invalid_argument("index is out of bounds for date block.");
     }
@@ -57,9 +56,7 @@ class DateBlock : public Block {
     } else {
       reason = "week_of_year";
     }
-    explanation.column_number = _col;
-    explanation.keyword = reason;
-    return explanation;
+    return {_col, reason};
   }
 
  protected:

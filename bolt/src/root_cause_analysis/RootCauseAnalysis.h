@@ -57,10 +57,10 @@ inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
  * @param generic_batch_processor The batchprocessor from which we can get
  * column number and keyword responsible for the given index.
  *
- * @return vector of PercentageResponsibleColumnAndKeyword, sorted in descending
- * order of their percentage impact.
+ * @return vector of Explanation structs, sorted in descending
+ * order of their significance percentages.
  */
-inline std::vector<dataset::Explanation> getPercentExplanationWithColumnNames(
+inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
     const BoltGraphPtr& model, const BoltVector& input_vector,
     const std::vector<std::string_view>& input_row,
     const std::shared_ptr<dataset::GenericBatchProcessor>&
@@ -77,16 +77,16 @@ inline std::vector<dataset::Explanation> getPercentExplanationWithColumnNames(
     ratio_sum += std::abs(gradient_ratio);
   }
 
-  std::vector<dataset::Explanation> responsible_column_and_keyword;
+  std::vector<dataset::Explanation> explanations;
 
   for (const auto& [ratio, index] : gradients_ratio_with_indices) {
-    dataset::Explanation column_num_and_keyword =
+    dataset::Explanation explanation_for_index =
         generic_batch_processor->explainIndex(index, input_row);
-    column_num_and_keyword.percentage_significance = (ratio / ratio_sum) * 100;
-    responsible_column_and_keyword.push_back(column_num_and_keyword);
+    explanation_for_index.percentage_significance = (ratio / ratio_sum) * 100;
+    explanations.push_back(explanation_for_index);
   }
 
-  return responsible_column_and_keyword;
+  return explanations;
 }
 
 }  // namespace thirdai::bolt
