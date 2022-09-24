@@ -44,7 +44,8 @@ class UserCountHistoryBlock final : public Block {
     }
 
     auto [start_timestamp, end_timestamp] =
-        _history->getHistoryTimeRangeAtIndex(time_seconds, index_within_block);
+        _history->getHistoryTimeRangeAtPeriodIndex(time_seconds,
+                                                   index_within_block);
 
     std::string start_time_str = TimeObject(start_timestamp).string();
     std::string end_time_str = TimeObject(end_timestamp).string();
