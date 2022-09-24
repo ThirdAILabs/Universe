@@ -131,6 +131,14 @@ class ColumnNumberMap {
 
   size_t size() const { return _name_to_num.size(); }
 
+  std::unordered_map<uint32_t, std::string> getColumnNumToColNameMap() {
+    std::unordered_map<uint32_t, std::string> col_num_to_col_name;
+    for (const auto& map : _name_to_num) {
+      col_num_to_col_name[map.second] = map.first;
+    }
+    return col_num_to_col_name;
+  }
+
  private:
   std::unordered_map<std::string, uint32_t> _name_to_num;
 
