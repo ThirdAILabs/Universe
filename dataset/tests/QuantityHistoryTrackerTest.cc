@@ -30,8 +30,8 @@ TEST(QuantityHistoryTrackerTest, SanityCheck) {
   auto last_5_days = history.getHistory(key, query_timestamp);
   for (uint32_t day = 0; day < 5; day++) {
     /*
-      This would not work if we had collisions, but we fixed the 
-      sketch seeds and the sketch is very large so collisions are 
+      This would not work if we had collisions, but we fixed the
+      sketch seeds and the sketch is very large so collisions are
       very unlikely.
     */
     ASSERT_EQ(last_5_days[day], static_cast<float>(day));
@@ -47,8 +47,8 @@ TEST(QuantityHistoryTrackerTest, DifferentKeysMapToDifferentCounts) {
   history.index("key_3", /* timestamp= */ 0, /* val= */ 36.0);
 
   /*
-    This would not work if we had collisions, but we fixed the 
-    sketch seeds and the sketch is very large so collisions are 
+    This would not work if we had collisions, but we fixed the
+    sketch seeds and the sketch is very large so collisions are
     very unlikely.
   */
   ASSERT_EQ(history.getHistory("key_1", /* current_timestamp= */ 0)[0], 1.0);
@@ -213,7 +213,8 @@ TEST(QuantityHistoryTrackerTest, CorrectlyHandlesHistoryLengths) {
   ASSERT_EQ(recent_history_length_3[2], 5.0);
 }
 
-TEST(QuantityHistoryTrackerTest, CorrectlyHandlesDifferentTrackingGranularities) {
+TEST(QuantityHistoryTrackerTest,
+     CorrectlyHandlesDifferentTrackingGranularities) {
   int64_t query_timestamp =
       static_cast<int64_t>(5) * TimeObject::SECONDS_IN_DAY;
 
@@ -242,17 +243,18 @@ TEST(QuantityHistoryTrackerTest, CorrectlyRemovesOutdatedCounts) {
 
   // Index a quantity at timestamp = 1 day.
   history.index("key", /* timestamp= */ static_cast<int64_t>(1) *
-                                     TimeObject::SECONDS_IN_DAY, 1.0);
+                           TimeObject::SECONDS_IN_DAY,
+                1.0);
   ASSERT_EQ(history.getHistory("key", query_timestamp)[4], 1.0);
 
   // New timestamp > current lowest timestamp + (lag + length) * granularity.
   // Quantity indexed earlier is archived.
   history.checkpoint(/* new_lowest_timestamp= */ static_cast<int64_t>(11) *
-                                     TimeObject::SECONDS_IN_DAY);
-  // Counts archived again. Counts archived twice. Quantity indexed earlier 
+                     TimeObject::SECONDS_IN_DAY);
+  // Counts archived again. Counts archived twice. Quantity indexed earlier
   // is permanently deleted.
   history.checkpoint(/* new_lowest_timestamp= */ static_cast<int64_t>(22) *
-                                     TimeObject::SECONDS_IN_DAY);
+                     TimeObject::SECONDS_IN_DAY);
   ASSERT_EQ(history.getHistory("key", query_timestamp)[4], 0.0);
 }
 
