@@ -32,6 +32,32 @@ using CategoricalPair = std::pair<std::string, uint32_t>;
 // A tuple of (column name, num unique classes, track last N)
 using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
 
+static inline dataset::QuantityTrackingGranularity stringToGranularity(
+      std::string&& granularity_string) {
+    auto lower_granularity_string = utils::lower(granularity_string);
+    if (lower_granularity_string == "daily" ||
+        lower_granularity_string == "d") {
+      return dataset::QuantityTrackingGranularity::Daily;
+    }
+    if (lower_granularity_string == "weekly" ||
+        lower_granularity_string == "w") {
+      return dataset::QuantityTrackingGranularity::Weekly;
+    }
+    if (lower_granularity_string == "biweekly" ||
+        lower_granularity_string == "b") {
+      return dataset::QuantityTrackingGranularity::Biweekly;
+    }
+    if (lower_granularity_string == "monthly" ||
+        lower_granularity_string == "m") {
+      return dataset::QuantityTrackingGranularity::Monthly;
+    }
+    throw std::invalid_argument(
+        granularity_string +
+        " is not a valid granularity option. The options are 'daily' / 'd', "
+        "'weekly' / 'w', 'biweekly' / 'b', and 'monthly' / 'm',");
+  }
+
+
 /**
  * Stores the dataset configuration.
  */

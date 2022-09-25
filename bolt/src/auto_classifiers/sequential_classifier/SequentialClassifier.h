@@ -72,7 +72,7 @@ class SequentialClassifier {
     _schema.history_lag = predict_ahead;
     _schema.history_length = history_length_for_inference;
     _schema.history_granularity =
-        stringToGranuarity(std::move(time_granularity));
+        stringToGranularity(std::move(time_granularity));
 
     _single_inference_col_nums = ColumnNumberMap(_schema);
   }
@@ -243,31 +243,6 @@ class SequentialClassifier {
   }
 
  private:
-  static dataset::QuantityTrackingGranularity stringToGranuarity(
-      std::string&& granularity_string) {
-    auto lower_granularity_string = utils::lower(granularity_string);
-    if (lower_granularity_string == "daily" ||
-        lower_granularity_string == "d") {
-      return dataset::QuantityTrackingGranularity::Daily;
-    }
-    if (lower_granularity_string == "weekly" ||
-        lower_granularity_string == "w") {
-      return dataset::QuantityTrackingGranularity::Weekly;
-    }
-    if (lower_granularity_string == "biweekly" ||
-        lower_granularity_string == "b") {
-      return dataset::QuantityTrackingGranularity::Biweekly;
-    }
-    if (lower_granularity_string == "monthly" ||
-        lower_granularity_string == "m") {
-      return dataset::QuantityTrackingGranularity::Monthly;
-    }
-    throw std::invalid_argument(
-        granularity_string +
-        " is not a valid granularity option. The options are 'daily' / 'd', "
-        "'weekly' / 'w', 'biweekly' / 'b', and 'monthly' / 'm',");
-  }
-
   static float getLayerSparsity(uint32_t layer_size) {
     if (layer_size < 500) {
       return 1.0;
