@@ -268,8 +268,6 @@ class Pipeline {
           "history_lag and history_length are not given.");
     }
 
-    std::cout << dataset::QuantityHistoryTracker::granularityToSeconds(schema.history_granularity) << std::endl;
-
     const auto& [user_col_name, _] = user;
     auto& user_qty_history =
         state.count_histories_by_id[dense_sequential_block_id];
