@@ -16,6 +16,7 @@
 #include <dataset/src/blocks/TabularPairGram.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
@@ -143,6 +144,27 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &NumericalCategoricalBlock::isDense,
            "Returns false since text blocks always produce sparse features.");
 
+  py::class_<StringLookupCategoricalBlock, CategoricalBlock,
+             StringLookupCategoricalBlockPtr>(
+      block_submodule, "StringId",
+      "A block that encodes categories represented as string IDs.")
+      .def(py::init<uint32_t, ThreadSafeVocabularyPtr, std::optional<char>>(), py::arg("col"),
+           py::arg("vocab"), py::arg("delimiter") = std::nullopt,
+           "Constructor.\n\n"
+           "Arguments:\n"
+           " * col: Int - Column number of the input row containing "
+           "the categorical information to be encoded.\n"
+           " * vocab: ThreadSafeVocabulary - Vocabulary.\n"
+           " * delimiter: Char (Optional) - A character that separates "
+           "different categories in the column. If not supplied, it is assumed "
+           "that the column only contains a single class.")
+      .def("feature_dim", &NumericalCategoricalBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &NumericalCategoricalBlock::isDense,
+           "Returns false since text blocks always produce sparse features.");
+
+  py::class_<ThreadSafeVocabulary, ThreadSafeVocabularyPtr>(dataset_submodule, "ThreadSafeVocabulary"); // NOLINT
+
   py::class_<DateBlock, Block, std::shared_ptr<DateBlock>>(
       block_submodule, "Date",
       "Encodes a date column given in YYYY-MM-DD format.")
@@ -198,7 +220,8 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("class_name_to_id") =
                std::unordered_map<std::string, uint32_t>(),
            py::arg("column_names") = std::vector<std::string>(),
-           py::arg("col_to_num_bins") = std::nullopt);
+           py::arg("col_to_num_bins") = std::nullopt).def("get_class_to_id_map", &TabularMetadata::getClassToIdMap
+           );
 
   py::class_<TabularPairGram, Block, std::shared_ptr<TabularPairGram>>(
       block_submodule, "TabularPairGram",
