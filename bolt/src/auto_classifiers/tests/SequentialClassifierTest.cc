@@ -295,7 +295,7 @@ TEST(SequentialClassifierTest, TestNoMultiClassCategoricalIfNoDelimiter) {
       /* static_text= */ {},
       /* static_categorical= */ {{"static_categorical", 1}},
       /* track_items= */ {{"target", 2, 3}});  // We do not pass the optional
-                                              // multi_class_delim argument
+                                               // multi_class_delim argument
 
   /*
     In the train file, static_categorical column of the second row
@@ -324,8 +324,9 @@ TEST(SequentialClassifierTest, TestNoMultiClassSequentialIfNoDelimiter) {
       /* timestamp= */ "timestamp",
       /* static_text= */ {},
       /* static_categorical= */ {},
-      /* track_items= */ {{"sequential", 1, 3}});  // We do not pass the optional
-                                                  // multi_class_delim argument
+      /* track_items= */ {{"sequential", 1, 3}});  // We do not pass the
+                                                   // optional multi_class_delim
+                                                   // argument
 
   /*
     In the train file, sequential column of the second row

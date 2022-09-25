@@ -51,16 +51,24 @@ class SequentialClassifier {
    * sequential column name, the number of unique classes, and
    * the number of previous values to track.
    */
-  SequentialClassifier(CategoricalPair user, CategoricalPair target,
-                       std::string timestamp,
-                       std::vector<std::string> static_text = {},
-                       std::vector<CategoricalPair> static_categorical = {},
-                       std::vector<SequentialTriplet> track_items = {},
-                       std::vector<std::string> track_quantities = {},
-                       std::optional<char> multi_class_delim = std::nullopt,
-                       std::optional<uint32_t> time_to_predict_ahead = std::nullopt,
-                       std::optional<uint32_t> history_length_for_inference = std::nullopt,
-                       std::string time_granularity = "daily") {
+  SequentialClassifier(
+      CategoricalPair user, CategoricalPair target, std::string timestamp,
+      std::vector<std::string> static_text = {},
+      std::vector<CategoricalPair> static_categorical = {},
+      std::vector<SequentialTriplet> track_items = {},
+      std::vector<std::string> track_quantities = {},
+      std::optional<char> multi_class_delim = std::nullopt,
+      std::optional<uint32_t> time_to_predict_ahead = std::nullopt,
+      std::optional<uint32_t> history_length_for_inference = std::nullopt,
+      std::string time_granularity = "daily") {
+    if (!track_quantities.empty() &&
+        (!time_to_predict_ahead || !history_length_for_inference)) {
+      throw std::invalid_argument(
+          "[SequentialClassifier] time_to_predict_ahead and "
+          "history_length_for_inference must be provided when tracking "
+          "quanitites.");
+    }
+
     _schema.user = std::move(user);
     _schema.target = std::move(target);
     _schema.timestamp_col_name = std::move(timestamp);
