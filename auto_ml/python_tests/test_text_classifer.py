@@ -1,4 +1,3 @@
-from zoneinfo import available_timezones
 import pytest
 from thirdai import deployment_config as dc
 from thirdai import bolt
