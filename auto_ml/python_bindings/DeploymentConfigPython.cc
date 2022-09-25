@@ -110,9 +110,7 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   py::class_<TextBlockConfig, BlockConfig, std::shared_ptr<TextBlockConfig>>(
       submodule, "TextBlockConfig")
       .def(py::init<bool, HyperParameterPtr<uint32_t>>(),
-           py::arg("use_pairgrams"),
-           py::arg("range") = std::make_shared<ConstantParameter<uint32_t>>(
-               dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM));
+           py::arg("use_pairgrams"), py::arg("range"));
 
   py::class_<DatasetConfig, DatasetConfigPtr>(submodule,  // NOLINT
                                               "DatasetConfig");

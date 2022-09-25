@@ -70,13 +70,15 @@ class BasicClassificationDatasetConfig final : public DatasetConfig {
   DatasetStatePtr createDatasetState(
       const std::string& option,
       const UserInputMap& user_specified_parameters) const final {
-    dataset::BlockPtr data_block = _data_block->getBlock(
-        /* column= */ 1, option, user_specified_parameters);
-
-    dataset::BlockPtr unlabeled_data_block = _data_block->getBlock(
+    dataset::BlockPtr label_block = _label_block->getBlock(
         /* column= */ 0, option, user_specified_parameters);
 
-    dataset::BlockPtr label_block = _label_block->getBlock(
+    uint32_t data_start_col = label_block->expectedNumColumns();
+
+    dataset::BlockPtr data_block = _data_block->getBlock(
+        /* column= */ data_start_col, option, user_specified_parameters);
+
+    dataset::BlockPtr unlabeled_data_block = _data_block->getBlock(
         /* column= */ 0, option, user_specified_parameters);
 
     bool shuffle = _shuffle->resolve(option, user_specified_parameters);
