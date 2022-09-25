@@ -75,12 +75,12 @@ target_link_libraries(
 )
 
 add_executable(
-  count_history_map_test
-  CountHistoryMapTest.cc
+  quantity_history_tracker_test
+  QuantityHistoryTrackerTest.cc
 )
 
 target_link_libraries(
-  count_history_map_test
+  quantity_history_tracker_test
   PRIVATE
   gtest_main
   hash_function_lib
@@ -202,7 +202,7 @@ set(DATASET_TESTS
   categorical_block_test
   date_block_test
   text_block_test
-  count_history_map_test
+  quantity_history_tracker_test
   thread_safe_vocabulary_tests
   user_item_history_block_tests
   user_count_history_block_tests

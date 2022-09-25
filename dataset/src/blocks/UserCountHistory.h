@@ -1,5 +1,5 @@
 #include "BlockInterface.h"
-#include <dataset/src/utils/CountHistoryMap.h>
+#include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <algorithm>
 #include <cmath>
@@ -9,7 +9,8 @@ namespace thirdai::dataset {
 class UserCountHistoryBlock final : public Block {
  public:
   UserCountHistoryBlock(uint32_t user_col, uint32_t count_col,
-                        uint32_t timestamp_col, CountHistoryMapPtr history)
+                        uint32_t timestamp_col,
+                        QuantityHistoryTrackerPtr history)
       : _user_col(user_col),
         _count_col(count_col),
         _timestamp_col(timestamp_col),
@@ -24,7 +25,7 @@ class UserCountHistoryBlock final : public Block {
 
   void prepareForBatch(const std::vector<std::string_view>& first_row) final {
     auto time = TimeObject(first_row.at(_timestamp_col));
-    _history->removeOutdatedCounts(time.secondsSinceEpoch());
+    _history->checkpointCurrentTimestamp(time.secondsSinceEpoch());
   }
 
   Explanation explainIndex(
@@ -44,8 +45,8 @@ class UserCountHistoryBlock final : public Block {
     }
 
     auto [start_timestamp, end_timestamp] =
-        _history->getHistoryTimeRangeAtPeriodIndex(time_seconds,
-                                                   index_within_block);
+        _history->getTimeRangeAtHistoryPosition(time_seconds,
+                                                index_within_block);
 
     std::string start_time_str = TimeObject(start_timestamp).string();
     std::string end_time_str = TimeObject(end_timestamp).string();
@@ -57,7 +58,7 @@ class UserCountHistoryBlock final : public Block {
   }
 
   static auto make(size_t user_col, size_t count_col, size_t timestamp_col,
-                   CountHistoryMapPtr history) {
+                   QuantityHistoryTrackerPtr history) {
     return std::make_shared<UserCountHistoryBlock>(user_col, count_col,
                                                    timestamp_col, history);
   }
@@ -134,7 +135,7 @@ class UserCountHistoryBlock final : public Block {
   uint32_t _user_col;
   uint32_t _count_col;
   uint32_t _timestamp_col;
-  CountHistoryMapPtr _history;
+  QuantityHistoryTrackerPtr _history;
 };
 
 using UserCountHistoryBlockPtr = std::shared_ptr<UserCountHistoryBlock>;
