@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -19,6 +20,27 @@ class CategoricalBlockTest;
 class TextBlockTest;
 
 using BlockPtr = std::shared_ptr<Block>;
+
+/**
+ * Helpful struct to keep all types of explanations required at one place.
+ *
+ * 1. percentage_significance : value which tells us how much this token is
+ * responsible.
+ * 2. column_number : column number corresponding to the responsible token.
+ * 3. keyword : The main thing in our RCA which gives us exact
+ * keyword is responsible for this.
+ * 4. column_name : if the classifer has map we can return column_name also.
+ */
+struct Explanation {
+  Explanation(uint32_t column_number, std::string keyword)
+      : column_number(column_number), keyword(std::move(keyword)) {}
+
+  uint32_t column_number;
+  float percentage_significance = 0.0;
+  // The following fields default to empty strings.
+  std::string keyword;
+  std::string column_name;
+};
 
 /**
  * Segmented feature vector abstract class.
@@ -130,6 +152,24 @@ class Block {
    * to see in each row of the dataset.
    */
   virtual uint32_t expectedNumColumns() const = 0;
+
+  /**
+   * For a given index, get the keyword which falls in that index when building
+   * the segmented feature vector.
+   *
+   * Arguments:
+   * index_within_block : index within the block so that we can get exact
+   * keyword responsible.
+   * input_row: the string_view of input string so that we process the
+   * keywords when we call explainIndex method rather than storing that in
+   * buildsegment , which may affect thread safety.
+   *
+   * Returns:
+   * column number and keyword responsible for the given index from that column.
+   */
+  virtual Explanation explainIndex(
+      uint32_t index_within_block,
+      const std::vector<std::string_view>& input_row) const = 0;
 
   virtual ~Block() = default;
 

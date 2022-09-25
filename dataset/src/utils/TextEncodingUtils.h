@@ -29,7 +29,10 @@ class TextEncodingUtils {
       const std::string_view sentence) {
     std::vector<uint32_t> unigrams;
     forEachWordHash(sentence,
-                    [&](uint32_t word_hash) { unigrams.push_back(word_hash); });
+                    [&](uint32_t word_hash, const std::string_view& word) {
+                      (void)word;
+                      unigrams.push_back(word_hash);
+                    });
     return unigrams;
   }
 
@@ -39,10 +42,27 @@ class TextEncodingUtils {
   static std::vector<uint32_t> computeRawUnigramsWithRange(
       const std::string_view sentence, uint32_t output_range) {
     std::vector<uint32_t> unigrams;
-    forEachWordHash(sentence, [&](uint32_t word_hash) {
-      unigrams.push_back(word_hash % output_range);
-    });
+    forEachWordHash(sentence,
+                    [&](uint32_t word_hash, const std::string_view& word) {
+                      (void)word;
+                      unigrams.push_back(word_hash % output_range);
+                    });
     return unigrams;
+  }
+
+  /**
+   * Get the word_hash to word map, which we can use it for RCA. Its better to
+   * write seperate function than to overload the already existing function.
+   */
+  static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
+      const std::string_view sentence, uint32_t output_range) {
+    std::unordered_map<uint32_t, std::string> index_to_word;
+    forEachWordHash(sentence,
+                    [&](uint32_t word_hash, const std::string_view& word) {
+                      (void)word_hash;
+                      index_to_word[word_hash % output_range] = word;
+                    });
+    return index_to_word;
   }
 
   /**
@@ -141,8 +161,9 @@ class TextEncodingUtils {
   template <typename WORD_PROCESSOR_T>
   inline static void forEachWordHash(const std::string_view sentence,
                                      WORD_PROCESSOR_T word_processor) {
-    static_assert(std::is_convertible<WORD_PROCESSOR_T,
-                                      std::function<void(uint32_t)>>::value);
+    static_assert(std::is_convertible<
+                  WORD_PROCESSOR_T,
+                  std::function<void(uint32_t, std::string_view)>>::value);
 
     bool prev_is_space = true;
     uint32_t start_of_word_offset;
@@ -158,10 +179,12 @@ class TextEncodingUtils {
         // of a word.
         uint32_t len = i - start_of_word_offset;
 
+        std::string_view word_view(sentence.data() + start_of_word_offset, len);
+
         // Hash the word using the recorded start offset and the current index.
         uint32_t word_hash =
             computeUnigram(sentence.data() + start_of_word_offset, len);
-        word_processor(word_hash);
+        word_processor(word_hash, word_view);
         prev_is_space = true;
       }
     }
@@ -169,9 +192,12 @@ class TextEncodingUtils {
       // If we don't find a space at the end of the sentence, then there's a
       // last word we need to hash.
       uint32_t len = sentence.size() - start_of_word_offset;
+
+      std::string_view word_view(sentence.data() + start_of_word_offset, len);
+
       uint32_t word_hash =
           computeUnigram(sentence.data() + start_of_word_offset, len);
-      word_processor(word_hash);
+      word_processor(word_hash, word_view);
     }
   }
 
@@ -220,17 +246,6 @@ class TextEncodingUtils {
       summed_val += base_value;
       idx_val_processor(indices.back(), summed_val);
     }
-  }
-
-  /**
-   * Creates a copy of the original string where all characters are lowercase.
-   */
-  inline static std::string makeLowerCase(const std::string_view original) {
-    std::string lower_case_text(original);
-    for (auto& c : lower_case_text) {
-      c = std::tolower(c);
-    }
-    return lower_case_text;
   }
 };
 

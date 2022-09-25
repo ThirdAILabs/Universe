@@ -194,6 +194,8 @@ class BoltGraph {
 
   std::shared_ptr<LossFunction> _loss;
 
+  // TODO(blaise/david): Factor out _epoch_count and _batch_cnt and put
+  // them in TrainState
   uint32_t _epoch_count;
   uint32_t _batch_cnt;
 };

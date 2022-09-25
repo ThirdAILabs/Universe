@@ -209,6 +209,8 @@ class TrainState {
   TrainState(const TrainConfig& train_config, uint32_t batch_size,
              uint32_t data_len)
       : learning_rate(train_config.learningRate()),
+        epoch(train_config.epochs()),
+        batch_cnt(0),
         verbose(train_config.verbose()),
         rebuild_hash_tables_batch(
             train_config.getRebuildHashTablesBatchInterval(batch_size,
@@ -220,6 +222,8 @@ class TrainState {
         train_metric_aggregator(train_config.getMetricAggregator()) {}
 
   float learning_rate;
+  uint32_t epoch;
+  uint64_t batch_cnt;
   bool verbose;
 
   uint32_t rebuild_hash_tables_batch;

@@ -64,6 +64,13 @@ void defineAutoClassifeirsInModule(py::module_& bolt_submodule) {
       py::arg("internal_model_dim"), py::arg("n_classes"),
       py::arg("column_datatypes"));
 
+#if THIRDAI_EXPOSE_ALL
+  tabular_classifier.def(
+      py::init<uint32_t, uint32_t, std::shared_ptr<dataset::TabularMetadata>>(),
+      py::arg("internal_model_dim"), py::arg("n_classes"),
+      py::arg("tabular_metadata"));
+#endif
+
   defineAutoClassifierCommonMethods(tabular_classifier);
 
   /**
