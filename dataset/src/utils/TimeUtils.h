@@ -33,7 +33,7 @@ class TimeObject {
     throw std::invalid_argument(error_ss.str());
   }
 
-  explicit TimeObject(const long seconds_since_epoch) {
+  explicit TimeObject(const time_t seconds_since_epoch) {
     // Explicit type for windows compiler
     const time_t* const ptr = &seconds_since_epoch;
     _time_object = *std::gmtime(ptr);
