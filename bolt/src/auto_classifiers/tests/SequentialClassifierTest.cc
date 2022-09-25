@@ -84,7 +84,7 @@ SequentialClassifier getTrainedClassifier(const char* train_file_name) {
       /* timestamp= */ "timestamp",
       /* static_text= */ {"static_text"},
       /* static_categorical= */ {{"static_categorical", 4}},
-      /* sequential= */ {{"sequential", 2, 3}});
+      /* track_items= */ {{"sequential", 2, 3}});
 
   classifier.train(train_file_name, /* epochs= */ 5, /* learning_rate= */ 0.01);
 
@@ -224,12 +224,12 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       /* timestamp= */ "timestamp",
       /* static_text= */ {"static_text"},
       /* static_categorical= */ {{"static_categorical", 4}},
-      /* sequential= */ {{"target", 2, 3}},
-      /* dense_sequential= */ {"count"},
+      /* track_items= */ {{"target", 2, 3}},
+      /* track_quantities= */ {"count"},
       /* multi_class_delim= */ ' ',
-      /* history_lag= */ 1,
-      /* history_length= */ 5,
-      /* tracking_granularity= */ "daily");
+      /* predict_ahead= */ 1,
+      /* history_length_for_inference= */ 5,
+      /* time_granularity= */ "daily");
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -265,12 +265,12 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
       /* timestamp= */ "timestamp",
       /* static_text= */ {"static_text"},
       /* static_categorical= */ {{"static_categorical", 4}},
-      /* sequential= */ {{"target", 2, 3}},
-      /* dense_sequential= */ {"count"},
+      /* track_items= */ {{"target", 2, 3}},
+      /* track_quantities= */ {"count"},
       /* multi_class_delim= */ std::nullopt,
-      /* history_lag= */ 1,
-      /* history_length= */ 5,
-      /* tracking_granularity= */ "daily");
+      /* predict_ahead= */ 1,
+      /* history_length_for_inference= */ 5,
+      /* time_granularity= */ "daily");
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -294,7 +294,7 @@ TEST(SequentialClassifierTest, TestNoMultiClassCategoricalIfNoDelimiter) {
       /* timestamp= */ "timestamp",
       /* static_text= */ {},
       /* static_categorical= */ {{"static_categorical", 1}},
-      /* sequential= */ {{"target", 2, 3}});  // We do not pass the optional
+      /* track_items= */ {{"target", 2, 3}});  // We do not pass the optional
                                               // multi_class_delim argument
 
   /*
@@ -324,7 +324,7 @@ TEST(SequentialClassifierTest, TestNoMultiClassSequentialIfNoDelimiter) {
       /* timestamp= */ "timestamp",
       /* static_text= */ {},
       /* static_categorical= */ {},
-      /* sequential= */ {{"sequential", 1, 3}});  // We do not pass the optional
+      /* track_items= */ {{"sequential", 1, 3}});  // We do not pass the optional
                                                   // multi_class_delim argument
 
   /*
@@ -381,8 +381,8 @@ TEST(SequentialClassifierTest, TestNeverMultiClassUser) {
       /* timestamp= */ "timestamp",
       /* static_text= */ {},
       /* static_categorical= */ {},
-      /* sequential= */ {},
-      /* dense_sequential= */ {},
+      /* track_items= */ {},
+      /* track_quantities= */ {},
       /* multi_class_delim= */ ' ');
 
   /*
@@ -442,30 +442,18 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
 }
 
 TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
-  std::tuple<std::string, uint32_t, uint32_t, uint32_t>
-      dense_sequential_config_0 = {"count0",
-                                   /* history_lag= */ 1,
-                                   /* history_length= */ 5,
-                                   /* period_days= */ 2};
-
-  std::tuple<std::string, uint32_t, uint32_t, uint32_t>
-      dense_sequential_config_1 = {"count1",
-                                   /* history_lag= */ 5,
-                                   /* history_length= */ 2,
-                                   /* period_days= */ 7};
-
   SequentialClassifier model(
       /* user= */ {"user", 1},
       /* target= */ {"target", 2},
       /* timestamp= */ "timestamp",
       /* static_text= */ {},
       /* static_categorical= */ {},
-      /* sequential= */ {{"target", 2, 3}},
-      /* dense_sequential= */ {"count"},
+      /* track_items= */ {{"target", 2, 3}},
+      /* track_quantities= */ {"count"},
       /* multi_class_delim= */ std::nullopt,
-      /* history_lag= */ 1,
-      /* history_length= */ 5,
-      /* tracking_granularity= */ "biweekly");
+      /* predict_ahead= */ 1,
+      /* history_length_for_inference= */ 5,
+      /* time_granularity= */ "biweekly");
 
   /*
     Train before getting state because state is only built once
