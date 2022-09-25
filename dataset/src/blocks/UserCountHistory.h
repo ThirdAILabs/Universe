@@ -25,7 +25,7 @@ class UserCountHistoryBlock final : public Block {
 
   void prepareForBatch(const std::vector<std::string_view>& first_row) final {
     auto time = TimeObject(first_row.at(_timestamp_col));
-    _history->checkpointCurrentTimestamp(time.secondsSinceEpoch());
+    _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());
   }
 
   Explanation explainIndex(
