@@ -1,4 +1,3 @@
-
 from cookie_monster import *
 
 
@@ -6,7 +5,7 @@ def test_cookie(input_dim, param_file_first_hidden, param_file_second_hidden, te
     model = CookieMonster(
         input_dim, hidden_dimension=2048, hidden_sparsity=0.1, mlflow_enabled=True
     )
-    #model.load_hidden_layer_parameters(param_file_first_hidden, param_file_second_hidden)
+    # model.load_hidden_layer_parameters(param_file_first_hidden, param_file_second_hidden)
     model.evaluate(test_dir, evaluate=False)
 
 
@@ -98,7 +97,7 @@ if __name__ == "__main__":
         100000,
         "s3://mlflow-artifacts-199696198976/29/96096d3e83bc468aad2926c3cb4f6620/artifacts/first_hidden_layer_parameters",
         "s3://mlflow-artifacts-199696198976/29/96096d3e83bc468aad2926c3cb4f6620/artifacts/second_hidden_layer_parameters",
-        "/home/blaise/cookie-monster/wikipedia_config"
+        "/home/blaise/cookie-monster/wikipedia_config",
     )
     # test_cookie(100000, "/home/henry/cookie_models/amz_yelp_tomatoes_dbpedia_sst_ag", "/home/henry/experiments/cookie_basic/test/")
 
