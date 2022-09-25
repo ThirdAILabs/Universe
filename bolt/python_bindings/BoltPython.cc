@@ -1,5 +1,6 @@
 #include "BoltPython.h"
 #include "BoltGraphPython.h"
+#include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
@@ -9,6 +10,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/DataLoader.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -120,8 +122,22 @@ py::module_ createBoltSubmodule(py::module_& module) {
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
            py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
+      .def("predict_single", &SequentialClassifier::predictSingle,
+           py::arg("input_sample"), py::arg("top_k") = 1,
+           "Computes the top k classes and their probabilities for a single "
+           "input sample. "
+           "Returns a list of (class name. probability) pairs\n"
+           "Arguments:\n"
+           " * sample: Dict[str, str] - The input sample as a dictionary where "
+           "the keys "
+           "are column names as specified in the schema and the values are the "
+           "respective "
+           "column values.\n"
+           " * k: Int (positive) - The number of top results to return.\n")
       .def("save", &SequentialClassifier::save, py::arg("filename"))
-      .def_static("load", &SequentialClassifier::load, py::arg("filename"));
+      .def_static("load", &SequentialClassifier::load, py::arg("filename"))
+      .def("explain", &SequentialClassifier::explain, py::arg("input_sample"),
+           py::arg("neuron_to_explain") = std::optional<uint32_t>());
 
   createBoltGraphSubmodule(bolt_submodule);
 

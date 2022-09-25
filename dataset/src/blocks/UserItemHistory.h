@@ -153,6 +153,14 @@ class UserItemHistoryBlock final : public Block {
         n_unique_items, item_col_delimiter);
   }
 
+  // TODO(YASH): See whether length of history makes sense in explanations.
+  Explanation explainIndex(
+      uint32_t index_within_block,
+      const std::vector<std::string_view>& input_row) const final {
+    (void)input_row;
+    return {_item_col, _item_id_lookup->getString(index_within_block)};
+  }
+
  protected:
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
