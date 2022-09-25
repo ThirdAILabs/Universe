@@ -115,9 +115,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
                std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
            py::arg("dense_sequential") = std::vector<std::string>(),
            py::arg("multi_class_delim") = std::nullopt,
-           py::arg("history_lag") = std::nullopt,
-           py::arg("history_length") = std::nullopt,
-           py::arg("tracking_granularity") = "daily")
+           py::arg("predict_ahead") = std::nullopt,
+           py::arg("history_length_for_inference") = std::nullopt,
+           py::arg("time_granularity") = "daily")
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))

@@ -58,9 +58,9 @@ class SequentialClassifier {
                        std::vector<SequentialTriplet> sequential = {},
                        std::vector<std::string> dense_sequential = {},
                        std::optional<char> multi_class_delim = std::nullopt,
-                       std::optional<uint32_t> history_lag = std::nullopt,
-                       std::optional<uint32_t> history_length = std::nullopt,
-                       std::string tracking_granularity = "daily") {
+                       std::optional<uint32_t> predict_ahead = std::nullopt,
+                       std::optional<uint32_t> history_length_for_inference = std::nullopt,
+                       std::string time_granularity = "daily") {
     _schema.user = std::move(user);
     _schema.target = std::move(target);
     _schema.timestamp_col_name = std::move(timestamp);
@@ -69,10 +69,10 @@ class SequentialClassifier {
     _schema.sequential = std::move(sequential);
     _schema.dense_sequential = std::move(dense_sequential);
     _schema.multi_class_delim = multi_class_delim;
-    _schema.history_lag = history_lag;
-    _schema.history_length = history_length;
+    _schema.history_lag = predict_ahead;
+    _schema.history_length = history_length_for_inference;
     _schema.history_granularity =
-        stringToGranuarity(std::move(tracking_granularity));
+        stringToGranuarity(std::move(time_granularity));
 
     _single_inference_col_nums = ColumnNumberMap(_schema);
   }
