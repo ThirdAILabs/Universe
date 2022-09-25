@@ -2,6 +2,7 @@
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <sys/types.h>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -64,8 +65,10 @@ TEST(QuantityHistoryTrackerTest, DifferentPeriodsMapToDifferentCounts) {
             36.0);
 }
 
-static std::pair<float, uint32_t> computeCountHistoryErrorWithVariableSketchSize(
-    uint32_t sketch_rows, uint32_t sketch_range, float expected_error = 0) {
+static std::pair<float, uint32_t>
+computeCountHistoryErrorWithVariableSketchSize(
+    uint32_t sketch_rows, uint32_t sketch_range,
+    std::optional<float> expected_error = std::nullopt) {
   QuantityHistoryTracker history(
       /* history_lag= */ 0, /* history_length= */ 1,
       /* tracking_granularity= */ QuantityTrackingGranularity::Daily,
@@ -73,7 +76,7 @@ static std::pair<float, uint32_t> computeCountHistoryErrorWithVariableSketchSize
   for (uint32_t key_id = 0; key_id < 500; key_id++) {
     for (int64_t day = 0; day < 1000; day++) {
       history.index(std::to_string(key_id), day * TimeObject::SECONDS_IN_DAY,
-                    100.0);
+                    1.0);
     }
   }
 
@@ -85,10 +88,13 @@ static std::pair<float, uint32_t> computeCountHistoryErrorWithVariableSketchSize
       auto recent_history = history.getHistory(
           std::to_string(key_id), day * TimeObject::SECONDS_IN_DAY);
       EXPECT_EQ(recent_history.size(), 1);
-      EXPECT_GE(recent_history[0], 100.0);
-      error += recent_history[0] - 100.0;
-      if (recent_history[0] - 100.0 <= expected_error) {
-        times_under_expected_error++;
+      EXPECT_GE(recent_history[0], 1.0);
+      error += recent_history[0] - 1.0;
+      if (expected_error) {
+        EXPECT_LT(recent_history[0] - 1.0, *expected_error * 2);
+        if (recent_history[0] - 1.0 <= *expected_error) {
+          times_under_expected_error++;
+        }
       }
     }
   }
@@ -98,31 +104,40 @@ static std::pair<float, uint32_t> computeCountHistoryErrorWithVariableSketchSize
 TEST(QuantityHistoryTrackerTest, ErrorDecreasesWithMoreSketchRows) {
   /*
     Theoretical error rate of count min sketch:
-    For each count, 
+    For each count,
     with probability 1 - 1/(e^rows),
-    error <= e / range * (sum of counts) = e / (2^22) * 50,000,000 = 36
+    error <= e / range * (sum of counts) = e / (2^16) * 500,000 = 21.0
   */
-  auto [error_with_one_row, times_under_expected_error_one_row] = computeCountHistoryErrorWithVariableSketchSize(
-      /* sketch_rows= */ 1, /* sketch_range= */ 1 << 22, /* expected_error= */ 36.0);
-  auto [error_with_five_rows, times_under_expected_error_five_rows] = computeCountHistoryErrorWithVariableSketchSize(
-      /* sketch_rows= */ 5, /* sketch_range= */ 1 << 22, /* expected_error= */ 36.0);
-  
+  auto [error_with_one_row, times_under_expected_error_one_row] =
+      computeCountHistoryErrorWithVariableSketchSize(
+          /* sketch_rows= */ 1, /* sketch_range= */ 1 << 16,
+          /* expected_error= */ 21.0);
+  auto [error_with_five_rows, times_under_expected_error_five_rows] =
+      computeCountHistoryErrorWithVariableSketchSize(
+          /* sketch_rows= */ 5, /* sketch_range= */ 1 << 16,
+          /* expected_error= */ 21.0);
+
   ASSERT_GT(error_with_one_row, error_with_five_rows);
-  
+
   // Probability of error <= 36 = 1 - 1/e = 63%. Make this lenient -> 50%.
-  ASSERT_GT(times_under_expected_error_one_row, 0.5 * 500000); // 500,000 samples.
-  
+  ASSERT_GT(times_under_expected_error_one_row,
+            0.5 * 500000);  // 500,000 samples.
+
   // Probability of error <= 36 = 1 - 1/e^5 = 99%. Make this lenient -> 80%.
-  ASSERT_GT(times_under_expected_error_five_rows, 0.8 * 500000); // 500,000 samples.
+  ASSERT_GT(times_under_expected_error_five_rows,
+            0.8 * 500000);  // 500,000 samples.
 }
 
 TEST(QuantityHistoryTrackerTest, ErrorDecreasesWithWiderSketchRange) {
-  auto [error_with_narrow_range, _0] = computeCountHistoryErrorWithVariableSketchSize(
-      /* sketch_rows= */ 5, /* sketch_range= */ 1 << 16);
-  auto [error_with_medium_range, _1] = computeCountHistoryErrorWithVariableSketchSize(
-      /* sketch_rows= */ 5, /* sketch_range= */ 1 << 19);
-  auto [error_with_wide_range, _2] = computeCountHistoryErrorWithVariableSketchSize(
-      /* sketch_rows= */ 5, /* sketch_range= */ 1 << 22);
+  auto [error_with_narrow_range, _0] =
+      computeCountHistoryErrorWithVariableSketchSize(
+          /* sketch_rows= */ 5, /* sketch_range= */ 1 << 16);
+  auto [error_with_medium_range, _1] =
+      computeCountHistoryErrorWithVariableSketchSize(
+          /* sketch_rows= */ 5, /* sketch_range= */ 1 << 19);
+  auto [error_with_wide_range, _2] =
+      computeCountHistoryErrorWithVariableSketchSize(
+          /* sketch_rows= */ 5, /* sketch_range= */ 1 << 22);
 
   ASSERT_GT(error_with_narrow_range, error_with_medium_range);
   ASSERT_GT(error_with_medium_range, error_with_wide_range);
