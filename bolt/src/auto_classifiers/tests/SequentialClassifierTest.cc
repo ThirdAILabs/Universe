@@ -227,7 +227,7 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       /* track_items= */ {{"target", 2, 3}},
       /* track_quantities= */ {"count"},
       /* multi_class_delim= */ ' ',
-      /* predict_ahead= */ 1,
+      /* time_to_predict_ahead= */ 1,
       /* history_length_for_inference= */ 5,
       /* time_granularity= */ "daily");
 
@@ -268,7 +268,7 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
       /* track_items= */ {{"target", 2, 3}},
       /* track_quantities= */ {"count"},
       /* multi_class_delim= */ std::nullopt,
-      /* predict_ahead= */ 1,
+      /* time_to_predict_ahead= */ 1,
       /* history_length_for_inference= */ 5,
       /* time_granularity= */ "daily");
 
@@ -451,7 +451,7 @@ TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
       /* track_items= */ {{"target", 2, 3}},
       /* track_quantities= */ {"count"},
       /* multi_class_delim= */ std::nullopt,
-      /* predict_ahead= */ 1,
+      /* time_to_predict_ahead= */ 1,
       /* history_length_for_inference= */ 5,
       /* time_granularity= */ "biweekly");
 

@@ -58,7 +58,7 @@ class SequentialClassifier {
                        std::vector<SequentialTriplet> track_items = {},
                        std::vector<std::string> track_quantities = {},
                        std::optional<char> multi_class_delim = std::nullopt,
-                       std::optional<uint32_t> predict_ahead = std::nullopt,
+                       std::optional<uint32_t> time_to_predict_ahead = std::nullopt,
                        std::optional<uint32_t> history_length_for_inference = std::nullopt,
                        std::string time_granularity = "daily") {
     _schema.user = std::move(user);
@@ -69,7 +69,7 @@ class SequentialClassifier {
     _schema.sequential = std::move(track_items);
     _schema.dense_sequential = std::move(track_quantities);
     _schema.multi_class_delim = multi_class_delim;
-    _schema.history_lag = predict_ahead;
+    _schema.history_lag = time_to_predict_ahead;
     _schema.history_length = history_length_for_inference;
     _schema.history_granularity =
         stringToGranularity(std::move(time_granularity));
