@@ -39,7 +39,8 @@ class QuantityHistoryTracker {
                              QuantityTrackingGranularity::Daily,
                          uint32_t sketch_rows = 5,
                          uint32_t sketch_range = 1 << 22)
-      : _interval_in_seconds(granularityToSeconds(tracking_granularity)),
+      : _granularity(tracking_granularity),
+        _interval_in_seconds(granularityToSeconds(tracking_granularity)),
         _history_lag(history_lag),
         _history_length(history_length),
         _start_timestamp(std::numeric_limits<int64_t>::min()),
