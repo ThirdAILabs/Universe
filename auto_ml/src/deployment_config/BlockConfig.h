@@ -12,13 +12,12 @@ class BlockConfig {
  public:
   virtual dataset::BlockPtr getBlock(
       uint32_t column, const std::string& option,
-      const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) const = 0;
+      const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~BlockConfig() = default;
 };
 
-using BlockConfigPtr = std::unique_ptr<BlockConfig>;
+using BlockConfigPtr = std::shared_ptr<BlockConfig>;
 
 class NumericalCategoricalBlockConfig final : public BlockConfig {
  public:
@@ -28,8 +27,7 @@ class NumericalCategoricalBlockConfig final : public BlockConfig {
 
   dataset::BlockPtr getBlock(
       uint32_t column, const std::string& option,
-      const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) const final {
+      const UserInputMap& user_specified_parameters) const final {
     uint32_t n_classes = _n_classes->resolve(option, user_specified_parameters);
     std::string delimiter =
         _delimiter->resolve(option, user_specified_parameters);
@@ -55,8 +53,7 @@ class DenseArrayBlockConfig final : public BlockConfig {
 
   dataset::BlockPtr getBlock(
       uint32_t column, const std::string& option,
-      const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) const final {
+      const UserInputMap& user_specified_parameters) const final {
     uint32_t dim = _dim->resolve(option, user_specified_parameters);
 
     return dataset::DenseArrayBlock::make(column, dim);
@@ -73,8 +70,7 @@ class TextBlockConfig final : public BlockConfig {
 
   dataset::BlockPtr getBlock(
       uint32_t column, const std::string& option,
-      const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) const final {
+      const UserInputMap& user_specified_parameters) const final {
     uint32_t range = _range->resolve(option, user_specified_parameters);
 
     if (_use_pairgrams) {

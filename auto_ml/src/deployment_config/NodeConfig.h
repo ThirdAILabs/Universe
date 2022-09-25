@@ -38,8 +38,7 @@ class NodeConfig {
 
   virtual bolt::NodePtr createNode(
       const PredecessorsMap& possible_predecessors, const std::string& option,
-      const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) const = 0;
+      const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~NodeConfig() = default;
 
@@ -47,16 +46,15 @@ class NodeConfig {
   std::string _name;
 };
 
-using NodeConfigPtr = std::unique_ptr<NodeConfig>;
+using NodeConfigPtr = std::shared_ptr<NodeConfig>;
 
 class FullyConnectedNodeConfig final : public NodeConfig {
  public:
   FullyConnectedNodeConfig(
       std::string name, HyperParameterPtr<uint32_t> dim,
       HyperParameterPtr<float> sparsity,
-      HyperParameterPtr<std::string> activation,
-      std::optional<HyperParameterPtr<bolt::SamplingConfigPtr>> sampling_config,
-      std::string predecessor_name)
+      HyperParameterPtr<std::string> activation, std::string predecessor_name,
+      std::optional<HyperParameterPtr<bolt::SamplingConfigPtr>> sampling_config)
       : NodeConfig(std::move(name)),
         _dim(std::move(dim)),
         _sparsity(std::move(sparsity)),
@@ -66,8 +64,7 @@ class FullyConnectedNodeConfig final : public NodeConfig {
 
   bolt::NodePtr createNode(
       const PredecessorsMap& possible_predecessors, const std::string& option,
-      const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) const final {
+      const UserInputMap& user_specified_parameters) const final {
     uint32_t dim = _dim->resolve(option, user_specified_parameters);
     float sparsity = _sparsity->resolve(option, user_specified_parameters);
     std::string activation =

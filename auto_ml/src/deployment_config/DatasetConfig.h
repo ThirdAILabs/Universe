@@ -77,12 +77,11 @@ class DatasetConfig {
  public:
   virtual DatasetStatePtr createDatasetState(
       const std::string& option,
-      const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) const = 0;
+      const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~DatasetConfig() = default;
 };
 
-using DatasetConfigPtr = std::unique_ptr<DatasetConfig>;
+using DatasetConfigPtr = std::shared_ptr<DatasetConfig>;
 
 }  // namespace thirdai::automl::deployment_config

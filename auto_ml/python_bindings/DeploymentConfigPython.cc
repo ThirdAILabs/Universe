@@ -2,7 +2,15 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/deployment_config/BlockConfig.h>
+#include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <auto_ml/src/deployment_config/ModelConfig.h>
+#include <auto_ml/src/deployment_config/NodeConfig.h>
+#include <auto_ml/src/deployment_config/TrainEvalParameters.h>
+#include <auto_ml/src/deployment_config/dataset_configs/BasicClassificationDataset.h>
+#include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
@@ -62,6 +70,77 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"));
+
+  py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig");  // NOLINT
+
+  py::class_<FullyConnectedNodeConfig, NodeConfig,
+             std::shared_ptr<FullyConnectedNodeConfig>>(
+      submodule, "FullyConnectedNodeConfig")
+      .def(
+          py::init<std::string, HyperParameterPtr<uint32_t>,
+                   HyperParameterPtr<float>, HyperParameterPtr<std::string>,
+                   std::string,
+                   std::optional<HyperParameterPtr<bolt::SamplingConfigPtr>>>(),
+          py::arg("name"), py::arg("dim"), py::arg("sparsity"),
+          py::arg("activation"), py::arg("predecessor"),
+          py::arg("sampling_config") = std::nullopt);
+
+  py::class_<ModelConfig, ModelConfigPtr>(submodule, "ModelConfig")
+      .def(py::init<std::vector<std::string>, std::vector<NodeConfigPtr>,
+                    HyperParameterPtr<std::shared_ptr<bolt::LossFunction>>>(),
+           py::arg("input_names"), py::arg("nodes"), py::arg("loss"));
+
+  py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig");  // NOLINT
+
+  py::class_<NumericalCategoricalBlockConfig, BlockConfig,
+             std::shared_ptr<NumericalCategoricalBlockConfig>>(
+      submodule, "NumericalCategoricalBlockConfig")
+      .def(py::init<HyperParameterPtr<uint32_t>,
+                    HyperParameterPtr<std::string>>(),
+           py::arg("n_classes"), py::arg("delimiter"));
+
+  py::class_<DenseArrayBlockConfig, BlockConfig,
+             std::shared_ptr<DenseArrayBlockConfig>>(submodule,
+                                                     "DenseArrayBlockConfig")
+      .def(py::init<HyperParameterPtr<uint32_t>>(), py::arg("dim"));
+
+  py::class_<TextBlockConfig, BlockConfig, std::shared_ptr<TextBlockConfig>>(
+      submodule, "TextBlockConfig")
+      .def(py::init<bool, HyperParameterPtr<uint32_t>>(),
+           py::arg("use_pairgrams"),
+           py::arg("range") = std::make_shared<ConstantParameter<uint32_t>>(
+               dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM));
+
+  py::class_<DatasetConfig, DatasetConfigPtr>(submodule,  // NOLINT
+                                              "DatasetConfig");
+
+  py::class_<BasicClassificationDatasetConfig, DatasetConfig,
+             std::shared_ptr<BasicClassificationDatasetConfig>>(
+      submodule, "BasicClassificationDatasetConfig")
+      .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
+                    HyperParameterPtr<std::string>>(),
+           py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
+           py::arg("delimiter"));
+
+  py::class_<TrainEvalParameters>(submodule, "TrainTestParameters")
+      .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
+                    bool, std::vector<std::string>>(),
+           py::arg("rebuild_hash_tables_interval"),
+           py::arg("reconstruct_hash_functions_interval"),
+           py::arg("default_batch_size"), py::arg("use_sparse_inference"),
+           py::arg("evaluation_metrics"));
+
+  py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
+                                                    "DeploymentConfig")
+      .def(py::init<DatasetConfigPtr, ModelConfigPtr, TrainEvalParameters>(),
+           py::arg("model_config"), py::arg("dataset_config"),
+           py::arg("train_eval_parameters"));
+
+  py::class_<ModelPipeline>(submodule, "ModelPipeline")
+      .def(py::init<DeploymentConfigPtr, const std::string&,
+                    const UserInputMap&>(),
+           py::arg("deployment_config"), py::arg("size"),
+           py::arg("parameters"));
 }
 
 template <typename T>

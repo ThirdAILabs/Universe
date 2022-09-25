@@ -5,9 +5,9 @@
 
 namespace thirdai::automl::deployment_config {
 
-class TrainTestParameters {
+class TrainEvalParameters {
  public:
-  TrainTestParameters(
+  TrainEvalParameters(
       std::optional<uint32_t> rebuild_hash_tables_interval,
       std::optional<uint32_t> reconstruct_hash_functions_interval,
       uint32_t default_batch_size, bool use_sparse_inference,

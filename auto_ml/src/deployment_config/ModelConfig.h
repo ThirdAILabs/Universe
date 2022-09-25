@@ -22,8 +22,7 @@ class ModelConfig {
 
   bolt::BoltGraphPtr createModel(
       std::vector<bolt::InputPtr> inputs, const std::string& option,
-      const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) const {
+      const UserInputMap& user_specified_parameters) const {
     if (_input_names.size() != inputs.size()) {
       throw std::invalid_argument(
           "Expected number of inputs does not match number of inputs returned "
@@ -57,5 +56,7 @@ class ModelConfig {
   std::vector<NodeConfigPtr> _nodes;
   HyperParameterPtr<std::shared_ptr<bolt::LossFunction>> _loss;
 };
+
+using ModelConfigPtr = std::shared_ptr<ModelConfig>;
 
 }  // namespace thirdai::automl::deployment_config

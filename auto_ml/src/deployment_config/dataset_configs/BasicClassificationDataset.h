@@ -69,8 +69,7 @@ class BasicClassificationDatasetConfig final : public DatasetConfig {
 
   DatasetStatePtr createDatasetState(
       const std::string& option,
-      const std::unordered_map<std::string, UserParameterInput>&
-          user_specified_parameters) const final {
+      const UserInputMap& user_specified_parameters) const final {
     dataset::BlockPtr data_block = _data_block->getBlock(
         /* column= */ 1, option, user_specified_parameters);
 

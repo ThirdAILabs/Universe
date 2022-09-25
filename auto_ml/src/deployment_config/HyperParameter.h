@@ -58,25 +58,28 @@ class UserParameterInput {
     bool _bool_param;
     uint32_t _int_param;
     float _float_param;
-    std::string _str_param;
   };
+  // std::string cannot be in the union since it is not trivially constructible.
+  std::string _str_param;
 
   enum ParameterType { Boolean, Integer, Float, String };
   ParameterType _type;
 };
 
+using UserInputMap =
+    std::unordered_map<std::string, deployment_config::UserParameterInput>;
+
 template <typename T>
 class HyperParameter {
  public:
   virtual T resolve(const std::string& option,
-                    const std::unordered_map<std::string, UserParameterInput>&
-                        user_specified_parameters) const = 0;
+                    const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~HyperParameter() = default;
 };
 
 template <typename T>
-using HyperParameterPtr = std::unique_ptr<HyperParameter<T>>;
+using HyperParameterPtr = std::shared_ptr<HyperParameter<T>>;
 
 template <typename T>
 class ConstantParameter final : public HyperParameter<T> {
@@ -84,12 +87,11 @@ class ConstantParameter final : public HyperParameter<T> {
   explicit ConstantParameter(T value) : _value(std::move(value)) {}
 
   static HyperParameterPtr<T> make(T value) {
-    return std::make_unique<ConstantParameter<T>>(std::move(value));
+    return std::make_shared<ConstantParameter<T>>(std::move(value));
   }
 
   T resolve(const std::string& option,
-            const std::unordered_map<std::string, UserParameterInput>&
-                user_specified_parameters) const final {
+            const UserInputMap& user_specified_parameters) const final {
     (void)option;
     (void)user_specified_parameters;
     return _value;
@@ -106,12 +108,11 @@ class OptionParameter final : public HyperParameter<T> {
       : _values(std::move(values)) {}
 
   static HyperParameterPtr<T> make(std::unordered_map<std::string, T> values) {
-    return std::make_unique<OptionParameter<T>>(std::move(values));
+    return std::make_shared<OptionParameter<T>>(std::move(values));
   }
 
   T resolve(const std::string& option,
-            const std::unordered_map<std::string, UserParameterInput>&
-                user_specified_parameters) const final {
+            const UserInputMap& user_specified_parameters) const final {
     (void)user_specified_parameters;
     if (!_values.count(option)) {
       throw std::runtime_error(
@@ -136,12 +137,11 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
       : _param_name(std::move(param_name)) {}
 
   static HyperParameterPtr<T> make(std::string param_name) {
-    return std::make_unique<UserSpecifiedParameter<T>>(std::move(param_name));
+    return std::make_shared<UserSpecifiedParameter<T>>(std::move(param_name));
   }
 
   T resolve(const std::string& option,
-            const std::unordered_map<std::string, UserParameterInput>&
-                user_specified_parameters) const final {
+            const UserInputMap& user_specified_parameters) const final {
     (void)option;
     if (!user_specified_parameters.count(_param_name)) {
       throw std::runtime_error("UserSpecifiedParameter '" + _param_name +
