@@ -23,18 +23,18 @@ enum class QuantityTrackingGranularity { Daily, Weekly, Biweekly, Monthly };
  * When working with time series problems, the model needs to learn to
  * predict a quantity or class some time interval ahead using a recent
  * history of values. Thus, at any point in time, the model has access
- * to a history of values binned into time intervals that lags behind by 
- * a certain amount of time. 
- * 
- * During training, the label that we are predicting comes from the current 
- * time, so in order to have the "history" be what we expect during 
+ * to a history of values binned into time intervals that lags behind by
+ * a certain amount of time.
+ *
+ * During training, the label that we are predicting comes from the current
+ * time, so in order to have the "history" be what we expect during
  * inference, the history needs to lag behind the current timestamp.
- * 
- * This data structure tracks a history of quntities of length `history_length` 
- * that lags behind the current timestamp by `history_lag` intervals of time. 
- * Each quantity in the history represents the sum of all records for the 
- * underlying value over a time interval of size `tracking_granuality`. The 
- * length of each time interval depends on the `tracking_granularity` – 
+ *
+ * This data structure tracks a history of quntities of length `history_length`
+ * that lags behind the current timestamp by `history_lag` intervals of time.
+ * Each quantity in the history represents the sum of all records for the
+ * underlying value over a time interval of size `tracking_granuality`. The
+ * length of each time interval depends on the `tracking_granularity` –
  * either daily, weekly, biweekly, or monthly.
  */
 class QuantityHistoryTracker {
@@ -98,13 +98,14 @@ class QuantityHistoryTracker {
             history_start_timestamp + (history_pos + 1) * _interval_in_seconds};
   }
 
-  /** 
-   * Tells the QuantityHistoryTracker that no inputs less than the passed in timestamp 
-   * will be added to the tracker in the future.
-   * If the passed in timestamp is more than history_lag + history_length tracking 
-   * granularities greater than the current lowest timestamp, the current tracked quantities 
-   * will be archived as old values, and the current archive will be deleted permanently.
-   * This means that tracked quantities are deleted permanently after two successful archivings.
+  /**
+   * Tells the QuantityHistoryTracker that no inputs less than the passed in
+   * timestamp will be added to the tracker in the future. If the passed in
+   * timestamp is more than history_lag + history_length tracking granularities
+   * greater than the current lowest timestamp, the current tracked quantities
+   * will be archived as old values, and the current archive will be deleted
+   * permanently. This means that tracked quantities are deleted permanently
+   * after two successful archivings.
    */
   void checkpoint(int64_t new_lowest_timestamp) {
     if (new_lowest_timestamp < timestampWhenSafeToRemoveOldCountSketch()) {
@@ -163,8 +164,9 @@ class QuantityHistoryTracker {
   }
 
  private:
- // TODO(Geordie): For clarity / to prevent accidental swapping of clubbed / 
- // unclubbed timestamps, we ideally return a different type e.g. ClubbedTimestamp.
+  // TODO(Geordie): For clarity / to prevent accidental swapping of clubbed /
+  // unclubbed timestamps, we ideally return a different type e.g.
+  // ClubbedTimestamp.
   int64_t historyStartTimestamp(int64_t current_timestamp) const {
     int64_t current_timestamp_clubbed =
         clubTimestampToInterval(current_timestamp);
