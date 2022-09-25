@@ -80,11 +80,11 @@ void assertFailsTraining(SequentialClassifier& model) {
 SequentialClassifier getTrainedClassifier(const char* train_file_name) {
   SequentialClassifier classifier(
       /* user= */ {"user", 1},
-      /* target= */ {"target", 2},
+      /* label= */ {"target", 2},
       /* timestamp= */ "timestamp",
       /* static_text= */ {"static_text"},
-      /* static_categorical= */ {{"static_categorical", 4}},
-      /* track_items= */ {{"sequential", 2, 3}});
+      /* static_category= */ {{"static_category", 4}},
+      /* track_categories= */ {{"sequential", 2, 3}});
 
   classifier.train(train_file_name, /* epochs= */ 5, /* learning_rate= */ 0.01);
 
@@ -190,7 +190,7 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
     The train set is curated so that the classifier
     successfully runs only if it correctly parses multi-class
     categorical columns. Notice that in the last two samples,
-    the target and static_categorical columns contain classes that
+    the target and static_category columns contain classes that
     have been seen in the previous samples, delimited by spaces.
     If the classifier fails to parse multi-class categorical columns,
     these columns would be treated as new unique classes, which then
@@ -199,14 +199,14 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
   */
   writeRowsToFile(
       TRAIN_FILE_NAME,
-      {"user,target,timestamp,static_text,static_categorical,count",
+      {"user,target,timestamp,static_text,static_category,count",
        "0,0,2022-08-29,hello,0,0", "0,1,2022-08-30,hello,1,1",
        "0,0,2022-08-31,hello,2,2", "0,1,2022-09-01,hello,3,3",
        "0,0 1,2022-09-02,hello,0 1,4", "0,1 0,2022-09-03,hello,1 2,5"});
 
   writeRowsToFile(
       TEST_FILE_NAME,
-      {"user,target,timestamp,static_text,static_categorical,count",
+      {"user,target,timestamp,static_text,static_category,count",
        "0,0 1,2022-09-04,hello,2 3,6", "0,1 0,2022-09-05,hello,3 0,7"});
 
   std::unordered_map<std::string, std::string> predict_single_sample = {
@@ -214,22 +214,22 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       {"target", "0 1"},
       {"timestamp", "2022-09-06"},
       {"static_text", "hello"},
-      {"static_categorical", "0 1"},
+      {"static_category", "0 1"},
       {"count", "8"},
   };
 
   SequentialClassifier model(
       /* user= */ {"user", 1},
-      /* target= */ {"target", 2},
+      /* label= */ {"target", 2},
       /* timestamp= */ "timestamp",
       /* static_text= */ {"static_text"},
-      /* static_categorical= */ {{"static_categorical", 4}},
-      /* track_items= */ {{"target", 2, 3}},
+      /* static_category= */ {{"static_category", 4}},
+      /* track_categories= */ {{"target", 2, 3}},
       /* track_quantities= */ {"count"},
       /* multi_class_delim= */ ' ',
+      /* time_granularity= */ "daily",
       /* time_to_predict_ahead= */ 1,
-      /* history_length_for_inference= */ 5,
-      /* time_granularity= */ "daily");
+      /* history_length_for_inference= */ 5);
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -241,12 +241,12 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
  */
 TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
   writeRowsToFile(TRAIN_FILE_NAME,
-                  {"user,target,timestamp,static_text,static_categorical,count",
+                  {"user,target,timestamp,static_text,static_category,count",
                    "0,0,2022-08-29,hello,0,0", "0,1,2022-08-30,hello,1,1",
                    "0,0,2022-08-31,hello,2,2", "0,1,2022-09-01,hello,3,3"});
 
   writeRowsToFile(TEST_FILE_NAME,
-                  {"user,target,timestamp,static_text,static_categorical,count",
+                  {"user,target,timestamp,static_text,static_category,count",
                    "0,0,2022-09-02,hello,0,4", "0,1,2022-09-03,hello,1,5",
                    "0,0,2022-09-04,hello,2,6", "0,1,2022-09-05,hello,3,7"});
 
@@ -255,22 +255,22 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
       {"target", "0"},
       {"timestamp", "2022-09-06"},
       {"static_text", "hello"},
-      {"static_categorical", "0"},
+      {"static_category", "0"},
       {"count", "8"},
   };
 
   SequentialClassifier model(
       /* user= */ {"user", 1},
-      /* target= */ {"target", 2},
+      /* label= */ {"target", 2},
       /* timestamp= */ "timestamp",
       /* static_text= */ {"static_text"},
-      /* static_categorical= */ {{"static_categorical", 4}},
-      /* track_items= */ {{"target", 2, 3}},
+      /* static_category= */ {{"static_category", 4}},
+      /* track_categories= */ {{"target", 2, 3}},
       /* track_quantities= */ {"count"},
       /* multi_class_delim= */ std::nullopt,
+      /* time_granularity= */ "daily",
       /* time_to_predict_ahead= */ 1,
-      /* history_length_for_inference= */ 5,
-      /* time_granularity= */ "daily");
+      /* history_length_for_inference= */ 5);
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -281,24 +281,25 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
  * argument.
  */
 TEST(SequentialClassifierTest, TestNoMultiClassCategoricalIfNoDelimiter) {
-  writeRowsToFile(TRAIN_FILE_NAME,
-                  {
-                      "user,target,timestamp,static_categorical",
-                      "0,0,2022-08-29,0",
-                      "0,1,2022-08-30,0 0",
-                  });
+  writeRowsToFile(TRAIN_FILE_NAME, {
+                                       "user,target,timestamp,static_category",
+                                       "0,0,2022-08-29,0",
+                                       "0,1,2022-08-30,0 0",
+                                   });
 
   SequentialClassifier model(
       /* user= */ {"user", 1},
-      /* target= */ {"target", 2},
+      /* label= */ {"target", 2},
       /* timestamp= */ "timestamp",
       /* static_text= */ {},
-      /* static_categorical= */ {{"static_categorical", 1}},
-      /* track_items= */ {{"target", 2, 3}});  // We do not pass the optional
-                                               // multi_class_delim argument
+      /* static_category= */ {{"static_category", 1}},
+      /* track_categories= */ {{"target", 2, 3}});  // We do not pass the
+                                                    // optional
+                                                    // multi_class_delim
+                                                    // argument
 
   /*
-    In the train file, static_categorical column of the second row
+    In the train file, static_category column of the second row
     should be parsed as a new unique string "0 0" as opposed to
     two previously seen "0" strings delimited by a space. Thus,
     we expect that the test should fail.
@@ -320,13 +321,14 @@ TEST(SequentialClassifierTest, TestNoMultiClassSequentialIfNoDelimiter) {
 
   SequentialClassifier model(
       /* user= */ {"user", 1},
-      /* target= */ {"target", 2},
+      /* label= */ {"target", 2},
       /* timestamp= */ "timestamp",
       /* static_text= */ {},
-      /* static_categorical= */ {},
-      /* track_items= */ {{"sequential", 1, 3}});  // We do not pass the
-                                                   // optional multi_class_delim
-                                                   // argument
+      /* static_category= */ {},
+      /* track_categories= */ {{"sequential", 1, 3}});  // We do not pass the
+                                                        // optional
+                                                        // multi_class_delim
+                                                        // argument
 
   /*
     In the train file, sequential column of the second row
@@ -351,7 +353,7 @@ TEST(SequentialClassifierTest, TestNoMultiClassTargetIfNoDelimiter) {
 
   SequentialClassifier model(
       /* user= */ {"user", 1},
-      /* target= */ {"target", 1},
+      /* label= */ {"target", 1},
       /* timestamp= */ "timestamp");  // We do not pass the optional
                                       // multi_class_delim argument
 
@@ -378,11 +380,11 @@ TEST(SequentialClassifierTest, TestNeverMultiClassUser) {
 
   SequentialClassifier model(
       /* user= */ {"user", 1},
-      /* target= */ {"target", 1},
+      /* label= */ {"target", 1},
       /* timestamp= */ "timestamp",
       /* static_text= */ {},
-      /* static_categorical= */ {},
-      /* track_items= */ {},
+      /* static_category= */ {},
+      /* track_categories= */ {},
       /* track_quantities= */ {},
       /* multi_class_delim= */ ' ');
 
@@ -398,7 +400,7 @@ TEST(SequentialClassifierTest, TestNeverMultiClassUser) {
 TEST(SequentialClassifierTest, TestExplainMethod) {
   writeRowsToFile(
       TRAIN_FILE_NAME,
-      {"user,target,timestamp,static_text,static_categorical,sequential",
+      {"user,target,timestamp,static_text,static_category,sequential",
        "0,0,2022-08-29,hello,0,B", "0,1,2022-08-30,hello,1,A",
        "0,0,2022-08-31,hello,2,A", "0,1,2022-09-01,hello,3,B"});
 
@@ -409,7 +411,7 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
       {"target", "0"},
       {"timestamp", "2022-09-01"},
       {"static_text", "hello world"},
-      {"static_categorical", "0"},
+      {"static_category", "0"},
       {"sequential", "B"}};
 
   std::vector<dataset::Explanation> responsible_column_and_input_keys =
@@ -445,16 +447,16 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
 TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
   SequentialClassifier model(
       /* user= */ {"user", 1},
-      /* target= */ {"target", 2},
+      /* label= */ {"target", 2},
       /* timestamp= */ "timestamp",
       /* static_text= */ {},
-      /* static_categorical= */ {},
-      /* track_items= */ {{"target", 2, 3}},
+      /* static_category= */ {},
+      /* track_categories= */ {{"target", 2, 3}},
       /* track_quantities= */ {"count"},
       /* multi_class_delim= */ std::nullopt,
+      /* time_granularity= */ "biweekly",
       /* time_to_predict_ahead= */ 1,
-      /* history_length_for_inference= */ 5,
-      /* time_granularity= */ "biweekly");
+      /* history_length_for_inference= */ 5);
 
   /*
     Train before getting state because state is only built once

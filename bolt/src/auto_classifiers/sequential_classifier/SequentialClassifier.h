@@ -52,15 +52,15 @@ class SequentialClassifier {
    * the number of previous values to track.
    */
   SequentialClassifier(
-      CategoricalPair user, CategoricalPair target, std::string timestamp,
+      CategoricalPair user, CategoricalPair label, std::string timestamp,
       std::vector<std::string> static_text = {},
-      std::vector<CategoricalPair> static_categorical = {},
-      std::vector<SequentialTriplet> track_items = {},
+      std::vector<CategoricalPair> static_category = {},
+      std::vector<SequentialTriplet> track_categories = {},
       std::vector<std::string> track_quantities = {},
       std::optional<char> multi_class_delim = std::nullopt,
+      std::string time_granularity = "daily",
       std::optional<uint32_t> time_to_predict_ahead = std::nullopt,
-      std::optional<uint32_t> history_length_for_inference = std::nullopt,
-      std::string time_granularity = "daily") {
+      std::optional<uint32_t> history_length_for_inference = std::nullopt) {
     if (!track_quantities.empty() &&
         (!time_to_predict_ahead || !history_length_for_inference)) {
       throw std::invalid_argument(
@@ -70,17 +70,16 @@ class SequentialClassifier {
     }
 
     _schema.user = std::move(user);
-    _schema.target = std::move(target);
+    _schema.label = std::move(label);
     _schema.timestamp_col_name = std::move(timestamp);
     _schema.static_text_col_names = std::move(static_text);
-    _schema.static_categorical = std::move(static_categorical);
-    _schema.sequential = std::move(track_items);
-    _schema.dense_sequential = std::move(track_quantities);
+    _schema.static_category = std::move(static_category);
+    _schema.track_categories = std::move(track_categories);
+    _schema.track_quantities = std::move(track_quantities);
     _schema.multi_class_delim = multi_class_delim;
-    _schema.history_lag = time_to_predict_ahead;
-    _schema.history_length = history_length_for_inference;
-    _schema.history_granularity =
-        stringToGranularity(std::move(time_granularity));
+    _schema.time_to_predict_ahead = time_to_predict_ahead;
+    _schema.history_length_for_inference = history_length_for_inference;
+    _schema.time_granularity = stringToGranularity(std::move(time_granularity));
 
     _single_inference_col_nums = ColumnNumberMap(_schema);
   }
@@ -142,7 +141,7 @@ class SequentialClassifier {
         return;
       }
       auto class_ids = output.findKLargestActivations(print_top_k);
-      auto target_lookup = _state.vocabs_by_column[_schema.target.first];
+      auto target_lookup = _state.vocabs_by_column[_schema.label.first];
 
       uint32_t first = true;
       while (!class_ids.empty()) {
@@ -301,7 +300,7 @@ class SequentialClassifier {
     while (!top_k_activations.empty()) {
       auto [activation, id] = top_k_activations.top();
       result.push_back(
-          {_state.vocabs_by_column[_schema.target.first]->getString(id),
+          {_state.vocabs_by_column[_schema.label.first]->getString(id),
            activation});
       top_k_activations.pop();
     }

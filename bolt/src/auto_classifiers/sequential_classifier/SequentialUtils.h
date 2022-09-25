@@ -60,34 +60,34 @@ static inline dataset::QuantityTrackingGranularity stringToGranularity(
  */
 struct Schema {
   CategoricalPair user;
-  CategoricalPair target;
+  CategoricalPair label;
   std::string timestamp_col_name;
   std::vector<std::string> static_text_col_names;
-  std::vector<CategoricalPair> static_categorical;
-  std::vector<SequentialTriplet> sequential;
-  std::vector<std::string> dense_sequential;
+  std::vector<CategoricalPair> static_category;
+  std::vector<SequentialTriplet> track_categories;
+  std::vector<std::string> track_quantities;
   std::optional<char> multi_class_delim;
-  std::optional<uint32_t> history_lag;
-  std::optional<uint32_t> history_length;
-  dataset::QuantityTrackingGranularity history_granularity;
+  std::optional<uint32_t> time_to_predict_ahead;
+  std::optional<uint32_t> history_length_for_inference;
+  dataset::QuantityTrackingGranularity time_granularity;
 
   Schema() {}
 
   std::unordered_set<std::string> allColumnNames() const {
     std::unordered_set<std::string> col_names;
     col_names.insert(std::get<0>(user));
-    col_names.insert(std::get<0>(target));
+    col_names.insert(std::get<0>(label));
     col_names.insert(timestamp_col_name);
     for (const auto& text_col_name : static_text_col_names) {
       col_names.insert(text_col_name);
     }
-    for (const auto& [cat_col_name, _1] : static_categorical) {
+    for (const auto& [cat_col_name, _1] : static_category) {
       col_names.insert(cat_col_name);
     }
-    for (const auto& [seq_col_name, _1, _2] : sequential) {
+    for (const auto& [seq_col_name, _1, _2] : track_categories) {
       col_names.insert(seq_col_name);
     }
-    for (const auto& dense_seq_col_name : dense_sequential) {
+    for (const auto& dense_seq_col_name : track_quantities) {
       col_names.insert(dense_seq_col_name);
     }
     return col_names;
@@ -98,9 +98,10 @@ struct Schema {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(user, target, timestamp_col_name, static_text_col_names,
-            static_categorical, sequential, dense_sequential, multi_class_delim,
-            history_lag, history_length, history_granularity);
+    archive(user, label, timestamp_col_name, static_text_col_names,
+            static_category, track_categories, track_quantities,
+            multi_class_delim, time_to_predict_ahead,
+            history_length_for_inference, time_granularity);
   }
 };
 
@@ -207,7 +208,7 @@ class Pipeline {
     auto input_blocks = buildInputBlocks(schema, state, col_nums, for_training);
 
     std::vector<dataset::BlockPtr> label_blocks;
-    label_blocks.push_back(makeCategoricalBlock(schema.target, state, col_nums,
+    label_blocks.push_back(makeCategoricalBlock(schema.label, state, col_nums,
                                                 schema.multi_class_delim));
 
     return {file_reader,
@@ -246,21 +247,22 @@ class Pipeline {
           dataset::UniGramTextBlock::make(col_nums.at(text_col_name)));
     }
 
-    for (const auto& categorical : schema.static_categorical) {
+    for (const auto& categorical : schema.static_category) {
       input_blocks.push_back(makeCategoricalBlock(categorical, state, col_nums,
                                                   schema.multi_class_delim));
     }
 
-    for (uint32_t seq_idx = 0; seq_idx < schema.sequential.size(); seq_idx++) {
+    for (uint32_t seq_idx = 0; seq_idx < schema.track_categories.size();
+         seq_idx++) {
       input_blocks.push_back(makeSequentialBlock(
-          seq_idx, schema, schema.sequential[seq_idx], state, col_nums,
+          seq_idx, schema, schema.track_categories[seq_idx], state, col_nums,
           for_training, schema.multi_class_delim));
     }
 
     for (uint32_t dense_seq_idx = 0;
-         dense_seq_idx < schema.dense_sequential.size(); dense_seq_idx++) {
+         dense_seq_idx < schema.track_quantities.size(); dense_seq_idx++) {
       input_blocks.push_back(makeDenseSequentialBlock(
-          dense_seq_idx, schema, schema.dense_sequential[dense_seq_idx], state,
+          dense_seq_idx, schema, schema.track_quantities[dense_seq_idx], state,
           col_nums, for_training));
     }
 
@@ -283,7 +285,7 @@ class Pipeline {
       uint32_t dense_sequential_block_id, const Schema& schema,
       const std::string& dense_sequential_col_name, DataState& state,
       const ColumnNumberMap& col_nums, bool for_training) {
-    if (!schema.history_lag || !schema.history_length) {
+    if (!schema.time_to_predict_ahead || !schema.history_length_for_inference) {
       throw std::invalid_argument(
           "[SequentialClassifier] there are dense sequential columns but "
           "history_lag and history_length are not given.");
@@ -295,8 +297,8 @@ class Pipeline {
     // Reset history if for training to prevent test data from leaking in.
     if (!user_qty_history || for_training) {
       user_qty_history = dataset::QuantityHistoryTracker::make(
-          *schema.history_lag, *schema.history_length,
-          schema.history_granularity);
+          *schema.time_to_predict_ahead, *schema.history_length_for_inference,
+          schema.time_granularity);
     }
 
     return dataset::UserCountHistoryBlock::make(
@@ -333,10 +335,10 @@ class Pipeline {
     }
 
     int64_t time_lag = 0;
-    if (schema.history_lag) {
-      time_lag = *schema.history_lag;
+    if (schema.time_to_predict_ahead) {
+      time_lag = *schema.time_to_predict_ahead;
       time_lag *= dataset::QuantityHistoryTracker::granularityToSeconds(
-          schema.history_granularity);
+          schema.time_granularity);
     }
 
     return dataset::UserItemHistoryBlock::make(

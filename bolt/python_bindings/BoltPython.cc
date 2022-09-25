@@ -99,25 +99,66 @@ py::module_ createBoltSubmodule(py::module_& module) {
    */
   py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
                                    "Autoclassifier for sequential predictions.")
-      .def(py::init<
-               const std::pair<std::string, uint32_t>,
-               const std::pair<std::string, uint32_t>, const std::string,
-               const std::vector<std::string>,
-               const std::vector<std::pair<std::string, uint32_t>>,
-               const std::vector<std::tuple<std::string, uint32_t, uint32_t>>,
-               const std::vector<std::string>, std::optional<char>,
-               std::optional<uint32_t>, std::optional<uint32_t>, std::string>(),
-           py::arg("user"), py::arg("target"), py::arg("timestamp"),
-           py::arg("static_text") = std::vector<std::string>(),
-           py::arg("static_categorical") =
-               std::vector<std::pair<std::string, uint32_t>>(),
-           py::arg("track_items") =
-               std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
-           py::arg("track_categories") = std::vector<std::string>(),
-           py::arg("multi_class_delim") = std::nullopt,
-           py::arg("predict_ahead") = std::nullopt,
-           py::arg("history_length_for_inference") = std::nullopt,
-           py::arg("time_granularity") = "daily")
+      .def(
+          py::init<
+              const std::pair<std::string, uint32_t>,
+              const std::pair<std::string, uint32_t>, const std::string,
+              const std::vector<std::string>,
+              const std::vector<std::pair<std::string, uint32_t>>,
+              const std::vector<std::tuple<std::string, uint32_t, uint32_t>>,
+              const std::vector<std::string>, std::optional<char>, std::string,
+              std::optional<uint32_t>, std::optional<uint32_t>>(),
+          py::arg("user"), py::arg("label"), py::arg("timestamp"),
+          py::arg("static_text") = std::vector<std::string>(),
+          py::arg("static_category") =
+              std::vector<std::pair<std::string, uint32_t>>(),
+          py::arg("track_categories") =
+              std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
+          py::arg("track_quantities") = std::vector<std::string>(),
+          py::arg("multi_class_delim") = std::nullopt,
+          py::arg("time_granularity") = "daily",
+          py::arg("time_to_predict_ahead") = std::nullopt,
+          py::arg("history_length_for_inference") = std::nullopt,
+          "Constructs a SequentialClassifier.\n"
+          "Arguments:\n"
+          " * user: Tup[str, int] - Column name for user IDs and the number of "
+          "unique user IDs.\n"
+          " * label: Tup[str, int] - Column name for label IDs and the number "
+          "of unique IDs.\n"
+          " * timestamp: str - Column name for timestamps. Timestamps must be "
+          "in YYYY-MM-DD format.\n"
+          " * static_text (optional): List[str] - List of column names for "
+          "static text information.\n"
+          " * static_category (optional): List[Tup[str, int]] - List of "
+          "(column name, num unique categories) pairs for static categorical "
+          "features.\n"
+          " * track_categories (optional): List[Tup[str, int, int]] - List of "
+          "(column name, num unique categories, max sequence length) triplets "
+          "for trackable categorical features. SequentialClassifier tracks the "
+          "last max_sequence_length categories associated with a user ID.\n"
+          " * track_quantities (optional): List[str] - List of column names "
+          "for trackable numerical features.\n",
+          " * multi_class_delim (optional): str - A single character to "
+          "delimit multi-class categorical feature columns. This delimiter "
+          "applies to columns specified in `static_category` and "
+          "`track_categories`. Defaults to None.\n"
+          " * time_granularity (optional): str - The granularity of quantity "
+          "tracking. Options: 'daily'/'d', 'weekly'/'w', 'biweekly'/'b', "
+          "'monthly'/'m'. E.g. If granularity is 'weekly' and there is a "
+          "record of a $50 transaction on Monday and a $100 transaction on "
+          "Tuesday, SequentialClassifier will treat this as a $150 transaction "
+          "during the week.\n"
+          " * time_to_predict_ahead (required only if track_quantities is "
+          "non-empty): int - How far ahead the model needs to learn to "
+          "predict. Time unit is in terms of the selected `time_granulartiy`. "
+          "E.g. time_to_predict_ahead=5 and granularity='weekly' means the "
+          "model learns to predict 5 weeks ahead.\n"
+          " * history_length_for_inference (required only if track_quantities "
+          "is non-empty): int - The length of history of tracked quantities "
+          "that the model can use to make predictions. Length is in terms of "
+          "the selected `time_granulartiy`. E.g. "
+          "history_length_for_inference=5 and granularity='weekly' means the "
+          "model uses the last 5 weeks of counts to make predictions.\n")
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))
