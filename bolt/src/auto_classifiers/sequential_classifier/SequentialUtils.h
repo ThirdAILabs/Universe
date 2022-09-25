@@ -229,16 +229,16 @@ class Pipeline {
     }
 
     for (uint32_t seq_idx = 0; seq_idx < schema.sequential.size(); seq_idx++) {
-      input_blocks.push_back(
-          makeSequentialBlock(seq_idx, schema, schema.sequential[seq_idx],
-                              state, col_nums, for_training, schema.multi_class_delim));
+      input_blocks.push_back(makeSequentialBlock(
+          seq_idx, schema, schema.sequential[seq_idx], state, col_nums,
+          for_training, schema.multi_class_delim));
     }
 
     for (uint32_t dense_seq_idx = 0;
          dense_seq_idx < schema.dense_sequential.size(); dense_seq_idx++) {
       input_blocks.push_back(makeDenseSequentialBlock(
-          dense_seq_idx, schema, schema.dense_sequential[dense_seq_idx],
-          state, col_nums, for_training));
+          dense_seq_idx, schema, schema.dense_sequential[dense_seq_idx], state,
+          col_nums, for_training));
     }
 
     return input_blocks;
@@ -257,7 +257,7 @@ class Pipeline {
   }
 
   static dataset::UserCountHistoryBlockPtr makeDenseSequentialBlock(
-      uint32_t dense_sequential_block_id, const Schema& schema, 
+      uint32_t dense_sequential_block_id, const Schema& schema,
       const std::string& dense_sequential_col_name, DataState& state,
       const ColumnNumberMap& col_nums, bool for_training) {
     if (!schema.history_lag || !schema.history_length) {
@@ -279,12 +279,13 @@ class Pipeline {
     return dataset::UserCountHistoryBlock::make(
         /* user_col= */ col_nums.at(user_col_name),
         /* count_col= */ col_nums.at(dense_sequential_col_name),
-        /* timestamp_col= */ col_nums.at(schema.timestamp_col_name), user_qty_history);
+        /* timestamp_col= */ col_nums.at(schema.timestamp_col_name),
+        user_qty_history);
   }
 
   // We pass in an ID because sequential blocks can corrupt each other's states.
   static dataset::BlockPtr makeSequentialBlock(
-      uint32_t sequential_block_id, const Schema& schema, 
+      uint32_t sequential_block_id, const Schema& schema,
       const SequentialTriplet& sequential, DataState& state,
       const ColumnNumberMap& col_nums, bool for_training,
       std::optional<char> delimiter) {
@@ -310,8 +311,9 @@ class Pipeline {
 
     int64_t time_lag = 0;
     if (schema.history_lag) {
-      time_lag = *schema.history_lag; 
-      time_lag *= dataset::QuantityHistoryTracker::granularityToSeconds(schema.history_granularity);
+      time_lag = *schema.history_lag;
+      time_lag *= dataset::QuantityHistoryTracker::granularityToSeconds(
+          schema.history_granularity);
     }
 
     return dataset::UserItemHistoryBlock::make(

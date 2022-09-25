@@ -146,7 +146,8 @@ class UserItemHistoryBlock final : public Block {
       int64_t time_lag = 0) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, std::move(user_id_map),
-        std::move(item_id_map), std::move(records), item_col_delimiter, time_lag);
+        std::move(item_id_map), std::move(records), item_col_delimiter,
+        time_lag);
   }
 
   static UserItemHistoryBlockPtr make(
@@ -183,7 +184,8 @@ class UserItemHistoryBlock final : public Block {
 
 #pragma omp critical(user_item_history_block)
       {
-        extendVectorWithUserHistory(user_id, timestamp_seconds - _time_lag, vec);
+        extendVectorWithUserHistory(user_id, timestamp_seconds - _time_lag,
+                                    vec);
         addItemsToUserHistory(user_id, timestamp_seconds, item_ids);
       }
     } catch (...) {
