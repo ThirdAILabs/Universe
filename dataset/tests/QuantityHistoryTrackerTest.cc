@@ -29,6 +29,11 @@ TEST(QuantityHistoryTrackerTest, SanityCheck) {
 
   auto last_5_days = history.getHistory(key, query_timestamp);
   for (uint32_t day = 0; day < 5; day++) {
+    /*
+      This would not work if we had collisions, but we fixed the 
+      sketch seeds and the sketch is very large so collisions are 
+      very unlikely.
+    */
     ASSERT_EQ(last_5_days[day], static_cast<float>(day));
   }
 }
@@ -41,6 +46,11 @@ TEST(QuantityHistoryTrackerTest, DifferentKeysMapToDifferentCounts) {
   history.index("key_2", /* timestamp= */ 0, /* val= */ 20.0);
   history.index("key_3", /* timestamp= */ 0, /* val= */ 36.0);
 
+  /*
+    This would not work if we had collisions, but we fixed the 
+    sketch seeds and the sketch is very large so collisions are 
+    very unlikely.
+  */
   ASSERT_EQ(history.getHistory("key_1", /* current_timestamp= */ 0)[0], 1.0);
   ASSERT_EQ(history.getHistory("key_2", /* current_timestamp= */ 0)[0], 20.0);
   ASSERT_EQ(history.getHistory("key_3", /* current_timestamp= */ 0)[0], 36.0);
@@ -69,7 +79,7 @@ TEST(QuantityHistoryTrackerTest, DifferentPeriodsMapToDifferentCounts) {
 static std::pair<float, uint32_t>
 computeCountHistoryErrorWithVariableSketchSize(
     uint32_t sketch_rows, uint32_t sketch_range,
-    float expected_error = std::numeric_limits<float>::max()) {
+    float expected_error_per_sample = std::numeric_limits<float>::max()) {
   QuantityHistoryTracker history(
       /* history_lag= */ 0, /* history_length= */ 1,
       /* tracking_granularity= */ QuantityTrackingGranularity::Daily,
@@ -92,8 +102,8 @@ computeCountHistoryErrorWithVariableSketchSize(
       EXPECT_EQ(recent_history.size(), 1);
       EXPECT_GE(recent_history[0], 1.0);
       error += recent_history[0] - 1.0;
-      EXPECT_LT(recent_history[0] - 1.0, expected_error * 2);
-      if (recent_history[0] - 1.0 <= expected_error) {
+      EXPECT_LT(recent_history[0] - 1.0, expected_error_per_sample * 2);
+      if (recent_history[0] - 1.0 <= expected_error_per_sample) {
         times_under_expected_error++;
       }
     }
@@ -104,18 +114,19 @@ computeCountHistoryErrorWithVariableSketchSize(
 TEST(QuantityHistoryTrackerTest, ErrorDecreasesWithMoreSketchRows) {
   /*
     Theoretical error rate of count min sketch:
-    For each count,
+    For EACH count,
     with probability 1 - 1/(e^rows),
     error <= e / range * (sum of counts) = e / (2^16) * 500,000 = 21.0
+    http://dimacs.rutgers.edu/~graham/pubs/papers/cmencyc.pdf page 2
   */
   auto [error_with_one_row, times_under_expected_error_one_row] =
       computeCountHistoryErrorWithVariableSketchSize(
           /* sketch_rows= */ 1, /* sketch_range= */ 1 << 16,
-          /* expected_error= */ 21.0);
+          /* expected_error_per_sample= */ 21.0);
   auto [error_with_five_rows, times_under_expected_error_five_rows] =
       computeCountHistoryErrorWithVariableSketchSize(
           /* sketch_rows= */ 5, /* sketch_range= */ 1 << 16,
-          /* expected_error= */ 21.0);
+          /* expected_error_per_sample= */ 21.0);
 
   ASSERT_GT(error_with_one_row, error_with_five_rows);
 
@@ -202,7 +213,7 @@ TEST(QuantityHistoryTrackerTest, CorrectlyHandlesHistoryLengths) {
   ASSERT_EQ(recent_history_length_3[2], 5.0);
 }
 
-TEST(QuantityHistoryTrackerTest, CorrectlyHandlesDifferentPeriods) {
+TEST(QuantityHistoryTrackerTest, CorrectlyHandlesDifferentTrackingGranularities) {
   int64_t query_timestamp =
       static_cast<int64_t>(5) * TimeObject::SECONDS_IN_DAY;
 
@@ -225,19 +236,22 @@ TEST(QuantityHistoryTrackerTest, CorrectlyRemovesOutdatedCounts) {
   QuantityHistoryTracker history(/* history_lag= */ 5,
                                  /* history_length= */ 5);
   int64_t query_timestamp =
-      static_cast<int64_t>(5) * TimeObject::SECONDS_IN_DAY;
+      static_cast<int64_t>(6) * TimeObject::SECONDS_IN_DAY;
 
-  history.checkpointCurrentTimestamp(/* timestamp= */ 0);
-  history.index("key", /* timestamp= */ 0, 1.0);
+  history.checkpoint(/* new_lowest_timestamp= */ 0);
+
+  // Index a quantity at timestamp = 1 day.
+  history.index("key", /* timestamp= */ static_cast<int64_t>(1) *
+                                     TimeObject::SECONDS_IN_DAY, 1.0);
   ASSERT_EQ(history.getHistory("key", query_timestamp)[4], 1.0);
 
-  history.checkpointCurrentTimestamp(/* timestamp= */ static_cast<int64_t>(10) *
+  // New timestamp > current lowest timestamp + (lag + length) * granularity.
+  // Quantity indexed earlier is archived.
+  history.checkpoint(/* new_lowest_timestamp= */ static_cast<int64_t>(11) *
                                      TimeObject::SECONDS_IN_DAY);
-  ASSERT_EQ(history.getHistory("key", query_timestamp)[4], 1.0);
-
-  history.checkpointCurrentTimestamp(/* timestamp= */ static_cast<int64_t>(11) *
-                                     TimeObject::SECONDS_IN_DAY);
-  history.checkpointCurrentTimestamp(/* timestamp= */ static_cast<int64_t>(22) *
+  // Counts archived again. Counts archived twice. Quantity indexed earlier 
+  // is permanently deleted.
+  history.checkpoint(/* new_lowest_timestamp= */ static_cast<int64_t>(22) *
                                      TimeObject::SECONDS_IN_DAY);
   ASSERT_EQ(history.getHistory("key", query_timestamp)[4], 0.0);
 }

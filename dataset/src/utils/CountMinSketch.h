@@ -22,7 +22,7 @@ class CountMinSketch {
         _sketch(_n_rows * _range),
         _seeds(_n_rows) {
     for (size_t i = 0; i < _n_rows; ++i) {
-      _seeds[i] = i * seed;
+      _seeds[i] = (i + 1) * seed;
     }
   }
 
