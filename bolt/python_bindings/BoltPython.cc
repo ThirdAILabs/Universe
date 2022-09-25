@@ -111,9 +111,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
            py::arg("static_text") = std::vector<std::string>(),
            py::arg("static_categorical") =
                std::vector<std::pair<std::string, uint32_t>>(),
-           py::arg("sequential") =
+           py::arg("track_items") =
                std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
-           py::arg("dense_sequential") = std::vector<std::string>(),
+           py::arg("track_categories") = std::vector<std::string>(),
            py::arg("multi_class_delim") = std::nullopt,
            py::arg("predict_ahead") = std::nullopt,
            py::arg("history_length_for_inference") = std::nullopt,

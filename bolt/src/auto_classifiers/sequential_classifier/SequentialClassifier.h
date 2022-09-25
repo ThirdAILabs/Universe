@@ -55,8 +55,8 @@ class SequentialClassifier {
                        std::string timestamp,
                        std::vector<std::string> static_text = {},
                        std::vector<CategoricalPair> static_categorical = {},
-                       std::vector<SequentialTriplet> sequential = {},
-                       std::vector<std::string> dense_sequential = {},
+                       std::vector<SequentialTriplet> track_items = {},
+                       std::vector<std::string> track_quantities = {},
                        std::optional<char> multi_class_delim = std::nullopt,
                        std::optional<uint32_t> predict_ahead = std::nullopt,
                        std::optional<uint32_t> history_length_for_inference = std::nullopt,
@@ -66,8 +66,8 @@ class SequentialClassifier {
     _schema.timestamp_col_name = std::move(timestamp);
     _schema.static_text_col_names = std::move(static_text);
     _schema.static_categorical = std::move(static_categorical);
-    _schema.sequential = std::move(sequential);
-    _schema.dense_sequential = std::move(dense_sequential);
+    _schema.sequential = std::move(track_items);
+    _schema.dense_sequential = std::move(track_quantities);
     _schema.multi_class_delim = multi_class_delim;
     _schema.history_lag = predict_ahead;
     _schema.history_length = history_length_for_inference;
