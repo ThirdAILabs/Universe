@@ -150,13 +150,15 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatchMultipleMaskedTokens) {
 
   uint32_t unknown_hash =
       TextEncodingUtils::computeUnigram(/* key= */ "[UNK]", /* len= */ 5);
+  // uint32_t mask_hash =
+  //     TextEncodingUtils::computeUnigram(/* key= */ "[MASK]", /* len= */ 6);
 
   const std::unordered_map<uint32_t, uint32_t>& words_to_ids =
       processor.getWordToIDMap();
 
-  EXPECT_EQ(data.getBatchSize(), 4);
+  EXPECT_EQ(data.getBatchSize(), 11);
   EXPECT_EQ(masked_indices.getBatchSize(), 4);
-  EXPECT_EQ(labels.getBatchSize(), 4);
+  EXPECT_EQ(labels.getBatchSize(), 11);
 
   for (uint32_t index = 0; index < 4; index++) {
     BoltVector label_vector = labels[index];

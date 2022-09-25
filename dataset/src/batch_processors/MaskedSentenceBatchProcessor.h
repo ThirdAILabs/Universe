@@ -16,8 +16,6 @@ class MaskedSentenceBatchProcessor final
  public:
   explicit MaskedSentenceBatchProcessor(uint32_t output_range)
       : _output_range(output_range),
-        _unknown_token_hash(TextEncodingUtils::computeUnigram(
-            /* key= */ "[UNK]", /* len= */ 5)),
         _masked_token_hash(TextEncodingUtils::computeUnigram(
             /* key= */ "[MASK]", /* len= */ 6)),
         _rand(723204),
@@ -27,6 +25,8 @@ class MaskedSentenceBatchProcessor final
                                const float masked_tokens_percentage)
       : MaskedSentenceBatchProcessor(output_range) {
     _masked_tokens_percentage = masked_tokens_percentage;
+    _unknown_token_hash = TextEncodingUtils::computeUnigram(  // NOLINT
+        /* key= */ "[UNK]", /* len= */ 5);
   }
 
   std::tuple<BoltBatch, BoltBatch, BoltBatch> createBatch(
@@ -37,7 +37,7 @@ class MaskedSentenceBatchProcessor final
 
 #pragma omp parallel for default(none) \
     shared(rows, vectors, masked_indices, labels)
-    for (const auto &row: rows) {
+    for (const auto& row : rows) {
       auto unigram_vector = TextEncodingUtils::computeRawUnigrams(row);
       auto [row_pairgrams, indices, row_labels] = processRow(unigram_vector);
 
@@ -131,9 +131,9 @@ class MaskedSentenceBatchProcessor final
     std::vector<BoltVector> pairgrams;
     std::for_each(
         unigram_copies.begin(), unigram_copies.end(),
-        [&pairgrams, &unigram_copies, this](uint32_t index) {
+        [&pairgrams, this](std::vector<uint32_t> unigram_copy) {
           pairgrams.push_back(TextEncodingUtils::computePairgramsFromUnigrams(
-              unigram_copies[index], _output_range));
+              unigram_copy, _output_range));
         });
 
     return {std::move(pairgrams),
