@@ -46,7 +46,10 @@ def make_tabular_metadata(pandas_xtrain, pandas_ytrain, tabular_dtypes):
     col_min_maxes = {}
     for i, colname in enumerate(pandas_xtrain.columns):
         if is_numeric_dtype(pandas_xtrain[colname]):
-            col_min_maxes[i] = [pandas_xtrain[colname].min(), pandas_xtrain[colname].max()]
+            col_min_maxes[i] = [
+                pandas_xtrain[colname].min(),
+                pandas_xtrain[colname].max(),
+            ]
 
     class_name_to_id = {}
     uid = 0
@@ -62,7 +65,9 @@ def make_tabular_metadata(pandas_xtrain, pandas_ytrain, tabular_dtypes):
     )
 
 
-def featurize_bolt_tabular_data(pandas_xtrain, pandas_ytrain, tabular_dtypes, input_dim, data_dir):
+def featurize_bolt_tabular_data(
+    pandas_xtrain, pandas_ytrain, tabular_dtypes, input_dim, data_dir
+):
     metadata = make_tabular_metadata(pandas_xtrain, pandas_ytrain, tabular_dtypes)
 
     data_labels = []
@@ -72,7 +77,8 @@ def featurize_bolt_tabular_data(pandas_xtrain, pandas_ytrain, tabular_dtypes, in
             input_blocks=[blocks.TabularPairGram(metadata, input_dim)],
             label_blocks=[
                 blocks.StringId(
-                    col=tabular_dtypes.index(TabularDataType.Label), vocab=metadata.get_class_to_id_map()
+                    col=tabular_dtypes.index(TabularDataType.Label),
+                    vocab=metadata.get_class_to_id_map(),
                 )
             ],
             batch_size=256,
@@ -92,7 +98,7 @@ def generate_run_configs():
             "lookup_size": 8,
             "log_embedding_block_size": 10,
             "reduction": "sum",
-        }, 
+        },
         {
             "name": "small_model",
             "num_embedding_lookups": 8,
@@ -144,41 +150,58 @@ def make_bolt_embedding_model(input_dim, run_config, num_classes):
     return model
 
 
-
-def execute_run(run_config, xtrain, ytrain, xtest, ytest, dataset_name, base_train_config, base_predict_config, num_test_rows, input_dim, num_classes):
+def execute_run(
+    run_config,
+    xtrain,
+    ytrain,
+    xtest,
+    ytest,
+    dataset_name,
+    base_train_config,
+    base_predict_config,
+    num_test_rows,
+    input_dim,
+    num_classes,
+):
     mlflow_callback = bolt.MlflowCallback(
-        tracking_uri="http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com", 
-        experiment_name="Tabular Architecture Sweep", 
-        run_name=run_config["name"], 
-        dataset_name=dataset_name, 
-        experiment_args=run_config
+        tracking_uri="http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com",
+        experiment_name="Tabular Architecture Sweep",
+        run_name=run_config["name"],
+        dataset_name=dataset_name,
+        experiment_args=run_config,
     )
 
-    train_config = base_train_config.with_callbacks([mlflow_callback,
-                bolt.graph.callbacks.EarlyStopCheckpoint(
-                    monitored_metric="categorical_accuracy",
-                    model_save_path="saveLoc",
-                    patience=3,
-                    min_delta=0,
-                )
-            ]
-        )
-
-    model = make_bolt_embedding_model(
-        input_dim, run_config, num_classes=num_classes
+    train_config = base_train_config.with_callbacks(
+        [
+            mlflow_callback,
+            bolt.graph.callbacks.EarlyStopCheckpoint(
+                monitored_metric="categorical_accuracy",
+                model_save_path="saveLoc",
+                patience=3,
+                min_delta=0,
+            ),
+        ]
     )
-    
+
+    model = make_bolt_embedding_model(input_dim, run_config, num_classes=num_classes)
+
     start_train = time.perf_counter()
     model.train(xtrain, ytrain, train_config)
     end_train = time.perf_counter()
-    mlflow_callback.log_additional_metric("total_training_time", end_train - start_train)
+    mlflow_callback.log_additional_metric(
+        "total_training_time", end_train - start_train
+    )
 
     model = bolt.graph.Model.load("saveLoc")
     start_predict = time.perf_counter()
-    best_test_accuracy = model.predict(xtest, ytest, base_predict_config)[0]["categorical_accuracy"]
+    best_test_accuracy = model.predict(xtest, ytest, base_predict_config)[0][
+        "categorical_accuracy"
+    ]
     end_predict = time.perf_counter()
     mlflow_callback.log_additional_metric("final_test_accuracy", best_test_accuracy)
-    mlflow_callback.log_additional_metric("average_inference_time", (end_predict - start_predict) / num_test_rows)
+    mlflow_callback.log_additional_metric(
+        "average_inference_time", (end_predict - start_predict) / num_test_rows
+    )
 
     size = os.path.getsize("saveLoc")
     mlflow_callback.log_additional_metric("serialized_model_size", size)
@@ -194,7 +217,9 @@ def main():
         data_dir = base_dir + dataset_name
         tabular_dtypes = get_tabular_col_datatypes(data_dir)
 
-        pandas_xtrain, pandas_ytrain, num_test_rows, num_classes = get_pandas_datasets(data_dir, tabular_dtypes)
+        pandas_xtrain, pandas_ytrain, num_test_rows, num_classes = get_pandas_datasets(
+            data_dir, tabular_dtypes
+        )
 
         print(
             f"\nTraining on dataset: {dataset_name} with {pandas_xtrain.shape[0]} rows, {pandas_xtrain.shape[1]} features, and {pandas_ytrain.nunique()} categories\n",
@@ -206,7 +231,9 @@ def main():
             pandas_xtrain, pandas_ytrain, tabular_dtypes, input_dim, data_dir
         )
 
-        base_predict_config = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
+        base_predict_config = bolt.graph.PredictConfig.make().with_metrics(
+            ["categorical_accuracy"]
+        )
 
         base_train_config = (
             bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=15)
@@ -216,10 +243,22 @@ def main():
                 validation_labels=yvalid,
                 predict_config=base_predict_config,
             )
-        )  
+        )
 
         for run_config in generate_run_configs():
-            execute_run(run_config, xtrain, ytrain, xtest, ytest, dataset_name, base_train_config, base_predict_config, num_test_rows, input_dim, num_classes)
+            execute_run(
+                run_config,
+                xtrain,
+                ytrain,
+                xtest,
+                ytest,
+                dataset_name,
+                base_train_config,
+                base_predict_config,
+                num_test_rows,
+                input_dim,
+                num_classes,
+            )
 
 
 if __name__ == "__main__":

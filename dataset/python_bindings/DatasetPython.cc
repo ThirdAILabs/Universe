@@ -148,8 +148,9 @@ void createDatasetSubmodule(py::module_& module) {
              StringLookupCategoricalBlockPtr>(
       block_submodule, "StringId",
       "A block that encodes categories represented as string IDs.")
-      .def(py::init<uint32_t, ThreadSafeVocabularyPtr, std::optional<char>>(), py::arg("col"),
-           py::arg("vocab"), py::arg("delimiter") = std::nullopt,
+      .def(py::init<uint32_t, ThreadSafeVocabularyPtr, std::optional<char>>(),
+           py::arg("col"), py::arg("vocab"),
+           py::arg("delimiter") = std::nullopt,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -163,7 +164,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &NumericalCategoricalBlock::isDense,
            "Returns false since text blocks always produce sparse features.");
 
-  py::class_<ThreadSafeVocabulary, ThreadSafeVocabularyPtr>(dataset_submodule, "ThreadSafeVocabulary"); // NOLINT
+  py::class_<ThreadSafeVocabulary, ThreadSafeVocabularyPtr>(
+      dataset_submodule, "ThreadSafeVocabulary");  // NOLINT
 
   py::class_<DateBlock, Block, std::shared_ptr<DateBlock>>(
       block_submodule, "Date",
@@ -220,8 +222,8 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("class_name_to_id") =
                std::unordered_map<std::string, uint32_t>(),
            py::arg("column_names") = std::vector<std::string>(),
-           py::arg("col_to_num_bins") = std::nullopt).def("get_class_to_id_map", &TabularMetadata::getClassToIdMap
-           );
+           py::arg("col_to_num_bins") = std::nullopt)
+      .def("get_class_to_id_map", &TabularMetadata::getClassToIdMap);
 
   py::class_<TabularPairGram, Block, std::shared_ptr<TabularPairGram>>(
       block_submodule, "TabularPairGram",
