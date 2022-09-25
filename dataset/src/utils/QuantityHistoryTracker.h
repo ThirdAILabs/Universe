@@ -23,12 +23,19 @@ enum class QuantityTrackingGranularity { Daily, Weekly, Biweekly, Monthly };
  * When working with time series problems, the model needs to learn to
  * predict a quantity or class some time interval ahead using a recent
  * history of values. Thus, at any point in time, the model has access
- * to a history of values that lags behind by a certain amount of time.
- * This data structure tracks a history of quntities of length
- * `history_length` time intervals that lags behind the current timestamp
- * by `history_lag` intervals of time. The length of each time interval
- * depends on the `tracking_granularity` – either daily, weekly, biweekly,
- * or monthly.
+ * to a history of values binned into time intervals that lags behind by 
+ * a certain amount of time. 
+ * 
+ * During training, the label that we are predicting comes from the current 
+ * time, so in order to have the "history" be what we expect during 
+ * inference, the history needs to lag behind the current timestamp.
+ * 
+ * This data structure tracks a history of quntities of length `history_length` 
+ * that lags behind the current timestamp by `history_lag` intervals of time. 
+ * Each quantity in the history represents the sum of all records for the 
+ * underlying value over a time interval of size `tracking_granuality`. The 
+ * length of each time interval depends on the `tracking_granularity` – 
+ * either daily, weekly, biweekly, or monthly.
  */
 class QuantityHistoryTracker {
   static constexpr uint32_t CMS_SEED = 341;
@@ -52,6 +59,7 @@ class QuantityHistoryTracker {
    * `key` during the time interval that contains `timestamp` by `val`.
    */
   void index(const std::string& key, int64_t timestamp, float val) {
+    assert(timestamp >= _start_timestamp);
     auto cms_key = cmsKey(key, clubTimestampToInterval(timestamp));
     _recent.increment(cms_key, val);
   }
@@ -59,8 +67,10 @@ class QuantityHistoryTracker {
   /**
    * @brief Get a history of quantities over `history_length` intervals of time,
    * lagged behind `current_timestamp` by `history_lag` intervals of time.
+   * Each value is the sum of the quantity over the time interval.
    * The length of the time interval is based on the `tracking_granularity`
    * passed to the constructor – daily, weekly, biweekly, or monthly.
+   * The returned history vector is ordered from oldest to most recent.
    */
   std::vector<float> getHistory(const std::string& key,
                                 int64_t current_timestamp) {
@@ -88,17 +98,35 @@ class QuantityHistoryTracker {
             history_start_timestamp + (history_pos + 1) * _interval_in_seconds};
   }
 
-  void checkpointCurrentTimestamp(int64_t timestamp) {
-    if (timestamp < expiryTimestamp()) {
+  /** 
+   * Tells the QuantityHistoryTracker that no inputs less than the passed in timestamp 
+   * will be added to the tracker in the future.
+   * If the passed in timestamp is more than history_lag + history_length tracking 
+   * granularities greater than the current lowest timestamp, the current tracked quantities 
+   * will be archived as old values, and the current archive will be deleted permanently.
+   * This means that tracked quantities are deleted permanently after two successful archivings.
+   */
+  void checkpoint(int64_t new_lowest_timestamp) {
+    if (new_lowest_timestamp < timestampWhenSafeToRemoveOldCountSketch()) {
       return;
     }
     std::swap(_recent, _old);
     _recent.clear();
-    _start_timestamp = timestamp;
+    _start_timestamp = new_lowest_timestamp;
   }
 
+  /**
+   * Returns the history lag that QuantityHistoryTracker was configured with;
+   * lag is in terms of TrackingGranularities.
+   */
   uint32_t historyLag() const { return _history_lag; }
+
+  /**
+   * Returns the history length that QuantityHistoryTracker was configured with;
+   * length is in terms of TrackingGranularities.
+   */
   uint32_t historyLength() const { return _history_length; }
+
   QuantityTrackingGranularity granularity() const { return _granularity; }
 
   static constexpr QuantityTrackingGranularity DEFAULT_TRACKING_GRANULARITY =
@@ -135,6 +163,8 @@ class QuantityHistoryTracker {
   }
 
  private:
+ // TODO(Geordie): For clarity / to prevent accidental swapping of clubbed / 
+ // unclubbed timestamps, we ideally return a different type e.g. ClubbedTimestamp.
   int64_t historyStartTimestamp(int64_t current_timestamp) const {
     int64_t current_timestamp_clubbed =
         clubTimestampToInterval(current_timestamp);
@@ -145,7 +175,7 @@ class QuantityHistoryTracker {
            start_offset_intervals * _interval_in_seconds;
   }
 
-  int64_t expiryTimestamp() const {
+  int64_t timestampWhenSafeToRemoveOldCountSketch() const {
     int64_t lifetime_periods = _history_lag + _history_length;
     return _start_timestamp + lifetime_periods * _interval_in_seconds;
   }
