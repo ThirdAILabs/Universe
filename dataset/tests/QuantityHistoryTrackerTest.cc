@@ -75,8 +75,9 @@ computeCountHistoryErrorWithVariableSketchSize(
       sketch_rows, sketch_range);
   for (uint32_t key_id = 0; key_id < 500; key_id++) {
     for (int64_t day = 0; day < 1000; day++) {
-      history.index(std::to_string(key_id), day * TimeObject::SECONDS_IN_DAY,
-                    1.0);
+      history.index(/* key= */ std::to_string(key_id),
+                    /* timestamp= */ day * TimeObject::SECONDS_IN_DAY,
+                    /* val= */ 1.0);
     }
   }
 
