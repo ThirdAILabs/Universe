@@ -2,6 +2,7 @@
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <sys/types.h>
+#include <limits>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -68,7 +69,7 @@ TEST(QuantityHistoryTrackerTest, DifferentPeriodsMapToDifferentCounts) {
 static std::pair<float, uint32_t>
 computeCountHistoryErrorWithVariableSketchSize(
     uint32_t sketch_rows, uint32_t sketch_range,
-    std::optional<float> expected_error = std::nullopt) {
+    float expected_error = std::numeric_limits<float>::max()) {
   QuantityHistoryTracker history(
       /* history_lag= */ 0, /* history_length= */ 1,
       /* tracking_granularity= */ QuantityTrackingGranularity::Daily,
@@ -91,11 +92,9 @@ computeCountHistoryErrorWithVariableSketchSize(
       EXPECT_EQ(recent_history.size(), 1);
       EXPECT_GE(recent_history[0], 1.0);
       error += recent_history[0] - 1.0;
-      if (expected_error) {
-        EXPECT_LT(recent_history[0] - 1.0, *expected_error * 2);
-        if (recent_history[0] - 1.0 <= *expected_error) {
-          times_under_expected_error++;
-        }
+      EXPECT_LT(recent_history[0] - 1.0, expected_error * 2);
+      if (recent_history[0] - 1.0 <= expected_error) {
+        times_under_expected_error++;
       }
     }
   }
