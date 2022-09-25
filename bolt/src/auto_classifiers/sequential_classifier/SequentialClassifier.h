@@ -7,6 +7,10 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
+#include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -152,6 +156,28 @@ class SequentialClassifier {
     return _model->summarize(/* print= */ false, /* detailed= */ true);
   }
 
+  std::vector<dataset::Explanation> explain(
+      const std::unordered_map<std::string, std::string>& sample,
+      std::optional<uint32_t> neuron_to_explain = std::nullopt) {
+    auto input_row = inputMapToInputRow(sample);
+
+    auto processor = Pipeline::buildSingleInferenceBatchProcessor(
+        _schema, _state, _single_inference_col_nums);
+
+    auto result = getSignificanceSortedExplanations(
+        _model, makeInputForSingleInference(processor, input_row), input_row,
+        processor, neuron_to_explain);
+
+    auto column_num_to_name =
+        _single_inference_col_nums.getColumnNumToColNameMap();
+
+    for (auto& response : result) {
+      response.column_name = column_num_to_name[response.column_number];
+    }
+
+    return result;
+  }
+
   /**
    * @brief Computes the top k classes and their probabilities.
    *
@@ -173,13 +199,12 @@ class SequentialClassifier {
 
     auto input_row = inputMapToInputRow(sample);
 
-    BoltVector input_vector;
-    Pipeline::buildSingleInferenceBatchProcessor(_schema, _state,
-                                                 _single_inference_col_nums)
-        ->makeInputVector(input_row, input_vector);
+    auto processor = Pipeline::buildSingleInferenceBatchProcessor(
+        _schema, _state, _single_inference_col_nums);
 
-    auto output = _model->predictSingle({input_vector},
-                                        /* use_sparse_inference= */ false);
+    auto output = _model->predictSingle(
+        {makeInputForSingleInference(processor, input_row)},
+        /* use_sparse_inference= */ false);
 
     return outputVectorToTopKResults(output, k);
   }
@@ -233,6 +258,14 @@ class SequentialClassifier {
       input_row[col_num] = col_value.data();
     }
     return input_row;
+  }
+
+  static BoltVector makeInputForSingleInference(
+      const dataset::GenericBatchProcessorPtr& processor,
+      std::vector<std::string_view>& input_row) {
+    BoltVector input_vector;
+    processor->makeInputVector(input_row, input_vector);
+    return input_vector;
   }
 
   std::vector<std::pair<std::string, float>> outputVectorToTopKResults(

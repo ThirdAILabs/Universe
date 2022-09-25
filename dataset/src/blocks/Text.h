@@ -4,6 +4,7 @@
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <utils/StringManipulation.h>
 #include <memory>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -19,6 +20,15 @@ class TextBlock : public Block {
   bool isDense() const final { return false; };
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
+
+  Explanation explainIndex(
+      uint32_t index_within_block,
+      const std::vector<std::string_view>& input_row) const final {
+    return {_col, getResponsibleWord(index_within_block, input_row.at(_col))};
+  }
+
+  virtual std::string getResponsibleWord(
+      uint32_t index, const std::string_view& text) const = 0;
 
  protected:
   std::exception_ptr buildSegment(
@@ -54,6 +64,14 @@ class PairGramTextBlock final : public TextBlock {
     return std::make_shared<PairGramTextBlock>(col, dim);
   }
 
+  std::string getResponsibleWord(uint32_t index,
+                                 const std::string_view& text) const final {
+    (void)index;
+    (void)text;
+    throw std::invalid_argument(
+        "Explain Index is not yet implemented for pairgram block.");
+  }
+
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
@@ -84,6 +102,13 @@ class UniGramTextBlock final : public TextBlock {
       uint32_t col,
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<UniGramTextBlock>(col, dim);
+  }
+
+  std::string getResponsibleWord(uint32_t index,
+                                 const std::string_view& text) const final {
+    std::unordered_map<uint32_t, std::string> index_to_word_map =
+        TextEncodingUtils::buildUnigramHashToWordMap(text, _dim);
+    return index_to_word_map.at(index);
   }
 
  protected:
@@ -117,6 +142,14 @@ class CharKGramTextBlock final : public TextBlock {
       uint32_t col, uint32_t k,
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<CharKGramTextBlock>(col, k, dim);
+  }
+
+  std::string getResponsibleWord(uint32_t index,
+                                 const std::string_view& text) const final {
+    (void)index;
+    (void)text;
+    throw std::invalid_argument(
+        "Explain Index is not yet implemented for char-k block.");
   }
 
  protected:

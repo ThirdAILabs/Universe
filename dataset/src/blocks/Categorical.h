@@ -6,6 +6,8 @@
 #include <exception>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset {
 
@@ -27,6 +29,21 @@ class CategoricalBlock : public Block {
   bool isDense() const final { return false; };
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
+
+  Explanation explainIndex(
+      uint32_t index_within_block,
+      const std::vector<std::string_view>& input_row) const final {
+    return {_col, getResponsibleCategory(index_within_block, input_row[_col])};
+  }
+
+  /*
+  Although as of now we don't need the category_value to get the responsible
+  category, in future it might be helpful, so passing the value as we do in text
+  block.
+  */
+  virtual std::string getResponsibleCategory(
+      uint32_t index_within_block,
+      const std::string_view& category_value) const = 0;
 
  protected:
   std::exception_ptr buildSegment(
@@ -73,6 +90,13 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
                                                        delimiter);
   }
 
+  std::string getResponsibleCategory(
+      uint32_t index_within_block,
+      const std::string_view& category_value) const final {
+    (void)category_value;
+    return std::to_string(index_within_block);
+  }
+
  protected:
   std::exception_ptr encodeCategory(std::string_view category,
                                     SegmentedFeatureVector& vec) final {
@@ -115,6 +139,12 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
   }
 
   ThreadSafeVocabularyPtr getVocabulary() const { return _vocab; }
+
+  std::string getResponsibleCategory(
+      uint32_t index, const std::string_view& category_value) const final {
+    (void)category_value;
+    return _vocab->getString(index);
+  }
 
  protected:
   std::exception_ptr encodeCategory(std::string_view category,
