@@ -11,6 +11,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -54,8 +55,11 @@ class SequentialClassifier {
       std::vector<std::string> static_text = {},
       std::vector<CategoricalPair> static_categorical = {},
       std::vector<SequentialTriplet> sequential = {},
-      std::vector<DenseSequentialQuadruplet> dense_sequential = {},
-      std::optional<char> multi_class_delim = std::nullopt) {
+      std::vector<std::string> dense_sequential = {},
+      std::optional<char> multi_class_delim = std::nullopt,
+      std::optional<uint32_t> history_lag = std::nullopt,
+      std::optional<uint32_t> history_length = std::nullopt,
+      dataset::QuantityTrackingGranularity tracking_granularity = dataset::QuantityTrackingGranularity::Daily) {
     _schema.user = std::move(user);
     _schema.target = std::move(target);
     _schema.timestamp_col_name = std::move(timestamp);
@@ -64,6 +68,9 @@ class SequentialClassifier {
     _schema.sequential = std::move(sequential);
     _schema.dense_sequential = std::move(dense_sequential);
     _schema.multi_class_delim = multi_class_delim;
+    _schema.history_lag = history_lag;
+    _schema.history_length = history_length;
+    _schema.history_granularity = tracking_granularity;
 
     _single_inference_col_nums = ColumnNumberMap(_schema);
   }

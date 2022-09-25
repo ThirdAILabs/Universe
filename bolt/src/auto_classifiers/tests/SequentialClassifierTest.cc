@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <algorithm>
 #include <cassert>
@@ -224,12 +225,11 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       /* static_text= */ {"static_text"},
       /* static_categorical= */ {{"static_categorical", 4}},
       /* sequential= */ {{"target", 2, 3}},
-      /* dense_sequential= */
-      {{"count",
-        /* history_lag= */ 1,
-        /* history_length= */ 5,
-        /* period_days= */ 2}},
-      /* multi_class_delim= */ ' ');
+      /* dense_sequential= */ {"count"},
+      /* multi_class_delim= */ ' ',
+      /* history_lag= */ 1,
+      /* history_length= */ 5,
+      /* tracking_granularity= */ dataset::QuantityTrackingGranularity::Daily);
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -266,11 +266,11 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
       /* static_text= */ {"static_text"},
       /* static_categorical= */ {{"static_categorical", 4}},
       /* sequential= */ {{"target", 2, 3}},
-      /* dense_sequential= */
-      {{"count",
-        /* history_lag= */ 1,
-        /* history_length= */ 5,
-        /* period_days= */ 2}});
+      /* dense_sequential= */ {"count"},
+      /* multi_class_delim= */ std::nullopt,
+      /* history_lag= */ 1,
+      /* history_length= */ 5,
+      /* tracking_granularity= */ dataset::QuantityTrackingGranularity::Daily);
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -461,30 +461,27 @@ TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
       /* static_text= */ {},
       /* static_categorical= */ {},
       /* sequential= */ {{"target", 2, 3}},
-      /* dense_sequential= */
-      {dense_sequential_config_0, dense_sequential_config_1});
+      /* dense_sequential= */ {"count"},
+      /* multi_class_delim= */ std::nullopt,
+      /* history_lag= */ 1,
+      /* history_length= */ 5,
+      /* tracking_granularity= */ dataset::QuantityTrackingGranularity::Biweekly);
 
   /*
     Train before getting state because state is only built once
     we call .train(), .predict(), or .explain()
   */
   writeRowsToFile(TRAIN_FILE_NAME,
-                  {"user,target,timestamp,count0,count1", "0,0,2022-09-04,6,3",
-                   "0,1,2022-09-05,7,9"});
+                  {"user,target,timestamp,count", "0,0,2022-09-04,6",
+                   "0,1,2022-09-05,7"});
   model.train(TRAIN_FILE_NAME, /* epochs= */ 1, /* learning_rate= */ 0.01);
 
   auto state = SequentialClassifierTextFixture::getState(model);
 
-  auto count_history_0 = state.count_histories_by_id[0];
-  ASSERT_EQ(count_history_0->historyLag(), 1);
-  ASSERT_EQ(count_history_0->historyLength(), 5);
-  ASSERT_EQ(count_history_0->periodSeconds(),
-            2 * dataset::TimeObject::SECONDS_IN_DAY);
-
-  auto count_history_1 = state.count_histories_by_id[1];
-  ASSERT_EQ(count_history_1->historyLag(), 5);
-  ASSERT_EQ(count_history_1->historyLength(), 2);
-  ASSERT_EQ(count_history_1->periodSeconds(),
-            7 * dataset::TimeObject::SECONDS_IN_DAY);
+  auto count_history = state.count_histories_by_id[0];
+  ASSERT_EQ(count_history->historyLag(), 1);
+  ASSERT_EQ(count_history->historyLength(), 5);
+  ASSERT_EQ(dataset::QuantityHistoryTracker::granularityToSeconds(count_history->granularity()),
+            dataset::QuantityHistoryTracker::granularityToSeconds(dataset::QuantityTrackingGranularity::Biweekly));
 }
 }  // namespace thirdai::bolt::sequential_classifier::tests

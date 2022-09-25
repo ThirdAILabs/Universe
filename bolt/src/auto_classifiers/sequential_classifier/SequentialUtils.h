@@ -14,7 +14,7 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
-#include <dataset/src/utils/CountHistoryMap.h>
+#include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <sys/types.h>
@@ -31,11 +31,6 @@ namespace thirdai::bolt::sequential_classifier {
 using CategoricalPair = std::pair<std::string, uint32_t>;
 // A tuple of (column name, num unique classes, track last N)
 using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
-// A tuple of (column name, num unique classes, track last N)
-using DenseSequentialQuadruplet =
-    std::tuple<std::string, /* history_lag= */ uint32_t,
-               /* history_length= */ uint32_t,
-               /* period_days= */ uint32_t>;
 
 /**
  * Stores the dataset configuration.
@@ -47,8 +42,11 @@ struct Schema {
   std::vector<std::string> static_text_col_names;
   std::vector<CategoricalPair> static_categorical;
   std::vector<SequentialTriplet> sequential;
-  std::vector<DenseSequentialQuadruplet> dense_sequential;
+  std::vector<std::string> dense_sequential;
   std::optional<char> multi_class_delim;
+  std::optional<uint32_t> history_lag;
+  std::optional<uint32_t> history_length;
+  dataset::QuantityTrackingGranularity history_granularity;
 
   Schema() {}
 
@@ -66,7 +64,7 @@ struct Schema {
     for (const auto& [seq_col_name, _1, _2] : sequential) {
       col_names.insert(seq_col_name);
     }
-    for (const auto& [dense_seq_col_name, _1, _2, _3] : dense_sequential) {
+    for (const auto& dense_seq_col_name : dense_sequential) {
       col_names.insert(dense_seq_col_name);
     }
     return col_names;
@@ -78,8 +76,8 @@ struct Schema {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(user, target, timestamp_col_name, static_text_col_names,
-            static_categorical, sequential, dense_sequential,
-            multi_class_delim);
+            static_categorical, sequential, dense_sequential, multi_class_delim,
+            history_lag, history_length, history_granularity);
   }
 };
 
@@ -99,7 +97,7 @@ struct DataState {
   std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
       history_collections_by_id;
 
-  std::unordered_map<uint32_t, dataset::CountHistoryMapPtr>
+  std::unordered_map<uint32_t, dataset::QuantityHistoryTrackerPtr>
       count_histories_by_id;
 
   DataState() {}
@@ -241,7 +239,7 @@ class Pipeline {
          dense_seq_idx < schema.dense_sequential.size(); dense_seq_idx++) {
       input_blocks.push_back(makeDenseSequentialBlock(
           dense_seq_idx, schema.user, schema.dense_sequential[dense_seq_idx],
-          schema.timestamp_col_name, state, col_nums, for_training));
+          schema, schema.timestamp_col_name, state, col_nums, for_training));
     }
 
     return input_blocks;
@@ -261,25 +259,30 @@ class Pipeline {
 
   static dataset::UserCountHistoryBlockPtr makeDenseSequentialBlock(
       uint32_t dense_sequential_block_id, const CategoricalPair& user,
-      const DenseSequentialQuadruplet& dense_sequential,
+      const std::string& dense_sequential_col_name, const Schema& schema,
       const std::string& timestamp_col_name, DataState& state,
       const ColumnNumberMap& col_nums, bool for_training) {
-    const auto& [user_col_name, _] = user;
-    const auto& [qty_col_name, history_lag, history_length, period_days] =
-        dense_sequential;
-    auto period_seconds = dataset::TimeObject::SECONDS_IN_DAY * period_days;
+    if (!schema.history_lag || !schema.history_length) {
+      throw std::invalid_argument(
+          "[SequentialClassifier] there are dense sequential columns but "
+          "history_lag and history_length are not given.");
+    }
 
+    std::cout << dataset::QuantityHistoryTracker::granularityToSeconds(schema.history_granularity) << std::endl;
+
+    const auto& [user_col_name, _] = user;
     auto& user_qty_history =
         state.count_histories_by_id[dense_sequential_block_id];
     // Reset history if for training to prevent test data from leaking in.
     if (!user_qty_history || for_training) {
-      user_qty_history = dataset::CountHistoryMap::make(
-          history_lag, history_length, period_seconds);
+      user_qty_history = dataset::QuantityHistoryTracker::make(
+          *schema.history_lag, *schema.history_length,
+          schema.history_granularity);
     }
 
     return dataset::UserCountHistoryBlock::make(
         /* user_col= */ col_nums.at(user_col_name),
-        /* count_col= */ col_nums.at(qty_col_name),
+        /* count_col= */ col_nums.at(dense_sequential_col_name),
         /* timestamp_col= */ col_nums.at(timestamp_col_name), user_qty_history);
   }
 
