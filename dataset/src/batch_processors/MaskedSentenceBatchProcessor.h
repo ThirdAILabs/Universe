@@ -31,18 +31,23 @@ class MaskedSentenceBatchProcessor final
 
   std::tuple<BoltBatch, BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
-    std::vector<BoltVector> vectors(rows.size());
-    std::vector<BoltVector> masked_indices(rows.size());
-    std::vector<BoltVector> labels(rows.size());
+    std::vector<BoltVector> vectors;
+    std::vector<BoltVector> masked_indices;
+    std::vector<BoltVector> labels;
 
 #pragma omp parallel for default(none) \
     shared(rows, vectors, masked_indices, labels)
-    for (uint32_t i = 0; i < rows.size(); i++) {
-      auto unigram_vector = TextEncodingUtils::computeRawUnigrams(rows[i]);
-      auto [row_pairgrams, indices, label] = processRow(unigram_vector);
-      vectors[i] = std::move(row_pairgrams);
-      masked_indices[i] = std::move(indices);
-      labels[i] = std::move(label);
+    for (const auto &row: rows) {
+      auto unigram_vector = TextEncodingUtils::computeRawUnigrams(row);
+      auto [row_pairgrams, indices, row_labels] = processRow(unigram_vector);
+
+      vectors.reserve(vectors.size() + row_pairgrams.size());
+      labels.reserve(labels.size() + row_labels.size());
+
+      vectors.insert(vectors.end(), row_pairgrams.begin(), row_pairgrams.end());
+      masked_indices.push_back(std::move(indices));
+
+      labels.insert(labels.end(), row_labels.begin(), row_labels.end());
     }
 
     return std::make_tuple(BoltBatch(std::move(vectors)),
@@ -59,10 +64,10 @@ class MaskedSentenceBatchProcessor final
   }
 
  private:
-  using PairgramsLabelsMaskedIndicesTuple =
+  using PairgramsMaskedIndicesLabelsTuple =
       std::tuple<std::vector<BoltVector>, BoltVector, std::vector<BoltVector>>;
 
-  PairgramsLabelsMaskedIndicesTuple processRow(
+  PairgramsMaskedIndicesLabelsTuple processRow(
       const std::vector<uint32_t>& unigrams) {
     uint32_t size = unigrams.size();
     std::vector<uint32_t> masked_indices;
@@ -86,20 +91,13 @@ class MaskedSentenceBatchProcessor final
       masked_word_hashes.push_back(unigrams[masked_index]);
       unigram_copies[index][masked_index] = _masked_token_hash;
     }
-    // 1. Look through every masked token 
-    // 2. I [MASK] at ThirdAI
-    // 3. I work at [MASK]
-    // 4. masked_indices = [1, 3]
-    // 5. 
-    for (uint32_t index = 0; index < masked_tokens_size; index++) {
-      uint32_t masked_index = masked_indices[index];
 
-
-      if (unigram_copies[index][masked_index] == _masked_token_hash) {
-        // insert the [UNK] token in the remaining masked positions
-        for (masked_index : masked_indices) {
-          if (unigram_copies[index][masked])
+    for (auto unigram_copy : unigram_copies) {
+      for (uint32_t masked_index : masked_indices) {
+        if (unigram_copy[masked_index] == _masked_token_hash) {
+          continue;
         }
+        unigram_copy[masked_index] = _unknown_token_hash;
       }
     }
 
