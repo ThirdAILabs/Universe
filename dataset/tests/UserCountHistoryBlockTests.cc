@@ -2,7 +2,7 @@
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/UserCountHistory.h>
-#include <dataset/src/utils/CountHistoryMap.h>
+#include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <cmath>
 
 namespace thirdai::dataset {
@@ -17,8 +17,8 @@ static BoltBatch processBatch(BlockPtr block,
 }
 
 TEST(UserCountHistoryBlockTest, ExplanationWorks) {
-  auto count_history = CountHistoryMap::make(/* history_lag= */ 1,
-                                             /* history_length= */ 5);
+  auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 1,
+                                                    /* history_length= */ 5);
 
   auto block =
       UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
@@ -56,8 +56,8 @@ TEST(UserCountHistoryBlockTest, ExplanationWorks) {
 }
 
 TEST(UserCountHistoryBlockTest, NoNormalizeWhenLookbackPeriodsEqualsOne) {
-  auto count_history = CountHistoryMap::make(/* history_lag= */ 1,
-                                             /* history_length= */ 1);
+  auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 1,
+                                                    /* history_length= */ 1);
 
   auto block =
       UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
@@ -78,8 +78,8 @@ TEST(UserCountHistoryBlockTest, NoNormalizeWhenLookbackPeriodsEqualsOne) {
 }
 
 TEST(UserCountHistoryBlockTest, NormalizeWhenLookbackPeriodsGreaterThanOne) {
-  auto count_history = CountHistoryMap::make(/* history_lag= */ 1,
-                                             /* history_length= */ 5);
+  auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 1,
+                                                    /* history_length= */ 5);
 
   auto block =
       UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
@@ -129,8 +129,8 @@ TEST(UserCountHistoryBlockTest, NormalizeWhenLookbackPeriodsGreaterThanOne) {
 }
 
 TEST(UserCountHistoryBlockTest, NotNumbersTreatedAsZero) {
-  auto count_history = CountHistoryMap::make(/* history_lag= */ 0,
-                                             /* history_length= */ 1);
+  auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 0,
+                                                    /* history_length= */ 1);
 
   auto block =
       UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
