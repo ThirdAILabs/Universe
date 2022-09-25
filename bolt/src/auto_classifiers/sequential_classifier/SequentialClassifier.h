@@ -11,6 +11,8 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/utils/QuantityHistoryTracker.h>
+#include <utils/StringManipulation.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -21,7 +23,13 @@
 
 namespace thirdai::bolt::sequential_classifier {
 
+class SequentialClassifierTextFixture;
+
+// TODO(Geordie): Rename to UserPreferenceClassifier? PersonalizedRecommender?
+// PersonalizedAndContextualizedClassifier?
 class SequentialClassifier {
+  friend SequentialClassifierTextFixture;
+
  public:
   /**
    * @brief Construct a new Sequential Classifier object
@@ -45,19 +53,35 @@ class SequentialClassifier {
    * sequential column name, the number of unique classes, and
    * the number of previous values to track.
    */
-  SequentialClassifier(CategoricalPair user, CategoricalPair target,
-                       std::string timestamp,
-                       std::vector<std::string> static_text = {},
-                       std::vector<CategoricalPair> static_categorical = {},
-                       std::vector<SequentialTriplet> sequential = {},
-                       std::optional<char> multi_class_delim = std::nullopt) {
+  SequentialClassifier(
+      CategoricalPair user, CategoricalPair label, std::string timestamp,
+      std::vector<std::string> static_text = {},
+      std::vector<CategoricalPair> static_category = {},
+      std::vector<SequentialTriplet> track_categories = {},
+      std::vector<std::string> track_quantities = {},
+      std::optional<char> multi_class_delim = std::nullopt,
+      std::string time_granularity = "daily",
+      std::optional<uint32_t> time_to_predict_ahead = std::nullopt,
+      std::optional<uint32_t> history_length_for_inference = std::nullopt) {
+    if (!track_quantities.empty() &&
+        (!time_to_predict_ahead || !history_length_for_inference)) {
+      throw std::invalid_argument(
+          "[SequentialClassifier] time_to_predict_ahead and "
+          "history_length_for_inference must be provided when tracking "
+          "quanitites.");
+    }
+
     _schema.user = std::move(user);
-    _schema.target = std::move(target);
+    _schema.label = std::move(label);
     _schema.timestamp_col_name = std::move(timestamp);
     _schema.static_text_col_names = std::move(static_text);
-    _schema.static_categorical = std::move(static_categorical);
-    _schema.sequential = std::move(sequential);
+    _schema.static_category = std::move(static_category);
+    _schema.track_categories = std::move(track_categories);
+    _schema.track_quantities = std::move(track_quantities);
     _schema.multi_class_delim = multi_class_delim;
+    _schema.time_to_predict_ahead = time_to_predict_ahead;
+    _schema.history_length_for_inference = history_length_for_inference;
+    _schema.time_granularity = stringToGranularity(std::move(time_granularity));
 
     _single_inference_col_nums = ColumnNumberMap(_schema);
   }
@@ -119,7 +143,7 @@ class SequentialClassifier {
         return;
       }
       auto class_ids = output.findKLargestActivations(print_top_k);
-      auto target_lookup = _state.vocabs_by_column[_schema.target.first];
+      auto target_lookup = _state.vocabs_by_column[_schema.label.first];
 
       uint32_t first = true;
       while (!class_ids.empty()) {
@@ -278,7 +302,7 @@ class SequentialClassifier {
     while (!top_k_activations.empty()) {
       auto [activation, id] = top_k_activations.top();
       result.push_back(
-          {_state.vocabs_by_column[_schema.target.first]->getString(id),
+          {_state.vocabs_by_column[_schema.label.first]->getString(id),
            activation});
       top_k_activations.pop();
     }
@@ -299,6 +323,13 @@ class SequentialClassifier {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_schema, _state, _model, _single_inference_col_nums);
+  }
+};
+
+class SequentialClassifierTextFixture {
+ public:
+  static DataState getState(const SequentialClassifier& model) {
+    return model._state;
   }
 };
 
