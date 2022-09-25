@@ -123,7 +123,7 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
            py::arg("delimiter"));
 
-  py::class_<TrainEvalParameters>(submodule, "TrainTestParameters")
+  py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
                     bool, std::vector<std::string>>(),
            py::arg("rebuild_hash_tables_interval"),
@@ -134,13 +134,12 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
       .def(py::init<DatasetConfigPtr, ModelConfigPtr, TrainEvalParameters>(),
-           py::arg("model_config"), py::arg("dataset_config"),
+           py::arg("dataset_config"), py::arg("model_config"),
            py::arg("train_eval_parameters"));
 
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
-      .def(py::init<DeploymentConfigPtr, const std::string&,
-                    const UserInputMap&>(),
-           py::arg("deployment_config"), py::arg("size"), py::arg("parameters"))
+      .def(py::init(&createPipeline), py::arg("deployment_config"),
+           py::arg("size"), py::arg("parameters"))
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
                              std::optional<uint32_t>, std::optional<uint32_t>>(
@@ -206,6 +205,37 @@ py::object evaluateWrapperFilename(ModelPipeline& model,
   return evaluateWrapperDataLoader(
       model, std::make_shared<dataset::SimpleFileDataLoader>(
                  filename, model.defaultBatchSize()));
+}
+
+ModelPipeline createPipeline(DeploymentConfigPtr config,
+                             const std::string& option,
+                             const py::dict& parameters) {
+  UserInputMap cpp_parameters;
+  for (const auto& [k, v] : parameters) {
+    if (!py::isinstance<py::str>(k)) {
+      throw std::invalid_argument("Keys or parameters map must be strings.");
+    }
+    std::string name = k.cast<std::string>();
+
+    if (py::isinstance<py::bool_>(v)) {
+      bool value = v.cast<bool>();
+      cpp_parameters[name] = UserParameterInput(value);
+    } else if (py::isinstance<py::int_>(v)) {
+      uint32_t value = v.cast<uint32_t>();
+      cpp_parameters[name] = UserParameterInput(value);
+    } else if (py::isinstance<py::float_>(v)) {
+      float value = v.cast<float>();
+      cpp_parameters[name] = UserParameterInput(value);
+    } else if (py::isinstance<py::str>(v)) {
+      std::string value = v.cast<std::string>();
+      cpp_parameters[name] = UserParameterInput(value);
+    } else {
+      throw std::invalid_argument(
+          "Values of parameters map must be bool, int, float, or str.");
+    }
+  }
+
+  return ModelPipeline(std::move(config), option, cpp_parameters);
 }
 
 }  // namespace thirdai::automl::deployment_config::python
