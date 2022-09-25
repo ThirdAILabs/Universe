@@ -27,9 +27,12 @@ class ModelPipeline {
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
+             std::optional<uint32_t> batch_size_opt,
              std::optional<uint32_t> max_in_memory_batches = std::nullopt) {
-    train(std::make_shared<dataset::SimpleFileDataLoader>(filename), epochs,
-          learning_rate, max_in_memory_batches);
+    uint32_t batch_size =
+        batch_size_opt.value_or(_config->parameters().defaultBatchSize());
+    train(std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size),
+          epochs, learning_rate, max_in_memory_batches);
   }
 
   void train(const std::shared_ptr<dataset::DataLoader>& data_source,
@@ -46,7 +49,8 @@ class ModelPipeline {
   }
 
   bolt::InferenceResult evaulate(const std::string& filename) {
-    return evaluate(std::make_shared<dataset::SimpleFileDataLoader>(filename));
+    return evaluate(std::make_shared<dataset::SimpleFileDataLoader>(
+        filename, _config->parameters().defaultBatchSize()));
   }
 
   bolt::InferenceResult evaluate(
