@@ -229,7 +229,7 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       /* multi_class_delim= */ ' ',
       /* history_lag= */ 1,
       /* history_length= */ 5,
-      /* tracking_granularity= */ dataset::QuantityTrackingGranularity::Daily);
+      /* tracking_granularity= */ "daily");
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -270,7 +270,7 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
       /* multi_class_delim= */ std::nullopt,
       /* history_lag= */ 1,
       /* history_length= */ 5,
-      /* tracking_granularity= */ dataset::QuantityTrackingGranularity::Daily);
+      /* tracking_granularity= */ "daily");
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -465,15 +465,14 @@ TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
       /* multi_class_delim= */ std::nullopt,
       /* history_lag= */ 1,
       /* history_length= */ 5,
-      /* tracking_granularity= */ dataset::QuantityTrackingGranularity::Biweekly);
+      /* tracking_granularity= */ "biweekly");
 
   /*
     Train before getting state because state is only built once
     we call .train(), .predict(), or .explain()
   */
-  writeRowsToFile(TRAIN_FILE_NAME,
-                  {"user,target,timestamp,count", "0,0,2022-09-04,6",
-                   "0,1,2022-09-05,7"});
+  writeRowsToFile(TRAIN_FILE_NAME, {"user,target,timestamp,count",
+                                    "0,0,2022-09-04,6", "0,1,2022-09-05,7"});
   model.train(TRAIN_FILE_NAME, /* epochs= */ 1, /* learning_rate= */ 0.01);
 
   auto state = SequentialClassifierTextFixture::getState(model);
@@ -481,7 +480,7 @@ TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
   auto count_history = state.count_histories_by_id[0];
   ASSERT_EQ(count_history->historyLag(), 1);
   ASSERT_EQ(count_history->historyLength(), 5);
-  ASSERT_EQ(dataset::QuantityHistoryTracker::granularityToSeconds(count_history->granularity()),
-            dataset::QuantityHistoryTracker::granularityToSeconds(dataset::QuantityTrackingGranularity::Biweekly));
+  ASSERT_EQ(count_history->granularity(),
+            dataset::QuantityTrackingGranularity::Biweekly);
 }
 }  // namespace thirdai::bolt::sequential_classifier::tests

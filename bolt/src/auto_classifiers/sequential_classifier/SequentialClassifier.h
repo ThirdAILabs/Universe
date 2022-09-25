@@ -12,6 +12,7 @@
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
+#include <utils/StringManipulation.h>
 #include <chrono>
 #include <optional>
 #include <stdexcept>
@@ -50,16 +51,16 @@ class SequentialClassifier {
    * sequential column name, the number of unique classes, and
    * the number of previous values to track.
    */
-  SequentialClassifier(
-      CategoricalPair user, CategoricalPair target, std::string timestamp,
-      std::vector<std::string> static_text = {},
-      std::vector<CategoricalPair> static_categorical = {},
-      std::vector<SequentialTriplet> sequential = {},
-      std::vector<std::string> dense_sequential = {},
-      std::optional<char> multi_class_delim = std::nullopt,
-      std::optional<uint32_t> history_lag = std::nullopt,
-      std::optional<uint32_t> history_length = std::nullopt,
-      dataset::QuantityTrackingGranularity tracking_granularity = dataset::QuantityTrackingGranularity::Daily) {
+  SequentialClassifier(CategoricalPair user, CategoricalPair target,
+                       std::string timestamp,
+                       std::vector<std::string> static_text = {},
+                       std::vector<CategoricalPair> static_categorical = {},
+                       std::vector<SequentialTriplet> sequential = {},
+                       std::vector<std::string> dense_sequential = {},
+                       std::optional<char> multi_class_delim = std::nullopt,
+                       std::optional<uint32_t> history_lag = std::nullopt,
+                       std::optional<uint32_t> history_length = std::nullopt,
+                       std::string tracking_granularity = "daily") {
     _schema.user = std::move(user);
     _schema.target = std::move(target);
     _schema.timestamp_col_name = std::move(timestamp);
@@ -70,7 +71,8 @@ class SequentialClassifier {
     _schema.multi_class_delim = multi_class_delim;
     _schema.history_lag = history_lag;
     _schema.history_length = history_length;
-    _schema.history_granularity = tracking_granularity;
+    _schema.history_granularity =
+        stringToGranuarity(std::move(tracking_granularity));
 
     _single_inference_col_nums = ColumnNumberMap(_schema);
   }
@@ -241,6 +243,31 @@ class SequentialClassifier {
   }
 
  private:
+  static dataset::QuantityTrackingGranularity stringToGranuarity(
+      std::string&& granularity_string) {
+    auto lower_granularity_string = utils::lower(granularity_string);
+    if (lower_granularity_string == "daily" ||
+        lower_granularity_string == "d") {
+      return dataset::QuantityTrackingGranularity::Daily;
+    }
+    if (lower_granularity_string == "weekly" ||
+        lower_granularity_string == "w") {
+      return dataset::QuantityTrackingGranularity::Weekly;
+    }
+    if (lower_granularity_string == "biweekly" ||
+        lower_granularity_string == "b") {
+      return dataset::QuantityTrackingGranularity::Biweekly;
+    }
+    if (lower_granularity_string == "monthly" ||
+        lower_granularity_string == "m") {
+      return dataset::QuantityTrackingGranularity::Monthly;
+    }
+    throw std::invalid_argument(
+        granularity_string +
+        " is not a valid granularity option. The options are 'daily' / 'd', "
+        "'weekly' / 'w', 'biweekly' / 'b', and 'monthly' / 'm',");
+  }
+
   static float getLayerSparsity(uint32_t layer_size) {
     if (layer_size < 500) {
       return 1.0;
