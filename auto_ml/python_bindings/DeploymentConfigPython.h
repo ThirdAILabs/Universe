@@ -1,6 +1,8 @@
 #pragma once
 
+#include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <unordered_map>
@@ -19,5 +21,12 @@ void defOptionParameter(py::module_& submodule);
 
 py::object makeUserSpecifiedParameter(const std::string& name,
                                       const py::object& type);
+
+py::object evaluateWrapperDataLoader(
+    ModelPipeline& model,
+    const std::shared_ptr<dataset::DataLoader>& data_source);
+
+py::object evaluateWrapperFilename(ModelPipeline& model,
+                                   const std::string& filename);
 
 }  // namespace thirdai::automl::deployment_config::python

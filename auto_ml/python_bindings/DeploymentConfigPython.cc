@@ -1,4 +1,5 @@
 #include "DeploymentConfigPython.h"
+#include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -11,11 +12,13 @@
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/BasicClassificationDataset.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -139,8 +142,22 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init<DeploymentConfigPtr, const std::string&,
                     const UserInputMap&>(),
-           py::arg("deployment_config"), py::arg("size"),
-           py::arg("parameters"));
+           py::arg("deployment_config"), py::arg("size"), py::arg("parameters"))
+      .def("train",
+           py::overload_cast<const std::string&, uint32_t, float,
+                             std::optional<uint32_t>, std::optional<uint32_t>>(
+               &ModelPipeline::train),
+           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("batch_size") = std::nullopt,
+           py::arg("max_in_memory_batches") = std::nullopt)
+      .def("train",
+           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&,
+                             uint32_t, float, std::optional<uint32_t>>(
+               &ModelPipeline::train),
+           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("max_in_memory_batches") = std::nullopt)
+      .def("evaluate", &evaluateWrapperFilename, py::arg("filename"))
+      .def("evaluate", &evaluateWrapperDataLoader, py::arg("data_source"));
 }
 
 template <typename T>
@@ -176,6 +193,21 @@ py::object makeUserSpecifiedParameter(const std::string& name,
   throw std::invalid_argument("Invalid type '" +
                               py::str(type).cast<std::string>() +
                               "' passed to UserSpecifiedParameter.");
+}
+
+py::object evaluateWrapperDataLoader(
+    ModelPipeline& model,
+    const std::shared_ptr<dataset::DataLoader>& data_source) {
+  auto [metrics, output] = model.evaluate(data_source);
+
+  return bolt::python::constructNumpyActivationsArrays(metrics, output);
+}
+
+py::object evaluateWrapperFilename(ModelPipeline& model,
+                                   const std::string& filename) {
+  return evaluateWrapperDataLoader(
+      model, std::make_shared<dataset::SimpleFileDataLoader>(
+                 filename, model.defaultBatchSize()));
 }
 
 }  // namespace thirdai::automl::deployment_config::python
