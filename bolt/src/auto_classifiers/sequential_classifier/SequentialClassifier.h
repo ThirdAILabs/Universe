@@ -25,6 +25,8 @@ namespace thirdai::bolt::sequential_classifier {
 
 class SequentialClassifierTextFixture;
 
+// TODO(Geordie): Rename to UserPreferenceClassifier? PersonalizedRecommender?
+// PersonalizedAndContextualizedClassifier?
 class SequentialClassifier {
   friend SequentialClassifierTextFixture;
 

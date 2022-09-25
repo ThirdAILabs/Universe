@@ -84,11 +84,11 @@ struct Schema {
     for (const auto& [cat_col_name, _1] : static_category) {
       col_names.insert(cat_col_name);
     }
-    for (const auto& [seq_col_name, _1, _2] : track_categories) {
-      col_names.insert(seq_col_name);
+    for (const auto& [track_cat_col_name, _1, _2] : track_categories) {
+      col_names.insert(track_cat_col_name);
     }
-    for (const auto& dense_seq_col_name : track_quantities) {
-      col_names.insert(dense_seq_col_name);
+    for (const auto& track_qty_col_name : track_quantities) {
+      col_names.insert(track_qty_col_name);
     }
     return col_names;
   }
@@ -122,7 +122,7 @@ struct DataState {
       history_collections_by_id;
 
   std::unordered_map<uint32_t, dataset::QuantityHistoryTrackerPtr>
-      count_histories_by_id;
+      quantity_histories_by_id;
 
   DataState() {}
 
@@ -131,7 +131,8 @@ struct DataState {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(vocabs_by_column, history_collections_by_id, count_histories_by_id);
+    archive(vocabs_by_column, history_collections_by_id,
+            quantity_histories_by_id);
   }
 };
 
@@ -254,14 +255,14 @@ class Pipeline {
 
     for (uint32_t seq_idx = 0; seq_idx < schema.track_categories.size();
          seq_idx++) {
-      input_blocks.push_back(makeSequentialBlock(
+      input_blocks.push_back(makeCategoryTrackingBlock(
           seq_idx, schema, schema.track_categories[seq_idx], state, col_nums,
           for_training, schema.multi_class_delim));
     }
 
     for (uint32_t dense_seq_idx = 0;
          dense_seq_idx < schema.track_quantities.size(); dense_seq_idx++) {
-      input_blocks.push_back(makeDenseSequentialBlock(
+      input_blocks.push_back(makeQuantityTrackingBlock(
           dense_seq_idx, schema, schema.track_quantities[dense_seq_idx], state,
           col_nums, for_training));
     }
@@ -281,9 +282,9 @@ class Pipeline {
         col_nums.at(cat_col_name), string_vocab, delimiter);
   }
 
-  static dataset::UserCountHistoryBlockPtr makeDenseSequentialBlock(
-      uint32_t dense_sequential_block_id, const Schema& schema,
-      const std::string& dense_sequential_col_name, DataState& state,
+  static dataset::UserCountHistoryBlockPtr makeQuantityTrackingBlock(
+      uint32_t id, const Schema& schema,
+      const std::string& track_quantity_col_name, DataState& state,
       const ColumnNumberMap& col_nums, bool for_training) {
     if (!schema.time_to_predict_ahead || !schema.history_length_for_inference) {
       throw std::invalid_argument(
@@ -292,26 +293,25 @@ class Pipeline {
     }
 
     const auto& [user_col_name, _] = schema.user;
-    auto& user_qty_history =
-        state.count_histories_by_id[dense_sequential_block_id];
     // Reset history if for training to prevent test data from leaking in.
-    if (!user_qty_history || for_training) {
-      user_qty_history = dataset::QuantityHistoryTracker::make(
-          *schema.time_to_predict_ahead, *schema.history_length_for_inference,
-          schema.time_granularity);
+    if (!state.quantity_histories_by_id[id] || for_training) {
+      state.quantity_histories_by_id[id] =
+          dataset::QuantityHistoryTracker::make(
+              *schema.time_to_predict_ahead,
+              *schema.history_length_for_inference, schema.time_granularity);
     }
 
     return dataset::UserCountHistoryBlock::make(
         /* user_col= */ col_nums.at(user_col_name),
-        /* count_col= */ col_nums.at(dense_sequential_col_name),
+        /* count_col= */ col_nums.at(track_quantity_col_name),
         /* timestamp_col= */ col_nums.at(schema.timestamp_col_name),
-        user_qty_history);
+        state.quantity_histories_by_id[id]);
   }
 
   // We pass in an ID because sequential blocks can corrupt each other's states.
-  static dataset::BlockPtr makeSequentialBlock(
-      uint32_t sequential_block_id, const Schema& schema,
-      const SequentialTriplet& sequential, DataState& state,
+  static dataset::BlockPtr makeCategoryTrackingBlock(
+      uint32_t id, const Schema& schema,
+      const SequentialTriplet& track_category, DataState& state,
       const ColumnNumberMap& col_nums, bool for_training,
       std::optional<char> delimiter) {
     const auto& [user_col_name, n_unique_users] = schema.user;
@@ -320,17 +320,15 @@ class Pipeline {
       user_vocab = dataset::ThreadSafeVocabulary::make(n_unique_users);
     }
 
-    const auto& [item_col_name, n_unique_items, track_last_n] = sequential;
+    const auto& [item_col_name, n_unique_items, track_last_n] = track_category;
     auto& item_vocab = state.vocabs_by_column[item_col_name];
     if (!item_vocab) {
       item_vocab = dataset::ThreadSafeVocabulary::make(n_unique_items);
     }
 
-    auto& user_item_history =
-        state.history_collections_by_id[sequential_block_id];
     // Reset history if for training to prevent test data from leaking in.
-    if (!user_item_history || for_training) {
-      user_item_history =
+    if (!state.history_collections_by_id[id] || for_training) {
+      state.history_collections_by_id[id] =
           dataset::ItemHistoryCollection::make(n_unique_users, track_last_n);
     }
 
@@ -344,7 +342,7 @@ class Pipeline {
     return dataset::UserItemHistoryBlock::make(
         col_nums.at(user_col_name), col_nums.at(item_col_name),
         col_nums.at(schema.timestamp_col_name), user_vocab, item_vocab,
-        user_item_history, delimiter, time_lag);
+        state.history_collections_by_id[id], delimiter, time_lag);
   }
 };
 

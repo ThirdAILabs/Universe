@@ -468,7 +468,7 @@ TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
 
   auto state = SequentialClassifierTextFixture::getState(model);
 
-  auto count_history = state.count_histories_by_id[0];
+  auto count_history = state.quantity_histories_by_id[0];
   ASSERT_EQ(count_history->historyLag(), 1);
   ASSERT_EQ(count_history->historyLength(), 5);
   ASSERT_EQ(count_history->granularity(),
