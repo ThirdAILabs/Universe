@@ -30,7 +30,7 @@ py::object evaluateWrapperFilename(ModelPipeline& model,
                                    const std::string& filename);
 
 ModelPipeline createPipeline(DeploymentConfigPtr config,
-                             const std::string& option,
+                             const std::optional<std::string>& option,
                              const py::dict& parameters);
 
 }  // namespace thirdai::automl::deployment_config::python

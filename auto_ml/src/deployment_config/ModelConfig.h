@@ -15,13 +15,14 @@ class ModelConfig {
  public:
   ModelConfig(std::vector<std::string> input_names,
               std::vector<NodeConfigPtr> nodes,
-              HyperParameterPtr<std::shared_ptr<bolt::LossFunction>> loss)
+              std::shared_ptr<bolt::LossFunction> loss)
       : _input_names(std::move(input_names)),
         _nodes(std::move(nodes)),
         _loss(std::move(loss)) {}
 
   bolt::BoltGraphPtr createModel(
-      std::vector<bolt::InputPtr> inputs, const std::string& option,
+      std::vector<bolt::InputPtr> inputs,
+      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const {
     if (_input_names.size() != inputs.size()) {
       throw std::invalid_argument(
@@ -45,8 +46,12 @@ class ModelConfig {
 
     auto model = std::make_shared<bolt::BoltGraph>(inputs, output);
 
-    auto loss = _loss->resolve(option, user_specified_parameters);
-    model->compile(loss);
+// Disable the model summary in the release, but print it out for internal use.
+#if THIRDAI_EXPOSE_ALL
+    model->compile(_loss);
+#else
+    model->compile(_loss, /* print_when_done= */ false);
+#endif
 
     return model;
   }
@@ -54,7 +59,7 @@ class ModelConfig {
  private:
   std::vector<std::string> _input_names;
   std::vector<NodeConfigPtr> _nodes;
-  HyperParameterPtr<std::shared_ptr<bolt::LossFunction>> _loss;
+  std::shared_ptr<bolt::LossFunction> _loss;
 };
 
 using ModelConfigPtr = std::shared_ptr<ModelConfig>;

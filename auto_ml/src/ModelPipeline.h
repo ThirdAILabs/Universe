@@ -14,7 +14,7 @@ namespace thirdai::automl {
 class ModelPipeline {
  public:
   ModelPipeline(deployment_config::DeploymentConfigPtr config,
-                const std::string& option,
+                const std::optional<std::string>& option,
                 const std::unordered_map<std::string,
                                          deployment_config::UserParameterInput>&
                     user_specified_parameters)

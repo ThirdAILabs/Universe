@@ -74,7 +74,7 @@ using UserInputMap =
 template <typename T>
 class HyperParameter {
  public:
-  virtual T resolve(const std::string& option,
+  virtual T resolve(const std::optional<std::string>& option,
                     const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~HyperParameter() = default;
@@ -92,7 +92,7 @@ class ConstantParameter final : public HyperParameter<T> {
     return std::make_shared<ConstantParameter<T>>(std::move(value));
   }
 
-  T resolve(const std::string& option,
+  T resolve(const std::optional<std::string>& option,
             const UserInputMap& user_specified_parameters) const final {
     (void)option;
     (void)user_specified_parameters;
@@ -113,15 +113,21 @@ class OptionParameter final : public HyperParameter<T> {
     return std::make_shared<OptionParameter<T>>(std::move(values));
   }
 
-  T resolve(const std::string& option,
+  T resolve(const std::optional<std::string>& option,
             const UserInputMap& user_specified_parameters) const final {
     (void)user_specified_parameters;
-    if (!_values.count(option)) {
-      throw std::runtime_error(
-          "OptionParameter did not contain value for option '" + option + "'.");
+    if (!option) {
+      throw std::invalid_argument(
+          "Must specify an option to resolve parameters in config.");
     }
 
-    return _values.at(option);
+    if (!_values.count(option.value())) {
+      throw std::invalid_argument(
+          "OptionParameter did not contain value for option '" +
+          option.value() + "'.");
+    }
+
+    return _values.at(option.value());
   }
 
  private:
@@ -142,7 +148,7 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
     return std::make_shared<UserSpecifiedParameter<T>>(std::move(param_name));
   }
 
-  T resolve(const std::string& option,
+  T resolve(const std::optional<std::string>& option,
             const UserInputMap& user_specified_parameters) const final {
     (void)option;
     if (!user_specified_parameters.count(_param_name)) {

@@ -4,6 +4,7 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/layers/SamplingConfig.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::deployment_config {
@@ -37,7 +38,8 @@ class NodeConfig {
   const std::string& name() const { return _name; }
 
   virtual bolt::NodePtr createNode(
-      const PredecessorsMap& possible_predecessors, const std::string& option,
+      const PredecessorsMap& possible_predecessors,
+      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~NodeConfig() = default;
@@ -62,8 +64,19 @@ class FullyConnectedNodeConfig final : public NodeConfig {
         _sampling_config(std::move(sampling_config)),
         _predecessor_name(std::move(predecessor_name)) {}
 
+  FullyConnectedNodeConfig(std::string name, HyperParameterPtr<uint32_t> dim,
+                           HyperParameterPtr<std::string> activation,
+                           std::string predecessor_name)
+      : NodeConfig(std::move(name)),
+        _dim(std::move(dim)),
+        _sparsity(ConstantParameter<float>::make(1.0)),
+        _activation(std::move(activation)),
+        _sampling_config(std::nullopt),
+        _predecessor_name(std::move(predecessor_name)) {}
+
   bolt::NodePtr createNode(
-      const PredecessorsMap& possible_predecessors, const std::string& option,
+      const PredecessorsMap& possible_predecessors,
+      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const final {
     uint32_t dim = _dim->resolve(option, user_specified_parameters);
     float sparsity = _sparsity->resolve(option, user_specified_parameters);

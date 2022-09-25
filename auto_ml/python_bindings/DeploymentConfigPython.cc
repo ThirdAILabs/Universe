@@ -86,11 +86,15 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
                    std::optional<HyperParameterPtr<bolt::SamplingConfigPtr>>>(),
           py::arg("name"), py::arg("dim"), py::arg("sparsity"),
           py::arg("activation"), py::arg("predecessor"),
-          py::arg("sampling_config") = std::nullopt);
+          py::arg("sampling_config") = std::nullopt)
+      .def(py::init<std::string, HyperParameterPtr<uint32_t>,
+                    HyperParameterPtr<std::string>, std::string>(),
+           py::arg("name"), py::arg("dim"), py::arg("activation"),
+           py::arg("predecessor"));
 
   py::class_<ModelConfig, ModelConfigPtr>(submodule, "ModelConfig")
       .def(py::init<std::vector<std::string>, std::vector<NodeConfigPtr>,
-                    HyperParameterPtr<std::shared_ptr<bolt::LossFunction>>>(),
+                    std::shared_ptr<bolt::LossFunction>>(),
            py::arg("input_names"), py::arg("nodes"), py::arg("loss"));
 
   py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig");  // NOLINT
@@ -110,7 +114,8 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   py::class_<TextBlockConfig, BlockConfig, std::shared_ptr<TextBlockConfig>>(
       submodule, "TextBlockConfig")
       .def(py::init<bool, HyperParameterPtr<uint32_t>>(),
-           py::arg("use_pairgrams"), py::arg("range"));
+           py::arg("use_pairgrams"), py::arg("range"))
+      .def(py::init<bool>(), py::arg("use_pairgrams"));
 
   py::class_<DatasetConfig, DatasetConfigPtr>(submodule,  // NOLINT
                                               "DatasetConfig");
@@ -133,13 +138,14 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
-      .def(py::init<DatasetConfigPtr, ModelConfigPtr, TrainEvalParameters>(),
+      .def(py::init<DatasetConfigPtr, ModelConfigPtr, TrainEvalParameters,
+                    std::vector<std::string>>(),
            py::arg("dataset_config"), py::arg("model_config"),
-           py::arg("train_eval_parameters"));
+           py::arg("train_eval_parameters"), py::arg("available_options"));
 
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
-           py::arg("size"), py::arg("parameters"))
+           py::arg("size") = std::nullopt, py::arg("parameters") = py::none())
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
                              std::optional<uint32_t>, std::optional<uint32_t>>(
@@ -208,7 +214,7 @@ py::object evaluateWrapperFilename(ModelPipeline& model,
 }
 
 ModelPipeline createPipeline(DeploymentConfigPtr config,
-                             const std::string& option,
+                             const std::optional<std::string>& option,
                              const py::dict& parameters) {
   UserInputMap cpp_parameters;
   for (const auto& [k, v] : parameters) {

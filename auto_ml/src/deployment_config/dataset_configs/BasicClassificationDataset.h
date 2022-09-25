@@ -68,7 +68,7 @@ class BasicClassificationDatasetConfig final : public DatasetConfig {
         _delimiter(std::move(delimiter)) {}
 
   DatasetStatePtr createDatasetState(
-      const std::string& option,
+      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const final {
     dataset::BlockPtr label_block = _label_block->getBlock(
         /* column= */ 0, option, user_specified_parameters);

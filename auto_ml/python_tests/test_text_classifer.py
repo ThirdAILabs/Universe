@@ -1,3 +1,4 @@
+from zoneinfo import available_timezones
 import pytest
 from thirdai import deployment_config as dc
 from thirdai import bolt
@@ -48,7 +49,6 @@ def test_text_classifer():
             dc.FullyConnectedNodeConfig(
                 name="hidden",
                 dim=dc.OptionParameter({"small": 100, "large": 200}),
-                sparsity=dc.ConstantParameter(1.0),
                 activation=dc.ConstantParameter("relu"),
                 predecessor="input",
             ),
@@ -60,14 +60,11 @@ def test_text_classifer():
                 predecessor="hidden",
             ),
         ],
-        loss=dc.ConstantParameter(bolt.CategoricalCrossEntropyLoss()),
+        loss=bolt.CategoricalCrossEntropyLoss(),
     )
 
     dataset_config = dc.BasicClassificationDatasetConfig(
-        data_block=dc.TextBlockConfig(
-            use_pairgrams=True,
-            range=dc.ConstantParameter(100_000),
-        ),
+        data_block=dc.TextBlockConfig(use_pairgrams=True),
         label_block=dc.NumericalCategoricalBlockConfig(
             n_classes=dc.UserSpecifiedParameter("output_dim", type=int),
             delimiter=dc.ConstantParameter(","),
@@ -88,6 +85,7 @@ def test_text_classifer():
         dataset_config=dataset_config,
         model_config=model_config,
         train_eval_parameters=train_eval_params,
+        available_options=["small", "large"],
     )
 
     model = dc.ModelPipeline(
@@ -108,4 +106,5 @@ def test_text_classifer():
 
     acc = np.mean(predictions == np.array(labels))
 
+    # Accuracy should be around 0.76 to 0.78.
     assert acc >= 0.7

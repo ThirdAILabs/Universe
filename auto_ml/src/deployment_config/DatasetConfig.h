@@ -76,7 +76,7 @@ using DatasetStatePtr = std::unique_ptr<DatasetState>;
 class DatasetConfig {
  public:
   virtual DatasetStatePtr createDatasetState(
-      const std::string& option,
+      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~DatasetConfig() = default;
