@@ -1,11 +1,11 @@
+#include "DragonVector.h"
 #include "CompressedVector.h"
+#include "Serializer.h"
 #include <hashing/src/UniversalHash.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -23,15 +23,6 @@ DragonVector<T>::DragonVector(const std::vector<T>& vector_to_compress,
                    static_cast<uint32_t>(vector_to_compress.size()),
                    compression_density, seed_for_hashing,
                    sample_population_size) {}
-
-template <class T>
-DragonVector<T>::DragonVector(std::vector<uint32_t> indices,
-                              std::vector<T> values, uint32_t uncompressed_size,
-                              uint32_t seed_for_hashing)
-    : _indices(std::move(indices)),
-      _values(std::move(values)),
-      _uncompressed_size(uncompressed_size),
-      _seed_for_hashing(seed_for_hashing) {}
 
 template <class T>
 DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
@@ -65,17 +56,17 @@ template <class T>
 void DragonVector<T>::sketch(const T* values, T threshold, uint32_t size,
                              uint32_t sketch_size) {
   UniversalHash hash_function = UniversalHash(_seed_for_hashing);
-  // TODO(TSK-567): MSVC complains about sharing values in the below block.
-  // Disabling short term to get builds green.
-  //
-  //     D:\a\Universe\Universe\compression\src\DragonVector.cc(68,9): error
-  //     C3028: 'thirdai::compression::DragonVector<float>::_values': only a
-  //     variable or static data member can be used in a data-sharing clause
-  //     [D:\a\Universe\Universe\build\_thirdai.vcxproj]
-  //
-  // #pragma omp parallel for default(none)
-  //     shared(_indices, _values, values, sketch_size, threshold, size,
-  //            _seed_for_hashing, hash_function)
+
+  /*
+   * TODO(TSK-567): MSVC complains about sharing values in the below block.
+   * Disabling short term to get builds green.
+   *    D:\a\Universe\Universe\compression\src\DragonVector.cc(68,9): error
+   *    C3028: 'thirdai::compression::DragonVector<float>::_values': only a
+   *    variable or static data member can be used in a data-sharing clause
+   *    [D:\a\Universe\Universe\build\_thirdai.vcxproj]
+   */
+#pragma omp parallel for default(none) \
+    shared(values, sketch_size, threshold, size, hash_function)
 
   for (uint32_t i = 0; i < size; i++) {
     if (std::abs(values[i]) > threshold) {
@@ -153,8 +144,72 @@ std::vector<T> DragonVector<T>::decompress() const {
 }
 
 template <class T>
-std::string DragonVector<T>::type() const {
-  return "dragon";
+CompressionScheme DragonVector<T>::type() const {
+  return CompressionScheme::Dragon;
+}
+
+/*
+ * The order of serialization for dragon vector is as follows:
+ * 1) An enum representing compression scheme
+ * 2) Uncompressed Size of the vector
+ * 3) Seed for hashing
+ * 4) Indices and then values array
+ * While writing vectors, we first write the size and then the contents.
+ */
+template <class T>
+void DragonVector<T>::serialize(char* serialized_data) const {
+  serializer::BinaryOutputHelper outputHelper(serialized_data);
+
+  // Writing compression scheme (1)
+  uint32_t compression_scheme = static_cast<uint32_t>(type());
+  outputHelper.write(&compression_scheme);
+
+  // Writing uncompressed size, seed_for_hashing (2,3)
+  outputHelper.write(&_uncompressed_size);
+  outputHelper.write(&_seed_for_hashing);
+
+  // Writing indices and values vectors (4)
+  outputHelper.writeVector(_indices);
+  outputHelper.writeVector(_values);
+}
+
+template <class T>
+DragonVector<T>::DragonVector(const char* serialized_data) {
+  serializer::BinaryInputHelper inputHelper(serialized_data);
+
+  // Reading the compression scheme (1)
+  uint32_t compression_scheme;
+  inputHelper.read(&compression_scheme);
+
+  // Reading uncompressed size, seed_for_hashing (2,3)
+  uint32_t uncompressed_size;
+  uint32_t seed_for_hashing;
+  inputHelper.read(&uncompressed_size);
+  inputHelper.read(&seed_for_hashing);
+
+  _uncompressed_size = uncompressed_size;  // NOLINT
+  _seed_for_hashing = seed_for_hashing;    // NOLINT
+
+  // Reading indices and values array (4)
+  inputHelper.readVector(_indices);
+  inputHelper.readVector(_values);
+}
+
+template <class T>
+uint32_t DragonVector<T>::serialized_size() const {
+  uint32_t serialized_size = 0;
+  // Compression scheme (1)
+  serialized_size += sizeof(uint32_t);
+
+  // Uncompressed size, seed_for_hashing (2,3)
+  serialized_size += 2 * sizeof(uint32_t);
+
+  // Size of indices array (4). We first write the size and then the elements
+  serialized_size += sizeof(uint32_t) + _indices.size() * sizeof(uint32_t);
+
+  // Size of values array (5)
+  serialized_size += sizeof(uint32_t) + _values.size() * sizeof(T);
+  return serialized_size;
 }
 
 template class DragonVector<float>;
