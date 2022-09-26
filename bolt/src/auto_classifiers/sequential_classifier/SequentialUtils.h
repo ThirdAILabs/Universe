@@ -227,7 +227,8 @@ class Pipeline {
   static dataset::GenericBatchProcessorPtr buildSingleInferenceBatchProcessor(
       const Schema& schema, DataState& state, const ColumnNumberMap& col_nums) {
     auto input_blocks =
-        buildInputBlocks(schema, state, col_nums, /* for_training= */ false);
+        buildInputBlocks(schema, state, col_nums, /* for_training= */ false,
+                         /* update_history= */ false);
     return dataset::GenericBatchProcessor::make(
         /* input_blocks= */ input_blocks, /* label_blocks= */ {});
   }
@@ -235,7 +236,7 @@ class Pipeline {
  private:
   static std::vector<dataset::BlockPtr> buildInputBlocks(
       const Schema& schema, DataState& state, const ColumnNumberMap& col_nums,
-      bool for_training) {
+      bool for_training, bool update_history = true) {
     std::vector<dataset::BlockPtr> input_blocks;
     input_blocks.push_back(makeCategoricalBlock(schema.user, state, col_nums,
                                                 /* delimiter= */ std::nullopt));
@@ -257,14 +258,16 @@ class Pipeline {
          seq_idx++) {
       input_blocks.push_back(makeCategoryTrackingBlock(
           seq_idx, schema, schema.track_categories[seq_idx], state, col_nums,
-          for_training, schema.multi_class_delim));
+          /* for_training= */ for_training, /* update_history=*/update_history,
+          schema.multi_class_delim));
     }
 
     for (uint32_t dense_seq_idx = 0;
          dense_seq_idx < schema.track_quantities.size(); dense_seq_idx++) {
       input_blocks.push_back(makeQuantityTrackingBlock(
           dense_seq_idx, schema, schema.track_quantities[dense_seq_idx], state,
-          col_nums, for_training));
+          col_nums, /* for_training= */ for_training,
+          /* update_history=*/update_history));
     }
 
     return input_blocks;
@@ -285,7 +288,7 @@ class Pipeline {
   static dataset::UserCountHistoryBlockPtr makeQuantityTrackingBlock(
       uint32_t id, const Schema& schema,
       const std::string& track_quantity_col_name, DataState& state,
-      const ColumnNumberMap& col_nums, bool for_training) {
+      const ColumnNumberMap& col_nums, bool for_training, bool update_history) {
     if (!schema.time_to_predict_ahead || !schema.history_length_for_inference) {
       throw std::invalid_argument(
           "[SequentialClassifier] there are dense sequential columns but "
@@ -305,14 +308,14 @@ class Pipeline {
         /* user_col= */ col_nums.at(user_col_name),
         /* count_col= */ col_nums.at(track_quantity_col_name),
         /* timestamp_col= */ col_nums.at(schema.timestamp_col_name),
-        state.quantity_histories_by_id[id]);
+        state.quantity_histories_by_id[id], update_history);
   }
 
   // We pass in an ID because sequential blocks can corrupt each other's states.
   static dataset::BlockPtr makeCategoryTrackingBlock(
       uint32_t id, const Schema& schema,
       const SequentialTriplet& track_category, DataState& state,
-      const ColumnNumberMap& col_nums, bool for_training,
+      const ColumnNumberMap& col_nums, bool for_training, bool update_history,
       std::optional<char> delimiter) {
     const auto& [user_col_name, n_unique_users] = schema.user;
     auto& user_vocab = state.vocabs_by_column[user_col_name];
@@ -342,7 +345,8 @@ class Pipeline {
     return dataset::UserItemHistoryBlock::make(
         col_nums.at(user_col_name), col_nums.at(item_col_name),
         col_nums.at(schema.timestamp_col_name), user_vocab, item_vocab,
-        state.history_collections_by_id[id], delimiter, time_lag);
+        state.history_collections_by_id[id], update_history, delimiter,
+        time_lag);
   }
 };
 

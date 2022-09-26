@@ -12,11 +12,13 @@ class UserCountHistoryBlock final : public Block {
  public:
   UserCountHistoryBlock(uint32_t user_col, uint32_t count_col,
                         uint32_t timestamp_col,
-                        QuantityHistoryTrackerPtr history)
+                        QuantityHistoryTrackerPtr history,
+                        bool update_history = true)
       : _user_col(user_col),
         _count_col(count_col),
         _timestamp_col(timestamp_col),
-        _history(std::move(history)) {}
+        _history(std::move(history)),
+        _update_history(update_history) {}
 
   uint32_t featureDim() const final { return _history->historyLength(); }
   bool isDense() const final { return true; }
@@ -60,9 +62,10 @@ class UserCountHistoryBlock final : public Block {
   }
 
   static auto make(size_t user_col, size_t count_col, size_t timestamp_col,
-                   QuantityHistoryTrackerPtr history) {
-    return std::make_shared<UserCountHistoryBlock>(user_col, count_col,
-                                                   timestamp_col, history);
+                   QuantityHistoryTrackerPtr history,
+                   bool update_history = true) {
+    return std::make_shared<UserCountHistoryBlock>(
+        user_col, count_col, timestamp_col, history, update_history);
   }
 
  protected:
@@ -71,7 +74,9 @@ class UserCountHistoryBlock final : public Block {
       SegmentedFeatureVector& vec) final {
     auto [user, time_seconds, val] = getUserTimeVal(input_row);
 
-    _history->index(user, time_seconds, val);
+    if (_update_history) {
+      _history->index(user, time_seconds, val);
+    }
 
     auto counts = getNormalizedRecentCountHistory(user, time_seconds);
 
@@ -138,6 +143,8 @@ class UserCountHistoryBlock final : public Block {
   uint32_t _count_col;
   uint32_t _timestamp_col;
   QuantityHistoryTrackerPtr _history;
+
+  bool _update_history;
 };
 
 using UserCountHistoryBlockPtr = std::shared_ptr<UserCountHistoryBlock>;

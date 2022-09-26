@@ -182,11 +182,21 @@ class SequentialClassifier {
 
   std::vector<dataset::Explanation> explain(
       const std::unordered_map<std::string, std::string>& sample,
-      std::optional<uint32_t> neuron_to_explain = std::nullopt) {
+      std::optional<std::string> target_label = std::nullopt) {
     auto input_row = inputMapToInputRow(sample);
 
     auto processor = Pipeline::buildSingleInferenceBatchProcessor(
         _schema, _state, _single_inference_col_nums);
+
+    std::optional<uint32_t> neuron_to_explain;
+    if (target_label) {
+      auto label_vocab = _state.vocabs_by_column[_schema.label.first];
+      if (!label_vocab) {
+        throw std::invalid_argument(
+            "[SequentialClassifier::explain] called before training.");
+      }
+      neuron_to_explain = label_vocab->getUid(*target_label);
+    }
 
     auto result = getSignificanceSortedExplanations(
         _model, makeInputForSingleInference(processor, input_row), input_row,

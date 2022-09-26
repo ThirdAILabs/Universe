@@ -165,23 +165,34 @@ py::module_ createBoltSubmodule(py::module_& module) {
            "Trains a Sequential classifier Model using the data provided in "
            "train_file"
            "Arguments:\n"
-           " * train_file: String - The path to the train file\n"
-           " * epochs: int - Number of epochs you want to train the model\n"
-           " * learning_rate: float - learning rate\n"
-           " * metrics: List[Str] - What all metrics you want to track during "
-           "training default to 'recall@1'\n"
-           "Example: let classfier is SequentialClassifier Object which "
-           "generated after initialization then "
-           " classifier.train(train_file = '/home/train_file.csv',epochs = "
-           "10,learning_rate = 0.001). ")
+           " * train_file: str - The path to the train file.\n"
+           " * epochs: int - Number of epochs to train the model.\n"
+           " * learning_rate: float - Learning rate\n"
+           " * metrics: List[Str] - Metrics to track during training. Defaults "
+           "to ['recall@1']\n")
 #if THIRDAI_EXPOSE_ALL
       .def("summarizeModel", &SequentialClassifier::summarizeModel,
            "Deprecated\n")
 #endif
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
-           py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1,
-           "Predicts t")
+           py::arg("output_file") = std::nullopt,
+           py::arg("write_top_k_to_file") = 1,
+           "Predicts the output classes and evaluates the predictions on a "
+           "test dataset."
+           "Optionally writes top k predictions to a file if output file name "
+           "is provided.\n"
+           "Arguments:\n"
+           " * test_file: str - The path to the train file.\n"
+           " * metrics (optional): List[str] - Metrics to evaluate the "
+           "predictions. Defaults to ['recall@1']. Metrics are currently "
+           "restricted to any 'recall@k' where k is a positive (nonzero) "
+           "integer.\n"
+           " * output_file (optional): str: An optional path to a file to "
+           "write predictions to. If not provided, predictions will not be "
+           "written to file.\n"
+           " * write_top_k_to_file (optional): int: Number of top predictions "
+           "to write to file per input sample. Defaults to 1.\n")
       .def("predict_single", &SequentialClassifier::predictSingle,
            py::arg("input_sample"), py::arg("top_k") = 1,
            "Computes the top k classes and their probabilities for a single "
@@ -194,10 +205,61 @@ py::module_ createBoltSubmodule(py::module_& module) {
            "respective "
            "column values.\n"
            " * k: Int (positive) - The number of top results to return.\n")
-      .def("save", &SequentialClassifier::save, py::arg("filename"))
-      .def_static("load", &SequentialClassifier::load, py::arg("filename"))
-      .def("explain", &SequentialClassifier::explain, py::arg("input_sample"),
-           py::arg("neuron_to_explain") = std::optional<uint32_t>());
+      .def("save", &SequentialClassifier::save, py::arg("filename"),
+           "Serializes the SequentialClassifier into a file on disk. Example:\n"
+           "```\n"
+           "from thirdai import bolt\n\n"
+           "model = bolt.SequentialClassifier(...)\n"
+           "model.save('seq_class_savefile.bolt')\n"
+           "```\n")
+      .def_static(
+          "load", &SequentialClassifier::load, py::arg("filename"),
+          "Loads a serialized SequentialClassifier from a file on disk. "
+          "Example:\n"
+          "```\n"
+          "from thirdai import bolt\n\n"
+          "model = bolt.SequentialClassifier.load('seq_class_savefile.bolt')\n"
+          "```\n")
+      .def(
+          "explain", &SequentialClassifier::explain, py::arg("input_sample"),
+          py::arg("neuron_to_explain") = std::nullopt,
+          "The Root Cause Analysis method which gives us relevant "
+          "explanations of the input with respect to the given target label.\n"
+          "Arguments:\n"
+          " * input_sample: Dict[str, str] - The input sample as a dictionary "
+          "where the keys are column names as specified in the schema and the "
+          "values are the respective column values.\n"
+          " * target_label (Optional): str - The label class with respect to "
+          "which we want the explanations for the input. Returns a list of "
+          "Explanation objects with the following fields: `column_number`, "
+          "`column_name`, `keyword`, and `percentage_significance`.\n"
+          "Example:\n"
+          "```\n"
+          "# Suppose we construct a SequentialClassifier as follows:\n"
+          "model = SequentialClassifier(\n"
+          "    user=('name', 500),\n"
+          "    label=('salary', 5),\n"
+          "    timestamp='timestamp',\n"
+          "    static_categorical=[('age_group', 7)]\n"
+          "    track_categories=[('expenditure_level', 7, 30)]\n"
+          ")\n\n"
+          "# Suppose there is a user identified as `arun` and we want to\n"
+          "# know why his salary is in the '<=50k' group, then we may call\n"
+          "# the explain(...) method as follows:\n\n"
+          "input_sample = {\n"
+          "    'name': 'arun',\n"
+          "    'timestamp': '2022-02-02',\n"
+          "    'age_group': '20-39',\n"
+          "    'expenditure_level': 'high'\n"
+          "})\n"
+          "explanations = model.explain(input_sample, target_label='<=50k')\n\n"
+          "# Let's now print the explanations\n\n"
+          "for explanation in explanations:\n"
+          "    print(explanation.column_num)\n"
+          "    print(explanation.column_name)\n"
+          "    print(explanation.percentage_significance)\n"
+          "    print(explanation.keyword)\n"
+          "```\n");
 
   createBoltGraphSubmodule(bolt_submodule);
 
