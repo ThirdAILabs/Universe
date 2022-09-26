@@ -8,6 +8,11 @@ import os
 from dataclasses import dataclass
 from typing import Dict, Any
 
+# The purpose of this experiment is to see how well the embedding layer does in
+# processing tabular datasets. Additionally this experiment provides a template
+# for tabular experiments and demonstrates how we can use the tabular blocks in
+# python to preprocess data.
+
 # TODO try freeze hash tables after N epochs
 # TODO try varying the input dimension
 # TODO try going to the max int token dimension for embedding layer and not modding the pairgrams
@@ -95,13 +100,15 @@ def generate_run_configs():
     for num_lookups in [4, 8, 16, 32]:
         for lookup_size in [4, 8, 16, 32]:
             for log_embedding_block_size in [8, 12, 16, 20, 25]:
-                run_configs.append({
-                    "name": f"lookups_{num_lookups}_lookup_size_{lookup_size}_block_size_{log_embedding_block_size}",
-                    "num_embedding_lookups": num_lookups,
-                    "lookup_size": lookup_size,
-                    "log_embedding_block_size": log_embedding_block_size,
-                    "reduction": "sum"
-                })
+                run_configs.append(
+                    {
+                        "name": f"lookups_{num_lookups}_lookup_size_{lookup_size}_block_size_{log_embedding_block_size}",
+                        "num_embedding_lookups": num_lookups,
+                        "lookup_size": lookup_size,
+                        "log_embedding_block_size": log_embedding_block_size,
+                        "reduction": "sum",
+                    }
+                )
     return run_configs
 
 
