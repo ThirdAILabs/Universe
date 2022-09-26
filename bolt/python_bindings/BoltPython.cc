@@ -161,13 +161,27 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "model uses the last 5 weeks of counts to make predictions.\n")
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("metrics") = std::vector<std::string>({"recall@1"}))
+           py::arg("metrics") = std::vector<std::string>({"recall@1"}),
+           "Trains a Sequential classifier Model using the data provided in "
+           "train_file"
+           "Arguments:\n"
+           " * train_file: String - The path to the train file\n"
+           " * epochs: int - Number of epochs you want to train the model\n"
+           " * learning_rate: float - learning rate\n"
+           " * metrics: List[Str] - What all metrics you want to track during "
+           "training default to 'recall@1'\n"
+           "Example: let classfier is SequentialClassifier Object which "
+           "generated after initialization then "
+           " classifier.train(train_file = '/home/train_file.csv',epochs = "
+           "10,learning_rate = 0.001). ")
 #if THIRDAI_EXPOSE_ALL
-      .def("summarizeModel", &SequentialClassifier::summarizeModel)
+      .def("summarizeModel", &SequentialClassifier::summarizeModel,
+           "Deprecated\n")
 #endif
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
-           py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
+           py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1,
+           "Predicts t")
       .def("predict_single", &SequentialClassifier::predictSingle,
            py::arg("input_sample"), py::arg("top_k") = 1,
            "Computes the top k classes and their probabilities for a single "
