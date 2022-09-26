@@ -171,8 +171,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &NumericalCategoricalBlock::isDense,
            "Returns false since text blocks always produce sparse features.");
 
-  py::class_<ThreadSafeVocabulary, ThreadSafeVocabularyPtr>(
-      dataset_submodule, "ThreadSafeVocabulary");  // NOLINT
+  py::class_<ThreadSafeVocabulary, ThreadSafeVocabularyPtr>(  // NOLINT
+      dataset_submodule, "ThreadSafeVocabulary");
 
   py::class_<DateBlock, Block, std::shared_ptr<DateBlock>>(
       block_submodule, "Date",
