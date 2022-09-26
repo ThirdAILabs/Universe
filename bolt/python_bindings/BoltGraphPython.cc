@@ -49,11 +49,11 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "for estimating a threshold for dragon compression or the number of "
            "sketches needed for count_sketch")
       .def("set", &ParameterReference::set, py::arg("new_params"),
-           py::arg("compression_scheme") = std::optional<std::string>{},
+           py::arg("from_compressed") = false,
            "Either takes in a numpy array and copies its contents into the "
            "parameters held in the ParameterReference object. Or takes in a "
-           "char array representing a compressed vector object and a "
-           "compression scheme")
+           "char array representing a compressed vector object and a boolean "
+           "indicating that parameters are being set from a compressed vector.")
       /*
        * TODO(Shubh):We should make a Compressed vector module at python
        * end to deal with concat function. Since, compressed vectors have an
@@ -64,7 +64,6 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
        */
       .def_static(
           "concat", &ParameterReference::concat, py::arg("compressed_vectors"),
-          py::arg("compression_scheme"),
           "Takes in a list of compressed vector objects and returns a "
           "concatenated compressed vector object. Concatenation is non-lossy "
           "in nature but comes at the cost of a higher memory footprint. "

@@ -16,8 +16,8 @@ ACCURACY_THRESHOLD = 0.8
 # every batch update
 def test_compressed_count_sketch_training():
     num_sketches = 1
-    compression_density = 0.2
-    num_epochs = 30
+    compression_density = 0.25
+    num_epochs = 35
 
     acc = compressed_training(
         compression_scheme="count_sketch",

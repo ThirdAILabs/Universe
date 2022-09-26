@@ -9,9 +9,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <cstdint>
+#include <cstring>
 #include <stdexcept>
 #include <variant>
-
 namespace py = pybind11;
 
 namespace thirdai::compression::python {
@@ -20,10 +20,13 @@ using SerializedCompressedVector =
 
 template <class T>
 std::variant<DragonVector<T>, CountSketch<T>> deserializeCompressedVector(
-    const char* serialized_compressed_vector,
-    const std::string& compression_scheme) {
+    const char* serialized_compressed_vector) {
+  int compression_scheme;
+  std::memcpy(&compression_scheme, serialized_compressed_vector,
+              sizeof(uint32_t));
+
   CompressionScheme compression_scheme_enum =
-      convertStringToEnum(compression_scheme);
+      static_cast<CompressionScheme>(compression_scheme);
 
   // std::variant automatically binds
   switch (compression_scheme_enum) {
@@ -40,8 +43,7 @@ std::variant<DragonVector<T>, CountSketch<T>> deserializeCompressedVector(
 
 template <class T>
 std::vector<std::variant<DragonVector<T>, CountSketch<T>>>
-convertPyListToCompressedVectors(const py::list& py_compressed_vectors,
-                                 const std::string& compression_scheme) {
+convertPyListToCompressedVectors(const py::list& py_compressed_vectors) {
   std::vector<std::variant<DragonVector<T>, CountSketch<T>>> compressed_vectors;
   size_t num_vectors = py_compressed_vectors.size();
   compressed_vectors.reserve(num_vectors);
@@ -50,7 +52,7 @@ convertPyListToCompressedVectors(const py::list& py_compressed_vectors,
     const char* serialized_data =
         py::cast<SerializedCompressedVector>(py_compressed_vectors[i]).data();
     compressed_vectors.emplace_back(
-        deserializeCompressedVector<T>(serialized_data, compression_scheme));
+        deserializeCompressedVector<T>(serialized_data));
   }
   return compressed_vectors;
 }

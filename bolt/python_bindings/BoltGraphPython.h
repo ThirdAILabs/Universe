@@ -58,9 +58,8 @@ class ParameterReference {
 
   ParameterArray get() const { return ParameterArray(_dimensions, _params); }
 
-  void set(const py::object& new_params,
-           const std::optional<std::string>& compression_scheme) {
-    if (!compression_scheme) {
+  void set(const py::object& new_params, bool from_compressed) {
+    if (!from_compressed) {
       ParameterArray new_array = py::cast<ParameterArray>(new_params);
       checkNumpyArrayDimensions(_dimensions, new_params);
       std::copy(new_array.data(), new_array.data() + _total_dim, _params);
@@ -71,7 +70,7 @@ class ParameterReference {
         py::cast<SerializedCompressedVector>(new_params).data();
     FloatCompressedVector compressed_vector =
         thirdai::compression::python::deserializeCompressedVector<float>(
-            serialized_data, compression_scheme.value());
+            serialized_data);
     std::vector<float> full_gradients = std::visit(
         thirdai::compression::DecompressVisitor<float>(), compressed_vector);
     // TODO(Shubh): Pass in a refernce to _params and avoid std::copy
@@ -105,11 +104,10 @@ class ParameterReference {
   }
 
   static SerializedCompressedVector concat(
-      const py::object& py_compressed_vectors,
-      const std::string& compression_scheme) {
+      const py::object& py_compressed_vectors) {
     std::vector<FloatCompressedVector> compressed_vectors =
         thirdai::compression::python::convertPyListToCompressedVectors<float>(
-            py_compressed_vectors, compression_scheme);
+            py_compressed_vectors);
     FloatCompressedVector concatenated_compressed_vector =
         thirdai::compression::concat(std::move(compressed_vectors));
 

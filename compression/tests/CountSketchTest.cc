@@ -35,32 +35,6 @@ class CountSketchTest : public testing::Test {
   }
 };
 
-TEST_F(CountSketchTest, ConstructorCountSketchTest) {
-  UniversalHash hash_for_index = UniversalHash(_seed_for_hashing_index);
-  UniversalHash hash_for_sign = UniversalHash(_seed_for_sign);
-
-  std::vector<float> count_sketch = _vec.sketches()[0];
-
-  std::vector<float> test_count_sketch(
-      (_uncompressed_size * _compression_density), 0);
-
-  for (uint32_t i = 0; i < _uncompressed_size; i++) {
-    uint32_t hashed_sign = hash_for_sign.gethash(i) % 2;
-    uint32_t hashed_index =
-        hash_for_index.gethash((i)) % test_count_sketch.size();
-
-    if (hashed_sign == 0) {
-      test_count_sketch[hashed_index] -= _original_vec[i];
-    } else {
-      test_count_sketch[hashed_index] += _original_vec[i];
-    }
-  }
-
-  for (size_t i = 0; i < test_count_sketch.size(); i++) {
-    ASSERT_EQ(test_count_sketch[i], count_sketch[i]);
-  }
-}
-
 TEST_F(CountSketchTest, ExtendCountSketchTest) {
   CountSketch<float> copy_sketch(_vec);
   std::vector<float> decompressed_vector = copy_sketch.decompress();

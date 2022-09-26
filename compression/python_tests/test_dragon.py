@@ -46,8 +46,8 @@ def test_get_set_values_dragon_vector():
         sample_population_size=10,
     )
 
-    first_layer.weights.set(compressed_weights, compression_scheme="dragon")
-    first_layer.biases.set(compressed_biases, compression_scheme="dragon")
+    first_layer.weights.set(compressed_weights, from_compressed=True)
+    first_layer.biases.set(compressed_biases, from_compressed=True)
 
     new_first_layer_biases = first_layer.biases.copy().flatten()
     new_first_layer_weights = first_layer.weights.copy().flatten()
@@ -79,9 +79,9 @@ def test_concat_values_dragon_vector():
         sample_population_size=50,
     )
     concatenated_weights = bolt.graph.ParameterReference.concat(
-        [compressed_weights] * 2, compression_scheme="dragon"
+        [compressed_weights] * 2
     )
-    first_layer.weights.set(concatenated_weights, compression_scheme="dragon")
+    first_layer.weights.set(concatenated_weights, from_compressed=True)
 
     new_first_layer_weights = first_layer.weights.copy().flatten()
 

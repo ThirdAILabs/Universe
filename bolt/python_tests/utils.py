@@ -311,16 +311,11 @@ def get_compressed_weight_gradients(
 def set_compressed_weight_gradients(
     model,
     compressed_weight_grads,
-    compression_scheme,
 ):
     layer1 = model.get_layer("fc_1")
     layer2 = model.get_layer("fc_2")
-    layer1.weight_gradients.set(
-        compressed_weight_grads[0], compression_scheme=compression_scheme
-    )
-    layer2.weight_gradients.set(
-        compressed_weight_grads[1], compression_scheme=compression_scheme
-    )
+    layer1.weight_gradients.set(compressed_weight_grads[0], from_compressed=True)
+    layer2.weight_gradients.set(compressed_weight_grads[1], from_compressed=True)
 
 
 def compressed_training(
@@ -366,7 +361,6 @@ def compressed_training(
             set_compressed_weight_gradients(
                 model,
                 compressed_weight_grads=compressed_weight_grads,
-                compression_scheme=compression_scheme,
             )
             model.updateParametersSingleNode()
 
