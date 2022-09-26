@@ -293,6 +293,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "constructor) must include this 'null token'. In this example, there "
           "are 5000 movies, but we define the number of unique movies as 5001 "
           "to include the 'null token'.")
+      .def("index_single", &SequentialClassifier::indexSingle, py::arg("sample"))
       .def("save", &SequentialClassifier::save, py::arg("filename"),
            "Serializes the SequentialClassifier into a file on disk. Example:\n"
            "```\n"

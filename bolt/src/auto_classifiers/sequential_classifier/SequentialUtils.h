@@ -225,10 +225,10 @@ class Pipeline {
   }
 
   static dataset::GenericBatchProcessorPtr buildSingleInferenceBatchProcessor(
-      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums) {
+      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums, bool update_history) {
     auto input_blocks =
         buildInputBlocks(schema, state, col_nums, /* for_training= */ false,
-                         /* update_history= */ false);
+                         /* update_history= */ update_history);
     return dataset::GenericBatchProcessor::make(
         /* input_blocks= */ input_blocks, /* label_blocks= */ {});
   }

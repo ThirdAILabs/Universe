@@ -186,15 +186,18 @@ class SequentialClassifier {
     auto input_row = inputMapToInputRow(sample);
 
     auto processor = Pipeline::buildSingleInferenceBatchProcessor(
-        _schema, _state, _single_inference_col_nums);
+        _schema, _state, _single_inference_col_nums, /* update_history= */ false);
 
     std::optional<uint32_t> neuron_to_explain;
     if (target_label) {
+      std::cout << "TARGET LABEL= " << *target_label << std::endl;
       auto label_vocab = _state.vocabs_by_column[_schema.label.first];
+      std::cout << "LABEL VOCAB= " << label_vocab << std::endl;
       if (!label_vocab) {
         throw std::invalid_argument(
             "[SequentialClassifier::explain] called before training.");
       }
+      std::cout << "UID= " << label_vocab->getUid(*target_label) << std::endl;
       neuron_to_explain = label_vocab->getUid(*target_label);
     }
 
@@ -234,13 +237,22 @@ class SequentialClassifier {
     auto input_row = inputMapToInputRow(sample);
 
     auto processor = Pipeline::buildSingleInferenceBatchProcessor(
-        _schema, _state, _single_inference_col_nums);
+        _schema, _state, _single_inference_col_nums, /* update_history= */ false);
 
     auto output = _model->predictSingle(
         {makeInputForSingleInference(processor, input_row)},
         /* use_sparse_inference= */ false);
 
     return outputVectorToTopKResults(output, k);
+  }
+
+  void indexSingle(const std::unordered_map<std::string, std::string>& sample) {
+    auto input_row = inputMapToInputRow(sample);
+
+    auto processor = Pipeline::buildSingleInferenceBatchProcessor(
+        _schema, _state, _single_inference_col_nums, /* update_history= */ true);
+    
+    makeInputForSingleInference(processor, input_row);
   }
 
   void save(const std::string& filename) {
