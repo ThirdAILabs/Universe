@@ -245,6 +245,14 @@ class SequentialClassifier {
     return outputVectorToTopKResults(output, k);
   }
 
+  /**
+   * @brief Indexes a single true sample to keep the SequentialClassifier's 
+   * internal quantity and category trackers up to date.
+   * 
+   * @param sample A map from strings to strings, where the keys are column
+   * names as specified in the SequentialClassifier schema and the values are
+   * the values of the respective columns.
+   */
   void indexSingle(const std::unordered_map<std::string, std::string>& sample) {
     auto input_row = inputMapToInputRow(sample);
 
