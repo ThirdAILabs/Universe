@@ -68,7 +68,13 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "concatenated compressed vector object. Concatenation is non-lossy "
           "in nature but comes at the cost of a higher memory footprint. "
           "Note: Only concatenate compressed vectors of the same type with "
-          "the same hyperparamters.");
+          "the same hyperparamters.")
+      .def_static(
+          "add", &ParameterReference::add, py::arg("compressed_vectors"),
+          "Takes in a list of compressed vector objects and returns a "
+          "compressed vector which is the result of addition of the input "
+          "vectors. Addition is lossy in nature but does not increase the "
+          "memory footprint when training in a compressed fashion");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT

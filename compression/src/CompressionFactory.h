@@ -47,6 +47,31 @@ class ExtendVisitor {
 };
 
 template <class T>
+class AddVisitor {
+ public:
+  void operator()(DragonVector<T>& vector_to_add_to,
+                  const DragonVector<T>& vector_to_add) {
+    vector_to_add_to.extend(vector_to_add);
+  }
+  void operator()(CountSketch<T>& vector_to_add_to,
+                  const CountSketch<T>& vector_to_add) {
+    vector_to_add_to.extend(vector_to_add);
+  }
+  void operator()(DragonVector<T>& vector_to_add_to,
+                  const CountSketch<T>& vector_to_add) {
+    (void)vector_to_add_to;
+    (void)vector_to_add;
+    throw std::invalid_argument("Cannot add a CountSketch to a DragonVector");
+  }
+  void operator()(CountSketch<T>& vector_to_add_to,
+                  const DragonVector<T>& vector_to_add) {
+    (void)vector_to_add_to;
+    (void)vector_to_add;
+    throw std::invalid_argument("Cannot add a DragonVector to a CountSketch");
+  }
+};
+
+template <class T>
 class DecompressVisitor {
  public:
   std::vector<T> operator()(const DragonVector<T>& dragon_vector) {
@@ -138,6 +163,26 @@ inline std::variant<DragonVector<T>, CountSketch<T>> concat(
   size_t num_vectors = compressed_vectors.size();
   for (size_t i = 1; i < num_vectors; i++) {
     std::visit(ExtendVisitor<T>(), initial_compressed_vector,
+               compressed_vectors[i]);
+  }
+  return initial_compressed_vector;
+}
+
+template <class T>
+inline std::variant<DragonVector<T>, CountSketch<T>> add(
+    std::vector<std::variant<DragonVector<T>, CountSketch<T>>>
+        compressed_vectors) {
+  if (compressed_vectors.empty()) {
+    throw std::logic_error("No compressed vectors provided for concatenating.");
+  }
+  // We initialize a compressed vector from the first element of the input
+  // vector, and then keep on extending it with the rest of the elements.
+
+  std::variant<DragonVector<T>, CountSketch<T>> initial_compressed_vector(
+      compressed_vectors[0]);
+  size_t num_vectors = compressed_vectors.size();
+  for (size_t i = 1; i < num_vectors; i++) {
+    std::visit(AddVisitor<T>(), initial_compressed_vector,
                compressed_vectors[i]);
   }
   return initial_compressed_vector;

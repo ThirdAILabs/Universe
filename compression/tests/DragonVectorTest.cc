@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <compression/src/CountSketch.h>
 #include <compression/src/DragonVector.h>
 #include <sys/types.h>
 #include <cstddef>
@@ -90,6 +91,20 @@ TEST_F(DragonVectorTest, SerializeDragonVectorTest) {
   for (size_t i = 0; i < indices.size(); i++) {
     ASSERT_EQ(indices[i], indices_deserialized[i]);
     ASSERT_EQ(values[i], values_deserialized[i]);
+  }
+}
+
+TEST_F(DragonVectorTest, AddDragonVectorTest) {
+  DragonVector<float> copy_dragon(_vec);
+  std::vector<float> decompressed_vector = copy_dragon.decompress();
+  _vec.add(copy_dragon);
+
+  /*
+   * Adding a dragon vector to itself will not change the values in the dragon
+   * vector.
+   */
+  for (uint32_t i = 0; i < _uncompressed_size; i++) {
+    ASSERT_EQ(decompressed_vector[i], _vec.get(i));
   }
 }
 

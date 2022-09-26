@@ -40,6 +40,8 @@ class DragonVector final : public CompressedVector<T> {
 
   void extend(const DragonVector<T>& vec);
 
+  void add(const DragonVector<T>& vec);
+
   std::vector<uint32_t> indices() const { return _indices; }
 
   std::vector<T> values() const { return _values; }

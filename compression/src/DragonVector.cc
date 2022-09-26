@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -127,6 +128,40 @@ void DragonVector<T>::extend(const DragonVector<T>& vec) {
   _values.insert(std::end(_values), std::begin(vec._values),
                  std::end(vec._values));
   //_uncompressed_size remains the same
+}
+
+/*
+ * DragonVectors with different underlying hash functions should not be added.
+ * Similarly, adding two DragonVectors with different underlying uncompressed
+ * vectors has random behavior. Not throwing exceptions but caller should be
+ * wary of these facts.
+ *
+ * NOTE: Adding two DragonVectors is lossy in nature. In
+ * current implementation, we keep the index that has the highest value. add is
+ * lossy in nature but does not increase the memory footprint.
+ *
+ * NOTE: DragonVector class is modelled exactly after the DRAGONN research
+ * paper. Approximately 40-45% of a DragonVector obtained after compressing a
+ * vector is empty i.e., only 50-60% of the DragonVector has non-zero indices
+ * and values. Thus, adding 2-3 such DragonVectors would mean that the number of
+ * non-zeros go up and hence, when training in a compressed setting, it is
+ * advisable to add DragonVectors when the number of nodes is not high. For
+ * example, in a tree all reduce setting, add DragonVectors for the levaes and
+ * then concat.
+ */
+template <class T>
+void DragonVector<T>::add(const DragonVector<T>& vec) {
+  if (vec.size() != this->size()) {
+    throw std::length_error("Cannot add two DragonVectors of different sizes");
+  }
+  uint32_t sketch_size = this->size();
+#pragma omp parallel for default(none) shared(sketch_size, vec)
+  for (uint32_t index = 0; index < sketch_size; index++) {
+    if (vec._values[index] > _values[index]) {
+      _indices[index] = vec._indices[index];
+      _values[index] = vec._values[index];
+    }
+  }
 }
 
 /*

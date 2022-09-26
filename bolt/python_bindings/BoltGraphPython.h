@@ -129,6 +129,32 @@ class ParameterReference {
         serialized_size, serialized_compressed_vector, free_when_done);
   }
 
+  static SerializedCompressedVector add(
+      const py::object& py_compressed_vectors) {
+    std::vector<FloatCompressedVector> compressed_vectors =
+        thirdai::compression::python::convertPyListToCompressedVectors<float>(
+            py_compressed_vectors);
+    FloatCompressedVector concatenated_compressed_vector =
+        thirdai::compression::add(std::move(compressed_vectors));
+
+    uint32_t serialized_size =
+        std::visit(thirdai::compression::SizeVisitor<float>(),
+                   concatenated_compressed_vector);
+
+    char* serialized_compressed_vector = new char[serialized_size];
+
+    std::visit(thirdai::compression::SerializeVisitor<float>(
+                   serialized_compressed_vector),
+               concatenated_compressed_vector);
+
+    py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
+      delete static_cast<char*>(ptr);
+    });
+
+    return SerializedCompressedVector(
+        serialized_size, serialized_compressed_vector, free_when_done);
+  }
+
  private:
   static uint64_t dimensionProduct(const std::vector<uint32_t>& dimensions) {
     uint64_t product = 1;
