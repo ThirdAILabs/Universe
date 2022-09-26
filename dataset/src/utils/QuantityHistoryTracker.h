@@ -106,7 +106,7 @@ class QuantityHistoryTracker {
    * will be archived as old values, and the current archive will be deleted
    * permanently. This means that tracked quantities are deleted permanently
    * after two successful archivings.
-   * 
+   *
    * If new_lowest_timestamp is less than the current lowest timestamp, the
    * current lowest timestamp will be updated to the new lowest timestamp but
    * no archiving occurs.

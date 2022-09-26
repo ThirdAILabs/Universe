@@ -186,18 +186,16 @@ class SequentialClassifier {
     auto input_row = inputMapToInputRow(sample);
 
     auto processor = Pipeline::buildSingleInferenceBatchProcessor(
-        _schema, _state, _single_inference_col_nums, /* update_history= */ false);
+        _schema, _state, _single_inference_col_nums,
+        /* update_history= */ false);
 
     std::optional<uint32_t> neuron_to_explain;
     if (target_label) {
-      std::cout << "TARGET LABEL= " << *target_label << std::endl;
       auto label_vocab = _state.vocabs_by_column[_schema.label.first];
-      std::cout << "LABEL VOCAB= " << label_vocab << std::endl;
       if (!label_vocab) {
         throw std::invalid_argument(
             "[SequentialClassifier::explain] called before training.");
       }
-      std::cout << "UID= " << label_vocab->getUid(*target_label) << std::endl;
       neuron_to_explain = label_vocab->getUid(*target_label);
     }
 
@@ -237,7 +235,8 @@ class SequentialClassifier {
     auto input_row = inputMapToInputRow(sample);
 
     auto processor = Pipeline::buildSingleInferenceBatchProcessor(
-        _schema, _state, _single_inference_col_nums, /* update_history= */ false);
+        _schema, _state, _single_inference_col_nums,
+        /* update_history= */ false);
 
     auto output = _model->predictSingle(
         {makeInputForSingleInference(processor, input_row)},
@@ -250,13 +249,14 @@ class SequentialClassifier {
     auto input_row = inputMapToInputRow(sample);
 
     auto processor = Pipeline::buildSingleInferenceBatchProcessor(
-        _schema, _state, _single_inference_col_nums, /* update_history= */ true);
-    
+        _schema, _state, _single_inference_col_nums,
+        /* update_history= */ true);
+
     // Emulate batch size of 2048.
     // TODO(Geordie): This is leaky abstraction.
     if (_state.n_index_single % 2048 == 0) {
       processor->prepareInputBlocksForBatch(input_row);
-      _state.n_index_single = 0;  
+      _state.n_index_single = 0;
     }
     _state.n_index_single++;
 

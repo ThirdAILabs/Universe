@@ -251,11 +251,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "input sample. "
           "Returns a list of (class name. probability) pairs\n"
           "Arguments:\n"
-          " * sample: Dict[str, str] - The input sample as a dictionary where "
-          "the keys "
-          "are column names as specified in the schema and the values are the "
-          "respective "
-          "column values.\n"
+          " * input_sample: Dict[str, str] - The input sample as a dictionary "
+          "where "
+          "the keys are column names as specified in the schema and the values "
+          "are the respective column values.\n"
           " * k: Int (positive) - The number of top results to return.\n"
           "Returns a list of (prediction, score) tuples."
           "Example:\n"
@@ -293,22 +292,6 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "constructor) must include this 'null token'. In this example, there "
           "are 5000 movies, but we define the number of unique movies as 5001 "
           "to include the 'null token'.")
-      .def("index_single", &SequentialClassifier::indexSingle, py::arg("sample"))
-      .def("save", &SequentialClassifier::save, py::arg("filename"),
-           "Serializes the SequentialClassifier into a file on disk. Example:\n"
-           "```\n"
-           "from thirdai import bolt\n\n"
-           "model = bolt.SequentialClassifier(...)\n"
-           "model.save('seq_class_savefile.bolt')\n"
-           "```\n")
-      .def_static(
-          "load", &SequentialClassifier::load, py::arg("filename"),
-          "Loads a serialized SequentialClassifier from a file on disk. "
-          "Example:\n"
-          "```\n"
-          "from thirdai import bolt\n\n"
-          "model = bolt.SequentialClassifier.load('seq_class_savefile.bolt')\n"
-          "```\n")
       .def(
           "explain", &SequentialClassifier::explain, py::arg("input_sample"),
           py::arg("target_label") = std::nullopt,
@@ -348,6 +331,51 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "    print(explanation.column_name)\n"
           "    print(explanation.percentage_significance)\n"
           "    print(explanation.keyword)\n"
+          "```\n")
+      .def(
+          "index_single", &SequentialClassifier::indexSingle, py::arg("sample"),
+          "Indexes a single true sample to keep the SequentialClassifier's "
+          "internal quantity and category trackers up to date.\n"
+          "Arguments:\n"
+          " * input_sample: Dict[str, str] - The input sample as a dictionary "
+          "where "
+          "the keys are column names as specified in the schema and the values "
+          "are the respective column values.\n"
+          "Example:\n"
+          "```\n"
+          "# Suppose we construct a SequentialClassifier as follows:\n"
+          "model = SequentialClassifier(\n"
+          "    user=('name', 500),\n"
+          "    label=('salary', 5),\n"
+          "    timestamp='timestamp',\n"
+          "    static_categorical=[('age_group', 7)]\n"
+          "    track_categories=[('expenditure_level', 7, 30)]\n"
+          ")\n\n"
+          "# Suppose we recorded a new sample with the following information:\n"
+          "input_sample = {\n"
+          "    'name': 'arun',\n"
+          "    'salary': '<=50k',\n"
+          "    'timestamp': '2022-02-02',\n"
+          "    'age_group': '20-39',\n"
+          "    'expenditure_level': 'high'\n"
+          "})\n\n"
+          "# Then we will call index_single as follows:\n"
+          "model.index_single(input_sample)\n"
+          "```\n")
+      .def("save", &SequentialClassifier::save, py::arg("filename"),
+           "Serializes the SequentialClassifier into a file on disk. Example:\n"
+           "```\n"
+           "from thirdai import bolt\n\n"
+           "model = bolt.SequentialClassifier(...)\n"
+           "model.save('seq_class_savefile.bolt')\n"
+           "```\n")
+      .def_static(
+          "load", &SequentialClassifier::load, py::arg("filename"),
+          "Loads a serialized SequentialClassifier from a file on disk. "
+          "Example:\n"
+          "```\n"
+          "from thirdai import bolt\n\n"
+          "model = bolt.SequentialClassifier.load('seq_class_savefile.bolt')\n"
           "```\n");
 
   createBoltGraphSubmodule(bolt_submodule);

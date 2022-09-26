@@ -227,7 +227,8 @@ class Pipeline {
   }
 
   static dataset::GenericBatchProcessorPtr buildSingleInferenceBatchProcessor(
-      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums, bool update_history) {
+      const Schema& schema, DataState& state, const ColumnNumberMap& col_nums,
+      bool update_history) {
     auto input_blocks =
         buildInputBlocks(schema, state, col_nums, /* for_training= */ false,
                          /* update_history= */ update_history);
