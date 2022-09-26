@@ -107,7 +107,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
               const std::vector<std::pair<std::string, uint32_t>>,
               const std::vector<std::tuple<std::string, uint32_t, uint32_t>>,
               const std::vector<std::string>, std::string,
-              std::optional<uint32_t>, std::optional<uint32_t>, std::optional<char>>(),
+              std::optional<uint32_t>, std::optional<uint32_t>,
+              std::optional<char>>(),
           py::arg("user"), py::arg("label"), py::arg("timestamp"),
           py::arg("static_text") = std::vector<std::string>(),
           py::arg("static_category") =
@@ -171,10 +172,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "    static_text=['userBio'],\n"
           "    static_category=['userAgeGroup'],\n\n"
           "    # For each user, track last 5 items, 50 unique items in total.\n"
-          "    track_categories=[('movieId', 50, 5)],\n\n" 
+          "    track_categories=[('movieId', 50, 5)],\n\n"
           "    # For each user, track a 30-day quantity history for\n"
           "    # predicting 1 day ahead. Track counts at weekly granularity.\n"
-          "    track_quantities=['movie_duration'],\n" 
+          "    track_quantities=['movie_duration'],\n"
           "    time_granularity='daily',\n"
           "    time_to_predict_ahead=1,\n"
           "    history_length_for_inference=30\n\n"
@@ -188,11 +189,25 @@ py::module_ createBoltSubmodule(py::module_& module) {
            "Trains a Sequential classifier Model using the data provided in "
            "train_file"
            "Arguments:\n"
-           " * train_file: str - The path to the train file.\n"
+           " * train_file: str - The path to the training dataset. The dataset "
+           "has to be a CSV file with a header.\n"
            " * epochs: int - Number of epochs to train the model.\n"
            " * learning_rate: float - Learning rate\n"
-           " * metrics: List[Str] - Metrics to track during training. Defaults "
-           "to ['recall@1']\n")
+           " * metrics (Optional): List[Str] - Metrics to track during "
+           "training. Defaults "
+           "to ['recall@1'] Metrics are currently restricted to any 'recall@k' "
+           "where k is a positive (nonzero) integer.\n"
+           "Example:\n"
+           "```\n"
+           "from thirdai import bolt\n\n"
+           "model = bolt.SequentialClassifier(...)\n"
+           "model.train(\n"
+           "    'train_data.csv',\n"
+           "    epochs=3,\n"
+           "    learning_rate=0.0001,\n"
+           "    metrics=['recall@1', 'recall@10', 'recall@100']\n"
+           ")\n"
+           "```\n")
 #if THIRDAI_EXPOSE_ALL
       .def("summarizeModel", &SequentialClassifier::summarizeModel,
            "Deprecated\n")
@@ -202,11 +217,12 @@ py::module_ createBoltSubmodule(py::module_& module) {
            py::arg("output_file") = std::nullopt,
            py::arg("write_top_k_to_file") = 1,
            "Predicts the output classes and evaluates the predictions on a "
-           "test dataset."
-           "Optionally writes top k predictions to a file if output file name "
-           "is provided.\n"
+           "test dataset. Optionally writes top k predictions to a file if "
+           "output file name is provided. This method cannot be called on an "
+           "untrained model.\n"
            "Arguments:\n"
-           " * test_file: str - The path to the train file.\n"
+           " * test_file: str - The path to the test dataset. The dataset has "
+           "to be a CSV file with a header.\n"
            " * metrics (optional): List[str] - Metrics to evaluate the "
            "predictions. Defaults to ['recall@1']. Metrics are currently "
            "restricted to any 'recall@k' where k is a positive (nonzero) "
@@ -215,19 +231,68 @@ py::module_ createBoltSubmodule(py::module_& module) {
            "write predictions to. If not provided, predictions will not be "
            "written to file.\n"
            " * write_top_k_to_file (optional): int: Number of top predictions "
-           "to write to file per input sample. Defaults to 1.\n")
-      .def("predict_single", &SequentialClassifier::predictSingle,
-           py::arg("input_sample"), py::arg("top_k") = 1,
-           "Computes the top k classes and their probabilities for a single "
-           "input sample. "
-           "Returns a list of (class name. probability) pairs\n"
-           "Arguments:\n"
-           " * sample: Dict[str, str] - The input sample as a dictionary where "
-           "the keys "
-           "are column names as specified in the schema and the values are the "
-           "respective "
-           "column values.\n"
-           " * k: Int (positive) - The number of top results to return.\n")
+           "to write to file per input sample. Defaults to 1.\n"
+           "Example:\n"
+           "```\n"
+           "from thirdai import bolt\n\n"
+           "model = bolt.SequentialClassifier(...)\n"
+           "model.train(...)\n"
+           "model.predict(\n"
+           "    'test_data.csv',\n"
+           "    metrics=['recall@1', 'recall@10', 'recall@100']\n"
+           "    output_file='predictions.txt',\n"
+           "    write_top_k_to_file=10,\n"
+           ")\n"
+           "```\n")
+      .def(
+          "predict_single", &SequentialClassifier::predictSingle,
+          py::arg("input_sample"), py::arg("top_k") = 1,
+          "Computes the top k classes and their probabilities for a single "
+          "input sample. "
+          "Returns a list of (class name. probability) pairs\n"
+          "Arguments:\n"
+          " * sample: Dict[str, str] - The input sample as a dictionary where "
+          "the keys "
+          "are column names as specified in the schema and the values are the "
+          "respective "
+          "column values.\n"
+          " * k: Int (positive) - The number of top results to return.\n"
+          "Returns a list of (prediction, score) tuples."
+          "Example:\n"
+          "```\n"
+          "# Suppose we construct a SequentialClassifier as follows:\n"
+          "model = SequentialClassifier(\n"
+          "    user=('name', 500),\n"
+          "    label=('movie', 5001),\n"
+          "    timestamp='timestamp',\n"
+          "    static_categorical=[('age_group', 7)]\n"
+          "    track_categories=[('movie', 5001, 10)]\n"
+          "    track_quantities=['movie_duration']\n"
+          "    time_granularity='daily',\n"
+          "    time_to_predict_ahead=1,\n"
+          "    history_length_for_inference=30\n\n"
+          ")\n\n"
+          "# Suppose there is a user 'arun' for whome we want to recommend\n"
+          "# the next movie to watch, then the input sample would be as "
+          "follows."
+          "input_sample = {\n"
+          "    'name': 'arun',\n"
+          "    'timestamp': '2022-02-02',\n"
+          "    'age_group': '20-39',\n"
+          "    'movie': 'null_token'\n"
+          "    'movie_duration': '0'\n"
+          "})\n\n"
+          "model.predict_single(input_sample, top_k=10)\n"
+          "```\n"
+          "Notice that in the example above, we will not know the movie or "
+          "movie duration since they are both tied to the variable that we are "
+          "trying to predict. In this scenario, we can pass in random values "
+          "and the model automatically ignores them. If you pass a unique "
+          "'null token' in place of a tracked categorical feature for clarity, "
+          "the number of unique values for that column (passed into the "
+          "constructor) must include this 'null token'. In this example, there "
+          "are 5000 movies, but we define the number of unique movies as 5001 "
+          "to include the 'null token'.")
       .def("save", &SequentialClassifier::save, py::arg("filename"),
            "Serializes the SequentialClassifier into a file on disk. Example:\n"
            "```\n"
