@@ -91,43 +91,18 @@ def featurize_bolt_tabular_data(
 
 
 def generate_run_configs():
-    return [
-        {
-            "name": "tiny_model",
-            "num_embedding_lookups": 8,
-            "lookup_size": 8,
-            "log_embedding_block_size": 10,
-            "reduction": "sum",
-        },
-        {
-            "name": "small_model",
-            "num_embedding_lookups": 8,
-            "lookup_size": 8,
-            "log_embedding_block_size": 15,
-            "reduction": "sum",
-        },
-        {
-            "name": "medium_model",
-            "num_embedding_lookups": 8,
-            "lookup_size": 8,
-            "log_embedding_block_size": 20,
-            "reduction": "sum",
-        },
-        {
-            "name": "large_model",
-            "num_embedding_lookups": 8,
-            "lookup_size": 8,
-            "log_embedding_block_size": 25,
-            "reduction": "sum",
-        },
-        {
-            "name": "medium_higher_lookup_size",
-            "num_embedding_lookups": 8,
-            "lookup_size": 16,
-            "log_embedding_block_size": 20,
-            "reduction": "sum",
-        },
-    ]
+    run_configs = []
+    for num_lookups in [4, 8, 16, 32]:
+        for lookup_size in [4, 8, 16, 32]:
+            for log_embedding_block_size in [8, 12, 16, 20, 25]:
+                run_configs.append({
+                    "name": f"lookups_{num_lookups}_lookup_size_{lookup_size}_block_size_{log_embedding_block_size}",
+                    "num_embedding_lookups": num_lookups,
+                    "lookup_size": lookup_size,
+                    "log_embedding_block_size": log_embedding_block_size,
+                    "reduction": "sum"
+                })
+    return run_configs
 
 
 def make_bolt_embedding_model(input_dim, run_config, num_classes):
