@@ -148,7 +148,7 @@ def execute_run(
     mlflow_callback = bolt.MlflowCallback(
         tracking_uri="http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com",
         experiment_name="Tabular Architecture Sweep",
-        run_name=run_config["name"],
+        run_name=dataset_name + "_" + run_config["name"],
         dataset_name=dataset_name,
         experiment_args=run_config,
     )
