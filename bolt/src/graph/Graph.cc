@@ -694,6 +694,11 @@ void BoltGraph::verifyCanGetInputGradientSingle(
         "The sparse output dimension should be atleast 2 to call "
         "getSecondHighestActivationId.");
   }
+
+  for (auto& node : _nodes) {
+    node->initOptimizer();
+  }
+
   verifyInputForGraph(single_input_gradients_context);
 }
 
