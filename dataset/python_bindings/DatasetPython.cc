@@ -49,7 +49,8 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<Explanation>(dataset_submodule, "Explanation")
       .def_readonly("column_number", &Explanation::column_number)
-      .def_readonly("percentage_significance", &Explanation::percentage_significance)
+      .def_readonly("percentage_significance",
+                    &Explanation::percentage_significance)
       .def_readonly("keyword", &Explanation::keyword)
       .def_readonly("column_name", &Explanation::column_name);
 
