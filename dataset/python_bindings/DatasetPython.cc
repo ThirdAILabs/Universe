@@ -47,6 +47,13 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
 
+  py::class_<Explanation>(dataset_submodule, "Explanation")
+      .def_readonly("column_number", &Explanation::column_number)
+      .def_readonly("percentage_significance",
+                    &Explanation::percentage_significance)
+      .def_readonly("keyword", &Explanation::keyword)
+      .def_readonly("column_name", &Explanation::column_name);
+
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",
       "Block abstract class.\n\n"
