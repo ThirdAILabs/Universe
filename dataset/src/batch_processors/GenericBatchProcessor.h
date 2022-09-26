@@ -10,6 +10,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
+#include <exception>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -55,12 +56,21 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       _expected_num_cols =
           std::max(block->expectedNumColumns(), _expected_num_cols);
     }
+    _block_feature_offsets = computeBlockFeatureOffsets();
   }
 
   std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> batch_inputs(rows.size());
     std::vector<BoltVector> batch_labels(rows.size());
+
+    auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
+    for (auto& block : _input_blocks) {
+      block->prepareForBatch(first_row);
+    }
+    for (auto& block : _label_blocks) {
+      block->prepareForBatch(first_row);
+    }
 
     /*
       These variables keep track of the presence of an erroneous input line.
@@ -96,15 +106,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         block_err = err;
       }
     }
-
     if (block_err) {
       std::rethrow_exception(block_err);
     }
-
     if (num_columns_error) {
       std::rethrow_exception(num_columns_error);
     }
-
     return std::make_tuple(BoltBatch(std::move(batch_inputs)),
                            BoltBatch(std::move(batch_labels)));
   }
@@ -133,6 +140,21 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       char delimiter = ',', bool parallel = true) {
     return std::make_shared<GenericBatchProcessor>(
         input_blocks, label_blocks, has_header, delimiter, parallel);
+  }
+
+  /*
+  For given index in input fetch the block responsible and get the column number
+  and the exact keyword responsible for it.
+  */
+  Explanation explainIndex(uint32_t feature_index,
+                           const std::vector<std::string_view>& input_row) {
+    auto iter = std::upper_bound(_block_feature_offsets.begin(),
+                                 _block_feature_offsets.end(), feature_index);
+    auto relevant_block_idx = iter - _block_feature_offsets.begin() - 1;
+    std::shared_ptr<Block> relevant_block = _input_blocks[relevant_block_idx];
+    uint32_t index_within_block =
+        feature_index - _block_feature_offsets[relevant_block_idx];
+    return relevant_block->explainIndex(index_within_block, input_row);
   }
 
  private:
@@ -172,6 +194,15 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return dim;
   }
 
+  std::vector<uint32_t> computeBlockFeatureOffsets() {
+    std::vector<uint32_t> block_offsets;
+    block_offsets.push_back(0);
+    for (const auto& block : _input_blocks) {
+      block_offsets.push_back(block_offsets.back() + block->featureDim());
+    }
+    return block_offsets;
+  }
+
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
@@ -202,6 +233,11 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
    */
   std::vector<std::shared_ptr<Block>> _input_blocks;
   std::vector<std::shared_ptr<Block>> _label_blocks;
+  /*
+  The offsets which are essential to fetch the exact block responsible for given
+  index for Root cause analysis.
+  */
+  std::vector<uint32_t> _block_feature_offsets;
 };
 
 using GenericBatchProcessorPtr = std::shared_ptr<GenericBatchProcessor>;

@@ -3,6 +3,8 @@
 #include "BlockInterface.h"
 #include <cmath>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -32,6 +34,15 @@ class DenseArrayBlock : public Block {
   bool isDense() const final { return true; };
 
   uint32_t expectedNumColumns() const final { return _start_col + _dim; };
+
+  Explanation explainIndex(
+      uint32_t index_within_block,
+      const std::vector<std::string_view>& columnar_sample) const final {
+    (void)columnar_sample;
+    (void)index_within_block;
+    throw std::invalid_argument(
+        "Explain feature is not yet implemented in dense array block!");
+  }
 
  protected:
   std::exception_ptr buildSegment(
