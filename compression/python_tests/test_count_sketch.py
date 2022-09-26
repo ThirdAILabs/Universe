@@ -23,7 +23,7 @@ def test_compressed_count_sketch_training():
         compression_scheme="count_sketch",
         compression_density=compression_density,
         sample_population_size=num_sketches,
-        hidden_dim=50,
+        hidden_dim=60,
         epochs=num_epochs,
     )
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
