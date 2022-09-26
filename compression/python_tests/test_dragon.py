@@ -97,7 +97,7 @@ def test_compressed_dragon_vector_training():
         compression_scheme="dragon",
         compression_density=0.2,
         sample_population_size=100,
-        hidden_dim=30,
-        epochs=25,
+        hidden_dim=50,
+        epochs=35,
     )
     assert acc[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
