@@ -252,6 +252,14 @@ class SequentialClassifier {
     auto processor = Pipeline::buildSingleInferenceBatchProcessor(
         _schema, _state, _single_inference_col_nums, /* update_history= */ true);
     
+    // Emulate batch size of 2048.
+    // TODO(Geordie): This is leaky abstraction.
+    if (_state.n_index_single % 2048 == 0) {
+      processor->prepareInputBlocksForBatch(input_row);
+      _state.n_index_single = 0;  
+    }
+    _state.n_index_single++;
+
     makeInputForSingleInference(processor, input_row);
   }
 

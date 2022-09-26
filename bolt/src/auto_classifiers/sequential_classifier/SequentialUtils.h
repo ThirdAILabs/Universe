@@ -126,13 +126,15 @@ struct DataState {
 
   DataState() {}
 
+  uint32_t n_index_single = 0;
+
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(vocabs_by_column, history_collections_by_id,
-            quantity_histories_by_id);
+            quantity_histories_by_id, n_index_single);
   }
 };
 
