@@ -10,16 +10,16 @@ concurrency:
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [main]
+    branches: [*]
   pull_request:
-    branches: [main]
+    branches: [*]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
   clang-tidy:
-    runs-on: ubuntu-latest
+    runs-on: windows-2016
 
     steps:
       - uses: actions/checkout@v2
