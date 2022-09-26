@@ -75,5 +75,9 @@ class CountSketch final : public CompressedVector<T> {
   uint32_t _uncompressed_size;
 
   void sketch(const T* values_to_compress, uint32_t size);
+
+  int hash_sign(uint32_t sketch_id, uint32_t index) const;
+
+  uint32_t hash_index(uint32_t sketch_id, uint32_t index) const;
 };
 }  // namespace thirdai::compression

@@ -74,6 +74,7 @@ class ParameterReference {
             serialized_data, compression_scheme.value());
     std::vector<float> full_gradients = std::visit(
         thirdai::compression::DecompressVisitor<float>(), compressed_vector);
+    // TODO(Shubh): Pass in a refernce to _params and avoid std::copy
     std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
               _params);
   }

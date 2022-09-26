@@ -105,10 +105,10 @@ TEST_F(CountSketchTest, SerializeCountSketchTest) {
       deserialized_vec.sketches();
   std::vector<std::vector<float>> original_sketches = _vec.sketches();
 
-  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
+  for (uint32_t sketch_id = 0; sketch_id < num_sketches; sketch_id++) {
     for (uint32_t index = 0; index < sketch_size; index++) {
-      ASSERT_EQ(deserialized_sketches[num_sketch][index],
-                original_sketches[num_sketch][index]);
+      ASSERT_EQ(deserialized_sketches[sketch_id][index],
+                original_sketches[sketch_id][index]);
     }
   }
 }

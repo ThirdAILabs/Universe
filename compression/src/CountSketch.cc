@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -51,42 +52,42 @@ CountSketch<T>::CountSketch(
 
 template <class T>
 void CountSketch<T>::sketch(const T* values_to_compress, uint32_t size) {
+#pragma omp parallel for default(none) shared(size, values_to_compress)
   for (uint32_t index = 0; index < size; index++) {
     set(index, values_to_compress[index]);
   }
 }
 
 template <class T>
+int CountSketch<T>::hash_sign(uint32_t sketch_id, uint32_t index) const {
+  // If _hasher_sign returns 0, we return -1, else 1
+  int sign = 2 * (_hasher_sign[sketch_id].gethash(index) % 2) - 1;
+  return sign;
+}
+
+template <class T>
+uint32_t CountSketch<T>::hash_index(uint32_t sketch_id, uint32_t index) const {
+  uint32_t sketch_size = this->size();
+  return _hasher_index[sketch_id].gethash(index) % sketch_size;
+}
+
+template <class T>
 T CountSketch<T>::get(uint32_t index) const {
   T estimated_value = 0;
-  uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
-  for (uint32_t num_sketch = 0; num_sketch < numSketches(); num_sketch++) {
-    uint32_t hashed_index =
-        _hasher_index[num_sketch].gethash(index) % sketch_size;
-    uint32_t hashed_sign = _hasher_sign[num_sketch].gethash(index) % 2;
-
-    if (hashed_sign == 0) {
-      estimated_value -= _count_sketches[num_sketch][hashed_index];
-    } else {
-      estimated_value += _count_sketches[num_sketch][hashed_index];
-    }
+  for (uint32_t sketch_id = 0; sketch_id < numSketches(); sketch_id++) {
+    uint32_t hashed_index = hash_index(sketch_id, index);
+    int hashed_sign = hash_sign(sketch_id, index);
+    estimated_value += hashed_sign * _count_sketches[sketch_id][hashed_index];
   }
   return estimated_value / _count_sketches.size();
 }
 
 template <class T>
 void CountSketch<T>::set(uint32_t index, T value) {
-  uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
-  for (uint32_t num_sketch = 0; num_sketch < numSketches(); num_sketch++) {
-    uint32_t hashed_index =
-        _hasher_index[num_sketch].gethash(index) % sketch_size;
-    uint32_t hashed_sign = _hasher_sign[num_sketch].gethash(index) % 2;
-
-    if (hashed_sign == 0) {
-      _count_sketches[num_sketch][hashed_index] -= value;
-    } else {
-      _count_sketches[num_sketch][hashed_index] += value;
-    }
+  for (uint32_t sketch_id = 0; sketch_id < numSketches(); sketch_id++) {
+    uint32_t hashed_index = hash_index(sketch_id, index);
+    int hashed_sign = hash_sign(sketch_id, index);
+    _count_sketches[sketch_id][hashed_index] += hashed_sign * value;
   }
 }
 
@@ -100,6 +101,11 @@ void CountSketch<T>::clear() {
 
 template <class T>
 void CountSketch<T>::extend(const CountSketch<T>& other_sketch) {
+  if (other_sketch.size() != this->size()) {
+    throw std::length_error(
+        "Cannot extend a count sketch with another count sketch of different "
+        "size.");
+  }
   _count_sketches.insert(std::end(_count_sketches),
                          std::begin(other_sketch._count_sketches),
                          std::end(other_sketch._count_sketches));
@@ -119,10 +125,20 @@ template <class T>
 void CountSketch<T>::add(const CountSketch<T>& other_sketch) {
   uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
 
-  for (uint32_t num_sketch = 0; num_sketch < numSketches(); num_sketch++) {
+  if (other_sketch.numSketches() != this->numSketches()) {
+    throw std::length_error(
+        "Cannot add count sketches that have different number of sketch "
+        "vectors.");
+  }
+
+  if (other_sketch.size() != this->size()) {
+    throw std::length_error("Cannot add count sketches of different sizes.");
+  }
+  // TODO(Shubh): Parallelize this.
+  for (uint32_t sketch_id = 0; sketch_id < numSketches(); sketch_id++) {
     for (uint32_t i = 0; i < sketch_size; i++) {
-      _count_sketches[num_sketch][i] +=
-          other_sketch._count_sketches[num_sketch][i];
+      _count_sketches[sketch_id][i] +=
+          other_sketch._count_sketches[sketch_id][i];
     }
   }
 }
@@ -183,22 +199,22 @@ void CountSketch<T>::serialize(char* serialized_data) const {
   // Writing seed for hashing indices (4)
   std::vector<uint32_t> seed_for_hashing_indices;
   seed_for_hashing_indices.reserve(num_sketches);
-  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
-    seed_for_hashing_indices.emplace_back(_hasher_index[num_sketch].seed());
+  for (uint32_t sketch_id = 0; sketch_id < num_sketches; sketch_id++) {
+    seed_for_hashing_indices.emplace_back(_hasher_index[sketch_id].seed());
   }
   outputHelper.writeVector(seed_for_hashing_indices);
 
   // Writing seed for sign (5)
   std::vector<uint32_t> seed_for_sign;
   seed_for_sign.reserve(num_sketches);
-  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
-    seed_for_sign.emplace_back(_hasher_sign[num_sketch].seed());
+  for (uint32_t sketch_id = 0; sketch_id < num_sketches; sketch_id++) {
+    seed_for_sign.emplace_back(_hasher_sign[sketch_id].seed());
   }
   outputHelper.writeVector(seed_for_sign);
 
   // Writing Count Sketch Vectors (6)
-  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
-    outputHelper.writeVector(_count_sketches[num_sketch]);
+  for (uint32_t sketch_id = 0; sketch_id < num_sketches; sketch_id++) {
+    outputHelper.writeVector(_count_sketches[sketch_id]);
   }
 }
 
@@ -229,14 +245,13 @@ CountSketch<T>::CountSketch(const char* serialized_data) {
 
   // Reading Count Sketch Vectors (6)
   _count_sketches.resize(num_sketches);
-  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
-    inputHelper.readVector(_count_sketches[num_sketch]);
+  for (uint32_t sketch_id = 0; sketch_id < num_sketches; sketch_id++) {
+    inputHelper.readVector(_count_sketches[sketch_id]);
   }
 
-  for (uint32_t num_sketch = 0; num_sketch < num_sketches; num_sketch++) {
-    _hasher_index.push_back(
-        UniversalHash(seed_for_hashing_indices[num_sketch]));
-    _hasher_sign.push_back(UniversalHash(seed_for_sign[num_sketch]));
+  for (uint32_t sketch_id = 0; sketch_id < num_sketches; sketch_id++) {
+    _hasher_index.push_back(UniversalHash(seed_for_hashing_indices[sketch_id]));
+    _hasher_sign.push_back(UniversalHash(seed_for_sign[sketch_id]));
   }
 }
 
