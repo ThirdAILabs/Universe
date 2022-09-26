@@ -89,7 +89,7 @@ class UserItemHistoryBlock final : public Block {
                        ThreadSafeVocabularyPtr user_id_map,
                        ThreadSafeVocabularyPtr item_id_map,
                        ItemHistoryCollectionPtr item_history_collection,
-                       bool update_history = true,
+                       bool should_update_history = true,
                        std::optional<char> item_col_delimiter = std::nullopt,
                        int64_t time_lag = 0)
       : _user_col(user_col),
@@ -99,7 +99,7 @@ class UserItemHistoryBlock final : public Block {
         _user_id_lookup(std::move(user_id_map)),
         _item_id_lookup(std::move(item_id_map)),
         _per_user_history(std::move(item_history_collection)),
-        _update_history(update_history),
+        _should_update_history(should_update_history),
         _item_col_delimiter(item_col_delimiter),
         _time_lag(time_lag) {
     if (_user_id_lookup->vocabSize() > _per_user_history->numHistories()) {
@@ -117,7 +117,7 @@ class UserItemHistoryBlock final : public Block {
   UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
                        uint32_t timestamp_col, uint32_t track_last_n,
                        uint32_t n_unique_users, uint32_t n_unique_items,
-                       bool update_history = true,
+                       bool should_update_history = true,
                        std::optional<char> item_col_delimiter = std::nullopt,
                        int64_t time_lag = 0)
       : _user_col(user_col),
@@ -128,7 +128,7 @@ class UserItemHistoryBlock final : public Block {
         _item_id_lookup(ThreadSafeVocabulary::make(n_unique_items)),
         _per_user_history(
             ItemHistoryCollection::make(n_unique_users, track_last_n)),
-        _update_history(update_history),
+        _should_update_history(should_update_history),
         _item_col_delimiter(item_col_delimiter),
         _time_lag(time_lag) {}
 
@@ -145,24 +145,24 @@ class UserItemHistoryBlock final : public Block {
   static UserItemHistoryBlockPtr make(
       uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
       ThreadSafeVocabularyPtr user_id_map, ThreadSafeVocabularyPtr item_id_map,
-      ItemHistoryCollectionPtr records, bool update_history = true,
+      ItemHistoryCollectionPtr records, bool should_update_history = true,
       std::optional<char> item_col_delimiter = std::nullopt,
       int64_t time_lag = 0) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, std::move(user_id_map),
-        std::move(item_id_map), std::move(records), update_history,
+        std::move(item_id_map), std::move(records), should_update_history,
         item_col_delimiter, time_lag);
   }
 
   static UserItemHistoryBlockPtr make(
       uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
       uint32_t track_last_n, uint32_t n_unique_users, uint32_t n_unique_items,
-      bool update_history = true,
+      bool should_update_history = true,
       std::optional<char> item_col_delimiter = std::nullopt,
       int64_t time_lag = 0) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, track_last_n, n_unique_users,
-        n_unique_items, update_history, item_col_delimiter, time_lag);
+        n_unique_items, should_update_history, item_col_delimiter, time_lag);
   }
 
   // TODO(YASH): See whether length of history makes sense in explanations.
@@ -191,7 +191,7 @@ class UserItemHistoryBlock final : public Block {
       {
         extendVectorWithUserHistory(user_id, timestamp_seconds - _time_lag,
                                     vec);
-        if (_update_history) {
+        if (_should_update_history) {
           addItemsToUserHistory(user_id, timestamp_seconds, item_ids);
         }
       }
@@ -251,7 +251,7 @@ class UserItemHistoryBlock final : public Block {
 
   std::shared_ptr<ItemHistoryCollection> _per_user_history;
 
-  bool _update_history;
+  bool _should_update_history;
   std::optional<char> _item_col_delimiter;
   int64_t _time_lag;
 };

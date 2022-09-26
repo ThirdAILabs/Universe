@@ -191,7 +191,7 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
           /* track_last_n= */ 3, /* n_unique_users= */ 1,
-          /* n_unique_items= */ 4, /* update_history= */ true,
+          /* n_unique_items= */ 4, /* should_update_history= */ true,
           /* item_col_delimiter= */ ' ')},
       /* label_blocks= */ {},
       /* has_header= */ false,

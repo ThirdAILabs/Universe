@@ -185,9 +185,9 @@ class SequentialClassifier {
       std::optional<std::string> target_label = std::nullopt) {
     auto input_row = inputMapToInputRow(sample);
 
-    auto processor = Pipeline::buildSingleInferenceBatchProcessor(
+    auto processor = Pipeline::buildSingleSampleBatchProcessor(
         _schema, _state, _single_inference_col_nums,
-        /* update_history= */ false);
+        /* should_update_history= */ false);
 
     std::optional<uint32_t> neuron_to_explain;
     if (target_label) {
@@ -234,9 +234,9 @@ class SequentialClassifier {
 
     auto input_row = inputMapToInputRow(sample);
 
-    auto processor = Pipeline::buildSingleInferenceBatchProcessor(
+    auto processor = Pipeline::buildSingleSampleBatchProcessor(
         _schema, _state, _single_inference_col_nums,
-        /* update_history= */ false);
+        /* should_update_history= */ false);
 
     auto output = _model->predictSingle(
         {makeInputForSingleInference(processor, input_row)},
@@ -246,9 +246,9 @@ class SequentialClassifier {
   }
 
   /**
-   * @brief Indexes a single true sample to keep the SequentialClassifier's 
+   * @brief Indexes a single true sample to keep the SequentialClassifier's
    * internal quantity and category trackers up to date.
-   * 
+   *
    * @param sample A map from strings to strings, where the keys are column
    * names as specified in the SequentialClassifier schema and the values are
    * the values of the respective columns.
@@ -256,9 +256,9 @@ class SequentialClassifier {
   void indexSingle(const std::unordered_map<std::string, std::string>& sample) {
     auto input_row = inputMapToInputRow(sample);
 
-    auto processor = Pipeline::buildSingleInferenceBatchProcessor(
+    auto processor = Pipeline::buildSingleSampleBatchProcessor(
         _schema, _state, _single_inference_col_nums,
-        /* update_history= */ true);
+        /* should_update_history= */ true);
 
     // Emulate batch size of 2048.
     // TODO(Geordie): This is leaky abstraction.
