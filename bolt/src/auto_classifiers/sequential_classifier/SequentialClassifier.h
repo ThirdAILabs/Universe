@@ -59,10 +59,10 @@ class SequentialClassifier {
       std::vector<CategoricalPair> static_category = {},
       std::vector<SequentialTriplet> track_categories = {},
       std::vector<std::string> track_quantities = {},
-      std::optional<char> multi_class_delim = std::nullopt,
       std::string time_granularity = "daily",
       std::optional<uint32_t> time_to_predict_ahead = std::nullopt,
-      std::optional<uint32_t> history_length_for_inference = std::nullopt) {
+      std::optional<uint32_t> history_length_for_inference = std::nullopt,
+      std::optional<char> multi_class_delim = std::nullopt) {
     if (!track_quantities.empty() &&
         (!time_to_predict_ahead || !history_length_for_inference)) {
       throw std::invalid_argument(

@@ -226,10 +226,10 @@ TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
       /* static_category= */ {{"static_category", 4}},
       /* track_categories= */ {{"target", 2, 3}},
       /* track_quantities= */ {"count"},
-      /* multi_class_delim= */ ' ',
       /* time_granularity= */ "daily",
       /* time_to_predict_ahead= */ 1,
-      /* history_length_for_inference= */ 5);
+      /* history_length_for_inference= */ 5,
+      /* multi_class_delim= */ ' ');
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -267,10 +267,10 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
       /* static_category= */ {{"static_category", 4}},
       /* track_categories= */ {{"target", 2, 3}},
       /* track_quantities= */ {"count"},
-      /* multi_class_delim= */ std::nullopt,
       /* time_granularity= */ "daily",
       /* time_to_predict_ahead= */ 1,
-      /* history_length_for_inference= */ 5);
+      /* history_length_for_inference= */ 5,
+      /* multi_class_delim= */ std::nullopt);
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
 }
@@ -386,6 +386,9 @@ TEST(SequentialClassifierTest, TestNeverMultiClassUser) {
       /* static_category= */ {},
       /* track_categories= */ {},
       /* track_quantities= */ {},
+      /* time_granularity= */ "daily",
+      /* time_to_predict_ahead= */ std::nullopt,
+      /* history_length_for_inference= */ std::nullopt,
       /* multi_class_delim= */ ' ');
 
   /*
@@ -453,10 +456,10 @@ TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
       /* static_category= */ {},
       /* track_categories= */ {{"target", 2, 3}},
       /* track_quantities= */ {"count"},
-      /* multi_class_delim= */ std::nullopt,
       /* time_granularity= */ "biweekly",
       /* time_to_predict_ahead= */ 1,
-      /* history_length_for_inference= */ 5);
+      /* history_length_for_inference= */ 5,
+      /* multi_class_delim= */ std::nullopt);
 
   /*
     Train before getting state because state is only built once

@@ -106,8 +106,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
               const std::vector<std::string>,
               const std::vector<std::pair<std::string, uint32_t>>,
               const std::vector<std::tuple<std::string, uint32_t, uint32_t>>,
-              const std::vector<std::string>, std::optional<char>, std::string,
-              std::optional<uint32_t>, std::optional<uint32_t>>(),
+              const std::vector<std::string>, std::string,
+              std::optional<uint32_t>, std::optional<uint32_t>, std::optional<char>>(),
           py::arg("user"), py::arg("label"), py::arg("timestamp"),
           py::arg("static_text") = std::vector<std::string>(),
           py::arg("static_category") =
@@ -115,10 +115,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
           py::arg("track_categories") =
               std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
           py::arg("track_quantities") = std::vector<std::string>(),
-          py::arg("multi_class_delim") = std::nullopt,
           py::arg("time_granularity") = "daily",
           py::arg("time_to_predict_ahead") = std::nullopt,
           py::arg("history_length_for_inference") = std::nullopt,
+          py::arg("multi_class_delim") = std::nullopt,
           "Constructs a SequentialClassifier.\n"
           "Arguments:\n"
           " * user: Tup[str, int] - Column name for user IDs and the number of "
@@ -137,11 +137,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "for trackable categorical features. SequentialClassifier tracks the "
           "last max_sequence_length categories associated with a user ID.\n"
           " * track_quantities (optional): List[str] - List of column names "
-          "for trackable numerical features.\n",
-          " * multi_class_delim (optional): str - A single character to "
-          "delimit multi-class categorical feature columns. This delimiter "
-          "applies to columns specified in `static_category` and "
-          "`track_categories`. Defaults to None.\n"
+          "for trackable numerical features.\n"
           " * time_granularity (optional): str - The granularity of quantity "
           "tracking. Options: 'daily'/'d', 'weekly'/'w', 'biweekly'/'b', "
           "'monthly'/'m'. E.g. If granularity is 'weekly' and there is a "
@@ -158,7 +154,34 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "that the model can use to make predictions. Length is in terms of "
           "the selected `time_granulartiy`. E.g. "
           "history_length_for_inference=5 and granularity='weekly' means the "
-          "model uses the last 5 weeks of counts to make predictions.\n")
+          "model uses the last 5 weeks of counts to make predictions.\n"
+          " * multi_class_delim (optional): str - A single character to "
+          "delimit multi-class categorical feature columns. This delimiter "
+          "applies to columns specified in `static_category` and "
+          "`track_categories`. Defaults to None.\n"
+          "Example:\n"
+          "```\n"
+          "from thirdai import bolt\n\n"
+          "model = bolt.SequentialClassifier(\n"
+          "    # Required arguments"
+          "    user=('userId', 50), # (col name, n unique users)\n"
+          "    target=('movieId', 50), # (col name, n unique users)\n"
+          "    timestamp='timestamp',\n\n"
+          "    # Static features\n"
+          "    static_text=['userBio'],\n"
+          "    static_category=['userAgeGroup'],\n\n"
+          "    # For each user, track last 5 items, 50 unique items in total.\n"
+          "    track_categories=[('movieId', 50, 5)],\n\n" 
+          "    # For each user, track a 30-day quantity history for\n"
+          "    # predicting 1 day ahead. Track counts at weekly granularity.\n"
+          "    track_quantities=['movie_duration'],\n" 
+          "    time_granularity='daily',\n"
+          "    time_to_predict_ahead=1,\n"
+          "    history_length_for_inference=30\n\n"
+          "    # Categorical columns are delimited by spaces\n"
+          "    multi_class_delim=' '\n"
+          ")\n"
+          "```\n")
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
@@ -222,7 +245,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "```\n")
       .def(
           "explain", &SequentialClassifier::explain, py::arg("input_sample"),
-          py::arg("neuron_to_explain") = std::nullopt,
+          py::arg("target_label") = std::nullopt,
           "The Root Cause Analysis method which gives us relevant "
           "explanations of the input with respect to the given target label.\n"
           "Arguments:\n"
