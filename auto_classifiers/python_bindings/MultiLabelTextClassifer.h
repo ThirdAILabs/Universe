@@ -57,6 +57,11 @@ class MultiLabelTextClassifier final
     return deserialize_into;
   }
 
+  std::vector<dataset::Explanation> explain(const std::vector<uint32_t>& sample) override {
+    (void)sample;
+    throw std::invalid_argument("not yet");
+  }
+
   void updateThreshold(float new_threshold) { _threshold = new_threshold; }
 
  protected:

@@ -11,6 +11,7 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -85,6 +86,8 @@ class AutoClassifierBase {
         throw std::invalid_argument("Invalid ReturnMode reached.");
     }
   }
+
+  virtual std::vector<dataset::Explanation> explain(const PREDICT_INPUT_TYPE& sample) = 0;
 
   py::object predict(const PREDICT_INPUT_TYPE& sample) {
     BoltVector input = featurizeInputForInference(sample);

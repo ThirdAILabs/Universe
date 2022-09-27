@@ -75,6 +75,11 @@ class TabularClassifier final
     return deserialize_into;
   }
 
+  std::vector<dataset::Explanation> explain(const std::vector<std::string>& sample) override {
+    (void)sample;
+    throw std::invalid_argument("not yet");
+  }
+
  protected:
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
