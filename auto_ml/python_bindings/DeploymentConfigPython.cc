@@ -1,8 +1,10 @@
 #include "DeploymentConfigPython.h"
 #include <bolt/python_bindings/ConversionUtils.h>
+#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -160,7 +162,9 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
            py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
            py::arg("max_in_memory_batches") = std::nullopt)
       .def("evaluate", &evaluateWrapperFilename, py::arg("filename"))
-      .def("evaluate", &evaluateWrapperDataLoader, py::arg("data_source"));
+      .def("evaluate", &evaluateWrapperDataLoader, py::arg("data_source"))
+      .def("predict", &predictWrapper, py::arg("input_sample"))
+      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"));
 }
 
 template <typename T>
@@ -201,9 +205,9 @@ py::object makeUserSpecifiedParameter(const std::string& name,
 py::object evaluateWrapperDataLoader(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source) {
-  auto [metrics, output] = model.evaluate(data_source);
+  auto [_, output] = model.evaluate(data_source);
 
-  return bolt::python::constructNumpyActivationsArrays(metrics, output);
+  return convertInferenceTrackerToNumpy(output);
 }
 
 py::object evaluateWrapperFilename(ModelPipeline& model,
@@ -211,6 +215,23 @@ py::object evaluateWrapperFilename(ModelPipeline& model,
   return evaluateWrapperDataLoader(
       model, std::make_shared<dataset::SimpleFileDataLoader>(
                  filename, model.defaultBatchSize()));
+}
+
+py::object predictWrapper(ModelPipeline& model, const std::string& sample) {
+  BoltVector output = model.predict(sample);
+  return convertBoltVectorToNumpy(output);
+}
+
+py::list predictBatchWrapper(ModelPipeline& model,
+                             const std::vector<std::string>& samples) {
+  BoltBatch outputs = model.predictBatch(samples);
+
+  py::list py_outputs;
+  for (const auto& vector : outputs) {
+    py_outputs.append(convertBoltVectorToNumpy(vector));
+  }
+
+  return py_outputs;
 }
 
 ModelPipeline createPipeline(DeploymentConfigPtr config,
@@ -242,6 +263,55 @@ ModelPipeline createPipeline(DeploymentConfigPtr config,
   }
 
   return ModelPipeline(std::move(config), option, cpp_parameters);
+}
+
+py::object convertInferenceTrackerToNumpy(
+    bolt::InferenceOutputTracker& output) {
+  uint32_t num_samples = output.numSamples();
+  uint32_t inference_dim = output.numNonzerosInOutput();
+
+  const uint32_t* active_neurons_ptr = output.getNonowningActiveNeuronPointer();
+  const float* activations_ptr = output.getNonowningActivationPointer();
+
+  py::object output_handle = py::cast(std::move(output));
+
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+      activations_array({num_samples, inference_dim},
+                        {inference_dim * sizeof(float), sizeof(float)},
+                        activations_ptr, output_handle);
+
+  if (!active_neurons_ptr) {
+    return std::move(activations_array);
+  }
+
+  // See comment above activations_array for the python memory reasons behind
+  // passing in active_neuron_handle
+  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
+      active_neurons_array({num_samples, inference_dim},
+                           {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
+                           active_neurons_ptr, output_handle);
+
+  return py::make_tuple(std::move(activations_array),
+                        std::move(active_neurons_array));
+}
+
+py::object convertBoltVectorToNumpy(const BoltVector& vector) {
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+      activations_array(vector.len);
+  std::copy(vector.activations, vector.activations + vector.len,
+            activations_array.mutable_data());
+
+  if (vector.isDense()) {
+    // This is not a move on return because we are constructing a py::object.
+    return std::move(activations_array);
+  }
+
+  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
+      active_neurons_array(vector.len);
+  std::copy(vector.active_neurons, vector.active_neurons + vector.len,
+            active_neurons_array.mutable_data());
+
+  return py::make_tuple(active_neurons_array, activations_array);
 }
 
 }  // namespace thirdai::automl::deployment_config::python

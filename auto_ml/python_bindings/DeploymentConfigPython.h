@@ -29,8 +29,16 @@ py::object evaluateWrapperDataLoader(
 py::object evaluateWrapperFilename(ModelPipeline& model,
                                    const std::string& filename);
 
+py::object predictWrapper(ModelPipeline& model,const std::string& sample);
+
+py::list predictBatchWrapper(ModelPipeline& model,const std::vector<std::string>& samples);
+
 ModelPipeline createPipeline(DeploymentConfigPtr config,
                              const std::optional<std::string>& option,
                              const py::dict& parameters);
+
+py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
+
+py::object convertBoltVectorToNumpy(const BoltVector& vector);
 
 }  // namespace thirdai::automl::deployment_config::python

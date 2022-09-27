@@ -85,15 +85,8 @@ class ModelPipeline {
   }
 
   BoltBatch predictBatch(const std::vector<std::string>& samples) {
-    std::vector<std::vector<BoltVector>> inputs(samples.size());
-
-#pragma omp parallel for default(none) shared(inputs, samples)
-    for (uint32_t i = 0; i < samples.size(); i++) {
-      inputs[i] = _dataset_state->featurizeInput(samples[i]);
-    }
-
-    // TODO(Nicholas): convert vector of vector of inputs to vector of batches.
-    std::vector<BoltBatch> input_batches;
+    std::vector<BoltBatch> input_batches =
+        _dataset_state->featurizeInputBatch(samples);
 
     BoltBatch outputs = _model->predictSingleBatch(
         std::move(input_batches), _config->parameters().useSparseInference());

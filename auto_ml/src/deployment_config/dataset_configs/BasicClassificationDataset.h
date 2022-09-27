@@ -46,6 +46,17 @@ class BasicClassificationDatasetState final : public DatasetState {
     return {std::move(output)};
   }
 
+  std::vector<BoltBatch> featurizeInputBatch(
+      const std::vector<std::string>& inputs) final {
+    auto [batch, _] = _unlabeled_batch_processor->createBatch(inputs);
+
+    // We cannot use the initializer list because the copy constructor is
+    // deleted for BoltBatch.
+    std::vector<BoltBatch> batch_list;
+    batch_list.emplace_back(std::move(batch));
+    return batch_list;
+  }
+
   std::vector<bolt::InputPtr> getInputNodes() final {
     return {bolt::Input::make(_unlabeled_batch_processor->getInputDim())};
   }

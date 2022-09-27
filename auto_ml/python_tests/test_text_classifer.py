@@ -90,7 +90,7 @@ def test_text_classifer():
     model = dc.ModelPipeline(
         deployment_config=config,
         size="large",
-        parameters={"output_dim": 151, "delimiter": ","},
+        parameters={"output_dim": num_classes, "delimiter": ","},
     )
 
     model.train(
@@ -99,11 +99,34 @@ def test_text_classifer():
         learning_rate=0.01,
     )
 
-    _, logits = model.evaluate(filename=TEST_FILE)
+    logits = model.evaluate(filename=TEST_FILE)
 
-    predictions = np.argmax(logits, axis=1)
+    original_predictions = np.argmax(logits, axis=1)
 
-    acc = np.mean(predictions == np.array(labels))
+    acc = np.mean(original_predictions == np.array(labels))
 
     # Accuracy should be around 0.76 to 0.78.
     assert acc >= 0.7
+
+    with open(TEST_FILE) as test:
+        test_set = test.readlines()
+
+    test_samples = [x.split(",")[1] for x in test_set]
+
+    for sample, original_prediction in zip(test_samples, original_predictions):
+        single_prediction = np.argmax(model.predict(sample))
+        assert single_prediction == original_prediction
+
+
+    for samples, predictions in batch_predictions(test_samples, original_predictions):
+        batched_predictions = np.argmax(model.predict_batch(samples), axis=1)
+        for prediction, original_prediction in zip(batched_predictions, predictions):
+            assert prediction == original_prediction
+
+def batch_predictions(samples, original_predictions, batch_size=10):
+    batches = []
+    for i in range(0, len(original_predictions), batch_size):
+        batches.append(
+            (samples[i : i + batch_size], original_predictions[i : i + batch_size])
+        )
+    return batches

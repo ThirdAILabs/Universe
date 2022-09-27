@@ -66,6 +66,9 @@ class DatasetState {
 
   virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
 
+  virtual std::vector<BoltBatch> featurizeInputBatch(
+      const std::vector<std::string>& inputs) = 0;
+
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 
   virtual ~DatasetState() = default;

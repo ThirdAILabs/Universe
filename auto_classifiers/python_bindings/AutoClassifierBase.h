@@ -323,6 +323,25 @@ class AutoClassifierBase {
     archive(_model, _return_mode);
   }
 
+  static py::object constructNumpyActivationsArrays(
+      InferenceMetricData& metrics, InferenceOutputTracker& output) {
+    uint32_t num_samples = output.numSamples();
+    uint32_t inference_dim = output.numNonzerosInOutput();
+
+    const uint32_t* active_neurons_ptr =
+        output.getNonowningActiveNeuronPointer();
+    const float* activations_ptr = output.getNonowningActivationPointer();
+
+    py::object output_handle = py::cast(std::move(output));
+
+    return constructPythonInferenceTuple(
+        py::cast(metrics), /* num_samples= */ num_samples,
+        /* inference_dim= */ inference_dim, /* activations= */ activations_ptr,
+        /* active_neurons= */ active_neurons_ptr,
+        /* activation_handle= */ output_handle,
+        /* active_neuron_handle= */ output_handle);
+  }
+
   void processPredictionsBeforeReturning(InferenceOutputTracker& output) {
     uint32_t output_dim = output.numNonzerosInOutput();
 
