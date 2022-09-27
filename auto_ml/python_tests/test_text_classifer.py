@@ -117,11 +117,11 @@ def test_text_classifer():
         single_prediction = np.argmax(model.predict(sample))
         assert single_prediction == original_prediction
 
-
     for samples, predictions in batch_predictions(test_samples, original_predictions):
         batched_predictions = np.argmax(model.predict_batch(samples), axis=1)
         for prediction, original_prediction in zip(batched_predictions, predictions):
             assert prediction == original_prediction
+
 
 def batch_predictions(samples, original_predictions, batch_size=10):
     batches = []
