@@ -9,6 +9,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/types/DataType.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <pybind11/cast.h>
@@ -94,6 +95,28 @@ py::module_ createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
+  py::class_<SequentialClassifierDataType, SequentialClassifierDataTypePtr>(
+      bolt_submodule, "type", "Sequential Classifier Data Type.");
+
+  py::class_<CategoricalDataType, SequentialClassifierDataType,
+             CategoricalDataTypePtr>(bolt_submodule, "categorical")
+    .def(py::init<uint64_t>(), py::arg("n_unique"), 
+            "n_unique: Number of unique user IDs.\n")
+    .def(py::init<uint64_t, std::string>(), py::arg("n_unique"), py::arg("delim"),
+           "n_unique: Number of unique user IDs.\n"
+           "delim: Delimeter");
+
+  py::class_<NumericalDataType, SequentialClassifierDataType,
+             NumericalDataTypePtr>(bolt_submodule, "numerical")
+      .def(py::init<>());
+
+  py::class_<TextualDataType, SequentialClassifierDataType, TextualDataTypePtr>(
+      bolt_submodule, "text")
+      .def(py::init<>());
+
+  py::class_<DateTime, SequentialClassifierDataType, DateTimePtr>(
+      bolt_submodule, "datetime")
+      .def(py::init<std::string>(), py::arg("date"));
   /**
    * Sequential Classifier
    */
