@@ -59,7 +59,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                &ParameterReference::set),
            py::arg("new_params"),
            "Takes as input a char array that represents a compressed vector "
-           "and decompressed and copies into the ParameterReference object.")
+           "and decompresses and copies into the ParameterReference object.")
       .def("set", py::overload_cast<ParameterArray&>(&ParameterReference::set),
            py::arg("new_params"),
            "Takes as input a numpy array of floats and copies its contents "
