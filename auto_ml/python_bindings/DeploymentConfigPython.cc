@@ -44,10 +44,6 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   py::class_<HyperParameter<bool>, HyperParameterPtr<bool>>(  // NOLINT
       submodule, "BoolHyperParameter");
 
-  py::class_<HyperParameter<std::shared_ptr<bolt::LossFunction>>,  // NOLINT
-             HyperParameterPtr<std::shared_ptr<bolt::LossFunction>>>(
-      submodule, "LossHyperParameter");
-
   py::class_<HyperParameter<bolt::SamplingConfigPtr>,  // NOLINT
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
       submodule, "SamplingConfigHyperParameter");
@@ -63,14 +59,12 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   defConstantParameter<uint32_t>(submodule);
   defConstantParameter<float>(submodule);
   defConstantParameter<std::string>(submodule);
-  defConstantParameter<std::shared_ptr<bolt::LossFunction>>(submodule);
   defConstantParameter<bolt::SamplingConfigPtr>(submodule);
 
   defOptionParameter<bool>(submodule);
   defOptionParameter<uint32_t>(submodule);
   defOptionParameter<float>(submodule);
   defOptionParameter<std::string>(submodule);
-  defOptionParameter<std::shared_ptr<bolt::LossFunction>>(submodule);
   defOptionParameter<bolt::SamplingConfigPtr>(submodule);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
