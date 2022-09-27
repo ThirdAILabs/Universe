@@ -9,9 +9,8 @@ concurrency:
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push requests for the main branch
-  # TODO(Josh): Remove the DocUpdates branch before merge
   push:
-    branches: [main, DocUpdates]
+    branches: [main]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
