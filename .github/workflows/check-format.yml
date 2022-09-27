@@ -44,3 +44,14 @@ jobs:
       - name: Check Python format 
         run: |
           black . --check --exclude "build|.venv|venv|.env|env|deps"
+
+  cmake-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prepare cmake format
+        run: |
+          sudo pip3 install cmake-format
+      - name: Check Cmake format
+        run: |
+          find . -path ./deps -prune -o \( -name 'CMakeLists.txt' \) -exec cmake-format --check {} \; 
