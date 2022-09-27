@@ -20,6 +20,12 @@
 #include <pybind11/functional.h>
 #include <optional>
 
+
+
+int add2(int i, int j) {
+    return i + j;
+}
+
 namespace thirdai::bolt::python {
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
@@ -279,53 +285,64 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"))
-      .def(
-          "train", &BoltGraph::train, py::arg("train_data"),
-          py::arg("train_labels"), py::arg("train_config"),
-          "Trains the network on the given training data.\n"
-          "Arguments:\n"
-          " * train_data: PyObject - Training data. This can be one of "
-          "three things. First, it can be a BoltDataset as loaded by "
-          "thirdai.dataset.load_bolt_svm_dataset or "
-          "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
-          "numpy array of float32 where each row in the array is interpreted "
-          "as a vector. Thid, it can be a sparse dataset represented by a "
-          " tuple of three numpy arrays (indices, values, offsets), where "
-          "indices and offsets are uint32 and values are float32. In this case "
-          "indices is a 1D array of all the nonzero indices concatenated, "
-          "values is a 1D array of all the nonzero values concatenated, and "
-          "offsets are the start positions in the indices and values array of "
-          "each vector plus one extra element at the end of the array "
-          "representing the total number of nonzeros. This is so that "
-          "indices[offsets[i], offsets[i + 1]] contains the indices of the ith "
-          "vector and values[offsets[i], offsets[i+1] contains the values of "
-          "the ith vector. For example, if we have the vectors "
-          "{0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0}, then the indices "
-          "array is {1, 3, 3}, the values array is {1.5, 9.0, 4.0} and the "
-          "offsets array is {0, 2, 3}.\n"
-          " * train_labels: PyObject - Training labels. This can be one of "
-          "three things. First it can be a BoltDataset as loaded by "
-          "thirdai.dataset.load_bolt_svm_dataset or "
-          "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
-          "numpy array of float32 where each row in the array is interpreted "
-          "as a label vector. Thid, it can be a set of sparse vectors (each "
-          "vector is a label vector) represented as three numpy arrays "
-          "(indices, values, offsets) where indices and offsets are uint32 "
-          "and values are float32. In this case indices is a 1D array of all "
-          "the nonzero indices concatenated, values is a 1D array of all the "
-          "nonzero values concatenated, and offsets are the start positions "
-          "in the indices and values array of each vector plus one extra "
-          "element at the end of the array representing the total number of "
-          "nonzeros. This is so that indices[offsets[i], offsets[i + 1]] "
-          "contains the indices of the ith vector and values[offsets[i], "
-          "offsets[i+1] contains the values of the ith vector. For example, if "
-          "we have the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0}, "
-          "then the indices array is {1, 3, 3}, the values array is {1.5, "
-          "9.0, 4.0}, and the offsets array is {0, 2, 3}.\n"
-          " * train_config: TrainConfig - the additional training parameters. "
-          "See the TrainConfig documentation above.\n\n"
-          "Returns a mapping from metric names to an array of their values for "
-          "every epoch.")
+      .def("train", &BoltGraph::train, py::arg("train_data"),
+           py::arg("train_labels"), py::arg("train_config"), R"pbdoc(  
+Add two numbers
+
+:math:`a^2 + b^2 = c^2`
+
+Parameters
+----------
+a : array_like
+    Input array or object that can be converted to an array.
+axis : int or None, optional
+    Axis along which the geometric mean is computed. Default is 0.
+    If None, compute over the whole array `a`.
+dtype : dtype, optional
+    Type of the returned array and of the accumulator in which the
+    elements are summed. If dtype is not specified, it defaults to the
+    dtype of a, unless a has an integer dtype with a precision less than
+    that of the default platform integer. In that case, the default
+    platform integer is used.
+weights : array_like, optional
+    The `weights` array must be broadcastable to the same shape as `a`.
+    Default is None, which gives each value a weight of 1.0.
+
+Returns
+-------
+gmean : ndarray
+    See `dtype` parameter above.
+
+See Also
+--------
+numpy.mean : Arithmetic average
+numpy.average : Weighted average
+hmean : Harmonic mean
+
+Notes
+-----
+The geometric average is computed over a single dimension of the input
+array, axis=0 by default, or all values in the array if axis=None.
+float64 intermediate and return values are used for integer inputs.[1]_
+
+References
+----------
+.. [1] "Weighted Geometric Mean", *Wikipedia*,
+    https://en.wikipedia.org/wiki/Weighted_geometric_mean.
+
+Examples
+--------
+>>> from scipy.stats import gmean
+>>> gmean([1, 4])
+2.0
+>>> gmean([1, 2, 3, 4, 5, 6, 7])
+3.3800151591412964
+>>> gmean([1, 4, 7], weights=[3, 1, 3])
+2.80668351922014
+
+Some other explanation about the add function.
+
+)pbdoc")
 #if THIRDAI_EXPOSE_ALL
       .def(
           "get_input_gradients_single",
