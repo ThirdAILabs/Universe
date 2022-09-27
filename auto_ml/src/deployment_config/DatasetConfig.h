@@ -14,11 +14,23 @@
 namespace thirdai::automl::deployment_config {
 
 /**
- * Structure of DatasetConfig:
+ * Structure of Dataset Configuration and Loading:
+ *
+ * DatasetConfig:
+        A config that specifies how to create the DatasetLoaderFactory.
+ *
+ * DatasetLoaderFactory:
+ *      takes in DataLoaders, for instance S3, a file, etc. and returns a
+ *      DatasetLoader for the given resource. This factory can also maintain any
+ *      state that's needed to load datasets, for instance in the Tabular and
+ *      Sequential data loaders which are stateful.
+ *
+ * DatasetLoader:
+ *      Can return bolt datasets form the associated data source until it is
+ *      exhausted. For instance a data loader would be returned by the factory
+ *      for each data source train or evaluate is invoked with.
  *
  */
-
-
 
 using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
 using LabelDataset = dataset::BoltDatasetPtr;
