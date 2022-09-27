@@ -89,7 +89,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
       bolt_submodule, "WeightedMeanAbsolutePercentageError",
       "A loss function to minimize weighted mean absolute percentage error "
       "(WMAPE) "
-      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) / sum(|actual|)`")
+      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
+      "/ sum(|actual|)`")
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 

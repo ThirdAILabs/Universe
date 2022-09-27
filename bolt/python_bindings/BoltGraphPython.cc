@@ -20,12 +20,6 @@
 #include <pybind11/functional.h>
 #include <optional>
 
-
-
-int add2(int i, int j) {
-    return i + j;
-}
-
 namespace thirdai::bolt::python {
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
@@ -286,61 +280,52 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"))
       .def("train", &BoltGraph::train, py::arg("train_data"),
-           py::arg("train_labels"), py::arg("train_config"), R"pbdoc(  
-Add two numbers
+           py::arg("train_labels"), py::arg("train_config"),
+           R"pbdoc(  
+Trains the network on the given training data and labels with the given training
+config.
 
-:math:`a^2 + b^2 = c^2`
+Args:
+    train_data (List[BoltDataset] or BoltDataset): The data to train the model with. 
+        There should be exactly one BoltDataset for each Input node in the Bolt
+        model, and each BoltDataset should have the same total number of 
+        vectors and the same batch size. The batch size for training is the 
+        batch size of the passed in BoltDatasets (you can specify this batch 
+        size when loading or creating a BoltDataset).
+    train_labels (BoltDataset): The labels to use as ground truth during 
+        training. There should be the same number of total vectors and the
+        same batch size in this BoltDataset as in the train_data list.
+    train_config (TrainConfig): The object describing all other training
+        configuration details. See the TrainConfig documentation for more
+        information as to possible options. This includes the number of epochs
+        to train for, the verbosity of the training, the learning rate, and so
+        much more!
 
-Parameters
-----------
-a : array_like
-    Input array or object that can be converted to an array.
-axis : int or None, optional
-    Axis along which the geometric mean is computed. Default is 0.
-    If None, compute over the whole array `a`.
-dtype : dtype, optional
-    Type of the returned array and of the accumulator in which the
-    elements are summed. If dtype is not specified, it defaults to the
-    dtype of a, unless a has an integer dtype with a precision less than
-    that of the default platform integer. In that case, the default
-    platform integer is used.
-weights : array_like, optional
-    The `weights` array must be broadcastable to the same shape as `a`.
-    Default is None, which gives each value a weight of 1.0.
+Returns:
+    Dict[Str, List[float]]:
+    A dictionary from metric name to a list of the value of that metric 
+    for each epoch (this also always includes an entry for 'epoch_times'). The 
+    metrics that are returned are the metrics requested in the TrainConfig.
 
-Returns
--------
-gmean : ndarray
-    See `dtype` parameter above.
+Notes:
+    Sparse bolt training was originally based off of SLIDE. See [1]_ for more details
 
-See Also
---------
-numpy.mean : Arithmetic average
-numpy.average : Weighted average
-hmean : Harmonic mean
+References:
+    .. [1] "SLIDE : In Defense of Smart Algorithms over Hardware Acceleration for Large-Scale Deep Learning Systems" 
+            https://arxiv.org/pdf/1903.03129.pdf.
 
-Notes
------
-The geometric average is computed over a single dimension of the input
-array, axis=0 by default, or all values in the array if axis=None.
-float64 intermediate and return values are used for integer inputs.[1]_
+Examples:
+    >>> train_config = (
+            bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)
+            .with_metrics(["categorical_accuracy"])
+        )
+    >>> metrics = model.train(
+            train_data=train_data, train_labels=train_labels, train_config=train_config
+        )
+    >>> print(metrics)
+    {'epoch_times': [1.7, 3.4, 5.2], 'categorical_accuracy': [0.4665, 0.887, 0.9685]}
 
-References
-----------
-.. [1] "Weighted Geometric Mean", *Wikipedia*,
-    https://en.wikipedia.org/wiki/Weighted_geometric_mean.
-
-Examples
---------
->>> from scipy.stats import gmean
->>> gmean([1, 4])
-2.0
->>> gmean([1, 2, 3, 4, 5, 6, 7])
-3.3800151591412964
->>> gmean([1, 4, 7], weights=[3, 1, 3])
-2.80668351922014
-
-Some other explanation about the add function.
+That's all for now, folks! More docs coming soon :)
 
 )pbdoc")
 #if THIRDAI_EXPOSE_ALL
