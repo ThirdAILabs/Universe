@@ -27,7 +27,22 @@ add_executable(text_block_test TextBlockTests.cc)
 
 target_link_libraries(text_block_test PRIVATE gtest_main hash_function_lib)
 
-add_executable(thread_safe_vocabulary_tests ThreadSafeVocabularyTests.cc)
+add_executable(
+  quantity_history_tracker_test
+  QuantityHistoryTrackerTest.cc
+)
+
+target_link_libraries(
+  quantity_history_tracker_test
+  PRIVATE
+  gtest_main
+  hash_function_lib
+)
+
+add_executable(
+  thread_safe_vocabulary_tests
+  ThreadSafeVocabularyTests.cc
+)
 
 target_link_libraries(thread_safe_vocabulary_tests PRIVATE gtest_main
                                                            OpenMP::OpenMP_CXX)
@@ -37,7 +52,23 @@ add_executable(user_item_history_block_tests UserItemHistoryBlockTests.cc)
 target_link_libraries(user_item_history_block_tests PRIVATE gtest_main
                                                             OpenMP::OpenMP_CXX)
 
-add_executable(block_batch_processor_test BlockBatchProcessorTests.cc)
+add_executable(
+  user_count_history_block_tests
+  UserCountHistoryBlockTests.cc
+)
+
+target_link_libraries(
+  user_count_history_block_tests
+  PRIVATE
+  gtest_main
+  hash_function_lib
+  OpenMP::OpenMP_CXX
+)
+
+add_executable(
+  block_batch_processor_test
+  BlockBatchProcessorTests.cc
+)
 
 target_link_libraries(block_batch_processor_test PRIVATE gtest_main
                                                          dataset_core_lib)
@@ -68,19 +99,22 @@ target_link_libraries(save_load_dataset_test PRIVATE gtest_main)
 include(GoogleTest)
 
 set(DATASET_TESTS
-    svm_dataset_test
-    click_through_dataset_test
-    segmented_feature_vectors_test
-    categorical_block_test
-    date_block_test
-    text_block_test
-    thread_safe_vocabulary_tests
-    user_item_history_block_tests
-    block_batch_processor_test
-    generic_batch_processor_test
-    mlm_batch_processor_tests
-    save_load_dataset_test
-    streaming_generic_dataset_loader_tests)
+  svm_dataset_test
+  click_through_dataset_test
+  segmented_feature_vectors_test
+  categorical_block_test
+  date_block_test
+  text_block_test
+  quantity_history_tracker_test
+  thread_safe_vocabulary_tests
+  user_item_history_block_tests
+  user_count_history_block_tests
+  block_batch_processor_test
+  generic_batch_processor_test
+  mlm_batch_processor_tests
+  save_load_dataset_test
+  streaming_generic_dataset_loader_tests
+)
 
 foreach(DATASET_TEST IN LISTS DATASET_TESTS)
   gtest_discover_tests(${DATASET_TEST} DISCOVERY_TIMEOUT
