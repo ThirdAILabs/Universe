@@ -38,7 +38,7 @@ autodoc_default_options = {
     "imported-members": True,
     "undoc-members": True,
     "show-inheritance": True,
-    "special-members": True
+    "special-members": True,
 }
 
 # Add any paths that contain templates here, relative to this directory.
