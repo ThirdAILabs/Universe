@@ -32,11 +32,10 @@ jobs:
           known_hosts: ${{ secrets.DOC_HOSTING_KNOWN_HOSTS }}
 
       - name: Build Universe
-        run: bin/build.py -f THIRDAI_BUILD_LICENSE
+        run: bin/build.py -f THIRDAI_BUILD_LICENSE -e docs
 
       - name: Build docs
         run: |
-          pip3 install sphinx sphinx_rtd_theme
           (cd docs && make html)
 
       - name: Remove current docs

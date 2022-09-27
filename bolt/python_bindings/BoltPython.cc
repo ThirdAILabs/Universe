@@ -80,7 +80,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
       bolt_submodule, "MeanSquaredError",
       "A loss function that minimizes mean squared error (MSE) for regression "
       "tasks. "
-      "MSE = sum( (actual - prediction)^2 )")
+      ":math:`MSE = sum( (actual - prediction)^2 )`")
       .def(py::init<>(), "Constructs a MeanSquaredError object.");
 
   py::class_<WeightedMeanAbsolutePercentageErrorLoss,
@@ -89,8 +89,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
       bolt_submodule, "WeightedMeanAbsolutePercentageError",
       "A loss function to minimize weighted mean absolute percentage error "
       "(WMAPE) "
-      "for regression tasks. WMAPE = 100% * sum(|actual - prediction|) / "
-      "sum(|actual|)")
+      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
+      "/ sum(|actual|)`")
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
