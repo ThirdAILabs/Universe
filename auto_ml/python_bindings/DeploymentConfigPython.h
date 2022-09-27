@@ -29,9 +29,10 @@ py::object evaluateWrapperDataLoader(
 py::object evaluateWrapperFilename(ModelPipeline& model,
                                    const std::string& filename);
 
-py::object predictWrapper(ModelPipeline& model,const std::string& sample);
+py::object predictWrapper(ModelPipeline& model, const std::string& sample);
 
-py::list predictBatchWrapper(ModelPipeline& model,const std::vector<std::string>& samples);
+py::list predictBatchWrapper(ModelPipeline& model,
+                             const std::vector<std::string>& samples);
 
 ModelPipeline createPipeline(DeploymentConfigPtr config,
                              const std::optional<std::string>& option,
