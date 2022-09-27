@@ -112,7 +112,7 @@ class QuantityHistoryTracker {
    * no archiving occurs.
    */
   void checkpoint(int64_t new_lowest_timestamp) {
-    if (new_lowest_timestamp <= _start_timestamp) {
+    if (new_lowest_timestamp < _start_timestamp) {
       _start_timestamp = new_lowest_timestamp;
       return;
     }
