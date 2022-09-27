@@ -27,9 +27,9 @@ author = "ThirdAI Engineering"
 autodoc_mock_imports = ["ray", "toml", "torch", "transformers"]
 
 extensions = [
-  'sphinx.ext.napoleon', # Support for NumPy and Google style docstrings  
-  'sphinx.ext.autodoc',  # Core Sphinx library for auto html doc generation from docstrings
-  'sphinx.ext.imgmath'
+    "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
+    "sphinx.ext.autodoc",  # Core Sphinx library for auto html doc generation from docstrings
+    "sphinx.ext.imgmath",
 ]
 
 autodoc_default_options = {
