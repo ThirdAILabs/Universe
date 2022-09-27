@@ -1,4 +1,3 @@
-add_library(compression_core_lib DragonVector.cc)
-target_link_libraries(compression_core_lib PUBLIC hash_function_lib
-                                                  OpenMP::OpenMP_CXX)
+add_library(compression_core_lib DragonVector.cc CountSketch.cc)
+target_link_libraries(compression_core_lib PUBLIC hash_function_lib OpenMP::OpenMP_CXX)
 enable_testing()
