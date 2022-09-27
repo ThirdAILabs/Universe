@@ -152,9 +152,6 @@ class ParameterReference {
 //
 //    Ctrl-C is received by the Python interpreter, and holds it until the GIL
 //    is released, so a long-running function won’t be interrupted.
-//
-// We create a callback holding a chunk of python computation here, and at the
-// bindings layer, the callbacks are sneakily inserted to be present by default.
 class KeyboardInterrupt : public Callback {
  public:
   // Check whether Ctrl-C has been called on each batch begin. This is at a
