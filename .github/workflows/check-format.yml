@@ -54,4 +54,4 @@ jobs:
           sudo pip3 install cmake-format
       - name: Check Cmake format
         run: |
-          find . -iname 'Cmakelists.txt' -o -iname '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 
+          find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 
