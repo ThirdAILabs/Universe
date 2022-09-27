@@ -1,4 +1,4 @@
-name: Check Python and C++ Formatting
+name: Check Formatting
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
@@ -44,3 +44,14 @@ jobs:
       - name: Check Python format 
         run: |
           black . --check --exclude "build|.venv|venv|.env|env|deps"
+
+  cmake-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prepare cmake format
+        run: |
+          sudo pip3 install cmake-format
+      - name: Check Cmake format
+        run: |
+          find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 

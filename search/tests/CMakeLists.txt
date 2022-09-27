@@ -1,17 +1,10 @@
 enable_testing()
 include(GoogleTest)
 
-add_executable(
-  maxflash_array_test
-  MaxFlashArrayTest.cc
-)
+add_executable(maxflash_array_test MaxFlashArrayTest.cc)
 
-target_link_libraries(
-  maxflash_array_test
-  PRIVATE
-  hash_function_lib
-  maxflash_lib
-  gtest_main
-)
+target_link_libraries(maxflash_array_test PRIVATE hash_function_lib
+                                                  maxflash_lib gtest_main)
 
-gtest_discover_tests(maxflash_array_test DISCOVERY_TIMEOUT ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+gtest_discover_tests(maxflash_array_test DISCOVERY_TIMEOUT
+                     ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
