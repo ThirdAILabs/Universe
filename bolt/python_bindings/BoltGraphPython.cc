@@ -605,6 +605,10 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
       .def("get_final_lr", &LearningRateScheduler::getFinalLR);
 
+  py::class_<KeyboardInterrupt, KeyboardInterruptPtr, Callback>(
+      callbacks_submodule, "KeyboardInterrupt")
+      .def(py::init<>());
+
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
       .def(
