@@ -52,6 +52,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "sample_population_size is the number of random samples you take "
            "for estimating a threshold for dragon compression or the number of "
            "sketches needed for count_sketch")
+      // NOTE: The order of set functions is important for correct parameter
+      // overloading
       .def("set",
            py::overload_cast<SerializedCompressedVector&>(
                &ParameterReference::set),
