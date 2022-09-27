@@ -18,12 +18,10 @@
 #include <bolt/src/graph/nodes/Switch.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/functional.h>
-#include <Python.h>
 #include <optional>
 #include <string>
 
 namespace thirdai::bolt::python {
-
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
