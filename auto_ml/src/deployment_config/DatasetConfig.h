@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include "BlockConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -91,6 +92,14 @@ class DatasetLoaderFactory {
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 
   virtual ~DatasetLoaderFactory() = default;
+
+ private:
+  friend class cereal::access;
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
@@ -102,6 +111,17 @@ class DatasetConfig {
       const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~DatasetConfig() = default;
+
+ protected:
+  // Private constructor for cereal.
+  DatasetConfig() {}
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using DatasetConfigPtr = std::shared_ptr<DatasetConfig>;

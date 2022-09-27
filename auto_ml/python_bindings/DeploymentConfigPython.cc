@@ -137,10 +137,14 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
       .def(py::init<DatasetConfigPtr, ModelConfigPtr, TrainEvalParameters,
                     std::vector<std::string>>(),
            py::arg("dataset_config"), py::arg("model_config"),
-           py::arg("train_eval_parameters"), py::arg("available_options"));
+           py::arg("train_eval_parameters"), py::arg("available_options"))
+      .def("save", &DeploymentConfig::save, py::arg("filename"))
+      .def_static("load", &DeploymentConfig::load, py::arg("filename"));
 
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
+           py::arg("size") = std::nullopt, py::arg("parameters") = py::none())
+      .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
            py::arg("size") = std::nullopt, py::arg("parameters") = py::none())
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
@@ -158,7 +162,9 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
       .def("evaluate", &evaluateWrapperFilename, py::arg("filename"))
       .def("evaluate", &evaluateWrapperDataLoader, py::arg("data_source"))
       .def("predict", &predictWrapper, py::arg("input_sample"))
-      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"));
+      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
+      .def("save", &ModelPipeline::save, py::arg("filename"))
+      .def_static("load", &ModelPipeline::load, py::arg("filename"));
 }
 
 template <typename T>
@@ -196,6 +202,45 @@ py::object makeUserSpecifiedParameter(const std::string& name,
                               "' passed to UserSpecifiedParameter.");
 }
 
+ModelPipeline createPipeline(const DeploymentConfigPtr& config,
+                             const std::optional<std::string>& option,
+                             const py::dict& parameters) {
+  UserInputMap cpp_parameters;
+  for (const auto& [k, v] : parameters) {
+    if (!py::isinstance<py::str>(k)) {
+      throw std::invalid_argument("Keys or parameters map must be strings.");
+    }
+    std::string name = k.cast<std::string>();
+
+    if (py::isinstance<py::bool_>(v)) {
+      bool value = v.cast<bool>();
+      cpp_parameters[name] = UserParameterInput(value);
+    } else if (py::isinstance<py::int_>(v)) {
+      uint32_t value = v.cast<uint32_t>();
+      cpp_parameters[name] = UserParameterInput(value);
+    } else if (py::isinstance<py::float_>(v)) {
+      float value = v.cast<float>();
+      cpp_parameters[name] = UserParameterInput(value);
+    } else if (py::isinstance<py::str>(v)) {
+      std::string value = v.cast<std::string>();
+      cpp_parameters[name] = UserParameterInput(value);
+    } else {
+      throw std::invalid_argument(
+          "Values of parameters map must be bool, int, float, or str.");
+    }
+  }
+
+  return ModelPipeline(config, option, cpp_parameters);
+}
+
+ModelPipeline createPipelineFromSavedConfig(
+    const std::string& config_path, const std::optional<std::string>& option,
+    const py::dict& parameters) {
+  auto config = DeploymentConfig::load(config_path);
+
+  return createPipeline(config, option, parameters);
+}
+
 py::object evaluateWrapperDataLoader(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source) {
@@ -226,37 +271,6 @@ py::list predictBatchWrapper(ModelPipeline& model,
   }
 
   return py_outputs;
-}
-
-ModelPipeline createPipeline(const DeploymentConfigPtr& config,
-                             const std::optional<std::string>& option,
-                             const py::dict& parameters) {
-  UserInputMap cpp_parameters;
-  for (const auto& [k, v] : parameters) {
-    if (!py::isinstance<py::str>(k)) {
-      throw std::invalid_argument("Keys or parameters map must be strings.");
-    }
-    std::string name = k.cast<std::string>();
-
-    if (py::isinstance<py::bool_>(v)) {
-      bool value = v.cast<bool>();
-      cpp_parameters[name] = UserParameterInput(value);
-    } else if (py::isinstance<py::int_>(v)) {
-      uint32_t value = v.cast<uint32_t>();
-      cpp_parameters[name] = UserParameterInput(value);
-    } else if (py::isinstance<py::float_>(v)) {
-      float value = v.cast<float>();
-      cpp_parameters[name] = UserParameterInput(value);
-    } else if (py::isinstance<py::str>(v)) {
-      std::string value = v.cast<std::string>();
-      cpp_parameters[name] = UserParameterInput(value);
-    } else {
-      throw std::invalid_argument(
-          "Values of parameters map must be bool, int, float, or str.");
-    }
-  }
-
-  return ModelPipeline(config, option, cpp_parameters);
 }
 
 py::object convertInferenceTrackerToNumpy(

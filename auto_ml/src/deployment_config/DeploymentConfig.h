@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/specialize.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include "DatasetConfig.h"
 #include "ModelConfig.h"
 #include "TrainEvalParameters.h"
@@ -49,11 +53,38 @@ class DeploymentConfig {
     return _train_test_parameters;
   }
 
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::shared_ptr<DeploymentConfig> load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::shared_ptr<DeploymentConfig> deserialize_into(new DeploymentConfig());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
+
  private:
   DatasetConfigPtr _dataset_config;
   ModelConfigPtr _model_config;
   TrainEvalParameters _train_test_parameters;
   std::unordered_set<std::string> _available_options;
+
+  // Private constructor for cereal
+  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}) {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(_dataset_config, _model_config, _train_test_parameters,
+            _available_options);
+  }
 };
 
 using DeploymentConfigPtr = std::shared_ptr<DeploymentConfig>;

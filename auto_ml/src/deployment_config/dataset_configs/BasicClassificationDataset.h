@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -65,6 +69,16 @@ class BasicClassificationDatasetFactory final : public DatasetLoaderFactory {
   dataset::GenericBatchProcessorPtr _labeled_batch_processor;
   dataset::GenericBatchProcessorPtr _unlabeled_batch_processor;
   bool _shuffle;
+
+  // Private constructor for cereal.
+  BasicClassificationDatasetFactory() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DatasetLoaderFactory>(this),
+            _labeled_batch_processor, _unlabeled_batch_processor, _shuffle);
+  }
 };
 
 class BasicClassificationDatasetFactoryConfig final : public DatasetConfig {
@@ -110,6 +124,22 @@ class BasicClassificationDatasetFactoryConfig final : public DatasetConfig {
   BlockConfigPtr _label_block;
   HyperParameterPtr<bool> _shuffle;
   HyperParameterPtr<std::string> _delimiter;
+
+  // Private constructor for cereal.
+  BasicClassificationDatasetFactoryConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DatasetConfig>(this), _data_block, _label_block,
+            _shuffle, _delimiter);
+  }
 };
 
 }  // namespace thirdai::automl::deployment_config
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::BasicClassificationDatasetFactoryConfig)
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::BasicClassificationDatasetFactory)

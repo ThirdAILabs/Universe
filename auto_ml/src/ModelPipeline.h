@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/memory.hpp>
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -95,6 +97,23 @@ class ModelPipeline {
     return outputs;
   }
 
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<ModelPipeline> load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<ModelPipeline> deserialize_into(new ModelPipeline());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
+
   uint32_t defaultBatchSize() const { return _config.defaultBatchSize(); }
 
  private:
@@ -165,6 +184,15 @@ class ModelPipeline {
   deployment_config::TrainEvalParameters _config;
   bolt::BoltGraphPtr _model;
   deployment_config::DatasetLoaderFactoryPtr _dataset_factory;
+
+  // Private constructor for cereal.
+  ModelPipeline() : _config({}, {}, {}, {}, {}) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_config, _model, _dataset_factory);
+  }
 };
 
 }  // namespace thirdai::automl

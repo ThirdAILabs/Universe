@@ -202,8 +202,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<BatchProcessor>(this), _input_blocks_dense,
-            _label_blocks_dense, _input_blocks, _label_blocks);
+    archive(cereal::base_class<BatchProcessor>(this), _expects_header,
+            _delimiter, _parallel, _expected_num_cols, _input_blocks_dense,
+            _label_blocks_dense, _input_blocks, _label_blocks,
+            _block_feature_offsets);
   }
 
   // Private constructor for cereal.

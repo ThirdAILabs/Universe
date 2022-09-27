@@ -22,6 +22,14 @@ void defOptionParameter(py::module_& submodule);
 py::object makeUserSpecifiedParameter(const std::string& name,
                                       const py::object& type);
 
+ModelPipeline createPipeline(const DeploymentConfigPtr& config,
+                             const std::optional<std::string>& option,
+                             const py::dict& parameters);
+
+ModelPipeline createPipelineFromSavedConfig(
+    const std::string& config_path, const std::optional<std::string>& option,
+    const py::dict& parameters);
+
 py::object evaluateWrapperDataLoader(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source);
@@ -33,10 +41,6 @@ py::object predictWrapper(ModelPipeline& model, const std::string& sample);
 
 py::list predictBatchWrapper(ModelPipeline& model,
                              const std::vector<std::string>& samples);
-
-ModelPipeline createPipeline(const DeploymentConfigPtr& config,
-                             const std::optional<std::string>& option,
-                             const py::dict& parameters);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 

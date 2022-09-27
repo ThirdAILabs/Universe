@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <memory>
@@ -184,6 +185,13 @@ class Block {
   virtual std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec) = 0;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 }  // namespace thirdai::dataset

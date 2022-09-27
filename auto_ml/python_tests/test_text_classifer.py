@@ -4,12 +4,15 @@ from thirdai import bolt
 import random
 import datasets
 import numpy as np
+import os
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
 
-TRAIN_FILE = "./clinc_train.csv"
-TEST_FILE = "./clinc_test.csv"
+TRAIN_FILE = "./clinc_train_pipeline.csv"
+TEST_FILE = "./clinc_test_pipeline.csv"
+CONFIG_PATH = "./saved_text_classifier_config"
+SAVE_PATH = "./text_classifier_model_pipeline"
 
 
 def write_dataset_to_csv(dataset, filename, return_labels=False):
@@ -37,6 +40,13 @@ def download_clinc_dataset():
     labels = write_dataset_to_csv(clinc_dataset["test"], TEST_FILE, return_labels=True)
 
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
+
+
+def teardown_module():
+    os.remove(TRAIN_FILE)
+    os.remove(TEST_FILE)
+    os.remove(CONFIG_PATH)
+    os.remove(SAVE_PATH)
 
 
 def test_text_classifer():
@@ -87,8 +97,10 @@ def test_text_classifer():
         available_options=["small", "large"],
     )
 
+    config.save(CONFIG_PATH)
+
     model = dc.ModelPipeline(
-        deployment_config=config,
+        config_path=CONFIG_PATH,
         size="large",
         parameters={"output_dim": num_classes, "delimiter": ","},
     )
@@ -107,6 +119,9 @@ def test_text_classifer():
 
     # Accuracy should be around 0.76 to 0.78.
     assert acc >= 0.7
+
+    model.save(SAVE_PATH)
+    model = dc.ModelPipeline.load(SAVE_PATH)
 
     with open(TEST_FILE) as test:
         test_set = test.readlines()

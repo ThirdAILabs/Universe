@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <cmath>
 #include <memory>
@@ -69,6 +72,17 @@ class DenseArrayBlock : public Block {
  private:
   uint32_t _start_col;
   uint32_t _dim;
+
+  // Private constructor for cereal.
+  DenseArrayBlock() {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _start_col, _dim);
+  }
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::DenseArrayBlock)

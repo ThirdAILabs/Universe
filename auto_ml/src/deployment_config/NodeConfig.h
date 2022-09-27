@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "HyperParameter.h"
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -44,8 +49,18 @@ class NodeConfig {
 
   virtual ~NodeConfig() = default;
 
+ protected:
+  // Private constructor for cereal.
+  NodeConfig() {}
+
  private:
   std::string _name;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_name);
+  }
 };
 
 using NodeConfigPtr = std::shared_ptr<NodeConfig>;
@@ -105,6 +120,19 @@ class FullyConnectedNodeConfig final : public NodeConfig {
   HyperParameterPtr<std::string> _activation;
   std::optional<HyperParameterPtr<bolt::SamplingConfigPtr>> _sampling_config;
   std::string _predecessor_name;
+
+  // Private constructor for cereal.
+  FullyConnectedNodeConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<NodeConfig>(this), _dim, _sparsity, _activation,
+            _sampling_config, _predecessor_name);
+  }
 };
 
 }  // namespace thirdai::automl::deployment_config
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::FullyConnectedNodeConfig)

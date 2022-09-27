@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include <optional>
 #include <vector>
 
@@ -41,6 +44,16 @@ class TrainEvalParameters {
   uint32_t _default_batch_size;
   bool _use_sparse_inference;
   std::vector<std::string> _evaluation_metrics;
+
+  // Private constructor for cereal.
+  TrainEvalParameters() {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(_rebuild_hash_tables_interval, _reconstruct_hash_functions_interval,
+            _default_batch_size, _use_sparse_inference, _evaluation_metrics);
+  }
 };
 
 }  // namespace thirdai::automl::deployment_config
