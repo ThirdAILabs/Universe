@@ -13,6 +13,13 @@
 
 namespace thirdai::automl::deployment_config {
 
+/**
+ * Structure of DatasetConfig:
+ *
+ */
+
+
+
 using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
 using LabelDataset = dataset::BoltDatasetPtr;
 
@@ -52,7 +59,7 @@ class GenericDatasetLoader final : public DatasetLoader {
 
 using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
 
-class DatasetState {
+class DatasetLoaderFactory {
  public:
   virtual void preprocessDataset(
       const std::shared_ptr<dataset::DataLoader>& data_loader,
@@ -71,14 +78,14 @@ class DatasetState {
 
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 
-  virtual ~DatasetState() = default;
+  virtual ~DatasetLoaderFactory() = default;
 };
 
-using DatasetStatePtr = std::unique_ptr<DatasetState>;
+using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
 
 class DatasetConfig {
  public:
-  virtual DatasetStatePtr createDatasetState(
+  virtual DatasetLoaderFactoryPtr createDatasetState(
       const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const = 0;
 

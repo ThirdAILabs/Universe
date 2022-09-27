@@ -34,7 +34,7 @@ py::object predictWrapper(ModelPipeline& model, const std::string& sample);
 py::list predictBatchWrapper(ModelPipeline& model,
                              const std::vector<std::string>& samples);
 
-ModelPipeline createPipeline(DeploymentConfigPtr config,
+ModelPipeline createPipeline(const DeploymentConfigPtr& config,
                              const std::optional<std::string>& option,
                              const py::dict& parameters);
 

@@ -10,12 +10,12 @@
 
 namespace thirdai::automl::deployment_config {
 
-class BasicClassificationDatasetState final : public DatasetState {
+class BasicClassificationDatasetFactory final : public DatasetLoaderFactory {
  public:
-  BasicClassificationDatasetState(dataset::BlockPtr data_block,
-                                  dataset::BlockPtr unlabeled_data_block,
-                                  dataset::BlockPtr label_block, bool shuffle,
-                                  char delimiter)
+  BasicClassificationDatasetFactory(dataset::BlockPtr data_block,
+                                    dataset::BlockPtr unlabeled_data_block,
+                                    dataset::BlockPtr label_block, bool shuffle,
+                                    char delimiter)
       : _labeled_batch_processor(
             std::make_shared<dataset::GenericBatchProcessor>(
                 std::vector<dataset::BlockPtr>{std::move(data_block)},
@@ -67,18 +67,17 @@ class BasicClassificationDatasetState final : public DatasetState {
   bool _shuffle;
 };
 
-class BasicClassificationDatasetConfig final : public DatasetConfig {
+class BasicClassificationDatasetFactoryConfig final : public DatasetConfig {
  public:
-  BasicClassificationDatasetConfig(BlockConfigPtr data_block,
-                                   BlockConfigPtr label_block,
-                                   HyperParameterPtr<bool> shuffle,
-                                   HyperParameterPtr<std::string> delimiter)
+  BasicClassificationDatasetFactoryConfig(
+      BlockConfigPtr data_block, BlockConfigPtr label_block,
+      HyperParameterPtr<bool> shuffle, HyperParameterPtr<std::string> delimiter)
       : _data_block(std::move(data_block)),
         _label_block(std::move(label_block)),
         _shuffle(std::move(shuffle)),
         _delimiter(std::move(delimiter)) {}
 
-  DatasetStatePtr createDatasetState(
+  DatasetLoaderFactoryPtr createDatasetState(
       const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const final {
     dataset::BlockPtr label_block = _label_block->getBlock(
@@ -101,7 +100,7 @@ class BasicClassificationDatasetConfig final : public DatasetConfig {
           delimiter + "'.");
     }
 
-    return std::make_unique<BasicClassificationDatasetState>(
+    return std::make_unique<BasicClassificationDatasetFactory>(
         data_block, unlabeled_data_block, label_block, shuffle,
         delimiter.at(0));
   }

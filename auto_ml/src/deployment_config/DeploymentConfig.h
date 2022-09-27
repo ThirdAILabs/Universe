@@ -20,7 +20,8 @@ class DeploymentConfig {
         _available_options(available_options.begin(), available_options.end()) {
   }
 
-  std::pair<DatasetStatePtr, bolt::BoltGraphPtr> createDataLoaderAndModel(
+  std::pair<DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
+  createDataLoaderAndModel(
       const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const {
     if (!_available_options.empty() && !option) {
@@ -35,7 +36,7 @@ class DeploymentConfig {
           "' was not found in list of available options.");
     }
 
-    DatasetStatePtr dataset_state =
+    DatasetLoaderFactoryPtr dataset_state =
         _dataset_config->createDatasetState(option, user_specified_parameters);
 
     bolt::BoltGraphPtr model = _model_config->createModel(

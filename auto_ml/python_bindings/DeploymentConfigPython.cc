@@ -122,8 +122,8 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   py::class_<DatasetConfig, DatasetConfigPtr>(submodule,  // NOLINT
                                               "DatasetConfig");
 
-  py::class_<BasicClassificationDatasetConfig, DatasetConfig,
-             std::shared_ptr<BasicClassificationDatasetConfig>>(
+  py::class_<BasicClassificationDatasetFactoryConfig, DatasetConfig,
+             std::shared_ptr<BasicClassificationDatasetFactoryConfig>>(
       submodule, "BasicClassificationDatasetConfig")
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
                     HyperParameterPtr<std::string>>(),
@@ -234,7 +234,7 @@ py::list predictBatchWrapper(ModelPipeline& model,
   return py_outputs;
 }
 
-ModelPipeline createPipeline(DeploymentConfigPtr config,
+ModelPipeline createPipeline(const DeploymentConfigPtr& config,
                              const std::optional<std::string>& option,
                              const py::dict& parameters) {
   UserInputMap cpp_parameters;
@@ -262,7 +262,7 @@ ModelPipeline createPipeline(DeploymentConfigPtr config,
     }
   }
 
-  return ModelPipeline(std::move(config), option, cpp_parameters);
+  return ModelPipeline(config, option, cpp_parameters);
 }
 
 py::object convertInferenceTrackerToNumpy(

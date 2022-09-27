@@ -5,6 +5,7 @@
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <dataset/src/DataLoader.h>
 #include <limits>
 #include <utility>
@@ -13,17 +14,17 @@ namespace thirdai::automl {
 
 class ModelPipeline {
  public:
-  ModelPipeline(deployment_config::DeploymentConfigPtr config,
+  ModelPipeline(const deployment_config::DeploymentConfigPtr& config,
                 const std::optional<std::string>& option,
                 const std::unordered_map<std::string,
                                          deployment_config::UserParameterInput>&
                     user_specified_parameters)
-      : _config(std::move(config)) {
+      : _config(config->parameters()) {
     auto [dataset_state, model] =
-        _config->createDataLoaderAndModel(option, user_specified_parameters);
+        config->createDataLoaderAndModel(option, user_specified_parameters);
 
     _model = std::move(model);
-    _dataset_state = std::move(dataset_state);
+    _dataset_factory = std::move(dataset_state);
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
@@ -38,7 +39,7 @@ class ModelPipeline {
   void train(const std::shared_ptr<dataset::DataLoader>& data_source,
              uint32_t epochs, float learning_rate,
              std::optional<uint32_t> max_in_memory_batches) {
-    auto dataset = _dataset_state->getDatasetLoader(data_source);
+    auto dataset = _dataset_factory->getDatasetLoader(data_source);
 
     if (max_in_memory_batches) {
       trainOnStream(dataset, learning_rate, epochs,
@@ -55,16 +56,16 @@ class ModelPipeline {
 
   bolt::InferenceResult evaluate(
       const std::shared_ptr<dataset::DataLoader>& data_source) {
-    auto dataset = _dataset_state->getDatasetLoader(data_source);
+    auto dataset = _dataset_factory->getDatasetLoader(data_source);
 
     auto [data, labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
     bolt::PredictConfig predict_cfg =
         bolt::PredictConfig::makeConfig()
-            .withMetrics(_config->parameters().evaluationMetrics())
+            .withMetrics(_config.evaluationMetrics())
             .returnActivations();
-    if (_config->parameters().useSparseInference()) {
+    if (_config.useSparseInference()) {
       predict_cfg.enableSparseInference();
     }
 
@@ -75,10 +76,10 @@ class ModelPipeline {
   }
 
   BoltVector predict(const std::string& sample) {
-    std::vector<BoltVector> inputs = _dataset_state->featurizeInput(sample);
+    std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
-    BoltVector output = _model->predictSingle(
-        std::move(inputs), _config->parameters().useSparseInference());
+    BoltVector output =
+        _model->predictSingle(std::move(inputs), _config.useSparseInference());
 
     // TODO(Nicholas): add option for thresholding (wayfair use case)
     return output;
@@ -86,17 +87,15 @@ class ModelPipeline {
 
   BoltBatch predictBatch(const std::vector<std::string>& samples) {
     std::vector<BoltBatch> input_batches =
-        _dataset_state->featurizeInputBatch(samples);
+        _dataset_factory->featurizeInputBatch(samples);
 
     BoltBatch outputs = _model->predictSingleBatch(
-        std::move(input_batches), _config->parameters().useSparseInference());
+        std::move(input_batches), _config.useSparseInference());
 
     return outputs;
   }
 
-  uint32_t defaultBatchSize() const {
-    return _config->parameters().defaultBatchSize();
-  }
+  uint32_t defaultBatchSize() const { return _config.defaultBatchSize(); }
 
  private:
   void trainInMemory(deployment_config::DatasetLoaderPtr& dataset,
@@ -104,7 +103,7 @@ class ModelPipeline {
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
-    if (_config->parameters().useSparseInference() && epochs > 1) {
+    if (_config.useSparseInference() && epochs > 1) {
       bolt::TrainConfig train_cfg_initial =
           getTrainConfig(learning_rate, /* epochs= */ 1);
 
@@ -122,7 +121,7 @@ class ModelPipeline {
   void trainOnStream(deployment_config::DatasetLoaderPtr& dataset,
                      float learning_rate, uint32_t epochs,
                      uint32_t max_in_memory_batches) {
-    if (_config->parameters().useSparseInference() && epochs > 1) {
+    if (_config.useSparseInference() && epochs > 1) {
       trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
@@ -153,21 +152,19 @@ class ModelPipeline {
     bolt::TrainConfig train_config =
         bolt::TrainConfig::makeConfig(learning_rate, epochs);
 
-    if (auto hash_table_rebuild =
-            _config->parameters().rebuildHashTablesInterval()) {
+    if (auto hash_table_rebuild = _config.rebuildHashTablesInterval()) {
       train_config.withRebuildHashTables(hash_table_rebuild.value());
     }
 
-    if (auto reconstruct_hash_fn =
-            _config->parameters().reconstructHashFunctionsInterval()) {
+    if (auto reconstruct_hash_fn = _config.reconstructHashFunctionsInterval()) {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
     return train_config;
   }
 
-  deployment_config::DeploymentConfigPtr _config;
+  deployment_config::TrainEvalParameters _config;
   bolt::BoltGraphPtr _model;
-  deployment_config::DatasetStatePtr _dataset_state;
+  deployment_config::DatasetLoaderFactoryPtr _dataset_factory;
 };
 
 }  // namespace thirdai::automl
