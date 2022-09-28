@@ -17,6 +17,7 @@
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Switch.h>
 #include <dataset/src/Datasets.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
 #include <optional>
 #include <string>
@@ -24,7 +25,10 @@
 namespace thirdai::bolt::python {
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
+  using ParameterArray =
+      py::array_t<float, py::array::c_style | py::array::forcecast>;
 
+  using SerializedCompressedVector = py::array_t<char, py::array::c_style>;
   py::class_<ParameterReference>(graph_submodule, "ParameterReference")
       .def("copy", &ParameterReference::copy,
            "Returns a copy of the parameters held in the ParameterReference as "
@@ -48,12 +52,26 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "sample_population_size is the number of random samples you take "
            "for estimating a threshold for dragon compression or the number of "
            "sketches needed for count_sketch")
-      .def("set", &ParameterReference::set, py::arg("new_params"),
-           py::arg("from_compressed") = false,
-           "Either takes in a numpy array and copies its contents into the "
-           "parameters held in the ParameterReference object. Or takes in a "
-           "char array representing a compressed vector object and a boolean "
-           "indicating that parameters are being set from a compressed vector.")
+      /*
+       * NOTE: The order of set functions is important for correct parameter
+       * overloading Pybind will first try the first set method, which will only
+       * work with an array of chars (a serialized compressed vector), since
+       * SerializedCompressedVector does not specify py::array::forcecast.
+       * Pybind will then try the second set method, which will work with any
+       * pybind array that can be converted to floats, keeping the normal
+       * behavior of setting parameters the same. See
+       * https://pybind11.readthedocs.io/en/stable/advanced/functions.html#overload-resolution-order
+       */
+      .def("set",
+           py::overload_cast<SerializedCompressedVector&>(
+               &ParameterReference::set),
+           py::arg("new_params"),
+           "Takes a char array as input that represents a compressed vector "
+           "and decompresses and copies into the ParameterReference object.")
+      .def("set", py::overload_cast<ParameterArray&>(&ParameterReference::set),
+           py::arg("new_params"),
+           "Takes a numpy array of floats as input and copies its contents "
+           "into the parameters held in the parameter reference object.")
       /*
        * TODO(Shubh):We should make a Compressed vector module at python
        * end to deal with concat function. Since, compressed vectors have an
