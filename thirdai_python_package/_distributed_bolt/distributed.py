@@ -106,9 +106,16 @@ class DistributedDataParallel:
 
         self.logging.info("Training has started!")
 
+        # This speeds up passing the complete model to each worker by having
+        # Ray serialize it once and save it in the object store instead of
+        # serializing it for every worker individually. See
+        # https://docs.ray.io/en/latest/ray-core/tips-for-first-time.html#tip-3-avoid-passing-same-object-repeatedly-to-remote-tasks
+        # for more details.
+        ray_model_ref = ray.put(model)
+
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
-            model_to_wrap=model,
+            model_to_wrap=ray_model_ref,
             train_file_name=train_file_names[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
@@ -122,7 +129,7 @@ class DistributedDataParallel:
             self.replica_workers.append(
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
-                    model_to_wrap=model,
+                    model_to_wrap=ray_model_ref,
                     train_file_name=train_file_names[worker_id + 1],
                     train_config=train_config,
                     id=worker_id + 1,
