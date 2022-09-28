@@ -162,7 +162,7 @@ class SequentialClassifier {
       auto label_vocab = _state.vocabs_by_column[_config.target];
       if (!label_vocab) {
         throw std::invalid_argument(
-            "[SequentialClassifier::explain] called before training.");
+            "[Oracle::explain] called before training.");
       }
       neuron_to_explain = label_vocab->getUid(*target_label);
     }
@@ -196,7 +196,7 @@ class SequentialClassifier {
       uint32_t k = 1) {
     if (k < 1) {
       throw std::invalid_argument(
-          "[SequentialClassifier::predictSingle] k must be greater than or "
+          "[Oracle::predictSingle] k must be greater than or "
           "equal to 1.");
     }
 
@@ -309,11 +309,15 @@ class SequentialClassifier {
     result.reserve(k);
 
     while (!top_k_activations.empty()) {
-      auto [activation, id] = top_k_activations.top();
+      // Returns minimum element, so the results vector is going to 
+      // be sorted in ascending order.
+      auto [activation, id] = top_k_activations.top(); 
       result.push_back(
           {_state.vocabs_by_column[_config.target]->getString(id), activation});
       top_k_activations.pop();
     }
+
+    std::reverse(result.begin(), result.end());
     return result;
   }
 

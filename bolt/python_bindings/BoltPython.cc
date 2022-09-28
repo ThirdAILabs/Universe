@@ -213,6 +213,14 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
         >>> print(metrics)
         {'epoch_times': [1.7, 3.4, 5.2], 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
+    
+    Notes:
+        - Temporal tracking relationships helps Oracle make better predictions by 
+          taking temporal context into account. For example, Oracle may keep track of 
+          the last few movies that a user has watched to better recommend the next movie.
+          `model.train()` automatically updates Oracle's temporal context.
+        - `model.train()` resets Oracle's temporal context at the start of training to 
+          prevent unwanted information from leaking into the training routine.
            )pbdoc"
         )
 #if THIRDAI_EXPOSE_ALL
@@ -242,7 +250,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
             Defaults to 1.
 
     Returns:
-        Dict[Str, float]:
+        Dict[str, float]:
         A dictionary from metric name to the value of that metric (this also 
         always includes an entry for 'test_time' measured in milliseconds). 
         The metrics that are returned are the metrics passed to the `metrics` 
@@ -254,97 +262,157 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
         >>> print(metrics)
         {'test_time': 20.0, 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
+    
+    Notes: 
+        - Temporal tracking relationships helps Oracle make better predictions by 
+          taking temporal context into account. For example, Oracle may keep track of 
+          the last few movies that a user has watched to better recommend the next movie.
+          `model.evaluate()` automatically updates Oracle's temporal context.
+           )pbdoc"
+        )
+    
+      .def(
+          "predict", &SequentialClassifier::predictSingle,
+          py::arg("input_sample"), py::arg("top_k") = 1,
+          R"pbdoc(  
+    Computes the top k classes and their probabilities for a single input sample. 
+
+    Args:
+        input_sample (Dict[str, str]): The input sample as a dictionary 
+            where the keys are column names as specified in data_types and the "
+            values are the respective column values. 
+        top_k (int): The number of top results to return. Must be > 1.
+
+    Returns:
+        List[Tuple[str, float]]:
+        A sorted list of pairs containing the predicted class name and the score for 
+        that prediction. The pairs are sorted in descending order from highest
+        score to lowest score.
+    
+    Example:
+        >>> # Suppose we configure and train Oracle as follows:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "user_id": bolt.types.categorical(n_unique_classes=5000),
+                    "timestamp": bolt.types.date(),
+                    "special_event": bolt.types.categorical(n_unique_classes=20),
+                    "movie_title": bolt.types.categorical(n_unique_classes=500)
+                },
+                temporal_tracking_relationships={
+                    "user_id": ["movie_title"]
+                },
+                target="movie_title"
+            )
+        >>> model.train(
+                train_file="train_file.csv", epochs=3, learning_rate=0.0001, metrics=["recall@1", "recall@10"]
+            )
+        >>> # Make a single prediction
+        >>> predictions = model.predict(
+                input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, top_k=3
+            )
+        >>> print(predictions)
+        [("Gone With The Wind", 0.322), ("Titanic", 0.225), ("Pretty Woman", 0.213)]
+    
+    Notes: 
+        - Only columns that are known at the time of inference need to be passed to
+          `model.predict()`. For example, notice that while we have a "movie_title" 
+          column in the `data_types` argument, we did not pass it to `model.predict()`. 
+          This is because we do not know the movie title at the time of inference – that 
+          is the target that we are trying to predict after all.
+
+        - Temporal tracking relationships helps Oracle make better predictions by 
+          taking temporal context into account. For example, Oracle may keep track of 
+          the last few movies that a user has watched to better recommend the next movie. 
+          Thus, Oracle is at its best when its internal temporal context gets updated with
+          new true samples. `model.predict()` does not update Oracle's temporal context.
+          To do this, we need to use `model.index()`. Read about `model.index()` for details.
            )pbdoc"
         )
       .def(
-          "predict_single", &SequentialClassifier::predictSingle,
-          py::arg("input_sample"), py::arg("top_k") = 1,
-          "Computes the top k classes and their probabilities for a single "
-          "input sample. "
-          "Returns a list of (class name. probability) pairs\n"
-          "Arguments:\n"
-          " * input_sample: Dict[str, str] - The input sample as a dictionary "
-          "where the keys are column names as specified in the schema and the "
-          "values are the respective column values.\n"
-          " * k: Int (positive) - The number of top results to return.\n"
-          "Returns a list of (prediction, score) tuples."
-          "Example:\n"
-          "```\n"
-          "# Suppose we construct a SequentialClassifier as follows:\n"
-          "model = SequentialClassifier(\n"
-          "    user=('name', 500),\n"
-          "    label=('movie', 5001),\n"
-          "    timestamp='timestamp',\n"
-          "    static_categorical=[('age_group', 7)]\n"
-          "    track_categories=[('movie', 5001, 10)]\n"
-          "    track_quantities=['movie_duration']\n"
-          "    time_granularity='daily',\n"
-          "    time_to_predict_ahead=1,\n"
-          "    history_length_for_inference=30\n\n"
-          ")\n\n"
-          "# Suppose there is a user 'arun' for whome we want to recommend\n"
-          "# the next movie to watch, then the input sample would be as "
-          "follows."
-          "input_sample = {\n"
-          "    'name': 'arun',\n"
-          "    'timestamp': '2022-02-02',\n"
-          "    'age_group': '20-39',\n"
-          "    'movie': 'null_token'\n"
-          "    'movie_duration': '0'\n"
-          "})\n\n"
-          "model.predict_single(input_sample, top_k=10)\n"
-          "```\n"
-          "Notice that in the example above, we will not know the movie or "
-          "movie duration since they are both tied to the variable that we are "
-          "trying to predict. In this scenario, we can pass in random values "
-          "and the model automatically ignores them. If you pass a unique "
-          "'null token' in place of a tracked categorical feature for clarity, "
-          "the number of unique values for that column (passed into the "
-          "constructor) must include this 'null token'. In this example, there "
-          "are 5000 movies, but we define the number of unique movies as 5001 "
-          "to include the 'null token'.")
-      .def(
           "explain", &SequentialClassifier::explain, py::arg("input_sample"),
-          py::arg("target_label") = std::nullopt,
-          "The Root Cause Analysis method which gives us relevant "
-          "explanations of the input with respect to the given target label.\n"
-          "Arguments:\n"
-          " * input_sample: Dict[str, str] - The input sample as a dictionary "
-          "where the keys are column names as specified in the schema and the "
-          "values are the respective column values.\n"
-          " * target_label (Optional): str - The label class with respect to "
-          "which we want the explanations for the input. Returns a list of "
-          "Explanation objects with the following fields: `column_number`, "
-          "`column_name`, `keyword`, and `percentage_significance`.\n"
-          "Example:\n"
-          "```\n"
-          "# Suppose we construct a SequentialClassifier as follows:\n"
-          "model = SequentialClassifier(\n"
-          "    user=('name', 500),\n"
-          "    label=('salary', 5),\n"
-          "    timestamp='timestamp',\n"
-          "    static_categorical=[('age_group', 7)]\n"
-          "    track_categories=[('expenditure_level', 7, 30)]\n"
-          ")\n\n"
-          "# Suppose there is a user identified as `arun` and we want to\n"
-          "# know why his salary is in the '<=50k' group, then we may call\n"
-          "# the explain(...) method as follows:\n\n"
-          "input_sample = {\n"
-          "    'name': 'arun',\n"
-          "    'timestamp': '2022-02-02',\n"
-          "    'age_group': '20-39',\n"
-          "    'expenditure_level': 'high'\n"
-          "})\n"
-          "explanations = model.explain(input_sample, target_label='<=50k')\n\n"
-          "# Let's now print the explanations\n\n"
-          "for explanation in explanations:\n"
-          "    print(explanation.column_num)\n"
-          "    print(explanation.column_name)\n"
-          "    print(explanation.percentage_significance)\n"
-          "    print(explanation.keyword)\n"
-          "```\n")
+          py::arg("target") = std::nullopt,
+          R"pbdoc(  
+    Identifies the columns that are most responsible for a predicted outcome 
+    and provides a brief description of the column's value.
+    
+    If a target is provided, the model will identify the columns that need 
+    to change for the model to predict the target class.
+    
+    Args:
+        input_sample (Dict[str, str]): The input sample as a dictionary 
+            where the keys are column names as specified in data_types and the "
+            values are the respective column values. 
+        target (str): Optional. The desired target class. If provided, the
+        model will identify the columns that need to change for the model to 
+        predict the target class.
+
+    Returns:
+        List[Explanation]:
+        A sorted list of `Explanation` objects that each contain the following fields:
+        `column_number`, `column_name`, `keyword`, and `percentage_significance`.
+        `column_number` and `column_name` identify the responsible column, 
+        `keyword` is a brief description of the value in this column, and
+        `percentage_significance` represents this column's contribution to the
+        predicted outcome. The list is sorted in descending order by the 
+        absolute value of the `percentage_significance` field of each element.
+    
+    Example:
+        >>> # Suppose we configure and train Oracle as follows:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "user_id": bolt.types.categorical(n_unique_classes=5000),
+                    "timestamp": bolt.types.date(),
+                    "special_event": bolt.types.categorical(n_unique_classes=20),
+                    "movie_title": bolt.types.categorical(n_unique_classes=500)
+                },
+                temporal_tracking_relationships={
+                    "user_id": "movie_title"
+                },
+                target="movie_title"
+            )
+        >>> model.train(
+                train_file="train_file.csv", epochs=3, learning_rate=0.0001, metrics=["recall@1", "recall@10"]
+            )
+        >>> # Make a single prediction
+        >>> explanations = model.explain(
+                input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, target="Home Alone"
+            )
+        >>> print(explanations[0].column_name)
+        "special_event"
+        >>> print(explanations[0].percentage_significance)
+        25.2
+        >>> print(explanations[0].keyword)
+        "christmas"
+        >>> print(explanations[1].column_name)
+        "movie_id"
+        >>> print(explanations[1].percentage_significance)
+        -22.3
+        >>> print(explanations[1].keyword)
+        "Previously seen 'Die Hard'"
+    
+    Notes: 
+        - The `column_name` field of the `Explanation` object is irrelevant in this case
+          since `model.explain()` uses column names.
+        - `percentage_significance` can be positive or negative depending on the 
+          relationship between the responsible column and the prediction. In the above
+          example, the `percentage_significance` associated with the explanation
+          "Previously seen 'Die Hard'" is negative because recently watching "Die Hard" is 
+          negatively correlated with the target class "Home Alone".
+        - Only columns that are known at the time of inference need to be passed to
+          `model.explain()`. For example, notice that while we have a "movie_title" 
+          column in the `data_types` argument, we did not pass it to `model.explain()`. 
+          This is because we do not know the movie title at the time of inference – that 
+          is the target that we are trying to predict after all.
+        - Temporal tracking relationships helps Oracle make better predictions by 
+          taking temporal context into account. For example, Oracle may keep track of 
+          the last few movies that a user has watched to better recommend the next movie. 
+          Thus, Oracle is at its best when its internal temporal context gets updated with
+          new true samples. `model.explain()` does not update Oracle's temporal context.
+          To do this, we need to use `model.index()`. Read about `model.index()` for details.
+           )pbdoc"
+        )
       .def(
-          "index_single", &SequentialClassifier::indexSingle, py::arg("sample"),
+          "index", &SequentialClassifier::indexSingle, py::arg("sample"),
           "Indexes a single true sample to keep the SequentialClassifier's "
           "internal quantity and category trackers up to date.\n"
           "Arguments:\n"
@@ -373,20 +441,32 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "model.index_single(input_sample)\n"
           "```\n")
       .def("save", &SequentialClassifier::save, py::arg("filename"),
-           "Serializes the SequentialClassifier into a file on disk. Example:\n"
-           "```\n"
-           "from thirdai import bolt\n\n"
-           "model = bolt.SequentialClassifier(...)\n"
-           "model.save('seq_class_savefile.bolt')\n"
-           "```\n")
+           R"pbdoc(  
+    Serializes an instance of Oracle into a file on disk. The serialized Oracle includes 
+    its current temporal context.
+    
+    Args:
+        filename (str): The file on disk to serialize this instance of Oracle into.
+
+    Example:
+        >>> model.Oracle(...)
+        >>> model.save("oracle_savefile.bolt")
+           )pbdoc"
+        )
       .def_static(
           "load", &SequentialClassifier::load, py::arg("filename"),
-          "Loads a serialized SequentialClassifier from a file on disk. "
-          "Example:\n"
-          "```\n"
-          "from thirdai import bolt\n\n"
-          "model = bolt.SequentialClassifier.load('seq_class_savefile.bolt')\n"
-          "```\n");
+          R"pbdoc(  
+    Loads a serialized instance of Oracle from a file on disk. The loaded Oracle includes 
+    the temporal context from before serialization.
+    
+    Args:
+        filename (str): The file on disk to load the instance of Oracle from.
+
+    Example:
+        >>> model.Oracle(...)
+        >>> model = bolt.Oracle.load("oracle_savefile.bolt")
+           )pbdoc"
+    );
 
   createBoltGraphSubmodule(bolt_submodule);
 
