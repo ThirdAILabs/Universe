@@ -1,21 +1,21 @@
 from thirdai._thirdai import bolt
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
-from thirdai._distributed_bolt.backend.trainer import Trainer
+from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
 import ray
 import textwrap
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from .utils import get_num_cpus, init_logging
-from typing import Optional, List
+from typing import List
 
 
 class RayTrainingClusterConfig:
     def __init__(
         self,
         num_workers: int,
-        requested_cpus_per_node: Optional[int] = -1,
-        communication_type: Optional[str] = "circular",
-        cluster_address: Optional[str] = "auto",
+        requested_cpus_per_node: int = -1,
+        communication_type: str = "circular",
+        cluster_address: str = "auto",
     ):
 
         self.logging = init_logging("distributed_fully_connected.log")
@@ -146,7 +146,7 @@ class DistributedDataParallel:
         """
         Trains the network using the communication type choosen.
         """
-        trainer = Trainer(
+        trainer = TrainStateManager(
             self.workers,
             self.primary_worker,
             self.logging,

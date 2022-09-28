@@ -9,15 +9,6 @@ def parse_svm_dataset(train_filename, batch_size):
     )
 
 
-def wrap_model(model_to_wrap, train_data, train_labels, train_config):
-    return bolt.DistributedTrainingWrapper(
-        model=model_to_wrap,
-        train_data=train_data,
-        train_labels=train_labels,
-        train_config=train_config,
-    )
-
-
 def init_logging(logger_file: str):
     """
     Returns logger from a logger file

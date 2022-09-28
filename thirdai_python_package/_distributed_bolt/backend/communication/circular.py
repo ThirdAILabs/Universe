@@ -94,30 +94,36 @@ class Circular:
         :type partition_id: int
         :param reduce: This bool determines whether we need
                         to reduce or gather, True: reduce, False: Gather. Defaults to True.
-        :type reduce: Optional[bool], optional
+        :type reduce: bool, optional
         :param avg_gradients: Defaults to False.
-        :type avg_gradients: Optional[bool], optional
+        :type avg_gradients: bool, optional
         """
         for i in range(len(self.friend_gradients)):
 
             # Getting the indices of the partition to work on
-            l_idx, r_idx = self.partitions[i][partition_id]
+            start_row_index, end_row_index = self.partitions[i][partition_id]
 
-            if r_idx > l_idx:
+            if start_row_index < end_row_index:
 
                 # arrays should be numpy arrays for the following operation, otherwise it will just get appened to the list
                 if reduce:
-                    self.gradients[i][l_idx:r_idx] += self.friend_gradients[i]
+                    self.gradients[i][
+                        start_row_index:end_row_index
+                    ] += self.friend_gradients[i]
                     if avg_gradients:
-                        self.gradients[i][l_idx:r_idx] /= self.num_workers
+                        self.gradients[i][
+                            start_row_index:end_row_index
+                        ] /= self.num_workers
                 else:
-                    self.gradients[i][l_idx:r_idx] = self.friend_gradients[i]
+                    self.gradients[i][
+                        start_row_index:end_row_index
+                    ] = self.friend_gradients[i]
 
     def process_ring(
         self,
         update_id: int,
-        reduce: Optional[bool] = True,
-        avg_gradients: Optional[bool] = False,
+        reduce: bool = True,
+        avg_gradients: bool = False,
     ):
         """
         The function first calculates the partition index range on which it will
@@ -132,9 +138,9 @@ class Circular:
         :type update_id: int
         :param reduce: This bool determines whether we need,
                     to reduce or gather, True: reduce, False: Gather. defaults to True
-        :type reduce: Optional[bool], optional
+        :type reduce: bool
         :param avg_gradients: _description_, defaults to False
-        :type avg_gradients: Optional[bool], optional
+        :type avg_gradients: bool
         """
 
         partition_id = (update_id + self.id - 1) % self.num_workers
@@ -156,11 +162,17 @@ class Circular:
         partition_id = (update_id + self.id) % self.num_workers
         our_partitions = [partition[partition_id] for partition in self.partitions]
 
-        gradient_subarray = []
-        for (l_idx, r_idx), gradient in zip(our_partitions, self.gradients):
-            if r_idx > l_idx:
-                gradient_subarray.append(gradient[l_idx:r_idx])
+        gradient_subarrays = []
+        for (start_row_index, end_row_index), gradient in zip(
+            our_partitions, self.gradients
+        ):
+            if start_row_index < end_row_index:
+                gradient_subarrays.append(gradient[start_row_index:end_row_index])
             else:
-                gradient_subarray.append(None)
+                # This won't happen in most use cases since the number
+                # of parameters in the array would have to be less than the
+                # number of nodes (assuming even partitions), but we include
+                # it to handle the edge case gracefully.
+                gradient_subarrays.append(None)
 
-        return gradient_subarray
+        return gradient_subarrays

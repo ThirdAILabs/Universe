@@ -1,7 +1,6 @@
-from typing import Optional
 from thirdai._thirdai import bolt
 import thirdai._distributed_bolt.backend.communication as comm
-from ..utils import wrap_model, parse_svm_dataset, get_gradients
+from ..utils import parse_svm_dataset, get_gradients
 
 
 class Worker:
@@ -33,9 +32,13 @@ class Worker:
         self.train_data, self.train_labels = parse_svm_dataset(
             train_file_name, batch_size
         )
-        self.model = wrap_model(
-            model_to_wrap, [self.train_data], self.train_labels, train_config
+        self.model = bolt.DistributedTrainingWrapper(
+            model=model_to_wrap,
+            train_data=[self.train_data],
+            train_labels=self.train_labels,
+            train_config=train_config,
         )
+
         # Set up variables
         self.num_workers = num_workers
         self.id = id
@@ -64,8 +67,8 @@ class Worker:
     def process_ring(
         self,
         update_id: int,
-        reduce: Optional[bool] = True,
-        avg_gradients: Optional[bool] = False,
+        reduce: bool = True,
+        avg_gradients: bool = False,
     ):
         """
         This function handles the circular all reduce
@@ -73,9 +76,9 @@ class Worker:
         :param update_id: The update sequence id
         :type update_id: int
         :param reduce: True if reduce, False if gather, defaults to True
-        :type reduce: Optional[bool], optional
+        :type reduce: bool
         :param avg_gradients: whether the update requires updating the gradients, defaults to False
-        :type avg_gradients: Optional[bool], optional
+        :type avg_gradients: bool
         """
         self.comm.process_ring(update_id, reduce, avg_gradients)
 

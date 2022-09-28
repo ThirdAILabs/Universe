@@ -41,7 +41,7 @@ def test_all_reduce_circular_communication():
     for i in range(len(weights_all_reduced_gt)):
         weights_all_reduced_gt[i] /= num_workers
 
-    # This code is copied from the function subwork_circular_communication in
+    # This code is copied from the function run_circular_cluster_communication in
     # primary_worker.py and the function process_ring in circular.py
     for update_id, reduce in [(num_workers, True), (num_workers + 1, False)]:
         for node in range(num_workers - 1):

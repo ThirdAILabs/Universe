@@ -2,7 +2,7 @@ import ray
 import time
 
 
-class Trainer:
+class TrainStateManager:
     """
     This class implements a trainer, which controls the trainings,
     expose high level APIs for trainings, predict.
@@ -10,7 +10,7 @@ class Trainer:
 
     def __init__(self, workers, primary_worker, logging, communication_type):
         """
-        Initializes the Trainer
+        Initializes the TrainStateManager
 
         :param workers: List of all the workers which includes the primary worker
         :type workers: List[ray.actor]
@@ -18,7 +18,7 @@ class Trainer:
         :type primary_worker: ray.actor
         :param logging:  Logs the Training using circular communication pattern
         :type logging: logging
-        :param communication_type: Type of communcation which Trainer would be using
+        :param communication_type: Type of communcation which TrainStateManager would be using
         :type communication_type: string
         """
 
@@ -75,11 +75,15 @@ class Trainer:
         start_communication_time = time.time()
         if self.communication_type == "linear":
             ray.get(
-                self.primary_worker.subwork_linear_communication.remote(self.workers)
+                self.primary_worker.run_linear_cluster_communication.remote(
+                    self.workers
+                )
             )
         elif self.communication_type == "circular":
             ray.get(
-                self.primary_worker.subwork_circular_communication.remote(self.workers)
+                self.primary_worker.run_circular_cluster_communication.remote(
+                    self.workers
+                )
             )
         ray.get([worker.receive_gradients.remote() for worker in self.workers])
         self.averaging_and_communication_time += time.time() - start_communication_time
@@ -92,7 +96,9 @@ class Trainer:
         Calls primary worker for updating parameters across all nodes
         """
         start_update_parameter_time = time.time()
-        ray.get(self.primary_worker.subwork_update_parameters.remote(self.workers))
+        ray.get(
+            self.primary_worker.update_parameters_across_cluster.remote(self.workers)
+        )
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def _log_training(self, batch_no, epoch):

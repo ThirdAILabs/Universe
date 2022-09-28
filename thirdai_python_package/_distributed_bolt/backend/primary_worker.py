@@ -26,21 +26,9 @@ class PrimaryWorker(Worker):
         model_to_wrap: bolt.graph.Model,
         train_file_name: str,
         train_config: bolt.graph.TrainConfig,
-        communication_type,
-        batch_size,
+        communication_type: str,
+        batch_size: int,
     ):
-        """
-        Initializes the Primary Worker Class
-
-        :param layer_dims: List of layer dimensions.
-        :type layer_dims: List[int]
-        :param num_workers: number of workers in training
-        :type num_workers: int
-        :param config: configuration file dictionary
-        :type config: TOML File
-        :param communication_type: Type of Communication
-        :type communication_type: string
-        """
 
         super().__init__(
             num_workers=num_workers,
@@ -53,7 +41,7 @@ class PrimaryWorker(Worker):
             batch_size=batch_size,
         )
 
-    def subwork_circular_communication(self, workers):
+    def run_circular_cluster_communication(self, workers):
         """
         This function first call the workers to compute the gradients on their network
         and then implements Baidu's All Ring All Reduce algorithm for communication.
@@ -64,6 +52,10 @@ class PrimaryWorker(Worker):
         :type workers: List[ray.actor]
         """
 
+        # TODO(Pratik): Clean up this function. It is unclear what update_id
+        # is, and the input to process_ring has a strange interaction between
+        # reduce and should_avg_gradients. Maybe we can make this an enum,
+        # something like [DONT_REDUCE, REDUCE, REDUCE_AND_AVERAGE_GRADIENTS].
         for update_id, reduce in [
             (self.num_workers, True),
             (self.num_workers + 1, False),
@@ -80,7 +72,7 @@ class PrimaryWorker(Worker):
                 )
                 update_id -= 1
 
-    def subwork_linear_communication(self, workers):
+    def run_linear_cluster_communication(self, workers):
         """
         This function implements the linear way of communicating between the node.
         In this way of communication, each of the worker calculates their gradients,
@@ -116,7 +108,7 @@ class PrimaryWorker(Worker):
         """
         return self.gradient_averages
 
-    def subwork_update_parameters(self, workers):
+    def update_parameters_across_cluster(self, workers):
         """
         This function calls every worker to update their parameters(weight and biases) with the
         updated gradients(which they receive from the PrimaryWorker)
