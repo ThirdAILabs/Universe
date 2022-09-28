@@ -18,6 +18,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -216,16 +217,11 @@ py::object predictWrapper(ModelPipeline& model, const std::string& sample) {
   return convertBoltVectorToNumpy(output);
 }
 
-py::list predictBatchWrapper(ModelPipeline& model,
-                             const std::vector<std::string>& samples) {
+py::object predictBatchWrapper(ModelPipeline& model,
+                               const std::vector<std::string>& samples) {
   BoltBatch outputs = model.predictBatch(samples);
 
-  py::list py_outputs;
-  for (const auto& vector : outputs) {
-    py_outputs.append(convertBoltVectorToNumpy(vector));
-  }
-
-  return py_outputs;
+  return convertBoltBatchToNumpy(outputs);
 }
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
@@ -258,6 +254,9 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
   return ModelPipeline::make(config, cpp_parameters);
 }
 
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
 py::object convertInferenceTrackerToNumpy(
     bolt::InferenceOutputTracker& output) {
   uint32_t num_samples = output.numSamples();
@@ -268,31 +267,28 @@ py::object convertInferenceTrackerToNumpy(
 
   py::object output_handle = py::cast(std::move(output));
 
-  py::array_t<float, py::array::c_style | py::array::forcecast>
-      activations_array(
-          /* shape= */ {num_samples, inference_dim},
-          /* strides= */ {inference_dim * sizeof(float), sizeof(float)},
-          /* ptr= */ activations_ptr, /* base= */ output_handle);
+  NumpyArray<float> activations_array(
+      /* shape= */ {num_samples, inference_dim},
+      /* strides= */ {inference_dim * sizeof(float), sizeof(float)},
+      /* ptr= */ activations_ptr, /* base= */ output_handle);
 
   if (!active_neurons_ptr) {
-    return std::move(activations_array);
+    return py::object(std::move(activations_array));
   }
 
   // See comment above activations_array for the python memory reasons behind
   // passing in active_neuron_handle
-  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
-      active_neurons_array(
-          /* shape= */ {num_samples, inference_dim},
-          /* strides= */ {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
-          /* ptr= */ active_neurons_ptr, /* base= */ output_handle);
+  NumpyArray<uint32_t> active_neurons_array(
+      /* shape= */ {num_samples, inference_dim},
+      /* strides= */ {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
+      /* ptr= */ active_neurons_ptr, /* base= */ output_handle);
 
   return py::make_tuple(std::move(activations_array),
                         std::move(active_neurons_array));
 }
 
 py::object convertBoltVectorToNumpy(const BoltVector& vector) {
-  py::array_t<float, py::array::c_style | py::array::forcecast>
-      activations_array(vector.len);
+  NumpyArray<float> activations_array(vector.len);
   std::copy(vector.activations, vector.activations + vector.len,
             activations_array.mutable_data());
 
@@ -300,12 +296,50 @@ py::object convertBoltVectorToNumpy(const BoltVector& vector) {
     return py::object(std::move(activations_array));
   }
 
-  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
-      active_neurons_array(vector.len);
+  NumpyArray<uint32_t> active_neurons_array(vector.len);
   std::copy(vector.active_neurons, vector.active_neurons + vector.len,
             active_neurons_array.mutable_data());
 
   return py::make_tuple(active_neurons_array, activations_array);
+}
+
+py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
+  uint32_t length = batch[0].len;
+
+  NumpyArray<float> activations_array(
+      /* shape= */ {batch.getBatchSize(), length});
+
+  std::optional<NumpyArray<uint32_t>> active_neurons_array = std::nullopt;
+  if (!batch[0].isDense()) {
+    active_neurons_array =
+        NumpyArray<uint32_t>(/* shape= */ {batch.getBatchSize(), length});
+  }
+
+  for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+    if (batch[i].len != length) {
+      throw std::invalid_argument(
+          "Cannot convert BoltBatch without constant lengths to a numpy "
+          "array.");
+    }
+    if (batch[i].isDense() != !active_neurons_array.has_value()) {
+      throw std::invalid_argument(
+          "Cannot convert BoltBatch without constant sparsity to a numpy "
+          "array.");
+    }
+
+    std::copy(batch[i].activations, batch[i].activations + length,
+              activations_array.mutable_data() + i * length);
+    if (active_neurons_array) {
+      std::copy(batch[i].active_neurons, batch[i].active_neurons + length,
+                active_neurons_array->mutable_data() + i * length);
+    }
+  }
+
+  if (active_neurons_array) {
+    return py::make_tuple(std::move(active_neurons_array.value()),
+                          std::move(activations_array));
+  }
+  return py::object(std::move(activations_array));
 }
 
 }  // namespace thirdai::automl::deployment_config::python

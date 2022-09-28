@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/DataLoader.h>
@@ -34,11 +35,13 @@ py::object evaluateWrapperFilename(ModelPipeline& model,
 
 py::object predictWrapper(ModelPipeline& model, const std::string& sample);
 
-py::list predictBatchWrapper(ModelPipeline& model,
-                             const std::vector<std::string>& samples);
+py::object predictBatchWrapper(ModelPipeline& model,
+                               const std::vector<std::string>& samples);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 
 py::object convertBoltVectorToNumpy(const BoltVector& vector);
+
+py::object convertBoltBatchToNumpy(const BoltBatch& batch);
 
 }  // namespace thirdai::automl::deployment_config::python
