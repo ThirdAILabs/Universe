@@ -47,7 +47,9 @@ def test_text_classifer():
         nodes=[
             dc.FullyConnectedNodeConfig(
                 name="hidden",
-                dim=dc.OptionMappedParameter(option_name="size", values={"small": 100, "large": 200}),
+                dim=dc.OptionMappedParameter(
+                    option_name="size", values={"small": 100, "large": 200}
+                ),
                 activation=dc.ConstantParameter("relu"),
                 predecessor="input",
             ),
@@ -88,14 +90,11 @@ def test_text_classifer():
 
     model = dc.ModelPipeline(
         deployment_config=config,
-        parameters={"size":"large", "output_dim": num_classes, "delimiter": ","},
+        parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
 
     model.train(
-        filename=TRAIN_FILE,
-        epochs=5,
-        learning_rate=0.01,
-        max_in_memory_batches=12
+        filename=TRAIN_FILE, epochs=5, learning_rate=0.01, max_in_memory_batches=12
     )
 
     logits = model.evaluate(filename=TEST_FILE)
