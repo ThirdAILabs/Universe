@@ -98,7 +98,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
   auto oracle_types_submodule = bolt_submodule.def_submodule("types");
 
   py::class_<sequential_classifier::DataType>(  // NOLINT
-      oracle_types_submodule, "Type", "Base class for bolt types.");
+      oracle_types_submodule, "ColumnType", "Base class for bolt types.");
 
   oracle_types_submodule.def("categorical",
                              sequential_classifier::DataType::categorical,
@@ -132,11 +132,58 @@ py::module_ createBoltSubmodule(py::module_& module) {
       .def(
           py::init<std::map<std::string, sequential_classifier::DataType>,
                    std::map<std::string,
-                            std::vector<sequential_classifier::TemporalConfig>>,
+                            std::vector<std::variant<std::string, sequential_classifier::TemporalConfig>>>,
                    std::string, std::string, uint32_t>(),
           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
           py::arg("target"), py::arg("time_granularity") = "daily",
-          py::arg("lookahead") = 0)
+          py::arg("lookahead") = 0,
+          R"pbdoc(  
+    Trains the network on the given training data and labels with the given training
+    config.
+
+    Args:
+        train_data (List[BoltDataset] or BoltDataset): The data to train the model with. 
+            There should be exactly one BoltDataset for each Input node in the Bolt
+            model, and each BoltDataset should have the same total number of 
+            vectors and the same batch size. The batch size for training is the 
+            batch size of the passed in BoltDatasets (you can specify this batch 
+            size when loading or creating a BoltDataset).
+        train_labels (BoltDataset): The labels to use as ground truth during 
+            training. There should be the same number of total vectors and the
+            same batch size in this BoltDataset as in the train_data list.
+        train_config (TrainConfig): The object describing all other training
+            configuration details. See the TrainConfig documentation for more
+            information as to possible options. This includes the number of epochs
+            to train for, the verbosity of the training, the learning rate, and so
+            much more!
+
+    Returns:
+        Dict[Str, List[float]]:
+        A dictionary from metric name to a list of the value of that metric 
+        for each epoch (this also always includes an entry for 'epoch_times'). The 
+        metrics that are returned are the metrics requested in the TrainConfig.
+
+    Notes:
+        Sparse bolt training was originally based off of SLIDE. See [1]_ for more details
+
+    References:
+        .. [1] "SLIDE : In Defense of Smart Algorithms over Hardware Acceleration for Large-Scale Deep Learning Systems" 
+                https://arxiv.org/pdf/1903.03129.pdf.
+
+    Examples:
+        >>> train_config = (
+                bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)
+                .with_metrics(["categorical_accuracy"])
+            )
+        >>> metrics = model.train(
+                train_data=train_data, train_labels=train_labels, train_config=train_config
+            )
+        >>> print(metrics)
+        {'epoch_times': [1.7, 3.4, 5.2], 'categorical_accuracy': [0.4665, 0.887, 0.9685]}
+
+    That's all for now, folks! More docs coming soon :)
+
+    )pbdoc")
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),

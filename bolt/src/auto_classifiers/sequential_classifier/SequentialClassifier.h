@@ -35,17 +35,19 @@ class SequentialClassifier {
   friend SequentialClassifierTextFixture;
 
  public:
-  SequentialClassifier(std::map<std::string, DataType> data_types,
-                       std::map<std::string, std::vector<TemporalConfig>>
-                           temporal_tracking_relationships,
-                       std::string target, std::string time_granularity = "d",
-                       uint32_t lookahead = 0) {
+  SequentialClassifier(
+      std::map<std::string, DataType> data_types,
+      std::map<std::string,
+               std::vector<std::variant<std::string, TemporalConfig>>>
+          temporal_tracking_relationships,
+      std::string target, std::string time_granularity = "d",
+      uint32_t lookahead = 0) {
     _config.data_types = std::move(data_types),
-    _config.temporal_tracking_relationships =
-        std::move(temporal_tracking_relationships);
     _config.target = std::move(target);
     _config.time_granularity = stringToGranularity(std::move(time_granularity));
     _config.lookahead = lookahead;
+    autotuneTemporalFeatures(_config,
+                             std::move(temporal_tracking_relationships));
     _single_inference_col_nums = ColumnNumberMap(_config.data_types);
   }
 

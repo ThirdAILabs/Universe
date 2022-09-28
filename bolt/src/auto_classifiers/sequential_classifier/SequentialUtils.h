@@ -28,8 +28,50 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 
 namespace thirdai::bolt::sequential_classifier {
+
+static inline void autotuneTemporalFeatures(
+    SequentialClassifierConfig& config,
+    std::map<std::string,
+             std::vector<std::variant<std::string, TemporalConfig>>>&&
+        temporal_relationships) {
+  std::map<std::string, std::vector<TemporalConfig>> temporal_configs;
+  for (const auto& [tracking_key, trackables] : temporal_relationships) {
+    for (const auto& trackable : trackables) {
+      if (std::holds_alternative<TemporalConfig>(trackable)) {
+        temporal_configs[tracking_key].push_back(
+            std::get<TemporalConfig>(trackable));
+      } else {
+        auto trackable_col = std::get<std::string>(trackable);
+        if (config.data_types.at(trackable_col).isNumerical()) {
+          uint32_t history_length =
+              std::max(config.lookahead, static_cast<uint32_t>(1)) * 4;
+          temporal_configs[tracking_key].push_back(
+              TemporalConfig::numerical(trackable_col, history_length));
+        } else if (config.data_types.at(trackable_col).isCategorical()) {
+          temporal_configs[tracking_key].push_back(
+              TemporalConfig::categorical(trackable_col, 1));
+          temporal_configs[tracking_key].push_back(
+              TemporalConfig::categorical(trackable_col, 2));
+          temporal_configs[tracking_key].push_back(
+              TemporalConfig::categorical(trackable_col, 5));
+          temporal_configs[tracking_key].push_back(
+              TemporalConfig::categorical(trackable_col, 13));
+          temporal_configs[tracking_key].push_back(
+              TemporalConfig::categorical(trackable_col, 32));
+        } else {
+          throw std::invalid_argument(
+              trackable_col +
+              " is neither numerical nor categorical. Only numerical and "
+              "categorical columns can be tracked temporally.");
+        }
+      }
+    }
+  }
+  config.temporal_tracking_relationships = temporal_configs;
+}
 
 static inline dataset::QuantityTrackingGranularity stringToGranularity(
     std::string&& granularity_string) {
