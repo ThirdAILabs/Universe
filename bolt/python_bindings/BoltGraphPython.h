@@ -70,8 +70,8 @@ class ParameterReference {
     if (full_gradients.size() != dimensionProduct(_dimensions)) {
       throw std::length_error(
           "The sizes of the decompressed vector and parameter reference are "
-          "different. Either the compressed vector has been corrupted or "
-          "trying to set the wrong parameter reference.");
+          "different. Either the compressed vector has been corrupted or you "
+          "are trying to set the wrong parameter reference.");
     }
 
     // TODO(Shubh): Pass in a refernce to _params and avoid std::copy

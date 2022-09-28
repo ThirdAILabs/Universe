@@ -52,17 +52,25 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "sample_population_size is the number of random samples you take "
            "for estimating a threshold for dragon compression or the number of "
            "sketches needed for count_sketch")
-      // NOTE: The order of set functions is important for correct parameter
-      // overloading
+      /*
+       * NOTE: The order of set functions is important for correct parameter
+       * overloading Pybind will first try the first set method, which will only
+       * work with an array of chars (a serialized compressed vector), since
+       * SerializedCompressedVector does not specify py::array::forcecast.
+       * Pybind will then try the second set method, which will work with any
+       * pybind array that can be converted to floats, keeping the normal
+       * behavior of setting parameters the same. See
+       * https://pybind11.readthedocs.io/en/stable/advanced/functions.html#overload-resolution-order
+       */
       .def("set",
            py::overload_cast<SerializedCompressedVector&>(
                &ParameterReference::set),
            py::arg("new_params"),
-           "Takes as input a char array that represents a compressed vector "
+           "Takes a char array as input that represents a compressed vector "
            "and decompresses and copies into the ParameterReference object.")
       .def("set", py::overload_cast<ParameterArray&>(&ParameterReference::set),
            py::arg("new_params"),
-           "Takes as input a numpy array of floats and copies its contents "
+           "Takes a numpy array of floats as input and copies its contents "
            "into the parameters held in the parameter reference object.")
       /*
        * TODO(Shubh):We should make a Compressed vector module at python
