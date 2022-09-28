@@ -45,7 +45,8 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
-      .def("__repr__", &BoltVector::toString);
+      .def("__repr__", &BoltVector::toString)
+      .def("dense", &BoltVector::dense);
 
   py::class_<Explanation>(dataset_submodule, "Explanation",
                           R"pbdoc(
