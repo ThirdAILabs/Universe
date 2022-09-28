@@ -38,3 +38,6 @@ jobs:
 
       - name: Run Benchmark
         run: bin/docker-benchmarking-run.sh "python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_configs/mnist_dense.txt --test_run"
+
+      - name: Delete Container
+        run: sudo docker system prune -a -f
