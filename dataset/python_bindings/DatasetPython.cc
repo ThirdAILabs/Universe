@@ -455,6 +455,9 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
+
+  dataset_submodule.def("processRow", &processRow, py::arg("sequence"),
+                        py::arg("masked_indices"), py::arg("pairgram_range"));
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
