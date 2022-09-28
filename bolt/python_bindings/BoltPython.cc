@@ -219,6 +219,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
           taking temporal context into account. For example, Oracle may keep track of 
           the last few movies that a user has watched to better recommend the next movie.
           `model.train()` automatically updates Oracle's temporal context.
+        - `model.train()` resets Oracle's temporal context at the start of training to 
+          prevent unwanted information from leaking into the training routine.
            )pbdoc"
         )
 #if THIRDAI_EXPOSE_ALL
@@ -248,7 +250,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
             Defaults to 1.
 
     Returns:
-        Dict[Str, float]:
+        Dict[str, float]:
         A dictionary from metric name to the value of that metric (this also 
         always includes an entry for 'test_time' measured in milliseconds). 
         The metrics that are returned are the metrics passed to the `metrics` 
@@ -352,7 +354,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         `keyword` is a brief description of the value in this column, and
         `percentage_significance` represents this column's contribution to the
         predicted outcome. The list is sorted in descending order by the 
-        `percentage_significance` field of each element.
+        absolute value of the `percentage_significance` field of each element.
     
     Example:
         >>> # Suppose we configure and train Oracle as follows:
@@ -373,24 +375,29 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
         >>> # Make a single prediction
         >>> explanations = model.explain(
-                input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, target="Home Alone 2"
+                input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, target="Home Alone"
             )
         >>> print(explanations[0].column_name)
         "special_event"
         >>> print(explanations[0].percentage_significance)
-        0.25
+        25.2
         >>> print(explanations[0].keyword)
         "christmas"
         >>> print(explanations[1].column_name)
         "movie_id"
         >>> print(explanations[1].percentage_significance)
-        0.22
+        -22.3
         >>> print(explanations[1].keyword)
-        "Previously seen 'Home Alone 1'"
+        "Previously seen 'Die Hard'"
     
     Notes: 
         - The `column_name` field of the `Explanation` object is irrelevant in this case
           since `model.explain()` uses column names.
+        - `percentage_significance` can be positive or negative depending on the 
+          relationship between the responsible column and the prediction. In the above
+          example, the `percentage_significance` associated with the explanation
+          "Previously seen 'Die Hard'" is negative because recently watching "Die Hard" is 
+          negatively correlated with the target class "Home Alone".
         - Only columns that are known at the time of inference need to be passed to
           `model.explain()`. For example, notice that while we have a "movie_title" 
           column in the `data_types` argument, we did not pass it to `model.explain()`. 
@@ -405,7 +412,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
            )pbdoc"
         )
       .def(
-          "index_single", &SequentialClassifier::indexSingle, py::arg("sample"),
+          "index", &SequentialClassifier::indexSingle, py::arg("sample"),
           "Indexes a single true sample to keep the SequentialClassifier's "
           "internal quantity and category trackers up to date.\n"
           "Arguments:\n"
