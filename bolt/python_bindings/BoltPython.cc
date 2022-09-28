@@ -434,20 +434,32 @@ py::module_ createBoltSubmodule(py::module_& module) {
           "model.index_single(input_sample)\n"
           "```\n")
       .def("save", &SequentialClassifier::save, py::arg("filename"),
-           "Serializes the SequentialClassifier into a file on disk. Example:\n"
-           "```\n"
-           "from thirdai import bolt\n\n"
-           "model = bolt.SequentialClassifier(...)\n"
-           "model.save('seq_class_savefile.bolt')\n"
-           "```\n")
+           R"pbdoc(  
+    Serializes an instance of Oracle into a file on disk. The serialized Oracle includes 
+    its current temporal context.
+    
+    Args:
+        filename (str): The file on disk to serialize this instance of Oracle into.
+
+    Example:
+        >>> model.Oracle(...)
+        >>> model.save("oracle_savefile.bolt")
+           )pbdoc"
+        )
       .def_static(
           "load", &SequentialClassifier::load, py::arg("filename"),
-          "Loads a serialized SequentialClassifier from a file on disk. "
-          "Example:\n"
-          "```\n"
-          "from thirdai import bolt\n\n"
-          "model = bolt.SequentialClassifier.load('seq_class_savefile.bolt')\n"
-          "```\n");
+          R"pbdoc(  
+    Loads a serialized instance of Oracle from a file on disk. The loaded Oracle includes 
+    the temporal context from before serialization.
+    
+    Args:
+        filename (str): The file on disk to load the instance of Oracle from.
+
+    Example:
+        >>> model.Oracle(...)
+        >>> model = bolt.Oracle.load("oracle_savefile.bolt")
+           )pbdoc"
+    );
 
   createBoltGraphSubmodule(bolt_submodule);
 
