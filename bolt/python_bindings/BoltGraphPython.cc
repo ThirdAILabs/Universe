@@ -17,13 +17,18 @@
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Switch.h>
 #include <dataset/src/Datasets.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
 #include <optional>
+#include <string>
 
 namespace thirdai::bolt::python {
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
+  using ParameterArray =
+      py::array_t<float, py::array::c_style | py::array::forcecast>;
 
+  using SerializedCompressedVector = py::array_t<char, py::array::c_style>;
   py::class_<ParameterReference>(graph_submodule, "ParameterReference")
       .def("copy", &ParameterReference::copy,
            "Returns a copy of the parameters held in the ParameterReference as "
@@ -40,19 +45,48 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "ParameterReference and acts as a reference to them, modifying this "
            "array will modify the parameters.")
 
-      // TODO(Shubh): Should work with a custom serializer rather than python
-      // dictionaries. Or we should make a Compressed vector module at python
-      // end to deal with this
       .def("compress", &ParameterReference::compress,
            py::arg("compression_scheme"), py::arg("compression_density"),
            py::arg("seed_for_hashing"), py::arg("sample_population_size"),
-           "Returns a python dictionary of compressed vectors. "
+           "Returns a char array representing a compressed vector. "
            "sample_population_size is the number of random samples you take "
-           "for estimating a threshold for dragon compression")
-      .def("set", &ParameterReference::set, py::arg("new_params"),
-           "Either takes in a numpy array and copies its contents into the "
-           "parameters held in the ParameterReference object. Or takes in a "
-           "python dictionary which represents a compressed vector object.");
+           "for estimating a threshold for dragon compression or the number of "
+           "sketches needed for count_sketch")
+      /*
+       * NOTE: The order of set functions is important for correct parameter
+       * overloading Pybind will first try the first set method, which will only
+       * work with an array of chars (a serialized compressed vector), since
+       * SerializedCompressedVector does not specify py::array::forcecast.
+       * Pybind will then try the second set method, which will work with any
+       * pybind array that can be converted to floats, keeping the normal
+       * behavior of setting parameters the same. See
+       * https://pybind11.readthedocs.io/en/stable/advanced/functions.html#overload-resolution-order
+       */
+      .def("set",
+           py::overload_cast<SerializedCompressedVector&>(
+               &ParameterReference::set),
+           py::arg("new_params"),
+           "Takes a char array as input that represents a compressed vector "
+           "and decompresses and copies into the ParameterReference object.")
+      .def("set", py::overload_cast<ParameterArray&>(&ParameterReference::set),
+           py::arg("new_params"),
+           "Takes a numpy array of floats as input and copies its contents "
+           "into the parameters held in the parameter reference object.")
+      /*
+       * TODO(Shubh):We should make a Compressed vector module at python
+       * end to deal with concat function. Since, compressed vectors have an
+       * underlying parameter reference, I think that until we have a seperate
+       * copmression module, concat can be planted in ParameterReference.
+       * Concatenating compressed vectors with the same underlying parameter
+       * reference is the same as "concatenating" the parameter references.
+       */
+      .def_static(
+          "concat", &ParameterReference::concat, py::arg("compressed_vectors"),
+          "Takes in a list of compressed vector objects and returns a "
+          "concatenated compressed vector object. Concatenation is non-lossy "
+          "in nature but comes at the cost of a higher memory footprint. "
+          "Note: Only concatenate compressed vectors of the same type with "
+          "the same hyperparamters.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
@@ -279,53 +313,55 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"))
-      .def(
-          "train", &BoltGraph::train, py::arg("train_data"),
-          py::arg("train_labels"), py::arg("train_config"),
-          "Trains the network on the given training data.\n"
-          "Arguments:\n"
-          " * train_data: PyObject - Training data. This can be one of "
-          "three things. First, it can be a BoltDataset as loaded by "
-          "thirdai.dataset.load_bolt_svm_dataset or "
-          "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
-          "numpy array of float32 where each row in the array is interpreted "
-          "as a vector. Thid, it can be a sparse dataset represented by a "
-          " tuple of three numpy arrays (indices, values, offsets), where "
-          "indices and offsets are uint32 and values are float32. In this case "
-          "indices is a 1D array of all the nonzero indices concatenated, "
-          "values is a 1D array of all the nonzero values concatenated, and "
-          "offsets are the start positions in the indices and values array of "
-          "each vector plus one extra element at the end of the array "
-          "representing the total number of nonzeros. This is so that "
-          "indices[offsets[i], offsets[i + 1]] contains the indices of the ith "
-          "vector and values[offsets[i], offsets[i+1] contains the values of "
-          "the ith vector. For example, if we have the vectors "
-          "{0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0}, then the indices "
-          "array is {1, 3, 3}, the values array is {1.5, 9.0, 4.0} and the "
-          "offsets array is {0, 2, 3}.\n"
-          " * train_labels: PyObject - Training labels. This can be one of "
-          "three things. First it can be a BoltDataset as loaded by "
-          "thirdai.dataset.load_bolt_svm_dataset or "
-          "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
-          "numpy array of float32 where each row in the array is interpreted "
-          "as a label vector. Thid, it can be a set of sparse vectors (each "
-          "vector is a label vector) represented as three numpy arrays "
-          "(indices, values, offsets) where indices and offsets are uint32 "
-          "and values are float32. In this case indices is a 1D array of all "
-          "the nonzero indices concatenated, values is a 1D array of all the "
-          "nonzero values concatenated, and offsets are the start positions "
-          "in the indices and values array of each vector plus one extra "
-          "element at the end of the array representing the total number of "
-          "nonzeros. This is so that indices[offsets[i], offsets[i + 1]] "
-          "contains the indices of the ith vector and values[offsets[i], "
-          "offsets[i+1] contains the values of the ith vector. For example, if "
-          "we have the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0}, "
-          "then the indices array is {1, 3, 3}, the values array is {1.5, "
-          "9.0, 4.0}, and the offsets array is {0, 2, 3}.\n"
-          " * train_config: TrainConfig - the additional training parameters. "
-          "See the TrainConfig documentation above.\n\n"
-          "Returns a mapping from metric names to an array of their values for "
-          "every epoch.")
+      .def("train", &BoltGraph::train, py::arg("train_data"),
+           py::arg("train_labels"), py::arg("train_config"),
+           R"pbdoc(  
+Trains the network on the given training data and labels with the given training
+config.
+
+Args:
+    train_data (List[BoltDataset] or BoltDataset): The data to train the model with. 
+        There should be exactly one BoltDataset for each Input node in the Bolt
+        model, and each BoltDataset should have the same total number of 
+        vectors and the same batch size. The batch size for training is the 
+        batch size of the passed in BoltDatasets (you can specify this batch 
+        size when loading or creating a BoltDataset).
+    train_labels (BoltDataset): The labels to use as ground truth during 
+        training. There should be the same number of total vectors and the
+        same batch size in this BoltDataset as in the train_data list.
+    train_config (TrainConfig): The object describing all other training
+        configuration details. See the TrainConfig documentation for more
+        information as to possible options. This includes the number of epochs
+        to train for, the verbosity of the training, the learning rate, and so
+        much more!
+
+Returns:
+    Dict[Str, List[float]]:
+    A dictionary from metric name to a list of the value of that metric 
+    for each epoch (this also always includes an entry for 'epoch_times'). The 
+    metrics that are returned are the metrics requested in the TrainConfig.
+
+Notes:
+    Sparse bolt training was originally based off of SLIDE. See [1]_ for more details
+
+References:
+    .. [1] "SLIDE : In Defense of Smart Algorithms over Hardware Acceleration for Large-Scale Deep Learning Systems" 
+            https://arxiv.org/pdf/1903.03129.pdf.
+
+Examples:
+    >>> train_config = (
+            bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)
+            .with_metrics(["categorical_accuracy"])
+        )
+    >>> metrics = model.train(
+            train_data=train_data, train_labels=train_labels, train_config=train_config
+        )
+    >>> print(metrics)
+    {'epoch_times': [1.7, 3.4, 5.2], 'categorical_accuracy': [0.4665, 0.887, 0.9685]}
+
+That's all for now, folks! More docs coming soon :)
+
+)pbdoc")
 #if THIRDAI_EXPOSE_ALL
       .def(
           "get_input_gradients_single",
@@ -588,6 +624,10 @@ void createCallbacksSubmodule(py::module_& graph_submodule) {
       callbacks_submodule, "LearningRateScheduler")
       .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
       .def("get_final_lr", &LearningRateScheduler::getFinalLR);
+
+  py::class_<KeyboardInterrupt, KeyboardInterruptPtr, Callback>(
+      callbacks_submodule, "KeyboardInterrupt")
+      .def(py::init<>());
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")

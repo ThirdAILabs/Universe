@@ -1,3 +1,4 @@
+from sqlite3 import complete_statement
 from thirdai import bolt, dataset
 import numpy as np
 import os
@@ -271,3 +272,103 @@ def build_train_and_predict_single_hidden_layer(
         predict_config.enable_sparse_inference()
 
     return model.predict(data, labels, predict_config)
+
+
+# Assumes that the model has only two layers
+def get_compressed_weight_gradients(
+    model,
+    compression_scheme,
+    compression_density,
+    seed_for_hashing,
+    sample_population_size,
+):
+    compressed_weight_grads = []
+    layer1 = model.get_layer("fc_1")
+    layer2 = model.get_layer("fc_2")
+
+    compressed_weight_grads.append(
+        layer1.weight_gradients.compress(
+            compression_scheme=compression_scheme,
+            compression_density=compression_density,
+            seed_for_hashing=seed_for_hashing,
+            sample_population_size=sample_population_size,
+        )
+    )
+
+    compressed_weight_grads.append(
+        layer2.weight_gradients.compress(
+            compression_scheme=compression_scheme,
+            compression_density=compression_density,
+            seed_for_hashing=seed_for_hashing,
+            sample_population_size=sample_population_size,
+        )
+    )
+
+    return compressed_weight_grads
+
+
+# Assumes that the model has only two layers
+def set_compressed_weight_gradients(
+    model,
+    compressed_weight_grads,
+):
+    layer1 = model.get_layer("fc_1")
+    layer2 = model.get_layer("fc_2")
+    layer1.weight_gradients.set(compressed_weight_grads[0])
+    layer2.weight_gradients.set(compressed_weight_grads[1])
+
+
+def compressed_training(
+    compression_scheme,
+    compression_density,
+    sample_population_size,
+    learning_rate=0.002,
+    n_classes=10,
+    hidden_dim=10,
+    epochs=30,
+):
+    train_data, train_labels = gen_numpy_training_data(
+        n_classes=n_classes, n_samples=1000, convert_to_bolt_dataset=False
+    )
+    test_data, test_labels = gen_numpy_training_data(
+        n_classes=n_classes, n_samples=100, convert_to_bolt_dataset=False
+    )
+
+    model = build_single_node_bolt_dag_model(
+        train_data=train_data,
+        train_labels=train_labels,
+        sparsity=0.2,
+        num_classes=n_classes,
+        learning_rate=learning_rate,
+        hidden_layer_dim=hidden_dim,
+    )
+
+    total_batches = model.numTrainingBatch()
+
+    predict_config = (
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+    )
+    for epochs in range(epochs):
+        for batch_num in range(total_batches):
+            model.calculateGradientSingleNode(batch_num)
+            compressed_weight_grads = get_compressed_weight_gradients(
+                model,
+                compression_scheme=compression_scheme,
+                compression_density=compression_density,
+                seed_for_hashing=np.random.randint(100),
+                sample_population_size=sample_population_size,
+            )
+            set_compressed_weight_gradients(
+                model,
+                compressed_weight_grads=compressed_weight_grads,
+            )
+            model.updateParametersSingleNode()
+
+    model.finishTraining()
+    acc = model.predict(
+        test_data=dataset.from_numpy(test_data, batch_size=64),
+        test_labels=dataset.from_numpy(test_labels, batch_size=64),
+        predict_config=predict_config,
+    )
+
+    return acc

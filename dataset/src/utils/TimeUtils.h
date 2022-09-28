@@ -33,6 +33,12 @@ class TimeObject {
     throw std::invalid_argument(error_ss.str());
   }
 
+  explicit TimeObject(const time_t seconds_since_epoch) {
+    // Explicit type for windows compiler
+    const time_t* const ptr = &seconds_since_epoch;
+    _time_object = *std::gmtime(ptr);
+  }
+
   /**
    * Theres an STL function that does this (std::mktime)
    * but it is prohibitively slow as it reads a file from
@@ -46,6 +52,20 @@ class TimeObject {
   int64_t secondsSinceEpoch() const {
     int64_t days_since_1970 = daysFrom1970ToYear() + dayOfYear();
     return days_since_1970 * SECONDS_IN_DAY;
+  }
+
+  std::string string() const {
+    std::stringstream ss;
+    ss << 1900 + _time_object.tm_year << '-';
+    if (_time_object.tm_mon < 9) {
+      ss << '0';
+    }
+    ss << _time_object.tm_mon + 1 << '-';
+    if (_time_object.tm_mday < 10) {
+      ss << '0';
+    }
+    ss << _time_object.tm_mday;
+    return ss.str();
   }
 
   inline int month() const { return _time_object.tm_mon; }
