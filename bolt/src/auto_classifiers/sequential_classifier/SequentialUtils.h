@@ -58,9 +58,9 @@ static inline void autotuneTemporalFeatures(
           temporal_configs[tracking_key].push_back(
               TemporalConfig::categorical(trackable_col, 5));
           temporal_configs[tracking_key].push_back(
-              TemporalConfig::categorical(trackable_col, 13));
+              TemporalConfig::categorical(trackable_col, 10));
           temporal_configs[tracking_key].push_back(
-              TemporalConfig::categorical(trackable_col, 32));
+              TemporalConfig::categorical(trackable_col, 25));
         } else {
           throw std::invalid_argument(
               trackable_col +
