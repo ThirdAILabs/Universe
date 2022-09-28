@@ -116,7 +116,7 @@ class PrimaryWorker(Worker):
         """
         return self.gradient_averages
 
-    def subwork_update_parameters(self, workers) -> bool:
+    def subwork_update_parameters(self, workers):
         """
         This function calls every worker to update their parameters(weight and biases) with the
         updated gradients(which they receive from the PrimaryWorker)
@@ -127,7 +127,6 @@ class PrimaryWorker(Worker):
         :rtype: bool
         """
         ray.get([worker.update_parameters.remote() for worker in workers])
-        return True
 
     def get_weights_biases(self):
         """

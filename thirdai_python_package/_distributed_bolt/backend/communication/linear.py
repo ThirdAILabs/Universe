@@ -23,7 +23,6 @@ class Linear:
         :rtype: bool
         """
         self.model.compute_and_save_batch_gradients(batch_no)
-        return True
 
     def receive_gradients(self):
         """
@@ -39,4 +38,3 @@ class Linear:
             self.gradients = ray.get(self.primary_worker.gradients_avg.remote())
 
         set_gradients(self.model, self.gradients)
-        return True

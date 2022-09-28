@@ -70,7 +70,7 @@ class Circular:
 
         self.calculate_gradient_partitions()
 
-    def receive_gradients(self) -> bool:
+    def receive_gradients(self):
         """
         This function is called by the primary_worker to set the updated
         gradients to the network (after the circular communication has
@@ -80,7 +80,6 @@ class Circular:
         :rtype: bool
         """
         set_gradients(self.model, self.gradients)
-        return True
 
     def update_partitions(
         self,

@@ -108,7 +108,6 @@ class Worker:
         :rtype: bool
         """
         self.comm.compute_and_save_batch_gradients(batch_no)
-        return True
 
     def get_calculated_gradients(self):
         """
@@ -125,7 +124,7 @@ class Worker:
         """
         return get_gradients(self.model)
 
-    def receive_gradients(self) -> bool:
+    def receive_gradients(self):
         """
         This function is called only when the communication pattern choosen
         is circular.
@@ -137,15 +136,13 @@ class Worker:
         :rtype: bool
         """
         self.comm.receive_gradients()
-        return True
 
-    def update_parameters(self) -> bool:
+    def update_parameters(self):
         """
         This function calls updateParameter function inside bolt, which
         inherently updates the entire network.
         """
         self.model.update_parameters()
-        return True
 
     def num_of_batches(self) -> int:
         """
