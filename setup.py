@@ -171,11 +171,14 @@ setup(
         # installable from a wheel on an m1
         "test": [
             "pytest",
+            "pytest-mock",
             "boto3",
             "moto",
+            "mlflow",
             "datasets",
             "torch",
             "toml",
+            "psutil",
             "transformers",
             "cryptography<=36.0.2",
             "tokenizers==0.11.6",
@@ -188,6 +191,8 @@ setup(
             "boto3",
         ],
         "distributed": ["ray", "toml"],
+        # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
+        "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
     },
     packages=["thirdai"]
     + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],

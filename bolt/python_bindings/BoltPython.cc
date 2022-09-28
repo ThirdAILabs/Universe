@@ -1,7 +1,6 @@
 #include "BoltPython.h"
-#include "AutoClassifierBase.h"
-#include "AutoClassifiers.h"
 #include "BoltGraphPython.h"
+#include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
@@ -11,6 +10,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/DataLoader.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -23,36 +23,7 @@
 
 namespace thirdai::bolt::python {
 
-template <typename CLASSIFIER>
-void defineAutoClassifierCommonMethods(py::class_<CLASSIFIER>& py_class) {
-  py_class
-      .def("train",
-           py::overload_cast<const std::string&, uint32_t, float,
-                             std::optional<uint32_t>, std::optional<uint32_t>>(
-               &CLASSIFIER::train),
-           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt)
-      .def("train",
-           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&,
-                             uint32_t, float, std::optional<uint32_t>>(
-               &CLASSIFIER::train),
-           py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("max_in_memory_batches") = std::nullopt)
-      .def("evaluate",
-           py::overload_cast<const std::string&>(&CLASSIFIER::evaluate),
-           py::arg("filename"))
-      .def("evaluate",
-           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&>(
-               &CLASSIFIER::evaluate),
-           py::arg("data_source"))
-      .def("predict", &CLASSIFIER::predict, py::arg("input"))
-      .def("predict_batch", &CLASSIFIER::predictBatch, py::arg("inputs"))
-      .def("save", &CLASSIFIER::save, py::arg("filename"))
-      .def_static("load", &CLASSIFIER::load, py::arg("filename"));
-}
-
-void createBoltSubmodule(py::module_& module) {
+py::module_ createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
 #if THIRDAI_EXPOSE_ALL
@@ -109,7 +80,7 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "MeanSquaredError",
       "A loss function that minimizes mean squared error (MSE) for regression "
       "tasks. "
-      "MSE = sum( (actual - prediction)^2 )")
+      ":math:`MSE = sum( (actual - prediction)^2 )`")
       .def(py::init<>(), "Constructs a MeanSquaredError object.");
 
   py::class_<WeightedMeanAbsolutePercentageErrorLoss,
@@ -118,87 +89,76 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "WeightedMeanAbsolutePercentageError",
       "A loss function to minimize weighted mean absolute percentage error "
       "(WMAPE) "
-      "for regression tasks. WMAPE = 100% * sum(|actual - prediction|) / "
-      "sum(|actual|)")
+      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
+      "/ sum(|actual|)`")
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
-
-  /**
-   * Text Classifier Definition
-   */
-  py::class_<TextClassifier> text_classifier(bolt_submodule, "TextClassifier");
-
-  text_classifier.def(
-      py::init<uint32_t, uint32_t>(), py::arg("internal_model_dim"),
-      py::arg("n_classes"),
-      "Constructs a TextClassifier with autotuning.\n"
-      "Arguments:\n"
-      " * internal_model_dim: int - Specifies the internal dimension used in "
-      "the model.\n"
-      " * n_classes: int - How many classes or categories are in the "
-      "labels of the dataset.\n");
-
-  defineAutoClassifierCommonMethods(text_classifier);
-
-  /**
-   * Tabular Classifier Definition
-   */
-  py::class_<TabularClassifier> tabular_classifier(bolt_submodule,
-                                                   "TabularClassifier");
-
-  tabular_classifier.def(
-      py::init<uint32_t, uint32_t, std::vector<std::string>>(),
-      py::arg("internal_model_dim"), py::arg("n_classes"),
-      py::arg("column_datatypes"));
-
-  defineAutoClassifierCommonMethods(tabular_classifier);
-
-  /**
-   * Multi Label Text Classifier Definition
-   */
-  py::class_<MultiLabelTextClassifier> multi_label_classifier(
-      bolt_submodule, "MultiLabelTextClassifier");
-
-  multi_label_classifier
-      .def(py::init<uint32_t, float>(), py::arg("n_classes"),
-           py::arg("threshold") = 0.95)
-      .def("update_threshold", &MultiLabelTextClassifier::updateThreshold);
-
-  defineAutoClassifierCommonMethods(multi_label_classifier);
-
-  /**
-   * Binary Text Classifier
-   */
-  py::class_<BinaryTextClassifier> binary_text_classifier(
-      bolt_submodule, "BinaryTextClassifier");
-
-  binary_text_classifier.def(
-      py::init<uint32_t, uint32_t, std::optional<float>, bool>(),
-      py::arg("n_outputs"), py::arg("internal_model_dim"),
-      py::arg("sparsity") = std::nullopt,
-      py::arg("use_sparse_inference") = true);
-
-  defineAutoClassifierCommonMethods(binary_text_classifier);
 
   /**
    * Sequential Classifier
    */
   py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier",
                                    "Autoclassifier for sequential predictions.")
-      .def(py::init<
-               const std::pair<std::string, uint32_t>&,
-               const std::pair<std::string, uint32_t>&, const std::string&,
-               const std::vector<std::string>&,
-               const std::vector<std::pair<std::string, uint32_t>>&,
-               const std::vector<std::tuple<std::string, uint32_t, uint32_t>>&,
-               std::optional<char>>(),
-           py::arg("user"), py::arg("target"), py::arg("timestamp"),
-           py::arg("static_text") = std::vector<std::string>(),
-           py::arg("static_categorical") =
-               std::vector<std::pair<std::string, uint32_t>>(),
-           py::arg("sequential") =
-               std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
-           py::arg("multi_class_delim") = std::nullopt)
+      .def(
+          py::init<
+              const std::pair<std::string, uint32_t>,
+              const std::pair<std::string, uint32_t>, const std::string,
+              const std::vector<std::string>,
+              const std::vector<std::pair<std::string, uint32_t>>,
+              const std::vector<std::tuple<std::string, uint32_t, uint32_t>>,
+              const std::vector<std::string>, std::optional<char>, std::string,
+              std::optional<uint32_t>, std::optional<uint32_t>>(),
+          py::arg("user"), py::arg("label"), py::arg("timestamp"),
+          py::arg("static_text") = std::vector<std::string>(),
+          py::arg("static_category") =
+              std::vector<std::pair<std::string, uint32_t>>(),
+          py::arg("track_categories") =
+              std::vector<std::tuple<std::string, uint32_t, uint32_t>>(),
+          py::arg("track_quantities") = std::vector<std::string>(),
+          py::arg("multi_class_delim") = std::nullopt,
+          py::arg("time_granularity") = "daily",
+          py::arg("time_to_predict_ahead") = std::nullopt,
+          py::arg("history_length_for_inference") = std::nullopt,
+          "Constructs a SequentialClassifier.\n"
+          "Arguments:\n"
+          " * user: Tup[str, int] - Column name for user IDs and the number of "
+          "unique user IDs.\n"
+          " * label: Tup[str, int] - Column name for label IDs and the number "
+          "of unique IDs.\n"
+          " * timestamp: str - Column name for timestamps. Timestamps must be "
+          "in YYYY-MM-DD format.\n"
+          " * static_text (optional): List[str] - List of column names for "
+          "static text information.\n"
+          " * static_category (optional): List[Tup[str, int]] - List of "
+          "(column name, num unique categories) pairs for static categorical "
+          "features.\n"
+          " * track_categories (optional): List[Tup[str, int, int]] - List of "
+          "(column name, num unique categories, max sequence length) triplets "
+          "for trackable categorical features. SequentialClassifier tracks the "
+          "last max_sequence_length categories associated with a user ID.\n"
+          " * track_quantities (optional): List[str] - List of column names "
+          "for trackable numerical features.\n",
+          " * multi_class_delim (optional): str - A single character to "
+          "delimit multi-class categorical feature columns. This delimiter "
+          "applies to columns specified in `static_category` and "
+          "`track_categories`. Defaults to None.\n"
+          " * time_granularity (optional): str - The granularity of quantity "
+          "tracking. Options: 'daily'/'d', 'weekly'/'w', 'biweekly'/'b', "
+          "'monthly'/'m'. E.g. If granularity is 'weekly' and there is a "
+          "record of a $50 transaction on Monday and a $100 transaction on "
+          "Tuesday, SequentialClassifier will treat this as a $150 transaction "
+          "during the week.\n"
+          " * time_to_predict_ahead (required only if track_quantities is "
+          "non-empty): int - How far ahead the model needs to learn to "
+          "predict. Time unit is in terms of the selected `time_granulartiy`. "
+          "E.g. time_to_predict_ahead=5 and granularity='weekly' means the "
+          "model learns to predict 5 weeks ahead.\n"
+          " * history_length_for_inference (required only if track_quantities "
+          "is non-empty): int - The length of history of tracked quantities "
+          "that the model can use to make predictions. Length is in terms of "
+          "the selected `time_granulartiy`. E.g. "
+          "history_length_for_inference=5 and granularity='weekly' means the "
+          "model uses the last 5 weeks of counts to make predictions.\n")
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}))
@@ -208,10 +168,26 @@ void createBoltSubmodule(py::module_& module) {
       .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
            py::arg("output_file") = std::nullopt, py::arg("print_last_k") = 1)
+      .def("predict_single", &SequentialClassifier::predictSingle,
+           py::arg("input_sample"), py::arg("top_k") = 1,
+           "Computes the top k classes and their probabilities for a single "
+           "input sample. "
+           "Returns a list of (class name. probability) pairs\n"
+           "Arguments:\n"
+           " * sample: Dict[str, str] - The input sample as a dictionary where "
+           "the keys "
+           "are column names as specified in the schema and the values are the "
+           "respective "
+           "column values.\n"
+           " * k: Int (positive) - The number of top results to return.\n")
       .def("save", &SequentialClassifier::save, py::arg("filename"))
-      .def_static("load", &SequentialClassifier::load, py::arg("filename"));
+      .def_static("load", &SequentialClassifier::load, py::arg("filename"))
+      .def("explain", &SequentialClassifier::explain, py::arg("input_sample"),
+           py::arg("neuron_to_explain") = std::optional<uint32_t>());
 
   createBoltGraphSubmodule(bolt_submodule);
+
+  return bolt_submodule;
 }
 
 }  // namespace thirdai::bolt::python

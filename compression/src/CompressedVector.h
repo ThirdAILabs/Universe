@@ -4,10 +4,26 @@
 #include <compression/src/CompressionUtils.h>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
-#include <random>
+#include <string>
 
 namespace thirdai::compression {
+
+enum class CompressionScheme { Dragon = 0, CountSketch = 1 };
+
+inline CompressionScheme convertStringToEnum(
+    const std::string& compression_scheme) {
+  std::string lower_name;
+  for (char c : compression_scheme) {
+    lower_name.push_back(std::tolower(c));
+  }
+  if (lower_name == "dragon") {
+    return CompressionScheme::Dragon;
+  }
+  if (lower_name == "count_sketch") {
+    return CompressionScheme::CountSketch;
+  }
+  throw std::invalid_argument("Invalid compression scheme specified.");
+}
 
 template <class T>
 class CompressedVector {
@@ -45,95 +61,23 @@ class CompressedVector {
    */
   virtual std::vector<T> decompress() const = 0;
 
-  virtual std::string type() const = 0;
+  virtual CompressionScheme type() const = 0;
+
+  virtual uint32_t uncompressedSize() const = 0;
+
+  virtual uint32_t size() const = 0;
 
   virtual ~CompressedVector() = default;
+
+  /*
+   * We pass a pointer to a char array to serialize function. The memory for
+   * storing this array is allocated by the user before the serialize method is
+   * called. This shifts the burden of managing the memory to the caller and
+   * also makes it easier to work with memory leaks.
+   */
+  virtual void serialize(char* serialized_data) const = 0;
+
+  virtual uint32_t serialized_size() const = 0;
 };
-
-template <class T>
-class DragonVector final : public CompressedVector<T> {
- public:
-  // defining the constructors for the class
-  DragonVector<T>() {}
-
-  /*
-   * If we are constructing a dragon vector from (indices,values) then we need
-   * to know the size of the original vector. Keeping track of the original size
-   * is important when we want to decompress a vector.
-   */
-  DragonVector(const std::vector<T>& vector_to_compress,
-               float compression_density, uint32_t seed_for_hashing,
-               uint32_t sample_population_size);
-
-  DragonVector(std::vector<uint32_t> indices, std::vector<T> values,
-               uint32_t uncompressed_size, uint32_t seed_for_hashing);
-
-  DragonVector(const T* values_to_compress, uint32_t size,
-               float compression_density, uint32_t seed_for_hashing,
-               uint32_t sample_population_size);
-
-  T get(uint32_t index) const final;
-
-  void set(uint32_t index, T value) final;
-
-  void clear() final;
-
-  /*
-   * Implementing utility methods for the class
-   */
-
-  void extend(const DragonVector<T>& vec);
-
-  std::vector<uint32_t> indices() { return _indices; }
-
-  std::vector<T> values() { return _values; }
-
-  uint32_t seedForHashing() const { return _seed_for_hashing; }
-
-  uint32_t uncompressedSize() const { return _uncompressed_size; }
-
-  uint32_t size() const { return static_cast<uint32_t>(_indices.size()); }
-
-  std::string type() const final;
-
-  std::vector<T> decompress() const final;
-
- private:
-  /*
-   * If we add a lot of compression schemes, we should have a sparse vector
-   * object rather than indices, values, size parameters. A lot of compression
-   * schemes such as topk, randomk, dragon, dgc uses a sparse vector
-   */
-
-  std::vector<uint32_t> _indices;
-  std::vector<T> _values;
-  uint32_t _min_sketch_size = 10;
-
-  // size of the original vector
-  uint32_t _uncompressed_size;
-
-  uint32_t _seed_for_hashing;
-
-  void sketch(const T* values, T threshold, uint32_t size,
-              uint32_t sketch_size);
-};
-
-template <class T>
-inline std::unique_ptr<CompressedVector<T>> compress(
-    const T* values, uint32_t size, const std::string& compression_scheme,
-    float compression_density, uint32_t seed_for_hashing,
-    uint32_t sample_population_size) {
-  if (compression_scheme == "dragon") {
-    return std::make_unique<DragonVector<T>>(values, size, compression_density,
-                                             seed_for_hashing,
-                                             sample_population_size);
-  }
-  throw std::logic_error("Compression Scheme is invalid");
-}
-
-template <class T>
-inline std::vector<T> decompress(const CompressedVector<T>& compressed_vector) {
-  return compressed_vector.decompress();
-}
 
 }  // namespace thirdai::compression

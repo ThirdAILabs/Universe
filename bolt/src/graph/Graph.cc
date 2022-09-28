@@ -116,6 +116,7 @@ MetricData BoltGraph::train(
 
       for (uint64_t batch_idx = 0; batch_idx < dataset_context.numBatches();
            batch_idx++) {
+        train_state.batch_cnt = batch_idx;
         callbacks.onBatchBegin(*this, train_state);
 
         dataset_context.setInputs(batch_idx, _inputs);
@@ -174,6 +175,7 @@ MetricData BoltGraph::train(
     }
 
     callbacks.onEpochEnd(*this, train_state);
+    train_state.epoch = _epoch_count;
     if (train_state.stop_training) {
       break;
     }
@@ -260,6 +262,16 @@ BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
   return label_vector;
 }
 
+/**
+ * @brief For given input get the input gradients when backpropagated the loss
+ * with respect to the mentioned label by user.
+ *
+ * @returns
+ * 1. Indices : the indices corresponding to which we are returning gradients in
+ * the input vector(we only return indices if input is sparse).
+ * 2. gradients ratios: (gradient_value)/(input_value) , this is for
+ * normalizing the gradients.
+ */
 std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
 BoltGraph::getInputGradientSingle(
     std::vector<BoltVector>&& input_data,
@@ -677,6 +689,11 @@ void BoltGraph::verifyCanGetInputGradientSingle(
         "The sparse output dimension should be atleast 2 to call "
         "getSecondHighestActivationId.");
   }
+
+  for (auto& node : _nodes) {
+    node->initOptimizer();
+  }
+
   verifyInputForGraph(single_input_gradients_context);
 }
 

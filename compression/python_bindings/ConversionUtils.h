@@ -1,85 +1,59 @@
 #pragma once
+
 #include <compression/src/CompressedVector.h>
+#include <compression/src/CountSketch.h>
+#include <compression/src/DragonVector.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
-#include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
-#include <pybind11/stl.h>
 #include <cstdint>
-#include <memory>
+#include <cstring>
 #include <stdexcept>
-
+#include <variant>
 namespace py = pybind11;
 
 namespace thirdai::compression::python {
+using SerializedCompressedVector =
+    py::array_t<char, py::array::c_style | py::array::forcecast>;
 
-// TODO(Shubh): Profiling this function to see if copying is a bottleneck.
 template <class T>
-inline std::vector<T> makeVectorFrom1dNumpyArray(
-    const py::array_t<T>& py_array) {
-  return std::vector<T>(py_array.data(), py_array.data() + py_array.size());
-}
+std::variant<DragonVector<T>, CountSketch<T>> deserializeCompressedVector(
+    const char* serialized_compressed_vector) {
+  int compression_scheme;
+  std::memcpy(&compression_scheme, serialized_compressed_vector,
+              sizeof(uint32_t));
 
-template <typename T>
-using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+  CompressionScheme compression_scheme_enum =
+      static_cast<CompressionScheme>(compression_scheme);
 
-// TODO(Shubh): We will have to remove this function and work directly with
-// binary streams to serialize and deserialize objects
-inline std::unique_ptr<CompressedVector<float>> convertPyDictToCompressedVector(
-    const py::object& pycompressed_vector) {
-  using thirdai::compression::python::NumpyArray;
-
-  if (py::cast<std::string>(pycompressed_vector["compression_scheme"]) ==
-      "dragon") {
-    NumpyArray<uint32_t> indices =
-        pycompressed_vector["indices"].cast<NumpyArray<uint32_t>>();
-    NumpyArray<float> values =
-        pycompressed_vector["values"].cast<NumpyArray<float>>();
-
-    std::vector<uint32_t> vector_indices =
-        thirdai::compression::python::makeVectorFrom1dNumpyArray(
-            py::cast<py::array_t<uint32_t>>(indices));
-
-    std::vector<float> vector_values =
-        thirdai::compression::python::makeVectorFrom1dNumpyArray(
-            py::cast<py::array_t<float>>(values));
-    DragonVector<float> dragon_sketch = compression::DragonVector<float>(
-        std::move(vector_indices), std::move(vector_values),
-        py::cast<std::uint32_t>(pycompressed_vector["original_size"]),
-        py::cast<int>(pycompressed_vector["seed_for_hashing"]));
-
-    return std::make_unique<DragonVector<float>>(dragon_sketch);
-  }
-  throw std::logic_error(
-      "Received unknown compression type " +
-      py::cast<std::string>(pycompressed_vector["compression_scheme"]) +
-      ". Currently supports Dragon compression only.");
-}
-
-inline py::dict convertCompressedVectorToPyDict(
-    const std::unique_ptr<CompressedVector<float>>& compressed_vector) {
-  py::dict py_compressed_vector;
-
-  py_compressed_vector["compression_scheme"] = compressed_vector->type();
-  if (compressed_vector->type() == "dragon") {
-    // dynamic casting a compressed vector to a dragon vector
-    DragonVector<float> dragon_sketch =
-        *dynamic_cast<DragonVector<float>*>(compressed_vector.get());
-
-    py_compressed_vector["original_size"] = dragon_sketch.uncompressedSize();
-    py_compressed_vector["sketch_size"] = dragon_sketch.size();
-    py_compressed_vector["seed_for_hashing"] = dragon_sketch.seedForHashing();
-    py_compressed_vector["indices"] =
-        py::array_t<uint32_t>(py::cast(dragon_sketch.indices()));
-    py_compressed_vector["values"] =
-        py::array_t<float>(py::cast(dragon_sketch.values()));
-
-    return py_compressed_vector;
+  // std::variant automatically binds
+  switch (compression_scheme_enum) {
+    case CompressionScheme::Dragon:
+      return DragonVector<T>(serialized_compressed_vector);
+    case CompressionScheme::CountSketch:
+      return CountSketch<T>(serialized_compressed_vector);
   }
 
-  throw std::logic_error("CompressedVector Type not known");
+  throw std::invalid_argument(
+      "Compression Scheme not supported. Only supports dragon and "
+      "count_sketch");
 }
 
+template <class T>
+std::vector<std::variant<DragonVector<T>, CountSketch<T>>>
+convertPyListToCompressedVectors(const py::list& py_compressed_vectors) {
+  std::vector<std::variant<DragonVector<T>, CountSketch<T>>> compressed_vectors;
+  size_t num_vectors = py_compressed_vectors.size();
+  compressed_vectors.reserve(num_vectors);
+
+  for (size_t i = 0; i < num_vectors; i++) {
+    const char* serialized_data =
+        py::cast<SerializedCompressedVector>(py_compressed_vectors[i]).data();
+    compressed_vectors.emplace_back(
+        deserializeCompressedVector<T>(serialized_data));
+  }
+  return compressed_vectors;
+}
 }  // namespace thirdai::compression::python

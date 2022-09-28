@@ -13,6 +13,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
+#include <dataset/src/blocks/TabularPairGram.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
@@ -45,6 +46,13 @@ void createDatasetSubmodule(py::module_& module) {
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
+
+  py::class_<Explanation>(dataset_submodule, "Explanation")
+      .def_readonly("column_number", &Explanation::column_number)
+      .def_readonly("percentage_significance",
+                    &Explanation::percentage_significance)
+      .def_readonly("keyword", &Explanation::keyword)
+      .def_readonly("column_name", &Explanation::column_name);
 
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",
@@ -93,7 +101,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("feature_dim", &UniGramTextBlock::featureDim,
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &UniGramTextBlock::isDense,
-           "Returns false since text blocks always produce sparse features.");
+           "Returns false since text blocks always produce sparse "
+           "features.");
 
   py::class_<CharKGramTextBlock, TextBlock, CharKGramTextBlockPtr>(
       block_submodule, "TextCharKGram",
@@ -169,6 +178,48 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &MockBlock::isDense,
            "True if the block produces dense features, False otherwise.");
+
+#if THIRDAI_EXPOSE_ALL
+  py::enum_<TabularDataType>(dataset_submodule, "TabularDataType")
+      .value("Label", TabularDataType::Label)
+      .value("Categorical", TabularDataType::Categorical)
+      .value("Numeric", TabularDataType::Numeric);
+
+  py::class_<TabularMetadata, std::shared_ptr<TabularMetadata>>(
+      dataset_submodule, "TabularMetadata", "Metadata for a tabular dataset.")
+      .def(py::init(
+               [](std::vector<TabularDataType> column_dtypes,
+                  std::unordered_map<uint32_t, std::pair<double, double>>
+                      col_min_maxes,
+                  std::unordered_map<std::string, uint32_t> class_name_to_id,
+                  std::vector<std::string> column_names = {},
+                  std::optional<std::unordered_map<uint32_t, uint32_t>>
+                      col_to_num_bins = std::nullopt) {
+                 return std::make_shared<TabularMetadata>(
+                     column_dtypes, col_min_maxes,
+                     ThreadSafeVocabulary::make(std::move(class_name_to_id),
+                                                /* fixed = */ true),
+                     column_names, col_to_num_bins);
+               }),
+           py::arg("column_dtypes"), py::arg("col_min_maxes"),
+           py::arg("class_name_to_id") =
+               std::unordered_map<std::string, uint32_t>(),
+           py::arg("column_names") = std::vector<std::string>(),
+           py::arg("col_to_num_bins") = std::nullopt);
+
+  py::class_<TabularPairGram, Block, std::shared_ptr<TabularPairGram>>(
+      block_submodule, "TabularPairGram",
+      "Given some metadata about a tabular dataset, assign unique "
+      "categories "
+      "to columns and compute pairgrams of the categories.")
+      .def(py::init<std::shared_ptr<TabularMetadata>, uint32_t>(),
+           py::arg("metadata"), py::arg("output_range"))
+      .def("feature_dim", &TabularPairGram::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &TabularPairGram::isDense,
+           "Returns false since text blocks always produce sparse "
+           "features.");
+#endif
 
   py::class_<PyBlockBatchProcessor>(
       internal_dataset_submodule, "BatchProcessor",

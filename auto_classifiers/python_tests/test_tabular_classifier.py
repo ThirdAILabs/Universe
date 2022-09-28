@@ -4,7 +4,7 @@ import pytest
 import os
 import pandas as pd
 import platform
-from utils import (
+from auto_classifier_utils import (
     compute_accuracy_of_predictions,
     check_autoclassifier_predict_correctness,
 )
@@ -107,6 +107,8 @@ def test_tabular_classifier_census_income_dataset():
     check_autoclassifier_predict_correctness(
         new_classifier, single_test_samples, predictions
     )
+
+    os.remove(SAVE_FILE)
 
 
 def create_single_test_samples():
@@ -301,7 +303,8 @@ def test_failure_on_too_many_labels():
     )
 
     with pytest.raises(
-        ValueError, match=r"Expected 1 classes but found an additional class: 'label2."
+        ValueError,
+        match=r"\[ThreadSafeVocabulary\] Expected 1 unique strings but found more.",
     ):
         classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
 

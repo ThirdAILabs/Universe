@@ -6,21 +6,32 @@
 #include <exception>
 
 namespace thirdai::dataset {
+
 /**
- * Given some metadata about a tabular dataset, assign unique categories to
- * columns and compute pairgrams of the categories.
+ * @brief Given some metadata about a tabular dataset, assign unique categories
+ * to columns and compute pairgrams of the categories.
+ *
+ * TODO(david): add a TabularBinningStrategy class to try out different methods
  */
 class TabularPairGram : public Block {
  public:
-  TabularPairGram(std::shared_ptr<TabularMetadata>& metadata,
-                  uint32_t output_range)
-      : _metadata(metadata), _output_range(output_range) {}
+  TabularPairGram(TabularMetadataPtr metadata, uint32_t output_range)
+      : _metadata(std::move(metadata)), _output_range(output_range) {}
 
   uint32_t featureDim() const final { return _output_range; };
 
   bool isDense() const final { return false; };
 
   uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
+
+  Explanation explainIndex(
+      uint32_t index_within_block,
+      const std::vector<std::string_view>& columnar_sample) const final {
+    (void)columnar_sample;
+    (void)index_within_block;
+    throw std::invalid_argument(
+        "Explain feature is not yet implemented in tabular block!");
+  }
 
  protected:
   // TODO(david) We should always include all unigrams but if the number of
@@ -33,7 +44,7 @@ class TabularPairGram : public Block {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       std::string str_val(input_row[col]);
-      switch (_metadata->getColType(col)) {
+      switch (_metadata->colType(col)) {
         case TabularDataType::Numeric: {
           std::exception_ptr err;
           uint32_t unigram = _metadata->getNumericHashValue(col, str_val, err);
@@ -67,8 +78,10 @@ class TabularPairGram : public Block {
   }
 
  private:
-  std::shared_ptr<TabularMetadata> _metadata;
+  TabularMetadataPtr _metadata;
   uint32_t _output_range;
 };
+
+using TabularPairGramPtr = std::shared_ptr<TabularPairGram>;
 
 }  // namespace thirdai::dataset
