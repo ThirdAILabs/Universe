@@ -58,14 +58,7 @@ class ParameterReference {
 
   ParameterArray get() const { return ParameterArray(_dimensions, _params); }
 
-  void set(const py::object& new_params, bool from_compressed) {
-    if (!from_compressed) {
-      ParameterArray new_array = py::cast<ParameterArray>(new_params);
-      checkNumpyArrayDimensions(_dimensions, new_params);
-      std::copy(new_array.data(), new_array.data() + _total_dim, _params);
-      return;
-    }
-
+  void set(py::array_t<char, py::array::c_style>& new_params) {
     const char* serialized_data =
         py::cast<SerializedCompressedVector>(new_params).data();
     FloatCompressedVector compressed_vector =
@@ -73,9 +66,24 @@ class ParameterReference {
             serialized_data);
     std::vector<float> full_gradients = std::visit(
         thirdai::compression::DecompressVisitor<float>(), compressed_vector);
+
+    if (full_gradients.size() != dimensionProduct(_dimensions)) {
+      throw std::length_error(
+          "The sizes of the decompressed vector and parameter reference are "
+          "different. Either the compressed vector has been corrupted or you "
+          "are trying to set the wrong parameter reference.");
+    }
+
     // TODO(Shubh): Pass in a refernce to _params and avoid std::copy
     std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
               _params);
+  }
+
+  void set(py::array_t<float, py::array::c_style | py::array::forcecast>&
+               new_params) {
+    ParameterArray new_array = py::cast<ParameterArray>(new_params);
+    checkNumpyArrayDimensions(_dimensions, new_params);
+    std::copy(new_array.data(), new_array.data() + _total_dim, _params);
   }
 
   SerializedCompressedVector compress(const std::string& compression_scheme,
