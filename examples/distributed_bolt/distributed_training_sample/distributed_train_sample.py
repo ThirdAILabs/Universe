@@ -25,16 +25,16 @@ if __name__ == "__main__":
     cluster_config = db.RayTrainingClusterConfig(
         num_workers=2, requested_cpus_per_node=1, communication_type="linear"
     )
-    head = db.DistributedDataParallel(
+    wrapped_model = db.DistributedDataParallel(
         cluster_config=cluster_config,
         model=model,
         train_config=train_config,
         train_file_names=dataset_paths,
         batch_size=256,
     )
-    head.train()
+    wrapped_model.train()
 
-    model = head.get_model()
+    model = wrapped_model.get_model()
     predict_config = (
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )

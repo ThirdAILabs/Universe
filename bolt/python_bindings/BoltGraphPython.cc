@@ -570,8 +570,8 @@ That's all for now, folks! More docs coming soon :)
           "model",
           [](DistributedTrainingWrapper& node) { return node.getModel(); },
           py::return_value_policy::reference_internal,
-          "Returns a ParameterReference object to the weight gradients "
-          "matrix.");
+          "The underlying Bolt model wrapped by this "
+          "DistributedTrainingWrapper.");
 
   createCallbacksSubmodule(graph_submodule);
 }
