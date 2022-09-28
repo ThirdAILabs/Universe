@@ -29,6 +29,8 @@ class DataLoader {
   uint32_t _target_batch_size;
 };
 
+using DataLoaderPtr = std::shared_ptr<DataLoader>;
+
 class SimpleFileDataLoader final : public DataLoader {
  public:
   SimpleFileDataLoader(const std::string& filename, uint32_t target_batch_size)

@@ -9,8 +9,6 @@ namespace thirdai::automl::deployment_config {
 
 class UserParameterInput {
  public:
-  UserParameterInput() : _type(ParameterType::Uninitialized) {}
-
   explicit UserParameterInput(bool bool_val)
       : _bool_param(bool_val), _type(ParameterType::Boolean) {}
 
@@ -64,7 +62,7 @@ class UserParameterInput {
   // std::string cannot be in the union since it is not trivially constructible.
   std::string _str_param;
 
-  enum ParameterType { Uninitialized, Boolean, Integer, Float, String };
+  enum ParameterType { Boolean, Integer, Float, String };
   ParameterType _type;
 };
 

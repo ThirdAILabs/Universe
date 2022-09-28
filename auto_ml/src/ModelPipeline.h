@@ -12,6 +12,13 @@
 
 namespace thirdai::automl {
 
+/**
+ * This class represents an end-to-end data processing + model pipeline. It
+ * handles all functionality from loading data to training, evaulation, and
+ * inference. The DeploymentConfig acts as a meta config, which specifies
+ * what parameters to use, and how to combine them with the user specified
+ * parameters to construct the model and dataset processing system.
+ */
 class ModelPipeline {
  public:
   ModelPipeline(const deployment_config::DeploymentConfigPtr& config,
@@ -19,7 +26,7 @@ class ModelPipeline {
                 const std::unordered_map<std::string,
                                          deployment_config::UserParameterInput>&
                     user_specified_parameters)
-      : _config(config->parameters()) {
+      : _train_eval_config(config->parameters()) {
     auto [dataset_state, model] =
         config->createDataLoaderAndModel(option, user_specified_parameters);
 
@@ -63,9 +70,9 @@ class ModelPipeline {
 
     bolt::PredictConfig predict_cfg =
         bolt::PredictConfig::makeConfig()
-            .withMetrics(_config.evaluationMetrics())
+            .withMetrics(_train_eval_config.evaluationMetrics())
             .returnActivations();
-    if (_config.useSparseInference()) {
+    if (_train_eval_config.useSparseInference()) {
       predict_cfg.enableSparseInference();
     }
 
@@ -78,8 +85,8 @@ class ModelPipeline {
   BoltVector predict(const std::string& sample) {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
-    BoltVector output =
-        _model->predictSingle(std::move(inputs), _config.useSparseInference());
+    BoltVector output = _model->predictSingle(
+        std::move(inputs), _train_eval_config.useSparseInference());
 
     // TODO(Nicholas): add option for thresholding (wayfair use case)
     return output;
@@ -90,12 +97,14 @@ class ModelPipeline {
         _dataset_factory->featurizeInputBatch(samples);
 
     BoltBatch outputs = _model->predictSingleBatch(
-        std::move(input_batches), _config.useSparseInference());
+        std::move(input_batches), _train_eval_config.useSparseInference());
 
     return outputs;
   }
 
-  uint32_t defaultBatchSize() const { return _config.defaultBatchSize(); }
+  uint32_t defaultBatchSize() const {
+    return _train_eval_config.defaultBatchSize();
+  }
 
  private:
   void trainInMemory(deployment_config::DatasetLoaderPtr& dataset,
@@ -103,7 +112,7 @@ class ModelPipeline {
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
-    if (_config.useSparseInference() && epochs > 1) {
+    if (_train_eval_config.useSparseInference() && epochs > 1) {
       bolt::TrainConfig train_cfg_initial =
           getTrainConfig(learning_rate, /* epochs= */ 1);
 
@@ -121,7 +130,7 @@ class ModelPipeline {
   void trainOnStream(deployment_config::DatasetLoaderPtr& dataset,
                      float learning_rate, uint32_t epochs,
                      uint32_t max_in_memory_batches) {
-    if (_config.useSparseInference() && epochs > 1) {
+    if (_train_eval_config.useSparseInference() && epochs > 1) {
       trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
@@ -152,17 +161,19 @@ class ModelPipeline {
     bolt::TrainConfig train_config =
         bolt::TrainConfig::makeConfig(learning_rate, epochs);
 
-    if (auto hash_table_rebuild = _config.rebuildHashTablesInterval()) {
+    if (auto hash_table_rebuild =
+            _train_eval_config.rebuildHashTablesInterval()) {
       train_config.withRebuildHashTables(hash_table_rebuild.value());
     }
 
-    if (auto reconstruct_hash_fn = _config.reconstructHashFunctionsInterval()) {
+    if (auto reconstruct_hash_fn =
+            _train_eval_config.reconstructHashFunctionsInterval()) {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
     return train_config;
   }
 
-  deployment_config::TrainEvalParameters _config;
+  deployment_config::TrainEvalParameters _train_eval_config;
   bolt::BoltGraphPtr _model;
   deployment_config::DatasetLoaderFactoryPtr _dataset_factory;
 };

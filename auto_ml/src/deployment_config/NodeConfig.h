@@ -11,7 +11,7 @@ namespace thirdai::automl::deployment_config {
 
 class PredecessorsMap {
  public:
-  void update(const std::string& name, bolt::NodePtr node) {
+  void insert(const std::string& name, bolt::NodePtr node) {
     if (_discovered_nodes.count(name)) {
       throw std::invalid_argument("Cannot have multiple nodes with the name '" +
                                   name + "' in the model config.");
@@ -19,7 +19,7 @@ class PredecessorsMap {
     _discovered_nodes[name] = std::move(node);
   }
 
-  bolt::NodePtr getNode(const std::string& name) const {
+  bolt::NodePtr get(const std::string& name) const {
     if (!_discovered_nodes.count(name)) {
       throw std::invalid_argument("Cannot find node with name '" + name +
                                   "' in already discovered nodes.");
@@ -94,7 +94,7 @@ class FullyConnectedNodeConfig final : public NodeConfig {
       node = bolt::FullyConnectedNode::makeAutotuned(dim, sparsity, activation);
     }
 
-    node->addPredecessor(possible_predecessors.getNode(_predecessor_name));
+    node->addPredecessor(possible_predecessors.get(_predecessor_name));
 
     return node;
   }

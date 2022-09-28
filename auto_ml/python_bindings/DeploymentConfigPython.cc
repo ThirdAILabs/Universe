@@ -150,10 +150,9 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
            py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt)
       .def("train",
-           py::overload_cast<const std::shared_ptr<dataset::DataLoader>&,
-                             uint32_t, float, std::optional<uint32_t>>(
-               &ModelPipeline::train),
-           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
+           py::overload_cast<const dataset::DataLoaderPtr&, uint32_t, float,
+                             std::optional<uint32_t>>(&ModelPipeline::train),
+           py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
            py::arg("max_in_memory_batches") = std::nullopt)
       .def("evaluate", &evaluateWrapperFilename, py::arg("filename"))
       .def("evaluate", &evaluateWrapperDataLoader, py::arg("data_source"))
@@ -193,7 +192,8 @@ py::object makeUserSpecifiedParameter(const std::string& name,
 
   throw std::invalid_argument("Invalid type '" +
                               py::str(type).cast<std::string>() +
-                              "' passed to UserSpecifiedParameter.");
+                              "' passed to UserSpecifiedParameter. Must be one "
+                              "of bool, int, float, or str.");
 }
 
 py::object evaluateWrapperDataLoader(
@@ -234,22 +234,22 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
   UserInputMap cpp_parameters;
   for (const auto& [k, v] : parameters) {
     if (!py::isinstance<py::str>(k)) {
-      throw std::invalid_argument("Keys or parameters map must be strings.");
+      throw std::invalid_argument("Keys of parameters map must be strings.");
     }
     std::string name = k.cast<std::string>();
 
     if (py::isinstance<py::bool_>(v)) {
       bool value = v.cast<bool>();
-      cpp_parameters[name] = UserParameterInput(value);
+      cpp_parameters.emplace(name, UserParameterInput(value));
     } else if (py::isinstance<py::int_>(v)) {
       uint32_t value = v.cast<uint32_t>();
-      cpp_parameters[name] = UserParameterInput(value);
+      cpp_parameters.emplace(name, UserParameterInput(value));
     } else if (py::isinstance<py::float_>(v)) {
       float value = v.cast<float>();
-      cpp_parameters[name] = UserParameterInput(value);
+      cpp_parameters.emplace(name, UserParameterInput(value));
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
-      cpp_parameters[name] = UserParameterInput(value);
+      cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
       throw std::invalid_argument(
           "Values of parameters map must be bool, int, float, or str.");
@@ -270,9 +270,10 @@ py::object convertInferenceTrackerToNumpy(
   py::object output_handle = py::cast(std::move(output));
 
   py::array_t<float, py::array::c_style | py::array::forcecast>
-      activations_array({num_samples, inference_dim},
-                        {inference_dim * sizeof(float), sizeof(float)},
-                        activations_ptr, output_handle);
+      activations_array(
+          /* shape= */ {num_samples, inference_dim},
+          /* strides= */ {inference_dim * sizeof(float), sizeof(float)},
+          /* ptr= */ activations_ptr, /* base= */ output_handle);
 
   if (!active_neurons_ptr) {
     return std::move(activations_array);
@@ -281,9 +282,10 @@ py::object convertInferenceTrackerToNumpy(
   // See comment above activations_array for the python memory reasons behind
   // passing in active_neuron_handle
   py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
-      active_neurons_array({num_samples, inference_dim},
-                           {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
-                           active_neurons_ptr, output_handle);
+      active_neurons_array(
+          /* shape= */ {num_samples, inference_dim},
+          /* strides= */ {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
+          /* ptr= */ active_neurons_ptr, /* base= */ output_handle);
 
   return py::make_tuple(std::move(activations_array),
                         std::move(active_neurons_array));
@@ -296,8 +298,7 @@ py::object convertBoltVectorToNumpy(const BoltVector& vector) {
             activations_array.mutable_data());
 
   if (vector.isDense()) {
-    // This is not a move on return because we are constructing a py::object.
-    return std::move(activations_array);
+    return py::object(std::move(activations_array));
   }
 
   py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
