@@ -187,64 +187,75 @@ py::module_ createBoltSubmodule(py::module_& module) {
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
-           "Trains a Sequential classifier Model using the data provided in "
-           "train_file"
-           "Arguments:\n"
-           " * train_file: str - The path to the training dataset. The dataset "
-           "has to be a CSV file with a header.\n"
-           " * epochs: int - Number of epochs to train the model.\n"
-           " * learning_rate: float - Learning rate\n"
-           " * metrics (Optional): List[Str] - Metrics to track during "
-           "training. Defaults "
-           "to ['recall@1'] Metrics are currently restricted to any 'recall@k' "
-           "where k is a positive (nonzero) integer.\n"
-           "Example:\n"
-           "```\n"
-           "from thirdai import bolt\n\n"
-           "model = bolt.SequentialClassifier(...)\n"
-           "model.train(\n"
-           "    'train_data.csv',\n"
-           "    epochs=3,\n"
-           "    learning_rate=0.0001,\n"
-           "    metrics=['recall@1', 'recall@10', 'recall@100']\n"
-           ")\n"
-           "```\n")
+           R"pbdoc(  
+    Trains the model using the data provided in train_file.
+
+    Args:
+        train_file (str): The path to the training dataset. The dataset
+            has to be a CSV file with a header.
+        epochs (int): Number of epochs to train the model.
+        learning_rate (float): Learning rate. We recommend a learning 
+            rate of 0.0001 or lower.
+        metrics (List[str]): Metrics to track during training. Defaults to 
+            ["recall@1"]. Metrics are currently restricted to any 'recall@k' 
+            where k is a positive (nonzero) integer.
+
+    Returns:
+        Dict[Str, List[float]]:
+        A dictionary from metric name to a list of the value of that metric 
+        for each epoch (this also always includes an entry for 'epoch_times'
+        measured in seconds). The metrics that are returned are the metrics 
+        passed to the `metrics` parameter.
+    
+    Example:
+        >>> metrics = model.train(
+                train_file="train_file.csv", epochs=3, learning_rate=0.0001, metrics=["recall@1", "recall@10"]
+            )
+        >>> print(metrics)
+        {'epoch_times': [1.7, 3.4, 5.2], 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
+           )pbdoc"
+        )
 #if THIRDAI_EXPOSE_ALL
       .def("summarizeModel", &SequentialClassifier::summarizeModel,
            "Deprecated\n")
 #endif
-      .def("predict", &SequentialClassifier::predict, py::arg("test_file"),
+      .def("evaluate", &SequentialClassifier::predict, py::arg("validation_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
            py::arg("output_file") = std::nullopt,
            py::arg("write_top_k_to_file") = 1,
-           "Predicts the output classes and evaluates the predictions on a "
-           "test dataset. Optionally writes top k predictions to a file if "
-           "output file name is provided. This method cannot be called on an "
-           "untrained model.\n"
-           "Arguments:\n"
-           " * test_file: str - The path to the test dataset. The dataset has "
-           "to be a CSV file with a header.\n"
-           " * metrics (optional): List[str] - Metrics to evaluate the "
-           "predictions. Defaults to ['recall@1']. Metrics are currently "
-           "restricted to any 'recall@k' where k is a positive (nonzero) "
-           "integer.\n"
-           " * output_file (optional): str: An optional path to a file to "
-           "write predictions to. If not provided, predictions will not be "
-           "written to file.\n"
-           " * write_top_k_to_file (optional): int: Number of top predictions "
-           "to write to file per input sample. Defaults to 1.\n"
-           "Example:\n"
-           "```\n"
-           "from thirdai import bolt\n\n"
-           "model = bolt.SequentialClassifier(...)\n"
-           "model.train(...)\n"
-           "model.predict(\n"
-           "    'test_data.csv',\n"
-           "    metrics=['recall@1', 'recall@10', 'recall@100']\n"
-           "    output_file='predictions.txt',\n"
-           "    write_top_k_to_file=10,\n"
-           ")\n"
-           "```\n")
+           R"pbdoc(  
+    Evaluates how well the model predicts output classes on a validation 
+    dataset. Optionally writes top k predictions to a file if output file 
+    name is provided for external evaluation. This method cannot be called 
+    on an untrained model.
+
+    Args:
+        validation_file (str): The path to the validation dataset to 
+            evaluate on. The dataset has to be a CSV file with a header.
+        metrics (List[str]): Metrics to track during training. Defaults to 
+            ["recall@1"]. Metrics are currently restricted to any 'recall@k' 
+            where k is a positive (nonzero) integer.
+        output_file (str): An optional path to a file to write predictions 
+            to. If not provided, predictions will not be written to file.
+        write_top_k_to_file (int): Only relevant if `output_file` is provided. 
+            Number of top predictions to write to file per input sample. 
+            Defaults to 1.
+
+    Returns:
+        Dict[Str, float]:
+        A dictionary from metric name to the value of that metric (this also 
+        always includes an entry for 'test_time' measured in milliseconds). 
+        The metrics that are returned are the metrics passed to the `metrics` 
+        parameter.
+    
+    Example:
+        >>> metrics = model.evaluate(
+                validation_file="validation_file.csv", metrics=["recall@1", "recall@10"], output_file="predictions.txt", write_top_k_to_file=10
+            )
+        >>> print(metrics)
+        {'test_time': 20.0, 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
+           )pbdoc"
+        )
       .def(
           "predict_single", &SequentialClassifier::predictSingle,
           py::arg("input_sample"), py::arg("top_k") = 1,

@@ -73,7 +73,8 @@ class SequentialClassifier {
                /* hashes_per_table= */ 4,
                /* reservoir_size= */ 64)});
       _model->compile(
-          CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
+          CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss(), 
+          /* print_when_done= */ false);
     }
 
     auto [train_data, train_labels] = pipeline.loadInMemory();
