@@ -303,9 +303,14 @@ def set_compressed_weight_gradients(
     compressed_weight_grads,
 ):
     model = wrapped_model.model
-    for layer, compressed_weight_grad in zip(model.nodes(), compressed_weight_grads):
+    nodes_with_weight_gradients = [
+        layer for layer in model.nodes() if hasattr(layer, "weight_gradients")
+    ]
+    for layer, weight_gradient in zip(
+        nodes_with_weight_gradients, compressed_weight_grads
+    ):
         if hasattr(layer, "weight_gradients"):
-            layer.weight_gradients.set(compressed_weight_grad)
+            layer.weight_gradients.set(weight_gradient)
 
 
 def compressed_training(
