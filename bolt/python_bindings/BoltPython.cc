@@ -215,10 +215,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
         {'epoch_times': [1.7, 3.4, 5.2], 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
     
     Notes:
-        * Temporal tracking relationships helps Oracle make better predictions by 
-        taking temporal context into account. For example, Oracle may keep track of 
-        the last few movies that a user has watched to better recommend the next movie.
-        `model.train()` automatically updates Oracle's temporal context.
+        - Temporal tracking relationships helps Oracle make better predictions by 
+          taking temporal context into account. For example, Oracle may keep track of 
+          the last few movies that a user has watched to better recommend the next movie.
+          `model.train()` automatically updates Oracle's temporal context.
            )pbdoc"
         )
 #if THIRDAI_EXPOSE_ALL
@@ -262,10 +262,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
         {'test_time': 20.0, 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
     
     Notes: 
-        * Temporal tracking relationships helps Oracle make better predictions by 
-        taking temporal context into account. For example, Oracle may keep track of 
-        the last few movies that a user has watched to better recommend the next movie.
-        `model.evaluate()` automatically updates Oracle's temporal context.
+        - Temporal tracking relationships helps Oracle make better predictions by 
+          taking temporal context into account. For example, Oracle may keep track of 
+          the last few movies that a user has watched to better recommend the next movie.
+          `model.evaluate()` automatically updates Oracle's temporal context.
            )pbdoc"
         )
     
@@ -312,18 +312,18 @@ py::module_ createBoltSubmodule(py::module_& module) {
         [("Gone With The Wind", 0.322), ("Titanic", 0.225), ("Pretty Woman", 0.213)]
     
     Notes: 
-        * Only columns that are known at the time of inference need to be passed to
-        `model.predict()`. For example, notice that while we have a "movie_title" 
-        column in the `data_types` argument, we did not pass it to `model.predict()`. 
-        This is because we do not know the movie title at the time of inference – that 
-        is the target that we are trying to predict after all.
+        - Only columns that are known at the time of inference need to be passed to
+          `model.predict()`. For example, notice that while we have a "movie_title" 
+          column in the `data_types` argument, we did not pass it to `model.predict()`. 
+          This is because we do not know the movie title at the time of inference – that 
+          is the target that we are trying to predict after all.
 
-        * Temporal tracking relationships helps Oracle make better predictions by 
-        taking temporal context into account. For example, Oracle may keep track of 
-        the last few movies that a user has watched to better recommend the next movie. 
-        Thus, Oracle is at its best when its internal temporal context gets updated with
-        new true samples. `model.predict()` does not update Oracle's temporal context.
-        To do this, we need to use `model.index()`. Read about `model.index()` for details.
+        - Temporal tracking relationships helps Oracle make better predictions by 
+          taking temporal context into account. For example, Oracle may keep track of 
+          the last few movies that a user has watched to better recommend the next movie. 
+          Thus, Oracle is at its best when its internal temporal context gets updated with
+          new true samples. `model.predict()` does not update Oracle's temporal context.
+          To do this, we need to use `model.index()`. Read about `model.index()` for details.
            )pbdoc"
         )
       .def(
@@ -389,21 +389,19 @@ py::module_ createBoltSubmodule(py::module_& module) {
         "Previously seen 'Home Alone 1'"
     
     Notes: 
-        * The `column_name` field of the `Explanation` object is irrelevant in this case
-        since `model.explain()` uses column names.
-
-        * Only columns that are known at the time of inference need to be passed to
-        `model.explain()`. For example, notice that while we have a "movie_title" 
-        column in the `data_types` argument, we did not pass it to `model.explain()`. 
-        This is because we do not know the movie title at the time of inference – that 
-        is the target that we are trying to predict after all.
-
-        * Temporal tracking relationships helps Oracle make better predictions by 
-        taking temporal context into account. For example, Oracle may keep track of 
-        the last few movies that a user has watched to better recommend the next movie. 
-        Thus, Oracle is at its best when its internal temporal context gets updated with
-        new true samples. `model.explain()` does not update Oracle's temporal context.
-        To do this, we need to use `model.index()`. Read about `model.index()` for details.
+        - The `column_name` field of the `Explanation` object is irrelevant in this case
+          since `model.explain()` uses column names.
+        - Only columns that are known at the time of inference need to be passed to
+          `model.explain()`. For example, notice that while we have a "movie_title" 
+          column in the `data_types` argument, we did not pass it to `model.explain()`. 
+          This is because we do not know the movie title at the time of inference – that 
+          is the target that we are trying to predict after all.
+        - Temporal tracking relationships helps Oracle make better predictions by 
+          taking temporal context into account. For example, Oracle may keep track of 
+          the last few movies that a user has watched to better recommend the next movie. 
+          Thus, Oracle is at its best when its internal temporal context gets updated with
+          new true samples. `model.explain()` does not update Oracle's temporal context.
+          To do this, we need to use `model.index()`. Read about `model.index()` for details.
            )pbdoc"
         )
       .def(
