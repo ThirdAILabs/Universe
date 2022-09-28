@@ -114,7 +114,9 @@ class SwitchNode final : public Node,
   }
 
   void enableDistributedTraining() final {
-    // NOOP since the Switch node doesn't have any paramters
+    for (const auto& fc_node : _layers) {
+      fc_node->enableDistributedTraining();
+    }
   }
 
  private:

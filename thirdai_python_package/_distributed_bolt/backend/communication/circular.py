@@ -47,11 +47,11 @@ class Circular:
 
             self.partitions.append(partition_start_end_list)
 
-    def accumulate_batch_gradient(self, batch_no: int):
+    def compute_and_save_batch_gradients(self, batch_no: int):
         """
-        This functions calls the API 'accumulate_batch_gradient',
+        This functions calls the API 'compute_and_save_batch_gradients',
         which calculates the gradients for the network managed by
-        this particular worker. The accumulate_batch_gradient trains
+        this particular worker. The compute_and_save_batch_gradients trains
         the network and calculates the gradient for the particular
         training batch with batch no. batch_no and with loss function
         specified in the config.
@@ -63,7 +63,7 @@ class Circular:
         :param batch_no: training batch to calculate gradients on
         :type batch_no: int
         """
-        self.model.accumulate_batch_gradient(batch_no)
+        self.model.compute_and_save_batch_gradients(batch_no)
 
         self.partitions = []
         self.gradients = get_gradients(self.model)

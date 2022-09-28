@@ -561,8 +561,8 @@ That's all for now, folks! More docs coming soon :)
                     dataset::BoltDatasetPtr, TrainConfig>(),
            py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
            py::arg("train_config"))
-      .def("accumulate_batch_gradient",
-           &DistributedTrainingWrapper::accumulateBatchGradient,
+      .def("compute_and_save_batch_gradients",
+           &DistributedTrainingWrapper::computeAndSaveBatchGradients,
            py::arg("batch_idx"))
       .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
       .def("finish_training", &DistributedTrainingWrapper::finishTraining)

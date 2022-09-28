@@ -46,14 +46,14 @@ class Trainer:
         :param batch_id: Batch number to train on
         :type batch_id: int
         """
-        self._accumulate_batch_gradient(batch_id)
+        self._compute_and_save_batch_gradients(batch_id)
         self._communicate()
         self._update_parameters()
         self._log_training(batch_id, epoch_id)
 
-    def _accumulate_batch_gradient(self, batch_no):
+    def _compute_and_save_batch_gradients(self, batch_no):
         """
-        Call accumulate_batch_gradient function on each of the worker
+        Call compute_and_save_batch_gradients function on each of the worker
 
         :param batch_no: Batch Id for this particular training
         :type batch_no: Integer
@@ -61,7 +61,7 @@ class Trainer:
         start_calculating_gradients_time = time.time()
         ray.get(
             [
-                worker.accumulate_batch_gradient.remote(batch_no)
+                worker.compute_and_save_batch_gradients.remote(batch_no)
                 for worker in self.workers
             ]
         )
