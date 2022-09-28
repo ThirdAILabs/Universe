@@ -1,13 +1,16 @@
 #pragma once
 
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <dataset/src/DataLoader.h>
+#include <exceptions/src/Exceptions.h>
 #include <limits>
+#include <memory>
 #include <utility>
 
 namespace thirdai::automl {
@@ -21,16 +24,22 @@ namespace thirdai::automl {
  */
 class ModelPipeline {
  public:
-  ModelPipeline(const deployment_config::DeploymentConfigPtr& config,
-                const std::unordered_map<std::string,
-                                         deployment_config::UserParameterInput>&
-                    user_specified_parameters)
-      : _train_eval_config(config->parameters()) {
-    auto [dataset_state, model] =
+  ModelPipeline(deployment_config::DatasetLoaderFactoryPtr dataset_factory,
+                bolt::BoltGraphPtr model,
+                deployment_config::TrainEvalParameters train_eval_parameters)
+      : _dataset_factory(std::move(dataset_factory)),
+        _model(std::move(model)),
+        _train_eval_config(std::move(train_eval_parameters)) {}
+
+  static auto make(const deployment_config::DeploymentConfigPtr& config,
+                   const std::unordered_map<
+                       std::string, deployment_config::UserParameterInput>&
+                       user_specified_parameters) {
+    auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
 
-    _model = std::move(model);
-    _dataset_factory = std::move(dataset_state);
+    return ModelPipeline(std::move(dataset_factory), std::move(model),
+                         config->train_eval_parameters());
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
@@ -172,9 +181,9 @@ class ModelPipeline {
     return train_config;
   }
 
-  deployment_config::TrainEvalParameters _train_eval_config;
-  bolt::BoltGraphPtr _model;
   deployment_config::DatasetLoaderFactoryPtr _dataset_factory;
+  bolt::BoltGraphPtr _model;
+  deployment_config::TrainEvalParameters _train_eval_config;
 };
 
 }  // namespace thirdai::automl

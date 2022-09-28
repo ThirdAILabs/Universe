@@ -12,7 +12,7 @@
 #include <auto_ml/src/deployment_config/ModelConfig.h>
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
-#include <auto_ml/src/deployment_config/dataset_configs/BasicClassificationDataset.h>
+#include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -113,12 +113,12 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
            py::arg("use_pairgrams"), py::arg("range"))
       .def(py::init<bool>(), py::arg("use_pairgrams"));
 
-  py::class_<DatasetConfig, DatasetConfigPtr>(submodule,  // NOLINT
-                                              "DatasetConfig");
+  py::class_<DatasetLoaderFactoryConfig,  // NOLINT
+             DatasetLoaderFactoryConfigPtr>(submodule, "DatasetConfig");
 
-  py::class_<BasicClassificationDatasetFactoryConfig, DatasetConfig,
-             std::shared_ptr<BasicClassificationDatasetFactoryConfig>>(
-      submodule, "BasicClassificationDatasetConfig")
+  py::class_<SingleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
+             std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
+      submodule, "SingleBlockDatasetFactory")
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
                     HyperParameterPtr<std::string>>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
@@ -134,7 +134,8 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
-      .def(py::init<DatasetConfigPtr, ModelConfigPtr, TrainEvalParameters>(),
+      .def(py::init<DatasetLoaderFactoryConfigPtr, ModelConfigPtr,
+                    TrainEvalParameters>(),
            py::arg("dataset_config"), py::arg("model_config"),
            py::arg("train_eval_parameters"));
 
@@ -254,7 +255,7 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
     }
   }
 
-  return ModelPipeline(config, cpp_parameters);
+  return ModelPipeline::make(config, cpp_parameters);
 }
 
 py::object convertInferenceTrackerToNumpy(

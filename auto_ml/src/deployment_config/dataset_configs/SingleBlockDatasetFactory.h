@@ -10,12 +10,12 @@
 
 namespace thirdai::automl::deployment_config {
 
-class BasicClassificationDatasetFactory final : public DatasetLoaderFactory {
+class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
  public:
-  BasicClassificationDatasetFactory(dataset::BlockPtr data_block,
-                                    dataset::BlockPtr unlabeled_data_block,
-                                    dataset::BlockPtr label_block, bool shuffle,
-                                    char delimiter)
+  SingleBlockDatasetFactory(dataset::BlockPtr data_block,
+                            dataset::BlockPtr unlabeled_data_block,
+                            dataset::BlockPtr label_block, bool shuffle,
+                            char delimiter)
       : _labeled_batch_processor(
             std::make_shared<dataset::GenericBatchProcessor>(
                 std::vector<dataset::BlockPtr>{std::move(data_block)},
@@ -67,11 +67,13 @@ class BasicClassificationDatasetFactory final : public DatasetLoaderFactory {
   bool _shuffle;
 };
 
-class BasicClassificationDatasetFactoryConfig final : public DatasetConfig {
+class SingleBlockDatasetFactoryConfig final
+    : public DatasetLoaderFactoryConfig {
  public:
-  BasicClassificationDatasetFactoryConfig(
-      BlockConfigPtr data_block, BlockConfigPtr label_block,
-      HyperParameterPtr<bool> shuffle, HyperParameterPtr<std::string> delimiter)
+  SingleBlockDatasetFactoryConfig(BlockConfigPtr data_block,
+                                  BlockConfigPtr label_block,
+                                  HyperParameterPtr<bool> shuffle,
+                                  HyperParameterPtr<std::string> delimiter)
       : _data_block(std::move(data_block)),
         _label_block(std::move(label_block)),
         _shuffle(std::move(shuffle)),
@@ -98,9 +100,11 @@ class BasicClassificationDatasetFactoryConfig final : public DatasetConfig {
           delimiter + "'.");
     }
 
-    return std::make_unique<BasicClassificationDatasetFactory>(
-        data_block, unlabeled_data_block, label_block, shuffle,
-        delimiter.at(0));
+    return std::make_unique<SingleBlockDatasetFactory>(
+        /* data_block= */ data_block,
+        /* unlabeled_data_block= */ unlabeled_data_block,
+        /* label_block=*/label_block, /* shuffle= */ shuffle,
+        /* delimiter= */ delimiter.at(0));
   }
 
  private:

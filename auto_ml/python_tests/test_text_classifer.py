@@ -62,7 +62,7 @@ def test_text_classifer():
         loss=bolt.CategoricalCrossEntropyLoss(),
     )
 
-    dataset_config = dc.BasicClassificationDatasetConfig(
+    dataset_config = dc.SingleBlockDatasetFactory(
         data_block=dc.TextBlockConfig(use_pairgrams=True),
         label_block=dc.NumericalCategoricalBlockConfig(
             n_classes=dc.UserSpecifiedParameter("output_dim", type=int),
@@ -95,6 +95,7 @@ def test_text_classifer():
         filename=TRAIN_FILE,
         epochs=5,
         learning_rate=0.01,
+        max_in_memory_batches=12
     )
 
     logits = model.evaluate(filename=TEST_FILE)

@@ -54,10 +54,12 @@ class GenericDatasetLoader final : public DatasetLoader {
 
   std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
       uint32_t max_in_memory_batches) final {
-    (void)max_in_memory_batches;
-    // TODO(Nicholas, Geordie): add method to load N batches in
-    // StreamingGenericDatasetLoader
-    auto [data, labels] = _dataset.loadInMemory();
+    auto datasets = _dataset.loadInMemoryWithMaxBatches(max_in_memory_batches);
+    if (!datasets) {
+      return std::nullopt;
+    }
+
+    auto& [data, labels] = datasets.value();
 
     return std::make_optional<std::pair<InputDatasets, LabelDataset>>(
         InputDatasets{data}, labels);
@@ -95,14 +97,15 @@ class DatasetLoaderFactory {
 
 using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
 
-class DatasetConfig {
+class DatasetLoaderFactoryConfig {
  public:
   virtual DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const = 0;
 
-  virtual ~DatasetConfig() = default;
+  virtual ~DatasetLoaderFactoryConfig() = default;
 };
 
-using DatasetConfigPtr = std::shared_ptr<DatasetConfig>;
+using DatasetLoaderFactoryConfigPtr =
+    std::shared_ptr<DatasetLoaderFactoryConfig>;
 
 }  // namespace thirdai::automl::deployment_config

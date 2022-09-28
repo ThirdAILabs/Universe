@@ -4,66 +4,59 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <variant>
 
 namespace thirdai::automl::deployment_config {
 
 class UserParameterInput {
  public:
-  explicit UserParameterInput(bool bool_val)
-      : _bool_param(bool_val), _type(ParameterType::Boolean) {}
+  explicit UserParameterInput(bool bool_val) : _value(bool_val) {}
 
-  explicit UserParameterInput(uint32_t int_val)
-      : _int_param(int_val), _type(ParameterType::Integer) {}
+  explicit UserParameterInput(uint32_t int_val) : _value(int_val) {}
 
-  explicit UserParameterInput(float float_val)
-      : _float_param(float_val), _type(ParameterType::Float) {}
+  explicit UserParameterInput(float float_val) : _value(float_val) {}
 
   explicit UserParameterInput(std::string str_val)
-      : _str_param(std::move(str_val)), _type(ParameterType::String) {}
+      : _value(std::move(str_val)) {}
 
-  bool getBooleanParam() const {
-    if (_type != ParameterType::Boolean) {
-      throw std::invalid_argument(
-          "Expected boolean parameter but received other type.");
+  bool resolveBooleanParam(const std::string& param_name) const {
+    try {
+      return std::get<bool>(_value);
+    } catch (const std::bad_variant_access& e) {
+      throw std::invalid_argument("Expected parameter '" + param_name +
+                                  "'to be of type bool.");
     }
-    return _bool_param;
   }
 
-  uint32_t getIntegerParam() const {
-    if (_type != ParameterType::Integer) {
-      throw std::invalid_argument(
-          "Expected integer parameter but received other type.");
+  uint32_t resolveIntegerParam(const std::string& param_name) const {
+    try {
+      return std::get<uint32_t>(_value);
+    } catch (const std::bad_variant_access& e) {
+      throw std::invalid_argument("Expected parameter '" + param_name +
+                                  "'to be of type int.");
     }
-    return _int_param;
   }
 
-  float getFloatParam() const {
-    if (_type != ParameterType::Float) {
-      throw std::invalid_argument(
-          "Expected float parameter but received other type.");
+  float resolveFloatParam(const std::string& param_name) const {
+    try {
+      return std::get<float>(_value);
+    } catch (const std::bad_variant_access& e) {
+      throw std::invalid_argument("Expected parameter '" + param_name +
+                                  "'to be of type float.");
     }
-    return _float_param;
   }
 
-  std::string getStringParam() const {
-    if (_type != ParameterType::String) {
-      throw std::invalid_argument(
-          "Expected string parameter but received other type.");
+  std::string resolveStringParam(const std::string& param_name) const {
+    try {
+      return std::get<std::string>(_value);
+    } catch (const std::bad_variant_access& e) {
+      throw std::invalid_argument("Expected parameter '" + param_name +
+                                  "'to be of type str.");
     }
-    return _str_param;
   }
 
  private:
-  union {
-    bool _bool_param;
-    uint32_t _int_param;
-    float _float_param;
-  };
-  // std::string cannot be in the union since it is not trivially constructible.
-  std::string _str_param;
-
-  enum ParameterType { Boolean, Integer, Float, String };
-  ParameterType _type;
+  std::variant<bool, uint32_t, float, std::string> _value;
 };
 
 using UserInputMap =
@@ -112,8 +105,14 @@ class OptionMappedParameter final : public HyperParameter<T> {
   }
 
   T resolve(const UserInputMap& user_specified_parameters) const final {
-    std::string option =
-        user_specified_parameters.at(_option_name).getStringParam();
+    if (!user_specified_parameters.count(_option_name)) {
+      throw std::invalid_argument("UserSpecifiedParameter '" + _option_name +
+                                  "' not specified by user but is required to "
+                                  "construct ModelPipeline.");
+    }
+
+    std::string option = user_specified_parameters.at(_option_name)
+                             .resolveStringParam(_option_name);
 
     if (!_values.count(option)) {
       throw std::invalid_argument(
@@ -130,9 +129,10 @@ class OptionMappedParameter final : public HyperParameter<T> {
 
 template <typename T>
 class UserSpecifiedParameter final : public HyperParameter<T> {
-  static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, float> ||
-                    std::is_same_v<T, std::string> || std::is_same_v<T, bool>,
-                "User specified parameter must be uint32_t or float.");
+  static_assert(std::is_same_v<T, bool> || std::is_same_v<T, uint32_t> ||
+                    std::is_same_v<T, float> || std::is_same_v<T, std::string>,
+                "User specified parameter must be bool, uint32_t, float, or "
+                "std::string.");
 
  public:
   explicit UserSpecifiedParameter(std::string param_name)
@@ -144,21 +144,26 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
 
   T resolve(const UserInputMap& user_specified_parameters) const final {
     if (!user_specified_parameters.count(_param_name)) {
-      throw std::runtime_error("UserSpecifiedParameter '" + _param_name +
-                               "' not specified by user.");
+      throw std::invalid_argument("UserSpecifiedParameter '" + _param_name +
+                                  "' not specified by user but is required to "
+                                  "construct ModelPipeline.");
     }
 
     if constexpr (std::is_same<T, bool>::value) {
-      return user_specified_parameters.at(_param_name).getBooleanParam();
+      return user_specified_parameters.at(_param_name)
+          .resolveBooleanParam(_param_name);
     }
     if constexpr (std::is_same<T, uint32_t>::value) {
-      return user_specified_parameters.at(_param_name).getIntegerParam();
+      return user_specified_parameters.at(_param_name)
+          .resolveIntegerParam(_param_name);
     }
     if constexpr (std::is_same<T, float>::value) {
-      return user_specified_parameters.at(_param_name).getFloatParam();
+      return user_specified_parameters.at(_param_name)
+          .resolveFloatParam(_param_name);
     }
     if constexpr (std::is_same<T, std::string>::value) {
-      return user_specified_parameters.at(_param_name).getStringParam();
+      return user_specified_parameters.at(_param_name)
+          .resolveStringParam(_param_name);
     }
   }
 
