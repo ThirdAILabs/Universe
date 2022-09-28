@@ -31,11 +31,6 @@ inline std::tuple<BoltVector, BoltVector, BoltVector> processRow(
     unigrams[masked_index] = unknown_token_hash;
   }
 
-  // We are using the hash of the masked word to find its ID because the
-  // chance that two words have the same hash in the range [0, 2^32) are very
-  // small, and by using this hash we avoid having to store all of the words
-  // in the sentence and we can simply do a single pass over it and compute
-  // the hashes.
   std::vector<uint32_t> masked_word_ids(masked_indices.size(), 1);
 
   BoltVector label = BoltVector::makeSparseVector(
