@@ -65,9 +65,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::vector<BoltVector> batch_labels(rows.size());
 
     auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
-    for (auto& block : _input_blocks) {
-      block->prepareForBatch(first_row);
-    }
+    prepareInputBlocksForBatch(first_row);
     for (auto& block : _label_blocks) {
       block->prepareForBatch(first_row);
     }
@@ -123,6 +121,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   uint32_t getInputDim() const { return sumBlockDims(_input_blocks); }
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
+
+  void prepareInputBlocksForBatch(std::vector<std::string_view>& sample) {
+    for (auto& block : _input_blocks) {
+      block->prepareForBatch(sample);
+    }
+  }
 
   std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
                                      BoltVector& vector) {
