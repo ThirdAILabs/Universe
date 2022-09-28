@@ -39,7 +39,6 @@ class NodeConfig {
 
   virtual bolt::NodePtr createNode(
       const PredecessorsMap& possible_predecessors,
-      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~NodeConfig() = default;
@@ -76,17 +75,16 @@ class FullyConnectedNodeConfig final : public NodeConfig {
 
   bolt::NodePtr createNode(
       const PredecessorsMap& possible_predecessors,
-      const std::optional<std::string>& option,
+
       const UserInputMap& user_specified_parameters) const final {
-    uint32_t dim = _dim->resolve(option, user_specified_parameters);
-    float sparsity = _sparsity->resolve(option, user_specified_parameters);
-    std::string activation =
-        _activation->resolve(option, user_specified_parameters);
+    uint32_t dim = _dim->resolve(user_specified_parameters);
+    float sparsity = _sparsity->resolve(user_specified_parameters);
+    std::string activation = _activation->resolve(user_specified_parameters);
 
     bolt::FullyConnectedNodePtr node;
     if (_sampling_config) {
       bolt::SamplingConfigPtr sampling_config =
-          (*_sampling_config)->resolve(option, user_specified_parameters);
+          (*_sampling_config)->resolve(user_specified_parameters);
 
       node = bolt::FullyConnectedNode::make(dim, sparsity, activation,
                                             sampling_config);

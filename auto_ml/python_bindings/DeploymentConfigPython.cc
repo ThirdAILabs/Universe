@@ -61,11 +61,11 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   defConstantParameter<std::string>(submodule);
   defConstantParameter<bolt::SamplingConfigPtr>(submodule);
 
-  defOptionParameter<bool>(submodule);
-  defOptionParameter<uint32_t>(submodule);
-  defOptionParameter<float>(submodule);
-  defOptionParameter<std::string>(submodule);
-  defOptionParameter<bolt::SamplingConfigPtr>(submodule);
+  defOptionMappedParameter<bool>(submodule);
+  defOptionMappedParameter<uint32_t>(submodule);
+  defOptionMappedParameter<float>(submodule);
+  defOptionMappedParameter<std::string>(submodule);
+  defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"));
@@ -134,14 +134,13 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
-      .def(py::init<DatasetConfigPtr, ModelConfigPtr, TrainEvalParameters,
-                    std::vector<std::string>>(),
+      .def(py::init<DatasetConfigPtr, ModelConfigPtr, TrainEvalParameters>(),
            py::arg("dataset_config"), py::arg("model_config"),
-           py::arg("train_eval_parameters"), py::arg("available_options"));
+           py::arg("train_eval_parameters"));
 
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
-           py::arg("size") = std::nullopt, py::arg("parameters") = py::none())
+           py::arg("parameters") = py::none())
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
                              std::optional<uint32_t>, std::optional<uint32_t>>(
@@ -167,9 +166,9 @@ void defConstantParameter(py::module_& submodule) {
 }
 
 template <typename T>
-void defOptionParameter(py::module_& submodule) {
-  submodule.def("OptionParameter", &OptionParameter<T>::make,
-                py::arg("values").noconvert());
+void defOptionMappedParameter(py::module_& submodule) {
+  submodule.def("OptionMappedParameter", &OptionMappedParameter<T>::make,
+                py::arg("option_name"), py::arg("values").noconvert());
 }
 
 py::object makeUserSpecifiedParameter(const std::string& name,
@@ -229,7 +228,6 @@ py::list predictBatchWrapper(ModelPipeline& model,
 }
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
-                             const std::optional<std::string>& option,
                              const py::dict& parameters) {
   UserInputMap cpp_parameters;
   for (const auto& [k, v] : parameters) {
@@ -256,7 +254,7 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
     }
   }
 
-  return ModelPipeline(config, option, cpp_parameters);
+  return ModelPipeline(config, cpp_parameters);
 }
 
 py::object convertInferenceTrackerToNumpy(

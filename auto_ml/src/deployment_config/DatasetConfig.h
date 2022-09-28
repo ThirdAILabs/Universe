@@ -98,7 +98,6 @@ using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
 class DatasetConfig {
  public:
   virtual DatasetLoaderFactoryPtr createDatasetState(
-      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~DatasetConfig() = default;

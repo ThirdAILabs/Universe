@@ -12,8 +12,7 @@ namespace thirdai::automl::deployment_config {
 class BlockConfig {
  public:
   virtual dataset::BlockPtr getBlock(
-      uint32_t column, const std::optional<std::string>& option,
-      const UserInputMap& user_specified_parameters) const = 0;
+      uint32_t column, const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~BlockConfig() = default;
 };
@@ -27,11 +26,10 @@ class NumericalCategoricalBlockConfig final : public BlockConfig {
       : _n_classes(std::move(n_classes)), _delimiter(std::move(delimiter)) {}
 
   dataset::BlockPtr getBlock(
-      uint32_t column, const std::optional<std::string>& option,
+      uint32_t column,
       const UserInputMap& user_specified_parameters) const final {
-    uint32_t n_classes = _n_classes->resolve(option, user_specified_parameters);
-    std::string delimiter =
-        _delimiter->resolve(option, user_specified_parameters);
+    uint32_t n_classes = _n_classes->resolve(user_specified_parameters);
+    std::string delimiter = _delimiter->resolve(user_specified_parameters);
     if (delimiter.size() != 1) {
       throw std::invalid_argument(
           "Expected delimiter to be a single character but recieved: '" +
@@ -53,9 +51,9 @@ class DenseArrayBlockConfig final : public BlockConfig {
       : _dim(std::move(dim)) {}
 
   dataset::BlockPtr getBlock(
-      uint32_t column, const std::optional<std::string>& option,
+      uint32_t column,
       const UserInputMap& user_specified_parameters) const final {
-    uint32_t dim = _dim->resolve(option, user_specified_parameters);
+    uint32_t dim = _dim->resolve(user_specified_parameters);
 
     return dataset::DenseArrayBlock::make(column, dim);
   }
@@ -75,9 +73,9 @@ class TextBlockConfig final : public BlockConfig {
             dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)) {}
 
   dataset::BlockPtr getBlock(
-      uint32_t column, const std::optional<std::string>& option,
+      uint32_t column,
       const UserInputMap& user_specified_parameters) const final {
-    uint32_t range = _range->resolve(option, user_specified_parameters);
+    uint32_t range = _range->resolve(user_specified_parameters);
 
     if (_use_pairgrams) {
       return dataset::PairGramTextBlock::make(column, range);

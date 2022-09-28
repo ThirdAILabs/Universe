@@ -47,7 +47,7 @@ def test_text_classifer():
         nodes=[
             dc.FullyConnectedNodeConfig(
                 name="hidden",
-                dim=dc.OptionParameter({"small": 100, "large": 200}),
+                dim=dc.OptionMappedParameter(option_name="size", values={"small": 100, "large": 200}),
                 activation=dc.ConstantParameter("relu"),
                 predecessor="input",
             ),
@@ -84,13 +84,11 @@ def test_text_classifer():
         dataset_config=dataset_config,
         model_config=model_config,
         train_eval_parameters=train_eval_params,
-        available_options=["small", "large"],
     )
 
     model = dc.ModelPipeline(
         deployment_config=config,
-        size="large",
-        parameters={"output_dim": num_classes, "delimiter": ","},
+        parameters={"size":"large", "output_dim": num_classes, "delimiter": ","},
     )
 
     model.train(

@@ -34,7 +34,6 @@ class ModelConfig {
 
   bolt::BoltGraphPtr createModel(
       std::vector<bolt::InputPtr> inputs,
-      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const {
     if (_input_names.size() != inputs.size()) {
       throw std::invalid_argument(
@@ -48,13 +47,13 @@ class ModelConfig {
     }
 
     for (uint32_t i = 0; i < _nodes.size() - 1; i++) {
-      auto node = _nodes[i]->createNode(predecessors, option,
-                                        user_specified_parameters);
+      auto node =
+          _nodes[i]->createNode(predecessors, user_specified_parameters);
       predecessors.insert(/* name= */ _nodes[i]->name(), /* node= */ node);
     }
 
-    auto output = _nodes.back()->createNode(predecessors, option,
-                                            user_specified_parameters);
+    auto output =
+        _nodes.back()->createNode(predecessors, user_specified_parameters);
 
     auto model = std::make_shared<bolt::BoltGraph>(inputs, output);
 

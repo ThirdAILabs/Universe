@@ -72,8 +72,7 @@ using UserInputMap =
 template <typename T>
 class HyperParameter {
  public:
-  virtual T resolve(const std::optional<std::string>& option,
-                    const UserInputMap& user_specified_parameters) const = 0;
+  virtual T resolve(const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~HyperParameter() = default;
 };
@@ -90,9 +89,7 @@ class ConstantParameter final : public HyperParameter<T> {
     return std::make_shared<ConstantParameter<T>>(std::move(value));
   }
 
-  T resolve(const std::optional<std::string>& option,
-            const UserInputMap& user_specified_parameters) const final {
-    (void)option;
+  T resolve(const UserInputMap& user_specified_parameters) const final {
     (void)user_specified_parameters;
     return _value;
   }
@@ -102,33 +99,32 @@ class ConstantParameter final : public HyperParameter<T> {
 };
 
 template <typename T>
-class OptionParameter final : public HyperParameter<T> {
+class OptionMappedParameter final : public HyperParameter<T> {
  public:
-  explicit OptionParameter(std::unordered_map<std::string, T> values)
-      : _values(std::move(values)) {}
+  OptionMappedParameter(std::string option_name,
+                        std::unordered_map<std::string, T> values)
+      : _option_name(std::move(option_name)), _values(std::move(values)) {}
 
-  static HyperParameterPtr<T> make(std::unordered_map<std::string, T> values) {
-    return std::make_shared<OptionParameter<T>>(std::move(values));
+  static HyperParameterPtr<T> make(std::string option_name,
+                                   std::unordered_map<std::string, T> values) {
+    return std::make_shared<OptionMappedParameter<T>>(std::move(option_name),
+                                                      std::move(values));
   }
 
-  T resolve(const std::optional<std::string>& option,
-            const UserInputMap& user_specified_parameters) const final {
-    (void)user_specified_parameters;
-    if (!option) {
+  T resolve(const UserInputMap& user_specified_parameters) const final {
+    std::string option =
+        user_specified_parameters.at(_option_name).getStringParam();
+
+    if (!_values.count(option)) {
       throw std::invalid_argument(
-          "Must specify an option to resolve parameters in config.");
+          "OptionParameter did not contain value for option '" + option + "'.");
     }
 
-    if (!_values.count(option.value())) {
-      throw std::invalid_argument(
-          "OptionParameter did not contain value for option '" +
-          option.value() + "'.");
-    }
-
-    return _values.at(option.value());
+    return _values.at(option);
   }
 
  private:
+  std::string _option_name;
   std::unordered_map<std::string, T> _values;
 };
 
@@ -146,9 +142,7 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
     return std::make_shared<UserSpecifiedParameter<T>>(std::move(param_name));
   }
 
-  T resolve(const std::optional<std::string>& option,
-            const UserInputMap& user_specified_parameters) const final {
-    (void)option;
+  T resolve(const UserInputMap& user_specified_parameters) const final {
     if (!user_specified_parameters.count(_param_name)) {
       throw std::runtime_error("UserSpecifiedParameter '" + _param_name +
                                "' not specified by user.");

@@ -22,13 +22,12 @@ namespace thirdai::automl {
 class ModelPipeline {
  public:
   ModelPipeline(const deployment_config::DeploymentConfigPtr& config,
-                const std::optional<std::string>& option,
                 const std::unordered_map<std::string,
                                          deployment_config::UserParameterInput>&
                     user_specified_parameters)
       : _train_eval_config(config->parameters()) {
     auto [dataset_state, model] =
-        config->createDataLoaderAndModel(option, user_specified_parameters);
+        config->createDataLoaderAndModel(user_specified_parameters);
 
     _model = std::move(model);
     _dataset_factory = std::move(dataset_state);

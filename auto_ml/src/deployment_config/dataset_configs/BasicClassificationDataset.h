@@ -78,22 +78,20 @@ class BasicClassificationDatasetFactoryConfig final : public DatasetConfig {
         _delimiter(std::move(delimiter)) {}
 
   DatasetLoaderFactoryPtr createDatasetState(
-      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const final {
     dataset::BlockPtr label_block = _label_block->getBlock(
-        /* column= */ 0, option, user_specified_parameters);
+        /* column= */ 0, user_specified_parameters);
 
     uint32_t data_start_col = label_block->expectedNumColumns();
 
     dataset::BlockPtr data_block = _data_block->getBlock(
-        /* column= */ data_start_col, option, user_specified_parameters);
+        /* column= */ data_start_col, user_specified_parameters);
 
     dataset::BlockPtr unlabeled_data_block = _data_block->getBlock(
-        /* column= */ 0, option, user_specified_parameters);
+        /* column= */ 0, user_specified_parameters);
 
-    bool shuffle = _shuffle->resolve(option, user_specified_parameters);
-    std::string delimiter =
-        _delimiter->resolve(option, user_specified_parameters);
+    bool shuffle = _shuffle->resolve(user_specified_parameters);
+    std::string delimiter = _delimiter->resolve(user_specified_parameters);
     if (delimiter.size() != 1) {
       throw std::invalid_argument(
           "Expected delimiter to be a single character but recieved: '" +
