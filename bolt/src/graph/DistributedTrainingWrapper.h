@@ -15,10 +15,10 @@ namespace thirdai::bolt {
 
 class DistributedTrainingWrapper {
  public:
-  DistributedTrainingWrapper(
-      BoltGraphPtr bolt_graph,
-      const std::vector<dataset::BoltDatasetPtr>& train_data,
-      const dataset::BoltDatasetPtr& train_labels, TrainConfig train_config)
+  DistributedTrainingWrapper(BoltGraphPtr bolt_graph,
+                             const dataset::BoltDatasetList& train_data,
+                             const dataset::BoltDatasetPtr& train_labels,
+                             TrainConfig train_config)
       : _bolt_graph(std::move(bolt_graph)),
         _train_context(DatasetContext(train_data, train_labels)),
         _train_config(std::move(train_config)),
@@ -54,7 +54,6 @@ class DistributedTrainingWrapper {
   BoltGraphPtr _bolt_graph;
   DatasetContext _train_context;
   TrainConfig _train_config;
-  // TODO(Josh): I think this is unused
   MetricAggregator _metric_aggregator;
 };
 

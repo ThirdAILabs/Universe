@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Datasets.h>

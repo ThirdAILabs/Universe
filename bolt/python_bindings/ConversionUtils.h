@@ -218,8 +218,8 @@ denseBoltVectorToNumpy(const BoltVector& output) {
 
 // This struct is used to wrap a char* into a stream, see
 // https://stackoverflow.com/questions/7781898/get-an-istream-from-a-char
-struct membuf : std::streambuf {
-  membuf(char* begin, char* end) { this->setg(begin, begin, end); }
+struct Membuf : std::streambuf {
+  Membuf(char* begin, char* end) { this->setg(begin, begin, end); }
 };
 
 // This function defines the pickle method for a type, assuming that type
@@ -247,7 +247,7 @@ pybind11::detail::initimpl::pickle_factory<
       [](const py::bytes& binary_model_python) {  // __setstate__
         py::buffer_info info(py::buffer(binary_model_python).request());
         char* binary_model = reinterpret_cast<char*>(info.ptr);
-        membuf sbuf(binary_model, binary_model + info.size);
+        Membuf sbuf(binary_model, binary_model + info.size);
         std::istream in(&sbuf);
         return SERIALIZE_T::load_stream(in);
       });
