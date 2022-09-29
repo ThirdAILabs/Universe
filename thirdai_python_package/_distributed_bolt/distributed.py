@@ -55,6 +55,12 @@ class RayTrainingClusterConfig:
         runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
 
         ray.init(address=cluster_address, runtime_env=runtime_env)
+        
+        if self.communication_type == "gloo":
+            fileStore_path = f"{ray.worker._global_node.get_session_dir_path()}" + "/collective/gloo/rendezvous"
+            import os
+            os.makedirs(fileStore_path)
+        
         if not ray.is_initialized():
             raise Exception(
                 textwrap.dedent(

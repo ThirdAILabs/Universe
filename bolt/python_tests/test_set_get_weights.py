@@ -59,7 +59,8 @@ def test_dag_get_set_weights():
     output_layer_weights = output_layer.weights.get()
     output_layer_biases = output_layer.biases.get()
 
-    untrained_model.get_layer("fc_1").weights.set(hidden_layer_weights)
+    
+    untrained_model.get_layer("fc_1").weights.set(np.array(hidden_layer_weights, dtype=np.float32))
     untrained_model.get_layer("fc_1").biases.set(hidden_layer_biases)
 
     untrained_model.get_layer("fc_2").weights.set(output_layer_weights)
@@ -107,3 +108,4 @@ def test_bad_numpy_array_dim():
         match=f".*Expected {hidden_layer_biases.ndim}D numpy array but received {padded_weights.ndim}D numpy array",
     ):
         model.get_layer("fc_1").biases.set(padded_weights)
+test_dag_get_set_weights()

@@ -100,6 +100,12 @@ class PrimaryWorker(Worker):
         for gradient_id in range(len(self.gradient_averages)):
             self.gradient_averages[gradient_id] /= len(workers)
 
+    def run_gloo_cluster_communication(self, workers):
+        num_workers = len(workers)
+        ray.get([worker.all_reduce_gradients.remote(num_workers) for worker in workers])
+
+    
+
     def gradients_avg(self):
         """
         This function is called by the workers to get the gradients back from PrimaryWorker.

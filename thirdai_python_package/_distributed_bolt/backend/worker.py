@@ -48,6 +48,9 @@ class Worker:
         self.comm = (
             comm.Circular(self.model, self.id, self.primary_worker, self.num_workers)
             if self.communication_type == "circular"
+            else 
+            comm.GlooBackend(self.model, self.id, self.num_workers)
+            if self.communication_type == "gloo"
             else comm.Linear(self.model, self.id, self.primary_worker)
         )
 
@@ -92,6 +95,9 @@ class Worker:
         :rtype: numpy.ndarray
         """
         return self.comm.receive_array_partitions(update_id)
+
+    def all_reduce_gradients(self, num_workers: int):
+        self.comm.all_reduce_gradients(num_workers)
 
     def compute_and_store_batch_gradients(self, batch_no: int):
         """
