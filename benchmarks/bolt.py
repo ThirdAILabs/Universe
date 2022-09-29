@@ -6,7 +6,7 @@ import pathlib
 import numpy as np
 
 from thirdai import bolt, dataset
-from thirdai import setup_logging
+import thirdai
 
 from utils import (
     start_experiment,
@@ -26,7 +26,7 @@ def main():
         description="Creates, trains, and tests a bolt network on the specified config."
     )
 
-    setup_logging(
+    thirdai.logging.setup(
         log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level
     )
 
