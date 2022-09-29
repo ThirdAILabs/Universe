@@ -1,9 +1,8 @@
 import math
-import os
-import pickle
-
 import numpy as np
 from thirdai._thirdai import bolt, dataset
+import os
+import pickle
 
 
 class Mach:

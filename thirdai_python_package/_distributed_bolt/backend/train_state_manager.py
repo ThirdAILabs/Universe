@@ -1,6 +1,5 @@
-import time
-
 import ray
+import time
 
 
 class TrainStateManager:

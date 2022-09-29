@@ -1,7 +1,8 @@
-import pathlib
 import sys
+import pathlib
 
-from thirdai import bolt, setup_logging
+from thirdai import bolt
+from thirdai import setup_logging
 
 from utils import (
     config_get_required,

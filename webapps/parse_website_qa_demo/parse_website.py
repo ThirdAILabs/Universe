@@ -1,8 +1,7 @@
-import re
 import urllib.request
-from urllib.parse import urljoin, urlparse
-
 from bs4 import BeautifulSoup
+import re
+from urllib.parse import urljoin, urlparse
 
 remove_bad_chars = re.compile("[^a-zA-Z,!?.0-9 ]")
 

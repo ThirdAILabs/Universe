@@ -14,8 +14,8 @@ class EasyQA:
         pass
 
     def index(self, id_passage_pairs):
-        from thirdai.embeddings import DocSearchModel
         from thirdai.search import DocRetrieval
+        from thirdai.embeddings import DocSearchModel
         from tqdm import tqdm
 
         self.embedding_model = DocSearchModel()

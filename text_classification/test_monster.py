@@ -1,5 +1,5 @@
-import pytest
 from cookie_monster import *
+import pytest
 
 pytestmark = [pytest.mark.unit]
 

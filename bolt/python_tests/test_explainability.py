@@ -1,7 +1,6 @@
-import numpy as np
-import pytest
 from thirdai import bolt, dataset
-
+import pytest
+import numpy as np
 from utils import gen_numpy_training_data, get_simple_dag_model
 
 pytestmark = [pytest.mark.unit]

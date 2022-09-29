@@ -1,18 +1,14 @@
 # Add unit and release test markers for all tests in this file
-import platform
-
 import pytest
+import platform
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
-import time
-
-import numpy as np
 import thirdai
-from doc_retrieval_helpers import (
-    get_build_and_run_functions_random,
-    get_build_and_run_functions_restful,
-)
+from doc_retrieval_helpers import get_build_and_run_functions_random
+from doc_retrieval_helpers import get_build_and_run_functions_restful
+import numpy as np
+import time
 
 
 @pytest.mark.unit

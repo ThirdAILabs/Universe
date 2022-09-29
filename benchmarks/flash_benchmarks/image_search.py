@@ -1,12 +1,11 @@
+import numpy as np
+import time
+import thirdai
 import argparse
+import mlflow
 
 # Add the logging folder to the system path
 import sys
-import time
-
-import mlflow
-import numpy as np
-import thirdai
 
 sys.path.insert(1, sys.path[0] + "/../../logging/")
 from mlflow_logger import log_imagesearch_run

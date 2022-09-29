@@ -1,7 +1,5 @@
-from typing import Optional
-
 import ray
-
+from typing import Optional
 from ...utils import get_gradients, set_gradients
 
 

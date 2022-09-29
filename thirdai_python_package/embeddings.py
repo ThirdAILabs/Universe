@@ -1,7 +1,7 @@
 try:
-    import numpy as np
     import torch
     import transformers
+    import numpy as np
 except ImportError as e:
     print(
         "The embeddings package requires the PyTorch, transformers, and numpy "

@@ -5,7 +5,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.integration]
 import numpy as np
 from thirdai import bolt, dataset
 
-from utils import compressed_training
+from utils import (
+    compressed_training,
+)
 
 LEARNING_RATE = 0.002
 ACCURACY_THRESHOLD = 0.8

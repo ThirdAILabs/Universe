@@ -1,7 +1,6 @@
-import time
-
 import thirdai._thirdai.dataset
 from thirdai._thirdai.dataset import *
+import time
 
 __all__ = []
 __all__.extend(dir(thirdai._thirdai.dataset))

@@ -1,5 +1,4 @@
 import pytest
-
 from utils import get_simple_concat_model
 
 

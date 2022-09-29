@@ -1,12 +1,10 @@
+from hashlib import new
+import numpy as np
+from thirdai import bolt, dataset
+import pytest
+import time
 import os
 import shutil
-import time
-from hashlib import new
-
-import numpy as np
-import pytest
-from thirdai import bolt, dataset
-
 
 # Returns data and labels for learning the function f(a) = a, where a is
 # sparse (num_true_labels_per_example number of nonzeros).

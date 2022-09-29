@@ -1,13 +1,12 @@
+from thirdai import bolt
+import pytest
+import datasets
 import os
 import random
-
-import datasets
-import pytest
 from auto_classifier_utils import (
-    check_autoclassifier_predict_correctness,
     compute_accuracy_of_predictions,
+    check_autoclassifier_predict_correctness,
 )
-from thirdai import bolt
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 

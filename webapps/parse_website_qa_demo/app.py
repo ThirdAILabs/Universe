@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, request, render_template
 from parse_website import ParsedWebsite
 from thirdai.search import EasyQA
 

@@ -1,8 +1,7 @@
 # Add a release test marker for all tests in this file (the tests will only
 # work when built in release mode)
-import platform
-
 import pytest
+import platform
 
 pytestmark = [pytest.mark.release]
 

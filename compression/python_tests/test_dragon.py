@@ -5,7 +5,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.integration]
 import numpy as np
 from thirdai import bolt
 
-from utils import build_simple_hidden_layer_model, compressed_training
+from utils import (
+    build_simple_hidden_layer_model,
+    compressed_training,
+)
 
 INPUT_DIM = 10
 HIDDEN_DIM = 10

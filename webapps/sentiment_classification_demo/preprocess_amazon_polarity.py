@@ -1,8 +1,7 @@
-import argparse
 import csv
 import re
-
 import thirdai
+import argparse
 
 
 def preprocess_amazon_polarity(input_file, output_dim, output_file, has_header=True):

@@ -1,11 +1,10 @@
-import argparse
 import time
-
+import argparse
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
-from pytorch_tabnet.tab_model import TabNetClassifier
 from thirdai import bolt
 from xgboost import XGBClassifier
+from pytorch_tabnet.tab_model import TabNetClassifier
 
 
 def compute_accuracy_of_predictions(test_labels, predictions):

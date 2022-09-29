@@ -1,6 +1,5 @@
-import logging
-
 from thirdai._thirdai import bolt, dataset
+import logging
 
 
 def parse_svm_dataset(train_filename, batch_size):

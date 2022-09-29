@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from utils import build_train_and_predict_single_hidden_layer
 
 pytestmark = [pytest.mark.unit]

@@ -1,10 +1,8 @@
 import os
 import platform
 import socket
-from typing import Any, Dict
-
+from typing import Dict, Any
 from thirdai._thirdai.bolt import graph
-
 
 # TODO how can we define this under bolt.graph.callbacks?
 class MlflowCallback(graph.callbacks.Callback):

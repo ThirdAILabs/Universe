@@ -1,5 +1,5 @@
-import os
 import pathlib
+import os
 
 CACHE_DIR = pathlib.Path.home() / ".cache" / "thirdai"
 

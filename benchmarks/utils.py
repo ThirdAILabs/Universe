@@ -1,15 +1,15 @@
 import argparse
+import mlflow
 import os
+import toml
 import platform
+import psutil
 import socket
 import sys
-from typing import Any, Dict
+import numpy as np
 from urllib.request import urlopen
 
-import mlflow
-import numpy as np
-import psutil
-import toml
+from typing import Any, Dict
 from sklearn.datasets import load_svmlight_file
 
 # See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html
