@@ -5,6 +5,7 @@
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <memory>
 #include <stdexcept>
 
 namespace thirdai::bolt::python {
@@ -213,6 +214,43 @@ denseBoltVectorToNumpy(const BoltVector& output) {
       activations_array({output.len}, {sizeof(float)}, activations,
                         activation_handle);
   return activations_array;
+}
+
+// This struct is used to wrap a char* into a stream, see
+// https://stackoverflow.com/questions/7781898/get-an-istream-from-a-char
+struct Membuf : std::streambuf {
+  Membuf(char* begin, char* end) { this->setg(begin, begin, end); }
+};
+
+// This function defines the pickle method for a type, assuming that type
+// has a static load method that takes in an istream and a save method that
+// takes in an ostream.
+// Pybind pickling reference:
+// https://pybind11.readthedocs.io/en/stable/advanced/classes.html#pickling-support
+// py::bytes -> char*:
+// https://github.com/pybind/pybind11/issues/2517
+// char* -> istream:
+// https://stackoverflow.com/questions/7781898/get-an-istream-from-a-char
+template <typename SERIALIZE_T>
+pybind11::detail::initimpl::pickle_factory<
+    std::function<py::bytes(const SERIALIZE_T&)>,
+    std::function<std::shared_ptr<SERIALIZE_T>(
+        py::bytes)>> inline static getPickleFunction() {
+  return py::pickle<std::function<py::bytes(const SERIALIZE_T&)>,
+                    std::function<std::shared_ptr<SERIALIZE_T>(py::bytes)>>(
+      [](const SERIALIZE_T& model) {
+        std::stringstream ss;
+        model.save_stream(ss);
+        std::string binary_model = ss.str();
+        return py::bytes(binary_model);
+      },
+      [](const py::bytes& binary_model_python) {  // __setstate__
+        py::buffer_info info(py::buffer(binary_model_python).request());
+        char* binary_model = reinterpret_cast<char*>(info.ptr);
+        Membuf sbuf(binary_model, binary_model + info.size);
+        std::istream in(&sbuf);
+        return SERIALIZE_T::load_stream(in);
+      });
 }
 
 }  // namespace thirdai::bolt::python

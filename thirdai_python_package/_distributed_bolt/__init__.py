@@ -1,1 +1,1 @@
-from .distributed_fully_connected import FullyConnectedNetwork
+from .distributed import DistributedDataParallel, RayTrainingClusterConfig

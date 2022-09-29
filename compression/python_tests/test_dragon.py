@@ -3,7 +3,7 @@ import pytest
 pytestmark = [pytest.mark.unit, pytest.mark.integration]
 
 import numpy as np
-from thirdai import bolt, dataset
+from thirdai import bolt
 
 from utils import (
     build_simple_hidden_layer_model,
