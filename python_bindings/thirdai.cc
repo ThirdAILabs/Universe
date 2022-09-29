@@ -26,11 +26,12 @@ void createLoggingSubmodule(py::module_& module_) {
   auto logging_submodule = module_.def_submodule("logging");
 
   logging_submodule.def(
-      "setup", &thirdai::logging::setupLogging,
+      "setup", &thirdai::logging::setup,
       py::arg("log_to_stderr") = thirdai::logging::DEFAULT_LOG_TO_STDERR,
       py::arg("path") = thirdai::logging::DEFAULT_LOG_PATH,
       py::arg("level") = thirdai::logging::DEFAULT_LOG_LEVEL,
       py::arg("pattern") = thirdai::logging::DEFAULT_LOG_PATTERN,
+      py::arg("flush_interval") = thirdai::logging::DEFAULT_LOG_FLUSH_INTERVAL,
       R"pbdoc(
         Set up log for thirdai C++ library.
 
@@ -47,6 +48,8 @@ void createLoggingSubmodule(py::module_& module_) {
                https://github.com/gabime/spdlog/wiki/3.-Custom-formatting for using 
                format-strings.
         :type pattern: str
+        :param flush_interval: Interval in seconds at which logs will be flushed while in operation.
+        :type flush_interval: int
         )pbdoc");
 
   logging_submodule.def(
@@ -78,6 +81,10 @@ void createLoggingSubmodule(py::module_& module_) {
       "trace",
       [](const std::string& logline) { thirdai::logging::trace(logline); },
       R"pbdoc(Write to logs with level trace.)pbdoc");
+
+  logging_submodule.def(
+      "flush", []() { thirdai::logging::flush(); },
+      R"pbdoc(Force a flush on the logger.)pbdoc");
 }
 
 // TODO(all): Figure out naming convention for python exposed classes and

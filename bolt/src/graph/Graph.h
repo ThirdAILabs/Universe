@@ -111,6 +111,12 @@ class BoltGraph {
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
 
+  InferenceResult namedPredict(
+      const std::string& label,
+      const std::vector<dataset::BoltDatasetPtr>& test_data,
+      const dataset::BoltDatasetPtr& test_labels,
+      const PredictConfig& predict_config);
+
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
 

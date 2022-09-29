@@ -139,6 +139,11 @@ class TrainConfig {
     return *this;
   }
 
+  TrainConfig& logLossEvery(uint32_t log_loss_every) {
+    _log_loss_every = log_loss_every;
+    return *this;
+  }
+
   std::optional<ValidationContext> getValidationContext() const {
     return _validation_context;
   }
@@ -220,6 +225,8 @@ class TrainConfig {
     return deserialize_into;
   }
 
+  uint32_t log_loss_every() const { return _log_loss_every; }
+
  private:
   // Private constructor for cereal.
   TrainConfig() : TrainConfig(0, 0){};
@@ -232,7 +239,8 @@ class TrainConfig {
         _rebuild_hash_tables(std::nullopt),
         _reconstruct_hash_functions(std::nullopt),
         _callbacks({}),
-        _validation_context(std::nullopt) {}
+        _validation_context(std::nullopt),
+        _log_loss_every(1) {}
 
   friend class cereal::access;
   // We don't serialize the callbacks because they might be arbitrary functions
@@ -257,6 +265,8 @@ class TrainConfig {
   CallbackList _callbacks;
 
   std::optional<ValidationContext> _validation_context;
+
+  uint32_t _log_loss_every;
 };
 
 class TrainState {
