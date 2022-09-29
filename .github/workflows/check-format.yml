@@ -65,4 +65,4 @@ jobs:
           sudo pip3 install isort
       - name: Check isort format
         run: |
-          isort . --check --skip-glob deps --skip _deps
+          isort . --check --profile black --skip-glob deps --skip _deps
