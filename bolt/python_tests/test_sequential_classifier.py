@@ -90,19 +90,19 @@ def test_multiple_explain_returns_same():
         prev_explanations = explanations
 
 
-# def test_predict_returns_sorted_scores():
-#     model = make_simple_sequential_model()
-#     model.train(TRAIN_FILE, 2, 0.01)
-#     top_k = 2
-#     result = model.predict_single(
-#         {"userId": "0", "timestamp": "2022-08-31"}, top_k=top_k
-#     )
-#     assert len(result) == top_k
+def test_predict_returns_sorted_scores():
+    model = make_simple_sequential_model()
+    model.train(TRAIN_FILE, 2, 0.01)
+    top_k = 2
+    result = model.predict_single(
+        {"userId": "0", "timestamp": "2022-08-31"}, top_k=top_k
+    )
+    assert len(result) == top_k
 
-#     prev_score = float("inf")
-#     for prediction, score in result:
-#         assert prev_score > score
-#         prev_score = score
+    prev_score = float("inf")
+    for _, score in result:
+        assert prev_score > score
+        prev_score = score
 
 
 def test_index_changes_explain_and_predict():
@@ -126,7 +126,6 @@ def test_index_changes_explain_and_predict():
     )
 
 
-# TODO this doesnt fail??
 def test_fail_on_relationships_with_no_datetime():
     model = bolt.Oracle(
         data_types={
@@ -137,8 +136,24 @@ def test_fail_on_relationships_with_no_datetime():
         target="movieId",
     )
 
+    write_lines_to_file(
+        TRAIN_FILE,
+        [
+            "userId,movieId",
+            "0,100",
+            "1,100",
+            "1,101",
+            "1,102",
+        ],
+    )
 
-# TODO this doesnt fail??
+    with pytest.raises(
+        ValueError,
+        match=r"There has to be a timestamp column in order to use temporal tracking relationships.",
+    ):
+        model.train(TRAIN_FILE, 1, 0.01)
+
+
 def test_fail_on_multiple_datetime():
     model = bolt.Oracle(
         data_types={
@@ -150,6 +165,21 @@ def test_fail_on_multiple_datetime():
         temporal_tracking_relationships={"userId": ["movieId"]},
         target="movieId",
     )
+    write_lines_to_file(
+        TRAIN_FILE,
+        [
+            "userId,movieId,timestamp,timestamp1",
+            "0,100,2022-08-29,2022-08-29",
+            "1,100,2022-08-30,2022-08-30",
+            "1,101,2022-08-31,2022-08-31",
+            "1,102,2022-09-01,2022-09-01",
+        ],
+    )
+    with pytest.raises(
+        ValueError,
+        match=r"There can only be one timestamp column.",
+    ):
+        model.train(TRAIN_FILE, 1, 0.01)
 
 
 def test_tracking_on_invalid_type_fails():
@@ -167,13 +197,8 @@ def test_tracking_on_invalid_type_fails():
         )
 
 
-# TODO how to specify autotuned temporal
 def test_autotuned_tracking_on_invalid_type_fails():
-    # with pytest.raises(
-    #     ValueError,
-    #     match=r"timestamp is neither numerical nor categorical. Only numerical and categorical columns can be tracked temporally.",
-    # ):
-    bolt.Oracle(
+    model = bolt.Oracle(
         data_types={
             "userId": bolt.types.categorical(n_unique_classes=3),
             "timestamp": bolt.types.date(),
@@ -181,3 +206,8 @@ def test_autotuned_tracking_on_invalid_type_fails():
         temporal_tracking_relationships={"timestamp": ["userId"]},
         target="movieId",
     )
+    with pytest.raises(
+        ValueError,
+        match=r"\[DataType\] Tried to cast non-categorical datatype as a categorical datatype",
+    ):
+        model.train(TRAIN_FILE, 1, 0.01)
