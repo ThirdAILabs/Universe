@@ -66,12 +66,12 @@ class ModelPipeline {
     }
   }
 
-  bolt::InferenceResult evaulate(const std::string& filename) {
+  bolt::InferenceOutputTracker evaulate(const std::string& filename) {
     return evaluate(std::make_shared<dataset::SimpleFileDataLoader>(
         filename, defaultBatchSize()));
   }
 
-  bolt::InferenceResult evaluate(
+  bolt::InferenceOutputTracker evaluate(
       const std::shared_ptr<dataset::DataLoader>& data_source) {
     auto dataset = _dataset_factory->getLabeledDatasetLoader(data_source);
 
@@ -86,9 +86,20 @@ class ModelPipeline {
       predict_cfg.enableSparseInference();
     }
 
-    auto output = _model->predict({data}, {labels}, predict_cfg);
+    auto [_, output] = _model->predict({data}, labels, predict_cfg);
 
-    // TODO(Nicholas): add option for thresholding (wayfair use case)
+    if (auto threshold = _train_eval_config.predictionThreshold()) {
+      uint32_t output_dim = output.numNonzerosInOutput();
+      for (uint32_t i = 0; i < output.numSamples(); i++) {
+        float* activations = output.activationsForSample(i);
+        uint32_t prediction_index = argmax(activations, output_dim);
+
+        if (activations[prediction_index] < threshold.value()) {
+          activations[prediction_index] = threshold.value() + 0.0001;
+        }
+      }
+    }
+
     return output;
   }
 
@@ -98,7 +109,13 @@ class ModelPipeline {
     BoltVector output = _model->predictSingle(
         std::move(inputs), _train_eval_config.useSparseInference());
 
-    // TODO(Nicholas): add option for thresholding (wayfair use case)
+    if (auto threshold = _train_eval_config.predictionThreshold()) {
+      uint32_t prediction_index = argmax(output.activations, output.len);
+      if (output.activations[prediction_index] < threshold.value()) {
+        output.activations[prediction_index] = threshold.value() + 0.0001;
+      }
+    }
+
     return output;
   }
 
@@ -108,6 +125,15 @@ class ModelPipeline {
 
     BoltBatch outputs = _model->predictSingleBatch(
         std::move(input_batches), _train_eval_config.useSparseInference());
+
+    if (auto threshold = _train_eval_config.predictionThreshold()) {
+      for (auto& output : outputs) {
+        uint32_t prediction_index = argmax(output.activations, output.len);
+        if (output.activations[prediction_index] < threshold.value()) {
+          output.activations[prediction_index] = threshold.value() + 0.0001;
+        }
+      }
+    }
 
     return outputs;
   }
@@ -198,6 +224,20 @@ class ModelPipeline {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
     return train_config;
+  }
+
+  static uint32_t argmax(const float* const array, uint32_t len) {
+    assert(len > 0);
+
+    uint32_t max_index = 0;
+    float max_value = array[0];
+    for (uint32_t i = 1; i < len; i++) {
+      if (array[i] > max_value) {
+        max_index = i;
+        max_value = array[i];
+      }
+    }
+    return max_index;
   }
 
   // Private constructor for cereal.

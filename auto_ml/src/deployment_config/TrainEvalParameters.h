@@ -38,12 +38,17 @@ class TrainEvalParameters {
     return _evaluation_metrics;
   }
 
+  std::optional<float> predictionThreshold() const {
+    return _prediction_threshold;
+  }
+
  private:
   std::optional<uint32_t> _rebuild_hash_tables_interval;
   std::optional<uint32_t> _reconstruct_hash_functions_interval;
   uint32_t _default_batch_size;
   bool _use_sparse_inference;
   std::vector<std::string> _evaluation_metrics;
+  std::optional<float> _prediction_threshold;
 
   // Private constructor for cereal.
   TrainEvalParameters() {}

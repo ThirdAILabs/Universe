@@ -245,7 +245,7 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 py::object evaluateWrapperDataLoader(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source) {
-  auto [_, output] = model.evaluate(data_source);
+  auto output = model.evaluate(data_source);
 
   return convertInferenceTrackerToNumpy(output);
 }

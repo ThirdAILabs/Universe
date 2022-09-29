@@ -218,6 +218,55 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
   }
 };
 
+class AutotunedSparsityParameter final : public HyperParameter<float> {
+ public:
+  explicit AutotunedSparsityParameter(std::string dimension_param_name)
+      : _dimension_param_name(std::move(dimension_param_name)) {}
+
+  float resolve(const UserInputMap& user_specified_parameters) const final {
+    if (!user_specified_parameters.count(_dimension_param_name)) {
+      throw std::invalid_argument("UserSpecifiedParameter '" +
+                                  _dimension_param_name +
+                                  "' not specified by user but is required to "
+                                  "construct ModelPipeline.");
+    }
+
+    uint32_t dim = user_specified_parameters.at(_dimension_param_name)
+                       .resolveIntegerParam(_dimension_param_name);
+
+    /**
+     * For smaller output layers (dim < 2000), we return a sparsity that puts
+     * the sparse dimension between 80 and 200. For larger layers (2000 <= dim),
+     * we return a sparsity that puts the sparse dimension between 100 and 260.
+     * Note that the following code assums that the sparsity_values vector is
+     * sorted by increasing dimension threshold.
+     */
+    std::vector<std::pair<uint32_t, float>> sparsity_values = {
+        {450, 1.0},   {900, 0.2},    {1800, 0.1},
+        {4000, 0.05}, {10000, 0.02}, {20000, 0.01}};
+
+    for (const auto& [dim_threshold, sparsity] : sparsity_values) {
+      if (dim < dim_threshold) {
+        return sparsity;
+      }
+    }
+    return 0.05;
+  }
+
+ private:
+  std::string _dimension_param_name;
+
+  // Private constructor for cereal.
+  AutotunedSparsityParameter() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HyperParameter<float>>(this),
+            _dimension_param_name);
+  }
+};
+
 }  // namespace thirdai::automl::deployment_config
 
 CEREAL_REGISTER_TYPE(
