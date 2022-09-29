@@ -4,15 +4,12 @@ from thirdai import bolt
 import random
 import datasets
 import numpy as np
-import os
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
 
-TRAIN_FILE = "./clinc_train_pipeline.csv"
-TEST_FILE = "./clinc_test_pipeline.csv"
-CONFIG_PATH = "./saved_text_classifier_config"
-SAVE_PATH = "./text_classifier_model_pipeline"
+TRAIN_FILE = "./clinc_train.csv"
+TEST_FILE = "./clinc_test.csv"
 
 
 def write_dataset_to_csv(dataset, filename, return_labels=False):
@@ -42,19 +39,8 @@ def download_clinc_dataset():
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
 
 
-<<<<<<< HEAD
-def teardown_module():
-    os.remove(TRAIN_FILE)
-    os.remove(TEST_FILE)
-    os.remove(CONFIG_PATH)
-    os.remove(SAVE_PATH)
-
-
-def test_text_classifer():
-=======
 @pytest.fixture(scope="module")
 def clinc_dataset():
->>>>>>> f8b285a2fd9f1b9a53bbb9d85b0a4234f76b6ecf
     num_classes, labels = download_clinc_dataset()
     return (num_classes, labels)
 
@@ -109,17 +95,9 @@ def trained_text_classifier(clinc_dataset):
         train_eval_parameters=train_eval_params,
     )
 
-    config.save(CONFIG_PATH)
-
     model = dc.ModelPipeline(
-<<<<<<< HEAD
-        config_path=CONFIG_PATH,
-        size="large",
-        parameters={"output_dim": num_classes, "delimiter": ","},
-=======
         deployment_config=config,
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
->>>>>>> f8b285a2fd9f1b9a53bbb9d85b0a4234f76b6ecf
     )
 
     model.train(
@@ -144,16 +122,11 @@ def test_text_classifer_accuracy(model_predictions, clinc_dataset):
     # Accuracy should be around 0.76 to 0.78.
     assert acc >= 0.7
 
-<<<<<<< HEAD
-    model.save(SAVE_PATH)
-    model = dc.ModelPipeline.load(SAVE_PATH)
-=======
 
 def test_text_classifer_predict(
     trained_text_classifier, model_predictions, clinc_dataset
 ):
     _, labels = clinc_dataset
->>>>>>> f8b285a2fd9f1b9a53bbb9d85b0a4234f76b6ecf
 
     with open(TEST_FILE) as test:
         test_set = test.readlines()
