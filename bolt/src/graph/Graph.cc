@@ -145,8 +145,10 @@ MetricData BoltGraph::train(
                                .count();
 
       std::string logline = fmt::format(
-          "train | epoch {} | complete | {} | batches {} | time {}s", _epoch,
-          train_metrics.summary(), dataset_context.numBatches(), epoch_time);
+          "train | epoch {} | updates {} | {} | batches {} | time {}s | "
+          "complete",
+          _epoch, _updates, train_metrics.summary(),
+          dataset_context.numBatches(), epoch_time);
 
       logging::info(logline);
 
@@ -428,7 +430,7 @@ InferenceResult BoltGraph::predict(
                           .count();
 
   std::string logline = fmt::format(
-      "predict | epoch {} | batch {} | {} | batches {} | time {}ms", _epoch,
+      "predict | epoch {} | updates {} | {} | batches {} | time {}ms", _epoch,
       _updates, metrics.summary(), predict_context.numBatches(), test_time);
 
   logging::info(logline);
