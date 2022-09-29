@@ -73,7 +73,7 @@ class SequentialClassifier {
                /* hashes_per_table= */ 4,
                /* reservoir_size= */ 64)});
       _model->compile(
-          CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss(), 
+          CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss(),
           /* print_when_done= */ false);
     }
 
@@ -309,9 +309,9 @@ class SequentialClassifier {
     result.reserve(k);
 
     while (!top_k_activations.empty()) {
-      // Returns minimum element, so the results vector is going to 
+      // Returns minimum element, so the results vector is going to
       // be sorted in ascending order.
-      auto [activation, id] = top_k_activations.top(); 
+      auto [activation, id] = top_k_activations.top();
       result.push_back(
           {_state.vocabs_by_column[_config.target]->getString(id), activation});
       top_k_activations.pop();

@@ -48,12 +48,12 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__repr__", &BoltVector::toString);
 
   py::class_<Explanation>(dataset_submodule, "Explanation",
-      R"pbdoc(
+                          R"pbdoc(
      Represents an input column that is responsible for a predicted
      outcome.
       )pbdoc")
       .def_readonly("column_number", &Explanation::column_number,
-      R"pbdoc(
+                    R"pbdoc(
      Identifies the responsible input column.
       )pbdoc")
       .def_readonly("percentage_significance",
@@ -66,11 +66,11 @@ void createDatasetSubmodule(py::module_& module) {
      prediction are negatively correlated.
       )pbdoc")
       .def_readonly("keyword", &Explanation::keyword,
-      R"pbdoc(
+                    R"pbdoc(
      A brief description of the value in this column.
       )pbdoc")
       .def_readonly("column_name", &Explanation::column_name,
-      R"pbdoc(
+                    R"pbdoc(
      Identifies the responsible input column.
       )pbdoc");
 
