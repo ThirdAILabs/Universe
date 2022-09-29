@@ -385,8 +385,27 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
 
     Notes:
-        - Refer to the documentation bolt.types.ColumnType and bolt.temporal.TemporalConfig to better understand column types 
-          and temporal tracking configurations.
+        - Refer to the documentation bolt.types.ColumnType and bolt.temporal.TemporalConfig 
+          to better understand column types and temporal tracking configurations.
+        - When `temporal_tracking_relationships` is non-empty, Oracle automatically captures temporal 
+          context, so data must be passed into Oracle in chronological order. This also 
+          affects how we call `model.predict()`, `model.explain()`, and `model.index()`;
+          the order in which they are called must follow the chronological order of the
+          data. Here is an example:
+            >>> # Suppose we have three samples (pay attention to the timestamps):
+            >>> sample_0
+            {"user_id": "A35", "movie_id": "M22", "timestamp": "2022-02-02"}
+            >>> sample_1
+            {"user_id": "A35", "movie_id": "M01", "timestamp": "2022-02-03"}
+            >>> sample_2
+            {"user_id": "A35", "movie_id": "M523", "timestamp": "2022-02-04"}
+            >>> # Then we call the methods in this order:
+            >>> model.predict(sample_0) # or model.explain(sample_0)
+            >>> model.index(sample_0)
+            >>> model.predict(sample_1) # or model.explain(sample_1)
+            >>> model.index(sample_1)
+            >>> model.predict(sample_2) # or model.explain(sample_2)
+            >>> model.index(sample_2)
 
     )pbdoc")
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
