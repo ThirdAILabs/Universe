@@ -1,9 +1,11 @@
+from re import S
 import pytest
 from thirdai import deployment_config as dc
 from thirdai import bolt
 import random
 import datasets
 import numpy as np
+import os
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -12,6 +14,20 @@ TRAIN_FILE = "./clinc_train.csv"
 TEST_FILE = "./clinc_test.csv"
 CONFIG_FILE = "./saved_clinc_config"
 SAVE_FILE = "./saved_clinc_model_pipeline"
+
+
+def remove_files():
+    for file in [TRAIN_FILE, TEST_FILE, CONFIG_FILE, SAVE_FILE]:
+        if os.path.exists(file):
+            os.remove(file)
+
+
+def setup_module():
+    remove_files()
+
+
+def teardown_module():
+    remove_files()
 
 
 def write_dataset_to_csv(dataset, filename, return_labels=False):
