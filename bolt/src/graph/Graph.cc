@@ -133,8 +133,7 @@ MetricData BoltGraph::train(
 
         uint32_t updates = 1 + epoch * dataset_context.numBatches() + batch_idx;
 
-        uint32_t log_loss_every = train_config.log_loss_every();
-        if (updates % log_loss_every == 0) {
+        if (updates % train_config.logLossFrequency() == 0) {
           logging::info("train | epoch {} | updates {} | {}", (_epoch_count),
                         updates, train_metrics.summary());
         }

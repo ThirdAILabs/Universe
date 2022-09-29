@@ -306,8 +306,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "Returns the learning rate a model with this TrainConfig will train "
           "with.")
       .def(getPickleFunction<TrainConfig>())
-      .def("log_loss_every", &TrainConfig::logLossEvery,
-           py::arg("log_loss_every"));
+      .def("with_log_loss_frequency", &TrainConfig::withLogLossFrequency,
+           py::arg("log_loss_frequency"));
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)
