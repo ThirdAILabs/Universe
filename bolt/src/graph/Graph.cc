@@ -131,8 +131,13 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        logging::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
-                      train_metrics.summary());
+        uint32_t updates = 1 + epoch * dataset_context.numBatches() + batch_idx;
+
+        uint32_t log_loss_every = train_config.log_loss_every();
+        if (updates % log_loss_every == 0) {
+          logging::info("train | epoch {} | updates {} | {}", (_epoch_count),
+                        updates, train_metrics.summary());
+        }
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -143,9 +148,9 @@ MetricData BoltGraph::train(
                                .count();
 
       std::string logline = fmt::format(
-          "train | epoch {} | complete |  batches {} | time {}s | {}",
-          _epoch_count, dataset_context.numBatches(), epoch_time,
-          train_metrics.summary());
+          "train | epoch {} | complete | {} | batches {} | time {}s",
+          _epoch_count, train_metrics.summary(), dataset_context.numBatches(),
+          epoch_time);
 
       logging::info(logline);
 
@@ -169,8 +174,10 @@ MetricData BoltGraph::train(
     // epoch. this also lets us validate after N updates per say. Requires the
     // raii cleanup change mentioned above for validation after a batch
     if (validation) {
-      auto [val_metrics, _] = predict(validation->data(), validation->labels(),
-                                      validation->config());
+      std::string label = fmt::format("valid | epoch {} | complete", epoch);
+      auto [val_metrics, _] =
+          namedPredict(label, validation->data(), validation->labels(),
+                       validation->config());
       train_state.updateValidationMetrics(val_metrics);
     }
 
@@ -357,6 +364,14 @@ InferenceResult BoltGraph::predict(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const dataset::BoltDatasetPtr& test_labels,
     const PredictConfig& predict_config) {
+  return namedPredict("external", test_data, test_labels, predict_config);
+}
+
+InferenceResult BoltGraph::namedPredict(
+    const std::string& label,
+    const std::vector<dataset::BoltDatasetPtr>& test_data,
+    const dataset::BoltDatasetPtr& test_labels,
+    const PredictConfig& predict_config) {
   DatasetContext predict_context(test_data, test_labels);
 
   bool has_labels = (test_labels != nullptr);
@@ -423,8 +438,9 @@ InferenceResult BoltGraph::predict(
                           .count();
 
   std::string logline =
-      fmt::format("test | complete |  batches {} | time {}ms | {}",
-                  predict_context.numBatches(), test_time, metrics.summary());
+      fmt::format("{} | {} | batches {} | time {}ms", label, metrics.summary(),
+                  predict_context.numBatches(), test_time);
+
   logging::info(logline);
   if (bar) {
     bar->close(logline);
