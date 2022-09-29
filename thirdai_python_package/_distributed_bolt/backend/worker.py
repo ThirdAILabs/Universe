@@ -93,7 +93,7 @@ class Worker:
         """
         return self.comm.receive_array_partitions(update_id)
 
-    def compute_and_save_batch_gradients(self, batch_no: int):
+    def compute_and_store_batch_gradients(self, batch_no: int):
         """
         This function is called only when the mode of communication is
         linear.
@@ -110,7 +110,7 @@ class Worker:
         :return: check whether training is complete or not
         :rtype: bool
         """
-        self.comm.compute_and_save_batch_gradients(batch_no)
+        self.comm.compute_and_store_batch_gradients(batch_no)
 
     def get_calculated_gradients(self):
         """

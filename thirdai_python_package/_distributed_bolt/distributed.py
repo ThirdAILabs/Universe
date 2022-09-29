@@ -10,6 +10,12 @@ from typing import List
 
 
 class RayTrainingClusterConfig:
+    """
+    The RayTrainingClusterConfig object represents an initialized Ray cluster
+    that we know will work for training (worker and head nodes initialized,
+    logging initialized, etc.).
+    """
+
     def __init__(
         self,
         num_workers: int,
@@ -17,6 +23,13 @@ class RayTrainingClusterConfig:
         communication_type: str = "circular",
         cluster_address: str = "auto",
     ):
+        """
+        This constructor connects to an already existing Ray cluster,
+        starts Ray workers on each node, initializes logging, and creates
+        Ray primary and replica worker configs. It computes and stores a
+        a number of useful fields, including num_workers, communication_type,
+        logging, primary_worker_config, and replica_worker_configs.
+        """
 
         self.logging = init_logging("distributed_fully_connected.log")
         self.logging.info("Building Ray training cluster")
@@ -90,7 +103,15 @@ class DistributedDataParallel:
         train_file_names: List[str],
         batch_size: int,
     ):
-
+        """
+        This constructor returns a new DistributedDataParallel object that can
+        be used to train the given model in a distributed fashion on the cluster
+        corresponding to the passed in cluster_config. This constructor also
+        passes the given model, the training config, and the corresponding
+        training file name to each node in the cluster, thereby ensuring that
+        each node is ready for training. After this constructor returns, the
+        user can simply call train to train the model on the cluster.
+        """
         self.communication_type = cluster_config.communication_type
         self.logging = cluster_config.logging
         self.train_config = train_config
@@ -153,7 +174,7 @@ class DistributedDataParallel:
         """
         Trains the network using the communication type choosen.
         """
-        trainer = TrainStateManager(
+        train_state_manager = TrainStateManager(
             self.workers,
             self.primary_worker,
             self.logging,
@@ -165,9 +186,9 @@ class DistributedDataParallel:
 
                 # Here we are asking every worker to calculate their gradients and return
                 # once they all calculate their gradients
-                trainer.train(epoch, batch_id)
+                train_state_manager.train_batch(epoch, batch_id)
 
-        trainer.finish_training()
+        train_state_manager.finish_training()
 
     def get_model(self, worker_id=0):
         return ray.get(self.workers[worker_id].model.remote())

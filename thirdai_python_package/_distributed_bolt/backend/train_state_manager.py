@@ -37,7 +37,7 @@ class TrainStateManager:
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
-    def train(self, epoch_id, batch_id):
+    def train_batch(self, epoch_id, batch_id):
         """
         Train the Model
 
@@ -46,14 +46,14 @@ class TrainStateManager:
         :param batch_id: Batch number to train on
         :type batch_id: int
         """
-        self._compute_and_save_batch_gradients(batch_id)
+        self._compute_and_store_batch_gradients(batch_id)
         self._communicate()
         self._update_parameters()
         self._log_training(batch_id, epoch_id)
 
-    def _compute_and_save_batch_gradients(self, batch_no):
+    def _compute_and_store_batch_gradients(self, batch_no):
         """
-        Call compute_and_save_batch_gradients function on each of the worker
+        Call compute_and_store_batch_gradients function on each of the worker
 
         :param batch_no: Batch Id for this particular training
         :type batch_no: Integer
@@ -61,7 +61,7 @@ class TrainStateManager:
         start_calculating_gradients_time = time.time()
         ray.get(
             [
-                worker.compute_and_save_batch_gradients.remote(batch_no)
+                worker.compute_and_store_batch_gradients.remote(batch_no)
                 for worker in self.workers
             ]
         )

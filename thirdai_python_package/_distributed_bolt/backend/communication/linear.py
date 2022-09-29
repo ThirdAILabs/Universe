@@ -8,11 +8,11 @@ class Linear:
         self.id = id
         self.primary_worker = primary_worker
 
-    def compute_and_save_batch_gradients(self, batch_no):
+    def compute_and_store_batch_gradients(self, batch_no):
         """
-        This functions calls the API 'compute_and_save_batch_gradients',
+        This functions calls the API 'compute_and_store_batch_gradients',
         which calculates the gradients for the network managed by
-        this particular worker. The compute_and_save_batch_gradients trains
+        this particular worker. The compute_and_store_batch_gradients trains
         the network and calculates the gradient for the particular
         training batch with batch no. batch_no and with loss function
         specified in the config.
@@ -22,7 +22,7 @@ class Linear:
         :return: shows completion
         :rtype: bool
         """
-        self.model.compute_and_save_batch_gradients(batch_no)
+        self.model.compute_and_store_batch_gradients(batch_no)
 
     def receive_gradients(self):
         """
