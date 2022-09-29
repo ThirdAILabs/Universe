@@ -94,9 +94,7 @@ def test_predict_returns_sorted_scores():
     model = make_simple_sequential_model()
     model.train(TRAIN_FILE, 2, 0.01)
     top_k = 2
-    result = model.predict(
-        {"userId": "0", "timestamp": "2022-08-31"}, top_k=top_k
-    )
+    result = model.predict({"userId": "0", "timestamp": "2022-08-31"}, top_k=top_k)
     assert len(result) == top_k
 
     prev_score = float("inf")
