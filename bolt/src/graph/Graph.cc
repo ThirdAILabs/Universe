@@ -90,6 +90,7 @@ MetricData BoltGraph::train(
   callbacks.onTrainBegin(*this, train_state);
 
   for (uint32_t _epoch = 0; _epoch < train_config.epochs(); _epoch++) {
+    train_state.epoch = _epoch;
     callbacks.onEpochBegin(*this, train_state);
 
     /*
@@ -178,7 +179,6 @@ MetricData BoltGraph::train(
     }
 
     callbacks.onEpochEnd(*this, train_state);
-    train_state.epoch = _epoch;
     if (train_state.stop_training) {
       break;
     }
