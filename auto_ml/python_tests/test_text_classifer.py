@@ -10,6 +10,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.release]
 
 TRAIN_FILE = "./clinc_train.csv"
 TEST_FILE = "./clinc_test.csv"
+SAVE_FILE = "./saved_clinc_model_pipeline"
 
 
 def write_dataset_to_csv(dataset, filename, return_labels=False):
@@ -151,3 +152,27 @@ def batch_predictions(samples, original_predictions, batch_size=10):
             (samples[i : i + batch_size], original_predictions[i : i + batch_size])
         )
     return batches
+
+
+def test_model_save_and_load(trained_text_classifier, model_predictions, clinc_dataset):
+    trained_text_classifier.save(SAVE_FILE)
+
+    model = dc.ModelPipeline.load(SAVE_FILE)
+
+    # Check that predictions match after saving
+    new_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)
+    assert np.array_equal(model_predictions, new_predictions)
+
+    # Check that we can still fine tune the model
+
+    model.train(
+        filename=TRAIN_FILE,
+        epochs=1,
+        learning_rate=0.001,
+    )
+
+    _, labels = clinc_dataset
+    fine_tuned_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)
+    acc = np.mean(fine_tuned_predictions == np.array(labels))
+
+    assert acc >= 0.7
