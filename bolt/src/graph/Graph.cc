@@ -339,6 +339,8 @@ BoltGraph::getInputGradientSingle(
     input_vector.gradients = nullptr;
     cleanupAfterBatchProcessing();
 
+    // When activations are zero(in some rare cases) normalising will blow up
+    // the value so avoiding it.
     for (uint32_t i = 0; i < input_vector.len; i++) {
       if (input_vector.activations[i] != 0) {
         normalised_vec_grad[i] /= input_vector.activations[i];
