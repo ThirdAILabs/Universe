@@ -55,3 +55,14 @@ jobs:
       - name: Check Cmake format
         run: |
           find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 
+
+  isort-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prepare isort format
+        run: |
+          sudo pip3 install isort
+      - name: Check isort format
+        run: |
+          isort . --check --skip-glob deps --skip _deps
