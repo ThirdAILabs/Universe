@@ -1,6 +1,8 @@
-import thirdai
-import numpy as np
 import random
+
+import numpy as np
+import thirdai
+
 
 # Helper method that returns a tuple of two functions. The first function
 # takes no arguments and returns a document retrieval index with all generated

@@ -3,18 +3,17 @@
 # a REST API to perform ANN search. You will need to change the variables
 # below the import statement for the script to work on your system.
 
-import tensorflow as tf
-import numpy as np
-from tensorflow import keras
-from tensorflow.keras.preprocessing.image import load_img
-from tensorflow.keras.preprocessing.image import img_to_array
-from tensorflow.keras.applications.imagenet_utils import decode_predictions
-import tensorflow as tf
-import time
-import thirdai
-from flask import Flask, flash, request, send_file, abort, redirect
-from PIL import Image
 import io
+import time
+
+import numpy as np
+import tensorflow as tf
+import thirdai
+from flask import Flask, abort, flash, redirect, request, send_file
+from PIL import Image
+from tensorflow import keras
+from tensorflow.keras.applications.imagenet_utils import decode_predictions
+from tensorflow.keras.preprocessing.image import img_to_array, load_img
 
 chunk_path = "/Users/josh/IndexChunks/"
 max_chunk_num_exclusive = 129

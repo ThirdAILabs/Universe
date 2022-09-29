@@ -1,6 +1,7 @@
-from thirdai import bolt, dataset
 import os
+
 import pytest
+from thirdai import bolt, dataset
 
 # Add an integration test marker for all tests in this file
 pytestmark = [pytest.mark.integration]

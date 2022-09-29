@@ -1,9 +1,9 @@
-from thirdai import bolt, dataset
-from thirdai.dataset import DataPipeline, blocks
-
 # Uncomment the following line when used on a machine with valid mlflow credentials
 # import mlflow
 import os
+
+from thirdai import bolt, dataset
+from thirdai.dataset import DataPipeline, blocks
 
 
 class CookieMonster:

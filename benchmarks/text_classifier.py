@@ -1,10 +1,9 @@
 import argparse
+import pathlib
+import sys
+
 import mlflow
 import pandas as pd
-import pandas as pd
-import sys
-import pathlib
-
 from thirdai import bolt
 
 parent_dir = pathlib.Path(__file__).parent.parent
