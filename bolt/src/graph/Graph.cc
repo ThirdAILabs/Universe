@@ -12,6 +12,7 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <exceptions/src/Exceptions.h>
 #include <utils/Logging.h>
 #include <algorithm>
@@ -340,7 +341,9 @@ BoltGraph::getInputGradientSingle(
     cleanupAfterBatchProcessing();
 
     for (uint32_t i = 0; i < input_vector.len; i++) {
-      normalised_vec_grad[i] /= input_vector.activations[i];
+      if (input_vector.activations[i] != 0) {
+        normalised_vec_grad[i] /= input_vector.activations[i];
+      }
     }
 
     if (input_vector_indices.empty()) {
