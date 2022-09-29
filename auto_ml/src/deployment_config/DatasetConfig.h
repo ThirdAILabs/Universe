@@ -82,7 +82,7 @@ class DatasetLoaderFactory {
     (void)max_in_memory_batches;
   }
 
-  virtual DatasetLoaderPtr getDatasetLoader(
+  virtual DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;

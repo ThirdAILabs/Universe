@@ -28,7 +28,7 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
                 /* has_header= */ false, delimiter)),
         _shuffle(shuffle) {}
 
-  DatasetLoaderPtr getDatasetLoader(
+  DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader) final {
     return std::make_unique<GenericDatasetLoader>(
         data_loader, _labeled_batch_processor, _shuffle);

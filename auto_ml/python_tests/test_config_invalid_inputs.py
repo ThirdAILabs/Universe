@@ -7,7 +7,6 @@ pytestmark = [pytest.mark.unit]
 
 def get_config(
     add_extra_input=False,
-    use_invalid_delimiter=False,
     missing_predecessor=False,
     duplicate_node_name=False,
 ):
@@ -42,15 +41,11 @@ def get_config(
         loss=bolt.CategoricalCrossEntropyLoss(),
     )
 
-    if use_invalid_delimiter:
-        label_delimiter = ",,"
-    else:
-        label_delimiter = ","
     dataset_config = dc.SingleBlockDatasetFactory(
         data_block=dc.TextBlockConfig(use_pairgrams=True),
         label_block=dc.NumericalCategoricalBlockConfig(
             n_classes=dc.UserSpecifiedParameter("output_dim", type=int),
-            delimiter=dc.ConstantParameter(label_delimiter),
+            delimiter=dc.ConstantParameter(","),
         ),
         shuffle=dc.ConstantParameter(False),
         delimiter=dc.UserSpecifiedParameter("delimiter", type=str),
@@ -111,7 +106,8 @@ def test_missing_option_parameter_throws():
 
 def test_invalid_option_parameter_option():
     with pytest.raises(
-        ValueError, match=r"Invalid option 'sort-of-sparse' for OptionMappedParameter."
+        ValueError,
+        match=r"Invalid option 'sort-of-sparse' for 'sparsity_level'. Supported options are: \[ 'dense' 'sparse' \].",
     ):
         dc.ModelPipeline(
             deployment_config=get_config(),
@@ -185,10 +181,10 @@ def test_invalid_delimiter_throws():
         match=r"Expected delimiter to be a single character but recieved: ',,'.",
     ):
         dc.ModelPipeline(
-            deployment_config=get_config(use_invalid_delimiter=True),
+            deployment_config=get_config(),
             parameters={
                 "output_dim": 100,
                 "sparsity_level": "sort-of-sparse",
-                "delimiter": ",",
+                "delimiter": ",,",
             },
         )
