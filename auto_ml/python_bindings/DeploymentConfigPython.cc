@@ -246,8 +246,10 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
       std::string value = v.cast<std::string>();
       cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
-      throw std::invalid_argument(
-          "Values of parameters map must be bool, int, float, or str.");
+      throw std::invalid_argument("Invalid type '" +
+                                  py::str(v.get_type()).cast<std::string>() +
+                                  "'. Values of parameters dictionary must be "
+                                  "bool, int, float, or str.");
     }
   }
 

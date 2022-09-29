@@ -115,8 +115,8 @@ class OptionMappedParameter final : public HyperParameter<T> {
                              .resolveStringParam(_option_name);
 
     if (!_values.count(option)) {
-      throw std::invalid_argument(
-          "OptionParameter did not contain value for option '" + option + "'.");
+      throw std::invalid_argument("Invalid option '" + option +
+                                  "' for OptionMappedParameter.");
     }
 
     return _values.at(option);

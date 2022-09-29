@@ -37,8 +37,8 @@ class ModelConfig {
       const UserInputMap& user_specified_parameters) const {
     if (_input_names.size() != inputs.size()) {
       throw std::invalid_argument(
-          "Expected number of inputs does not match number of inputs returned "
-          "from data loader.");
+          "Number of inputs in model config does not match number of inputs "
+          "returned from data loader.");
     }
 
     PredecessorsMap predecessors;
@@ -54,6 +54,8 @@ class ModelConfig {
 
     auto output =
         _nodes.back()->createNode(predecessors, user_specified_parameters);
+    // This is to check that there is not another node with this name.
+    predecessors.insert(/* name= */ _nodes.back()->name(), /* node= */ output);
 
     auto model = std::make_shared<bolt::BoltGraph>(inputs, output);
 
