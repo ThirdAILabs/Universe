@@ -297,7 +297,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Constructor.
 
     Args:
-        data_types (Dict[str, bolt.types]): A mapping from column name to column type. 
+        data_types (Dict[str, bolt.types.ColumnType]): A mapping from column name to column type. 
             This map specifies the columns that we want to pass into the model; it does 
             not need to include all columns in the dataset.
 
@@ -311,7 +311,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
             If `temporal_tracking_relationships` is non-empty, there must one 
             bolt.types.date() column. This column contains date strings in YYYY-MM-DD format.
             There can only be one bolt.types.date() column.
-        temporal_tracking_relationships (Dict[str, List[str or bolt.temporal]]): A mapping 
+        temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): A mapping 
             from column name to a list of either other column names or bolt.temporal objects.
             This mapping tells Oracle what columns can be tracked over time for each key.
             For example, we may want to tell Oracle that we want to track a user's watch 
@@ -385,7 +385,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
 
     Notes:
-        - Refer to the documentation bolt.types and bolt.temporal to better understand column types 
+        - Refer to the documentation bolt.types.ColumnType and bolt.temporal.TemporalConfig to better understand column types 
           and temporal tracking configurations.
 
     )pbdoc")
