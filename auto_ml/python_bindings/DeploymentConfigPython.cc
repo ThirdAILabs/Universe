@@ -71,6 +71,11 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"));
 
+  py::class_<AutotunedSparsityParameter, HyperParameter<float>,
+             std::shared_ptr<AutotunedSparsityParameter>>(
+      submodule, "AutotunedSparsityParameter")
+      .def(py::init<std::string>(), py::arg("dimension_param_name"));
+
   py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig");  // NOLINT
 
   py::class_<FullyConnectedNodeConfig, NodeConfig,
@@ -127,11 +132,12 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
-                    bool, std::vector<std::string>>(),
+                    bool, std::vector<std::string>, std::optional<float>>(),
            py::arg("rebuild_hash_tables_interval"),
            py::arg("reconstruct_hash_functions_interval"),
            py::arg("default_batch_size"), py::arg("use_sparse_inference"),
-           py::arg("evaluation_metrics"));
+           py::arg("evaluation_metrics"),
+           py::arg("prediction_threshold") = std::nullopt);
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")

@@ -241,7 +241,7 @@ class ModelPipeline {
   }
 
   // Private constructor for cereal.
-  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
+  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}, {}) {}
 
   friend class cereal::access;
   template <class Archive>
