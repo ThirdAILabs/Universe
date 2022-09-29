@@ -89,7 +89,7 @@ MetricData BoltGraph::train(
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
 
-  for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+  for (uint32_t _epoch = 0; _epoch < train_config.epochs(); _epoch++) {
     callbacks.onEpochBegin(*this, train_state);
 
     /*
@@ -109,7 +109,7 @@ MetricData BoltGraph::train(
     try {
       std::optional<ProgressBar> bar = makeOptionalProgressBar(
           /*make=*/train_config.verbose(),
-          /*description=*/fmt::format("train epoch {}", _epoch_count),
+          /*description=*/fmt::format("train epoch {}", _epoch),
           /*max_steps=*/dataset_context.numBatches());
 
       auto train_start = std::chrono::high_resolution_clock::now();
@@ -131,11 +131,9 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        uint32_t updates = 1 + epoch * dataset_context.numBatches() + batch_idx;
-
-        if (updates % train_config.logLossFrequency() == 0) {
-          logging::info("train | epoch {} | updates {} | {}", (_epoch_count),
-                        updates, train_metrics.summary());
+        if (_updates % train_config.logLossFrequency() == 0) {
+          logging::info("train | epoch {} | updates {} | {}", (_epoch),
+                        _updates, train_metrics.summary());
         }
 
         callbacks.onBatchEnd(*this, train_state);
@@ -147,9 +145,8 @@ MetricData BoltGraph::train(
                                .count();
 
       std::string logline = fmt::format(
-          "train | epoch {} | complete | {} | batches {} | time {}s",
-          _epoch_count, train_metrics.summary(), dataset_context.numBatches(),
-          epoch_time);
+          "train | epoch {} | complete | {} | batches {} | time {}s", _epoch,
+          train_metrics.summary(), dataset_context.numBatches(), epoch_time);
 
       logging::info(logline);
 
@@ -157,7 +154,6 @@ MetricData BoltGraph::train(
         bar->close(logline);
       }
 
-      _epoch_count++;
       train_metrics.logAndReset();
 
       train_state.epoch_times.push_back(static_cast<double>(epoch_time));
@@ -173,7 +169,7 @@ MetricData BoltGraph::train(
     // epoch. this also lets us validate after N updates per say. Requires the
     // raii cleanup change mentioned above for validation after a batch
     if (validation) {
-      std::string label = fmt::format("valid | epoch {} | complete", epoch);
+      std::string label = fmt::format("valid | epoch {} | complete", _epoch);
       auto [val_metrics, _] =
           namedPredict(label, validation->data(), validation->labels(),
                        validation->config());
@@ -181,7 +177,7 @@ MetricData BoltGraph::train(
     }
 
     callbacks.onEpochEnd(*this, train_state);
-    train_state.epoch = _epoch_count;
+    train_state.epoch = _epoch;
     if (train_state.stop_training) {
       break;
     }
@@ -223,8 +219,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
 void BoltGraph::updateParametersAndSampling(
     float learning_rate, uint32_t rebuild_hash_tables_batch,
     uint32_t reconstruct_hash_functions_batch) {
-  ++_batch_cnt;
-  updateParameters(learning_rate, _batch_cnt);
+  ++_updates;
+  updateParameters(learning_rate, _updates);
   updateSampling(
       /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
       /* reconstruct_hash_functions_batch= */
@@ -784,7 +780,7 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-          _epoch_count, _batch_cnt);
+          _epoch, _updates);
 }
 
 void BoltGraph::save(const std::string& filename) const {
