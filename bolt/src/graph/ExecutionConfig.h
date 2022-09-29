@@ -138,7 +138,7 @@ class TrainConfig {
   TrainConfig& withValidation(
       const std::vector<dataset::BoltDatasetPtr>& validation_data,
       const dataset::BoltDatasetPtr& validation_labels,
-      const PredictConfig& predict_config, uint32_t validate_every) {
+      const PredictConfig& predict_config, uint32_t validate_every = 0) {
     _validation_context = ValidationContext(validation_data, validation_labels,
                                             predict_config, validate_every);
     return *this;
