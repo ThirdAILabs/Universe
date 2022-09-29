@@ -62,9 +62,9 @@ def test_multiple_predict_returns_same():
     model.train(TRAIN_FILE, 2, 0.01)
 
     sample = {"userId": "0", "timestamp": "2022-08-31"}
-    prev_result = model.predict_single(sample)
+    prev_result = model.predict(sample)
     for _ in range(5):
-        result = model.predict_single(sample)
+        result = model.predict(sample)
         assert prev_result == result
         prev_result = result
 
@@ -94,7 +94,7 @@ def test_predict_returns_sorted_scores():
     model = make_simple_sequential_model()
     model.train(TRAIN_FILE, 2, 0.01)
     top_k = 2
-    result = model.predict_single(
+    result = model.predict(
         {"userId": "0", "timestamp": "2022-08-31"}, top_k=top_k
     )
     assert len(result) == top_k
@@ -111,12 +111,12 @@ def test_index_changes_explain_and_predict():
 
     sample = {"userId": "0", "timestamp": "2022-08-31"}
 
-    first_result = model.predict_single(sample)
+    first_result = model.predict(sample)
     first_explanations = model.explain(sample)
 
-    model.index_single({"userId": "0", "movieId": "101", "timestamp": "2022-08-31"})
+    model.index({"userId": "0", "movieId": "101", "timestamp": "2022-08-31"})
 
-    second_result = model.predict_single(sample)
+    second_result = model.predict(sample)
     second_explanations = model.explain(sample)
 
     assert first_result != second_result
