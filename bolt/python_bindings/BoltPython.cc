@@ -102,12 +102,75 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
   oracle_types_submodule.def("categorical",
                              sequential_classifier::DataType::categorical,
-                             py::arg("n_unique_classes"));
+                             py::arg("n_unique_classes"),
+                             R"pbdoc(
+    Categorical column type. Use this object if a column contains categorical 
+    data (each unique value is treated as a class). Examples include user IDs, 
+    movie titles, or age groups.
+
+    Args:
+        n_unique_classes (int): Number of unique categories in the column.
+            Oracle throws an error if the column contains more than the 
+            specified number of unique values.
+    
+    Example:
+        >>> bolt.Oracle(
+                data_types: {
+                    "user_id": bolt.types.categorical(n_unique_classes=5000)
+                }
+                ...
+            )
+                             )pbdoc");
   oracle_types_submodule.def("numerical",
-                             sequential_classifier::DataType::numerical);
+                             sequential_classifier::DataType::numerical,
+                             R"pbdoc(
+    Numerical column type. Use this object if a column contains numerical 
+    data (the value is treated as a quantity). Examples include hours of 
+    a movie watched, sale quantity, or population size.
+
+    Example:
+        >>> bolt.Oracle(
+                data_types: {
+                    "hours_watched": bolt.types.numerical()
+                }
+                ...
+            )
+                             )pbdoc");
   oracle_types_submodule.def("text", sequential_classifier::DataType::text,
-                             py::arg("average_n_words") = std::nullopt);
-  oracle_types_submodule.def("date", sequential_classifier::DataType::date);
+                             py::arg("average_n_words") = std::nullopt,
+                             R"pbdoc(
+    Text column type. Use this object if a column contains text data 
+    (the meaning of the text matters). Examples include descriptions, 
+    search queries, and user bios.
+
+    Args:
+        average_n_words (int): Optional. Average number of words in the 
+            text column in each row. If provided, Oracle may make 
+            optimizations as appropriate.
+    
+    Example:
+        >>> bolt.Oracle(
+                data_types: {
+                    "user_motto": bolt.types.text(average_n_words=10),
+                    "user_bio": bolt.types.text()
+                }
+                ...
+            )
+
+                             )pbdoc");
+  oracle_types_submodule.def("date", sequential_classifier::DataType::date,
+                             R"pbdoc(
+    Date column type. Use this object if a column contains date strings. 
+    Date strings must be in YYYY-MM-DD format.
+ 
+    Example:
+        >>> bolt.Oracle(
+                data_types: {
+                    "timestamp": bolt.types.date()
+                }
+                ...
+            )
+                             )pbdoc");
 
   auto oracle_temporal_submodule = bolt_submodule.def_submodule("temporal");
 
@@ -118,70 +181,178 @@ py::module_ createBoltSubmodule(py::module_& module) {
   oracle_temporal_submodule.def(
       "categorical", sequential_classifier::TemporalConfig::categorical,
       py::arg("column_name"), py::arg("track_last_n"),
-      py::arg("include_current_row") = false);
+      py::arg("column_known_during_inference") = false,
+      R"pbdoc(
+    Temporal categorical config. Use this object to configure how a 
+    categorical column is tracked over time. 
+
+    Args:
+        column_name (str): The name of the tracked column.
+        track_last_n (int): Number of last categorical values to track
+            per tracking id.
+        column_known_during_inference (bool): Optional. Whether the 
+            value of the tracked column is known during inference. Defaults 
+            to False.
+
+    Example:
+        >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend_level", "sales_performance"
+        >>> # We want to predict the current week's sales performance for each product using temporal context.
+        >>> # For each product ID, we would like to track both their ad spend level and sales performance over time.
+        >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "product_id": bolt.types.categorical(n_unique_classes=5000),
+                    "timestamp": bolt.types.date(),
+                    "ad_spend_level": bolt.types.categorical(n_unique_classes=5),
+                    "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                },
+                temporal_tracking_relationships={
+                    "product_id": [
+                        bolt.temporal.categorical(column_name="ad_spend_level", track_last_n=5, column_known_during_inference=True),
+                        bolt.temporal.categorical(column_name="ad_spend_level", track_last_n=25, column_known_during_inference=True),
+                        bolt.temporal.categorical(column_name="sales_performance", track_last_n=5), # column_known_during_inference defaults to False
+                    ]
+                },
+                ...
+            )
+    
+    Notes:
+        - Temporal categorical features are tracked as a set; if we track the last 5 ad spend levels,
+          we capture what the last 5 ad spend levels are, but we do not capture their order.
+        - The same column can be tracked more than once, allowing us to capture both short and
+          long term trends.
+      )pbdoc");
   oracle_temporal_submodule.def(
       "numerical", sequential_classifier::TemporalConfig::numerical,
       py::arg("column_name"), py::arg("history_length"),
-      py::arg("include_current_row") = false);
+      py::arg("column_known_during_inference") = false,
+      R"pbdoc(
+    Temporal numerical config. Use this object to configure how a 
+    numerical column is tracked over time. 
+
+    Args:
+        column_name (str): The name of the tracked column.
+        history_length (int): Amount of time to look back. Time is in terms 
+            of the time granularity passed to the Oracle constructor.
+        column_known_during_inference (bool): Optional. Whether the 
+            value of the tracked column is known during inference. Defaults 
+            to False.
+
+    Example:
+        >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_performance"
+        >>> # We want to predict the current week's sales performance for each product using temporal context.
+        >>> # For each product ID, we would like to track both their ad spend and sales performance over time.
+        >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "product_id": bolt.types.categorical(n_unique_classes=5000),
+                    "timestamp": bolt.types.date(),
+                    "ad_spend": bolt.types.numerical(),
+                    "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                },
+                target="sales_performance"
+                time_granularity="weekly",
+                temporal_tracking_relationships={
+                    "product_id": [
+                        # Track last 5 weeks of ad spend
+                        bolt.temporal.numerical(column_name="ad_spend", history_length=5, column_known_during_inference=True),
+                        # Track last 10 weeks of ad spend
+                        bolt.temporal.numerical(column_name="ad_spend", history_length=10, column_known_during_inference=True),
+                        # Track last 5 weeks of sales quantity
+                        bolt.temporal.numerical(column_name="sales_quantity", history_length=5), # column_known_during_inference defaults to False
+                    ]
+                },
+
+            )
+    
+    Notes:
+        - The same column can be tracked more than once, allowing us to capture both short and
+          long term trends.
+      )pbdoc");
 
   /**
    * Sequential Classifier
    */
   py::class_<SequentialClassifier>(bolt_submodule, "Oracle",
-                                   "Autoclassifier for sequential predictions.")
-      .def(
-          py::init<std::map<std::string, sequential_classifier::DataType>,
-                   std::map<std::string,
-                            std::vector<std::variant<std::string, sequential_classifier::TemporalConfig>>>,
-                   std::string, std::string, uint32_t>(),
-          py::arg("data_types"), py::arg("temporal_tracking_relationships"),
-          py::arg("target"), py::arg("time_granularity") = "daily",
-          py::arg("lookahead") = 0,
-          R"pbdoc(  
-    Trains the network on the given training data and labels with the given training
-    config.
+                                   R"pbdoc( 
+    An all-purpose classifier for tabular datasets. In addition to learning from
+    the columns of a single row, Oracle can make use of temporal features
+                                   )pbdoc")
+      .def(py::init<std::map<std::string, sequential_classifier::DataType>,
+                    std::map<std::string,
+                             std::vector<std::variant<
+                                 std::string,
+                                 sequential_classifier::TemporalConfig>>>,
+                    std::string, std::string, uint32_t>(),
+           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
+           py::arg("target"), py::arg("time_granularity") = "daily",
+           py::arg("lookahead") = 0,
+           R"pbdoc(  
+    Constructor.
 
     Args:
-        train_data (List[BoltDataset] or BoltDataset): The data to train the model with. 
-            There should be exactly one BoltDataset for each Input node in the Bolt
-            model, and each BoltDataset should have the same total number of 
-            vectors and the same batch size. The batch size for training is the 
-            batch size of the passed in BoltDatasets (you can specify this batch 
-            size when loading or creating a BoltDataset).
-        train_labels (BoltDataset): The labels to use as ground truth during 
-            training. There should be the same number of total vectors and the
-            same batch size in this BoltDataset as in the train_data list.
-        train_config (TrainConfig): The object describing all other training
-            configuration details. See the TrainConfig documentation for more
-            information as to possible options. This includes the number of epochs
-            to train for, the verbosity of the training, the learning rate, and so
-            much more!
+        data_types (Dict[str, bolt.types]): A mapping from column name to column type. 
+            This map specifies the columns that we want to pass into the model; it does 
+            not need to include all columns in the dataset.
 
-    Returns:
-        Dict[Str, List[float]]:
-        A dictionary from metric name to a list of the value of that metric 
-        for each epoch (this also always includes an entry for 'epoch_times'). The 
-        metrics that are returned are the metrics requested in the TrainConfig.
+            Column type is one of:
+            - `bolt.types.categorical(n_unique_values: int)`
+            - `bolt.types.numerical()`
+            - `bolt.types.text(average_n_words: int=None)`
+            - `bolt.types.date()`
+            See bolt.types for details.
 
-    Notes:
-        Sparse bolt training was originally based off of SLIDE. See [1]_ for more details
+            If `temporal_tracking_relationships` is non-empty, there must one 
+            bolt.types.date() column. This column contains date strings in YYYY-MM-DD format.
+            There can only be one bolt.types.date() column.
+        temporal_tracking_relationships (Dict[str, List[str or bolt.temporal]]): A mapping 
+            from column name to a list of either other column names or bolt.temporal objects.
 
-    References:
-        .. [1] "SLIDE : In Defense of Smart Algorithms over Hardware Acceleration for Large-Scale Deep Learning Systems" 
-                https://arxiv.org/pdf/1903.03129.pdf.
+            
+            
+            bolt.temporal object is one of:
+            - `bolt.temporal.categorical(column_name: str, track_last_n: int, column_known_during_inference: bool=False)
+            - `bolt.temporal.numerical(column_name: str, history_length: int, column_known_during_inference: bool=False)
+            See bolt.temporal for details.
+
+            AAAA
+        target (str): Name of the column that contains the value to be predicted by
+            Oracle. The target column has to be a categorical column.
+        time_granularity (str): Optional. The AAAAA Defaults to "daily".
+        lookahead (str): Optional. How far into the future the model needs to predict. This length of
+            time is in terms of time_granularity. E.g. 'time_granularity="daily"` and 
+            `lookahead=5` means the model needs to learn to predict 5 days ahead. Defaults to 1.
 
     Examples:
-        >>> train_config = (
-                bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)
-                .with_metrics(["categorical_accuracy"])
+        >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
+        >>> # We want to predict next week's sales performance for each product using temporal context.
+        >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
+        >>> model = bolt.Oracle(
+                data_types={
+                    "product_id": bolt.types.categorical(n_unique_classes=5000),
+                    "timestamp": bolt.types.date(),
+                    "ad_spend": bolt.types.numerical(),
+                    "sales_quantity": bolt.types.numerical(),
+                    "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                },
+                temporal_tracking_relationships={
+                    "product_id": [
+                        # Track last 5 weeks of ad spend
+                        bolt.temporal.numerical(column_name="ad_spend", history_length=5),
+                        # Track last 10 weeks of ad spend
+                        bolt.temporal.numerical(column_name="ad_spend", history_length=10),
+                        # Track last 5 weeks of sales performance
+                        bolt.temporal.categorical(column_name="sales_performance", history_length=5),
+                    ]
+                },
+                target="sales_performance"
+                time_granularity="weekly",
+                lookahead=2 # predict 2 weeks ahead
             )
-        >>> metrics = model.train(
-                train_data=train_data, train_labels=train_labels, train_config=train_config
-            )
-        >>> print(metrics)
-        {'epoch_times': [1.7, 3.4, 5.2], 'categorical_accuracy': [0.4665, 0.887, 0.9685]}
 
-    That's all for now, folks! More docs coming soon :)
+    Notes:
+        - Refer to the documentation bolt.types and bolt.temporal to better understand column types 
+          and temporal tracking configurations.
 
     )pbdoc")
       .def("train", &SequentialClassifier::train, py::arg("train_file"),
@@ -215,19 +386,19 @@ py::module_ createBoltSubmodule(py::module_& module) {
         {'epoch_times': [1.7, 3.4, 5.2], 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
     
     Notes:
-        - Temporal tracking relationships helps Oracle make better predictions by 
-          taking temporal context into account. For example, Oracle may keep track of 
+        - If temporal tracking relationships are provided, Oracle can make better predictions 
+          by taking temporal context into account. For example, Oracle may keep track of 
           the last few movies that a user has watched to better recommend the next movie.
           `model.train()` automatically updates Oracle's temporal context.
         - `model.train()` resets Oracle's temporal context at the start of training to 
           prevent unwanted information from leaking into the training routine.
-           )pbdoc"
-        )
+           )pbdoc")
 #if THIRDAI_EXPOSE_ALL
       .def("summarizeModel", &SequentialClassifier::summarizeModel,
            "Deprecated\n")
 #endif
-      .def("evaluate", &SequentialClassifier::predict, py::arg("validation_file"),
+      .def("evaluate", &SequentialClassifier::predict,
+           py::arg("validation_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
            py::arg("output_file") = std::nullopt,
            py::arg("write_top_k_to_file") = 1,
@@ -264,17 +435,15 @@ py::module_ createBoltSubmodule(py::module_& module) {
         {'test_time': 20.0, 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
     
     Notes: 
-        - Temporal tracking relationships helps Oracle make better predictions by 
-          taking temporal context into account. For example, Oracle may keep track of 
+        - If temporal tracking relationships are provided, Oracle can make better predictions 
+          by taking temporal context into account. For example, Oracle may keep track of 
           the last few movies that a user has watched to better recommend the next movie.
           `model.evaluate()` automatically updates Oracle's temporal context.
-           )pbdoc"
-        )
-    
-      .def(
-          "predict", &SequentialClassifier::predictSingle,
-          py::arg("input_sample"), py::arg("top_k") = 1,
-          R"pbdoc(  
+           )pbdoc")
+
+      .def("predict", &SequentialClassifier::predictSingle,
+           py::arg("input_sample"), py::arg("top_k") = 1,
+           R"pbdoc(  
     Computes the top k classes and their probabilities for a single input sample. 
 
     Args:
@@ -320,18 +489,16 @@ py::module_ createBoltSubmodule(py::module_& module) {
           This is because we do not know the movie title at the time of inference – that 
           is the target that we are trying to predict after all.
 
-        - Temporal tracking relationships helps Oracle make better predictions by 
-          taking temporal context into account. For example, Oracle may keep track of 
+        - If temporal tracking relationships are provided, Oracle can make better predictions 
+          by taking temporal context into account. For example, Oracle may keep track of 
           the last few movies that a user has watched to better recommend the next movie. 
           Thus, Oracle is at its best when its internal temporal context gets updated with
           new true samples. `model.predict()` does not update Oracle's temporal context.
           To do this, we need to use `model.index()`. Read about `model.index()` for details.
-           )pbdoc"
-        )
-      .def(
-          "explain", &SequentialClassifier::explain, py::arg("input_sample"),
-          py::arg("target") = std::nullopt,
-          R"pbdoc(  
+           )pbdoc")
+      .def("explain", &SequentialClassifier::explain, py::arg("input_sample"),
+           py::arg("target") = std::nullopt,
+           R"pbdoc(  
     Identifies the columns that are most responsible for a predicted outcome 
     and provides a brief description of the column's value.
     
@@ -403,43 +570,57 @@ py::module_ createBoltSubmodule(py::module_& module) {
           column in the `data_types` argument, we did not pass it to `model.explain()`. 
           This is because we do not know the movie title at the time of inference – that 
           is the target that we are trying to predict after all.
-        - Temporal tracking relationships helps Oracle make better predictions by 
-          taking temporal context into account. For example, Oracle may keep track of 
+        - If temporal tracking relationships are provided, Oracle can make better predictions 
+          by taking temporal context into account. For example, Oracle may keep track of 
           the last few movies that a user has watched to better recommend the next movie. 
           Thus, Oracle is at its best when its internal temporal context gets updated with
           new true samples. `model.explain()` does not update Oracle's temporal context.
           To do this, we need to use `model.index()`. Read about `model.index()` for details.
-           )pbdoc"
-        )
+           )pbdoc")
       .def(
           "index", &SequentialClassifier::indexSingle, py::arg("sample"),
-          "Indexes a single true sample to keep the SequentialClassifier's "
-          "internal quantity and category trackers up to date.\n"
-          "Arguments:\n"
-          " * input_sample: Dict[str, str] - The input sample as a dictionary "
-          "where the keys are column names as specified in the schema and the "
-          "values are the respective column values.\n"
-          "Example:\n"
-          "```\n"
-          "# Suppose we construct a SequentialClassifier as follows:\n"
-          "model = SequentialClassifier(\n"
-          "    user=('name', 500),\n"
-          "    label=('salary', 5),\n"
-          "    timestamp='timestamp',\n"
-          "    static_categorical=[('age_group', 7)]\n"
-          "    track_categories=[('expenditure_level', 7, 30)]\n"
-          ")\n\n"
-          "# Suppose we recorded a new sample with the following information:\n"
-          "input_sample = {\n"
-          "    'name': 'arun',\n"
-          "    'salary': '<=50k',\n"
-          "    'timestamp': '2022-02-02',\n"
-          "    'age_group': '20-39',\n"
-          "    'expenditure_level': 'high'\n"
-          "})\n\n"
-          "# Then we will call index_single as follows:\n"
-          "model.index_single(input_sample)\n"
-          "```\n")
+          R"pbdoc(
+
+    Indexes a single true sample to keep Oracle's temporal context up to date.
+
+    If temporal tracking relationships are provided, Oracle can make better predictions 
+    by taking temporal context into account. For example, Oracle may keep track of 
+    the last few movies that a user has watched to better recommend the next movie. 
+    Thus, Oracle is at its best when its internal temporal context gets updated with
+    new true samples. `model.index()` does exactly this. 
+
+    Args: 
+        input_sample (Dict[str, str]): The input sample as a dictionary 
+            where the keys are column names as specified in data_types and the "
+            values are the respective column values. 
+
+    Example:
+        >>> # Suppose we configure and train Oracle to do movie recommendation as follows:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "user_id": bolt.types.categorical(n_unique_classes=5000),
+                    "timestamp": bolt.types.date(),
+                    "special_event": bolt.types.categorical(n_unique_classes=20),
+                    "movie_title": bolt.types.categorical(n_unique_classes=500)
+                },
+                temporal_tracking_relationships={
+                    "user_id": ["movie_title"]
+                },
+                target="movie_title"
+            )
+        >>> model.train(
+                train_file="train_file.csv", epochs=3, learning_rate=0.0001, metrics=["recall@1", "recall@10"]
+            )
+        >>> # We then deploy the model for inference. Inference is performed by calling model.predict()
+        >>> predictions = model.predict(
+                input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, top_k=3
+            )
+        >>> # Suppose we later learn that user "A33225" ends up watching "Die Hard 3". 
+        >>> # We can call model.index() to keep Oracle's temporal context up to date.
+        >>> model.index(
+                input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas", "movie_title": "Die Hard 3"}
+            )
+          )pbdoc")
       .def("save", &SequentialClassifier::save, py::arg("filename"),
            R"pbdoc(  
     Serializes an instance of Oracle into a file on disk. The serialized Oracle includes 
@@ -451,11 +632,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Example:
         >>> model.Oracle(...)
         >>> model.save("oracle_savefile.bolt")
-           )pbdoc"
-        )
-      .def_static(
-          "load", &SequentialClassifier::load, py::arg("filename"),
-          R"pbdoc(  
+           )pbdoc")
+      .def_static("load", &SequentialClassifier::load, py::arg("filename"),
+                  R"pbdoc(  
     Loads a serialized instance of Oracle from a file on disk. The loaded Oracle includes 
     the temporal context from before serialization.
     
@@ -465,8 +644,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Example:
         >>> model.Oracle(...)
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
-           )pbdoc"
-    );
+           )pbdoc");
 
   createBoltGraphSubmodule(bolt_submodule);
 
