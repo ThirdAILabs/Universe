@@ -44,6 +44,9 @@ jobs:
       - name: Check Python format 
         run: |
           black . --check --exclude "build|.venv|venv|.env|env|deps"
+      - name: Check isort format
+        run: |
+          isort . --check --profile black --skip-glob deps --skip _deps
 
   cmake-format:
     runs-on: ubuntu-latest
@@ -55,14 +58,3 @@ jobs:
       - name: Check Cmake format
         run: |
           find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 
-
-  isort-format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Prepare isort format
-        run: |
-          sudo pip3 install isort
-      - name: Check isort format
-        run: |
-          isort . --check --profile black --skip-glob deps --skip _deps
