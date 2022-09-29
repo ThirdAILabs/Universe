@@ -16,6 +16,8 @@ class MockNode : public Node {
 
   MOCK_METHOD(bool, isInputNode, (), (const override));
 
+  MOCK_METHOD(void, enableDistributedTraining, (), (override));
+
  private:
   MOCK_METHOD(void, compileImpl, (), (override));
 

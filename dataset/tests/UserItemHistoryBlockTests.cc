@@ -3,6 +3,7 @@
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <dataset/src/utils/TimeUtils.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cstddef>
@@ -116,12 +117,11 @@ std::vector<std::vector<uint32_t>> processSamples(
   auto user_id_lookup = ThreadSafeVocabulary::make(n_users);
   auto item_id_lookup = ThreadSafeVocabulary::make(n_users * n_items_per_user);
 
-  auto records =
-      ItemHistoryCollection::make(user_id_lookup->vocabSize(), track_last_n);
+  auto records = ItemHistoryCollection::make(user_id_lookup->vocabSize());
 
   auto user_item_history_block = UserItemHistoryBlock::make(
       /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2,
-      user_id_lookup, item_id_lookup, records);
+      user_id_lookup, item_id_lookup, records, track_last_n);
 
   GenericBatchProcessor processor(
       /* input_blocks = */ {user_item_history_block},
@@ -191,7 +191,9 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
           /* track_last_n= */ 3, /* n_unique_users= */ 1,
-          /* n_unique_items= */ 4, /* item_col_delimiter= */ ' ')},
+          /* n_unique_items= */ 4, /* should_update_history= */ true,
+          /* include_current_row= */ false,
+          /* item_col_delimiter= */ ' ')},
       /* label_blocks= */ {},
       /* has_header= */ false,
       /* delimiter= */ ',',
@@ -208,5 +210,38 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
 
   ASSERT_EQ(active_neurons.size(), 3);
 }
+
+TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
+  std::vector<std::string> samples = {
+      {"user1,item1,2022-02-01"},
+      {"user1,item2,2022-02-02"},
+      {"user1,item3,2022-02-03"},
+      {"user1,item4,2022-02-08"},  // this sample is not past the lag.
+      {"user1,item5,2022-02-10"},
+  };
+
+  GenericBatchProcessor processor(
+      /* input_blocks= */ {UserItemHistoryBlock::make(
+          /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
+          /* track_last_n= */ 3, /* n_unique_users= */ 1,
+          /* n_unique_items= */ 5, /* should_update_history= */ true,
+          /* include_current_row= */ false,
+          /* item_col_delimiter= */ ' ',
+          /* time_lag= */ TimeObject::SECONDS_IN_DAY * 3)},
+      /* label_blocks= */ {},
+      /* has_header= */ false,
+      /* delimiter= */ ',',
+      /* parallel= */ false);
+
+  auto [batch, _] = processor.createBatch(samples);
+
+  // This means the block tracks the last 3 beyond lag.
+  ASSERT_EQ(batch[4].len, 3);
+}
+
+// TODO(Geordie): Test that if should_update_history == false, then history
+// should be the same before and after regardless of include_current_row
+// TODO(Geordie): Test that if include_current_row == true, then vector includes
+// last item, and not otherwise, regardless of should_update_history
 
 }  // namespace thirdai::dataset

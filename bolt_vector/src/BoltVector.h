@@ -312,6 +312,7 @@ struct BoltVector {
     for (uint32_t pos = k; pos < len; pos++) {
       uint32_t idx = isDense() ? pos : active_neurons[pos];
       ValueIndexPair val_idx_pair = {activations[pos], idx};
+      // top_k.top() is minimum element.
       if (val_idx_pair > top_k.top()) {
         top_k.pop();
         top_k.push(val_idx_pair);

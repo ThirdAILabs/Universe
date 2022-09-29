@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset {
 
@@ -37,11 +38,10 @@ class DenseArrayBlock : public Block {
 
   Explanation explainIndex(
       uint32_t index_within_block,
-      const std::vector<std::string_view>& columnar_sample) const final {
-    (void)columnar_sample;
-    (void)index_within_block;
-    throw std::invalid_argument(
-        "Explain feature is not yet implemented in dense array block!");
+      const std::vector<std::string_view>& input_row) final {
+    char* end;
+    float value = std::strtof(input_row.at(index_within_block).data(), &end);
+    return {_start_col + index_within_block, std::to_string(value)};
   }
 
  protected:
@@ -53,13 +53,9 @@ class DenseArrayBlock : public Block {
       float value = std::strtof(input_row.at(i).data(), &end);
       if (std::isinf(value)) {
         value = 0;
-        std::cout << "[DenseArrayBlock] WARNING: Found inf. Defaulting to 0."
-                  << std::endl;
       }
       if (std::isnan(value)) {
         value = 0;
-        std::cout << "[DenseArrayBlock] WARNING: Found NaN. Defaulting to 0."
-                  << std::endl;
       }
       vec.addDenseFeatureToSegment(value);
     }
@@ -70,5 +66,7 @@ class DenseArrayBlock : public Block {
   uint32_t _start_col;
   uint32_t _dim;
 };
+
+using DenseArrayBlockPtr = std::shared_ptr<DenseArrayBlock>;
 
 }  // namespace thirdai::dataset

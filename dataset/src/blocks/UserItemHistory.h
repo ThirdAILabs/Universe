@@ -35,31 +35,18 @@ struct ItemRecord {
 
 class ItemHistoryCollection {
  public:
-  ItemHistoryCollection(uint32_t n_histories, uint32_t max_items_per_history)
-      : _max_items_per_history(max_items_per_history),
-        _histories(n_histories) {}
-
-  void add(uint32_t history_id, uint32_t item_id, uint32_t timestamp) {
-    _histories.at(history_id).push_back({item_id, timestamp});
-    while (_histories.at(history_id).size() > _max_items_per_history) {
-      _histories.at(history_id).pop_front();
-    }
-  }
+  explicit ItemHistoryCollection(uint32_t n_histories)
+      : _histories(n_histories) {}
 
   uint32_t numHistories() const { return _histories.size(); }
 
-  uint32_t maxItemsPerHistory() const { return _max_items_per_history; }
+  auto& at(uint32_t history_id) { return _histories.at(history_id); }
 
-  const auto& at(uint32_t history_id) { return _histories.at(history_id); }
-
-  static std::shared_ptr<ItemHistoryCollection> make(
-      uint32_t n_histories, uint32_t max_items_per_history) {
-    return std::make_shared<ItemHistoryCollection>(n_histories,
-                                                   max_items_per_history);
+  static std::shared_ptr<ItemHistoryCollection> make(uint32_t n_histories) {
+    return std::make_shared<ItemHistoryCollection>(n_histories);
   }
 
  private:
-  uint32_t _max_items_per_history;
   std::vector<std::deque<ItemRecord>> _histories;
 
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
@@ -69,7 +56,7 @@ class ItemHistoryCollection {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_max_items_per_history, _histories);
+    archive(_histories);
   }
 };
 
@@ -89,15 +76,19 @@ class UserItemHistoryBlock final : public Block {
                        ThreadSafeVocabularyPtr user_id_map,
                        ThreadSafeVocabularyPtr item_id_map,
                        ItemHistoryCollectionPtr item_history_collection,
+                       uint32_t track_last_n, bool should_update_history = true,
+                       bool include_current_row = false,
                        std::optional<char> item_col_delimiter = std::nullopt,
                        int64_t time_lag = 0)
       : _user_col(user_col),
         _item_col(item_col),
         _timestamp_col(timestamp_col),
-        _track_last_n(item_history_collection->maxItemsPerHistory()),
+        _track_last_n(track_last_n),
         _user_id_lookup(std::move(user_id_map)),
         _item_id_lookup(std::move(item_id_map)),
         _per_user_history(std::move(item_history_collection)),
+        _should_update_history(should_update_history),
+        _include_current_row(include_current_row),
         _item_col_delimiter(item_col_delimiter),
         _time_lag(time_lag) {
     if (_user_id_lookup->vocabSize() > _per_user_history->numHistories()) {
@@ -115,6 +106,8 @@ class UserItemHistoryBlock final : public Block {
   UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
                        uint32_t timestamp_col, uint32_t track_last_n,
                        uint32_t n_unique_users, uint32_t n_unique_items,
+                       bool should_update_history = true,
+                       bool include_current_row = false,
                        std::optional<char> item_col_delimiter = std::nullopt,
                        int64_t time_lag = 0)
       : _user_col(user_col),
@@ -123,8 +116,9 @@ class UserItemHistoryBlock final : public Block {
         _track_last_n(track_last_n),
         _user_id_lookup(ThreadSafeVocabulary::make(n_unique_users)),
         _item_id_lookup(ThreadSafeVocabulary::make(n_unique_items)),
-        _per_user_history(
-            ItemHistoryCollection::make(n_unique_users, track_last_n)),
+        _per_user_history(ItemHistoryCollection::make(n_unique_users)),
+        _should_update_history(should_update_history),
+        _include_current_row(include_current_row),
         _item_col_delimiter(item_col_delimiter),
         _time_lag(time_lag) {}
 
@@ -141,31 +135,37 @@ class UserItemHistoryBlock final : public Block {
   static UserItemHistoryBlockPtr make(
       uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
       ThreadSafeVocabularyPtr user_id_map, ThreadSafeVocabularyPtr item_id_map,
-      ItemHistoryCollectionPtr records,
+      ItemHistoryCollectionPtr records, uint32_t track_last_n,
+      bool should_update_history = true, bool include_current_row = false,
       std::optional<char> item_col_delimiter = std::nullopt,
       int64_t time_lag = 0) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, std::move(user_id_map),
-        std::move(item_id_map), std::move(records), item_col_delimiter,
+        std::move(item_id_map), std::move(records), track_last_n,
+        should_update_history, include_current_row, item_col_delimiter,
         time_lag);
   }
 
   static UserItemHistoryBlockPtr make(
       uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
       uint32_t track_last_n, uint32_t n_unique_users, uint32_t n_unique_items,
+      bool should_update_history = true, bool include_current_row = false,
       std::optional<char> item_col_delimiter = std::nullopt,
       int64_t time_lag = 0) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, track_last_n, n_unique_users,
-        n_unique_items, item_col_delimiter, time_lag);
+        n_unique_items, should_update_history, include_current_row,
+        item_col_delimiter, time_lag);
   }
 
   // TODO(YASH): See whether length of history makes sense in explanations.
   Explanation explainIndex(
       uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) const final {
+      const std::vector<std::string_view>& input_row) final {
     (void)input_row;
-    return {_item_col, _item_id_lookup->getString(index_within_block)};
+    return {_item_col, "Previously seen '" +
+                           _item_id_lookup->getString(index_within_block) +
+                           "'"};
   }
 
  protected:
@@ -180,13 +180,28 @@ class UserItemHistoryBlock final : public Block {
       uint32_t user_id = _user_id_lookup->getUid(user_str);
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
-      auto item_ids = getItemIds(item_str);
+      std::vector<uint32_t> item_ids;
+      if (!item_str.empty()) {
+        item_ids = getItemIds(item_str);
+      }
 
 #pragma omp critical(user_item_history_block)
       {
-        extendVectorWithUserHistory(user_id, timestamp_seconds - _time_lag,
-                                    vec);
-        addItemsToUserHistory(user_id, timestamp_seconds, item_ids);
+        if (_include_current_row) {
+          addNewItemsToUserHistory(user_id, timestamp_seconds, item_ids);
+        }
+
+        extendVectorWithUserHistory(
+            user_id, timestamp_seconds - _time_lag, vec,
+            /* remove_outdated_elements= */ _should_update_history);
+
+        if (_include_current_row && !_should_update_history) {
+          removeNewItemsFromUserHistory(user_id, item_ids);
+        }
+
+        if (!_include_current_row && _should_update_history) {
+          addNewItemsToUserHistory(user_id, timestamp_seconds, item_ids);
+        }
       }
     } catch (...) {
       return std::current_exception();
@@ -212,26 +227,47 @@ class UserItemHistoryBlock final : public Block {
   }
 
   void extendVectorWithUserHistory(uint32_t user_id, int64_t timestamp_seconds,
-                                   SegmentedFeatureVector& vec) {
+                                   SegmentedFeatureVector& vec,
+                                   bool remove_outdated_elements) {
+    uint32_t seen = 0;
     uint32_t added = 0;
 
-    for (const auto& item : _per_user_history->at(user_id)) {
+    auto& user_history = _per_user_history->at(user_id);
+
+    for (auto record = user_history.rbegin(); record != user_history.rend();
+         record++) {
+      if (record->timestamp <= timestamp_seconds) {
+        vec.addSparseFeatureToSegment(record->item, 1.0);
+        added++;
+      }
+      seen++;
+
       if (added >= _track_last_n) {
         break;
       }
+    }
 
-      if (item.timestamp <= timestamp_seconds) {
-        vec.addSparseFeatureToSegment(item.item, 1.0);
-        added++;
-      }
+    if (remove_outdated_elements) {
+      uint32_t n_outdated = user_history.size() - seen;
+      user_history.erase(user_history.begin(),
+                         user_history.begin() + n_outdated);
     }
   }
 
-  void addItemsToUserHistory(uint32_t user_id, int64_t timestamp_seconds,
-                             std::vector<uint32_t>& item_ids) {
-    for (const auto& item_id : item_ids) {
-      _per_user_history->add(user_id, item_id, timestamp_seconds);
+  // Returns elements removed from the item history in chronological order.
+  void addNewItemsToUserHistory(uint32_t user_id, int64_t timestamp_seconds,
+                                std::vector<uint32_t>& new_item_ids) {
+    std::vector<ItemRecord> removed_elements;
+    for (const auto& item_id : new_item_ids) {
+      _per_user_history->at(user_id).push_back({item_id, timestamp_seconds});
     }
+  }
+
+  void removeNewItemsFromUserHistory(uint32_t user_id,
+                                     std::vector<uint32_t>& new_item_ids) {
+    auto& user_history = _per_user_history->at(user_id);
+    user_history.erase(user_history.begin(),
+                       user_history.begin() + new_item_ids.size());
   }
 
   uint32_t _user_col;
@@ -244,6 +280,8 @@ class UserItemHistoryBlock final : public Block {
 
   std::shared_ptr<ItemHistoryCollection> _per_user_history;
 
+  bool _should_update_history;
+  bool _include_current_row;
   std::optional<char> _item_col_delimiter;
   int64_t _time_lag;
 };

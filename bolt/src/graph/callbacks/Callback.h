@@ -111,6 +111,8 @@ class CallbackList {
     }
   }
 
+  uint64_t numCallbacks() const { return _callbacks.size(); }
+
  private:
   std::vector<CallbackPtr> _callbacks;
 };

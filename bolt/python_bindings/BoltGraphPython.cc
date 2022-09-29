@@ -1,7 +1,7 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
 #include "PyCallback.h"
-#include <bolt/src/graph/DistributedBoltGraph.h>
+#include <bolt/src/graph/DistributedTrainingWrapper.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
@@ -17,14 +17,20 @@
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Switch.h>
 #include <dataset/src/Datasets.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
+#include <pybind11/pytypes.h>
 #include <optional>
 #include <string>
 
 namespace thirdai::bolt::python {
+
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
+  using ParameterArray =
+      py::array_t<float, py::array::c_style | py::array::forcecast>;
 
+  using SerializedCompressedVector = py::array_t<char, py::array::c_style>;
   py::class_<ParameterReference>(graph_submodule, "ParameterReference")
       .def("copy", &ParameterReference::copy,
            "Returns a copy of the parameters held in the ParameterReference as "
@@ -48,12 +54,26 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "sample_population_size is the number of random samples you take "
            "for estimating a threshold for dragon compression or the number of "
            "sketches needed for count_sketch")
-      .def("set", &ParameterReference::set, py::arg("new_params"),
-           py::arg("from_compressed") = false,
-           "Either takes in a numpy array and copies its contents into the "
-           "parameters held in the ParameterReference object. Or takes in a "
-           "char array representing a compressed vector object and a boolean "
-           "indicating that parameters are being set from a compressed vector.")
+      /*
+       * NOTE: The order of set functions is important for correct parameter
+       * overloading Pybind will first try the first set method, which will only
+       * work with an array of chars (a serialized compressed vector), since
+       * SerializedCompressedVector does not specify py::array::forcecast.
+       * Pybind will then try the second set method, which will work with any
+       * pybind array that can be converted to floats, keeping the normal
+       * behavior of setting parameters the same. See
+       * https://pybind11.readthedocs.io/en/stable/advanced/functions.html#overload-resolution-order
+       */
+      .def("set",
+           py::overload_cast<SerializedCompressedVector&>(
+               &ParameterReference::set),
+           py::arg("new_params"),
+           "Takes a char array as input that represents a compressed vector "
+           "and decompresses and copies into the ParameterReference object.")
+      .def("set", py::overload_cast<ParameterArray&>(&ParameterReference::set),
+           py::arg("new_params"),
+           "Takes a numpy array of floats as input and copies its contents "
+           "into the parameters held in the parameter reference object.")
       /*
        * TODO(Shubh):We should make a Compressed vector module at python
        * end to deal with concat function. Since, compressed vectors have an
@@ -74,7 +94,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
                                      "InferenceOutput");
 
-  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
+  py::class_<Node, NodePtr>(graph_submodule, "Node")
+      .def_property_readonly("name", [](Node& node) { return node.name(); });
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
                                                               "FullyConnected")
@@ -214,7 +235,30 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * log_embedding_block_size: Int (positive) The log base 2 of the "
            "total size of the embedding block.\n")
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
-           "Tells the graph which token input to use for this Embedding Node.");
+           "Tells the graph which token input to use for this Embedding Node.")
+      .def_property_readonly(
+          "weights",
+          [](EmbeddingNode& node) {
+            std::vector<float>& raw_embedding_block =
+                node.getRawEmbeddingBlock();
+            return ParameterReference(
+                raw_embedding_block.data(),
+                {static_cast<uint32_t>(raw_embedding_block.size())});
+          },
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight matrix.")
+      .def_property_readonly(
+          "weight_gradients",
+          [](EmbeddingNode& node) {
+            std::vector<float>& raw_embedding_block_gradient =
+                node.getRawEmbeddingBlockGradient();
+            return ParameterReference(
+                raw_embedding_block_gradient.data(),
+                {static_cast<uint32_t>(raw_embedding_block_gradient.size())});
+          },
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight gradients "
+          "matrix.");
 
   graph_submodule.def("TokenInput", &Input::makeTokenInput, py::arg("dim"),
                       py::arg("num_tokens_range"));
@@ -238,7 +282,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
            py::arg("embedding_layer"));
 
-  py::class_<TrainConfig>(graph_submodule, "TrainConfig")
+  py::class_<TrainConfig, TrainConfigPtr>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
@@ -251,7 +295,17 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"));
+           py::arg("predict_config"))
+      .def_property_readonly(
+          "num_epochs", [](TrainConfig& config) { return config.epochs(); },
+          "Returns the number of epochs a model with this TrainConfig will "
+          "train for.")
+      .def_property_readonly(
+          "learning_rate",
+          [](TrainConfig& config) { return config.learningRate(); },
+          "Returns the learning rate a model with this TrainConfig will train "
+          "with.")
+      .def(getPickleFunction<TrainConfig>());
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)
@@ -260,7 +314,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("silence", &PredictConfig::silence)
       .def("return_activations", &PredictConfig::returnActivations);
 
-  py::class_<BoltGraph>(graph_submodule, "Model")
+  py::class_<BoltGraph, BoltGraphPtr>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"
@@ -494,49 +548,30 @@ That's all for now, folks! More docs coming soon :)
            "assigned name. As such, must be called after compile. You can "
            "determine which layer is which by printing a graph summary. "
            "Possible operations to perform on the returned object include "
-           "setting layer sparsity, freezing weights, or saving to a file");
+           "setting layer sparsity, freezing weights, or saving to a file")
+      .def("nodes", &BoltGraph::getNodeTraversalOrder,
+           "Returns a list of all Nodes that make up the graph in traversal "
+           "order. This list is guaranetted to be static after a model is "
+           "compiled.")
+      .def(getPickleFunction<BoltGraph>());
 
-  py::class_<DistributedTrainingContext>(graph_submodule, "DistributedModel")
-      .def(py::init<std::vector<InputPtr>, NodePtr,
-                    const std::vector<dataset::BoltDatasetPtr>&,
-                    const dataset::BoltDatasetPtr&, const TrainConfig&,
-                    std::shared_ptr<LossFunction>, bool>(),
-           py::arg("inputs"), py::arg("output"), py::arg("train_data"),
-           py::arg("train_labels"), py::arg("train_config"), py::arg("loss"),
-           py::arg("print_when_done") = true,
-           "Constucts a Bolt Graph Model For a Single Node"
-           "It constructs a Bolt Graph and initializes the training."
-           "This class further provide multiple APIs to be use in "
-           "Distributed setting.")
-      .def("calculateGradientSingleNode",
-           &DistributedTrainingContext::calculateGradientSingleNode,
-           py::arg("batch_idx"),
-           "This function trains the BoltGraph Model with training"
-           " batch(batch_indx)")
-      .def("updateParametersSingleNode",
-           &DistributedTrainingContext::updateParametersSingleNode,
-           "This function is called to update parameter using the"
-           " gradients.")
-      .def("numTrainingBatch", &DistributedTrainingContext::numTrainingBatches,
-           "Returns the number of training batch avaailable to this"
-           " BoltGraph")
-      .def("finishTraining", &DistributedTrainingContext::finishTraining)
-      .def(
-          "predict",
-          [](DistributedTrainingContext& model,
-             const dataset::BoltDatasetPtr& data,
-             const dataset::BoltDatasetPtr& labels,
-             const PredictConfig& predict_config) {
-            return dagPredictPythonWrapper(model._bolt_graph, {data}, labels,
-                                           predict_config);
-          },
-          py::arg("test_data"), py::arg("test_labels"),
-          py::arg("predict_config"),
-          "Returns the inference result using test_data, test_labels"
-          " and predict_config")
-      .def("get_layer", &DistributedTrainingContext::getNodeByName,
-           py::arg("layer_name"),
-           "Returns the pointer to layer with name layer_name");
+  py::class_<DistributedTrainingWrapper>(bolt_submodule,
+                                         "DistributedTrainingWrapper")
+      .def(py::init<BoltGraphPtr, std::vector<dataset::BoltDatasetPtr>,
+                    dataset::BoltDatasetPtr, TrainConfig>(),
+           py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
+           py::arg("train_config"))
+      .def("compute_and_store_batch_gradients",
+           &DistributedTrainingWrapper::computeAndSaveBatchGradients,
+           py::arg("batch_idx"))
+      .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
+      .def("finish_training", &DistributedTrainingWrapper::finishTraining)
+      .def_property_readonly(
+          "model",
+          [](DistributedTrainingWrapper& node) { return node.getModel(); },
+          py::return_value_policy::reference_internal,
+          "The underlying Bolt model wrapped by this "
+          "DistributedTrainingWrapper.");
 
   createCallbacksSubmodule(graph_submodule);
 }

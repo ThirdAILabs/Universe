@@ -3,7 +3,9 @@
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
+#include <dataset/src/utils/TimeUtils.h>
 #include <cmath>
+#include <string_view>
 
 namespace thirdai::dataset {
 
@@ -20,9 +22,10 @@ TEST(UserCountHistoryBlockTest, ExplanationWorks) {
   auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 1,
                                                     /* history_length= */ 5);
 
-  auto block =
-      UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
-                                  /* timestamp_col= */ 2, count_history);
+  auto block = UserCountHistoryBlock::make(
+      /* user_col= */ 0, /* count_col= */ 1,
+      /* timestamp_col= */ 2, count_history,
+      /* should_update_history= */ true, /* include_current_row= */ true);
 
   std::vector<std::string> input_rows = {
       {"user,0,2022-02-02"}, {"user,1,2022-02-03"}, {"user,2,2022-02-04"},
@@ -59,9 +62,10 @@ TEST(UserCountHistoryBlockTest, NoNormalizeWhenLookbackPeriodsEqualsOne) {
   auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 1,
                                                     /* history_length= */ 1);
 
-  auto block =
-      UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
-                                  /* timestamp_col= */ 2, count_history);
+  auto block = UserCountHistoryBlock::make(
+      /* user_col= */ 0, /* count_col= */ 1,
+      /* timestamp_col= */ 2, count_history,
+      /* should_update_history= */ true, /* include_current_row= */ true);
 
   std::vector<std::string> input_rows = {
       {"user,33,2022-02-02"},
@@ -81,9 +85,10 @@ TEST(UserCountHistoryBlockTest, NormalizeWhenLookbackPeriodsGreaterThanOne) {
   auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 1,
                                                     /* history_length= */ 5);
 
-  auto block =
-      UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
-                                  /* timestamp_col= */ 2, count_history);
+  auto block = UserCountHistoryBlock::make(
+      /* user_col= */ 0, /* count_col= */ 1,
+      /* timestamp_col= */ 2, count_history,
+      /* should_update_history= */ true, /* include_current_row= */ true);
 
   std::vector<std::string> input_rows = {
       {"user,0,2022-02-02"}, {"user,1,2022-02-03"}, {"user,2,2022-02-04"},
@@ -132,9 +137,10 @@ TEST(UserCountHistoryBlockTest, NotNumbersTreatedAsZero) {
   auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 0,
                                                     /* history_length= */ 1);
 
-  auto block =
-      UserCountHistoryBlock::make(/* user_col= */ 0, /* count_col= */ 1,
-                                  /* timestamp_col= */ 2, count_history);
+  auto block = UserCountHistoryBlock::make(
+      /* user_col= */ 0, /* count_col= */ 1,
+      /* timestamp_col= */ 2, count_history,
+      /* should_update_history= */ true, /* include_current_row= */ true);
 
   std::vector<std::string> input_rows = {
       {"user,nan,2022-02-02"},
@@ -150,5 +156,80 @@ TEST(UserCountHistoryBlockTest, NotNumbersTreatedAsZero) {
     ASSERT_EQ(vector.activations[0], 0.0);
   }
 }
+
+TEST(UserCountHistoryBlockTest,
+     HistoryDoesNotChangeWhenShouldUpdateHistoryIsFalse) {
+  auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 0,
+                                                    /* history_length= */ 1);
+
+  auto block = UserCountHistoryBlock::make(
+      /* user_col= */ 0, /* count_col= */ 1,
+      /* timestamp_col= */ 2, count_history,
+      /* should_update_history= */ false, /* include_current_row= */ true);
+
+  std::string key = "user";
+  std::string val = "5";
+  std::string timestamp = "2022-02-02";
+
+  std::vector<std::string> input_rows = {
+      {key + "," + val + "," + timestamp},
+  };
+
+  auto count_before = count_history->getHistory(
+      key, TimeObject(std::string_view(timestamp.data())).secondsSinceEpoch());
+
+  processBatch(block, input_rows);
+
+  std::vector<std::string_view> input_row_view(3);
+  input_row_view[0] = std::string_view(key.data(), /* len= */ 4);
+  input_row_view[1] = std::string_view(val.data(), /* len= */ 1);
+  input_row_view[2] = std::string_view(timestamp.data(), /* len= */ 10);
+  block->explainIndex(/* index_within_block= */ 0, input_row_view);
+
+  auto count_after =
+      count_history->getHistory(key, TimeObject(timestamp).secondsSinceEpoch());
+
+  ASSERT_EQ(count_before[0], count_after[0]);
+}
+
+TEST(UserCountHistoryBlockTest, IncludeCurrentRowFlagWorks) {
+  // Make sure that if include_current_row is false, a row's count column
+  // is not included in the corresponding vector.
+  auto count_history = QuantityHistoryTracker::make(/* history_lag= */ 0,
+                                                    /* history_length= */ 3);
+
+  auto block = UserCountHistoryBlock::make(
+      /* user_col= */ 0, /* count_col= */ 1,
+      /* timestamp_col= */ 2, count_history,
+      /* should_update_history= */ true, /* include_current_row= */ false);
+
+  std::vector<std::string> input_rows = {
+      {"user,1,2022-02-02"},
+      {"user,5,2022-02-04"},
+      {"user,4,2022-02-05"},
+  };
+
+  auto batch = processBatch(block, input_rows);
+
+  auto last_vector = batch[2];
+
+  // First make sure that the the exclude current row block only excludes
+  // the current row but still tracks previous over time.
+  for (uint32_t i = 0; i < 3; i++) {
+    // We can be sure that none of the counts are zero because
+    // the average of 1, 5, and 0 is 2 (not 1, 5, or 0)
+    ASSERT_NE(last_vector.activations[i], 0);
+  }
+
+  /*
+    Since we exclude the current row, the count on 2022-02-05 is 0, which
+    is lower than average. Therefore, we expect that the activation at
+    position 2 is < 0 after normalization.
+  */
+  ASSERT_LT(last_vector.activations[2], 0);
+}
+
+// TODO(Geordie): Test that if include_current_row == true, then vector includes
+// last item, and not otherwise, regardless of should_update_history
 
 }  // namespace thirdai::dataset

@@ -231,6 +231,14 @@ class Node {
     return *_name;
   }
 
+  // This function tells this Node it will be used during distributed training.
+  // This chiefly is relevant during paramemeter updates,
+  // when a Node needs to know that it cannot rely on its own tracking of which
+  // neurons were activated (since the gradient will also be aggregated from
+  // other machines), and so it should do a dense parameter update no matter
+  // what.
+  virtual void enableDistributedTraining() = 0;
+
   virtual ~Node() = default;
 
  protected:

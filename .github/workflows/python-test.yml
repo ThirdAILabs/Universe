@@ -37,3 +37,22 @@ jobs:
 
       - name: Run python integration tests
         run: bin/python-test.sh -m integration
+
+  distributed-python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+      # the rest of the steps
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+        
+      - name: Build python package and install test dependencies
+        run: bin/build.py --extras test
+
+      - name: Call build again to also install distributed dependencies
+        run: bin/build.py --extras distributed
+
+      - name: Run python distributed tests
+        run: bin/python-test.sh -m distributed
