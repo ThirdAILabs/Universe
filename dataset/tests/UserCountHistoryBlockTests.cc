@@ -175,8 +175,8 @@ TEST(UserCountHistoryBlockTest,
       {key + "," + val + "," + timestamp},
   };
 
-  auto count_before =
-      count_history->getHistory(key, TimeObject(std::string_view(timestamp.data())).secondsSinceEpoch());
+  auto count_before = count_history->getHistory(
+      key, TimeObject(std::string_view(timestamp.data())).secondsSinceEpoch());
 
   processBatch(block, input_rows);
 
