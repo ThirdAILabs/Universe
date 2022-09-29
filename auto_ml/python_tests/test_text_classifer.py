@@ -10,6 +10,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.release]
 
 TRAIN_FILE = "./clinc_train.csv"
 TEST_FILE = "./clinc_test.csv"
+CONFIG_FILE = "./saved_clinc_config"
 SAVE_FILE = "./saved_clinc_model_pipeline"
 
 
@@ -96,8 +97,10 @@ def trained_text_classifier(clinc_dataset):
         train_eval_parameters=train_eval_params,
     )
 
+    config.save(CONFIG_FILE)
+
     model = dc.ModelPipeline(
-        deployment_config=config,
+        config_path=CONFIG_FILE,
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
 

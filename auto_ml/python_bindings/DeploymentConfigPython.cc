@@ -138,10 +138,14 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
       .def(py::init<DatasetLoaderFactoryConfigPtr, ModelConfigPtr,
                     TrainEvalParameters>(),
            py::arg("dataset_config"), py::arg("model_config"),
-           py::arg("train_eval_parameters"));
+           py::arg("train_eval_parameters"))
+      .def("save", &DeploymentConfig::save, py::arg("filename"))
+      .def_static("load", &DeploymentConfig::load, py::arg("filename"));
 
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
+           py::arg("parameters") = py::none())
+      .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
            py::arg("parameters") = py::none())
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
