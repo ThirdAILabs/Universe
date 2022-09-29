@@ -276,7 +276,13 @@ py::module_ createBoltSubmodule(py::module_& module) {
   py::class_<SequentialClassifier>(bolt_submodule, "Oracle",
                                    R"pbdoc( 
     An all-purpose classifier for tabular datasets. In addition to learning from
-    the columns of a single row, Oracle can make use of temporal features
+    the columns of a single row, Oracle can make use of "temporal context". For 
+    example, if used to build a movie recommender, Oracle may use information 
+    about the last 5 movies that a user has watched to recommend the next movie.
+    Similarly, if used to forecast the outcome of marketing campaigns, Oracle may 
+    use several months' worth of campaign history for each product to make better
+    forecasts.
+    
                                    )pbdoc")
       .def(py::init<std::map<std::string, sequential_classifier::DataType>,
                     std::map<std::string,
@@ -307,21 +313,31 @@ py::module_ createBoltSubmodule(py::module_& module) {
             There can only be one bolt.types.date() column.
         temporal_tracking_relationships (Dict[str, List[str or bolt.temporal]]): A mapping 
             from column name to a list of either other column names or bolt.temporal objects.
+            This mapping tells Oracle what columns can be tracked over time for each key.
+            For example, we may want to tell Oracle that we want to track a user's watch 
+            history by passing in a map like `{"user_id": ["movie_id"]}`
 
-            
-            
+            If we provide a mapping from a string to a list of strings like the above, 
+            the temporal tracking configuration will be autotuned. We can take control by 
+            passing in bolt.temporal objects intead of strings.
+
             bolt.temporal object is one of:
             - `bolt.temporal.categorical(column_name: str, track_last_n: int, column_known_during_inference: bool=False)
             - `bolt.temporal.numerical(column_name: str, history_length: int, column_known_during_inference: bool=False)
             See bolt.temporal for details.
-
-            AAAA
         target (str): Name of the column that contains the value to be predicted by
             Oracle. The target column has to be a categorical column.
-        time_granularity (str): Optional. The AAAAA Defaults to "daily".
+        time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
+            or `"monthly"`/`"m"`. Interval of time that we are interested in. Temporal numerical 
+            features are clubbed according to this time granularity. E.g. if 
+            `time_granularity="w"` and the numerical values on days 1 and 2 are
+            345.25 and 201.1 respectively, then Oracle captures a single numerical 
+            value of 546.26 for the week instead of individual values for the two days.
+            Defaults to "daily".
         lookahead (str): Optional. How far into the future the model needs to predict. This length of
             time is in terms of time_granularity. E.g. 'time_granularity="daily"` and 
-            `lookahead=5` means the model needs to learn to predict 5 days ahead. Defaults to 1.
+            `lookahead=5` means the model needs to learn to predict 5 days ahead. Defaults to 0
+            (predict the immediate next thing).
 
     Examples:
         >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
@@ -348,6 +364,24 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 target="sales_performance"
                 time_granularity="weekly",
                 lookahead=2 # predict 2 weeks ahead
+            )
+        >>> # Alternatively suppose our data has the following columns: "user_id", "movie_id", "hours_watched", "timestamp"
+        >>> # We want to build a movie recommendation system.
+        >>> # Then we may configure Oracle as follows:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "user_id": bolt.types.categorical(n_unique_classes=5000),
+                    "timestamp": bolt.types.date(),
+                    "movie_id": bolt.types.categorical(n_unique_classes=3000),
+                    "hours_watched": bolt.types.numerical(),
+                },
+                temporal_tracking_relationships={
+                    "user_id": [
+                        "movie_id", # autotuned movie temporal tracking
+                        bolt.temporal.numerical(column_name="hours_watched", history_length="5") # track last 5 days of hours watched.
+                    ]
+                },
+                target="movie_id"
             )
 
     Notes:
@@ -577,9 +611,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
           new true samples. `model.explain()` does not update Oracle's temporal context.
           To do this, we need to use `model.index()`. Read about `model.index()` for details.
            )pbdoc")
-      .def(
-          "index", &SequentialClassifier::indexSingle, py::arg("sample"),
-          R"pbdoc(
+      .def("index", &SequentialClassifier::indexSingle, py::arg("sample"),
+           R"pbdoc(
 
     Indexes a single true sample to keep Oracle's temporal context up to date.
 
