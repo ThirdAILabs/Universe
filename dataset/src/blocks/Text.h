@@ -23,7 +23,7 @@ class TextBlock : public Block {
 
   Explanation explainIndex(
       uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) const final {
+      const std::vector<std::string_view>& input_row) final {
     return {_col, getResponsibleWord(index_within_block, input_row.at(_col))};
   }
 

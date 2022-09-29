@@ -1,11 +1,6 @@
-from numpy import partition
-import ray
-import time
-from typing import Tuple, Any, Optional, Dict, List
-from thirdai._distributed_bolt._models.fully_connected_network_model import (
-    FullyConnectedNetworkSingleNode,
-)
+from thirdai._thirdai import bolt
 import thirdai._distributed_bolt.backend.communication as comm
+from ..utils import parse_svm_dataset, get_gradients
 
 
 class Worker:
@@ -21,32 +16,29 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
+        model_to_wrap: bolt.graph,
+        train_file_name: str,
         id: int,
         primary_worker,
-        config,
-        layer_dims,
-        communication_type,
+        train_config: bolt.graph.TrainConfig,
+        communication_type: str,
+        batch_size: int,
     ):
         """
-        Initializes the worker to run
-
-        :param num_workers: total number of nodes
-        :type num_workers: int
-        :param id: id of this particular worker
-        :type id: int
-        :param primary_worker: Primary Worker
-        :type primary_worker: ray.actor
-        :param config: configuration file for setting up the network
-        :type config: Dict
-        :param layer_dims: dimensions for network
-        :type layer_dims: List[int]
-        :param communication_type: type of communication
-        :type communication_type: string
+        Initializes the worker, including wrapping the passed in model in a
+        DistributedWrapper with the dataset read in.
         """
 
-        self.model = FullyConnectedNetworkSingleNode(
-            config, num_workers, layer_dims, id
+        self.train_data, self.train_labels = parse_svm_dataset(
+            train_file_name, batch_size
         )
+        self.model = bolt.DistributedTrainingWrapper(
+            model=model_to_wrap,
+            train_data=[self.train_data],
+            train_labels=self.train_labels,
+            train_config=train_config,
+        )
+
         # Set up variables
         self.num_workers = num_workers
         self.id = id
@@ -75,8 +67,8 @@ class Worker:
     def process_ring(
         self,
         update_id: int,
-        reduce: Optional[bool] = True,
-        avg_gradients: Optional[bool] = False,
+        reduce: bool = True,
+        avg_gradients: bool = False,
     ):
         """
         This function handles the circular all reduce
@@ -84,9 +76,9 @@ class Worker:
         :param update_id: The update sequence id
         :type update_id: int
         :param reduce: True if reduce, False if gather, defaults to True
-        :type reduce: Optional[bool], optional
+        :type reduce: bool
         :param avg_gradients: whether the update requires updating the gradients, defaults to False
-        :type avg_gradients: Optional[bool], optional
+        :type avg_gradients: bool
         """
         self.comm.process_ring(update_id, reduce, avg_gradients)
 
@@ -101,7 +93,7 @@ class Worker:
         """
         return self.comm.receive_array_partitions(update_id)
 
-    def calculate_gradients(self, batch_no: int):
+    def compute_and_store_batch_gradients(self, batch_no: int):
         """
         This function is called only when the mode of communication is
         linear.
@@ -118,8 +110,7 @@ class Worker:
         :return: check whether training is complete or not
         :rtype: bool
         """
-        self.comm.calculate_gradients(batch_no)
-        return True
+        self.comm.compute_and_store_batch_gradients(batch_no)
 
     def get_calculated_gradients(self):
         """
@@ -134,36 +125,9 @@ class Worker:
         :return: Model Gradients
         :rtype: numpy.ndarray
         """
-        return self.model.get_calculated_gradients()
+        return get_gradients(self.model)
 
-    def return_params(self):
-        """
-        This function will only be called for worker having its id 0.
-        The primary_worker will call this function to get the initial random
-        weights from worker with id 0 and then send those weights to all
-        the workers.
-
-        :return: Model Parameters
-        :rtype: numpy.ndarray
-        """
-        return self.model.get_parameters()
-
-    def synchronize_parameters(self) -> bool:
-        """
-        This function is called by primary_worker to all the workers whose id
-        is not equal to 0. This function gets the initialized random weight
-        ans biases from worker with id = 0. and sets the weight on all
-        the other workers.
-
-        :return: signals the synchronization is complete
-        :rtype: bool
-        """
-        if self.id != 0:
-            weights, biases = ray.get(self.primary_worker.get_weights_biases.remote())
-            self.model.set_parameters(weights, biases)
-        return True
-
-    def receive_gradients(self) -> bool:
+    def receive_gradients(self):
         """
         This function is called only when the communication pattern choosen
         is circular.
@@ -175,29 +139,22 @@ class Worker:
         :rtype: bool
         """
         self.comm.receive_gradients()
-        return True
 
-    def update_parameters(self, learning_rate: float) -> bool:
+    def update_parameters(self):
         """
         This function calls updateParameter function inside bolt, which
         inherently updates the entire network.
-
-        :param learning_rate: the learning rate for updating the parameters
-        :type learning_rate: float
-        :return: Returns true if function completes successfully
-        :rtype: bool
         """
-        self.model.update_parameters(learning_rate)
-        return True
+        self.model.update_parameters()
 
     def num_of_batches(self) -> int:
         """
         This function returns the total number of batches the workers have.
         """
-        return self.model.num_of_batches()
+        return len(self.train_data)
 
     def finish_training(self):
         self.model.finish_training()
 
-    def predict(self):
-        return self.model.predict()
+    def model(self):
+        return self.model.model

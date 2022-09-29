@@ -55,7 +55,7 @@ def main():
         "-e",
         "--extras",
         default="", 
-        choices=["", "test", "benchmark", "distributed", "all"],
+        choices=["", "test", "benchmark", "distributed", "all", "docs"],
         metavar="EXTRAS",  # Don't print the choices because they're ugly
         help="A string corresponding to the additional python dependencies the build should ensure are installed. See setup.py for the specific packages each option entails.",
     )
