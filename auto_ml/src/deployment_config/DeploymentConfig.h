@@ -1,7 +1,8 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <cereal/specialize.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_set.hpp>
 #include "DatasetConfig.h"
@@ -68,14 +69,14 @@ class DeploymentConfig {
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
+    cereal::PortableBinaryOutputArchive oarchive(filestream);
     oarchive(*this);
   }
 
   static std::shared_ptr<DeploymentConfig> load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
+    cereal::PortableBinaryInputArchive iarchive(filestream);
     std::shared_ptr<DeploymentConfig> deserialize_into(new DeploymentConfig());
     iarchive(*deserialize_into);
 
