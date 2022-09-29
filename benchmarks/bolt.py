@@ -4,7 +4,9 @@ import pathlib
 import sys
 
 import numpy as np
-from thirdai import bolt, dataset, setup_logging
+
+from thirdai import bolt, dataset
+import thirdai
 
 from utils import (
     config_get_required,
@@ -24,7 +26,7 @@ def main():
         description="Creates, trains, and tests a bolt network on the specified config."
     )
 
-    setup_logging(
+    thirdai.logging.setup(
         log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level
     )
 
