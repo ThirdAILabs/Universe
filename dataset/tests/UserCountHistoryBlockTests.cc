@@ -176,14 +176,14 @@ TEST(UserCountHistoryBlockTest,
   };
 
   auto count_before =
-      count_history->getHistory(key, TimeObject(timestamp).secondsSinceEpoch());
+      count_history->getHistory(key, TimeObject(std::string_view(timestamp.data())).secondsSinceEpoch());
 
   processBatch(block, input_rows);
 
   std::vector<std::string_view> input_row_view(3);
   input_row_view[0] = std::string_view(key.data(), /* len= */ 4);
   input_row_view[1] = std::string_view(val.data(), /* len= */ 1);
-  input_row_view[2] = std::string_view(timestamp.data() + 7, /* len= */ 10);
+  input_row_view[2] = std::string_view(timestamp.data(), /* len= */ 10);
   block->explainIndex(/* index_within_block= */ 0, input_row_view);
 
   auto count_after =
