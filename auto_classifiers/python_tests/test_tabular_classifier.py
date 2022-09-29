@@ -4,8 +4,10 @@ from multiprocessing.sharedctypes import Value
 
 import pandas as pd
 import pytest
-from auto_classifier_utils import (check_autoclassifier_predict_correctness,
-                                   compute_accuracy_of_predictions)
+from auto_classifier_utils import (
+    check_autoclassifier_predict_correctness,
+    compute_accuracy_of_predictions,
+)
 from thirdai import bolt
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]

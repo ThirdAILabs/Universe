@@ -9,8 +9,10 @@ import time
 
 import numpy as np
 import thirdai
-from doc_retrieval_helpers import (get_build_and_run_functions_random,
-                                   get_build_and_run_functions_restful)
+from doc_retrieval_helpers import (
+    get_build_and_run_functions_random,
+    get_build_and_run_functions_restful,
+)
 
 
 @pytest.mark.unit

@@ -1,4 +1,5 @@
 import argparse
+
 # Add the logging folder to the system path
 import sys
 import time

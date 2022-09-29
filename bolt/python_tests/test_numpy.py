@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
 
-from utils import (build_train_and_predict_single_hidden_layer,
-                   gen_numpy_training_data)
+from utils import build_train_and_predict_single_hidden_layer, gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
 

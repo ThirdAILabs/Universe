@@ -15,6 +15,7 @@ import thirdai.bolt as bolt
 import thirdai.dataset as dataset
 import thirdai.hashing as hashing
 import thirdai.search as search
+
 # Relay __version__ from C++
 from thirdai._thirdai import __version__, setup_logging
 
