@@ -2,6 +2,7 @@
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <sys/types.h>
+#include <utils/Logging.h>
 #include <algorithm>
 #include <atomic>
 #include <cstdlib>
