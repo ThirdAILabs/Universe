@@ -26,7 +26,7 @@ class TabularPairGram : public Block {
 
   Explanation explainIndex(
       uint32_t index_within_block,
-      const std::vector<std::string_view>& columnar_sample) const final {
+      const std::vector<std::string_view>& columnar_sample) final {
     (void)columnar_sample;
     (void)index_within_block;
     throw std::invalid_argument(

@@ -47,12 +47,32 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
 
-  py::class_<Explanation>(dataset_submodule, "Explanation")
-      .def_readonly("column_number", &Explanation::column_number)
+  py::class_<Explanation>(dataset_submodule, "Explanation",
+                          R"pbdoc(
+     Represents an input column that is responsible for a predicted
+     outcome.
+      )pbdoc")
+      .def_readonly("column_number", &Explanation::column_number,
+                    R"pbdoc(
+     Identifies the responsible input column.
+      )pbdoc")
       .def_readonly("percentage_significance",
-                    &Explanation::percentage_significance)
-      .def_readonly("keyword", &Explanation::keyword)
-      .def_readonly("column_name", &Explanation::column_name);
+                    &Explanation::percentage_significance,
+                    R"pbdoc(
+     The column's contribution to the predicted outcome. Can be 
+     positive or negative depending on the relationship between 
+     the responsible column and the prediction. For example, it
+     can be negative if the responsible input column and the 
+     prediction are negatively correlated.
+      )pbdoc")
+      .def_readonly("keyword", &Explanation::keyword,
+                    R"pbdoc(
+     A brief description of the value in this column.
+      )pbdoc")
+      .def_readonly("column_name", &Explanation::column_name,
+                    R"pbdoc(
+     Identifies the responsible input column.
+      )pbdoc");
 
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",
