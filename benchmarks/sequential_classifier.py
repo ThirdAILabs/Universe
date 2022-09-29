@@ -1,17 +1,10 @@
-import sys
 import pathlib
+import sys
 
-from thirdai import bolt
-from thirdai import setup_logging
+from thirdai import bolt, setup_logging
 
-from utils import (
-    config_get_required,
-    find_full_filepath,
-    log_metrics,
-    log_params,
-    start_experiment,
-    start_mlflow,
-)
+from utils import (config_get_required, find_full_filepath, log_metrics,
+                   log_params, start_experiment, start_mlflow)
 
 
 def to_categorical_pair(config):

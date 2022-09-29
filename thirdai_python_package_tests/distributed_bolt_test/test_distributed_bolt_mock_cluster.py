@@ -6,17 +6,18 @@
 
 
 import sys
+
+import numpy as np
 import pytest
 from thirdai import bolt, dataset
-import numpy as np
 
 pytestmark = [pytest.mark.distributed]
 
 
 try:
+    import ray
     import thirdai.distributed_bolt as db
     from ray.cluster_utils import Cluster
-    import ray
 except ImportError:
     pass
 

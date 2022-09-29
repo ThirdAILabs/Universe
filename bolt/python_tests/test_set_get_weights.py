@@ -1,9 +1,10 @@
 import math
+
 import numpy as np
 import pytest
 from thirdai import bolt
-from utils import gen_numpy_training_data, get_simple_dag_model
 
+from utils import gen_numpy_training_data, get_simple_dag_model
 
 LEARNING_RATE = 0.001
 BATCH_SIZE = 64

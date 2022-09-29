@@ -1,10 +1,12 @@
-from thirdai import bolt, dataset
-from benchmarks.mlflow_logger import ExperimentLogger
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from skimage.util import view_as_blocks
-import numpy as np
-import time
 import argparse
+import time
+
+import numpy as np
+from skimage.util import view_as_blocks
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from thirdai import bolt, dataset
+
+from benchmarks.mlflow_logger import ExperimentLogger
 
 # TODO: figure out why numpy is slow
 # TODO: calculate num patches in conv layer

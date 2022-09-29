@@ -2,8 +2,8 @@
 
 import argparse
 import os
-from datetime import date
 import subprocess
+from datetime import date
 from pathlib import Path
 
 

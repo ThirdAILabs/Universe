@@ -1,14 +1,13 @@
 import sys
 
 try:
-    from thirdai._distributed_bolt.backend.communication.circular import (
-        Circular as Circular,
-    )
+    from thirdai._distributed_bolt.backend.communication.circular import \
+        Circular as Circular
 except ImportError:
     pass
 
-import pytest
 import numpy as np
+import pytest
 
 pytestmark = [pytest.mark.distributed]
 
