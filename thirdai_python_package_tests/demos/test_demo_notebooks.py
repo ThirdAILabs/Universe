@@ -1,13 +1,13 @@
 import glob
 import os
-import pytest
-from pathlib import Path
-import subprocess
 import shutil
+import subprocess
 import tempfile
+from pathlib import Path
 
-from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 import nbformat
+import pytest
+from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 
 pytestmark = [pytest.mark.unit]
 

@@ -1,9 +1,10 @@
-import pytest
-from thirdai import deployment_config as dc
-from thirdai import bolt
 import random
+
 import datasets
 import numpy as np
+import pytest
+from thirdai import bolt
+from thirdai import deployment_config as dc
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
