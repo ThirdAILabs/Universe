@@ -1,4 +1,3 @@
-from re import S
 import pytest
 from thirdai import deployment_config as dc
 from thirdai import bolt
@@ -143,7 +142,7 @@ def test_text_classifer_accuracy(model_predictions, clinc_dataset):
     assert acc >= 0.7
 
 
-def test_text_classifer_predict(
+def test_different_predict_methods_have_same_result(
     trained_text_classifier, model_predictions, clinc_dataset
 ):
     _, labels = clinc_dataset

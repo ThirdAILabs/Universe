@@ -53,6 +53,9 @@ wheelhouse
 venv
 env
 
+# Datasets downloaded during tests
+mnist_data
+
 # -- Begin vim .gitignore
 # Swap
 [._]*.s[a-v][a-z]

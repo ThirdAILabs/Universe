@@ -5,6 +5,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <bolt/src/layers/LayerConfig.h>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -136,8 +137,15 @@ class OptionMappedParameter final : public HyperParameter<T> {
                              .resolveStringParam(_option_name);
 
     if (!_values.count(option)) {
-      throw std::invalid_argument("Invalid option '" + option +
-                                  "' for OptionMappedParameter.");
+      std::stringstream error;
+      error << "Invalid option '" << option << "' for '" << _option_name
+            << "'. Supported options are: [ ";
+      for (const auto& option : _values) {
+        error << "'" << option.first << "' ";
+      }
+      error << "].";
+
+      throw std::invalid_argument(error.str());
     }
 
     return _values.at(option);

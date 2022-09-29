@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <cereal/archives/json.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_set.hpp>

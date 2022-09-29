@@ -1,3 +1,4 @@
+#include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -79,12 +80,20 @@ void assertFailsTraining(SequentialClassifier& model) {
 
 SequentialClassifier getTrainedClassifier(const char* train_file_name) {
   SequentialClassifier classifier(
-      /* user= */ {"user", 1},
-      /* label= */ {"target", 2},
-      /* timestamp= */ "timestamp",
-      /* static_text= */ {"static_text"},
-      /* static_category= */ {{"static_category", 4}},
-      /* track_categories= */ {{"sequential", 2, 3}});
+      /* data_types= */
+      {
+          {"user", DataType::categorical(/* n_unique_classes= */ 1)},
+          {"target", DataType::categorical(/* n_unique_classes= */ 2)},
+          {"timestamp", DataType::date()},
+          {"static_text", DataType::text()},
+          {"static_category", DataType::categorical(/* n_unique_classes= */ 4)},
+          {"sequential", DataType::categorical(/* n_unique_classes= */ 2)},
+      },
+      /* temporal_tracking_relationships= */
+      {{"user",
+        {TemporalConfig::categorical(/* column_name= */ "sequential",
+                                     /* track_last_n= */ 3)}}},
+      /* target= */ "target");
 
   classifier.train(train_file_name, /* epochs= */ 5, /* learning_rate= */ 0.01);
 
@@ -160,7 +169,9 @@ void assertWordsWithinBlock(const std::vector<std::string>& column_names,
       "day_of_week", "week_of_month", "month_of_year", "week_of_year"};
   // these sequential reasons based on values in the sequential column in train
   // data.
-  std::vector<std::string> sequential_reasons = {"A", "B", "C", "D"};
+  std::vector<std::string> sequential_reasons = {
+      "Previously seen 'A'", "Previously seen 'B'", "Previously seen 'C'",
+      "Previously seen 'D'"};
   std::vector<std::string> text_reasons =
       getWordsInTextColumn(input["static_text"]);
   for (uint32_t i = 0; i < words_responsible.size(); i++) {
@@ -180,66 +191,7 @@ void assertWordsWithinBlock(const std::vector<std::string>& column_names,
   }
 }
 
-/**
- * @brief Tests that sequential classifier works when:
- * 1) Target and static categorical columns have multiple classes
- * 2) We pass in a multi_class_delimiter argument.
- */
-TEST(SequentialClassifierTest, TestLoadSaveMultiClass) {
-  /*
-    The train set is curated so that the classifier
-    successfully runs only if it correctly parses multi-class
-    categorical columns. Notice that in the last two samples,
-    the target and static_category columns contain classes that
-    have been seen in the previous samples, delimited by spaces.
-    If the classifier fails to parse multi-class categorical columns,
-    these columns would be treated as new unique classes, which then
-    throws an error since it would have exceeded the expected number of
-    unique classes.
-  */
-  writeRowsToFile(
-      TRAIN_FILE_NAME,
-      {"user,target,timestamp,static_text,static_category,count",
-       "0,0,2022-08-29,hello,0,0", "0,1,2022-08-30,hello,1,1",
-       "0,0,2022-08-31,hello,2,2", "0,1,2022-09-01,hello,3,3",
-       "0,0 1,2022-09-02,hello,0 1,4", "0,1 0,2022-09-03,hello,1 2,5"});
-
-  writeRowsToFile(
-      TEST_FILE_NAME,
-      {"user,target,timestamp,static_text,static_category,count",
-       "0,0 1,2022-09-04,hello,2 3,6", "0,1 0,2022-09-05,hello,3 0,7"});
-
-  std::unordered_map<std::string, std::string> predict_single_sample = {
-      {"user", "0"},
-      {"target", "0 1"},
-      {"timestamp", "2022-09-06"},
-      {"static_text", "hello"},
-      {"static_category", "0 1"},
-      {"count", "8"},
-  };
-
-  SequentialClassifier model(
-      /* user= */ {"user", 1},
-      /* label= */ {"target", 2},
-      /* timestamp= */ "timestamp",
-      /* static_text= */ {"static_text"},
-      /* static_category= */ {{"static_category", 4}},
-      /* track_categories= */ {{"target", 2, 3}},
-      /* track_quantities= */ {"count"},
-      /* multi_class_delim= */ ' ',
-      /* time_granularity= */ "daily",
-      /* time_to_predict_ahead= */ 1,
-      /* history_length_for_inference= */ 5);
-
-  assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
-}
-
-/**
- * @brief Tests that sequential classifier works properly when:
- * 1) Each column in the dataset only has a single value
- * 2) We don't pass the optional multi_class_delim argument
- */
-TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
+TEST(SequentialClassifierTest, TestLoadSave) {
   writeRowsToFile(TRAIN_FILE_NAME,
                   {"user,target,timestamp,static_text,static_category,count",
                    "0,0,2022-08-29,hello,0,0", "0,1,2022-08-30,hello,1,1",
@@ -260,141 +212,28 @@ TEST(SequentialClassifierTest, TestLoadSaveNoMultiClassDelim) {
   };
 
   SequentialClassifier model(
-      /* user= */ {"user", 1},
-      /* label= */ {"target", 2},
-      /* timestamp= */ "timestamp",
-      /* static_text= */ {"static_text"},
-      /* static_category= */ {{"static_category", 4}},
-      /* track_categories= */ {{"target", 2, 3}},
-      /* track_quantities= */ {"count"},
-      /* multi_class_delim= */ std::nullopt,
+      /* data_types= */
+      {
+          {"user", DataType::categorical(/* n_unique_classes= */ 1)},
+          {"target", DataType::categorical(/* n_unique_classes= */ 2)},
+          {"timestamp", DataType::date()},
+          {"static_text", DataType::text()},
+          {"static_category", DataType::categorical(/* n_unique_classes= */ 4)},
+          {"count", DataType::numerical()},
+      },
+      /* temporal_tracking_relationships= */
+      {{"user",
+        {
+            TemporalConfig::categorical(/* column_name= */ "target",
+                                        /* track_last_n= */ 3),
+            TemporalConfig::numerical(/* column_name= */ "count",
+                                      /* history_length= */ 5),
+        }}},
+      /* target= */ "target",
       /* time_granularity= */ "daily",
-      /* time_to_predict_ahead= */ 1,
-      /* history_length_for_inference= */ 5);
+      /* lookahead= */ 1);
 
   assertSuccessfulLoadSave(model, predict_single_sample, /* n_targets= */ 2);
-}
-
-/**
- * @brief Tests that sequential classifier does not parse static categorical
- * columns into multiple classes if we don't pass in a multi_class_delim
- * argument.
- */
-TEST(SequentialClassifierTest, TestNoMultiClassCategoricalIfNoDelimiter) {
-  writeRowsToFile(TRAIN_FILE_NAME, {
-                                       "user,target,timestamp,static_category",
-                                       "0,0,2022-08-29,0",
-                                       "0,1,2022-08-30,0 0",
-                                   });
-
-  SequentialClassifier model(
-      /* user= */ {"user", 1},
-      /* label= */ {"target", 2},
-      /* timestamp= */ "timestamp",
-      /* static_text= */ {},
-      /* static_category= */ {{"static_category", 1}},
-      /* track_categories= */ {{"target", 2, 3}});  // We do not pass the
-                                                    // optional
-                                                    // multi_class_delim
-                                                    // argument
-
-  /*
-    In the train file, static_category column of the second row
-    should be parsed as a new unique string "0 0" as opposed to
-    two previously seen "0" strings delimited by a space. Thus,
-    we expect that the test should fail.
-  */
-  assertFailsTraining(model);
-}
-
-/**
- * @brief Tests that sequential classifier does not parse sequential
- * columns into multiple classes if we don't pass in a multi_class_delim
- * argument.
- */
-TEST(SequentialClassifierTest, TestNoMultiClassSequentialIfNoDelimiter) {
-  writeRowsToFile(TRAIN_FILE_NAME, {
-                                       "user,target,timestamp,sequential",
-                                       "0,0,2022-08-29,0",
-                                       "0,1,2022-08-30,0 0",
-                                   });
-
-  SequentialClassifier model(
-      /* user= */ {"user", 1},
-      /* label= */ {"target", 2},
-      /* timestamp= */ "timestamp",
-      /* static_text= */ {},
-      /* static_category= */ {},
-      /* track_categories= */ {{"sequential", 1, 3}});  // We do not pass the
-                                                        // optional
-                                                        // multi_class_delim
-                                                        // argument
-
-  /*
-    In the train file, sequential column of the second row
-    should be parsed as a new unique string "0 0" as opposed to
-    two previously seen "0" strings delimited by a space. Thus,
-    we expect that the test should fail.
-  */
-  assertFailsTraining(model);
-}
-
-/**
- * @brief Tests that sequential classifier does not parse target
- * columns into multiple classes if we don't pass in a multi_class_delim
- * argument.
- */
-TEST(SequentialClassifierTest, TestNoMultiClassTargetIfNoDelimiter) {
-  writeRowsToFile(TRAIN_FILE_NAME, {
-                                       "user,target,timestamp",
-                                       "0,0,2022-08-29",
-                                       "0,0 0,2022-08-30",
-                                   });
-
-  SequentialClassifier model(
-      /* user= */ {"user", 1},
-      /* label= */ {"target", 1},
-      /* timestamp= */ "timestamp");  // We do not pass the optional
-                                      // multi_class_delim argument
-
-  /*
-    In the train file, target column of the second row
-    should be parsed as a new unique string "0 0" as opposed to
-    two previously seen "0" strings delimited by a space. Thus,
-    we expect that the test should fail.
-  */
-  assertFailsTraining(model);
-}
-
-/**
- * @brief Tests that sequential classifier does not parse user
- * columns into multiple classes even if we pass in a multi_class_delim
- * argument.
- */
-TEST(SequentialClassifierTest, TestNeverMultiClassUser) {
-  writeRowsToFile(TRAIN_FILE_NAME, {
-                                       "user,target,timestamp",
-                                       "0,0,2022-08-29",
-                                       "0 0,0,2022-08-30",
-                                   });
-
-  SequentialClassifier model(
-      /* user= */ {"user", 1},
-      /* label= */ {"target", 1},
-      /* timestamp= */ "timestamp",
-      /* static_text= */ {},
-      /* static_category= */ {},
-      /* track_categories= */ {},
-      /* track_quantities= */ {},
-      /* multi_class_delim= */ ' ');
-
-  /*
-    In the train file, user column of the second row
-    should be parsed as a new unique string "0 0" as opposed to
-    two previously seen "0" strings delimited by a space. Thus,
-    we expect that the test should fail.
-  */
-  assertFailsTraining(model);
 }
 
 TEST(SequentialClassifierTest, TestExplainMethod) {
@@ -446,17 +285,24 @@ TEST(SequentialClassifierTest, TestExplainMethod) {
 
 TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
   SequentialClassifier model(
-      /* user= */ {"user", 1},
-      /* label= */ {"target", 2},
-      /* timestamp= */ "timestamp",
-      /* static_text= */ {},
-      /* static_category= */ {},
-      /* track_categories= */ {{"target", 2, 3}},
-      /* track_quantities= */ {"count"},
-      /* multi_class_delim= */ std::nullopt,
+      /* data_types= */
+      {
+          {"user", DataType::categorical(/* n_unique_classes= */ 1)},
+          {"target", DataType::categorical(/* n_unique_classes= */ 2)},
+          {"timestamp", DataType::date()},
+          {"count", DataType::numerical()},
+      },
+      /* temporal_tracking_relationships= */
+      {{"user",
+        {
+            TemporalConfig::numerical(/* column_name= */ "count",
+                                      /* history_length= */ 5),
+            TemporalConfig::categorical(/* column_name= */ "target",
+                                        /* track_last_n= */ 3),
+        }}},
+      /* target= */ "target",
       /* time_granularity= */ "biweekly",
-      /* time_to_predict_ahead= */ 1,
-      /* history_length_for_inference= */ 5);
+      /* lookahead= */ 1);
 
   /*
     Train before getting state because state is only built once
@@ -468,10 +314,11 @@ TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
 
   auto state = SequentialClassifierTextFixture::getState(model);
 
-  auto count_history = state.quantity_histories_by_id[0];
+  auto count_history = state.quantity_histories_by_id["user_0"];
   ASSERT_EQ(count_history->historyLag(), 1);
   ASSERT_EQ(count_history->historyLength(), 5);
   ASSERT_EQ(count_history->granularity(),
             dataset::QuantityTrackingGranularity::Biweekly);
 }
+
 }  // namespace thirdai::bolt::sequential_classifier::tests

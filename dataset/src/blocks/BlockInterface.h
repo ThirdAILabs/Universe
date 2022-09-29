@@ -174,7 +174,7 @@ class Block {
    */
   virtual Explanation explainIndex(
       uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) const = 0;
+      const std::vector<std::string_view>& input_row) = 0;
 
   virtual ~Block() = default;
 

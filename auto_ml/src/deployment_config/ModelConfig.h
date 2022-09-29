@@ -14,7 +14,7 @@
 namespace thirdai::automl::deployment_config {
 
 /**
- * This config provides the structure for instantiated the bolt dag.
+ * This config provides the structure for instantiating the bolt dag.
  * Args:
  *    - input_names: the names of the inputs to the dag. The input nodes
  *      themselves are constructed by the dataset factory, this is just used to
