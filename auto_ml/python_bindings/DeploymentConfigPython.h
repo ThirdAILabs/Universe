@@ -29,12 +29,12 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
 ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
                                             const py::dict& parameters);
 
-py::object evaluateWrapperDataLoader(
+py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source);
 
-py::object evaluateWrapperFilename(ModelPipeline& model,
-                                   const std::string& filename);
+py::object evaluateOnFileWrapper(ModelPipeline& model,
+                                 const std::string& filename);
 
 py::object predictWrapper(ModelPipeline& model, const std::string& sample);
 
