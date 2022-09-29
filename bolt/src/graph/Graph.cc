@@ -140,9 +140,13 @@ MetricData BoltGraph::train(
         }
 
         if (validation && updates % validation->validate_every() == 0) {
-          // This is not ideal and will have to be changed to be cleaned in the
-          // future.
-          // TODO(jerin-thirdai)
+          // TODO(jerin-thirdai): The implications of doing
+          // cleanupAfterBatchProcessing and prepareToProcessBatches is not
+          // fully understood here. These two functions should not exist, but
+          // not doing this leads to assertion failure on node-state or a
+          // segfault on something set as a nullptr after
+          // cleanupAfterBatchProcessing if prepareToProcessBatches is not
+          // applied.
 
           cleanupAfterBatchProcessing();
           std::string label =
