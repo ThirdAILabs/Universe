@@ -64,6 +64,14 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::vector<BoltVector> batch_inputs(rows.size());
     std::vector<BoltVector> batch_labels(rows.size());
 
+    auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
+    for (auto& block : _input_blocks) {
+      block->prepareForBatch(first_row);
+    }
+    for (auto& block : _label_blocks) {
+      block->prepareForBatch(first_row);
+    }
+
     /*
       These variables keep track of the presence of an erroneous input line.
       We do this instead of throwing an error directly because throwing
@@ -98,15 +106,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         block_err = err;
       }
     }
-
     if (block_err) {
       std::rethrow_exception(block_err);
     }
-
     if (num_columns_error) {
       std::rethrow_exception(num_columns_error);
     }
-
     return std::make_tuple(BoltBatch(std::move(batch_inputs)),
                            BoltBatch(std::move(batch_labels)));
   }

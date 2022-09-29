@@ -8,15 +8,15 @@ if(WIN32)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-# When I set LD_PRELOAD to be able use ASan with python tests, for some reason 
+# When I set LD_PRELOAD to be able use ASan with python tests, for some reason
 # CMake can't find Python unless we set it to an empty string.
 set(ENV{LD_PRELOAD} "")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 
-# See [1] https://gcc.gnu.org/wiki/Visibility
-#     [2] https://stackoverflow.com/a/31157258/4565794
+# See [1] https://gcc.gnu.org/wiki/Visibility [2]
+# https://stackoverflow.com/a/31157258/4565794
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
@@ -37,16 +37,17 @@ message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
-
-if (MSVC)
-  if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-    message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
+if(MSVC)
+  if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    message(
+      FATAL_ERROR "For now, we only support building in release mode using MSVC"
+    )
   endif()
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
 
   # We create an interface to plant compile flags and be cohesive with the rest
-  # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile
-  # flags narrowing it to just the required targets.
+  # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile flags
+  # narrowing it to just the required targets.
 
   add_library(_thirdai_windows_llvm_openmp INTERFACE)
   target_compile_options(_thirdai_windows_llvm_openmp INTERFACE "/openmp:llvm")
@@ -58,22 +59,18 @@ else()
     -Wextra
     -Werror
     -Wno-unused-function
-    -pedantic 
-    
+    -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>
     $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
-
     $<$<CONFIG:DebugWithAsan>:-Og>
     $<$<CONFIG:DebugWithAsan>:-g>
     $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
-
     $<$<CONFIG:Release>:-DNDEBUG>
     $<$<CONFIG:Release>:-Ofast>
     $<$<CONFIG:Release>:-fno-finite-math-only>
     $<$<CONFIG:Release>:-funroll-loops>
     $<$<CONFIG:Release>:-ftree-vectorize>
-
     $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
     $<$<CONFIG:RelWithDebInfo>:-Ofast>
     $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
@@ -81,15 +78,13 @@ else()
     $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
     $<$<CONFIG:RelWithDebInfo>:-g>
     $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
-
     $<$<CONFIG:RelWithAsan>:-DNDEBUG>
     $<$<CONFIG:RelWithAsan>:-Ofast>
     $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
     $<$<CONFIG:RelWithAsan>:-funroll-loops>
     $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
     $<$<CONFIG:RelWithAsan>:-g>
-    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
-  )
+    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
 
   find_package(OpenMP REQUIRED)
 endif()
@@ -97,36 +92,35 @@ endif()
 # Add feature flags passed in from python
 add_compile_definitions(${FEATURE_FLAGS})
 
-# In debug mode we are using ASan (address sanitizer) to provide better information on errors.
-# We only run with this in debug mode because it carries a performace penalty. 
-# See https://github.com/google/sanitizers/wiki/AddressSanitizer for more information.
+# In debug mode we are using ASan (address sanitizer) to provide better
+# information on errors. We only run with this in debug mode because it carries
+# a performace penalty. See
+# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
+# information.
 
+# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang.
+if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
+  add_compile_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
+                      $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
-# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang. 
-if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") 
-  add_compile_options(
-    $<$<CONFIG:RelWithAsan>:-fsanitize=address>
-    $<$<CONFIG:DebugWithAsan>:-fsanitize=address>
-  )
-
-  add_link_options(
-    $<$<CONFIG:RelWithAsan>:-fsanitize=address>
-    $<$<CONFIG:DebugWithAsan>:-fsanitize=address>
-  )
+  add_link_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
+                   $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 endif()
 
 # Custom command line options
 
 # The following is added for Windows workflows failing on GitHub, inorder to
-# provide a configurable TimeOut.  The default value is set to 5,
-# from
+# provide a configurable TimeOut.  The default value is set to 5, from
 # http://github.com/Kitware/CMake/blob/9d1ecd72fb45af722da7668d0c7482b7a0b1876f/Modules/GoogleTest.cmake#L419-L436,
 # retaining default behaviour.
-# 
-# For Windows workflow, we may configure this to a higher value now through CMake command-line supply.
+#
+# For Windows workflow, we may configure this to a higher value now through
+# CMake command-line supply.
 
-set(THIRDAI_GTEST_DISCOVERY_TIMEOUT 5 CACHE STRING "Timeout for GoogleTest discovery, configurable from command-line.")
-
+set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
+    5
+    CACHE STRING
+          "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
 include_directories(deps/pybind11/include)
@@ -145,37 +139,41 @@ add_subdirectory(deps/spdlog)
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
 # can work with vscode
-include_directories(deps) 
+include_directories(deps)
 
-# Check if there is a license flag, and only if so add the cryptopp lib
-# We have two different License flags, one for if to build the license files
-# (THIRDAI_BUILD_LICENSE) and one for if to check the license (THIRDAI_CHECK_LICENSE).
-# If just the THIRDAI_CHECK_LICENSE flag is set there will be a linker error.
-list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
-SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
-if (${LICENSE_BUILD_FLAG_FOUND})
+# Check if there is a license flag, and only if so add the cryptopp lib We have
+# two different License flags, one for if to build the license files
+# (THIRDAI_BUILD_LICENSE) and one for if to check the license
+# (THIRDAI_CHECK_LICENSE). If just the THIRDAI_CHECK_LICENSE flag is set there
+# will be a linker error.
+list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
+if(${LICENSE_BUILD_FLAG_FOUND})
 
   message("Building cryptopp...")
-  # Install CRYPTOPP and set the static lib to be the static library file. This is pretty
-  # ugly (the build happens at configure time, not build time) but honestly
-  # okay (I spent way too long getting anything at all to work). Plus, it's 
-  # gated by a feature flag anyways.
-  # For now use default 32 jobs to build.
-  if (MSVC)
+  # Install CRYPTOPP and set the static lib to be the static library file. This
+  # is pretty ugly (the build happens at configure time, not build time) but
+  # honestly okay (I spent way too long getting anything at all to work). Plus,
+  # it's gated by a feature flag anyways. For now use default 32 jobs to build.
+  if(MSVC)
     set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/cryptlib.lib)
-    message("${CRYPTOPP_LIB} must already exist or there will be errors (you can build with nmake, see https://www.cryptopp.com/wiki/Nmake_(Command_Line) )")
+    message(
+      "${CRYPTOPP_LIB} must already exist or there will be errors (you can build with nmake, see https://www.cryptopp.com/wiki/Nmake_(Command_Line) )"
+    )
   else()
     set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
     message("Running make in ${CMAKE_SOURCE_DIR}/deps/cryptopp")
-    execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+    execute_process(COMMAND make static CXX=g++ -j32 -C
+                            ${CMAKE_SOURCE_DIR}/deps/cryptopp)
   endif()
 endif()
 
-
-find_package (Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+set(gtest_force_shared_crt
+    ON
+    CACHE BOOL "" FORCE)
 
 # Enable testing
 include(CTest)
@@ -197,66 +195,43 @@ add_subdirectory(wrappers)
 add_subdirectory(compression)
 
 # Only add the licensing subdirectory if the corresponding flag is set
-if (${LICENSE_BUILD_FLAG_FOUND})
+if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
 file(
-  GLOB BOLT_SOURCES 
+  GLOB
+  BOLT_SOURCES
   bolt/src/auto_classifiers/*.cc
   bolt/src/graph/*.cc
-  bolt/src/layers/*.cc 
-  bolt/src/networks/*.cc 
-  bolt/src/utils/*.cc 
-)
+  bolt/src/layers/*.cc
+  bolt/src/networks/*.cc
+  bolt/src/utils/*.cc)
 
-file(
-  GLOB_RECURSE SEARCH_SOURCES 
-  search/src/*.cc 
-)
+file(GLOB_RECURSE SEARCH_SOURCES search/src/*.cc)
 
-file(
-  GLOB_RECURSE HASHING_SOURCES
-  hashing/src/*.cc
-)
+file(GLOB_RECURSE HASHING_SOURCES hashing/src/*.cc)
 
-file(
-  GLOB_RECURSE HASHTABLE_SOURCES
-  hashtable/src/*.cc
-)
+file(GLOB_RECURSE HASHTABLE_SOURCES hashtable/src/*.cc)
 
-file (
-  GLOB_RECURSE WRAPPER_SOURCES
-  wrappers/src/*.cc
-)
+file(GLOB_RECURSE WRAPPER_SOURCES wrappers/src/*.cc)
 
-file (
-  GLOB_RECURSE DATASET_SOURCES
-  dataset/src/*.cc
-)
+file(GLOB_RECURSE DATASET_SOURCES dataset/src/*.cc)
 
-file(
-   GLOB_RECURSE COMPRESSION_SOURCES
-   compression/src/*.cc
- )
+file(GLOB_RECURSE COMPRESSION_SOURCES compression/src/*.cc)
 
-file(
-  GLOB_RECURSE UTILS_SOURCES
-  utils/*.cc
-)
+file(GLOB_RECURSE UTILS_SOURCES utils/*.cc)
 
-file(
-  GLOB RECURSE AUTOML_SOURCES
-  auto_ml/src/*.cc
-)
+file(GLOB RECURSE AUTOML_SOURCES auto_ml/src/*.cc)
 
-# pybind11_add_module automatically adds debug info to RelWithDebInfo and
-# Debug builds, but not our ASan builds. This means that for now we can't run
-# ASan from python, but honestly this is more trouble than it's worth so for
-# now this is actually a feature rather than a bug.
+# pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
+# builds, but not our ASan builds. This means that for now we can't run ASan
+# from python, but honestly this is more trouble than it's worth so for now this
+# is actually a feature rather than a bug.
 
-pybind11_add_module(_thirdai 
-  python_bindings/thirdai.cc 
+pybind11_add_module(
+  _thirdai
+  python_bindings/thirdai.cc
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltGraphPython.cc
   dataset/python_bindings/DatasetPython.cc
@@ -264,8 +239,8 @@ pybind11_add_module(_thirdai
   hashing/python_bindings/HashingPython.cc
   auto_classifiers/python_bindings/AutoClassifiersPython.cc
   auto_ml/python_bindings/DeploymentConfigPython.cc
-  ${BOLT_SOURCES} 
-  ${SEARCH_SOURCES} 
+  ${BOLT_SOURCES}
+  ${SEARCH_SOURCES}
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
   ${DATASET_SOURCES}
@@ -273,11 +248,10 @@ pybind11_add_module(_thirdai
   ${DATASET_SOURCES}
   ${COMPRESSION_SOURCES}
   ${UTILS_SOURCES}
-  ${AUTOML_SOURCES}
-)
+  ${AUTOML_SOURCES})
 
 target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
 
-if (${LICENSE_BUILD_FLAG_FOUND})
+if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
 endif()

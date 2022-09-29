@@ -1,6 +1,5 @@
 #pragma once
 
-#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/Datasets.h>

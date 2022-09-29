@@ -42,6 +42,7 @@ def download_clinc_dataset():
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
 
 
+<<<<<<< HEAD
 def teardown_module():
     os.remove(TRAIN_FILE)
     os.remove(TEST_FILE)
@@ -50,14 +51,26 @@ def teardown_module():
 
 
 def test_text_classifer():
+=======
+@pytest.fixture(scope="module")
+def clinc_dataset():
+>>>>>>> f8b285a2fd9f1b9a53bbb9d85b0a4234f76b6ecf
     num_classes, labels = download_clinc_dataset()
+    return (num_classes, labels)
+
+
+@pytest.fixture(scope="module")
+def trained_text_classifier(clinc_dataset):
+    num_classes, _ = clinc_dataset
 
     model_config = dc.ModelConfig(
         input_names=["input"],
         nodes=[
             dc.FullyConnectedNodeConfig(
                 name="hidden",
-                dim=dc.OptionParameter({"small": 100, "large": 200}),
+                dim=dc.OptionMappedParameter(
+                    option_name="size", values={"small": 100, "large": 200}
+                ),
                 activation=dc.ConstantParameter("relu"),
                 predecessor="input",
             ),
@@ -72,7 +85,7 @@ def test_text_classifer():
         loss=bolt.CategoricalCrossEntropyLoss(),
     )
 
-    dataset_config = dc.BasicClassificationDatasetConfig(
+    dataset_config = dc.SingleBlockDatasetFactory(
         data_block=dc.TextBlockConfig(use_pairgrams=True),
         label_block=dc.NumericalCategoricalBlockConfig(
             n_classes=dc.UserSpecifiedParameter("output_dim", type=int),
@@ -94,46 +107,66 @@ def test_text_classifer():
         dataset_config=dataset_config,
         model_config=model_config,
         train_eval_parameters=train_eval_params,
-        available_options=["small", "large"],
     )
 
     config.save(CONFIG_PATH)
 
     model = dc.ModelPipeline(
+<<<<<<< HEAD
         config_path=CONFIG_PATH,
         size="large",
         parameters={"output_dim": num_classes, "delimiter": ","},
+=======
+        deployment_config=config,
+        parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
+>>>>>>> f8b285a2fd9f1b9a53bbb9d85b0a4234f76b6ecf
     )
 
     model.train(
-        filename=TRAIN_FILE,
-        epochs=5,
-        learning_rate=0.01,
+        filename=TRAIN_FILE, epochs=5, learning_rate=0.01, max_in_memory_batches=12
     )
 
-    logits = model.evaluate(filename=TEST_FILE)
+    return model
 
-    original_predictions = np.argmax(logits, axis=1)
 
-    acc = np.mean(original_predictions == np.array(labels))
+@pytest.fixture(scope="module")
+def model_predictions(trained_text_classifier):
+    logits = trained_text_classifier.evaluate(filename=TEST_FILE)
+    predictions = np.argmax(logits, axis=1)
+    return predictions
+
+
+def test_text_classifer_accuracy(model_predictions, clinc_dataset):
+    _, labels = clinc_dataset
+
+    acc = np.mean(model_predictions == np.array(labels))
 
     # Accuracy should be around 0.76 to 0.78.
     assert acc >= 0.7
 
+<<<<<<< HEAD
     model.save(SAVE_PATH)
     model = dc.ModelPipeline.load(SAVE_PATH)
+=======
+
+def test_text_classifer_predict(
+    trained_text_classifier, model_predictions, clinc_dataset
+):
+    _, labels = clinc_dataset
+>>>>>>> f8b285a2fd9f1b9a53bbb9d85b0a4234f76b6ecf
 
     with open(TEST_FILE) as test:
         test_set = test.readlines()
 
     test_samples = [x.split(",")[1] for x in test_set]
 
-    for sample, original_prediction in zip(test_samples, original_predictions):
-        single_prediction = np.argmax(model.predict(sample))
+    for sample, original_prediction in zip(test_samples, model_predictions):
+        single_prediction = np.argmax(trained_text_classifier.predict(sample))
         assert single_prediction == original_prediction
 
-    for samples, predictions in batch_predictions(test_samples, original_predictions):
-        batched_predictions = np.argmax(model.predict_batch(samples), axis=1)
+    for samples, predictions in batch_predictions(test_samples, model_predictions):
+        predictions_for_batch = trained_text_classifier.predict_batch(samples)
+        batched_predictions = np.argmax(predictions_for_batch, axis=1)
         for prediction, original_prediction in zip(batched_predictions, predictions):
             assert prediction == original_prediction
 

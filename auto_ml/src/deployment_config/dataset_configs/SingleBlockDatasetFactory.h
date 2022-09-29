@@ -14,12 +14,12 @@
 
 namespace thirdai::automl::deployment_config {
 
-class BasicClassificationDatasetFactory final : public DatasetLoaderFactory {
+class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
  public:
-  BasicClassificationDatasetFactory(dataset::BlockPtr data_block,
-                                    dataset::BlockPtr unlabeled_data_block,
-                                    dataset::BlockPtr label_block, bool shuffle,
-                                    char delimiter)
+  SingleBlockDatasetFactory(dataset::BlockPtr data_block,
+                            dataset::BlockPtr unlabeled_data_block,
+                            dataset::BlockPtr label_block, bool shuffle,
+                            char delimiter)
       : _labeled_batch_processor(
             std::make_shared<dataset::GenericBatchProcessor>(
                 std::vector<dataset::BlockPtr>{std::move(data_block)},
@@ -71,7 +71,7 @@ class BasicClassificationDatasetFactory final : public DatasetLoaderFactory {
   bool _shuffle;
 
   // Private constructor for cereal.
-  BasicClassificationDatasetFactory() {}
+  SingleBlockDatasetFactory() {}
 
   friend class cereal::access;
   template <class Archive>
@@ -81,42 +81,44 @@ class BasicClassificationDatasetFactory final : public DatasetLoaderFactory {
   }
 };
 
-class BasicClassificationDatasetFactoryConfig final : public DatasetConfig {
+class SingleBlockDatasetFactoryConfig final
+    : public DatasetLoaderFactoryConfig {
  public:
-  BasicClassificationDatasetFactoryConfig(
-      BlockConfigPtr data_block, BlockConfigPtr label_block,
-      HyperParameterPtr<bool> shuffle, HyperParameterPtr<std::string> delimiter)
+  SingleBlockDatasetFactoryConfig(BlockConfigPtr data_block,
+                                  BlockConfigPtr label_block,
+                                  HyperParameterPtr<bool> shuffle,
+                                  HyperParameterPtr<std::string> delimiter)
       : _data_block(std::move(data_block)),
         _label_block(std::move(label_block)),
         _shuffle(std::move(shuffle)),
         _delimiter(std::move(delimiter)) {}
 
   DatasetLoaderFactoryPtr createDatasetState(
-      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const final {
     dataset::BlockPtr label_block = _label_block->getBlock(
-        /* column= */ 0, option, user_specified_parameters);
+        /* column= */ 0, user_specified_parameters);
 
     uint32_t data_start_col = label_block->expectedNumColumns();
 
     dataset::BlockPtr data_block = _data_block->getBlock(
-        /* column= */ data_start_col, option, user_specified_parameters);
+        /* column= */ data_start_col, user_specified_parameters);
 
     dataset::BlockPtr unlabeled_data_block = _data_block->getBlock(
-        /* column= */ 0, option, user_specified_parameters);
+        /* column= */ 0, user_specified_parameters);
 
-    bool shuffle = _shuffle->resolve(option, user_specified_parameters);
-    std::string delimiter =
-        _delimiter->resolve(option, user_specified_parameters);
+    bool shuffle = _shuffle->resolve(user_specified_parameters);
+    std::string delimiter = _delimiter->resolve(user_specified_parameters);
     if (delimiter.size() != 1) {
       throw std::invalid_argument(
           "Expected delimiter to be a single character but recieved: '" +
           delimiter + "'.");
     }
 
-    return std::make_unique<BasicClassificationDatasetFactory>(
-        data_block, unlabeled_data_block, label_block, shuffle,
-        delimiter.at(0));
+    return std::make_unique<SingleBlockDatasetFactory>(
+        /* data_block= */ data_block,
+        /* unlabeled_data_block= */ unlabeled_data_block,
+        /* label_block=*/label_block, /* shuffle= */ shuffle,
+        /* delimiter= */ delimiter.at(0));
   }
 
  private:
@@ -126,20 +128,20 @@ class BasicClassificationDatasetFactoryConfig final : public DatasetConfig {
   HyperParameterPtr<std::string> _delimiter;
 
   // Private constructor for cereal.
-  BasicClassificationDatasetFactoryConfig() {}
+  SingleBlockDatasetFactoryConfig() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetConfig>(this), _data_block, _label_block,
-            _shuffle, _delimiter);
+    archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _data_block,
+            _label_block, _shuffle, _delimiter);
   }
 };
 
 }  // namespace thirdai::automl::deployment_config
 
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::BasicClassificationDatasetFactoryConfig)
+    thirdai::automl::deployment_config::SingleBlockDatasetFactoryConfig)
 
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::BasicClassificationDatasetFactory)
+    thirdai::automl::deployment_config::SingleBlockDatasetFactory)

@@ -13,43 +13,55 @@
 
 namespace thirdai::automl::deployment_config {
 
+/**
+ * The DeploymentConfig acts as a meta config that internally allows us to
+ * specify a model architecture and corresponding dataset loader. The important
+ * feature is that these meta configs can either have the parameters explicitly
+ * defined or left as user supplied parameters, but explicitly state how that
+ * user specified parameter is to be used. This gives us as much control as we
+ * want over types and sizes of models used, but allows us to build in degrees
+ * of customization as needed.
+ *
+ * This config is organized into three parts:
+ *
+ *    - DatasetLoaderFactoryConfig: specifies how data should be processed and
+ *      featurized for the model.
+ *
+ *    - ModelConfig: this specifies the architecure of the model.
+ *
+ *    - TrainEvalParameters: specifies other parameters that are important for
+ *      training/evaluation but that we don't want to expose to the user. Unlike
+ *      the other configs, these parameters must be supplied as constants, and
+ *      cannot be user supplied. This is to hide complexity like rebuilding hash
+ *      tables, but still allowing us to customize the config for different
+ *      tasks.
+ *
+ * When the config is used to create a ModelPipeline, the hyperparameters in the
+ * DatasetLoaderFactoryConfig and ModelConfig are resolved using a list of user
+ * supplied parameters.
+ */
 class DeploymentConfig {
  public:
-  DeploymentConfig(DatasetConfigPtr dataset_config, ModelConfigPtr model_config,
-                   TrainEvalParameters train_test_parameters,
-                   std::vector<std::string> available_options)
+  DeploymentConfig(DatasetLoaderFactoryConfigPtr dataset_config,
+                   ModelConfigPtr model_config,
+                   TrainEvalParameters train_test_parameters)
       : _dataset_config(std::move(dataset_config)),
         _model_config(std::move(model_config)),
-        _train_test_parameters(std::move(train_test_parameters)),
-        _available_options(available_options.begin(), available_options.end()) {
-  }
+        _train_test_parameters(std::move(train_test_parameters)) {}
 
   std::pair<DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
   createDataLoaderAndModel(
-      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const {
-    if (!_available_options.empty() && !option) {
-      throw std::invalid_argument(
-          "Must specify an size option to instantiate this model "
-          "configuration.");
-    }
-
-    if (option.has_value() && !_available_options.count(option.value())) {
-      throw std::invalid_argument(
-          "Option parameter '" + option.value() +
-          "' was not found in list of available options.");
-    }
-
-    DatasetLoaderFactoryPtr dataset_state =
-        _dataset_config->createDatasetState(option, user_specified_parameters);
+    DatasetLoaderFactoryPtr dataset_factory =
+        _dataset_config->createDatasetState(user_specified_parameters);
 
     bolt::BoltGraphPtr model = _model_config->createModel(
-        dataset_state->getInputNodes(), option, user_specified_parameters);
+        dataset_factory->getInputNodes(), user_specified_parameters);
 
-    return {std::move(dataset_state), model};
+    return {std::move(dataset_factory), std::move(model)};
   }
 
-  const TrainEvalParameters& parameters() const {
+  const TrainEvalParameters& train_eval_parameters() const {
     return _train_test_parameters;
   }
 
@@ -71,10 +83,12 @@ class DeploymentConfig {
   }
 
  private:
-  DatasetConfigPtr _dataset_config;
+  DatasetLoaderFactoryConfigPtr _dataset_config;
   ModelConfigPtr _model_config;
+
+  // These are static parameters that need to be configurable for different
+  // models, but that the user cannot modify.
   TrainEvalParameters _train_test_parameters;
-  std::unordered_set<std::string> _available_options;
 
   // Private constructor for cereal
   DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}) {}
@@ -82,8 +96,7 @@ class DeploymentConfig {
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(_dataset_config, _model_config, _train_test_parameters,
-            _available_options);
+    archive(_dataset_config, _model_config, _train_test_parameters);
   }
 };
 

@@ -16,7 +16,7 @@ namespace thirdai::automl::deployment_config {
 
 class PredecessorsMap {
  public:
-  void update(const std::string& name, bolt::NodePtr node) {
+  void insert(const std::string& name, bolt::NodePtr node) {
     if (_discovered_nodes.count(name)) {
       throw std::invalid_argument("Cannot have multiple nodes with the name '" +
                                   name + "' in the model config.");
@@ -24,7 +24,7 @@ class PredecessorsMap {
     _discovered_nodes[name] = std::move(node);
   }
 
-  bolt::NodePtr getNode(const std::string& name) const {
+  bolt::NodePtr get(const std::string& name) const {
     if (!_discovered_nodes.count(name)) {
       throw std::invalid_argument("Cannot find node with name '" + name +
                                   "' in already discovered nodes.");
@@ -44,7 +44,6 @@ class NodeConfig {
 
   virtual bolt::NodePtr createNode(
       const PredecessorsMap& possible_predecessors,
-      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~NodeConfig() = default;
@@ -91,17 +90,16 @@ class FullyConnectedNodeConfig final : public NodeConfig {
 
   bolt::NodePtr createNode(
       const PredecessorsMap& possible_predecessors,
-      const std::optional<std::string>& option,
+
       const UserInputMap& user_specified_parameters) const final {
-    uint32_t dim = _dim->resolve(option, user_specified_parameters);
-    float sparsity = _sparsity->resolve(option, user_specified_parameters);
-    std::string activation =
-        _activation->resolve(option, user_specified_parameters);
+    uint32_t dim = _dim->resolve(user_specified_parameters);
+    float sparsity = _sparsity->resolve(user_specified_parameters);
+    std::string activation = _activation->resolve(user_specified_parameters);
 
     bolt::FullyConnectedNodePtr node;
     if (_sampling_config) {
       bolt::SamplingConfigPtr sampling_config =
-          (*_sampling_config)->resolve(option, user_specified_parameters);
+          (*_sampling_config)->resolve(user_specified_parameters);
 
       node = bolt::FullyConnectedNode::make(dim, sparsity, activation,
                                             sampling_config);
@@ -109,7 +107,7 @@ class FullyConnectedNodeConfig final : public NodeConfig {
       node = bolt::FullyConnectedNode::makeAutotuned(dim, sparsity, activation);
     }
 
-    node->addPredecessor(possible_predecessors.getNode(_predecessor_name));
+    node->addPredecessor(possible_predecessors.get(_predecessor_name));
 
     return node;
   }

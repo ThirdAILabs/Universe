@@ -4,13 +4,14 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <compression/python_bindings/ConversionUtils.h>
-#include <compression/src/CompressedVector.h>
+#include <compression/src/CompressionFactory.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <stdexcept>
+#include <variant>
 
 namespace py = pybind11;
 
@@ -31,7 +32,14 @@ py::tuple dagGetInputGradientSingleWrapper(
 using ParameterArray =
     py::array_t<float, py::array::c_style | py::array::forcecast>;
 
+using SerializedCompressedVector =
+    py::array_t<char, py::array::c_style | py::array::forcecast>;
+
 class ParameterReference {
+  using FloatCompressedVector =
+      std::variant<thirdai::compression::DragonVector<float>,
+                   thirdai::compression::CountSketch<float>>;
+
  public:
   ParameterReference(float* params, std::vector<uint32_t> dimensions)
       : _params(params), _dimensions(std::move(dimensions)) {
@@ -50,33 +58,83 @@ class ParameterReference {
 
   ParameterArray get() const { return ParameterArray(_dimensions, _params); }
 
-  void set(const py::object& new_params) {
-    if (py::isinstance<py::array>(new_params)) {
-      ParameterArray new_array = py::cast<ParameterArray>(new_params);
-      checkNumpyArrayDimensions(_dimensions, new_params);
-      std::copy(new_array.data(), new_array.data() + _total_dim, _params);
-    } else if (py::isinstance<py::dict>(new_params)) {
-      using CompressedVector = thirdai::compression::CompressedVector<float>;
-      std::unique_ptr<CompressedVector> compressed_vector =
-          thirdai::compression::python::convertPyDictToCompressedVector(
-              new_params);
+  void set(py::array_t<char, py::array::c_style>& new_params) {
+    const char* serialized_data =
+        py::cast<SerializedCompressedVector>(new_params).data();
+    FloatCompressedVector compressed_vector =
+        thirdai::compression::python::deserializeCompressedVector<float>(
+            serialized_data);
+    std::vector<float> full_gradients = std::visit(
+        thirdai::compression::DecompressVisitor<float>(), compressed_vector);
 
-      std::vector<float> full_gradients = compressed_vector->decompress();
-      std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
-                _params);
-    } else {
-      throw std::invalid_argument(
-          "Cannot set parameters from an unsupported Python datatype");
+    if (full_gradients.size() != dimensionProduct(_dimensions)) {
+      throw std::length_error(
+          "The sizes of the decompressed vector and parameter reference are "
+          "different. Either the compressed vector has been corrupted or you "
+          "are trying to set the wrong parameter reference.");
     }
+
+    // TODO(Shubh): Pass in a refernce to _params and avoid std::copy
+    std::copy(full_gradients.data(), full_gradients.data() + _total_dim,
+              _params);
   }
 
-  py::dict compress(const std::string& compression_scheme,
-                    float compression_density, uint32_t seed_for_hashing,
-                    uint32_t sample_population_size) {
-    return thirdai::compression::python::convertCompressedVectorToPyDict(
-        thirdai::compression::compress(
-            _params, static_cast<uint32_t>(_total_dim), compression_scheme,
-            compression_density, seed_for_hashing, sample_population_size));
+  void set(py::array_t<float, py::array::c_style | py::array::forcecast>&
+               new_params) {
+    ParameterArray new_array = py::cast<ParameterArray>(new_params);
+    checkNumpyArrayDimensions(_dimensions, new_params);
+    std::copy(new_array.data(), new_array.data() + _total_dim, _params);
+  }
+
+  SerializedCompressedVector compress(const std::string& compression_scheme,
+                                      float compression_density,
+                                      uint32_t seed_for_hashing,
+                                      uint32_t sample_population_size) {
+    FloatCompressedVector compressed_vector = thirdai::compression::compress(
+        _params, static_cast<uint32_t>(_total_dim), compression_scheme,
+        compression_density, seed_for_hashing, sample_population_size);
+
+    uint32_t serialized_size = std::visit(
+        thirdai::compression::SizeVisitor<float>(), compressed_vector);
+
+    char* serialized_compressed_vector = new char[serialized_size];
+
+    std::visit(thirdai::compression::SerializeVisitor<float>(
+                   serialized_compressed_vector),
+               compressed_vector);
+
+    py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
+      delete static_cast<char*>(ptr);
+    });
+
+    return SerializedCompressedVector(
+        serialized_size, serialized_compressed_vector, free_when_done);
+  }
+
+  static SerializedCompressedVector concat(
+      const py::object& py_compressed_vectors) {
+    std::vector<FloatCompressedVector> compressed_vectors =
+        thirdai::compression::python::convertPyListToCompressedVectors<float>(
+            py_compressed_vectors);
+    FloatCompressedVector concatenated_compressed_vector =
+        thirdai::compression::concat(std::move(compressed_vectors));
+
+    uint32_t serialized_size =
+        std::visit(thirdai::compression::SizeVisitor<float>(),
+                   concatenated_compressed_vector);
+
+    char* serialized_compressed_vector = new char[serialized_size];
+
+    std::visit(thirdai::compression::SerializeVisitor<float>(
+                   serialized_compressed_vector),
+               concatenated_compressed_vector);
+
+    py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
+      delete static_cast<char*>(ptr);
+    });
+
+    return SerializedCompressedVector(
+        serialized_size, serialized_compressed_vector, free_when_done);
   }
 
  private:
@@ -92,5 +150,29 @@ class ParameterReference {
   std::vector<uint32_t> _dimensions;
   uint64_t _total_dim;
 };
+
+// The following callback uses py:: and PyErr symbols, which come from Python.
+// Doing this in an alternate way would require these symbols to be visible in
+// Graph.cc, which kind-of violates the existing structuring.
+//
+// Per pybind11 docs, no Ctrl-C is a Python artifact, which means standalone
+// library Ctrl-C is functional:
+//
+//    Ctrl-C is received by the Python interpreter, and holds it until the GIL
+//    is released, so a long-running function won’t be interrupted.
+class KeyboardInterrupt : public Callback {
+ public:
+  // Check whether Ctrl-C has been called on each batch begin. This is at a
+  // granularity where the users can't tell the difference, and probably does
+  // not hurt speed.
+  void onBatchBegin(BoltGraph& model, TrainState& train_state) final {
+    Callback::onBatchBegin(model, train_state);
+    if (PyErr_CheckSignals() != 0) {
+      throw py::error_already_set();
+    }
+  }
+};
+
+using KeyboardInterruptPtr = std::shared_ptr<KeyboardInterrupt>;
 
 }  // namespace thirdai::bolt::python

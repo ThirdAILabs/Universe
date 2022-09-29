@@ -8,7 +8,9 @@
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <chrono>
 #include <cstddef>
+#include <limits>
 #include <memory>
+#include <optional>
 #include <tuple>
 
 namespace thirdai::dataset {
@@ -96,15 +98,29 @@ class StreamingGenericDatasetLoader
   }
 
   std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadInMemory() final {
+    return loadInMemoryWithMaxBatches(std::numeric_limits<uint32_t>::max())
+        .value();
+  }
+
+  std::optional<std::tuple<BoltDatasetPtr, BoltDatasetPtr>>
+  loadInMemoryWithMaxBatches(uint32_t max_in_memory_batches) {
     std::cout << "Loading vectors from '" + _data_loader->resourceName() + "'"
               << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    while (addNextBatchToBuffer()) {
+
+    uint32_t batch_cnt = 0;
+    while (batch_cnt < max_in_memory_batches && addNextBatchToBuffer()) {
+      batch_cnt++;
     }
+
     auto [input_batches, label_batches] = _buffer.exportBuffer();
     auto end = std::chrono::high_resolution_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+    if (input_batches.empty()) {
+      return std::nullopt;
+    }
 
     auto dataset = std::make_tuple(
         std::make_shared<BoltDataset>(std::move(input_batches)),
@@ -120,6 +136,13 @@ class StreamingGenericDatasetLoader
   uint32_t getInputDim() { return _processor->getInputDim(); }
 
   uint32_t getLabelDim() { return _processor->getLabelDim(); }
+
+  void restart() final {
+    _data_loader->restart();
+    _buffer = ShuffleBatchBuffer(
+        /* shuffle_seed= */ time(NULL),
+        /* batch_size= */ _data_loader->getMaxBatchSize());
+  }
 
  private:
   void prefillShuffleBuffer() {

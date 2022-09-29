@@ -12,8 +12,11 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <dataset/src/utils/TimeUtils.h>
 #include <sys/types.h>
 #include <memory>
 #include <optional>
@@ -29,33 +32,63 @@ using CategoricalPair = std::pair<std::string, uint32_t>;
 // A tuple of (column name, num unique classes, track last N)
 using SequentialTriplet = std::tuple<std::string, uint32_t, uint32_t>;
 
+static inline dataset::QuantityTrackingGranularity stringToGranularity(
+    std::string&& granularity_string) {
+  auto lower_granularity_string = utils::lower(granularity_string);
+  if (lower_granularity_string == "daily" || lower_granularity_string == "d") {
+    return dataset::QuantityTrackingGranularity::Daily;
+  }
+  if (lower_granularity_string == "weekly" || lower_granularity_string == "w") {
+    return dataset::QuantityTrackingGranularity::Weekly;
+  }
+  if (lower_granularity_string == "biweekly" ||
+      lower_granularity_string == "b") {
+    return dataset::QuantityTrackingGranularity::Biweekly;
+  }
+  if (lower_granularity_string == "monthly" ||
+      lower_granularity_string == "m") {
+    return dataset::QuantityTrackingGranularity::Monthly;
+  }
+  throw std::invalid_argument(
+      granularity_string +
+      " is not a valid granularity option. The options are 'daily' / 'd', "
+      "'weekly' / 'w', 'biweekly' / 'b', and 'monthly' / 'm',");
+}
+
 /**
  * Stores the dataset configuration.
  */
 struct Schema {
   CategoricalPair user;
-  CategoricalPair target;
+  CategoricalPair label;
   std::string timestamp_col_name;
   std::vector<std::string> static_text_col_names;
-  std::vector<CategoricalPair> static_categorical;
-  std::vector<SequentialTriplet> sequential;
+  std::vector<CategoricalPair> static_category;
+  std::vector<SequentialTriplet> track_categories;
+  std::vector<std::string> track_quantities;
   std::optional<char> multi_class_delim;
+  std::optional<uint32_t> time_to_predict_ahead;
+  std::optional<uint32_t> history_length_for_inference;
+  dataset::QuantityTrackingGranularity time_granularity;
 
   Schema() {}
 
   std::unordered_set<std::string> allColumnNames() const {
     std::unordered_set<std::string> col_names;
     col_names.insert(std::get<0>(user));
-    col_names.insert(std::get<0>(target));
+    col_names.insert(std::get<0>(label));
     col_names.insert(timestamp_col_name);
     for (const auto& text_col_name : static_text_col_names) {
       col_names.insert(text_col_name);
     }
-    for (const auto& [cat_col_name, _1] : static_categorical) {
+    for (const auto& [cat_col_name, _1] : static_category) {
       col_names.insert(cat_col_name);
     }
-    for (const auto& [seq_col_name, _1, _2] : sequential) {
-      col_names.insert(seq_col_name);
+    for (const auto& [track_cat_col_name, _1, _2] : track_categories) {
+      col_names.insert(track_cat_col_name);
+    }
+    for (const auto& track_qty_col_name : track_quantities) {
+      col_names.insert(track_qty_col_name);
     }
     return col_names;
   }
@@ -65,8 +98,10 @@ struct Schema {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(user, target, timestamp_col_name, static_text_col_names,
-            static_categorical, sequential, multi_class_delim);
+    archive(user, label, timestamp_col_name, static_text_col_names,
+            static_category, track_categories, track_quantities,
+            multi_class_delim, time_to_predict_ahead,
+            history_length_for_inference, time_granularity);
   }
 };
 
@@ -86,6 +121,9 @@ struct DataState {
   std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
       history_collections_by_id;
 
+  std::unordered_map<uint32_t, dataset::QuantityHistoryTrackerPtr>
+      quantity_histories_by_id;
+
   DataState() {}
 
  private:
@@ -93,7 +131,8 @@ struct DataState {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(vocabs_by_column, history_collections_by_id);
+    archive(vocabs_by_column, history_collections_by_id,
+            quantity_histories_by_id);
   }
 };
 
@@ -170,7 +209,7 @@ class Pipeline {
     auto input_blocks = buildInputBlocks(schema, state, col_nums, for_training);
 
     std::vector<dataset::BlockPtr> label_blocks;
-    label_blocks.push_back(makeCategoricalBlock(schema.target, state, col_nums,
+    label_blocks.push_back(makeCategoricalBlock(schema.label, state, col_nums,
                                                 schema.multi_class_delim));
 
     return {file_reader,
@@ -209,16 +248,23 @@ class Pipeline {
           dataset::UniGramTextBlock::make(col_nums.at(text_col_name)));
     }
 
-    for (const auto& categorical : schema.static_categorical) {
+    for (const auto& categorical : schema.static_category) {
       input_blocks.push_back(makeCategoricalBlock(categorical, state, col_nums,
                                                   schema.multi_class_delim));
     }
 
-    for (uint32_t seq_idx = 0; seq_idx < schema.sequential.size(); seq_idx++) {
-      input_blocks.push_back(
-          makeSequentialBlock(seq_idx, schema.user, schema.sequential[seq_idx],
-                              schema.timestamp_col_name, state, col_nums,
-                              for_training, schema.multi_class_delim));
+    for (uint32_t seq_idx = 0; seq_idx < schema.track_categories.size();
+         seq_idx++) {
+      input_blocks.push_back(makeCategoryTrackingBlock(
+          seq_idx, schema, schema.track_categories[seq_idx], state, col_nums,
+          for_training, schema.multi_class_delim));
+    }
+
+    for (uint32_t dense_seq_idx = 0;
+         dense_seq_idx < schema.track_quantities.size(); dense_seq_idx++) {
+      input_blocks.push_back(makeQuantityTrackingBlock(
+          dense_seq_idx, schema, schema.track_quantities[dense_seq_idx], state,
+          col_nums, for_training));
     }
 
     return input_blocks;
@@ -236,37 +282,67 @@ class Pipeline {
         col_nums.at(cat_col_name), string_vocab, delimiter);
   }
 
+  static dataset::UserCountHistoryBlockPtr makeQuantityTrackingBlock(
+      uint32_t id, const Schema& schema,
+      const std::string& track_quantity_col_name, DataState& state,
+      const ColumnNumberMap& col_nums, bool for_training) {
+    if (!schema.time_to_predict_ahead || !schema.history_length_for_inference) {
+      throw std::invalid_argument(
+          "[SequentialClassifier] there are dense sequential columns but "
+          "history_lag and history_length are not given.");
+    }
+
+    const auto& [user_col_name, _] = schema.user;
+    // Reset history if for training to prevent test data from leaking in.
+    if (!state.quantity_histories_by_id[id] || for_training) {
+      state.quantity_histories_by_id[id] =
+          dataset::QuantityHistoryTracker::make(
+              *schema.time_to_predict_ahead,
+              *schema.history_length_for_inference, schema.time_granularity);
+    }
+
+    return dataset::UserCountHistoryBlock::make(
+        /* user_col= */ col_nums.at(user_col_name),
+        /* count_col= */ col_nums.at(track_quantity_col_name),
+        /* timestamp_col= */ col_nums.at(schema.timestamp_col_name),
+        state.quantity_histories_by_id[id]);
+  }
+
   // We pass in an ID because sequential blocks can corrupt each other's states.
-  static dataset::BlockPtr makeSequentialBlock(
-      uint32_t sequential_block_id, const CategoricalPair& user,
-      const SequentialTriplet& sequential,
-      const std::string& timestamp_col_name, DataState& state,
+  static dataset::BlockPtr makeCategoryTrackingBlock(
+      uint32_t id, const Schema& schema,
+      const SequentialTriplet& track_category, DataState& state,
       const ColumnNumberMap& col_nums, bool for_training,
       std::optional<char> delimiter) {
-    const auto& [user_col_name, n_unique_users] = user;
+    const auto& [user_col_name, n_unique_users] = schema.user;
     auto& user_vocab = state.vocabs_by_column[user_col_name];
     if (!user_vocab) {
       user_vocab = dataset::ThreadSafeVocabulary::make(n_unique_users);
     }
 
-    const auto& [item_col_name, n_unique_items, track_last_n] = sequential;
+    const auto& [item_col_name, n_unique_items, track_last_n] = track_category;
     auto& item_vocab = state.vocabs_by_column[item_col_name];
     if (!item_vocab) {
       item_vocab = dataset::ThreadSafeVocabulary::make(n_unique_items);
     }
 
-    auto& user_item_history =
-        state.history_collections_by_id[sequential_block_id];
     // Reset history if for training to prevent test data from leaking in.
-    if (!user_item_history || for_training) {
-      user_item_history =
+    if (!state.history_collections_by_id[id] || for_training) {
+      state.history_collections_by_id[id] =
           dataset::ItemHistoryCollection::make(n_unique_users, track_last_n);
+    }
+
+    int64_t time_lag = 0;
+    if (schema.time_to_predict_ahead) {
+      time_lag = *schema.time_to_predict_ahead;
+      time_lag *= dataset::QuantityHistoryTracker::granularityToSeconds(
+          schema.time_granularity);
     }
 
     return dataset::UserItemHistoryBlock::make(
         col_nums.at(user_col_name), col_nums.at(item_col_name),
-        col_nums.at(timestamp_col_name), user_vocab, item_vocab,
-        user_item_history, delimiter);
+        col_nums.at(schema.timestamp_col_name), user_vocab, item_vocab,
+        state.history_collections_by_id[id], delimiter, time_lag);
   }
 };
 

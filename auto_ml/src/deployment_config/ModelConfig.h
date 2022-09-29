@@ -13,6 +13,18 @@
 
 namespace thirdai::automl::deployment_config {
 
+/**
+ * This config provides the structure for instantiated the bolt dag.
+ * Args:
+ *    - input_names: the names of the inputs to the dag. The input nodes
+ *      themselves are constructed by the dataset factory, this is just used to
+ *      reference them. The ith input node created by the dataset factory
+ *      corresponds to the ith input here. The number of input names must match
+ *      the number of input nodes from the dataset factory.
+ *    - nodes: the nodes of the dag. Note that the last node must be the output
+ *      of the DAG.
+ *    - loss: The loss function to use.
+ */
 class ModelConfig {
  public:
   ModelConfig(std::vector<std::string> input_names,
@@ -24,27 +36,28 @@ class ModelConfig {
 
   bolt::BoltGraphPtr createModel(
       std::vector<bolt::InputPtr> inputs,
-      const std::optional<std::string>& option,
       const UserInputMap& user_specified_parameters) const {
     if (_input_names.size() != inputs.size()) {
       throw std::invalid_argument(
-          "Expected number of inputs does not match number of inputs returned "
-          "from data loader.");
+          "Number of inputs in model config does not match number of inputs "
+          "returned from data loader.");
     }
 
     PredecessorsMap predecessors;
     for (uint32_t i = 0; i < _input_names.size(); i++) {
-      predecessors.update(_input_names[i], inputs[i]);
+      predecessors.insert(/* name= */ _input_names[i], /* node= */ inputs[i]);
     }
 
     for (uint32_t i = 0; i < _nodes.size() - 1; i++) {
-      auto node = _nodes[i]->createNode(predecessors, option,
-                                        user_specified_parameters);
-      predecessors.update(_nodes[i]->name(), node);
+      auto node =
+          _nodes[i]->createNode(predecessors, user_specified_parameters);
+      predecessors.insert(/* name= */ _nodes[i]->name(), /* node= */ node);
     }
 
-    auto output = _nodes.back()->createNode(predecessors, option,
-                                            user_specified_parameters);
+    auto output =
+        _nodes.back()->createNode(predecessors, user_specified_parameters);
+    // This is to check that there is not another node with this name.
+    predecessors.insert(/* name= */ _nodes.back()->name(), /* node= */ output);
 
     auto model = std::make_shared<bolt::BoltGraph>(inputs, output);
 

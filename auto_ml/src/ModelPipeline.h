@@ -3,30 +3,45 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <dataset/src/DataLoader.h>
+#include <exceptions/src/Exceptions.h>
 #include <limits>
+#include <memory>
 #include <utility>
 
 namespace thirdai::automl {
 
+/**
+ * This class represents an end-to-end data processing + model pipeline. It
+ * handles all functionality from loading data to training, evaulation, and
+ * inference. The DeploymentConfig acts as a meta config, which specifies
+ * what parameters to use, and how to combine them with the user specified
+ * parameters to construct the model and dataset processing system.
+ */
 class ModelPipeline {
  public:
-  ModelPipeline(const deployment_config::DeploymentConfigPtr& config,
-                const std::optional<std::string>& option,
-                const std::unordered_map<std::string,
-                                         deployment_config::UserParameterInput>&
-                    user_specified_parameters)
-      : _config(config->parameters()) {
-    auto [dataset_state, model] =
-        config->createDataLoaderAndModel(option, user_specified_parameters);
+  ModelPipeline(deployment_config::DatasetLoaderFactoryPtr dataset_factory,
+                bolt::BoltGraphPtr model,
+                deployment_config::TrainEvalParameters train_eval_parameters)
+      : _dataset_factory(std::move(dataset_factory)),
+        _model(std::move(model)),
+        _train_eval_config(std::move(train_eval_parameters)) {}
 
-    _model = std::move(model);
-    _dataset_factory = std::move(dataset_state);
+  static auto make(const deployment_config::DeploymentConfigPtr& config,
+                   const std::unordered_map<
+                       std::string, deployment_config::UserParameterInput>&
+                       user_specified_parameters) {
+    auto [dataset_factory, model] =
+        config->createDataLoaderAndModel(user_specified_parameters);
+
+    return ModelPipeline(std::move(dataset_factory), std::move(model),
+                         config->train_eval_parameters());
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
@@ -65,9 +80,9 @@ class ModelPipeline {
 
     bolt::PredictConfig predict_cfg =
         bolt::PredictConfig::makeConfig()
-            .withMetrics(_config.evaluationMetrics())
+            .withMetrics(_train_eval_config.evaluationMetrics())
             .returnActivations();
-    if (_config.useSparseInference()) {
+    if (_train_eval_config.useSparseInference()) {
       predict_cfg.enableSparseInference();
     }
 
@@ -80,8 +95,8 @@ class ModelPipeline {
   BoltVector predict(const std::string& sample) {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
-    BoltVector output =
-        _model->predictSingle(std::move(inputs), _config.useSparseInference());
+    BoltVector output = _model->predictSingle(
+        std::move(inputs), _train_eval_config.useSparseInference());
 
     // TODO(Nicholas): add option for thresholding (wayfair use case)
     return output;
@@ -92,7 +107,7 @@ class ModelPipeline {
         _dataset_factory->featurizeInputBatch(samples);
 
     BoltBatch outputs = _model->predictSingleBatch(
-        std::move(input_batches), _config.useSparseInference());
+        std::move(input_batches), _train_eval_config.useSparseInference());
 
     return outputs;
   }
@@ -114,7 +129,9 @@ class ModelPipeline {
     return deserialize_into;
   }
 
-  uint32_t defaultBatchSize() const { return _config.defaultBatchSize(); }
+  uint32_t defaultBatchSize() const {
+    return _train_eval_config.defaultBatchSize();
+  }
 
  private:
   void trainInMemory(deployment_config::DatasetLoaderPtr& dataset,
@@ -122,7 +139,7 @@ class ModelPipeline {
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
-    if (_config.useSparseInference() && epochs > 1) {
+    if (_train_eval_config.useSparseInference() && epochs > 1) {
       bolt::TrainConfig train_cfg_initial =
           getTrainConfig(learning_rate, /* epochs= */ 1);
 
@@ -140,7 +157,7 @@ class ModelPipeline {
   void trainOnStream(deployment_config::DatasetLoaderPtr& dataset,
                      float learning_rate, uint32_t epochs,
                      uint32_t max_in_memory_batches) {
-    if (_config.useSparseInference() && epochs > 1) {
+    if (_train_eval_config.useSparseInference() && epochs > 1) {
       trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
@@ -171,28 +188,30 @@ class ModelPipeline {
     bolt::TrainConfig train_config =
         bolt::TrainConfig::makeConfig(learning_rate, epochs);
 
-    if (auto hash_table_rebuild = _config.rebuildHashTablesInterval()) {
+    if (auto hash_table_rebuild =
+            _train_eval_config.rebuildHashTablesInterval()) {
       train_config.withRebuildHashTables(hash_table_rebuild.value());
     }
 
-    if (auto reconstruct_hash_fn = _config.reconstructHashFunctionsInterval()) {
+    if (auto reconstruct_hash_fn =
+            _train_eval_config.reconstructHashFunctionsInterval()) {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
     return train_config;
   }
 
-  deployment_config::TrainEvalParameters _config;
-  bolt::BoltGraphPtr _model;
-  deployment_config::DatasetLoaderFactoryPtr _dataset_factory;
-
   // Private constructor for cereal.
-  ModelPipeline() : _config({}, {}, {}, {}, {}) {}
+  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_config, _model, _dataset_factory);
+    archive(_dataset_factory, _model, _train_eval_config);
   }
+
+  deployment_config::DatasetLoaderFactoryPtr _dataset_factory;
+  bolt::BoltGraphPtr _model;
+  deployment_config::TrainEvalParameters _train_eval_config;
 };
 
 }  // namespace thirdai::automl

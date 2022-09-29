@@ -11,10 +11,10 @@ __all__ = [
 ]
 
 # Include these so we can use them just by import the top level.
-import thirdai.bolt
-import thirdai.search
-import thirdai.dataset
-import thirdai.hashing
+import thirdai.bolt as bolt
+import thirdai.search as search
+import thirdai.dataset as dataset
+import thirdai.hashing as hashing
 
 from thirdai._thirdai import setup_logging
 
