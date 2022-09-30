@@ -238,7 +238,7 @@ pybind11_add_module(
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_classifiers/python_bindings/AutoClassifiersPython.cc
-  auto_ml/python_bindings/DeploymentConfigPython.cc
+  auto_ml/python_bindings/DeploymentPython.cc
   ${BOLT_SOURCES}
   ${SEARCH_SOURCES}
   ${HASHING_SOURCES}

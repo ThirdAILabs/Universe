@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <unordered_set>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 /**
  * The DeploymentConfig acts as a meta config that internally allows us to
@@ -102,4 +102,4 @@ class DeploymentConfig {
 
 using DeploymentConfigPtr = std::shared_ptr<DeploymentConfig>;
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment
