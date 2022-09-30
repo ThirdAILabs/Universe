@@ -1,22 +1,20 @@
 # TODO(josh): Add back mach benchmark
 
-import sys
 import pathlib
+import sys
 
 import numpy as np
-
-from thirdai import bolt, dataset
-from thirdai import setup_logging
+from thirdai import bolt, dataset, setup_logging
 
 from utils import (
+    config_get_required,
+    find_full_filepath,
+    is_ec2_instance,
+    log_prediction_metrics,
+    log_single_epoch_training_metrics,
+    mlflow_is_enabled,
     start_experiment,
     start_mlflow,
-    find_full_filepath,
-    log_single_epoch_training_metrics,
-    log_prediction_metrics,
-    mlflow_is_enabled,
-    config_get_required,
-    is_ec2_instance,
 )
 
 

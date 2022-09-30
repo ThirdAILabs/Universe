@@ -1,7 +1,9 @@
+import os.path
+
 import pytest
 from thirdai import bolt
+
 from utils import gen_numpy_training_data, get_simple_dag_model
-import os.path
 
 pytestmark = [pytest.mark.unit]
 

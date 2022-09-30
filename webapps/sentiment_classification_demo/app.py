@@ -1,9 +1,10 @@
-from flask import Flask, request, render_template
-from thirdai import bolt
-import time
-from transformers import pipeline
-import torch
 import sys
+import time
+
+import torch
+from flask import Flask, render_template, request
+from thirdai import bolt
+from transformers import pipeline
 
 torch.set_num_threads(1)
 

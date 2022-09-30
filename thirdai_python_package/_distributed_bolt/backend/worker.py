@@ -1,6 +1,7 @@
-from thirdai._thirdai import bolt
 import thirdai._distributed_bolt.backend.communication as comm
-from ..utils import parse_svm_dataset, get_gradients
+from thirdai._thirdai import bolt
+
+from ..utils import get_gradients, parse_svm_dataset
 
 
 class Worker:
