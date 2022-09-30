@@ -15,7 +15,7 @@
 #include <memory>
 #include <utility>
 
-namespace thirdai::automl {
+namespace thirdai::automl::deployment {
 
 /**
  * This class represents an end-to-end data processing + model pipeline. It
@@ -26,16 +26,15 @@ namespace thirdai::automl {
  */
 class ModelPipeline {
  public:
-  ModelPipeline(deployment_config::DatasetLoaderFactoryPtr dataset_factory,
+  ModelPipeline(DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,
-                deployment_config::TrainEvalParameters train_eval_parameters)
+                TrainEvalParameters train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
         _train_eval_config(std::move(train_eval_parameters)) {}
 
-  static auto make(const deployment_config::DeploymentConfigPtr& config,
-                   const std::unordered_map<
-                       std::string, deployment_config::UserParameterInput>&
+  static auto make(const DeploymentConfigPtr& config,
+                   const std::unordered_map<std::string, UserParameterInput>&
                        user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
@@ -134,8 +133,8 @@ class ModelPipeline {
   }
 
  private:
-  void trainInMemory(deployment_config::DatasetLoaderPtr& dataset,
-                     float learning_rate, uint32_t epochs) {
+  void trainInMemory(DatasetLoaderPtr& dataset, float learning_rate,
+                     uint32_t epochs) {
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
@@ -154,9 +153,8 @@ class ModelPipeline {
     _model->train(train_data, train_labels, train_cfg);
   }
 
-  void trainOnStream(deployment_config::DatasetLoaderPtr& dataset,
-                     float learning_rate, uint32_t epochs,
-                     uint32_t max_in_memory_batches) {
+  void trainOnStream(DatasetLoaderPtr& dataset, float learning_rate,
+                     uint32_t epochs, uint32_t max_in_memory_batches) {
     if (_train_eval_config.useSparseInference() && epochs > 1) {
       trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
@@ -169,8 +167,7 @@ class ModelPipeline {
     }
   }
 
-  void trainSingleEpochOnStream(deployment_config::DatasetLoaderPtr& dataset,
-                                float learning_rate,
+  void trainSingleEpochOnStream(DatasetLoaderPtr& dataset, float learning_rate,
                                 uint32_t max_in_memory_batches) {
     bolt::TrainConfig train_config =
         getTrainConfig(learning_rate, /* epochs= */ 1);
@@ -209,9 +206,9 @@ class ModelPipeline {
     archive(_dataset_factory, _model, _train_eval_config);
   }
 
-  deployment_config::DatasetLoaderFactoryPtr _dataset_factory;
+  DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
-  deployment_config::TrainEvalParameters _train_eval_config;
+  TrainEvalParameters _train_eval_config;
 };
 
-}  // namespace thirdai::automl
+}  // namespace thirdai::automl::deployment

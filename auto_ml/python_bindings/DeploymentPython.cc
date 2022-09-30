@@ -1,4 +1,4 @@
-#include "DeploymentConfigPython.h"
+#include "DeploymentPython.h"
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/LayerConfig.h>
@@ -28,10 +28,10 @@
 
 namespace py = pybind11;
 
-namespace thirdai::automl::deployment_config::python {
+namespace thirdai::automl::deployment::python {
 
-void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
-  py::module_ submodule = thirdai_module.def_submodule("deployment_config");
+void createDeploymentSubmodule(py::module_& thirdai_module) {
+  py::module_ submodule = thirdai_module.def_submodule("deployment");
 
   py::class_<HyperParameter<uint32_t>, HyperParameterPtr<uint32_t>>(  // NOLINT
       submodule, "UintHyperParameter");
@@ -357,4 +357,4 @@ py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
   return py::object(std::move(activations_array));
 }
 
-}  // namespace thirdai::automl::deployment_config::python
+}  // namespace thirdai::automl::deployment::python

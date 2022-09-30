@@ -12,7 +12,7 @@
 #include <optional>
 #include <stdexcept>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 class PredecessorsMap {
  public:
@@ -130,7 +130,6 @@ class FullyConnectedNodeConfig final : public NodeConfig {
   }
 };
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment
 
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::FullyConnectedNodeConfig)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::FullyConnectedNodeConfig)

@@ -12,7 +12,7 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
  public:
@@ -138,10 +138,9 @@ class SingleBlockDatasetFactoryConfig final
   }
 };
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment
 
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::SingleBlockDatasetFactoryConfig)
+    thirdai::automl::deployment::SingleBlockDatasetFactoryConfig)
 
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::SingleBlockDatasetFactory)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::SingleBlockDatasetFactory)

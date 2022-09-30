@@ -6,7 +6,7 @@
 #include <optional>
 #include <vector>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 class TrainEvalParameters {
  public:
@@ -56,4 +56,4 @@ class TrainEvalParameters {
   }
 };
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment
