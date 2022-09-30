@@ -12,7 +12,7 @@
 #include <unordered_map>
 #include <variant>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 class UserParameterInput {
  public:
@@ -65,8 +65,7 @@ class UserParameterInput {
   std::variant<bool, uint32_t, float, std::string> _value;
 };
 
-using UserInputMap =
-    std::unordered_map<std::string, deployment_config::UserParameterInput>;
+using UserInputMap = std::unordered_map<std::string, UserParameterInput>;
 
 template <typename T>
 class HyperParameter {
@@ -267,38 +266,30 @@ class AutotunedSparsityParameter final : public HyperParameter<float> {
   }
 };
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment
 
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<bool>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<uint32_t>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<float>)
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::ConstantParameter<bool>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::ConstantParameter<uint32_t>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::ConstantParameter<float>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::ConstantParameter<std::string>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment_config::ConstantParameter<
+    thirdai::automl::deployment::ConstantParameter<std::string>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<
                      thirdai::bolt::SamplingConfigPtr>)
 
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<bool>)
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::OptionMappedParameter<bool>)
+    thirdai::automl::deployment::OptionMappedParameter<uint32_t>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<float>)
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::OptionMappedParameter<uint32_t>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::OptionMappedParameter<float>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::OptionMappedParameter<std::string>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment_config::OptionMappedParameter<
+    thirdai::automl::deployment::OptionMappedParameter<std::string>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<
                      thirdai::bolt::SamplingConfigPtr>)
 
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<bool>)
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::UserSpecifiedParameter<bool>)
+    thirdai::automl::deployment::UserSpecifiedParameter<uint32_t>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<float>)
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::UserSpecifiedParameter<uint32_t>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::UserSpecifiedParameter<float>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::UserSpecifiedParameter<std::string>)
+    thirdai::automl::deployment::UserSpecifiedParameter<std::string>)
 
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::AutotunedSparsityParameter)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::AutotunedSparsityParameter)

@@ -11,7 +11,7 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 class BlockConfig {
  public:
@@ -130,9 +130,9 @@ class TextBlockConfig final : public BlockConfig {
   }
 };
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment
 
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::NumericalCategoricalBlockConfig)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment_config::DenseArrayBlockConfig)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment_config::TextBlockConfig)
+    thirdai::automl::deployment::NumericalCategoricalBlockConfig)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::DenseArrayBlockConfig)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::TextBlockConfig)

@@ -12,7 +12,7 @@
 #include <memory>
 #include <optional>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 /**
  * Structure of Dataset Configuration and Loading:
@@ -128,4 +128,4 @@ class DatasetLoaderFactoryConfig {
 using DatasetLoaderFactoryConfigPtr =
     std::shared_ptr<DatasetLoaderFactoryConfig>;
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment
