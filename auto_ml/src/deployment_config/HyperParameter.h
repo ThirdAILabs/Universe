@@ -236,10 +236,10 @@ class AutotunedSparsityParameter final : public HyperParameter<float> {
 
     /**
      * For smaller output layers (dim < 2000), we return a sparsity that puts
-     * the sparse dimension between 80 and 200. For larger layers (2000 <= dim),
-     * we return a sparsity that puts the sparse dimension between 100 and 260.
-     * Note that the following code assums that the sparsity_values vector is
-     * sorted by increasing dimension threshold.
+     * the sparse dimension between 80 and 200. For larger layers (2000 <=
+     * dim), we return a sparsity that puts the sparse dimension between 100
+     * and 260. Note that the following code assums that the sparsity_values
+     * vector is sorted by increasing dimension threshold.
      */
     std::vector<std::pair<uint32_t, float>> sparsity_values = {
         {450, 1.0},   {900, 0.2},    {1800, 0.1},
@@ -299,3 +299,6 @@ CEREAL_REGISTER_TYPE(
     thirdai::automl::deployment_config::UserSpecifiedParameter<float>)
 CEREAL_REGISTER_TYPE(
     thirdai::automl::deployment_config::UserSpecifiedParameter<std::string>)
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::AutotunedSparsityParameter)

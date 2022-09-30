@@ -1,9 +1,9 @@
-import pytest
 import os
-from thirdai.dataset import DataPipeline
-from thirdai.dataset import blocks
-from thirdai import bolt, dataset
+
 import numpy as np
+import pytest
+from thirdai import bolt, dataset
+from thirdai.dataset import DataPipeline, blocks
 
 
 def generate_text_classification_dataset(filename, delim):

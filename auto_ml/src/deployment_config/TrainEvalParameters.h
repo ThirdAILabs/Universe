@@ -59,7 +59,8 @@ class TrainEvalParameters {
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(_rebuild_hash_tables_interval, _reconstruct_hash_functions_interval,
-            _default_batch_size, _use_sparse_inference, _evaluation_metrics);
+            _default_batch_size, _use_sparse_inference, _evaluation_metrics,
+            _prediction_threshold);
   }
 };
 
