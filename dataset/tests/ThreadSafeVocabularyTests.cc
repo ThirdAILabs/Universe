@@ -47,10 +47,11 @@ static std::vector<std::string> generateRandomStrings(size_t n_unique,
 }
 
 std::vector<uint32_t> getUids(ThreadSafeVocabulary& lookup,
-                              std::vector<std::string>& strings) {
+                              std::vector<std::string>& strings,
+                              bool parallel=true) {
   std::vector<uint32_t> uids(strings.size());
   std::exception_ptr exception;
-#pragma omp parallel for default(none) shared(strings, uids, lookup, exception)
+#pragma omp parallel for default(none) shared(strings, uids, lookup, exception) if(parallel)
   for (uint32_t idx = 0; idx < strings.size(); idx++) {
     try {
       uids[idx] = lookup.getUid(strings[idx]);
@@ -95,9 +96,59 @@ std::vector<uint32_t> getUidsFromBatch(BoltBatch& batch, uint32_t block_idx = 0,
 }
 
 TEST(ThreadSafeVocabularyTests, Standalone) {
-  uint32_t n_unique = 10;
+  uint32_t n_unique = 100000;
   auto strings =
-      generateRandomStrings(n_unique, /* repetitions = */ 1000, /* len = */ 10);
+      generateRandomStrings(n_unique, /* repetitions = */ 20, /* len = */ 10);
+  std::cout << "PARALLEL" << std::endl;
+  {
+    ThreadSafeVocabulary vocab(n_unique);
+    for (uint32_t i = 0; i < 20; i++) {
+      auto start = std::chrono::high_resolution_clock::now();
+      auto uids = getUids(vocab, strings);
+      auto end = std::chrono::high_resolution_clock::now();
+      std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << std::endl;
+    }
+  }
+  
+  std::cout << "NOT PARALLEL" << std::endl;
+  {
+    ThreadSafeVocabulary vocab(n_unique);
+    for (uint32_t i = 0; i < 20; i++) {
+      auto start = std::chrono::high_resolution_clock::now();
+      auto uids = getUids(vocab, strings, false);
+      auto end = std::chrono::high_resolution_clock::now();
+      std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << std::endl;
+    }
+  }
+  // {
+  //   ThreadSafeVocabulary vocab(n_unique);
+  //   auto start = std::chrono::high_resolution_clock::now();
+  //   auto uids = getUids(vocab, strings, false);
+  //   auto end = std::chrono::high_resolution_clock::now();
+  //   std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << std::endl;
+  // }
+  // {
+  //   ThreadSafeVocabulary vocab(n_unique);
+  //   auto start = std::chrono::high_resolution_clock::now();
+  //   auto uids = getUids(vocab, strings, false);
+  //   auto end = std::chrono::high_resolution_clock::now();
+  //   std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << std::endl;
+  // }
+  // {
+  //   ThreadSafeVocabulary vocab(n_unique);
+  //   auto start = std::chrono::high_resolution_clock::now();
+  //   auto uids = getUids(vocab, strings, false);
+  //   auto end = std::chrono::high_resolution_clock::now();
+  //   std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << std::endl;
+  // }
+  // {
+  //   ThreadSafeVocabulary vocab(n_unique);
+  //   auto start = std::chrono::high_resolution_clock::now();
+  //   auto uids = getUids(vocab, strings, false);
+  //   auto end = std::chrono::high_resolution_clock::now();
+  //   std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << std::endl;
+  // }
+  
   ThreadSafeVocabulary vocab(n_unique);
   auto uids = getUids(vocab, strings);
   auto reverted_strings = backToStrings(vocab, uids);
