@@ -169,8 +169,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"))
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"))
       .def("predict", &predictWrapper, py::arg("input_sample"))
-      .def("predict_token", &predictTokensWrapper, py::arg("model"),
-           py::arg("tokens"))
+      .def("predict_token", &predictTokensWrapper, py::arg("tokens"))
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
