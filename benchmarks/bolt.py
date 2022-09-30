@@ -4,20 +4,12 @@ import pathlib
 import sys
 
 import numpy as np
-
-from thirdai import bolt, dataset
 import thirdai
+from thirdai import bolt, dataset
 
-from utils import (
-    config_get_required,
-    find_full_filepath,
-    is_ec2_instance,
-    log_prediction_metrics,
-    log_single_epoch_training_metrics,
-    mlflow_is_enabled,
-    start_experiment,
-    start_mlflow,
-)
+from utils import (config_get_required, find_full_filepath, is_ec2_instance,
+                   log_prediction_metrics, log_single_epoch_training_metrics,
+                   mlflow_is_enabled, start_experiment, start_mlflow)
 
 
 def main():
