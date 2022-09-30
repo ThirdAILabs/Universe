@@ -1,6 +1,6 @@
 import pytest
-from thirdai import deployment_config as dc
 from thirdai import bolt
+from thirdai import deployment_config as dc
 
 pytestmark = [pytest.mark.unit]
 
