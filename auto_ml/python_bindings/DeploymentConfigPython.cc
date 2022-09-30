@@ -138,11 +138,15 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
       .def(py::init<DatasetLoaderFactoryConfigPtr, ModelConfigPtr,
                     TrainEvalParameters>(),
            py::arg("dataset_config"), py::arg("model_config"),
-           py::arg("train_eval_parameters"));
+           py::arg("train_eval_parameters"))
+      .def("save", &DeploymentConfig::save, py::arg("filename"))
+      .def_static("load", &DeploymentConfig::load, py::arg("filename"));
 
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
-           py::arg("parameters") = py::none())
+           py::arg("parameters") = py::dict())
+      .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
+           py::arg("parameters") = py::dict())
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
                              std::optional<uint32_t>, std::optional<uint32_t>>(
@@ -155,10 +159,12 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
                              std::optional<uint32_t>>(&ModelPipeline::train),
            py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
            py::arg("max_in_memory_batches") = std::nullopt)
-      .def("evaluate", &evaluateWrapperFilename, py::arg("filename"))
-      .def("evaluate", &evaluateWrapperDataLoader, py::arg("data_source"))
+      .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"))
+      .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"))
       .def("predict", &predictWrapper, py::arg("input_sample"))
-      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"));
+      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
+      .def("save", &ModelPipeline::save, py::arg("filename"))
+      .def_static("load", &ModelPipeline::load, py::arg("filename"));
 }
 
 template <typename T>
@@ -197,33 +203,6 @@ py::object makeUserSpecifiedParameter(const std::string& name,
                               "of bool, int, float, or str.");
 }
 
-py::object evaluateWrapperDataLoader(
-    ModelPipeline& model,
-    const std::shared_ptr<dataset::DataLoader>& data_source) {
-  auto [_, output] = model.evaluate(data_source);
-
-  return convertInferenceTrackerToNumpy(output);
-}
-
-py::object evaluateWrapperFilename(ModelPipeline& model,
-                                   const std::string& filename) {
-  return evaluateWrapperDataLoader(
-      model, std::make_shared<dataset::SimpleFileDataLoader>(
-                 filename, model.defaultBatchSize()));
-}
-
-py::object predictWrapper(ModelPipeline& model, const std::string& sample) {
-  BoltVector output = model.predict(sample);
-  return convertBoltVectorToNumpy(output);
-}
-
-py::object predictBatchWrapper(ModelPipeline& model,
-                               const std::vector<std::string>& samples) {
-  BoltBatch outputs = model.predictBatch(samples);
-
-  return convertBoltBatchToNumpy(outputs);
-}
-
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
                              const py::dict& parameters) {
   UserInputMap cpp_parameters;
@@ -254,6 +233,40 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
   }
 
   return ModelPipeline::make(config, cpp_parameters);
+}
+
+ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
+                                            const py::dict& parameters) {
+  auto config = DeploymentConfig::load(config_path);
+
+  return createPipeline(config, parameters);
+}
+
+py::object evaluateOnDataLoaderWrapper(
+    ModelPipeline& model,
+    const std::shared_ptr<dataset::DataLoader>& data_source) {
+  auto [_, output] = model.evaluate(data_source);
+
+  return convertInferenceTrackerToNumpy(output);
+}
+
+py::object evaluateOnFileWrapper(ModelPipeline& model,
+                                 const std::string& filename) {
+  return evaluateOnDataLoaderWrapper(
+      model, std::make_shared<dataset::SimpleFileDataLoader>(
+                 filename, model.defaultBatchSize()));
+}
+
+py::object predictWrapper(ModelPipeline& model, const std::string& sample) {
+  BoltVector output = model.predict(sample);
+  return convertBoltVectorToNumpy(output);
+}
+
+py::object predictBatchWrapper(ModelPipeline& model,
+                               const std::vector<std::string>& samples) {
+  BoltBatch outputs = model.predictBatch(samples);
+
+  return convertBoltBatchToNumpy(outputs);
 }
 
 template <typename T>

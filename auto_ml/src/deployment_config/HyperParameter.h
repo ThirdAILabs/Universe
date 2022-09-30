@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <bolt/src/layers/LayerConfig.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -69,6 +74,13 @@ class HyperParameter {
   virtual T resolve(const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~HyperParameter() = default;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 template <typename T>
@@ -90,6 +102,15 @@ class ConstantParameter final : public HyperParameter<T> {
 
  private:
   T _value;
+
+  // Private constructor for cereal.
+  ConstantParameter() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HyperParameter<T>>(this), _value);
+  }
 };
 
 template <typename T>
@@ -133,6 +154,15 @@ class OptionMappedParameter final : public HyperParameter<T> {
  private:
   std::string _option_name;
   std::unordered_map<std::string, T> _values;
+
+  // Private constructor for cereal.
+  OptionMappedParameter() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HyperParameter<T>>(this), _option_name, _values);
+  }
 };
 
 template <typename T>
@@ -177,6 +207,46 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
 
  private:
   std::string _param_name;
+
+  // Private constructor for cereal.
+  UserSpecifiedParameter() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HyperParameter<T>>(this), _param_name);
+  }
 };
 
 }  // namespace thirdai::automl::deployment_config
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::ConstantParameter<bool>)
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::ConstantParameter<uint32_t>)
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::ConstantParameter<float>)
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::ConstantParameter<std::string>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment_config::ConstantParameter<
+                     thirdai::bolt::SamplingConfigPtr>)
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::OptionMappedParameter<bool>)
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::OptionMappedParameter<uint32_t>)
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::OptionMappedParameter<float>)
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::OptionMappedParameter<std::string>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment_config::OptionMappedParameter<
+                     thirdai::bolt::SamplingConfigPtr>)
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::UserSpecifiedParameter<bool>)
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::UserSpecifiedParameter<uint32_t>)
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::UserSpecifiedParameter<float>)
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::UserSpecifiedParameter<std::string>)

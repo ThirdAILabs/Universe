@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/memory.hpp>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -110,6 +112,23 @@ class ModelPipeline {
     return outputs;
   }
 
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<ModelPipeline> load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<ModelPipeline> deserialize_into(new ModelPipeline());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
+
   uint32_t defaultBatchSize() const {
     return _train_eval_config.defaultBatchSize();
   }
@@ -179,6 +198,15 @@ class ModelPipeline {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
     return train_config;
+  }
+
+  // Private constructor for cereal.
+  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_dataset_factory, _model, _train_eval_config);
   }
 
   deployment_config::DatasetLoaderFactoryPtr _dataset_factory;

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "HyperParameter.h"
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -15,6 +19,17 @@ class BlockConfig {
       uint32_t column, const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~BlockConfig() = default;
+
+ protected:
+  // Private constructor for cereal.
+  BlockConfig() {}
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using BlockConfigPtr = std::shared_ptr<BlockConfig>;
@@ -43,6 +58,15 @@ class NumericalCategoricalBlockConfig final : public BlockConfig {
  private:
   HyperParameterPtr<uint32_t> _n_classes;
   HyperParameterPtr<std::string> _delimiter;
+
+  // Private constructor for cereal.
+  NumericalCategoricalBlockConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<BlockConfig>(this), _n_classes, _delimiter);
+  }
 };
 
 class DenseArrayBlockConfig final : public BlockConfig {
@@ -60,6 +84,15 @@ class DenseArrayBlockConfig final : public BlockConfig {
 
  private:
   HyperParameterPtr<uint32_t> _dim;
+
+  // Private constructor for cereal.
+  DenseArrayBlockConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<BlockConfig>(this), _dim);
+  }
 };
 
 class TextBlockConfig final : public BlockConfig {
@@ -86,6 +119,20 @@ class TextBlockConfig final : public BlockConfig {
  private:
   bool _use_pairgrams;
   HyperParameterPtr<uint32_t> _range;
+
+  // Private constructor for cereal.
+  TextBlockConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<BlockConfig>(this), _use_pairgrams, _range);
+  }
 };
 
 }  // namespace thirdai::automl::deployment_config
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment_config::NumericalCategoricalBlockConfig)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment_config::DenseArrayBlockConfig)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment_config::TextBlockConfig)

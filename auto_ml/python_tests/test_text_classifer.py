@@ -1,15 +1,33 @@
-import pytest
-from thirdai import deployment_config as dc
-from thirdai import bolt
+import os
 import random
+
 import datasets
 import numpy as np
+import pytest
+from thirdai import bolt
+from thirdai import deployment_config as dc
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
 
 TRAIN_FILE = "./clinc_train.csv"
 TEST_FILE = "./clinc_test.csv"
+CONFIG_FILE = "./saved_clinc_config"
+SAVE_FILE = "./saved_clinc_model_pipeline"
+
+
+def remove_files():
+    for file in [TRAIN_FILE, TEST_FILE, CONFIG_FILE, SAVE_FILE]:
+        if os.path.exists(file):
+            os.remove(file)
+
+
+def setup_module():
+    remove_files()
+
+
+def teardown_module():
+    remove_files()
 
 
 def write_dataset_to_csv(dataset, filename, return_labels=False):
@@ -95,8 +113,10 @@ def trained_text_classifier(clinc_dataset):
         train_eval_parameters=train_eval_params,
     )
 
+    config.save(CONFIG_FILE)
+
     model = dc.ModelPipeline(
-        deployment_config=config,
+        config_path=CONFIG_FILE,
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
 
@@ -151,3 +171,27 @@ def batch_predictions(samples, original_predictions, batch_size=10):
             (samples[i : i + batch_size], original_predictions[i : i + batch_size])
         )
     return batches
+
+
+def test_model_save_and_load(trained_text_classifier, model_predictions, clinc_dataset):
+    trained_text_classifier.save(SAVE_FILE)
+
+    model = dc.ModelPipeline.load(SAVE_FILE)
+
+    # Check that predictions match after saving
+    new_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)
+    assert np.array_equal(model_predictions, new_predictions)
+
+    # Check that we can still fine tune the model
+
+    model.train(
+        filename=TRAIN_FILE,
+        epochs=1,
+        learning_rate=0.001,
+    )
+
+    _, labels = clinc_dataset
+    fine_tuned_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)
+    acc = np.mean(fine_tuned_predictions == np.array(labels))
+
+    assert acc >= 0.7

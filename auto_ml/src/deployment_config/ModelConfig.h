@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/vector.hpp>
 #include "NodeConfig.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
@@ -73,6 +75,15 @@ class ModelConfig {
   std::vector<std::string> _input_names;
   std::vector<NodeConfigPtr> _nodes;
   std::shared_ptr<bolt::LossFunction> _loss;
+
+  // Private constructor for cereal.
+  ModelConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_input_names, _nodes, _loss);
+  }
 };
 
 using ModelConfigPtr = std::shared_ptr<ModelConfig>;

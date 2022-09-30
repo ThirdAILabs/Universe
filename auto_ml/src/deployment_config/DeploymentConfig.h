@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include "DatasetConfig.h"
 #include "ModelConfig.h"
 #include "TrainEvalParameters.h"
@@ -61,6 +65,23 @@ class DeploymentConfig {
     return _train_test_parameters;
   }
 
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::PortableBinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::shared_ptr<DeploymentConfig> load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::PortableBinaryInputArchive iarchive(filestream);
+    std::shared_ptr<DeploymentConfig> deserialize_into(new DeploymentConfig());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
+
  private:
   DatasetLoaderFactoryConfigPtr _dataset_config;
   ModelConfigPtr _model_config;
@@ -68,6 +89,15 @@ class DeploymentConfig {
   // These are static parameters that need to be configurable for different
   // models, but that the user cannot modify.
   TrainEvalParameters _train_test_parameters;
+
+  // Private constructor for cereal
+  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}) {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(_dataset_config, _model_config, _train_test_parameters);
+  }
 };
 
 using DeploymentConfigPtr = std::shared_ptr<DeploymentConfig>;
