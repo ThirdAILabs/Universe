@@ -75,7 +75,7 @@ def test_exponential_lr_scheduler():
 
 @pytest.mark.unit
 def test_multistep_lr_scheduler():
-    lr_schedule = bolt.graph.callbacks.MultiStepLR(gamma=0.2, milestones=[2, 4])
+    lr_schedule = bolt.graph.callbacks.MultiStepLR(gamma=0.2, milestones=[1, 3])
     learning_rate_scheduler = train_model_with_scheduler(
         base_learning_rate=0.001,
         epochs=4,
