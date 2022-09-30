@@ -37,13 +37,14 @@ message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
-# Check if there is a license flag, and only if so add the cryptopp lib
-# We have two different License flags, one for if to build the license files
-# (THIRDAI_BUILD_LICENSE) and one for if to check the license (THIRDAI_CHECK_LICENSE).
-# If just the THIRDAI_CHECK_LICENSE flag is set there will be a linker error.
-list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
-SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
-if (${LICENSE_BUILD_FLAG_FOUND})
+# Check if there is a license flag, and only if so add the cryptopp lib We have
+# two different License flags, one for if to build the license files
+# (THIRDAI_BUILD_LICENSE) and one for if to check the license
+# (THIRDAI_CHECK_LICENSE). If just the THIRDAI_CHECK_LICENSE flag is set there
+# will be a linker error.
+list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
+if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
   set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
@@ -51,10 +52,11 @@ if (${LICENSE_BUILD_FLAG_FOUND})
   set(CRYPTOPP_LIB cryptopp::cryptopp)
 endif()
 
-
-if (MSVC)
-  if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-    message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
+if(MSVC)
+  if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    message(
+      FATAL_ERROR "For now, we only support building in release mode using MSVC"
+    )
   endif()
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
 
@@ -154,7 +156,6 @@ add_subdirectory(deps/spdlog)
 # can work with vscode
 include_directories(deps)
 
-
 find_package(Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
@@ -239,6 +240,6 @@ pybind11_add_module(
 
 target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
 
-if (${LICENSE_BUILD_FLAG_FOUND})
+if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
 endif()
