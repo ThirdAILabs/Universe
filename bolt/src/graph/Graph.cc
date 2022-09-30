@@ -146,10 +146,14 @@ MetricData BoltGraph::train(
           // segfault on something set as a nullptr after
           // cleanupAfterBatchProcessing if prepareToProcessBatches is not
           // applied.
+          //
+          // Currently unsure of the implications of adding validationMetrics
+          // from mid-batch as well, these will still be logged, but is not
+          // added to the callback export.
 
           cleanupAfterBatchProcessing();
-          auto [val_metrics, _] = predict(
-              validation->data(), validation->labels(), validation->config());
+          predict(validation->data(), validation->labels(),
+                  validation->config());
           prepareToProcessBatches(dataset_context.batchSize(),
                                   /* use_sparsity=*/true);
         }
