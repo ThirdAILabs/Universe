@@ -44,7 +44,8 @@ message("====================================")
 list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 if (${LICENSE_BUILD_FLAG_FOUND})
-  # Use our own source
+  # Use our own source, also don't build tests.
+  set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
   set(CRYPTOPP_LIB cryptopp::cryptopp)
