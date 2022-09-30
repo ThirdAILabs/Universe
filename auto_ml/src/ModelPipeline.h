@@ -55,7 +55,11 @@ class ModelPipeline {
   void train(const std::shared_ptr<dataset::DataLoader>& data_source,
              uint32_t epochs, float learning_rate,
              std::optional<uint32_t> max_in_memory_batches) {
-    auto dataset = _dataset_factory->getLabeledDatasetLoader(data_source);
+    _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
+    data_source->restart();
+
+    auto dataset = _dataset_factory->getLabeledDatasetLoader(
+        data_source, /* training= */ true);
 
     if (max_in_memory_batches) {
       trainOnStream(dataset, learning_rate, epochs,
@@ -72,7 +76,8 @@ class ModelPipeline {
 
   bolt::InferenceOutputTracker evaluate(
       const std::shared_ptr<dataset::DataLoader>& data_source) {
-    auto dataset = _dataset_factory->getLabeledDatasetLoader(data_source);
+    auto dataset = _dataset_factory->getLabeledDatasetLoader(
+        data_source, /* training= */ false);
 
     auto [data, labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();

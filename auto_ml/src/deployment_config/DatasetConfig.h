@@ -84,7 +84,7 @@ class DatasetLoaderFactory {
   }
 
   virtual DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader) = 0;
+      std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
 

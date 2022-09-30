@@ -22,6 +22,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -168,6 +169,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"))
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"))
       .def("predict", &predictWrapper, py::arg("input_sample"))
+      .def("predict_token", &predictTokensWrapper, py::arg("model"),
+           py::arg("tokens"))
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
@@ -266,6 +269,18 @@ py::object evaluateOnFileWrapper(ModelPipeline& model,
 py::object predictWrapper(ModelPipeline& model, const std::string& sample) {
   BoltVector output = model.predict(sample);
   return convertBoltVectorToNumpy(output);
+}
+
+py::object predictTokensWrapper(ModelPipeline& model,
+                                const std::vector<uint32_t>& tokens) {
+  std::stringstream sentence;
+  for (uint32_t i = 0; i < tokens.size(); i++) {
+    if (i > 0) {
+      sentence << ' ';
+    }
+    sentence << tokens[i];
+  }
+  return predictWrapper(model, sentence.str());
 }
 
 py::object predictBatchWrapper(ModelPipeline& model,
