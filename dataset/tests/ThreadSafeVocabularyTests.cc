@@ -154,29 +154,6 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
   assertStringsEqual(strings, block_3_reverted_strings);
 }
 
-TEST(ThreadSafeVocabularyTests, SeenAllStringsBehavior) {
-  uint32_t n_unique = 1000;
-  auto seen_strings =
-      generateRandomStrings(n_unique, /* repetitions = */ 1000, /* len = */ 10);
-  ThreadSafeVocabulary vocab(n_unique);
-
-  getUids(vocab, seen_strings);  // Build vocabulary.
-
-  vocab.fixVocab();
-
-  std::vector<uint32_t> uids = getUids(vocab, seen_strings);
-
-  auto reverted_strings = backToStrings(vocab, uids);
-  assertStringsEqual(seen_strings, reverted_strings);
-
-  // Different string length so the strings are guaranteed to be unseen
-  auto unseen_strings = generateRandomStrings(
-      /* n_unique = */ 1, /* repetitions = */ 1, /* len = */ 20);
-
-  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      vocab.getUid(unseen_strings.front()), std::invalid_argument);
-}
-
 TEST(ThreadSafeVocabularyTests, UidOutOfRangeThrowsError) {
   std::unordered_map<std::string, uint32_t> string_to_uid_map = {
       {"string", 175}};
