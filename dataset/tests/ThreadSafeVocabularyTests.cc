@@ -25,12 +25,13 @@ static std::vector<std::string> generateRandomStrings(size_t n_unique,
       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
       "abcdefghijklmnopqrstuvwxyz";
 
+  std::srand(0);
+
   std::vector<std::string> strings(n_unique * repetitions);
   for (uint32_t unique = 0; unique < n_unique; unique++) {
     std::string random_string;
     random_string.reserve(len);
 
-    std::srand(0);
     for (uint32_t i = 0; i < len; ++i) {
       random_string += alphanum[std::rand() % strlen(alphanum)];
     }
@@ -94,7 +95,7 @@ std::vector<uint32_t> getUidsFromBatch(BoltBatch& batch, uint32_t block_idx = 0,
 }
 
 TEST(ThreadSafeVocabularyTests, Standalone) {
-  uint32_t n_unique = 1000;
+  uint32_t n_unique = 10;
   auto strings =
       generateRandomStrings(n_unique, /* repetitions = */ 1000, /* len = */ 10);
   ThreadSafeVocabulary vocab(n_unique);
@@ -110,7 +111,7 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
   auto vocab = ThreadSafeVocabulary::make(n_unique);
   auto lookup_block = StringLookupCategoricalBlock::make(
       /* col = */ 0, vocab);
-
+  
   GenericBatchProcessor processor(/* input_blocks = */ {lookup_block},
                                   /* label_blocks = */ {});
   auto [batch, _] = processor.createBatch(strings);

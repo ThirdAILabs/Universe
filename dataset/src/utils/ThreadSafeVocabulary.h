@@ -39,9 +39,11 @@ class ThreadSafeVocabularyElement {
 
  private:
   explicit ThreadSafeVocabularyElement(std::string key, uint32_t id)
-      : key(std::move(key)), id(id) {}
+      : key(std::move(key)), id(id), _next(nullptr) {}
   std::atomic<ThreadSafeVocabularyElement*> _next;
 };
+
+// TODO(Geordie) Try to use mutex. Time it. Why is the second constructor failing asan checks? 
 
 class ThreadSafeVocabulary {
  public:
@@ -51,7 +53,10 @@ class ThreadSafeVocabulary {
         _linked_list_last_elems(vocab_size),
         _hash_table(new std::atomic<ThreadSafeVocabularyElement*>[vocab_size]) {
     _uid_to_string.reserve(vocab_size);
-        }
+    for (uint32_t bucket = 0; bucket < _vocab_size; bucket++) {
+      _hash_table[bucket] = nullptr;
+    }
+  }
 
   ThreadSafeVocabulary(
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map, bool fixed,
@@ -81,6 +86,9 @@ class ThreadSafeVocabulary {
 
     _linked_list_last_elems.resize(_vocab_size),
     _hash_table = new std::atomic<ThreadSafeVocabularyElement*>[_vocab_size];
+    for (uint32_t bucket = 0; bucket < _vocab_size; bucket++) {
+      _hash_table[bucket] = nullptr;
+    }
     
     // resize here so we can access 0 to map.size() - 1 uids with [] syntax
     _uid_to_string.resize(_size);
@@ -106,6 +114,8 @@ class ThreadSafeVocabulary {
   }
 
   uint32_t getUid(const std::string& key) {
+// #pragma omp critical
+//     std::cout << "size is " << _size << std::endl;
     auto bucket = getBucketIdx(key);
     ThreadSafeVocabularyElement* prev_elem = nullptr;
     for (auto* elem = _hash_table[bucket].load(); elem;
@@ -120,7 +130,8 @@ class ThreadSafeVocabulary {
     std::exception_ptr exception;
 #pragma omp critical(ThreadSafeVocabulary)
     {
-      for (auto* elem = prev_elem; elem; elem = elem->next()) {
+      ThreadSafeVocabularyElement* elem = prev_elem ? prev_elem : _hash_table[bucket].load();
+      for (; elem; elem = elem->next()) {
         if (elem->key == key) {
           id = elem->id;
         }
@@ -149,6 +160,8 @@ class ThreadSafeVocabulary {
     }
     
     if (*id >= _vocab_size) {
+#pragma omp critical
+      std::cout << "tsv" << __LINE__ << " id " << *id << std::endl;
       throw std::invalid_argument("[ThreadSafeVocabulary] Expected " +
                                   std::to_string(_vocab_size) +
                                   " unique strings but found more.");
@@ -192,7 +205,12 @@ class ThreadSafeVocabulary {
                                                   fixed, vocab_size);
   }
 
-  ~ThreadSafeVocabulary() { delete[] _hash_table; }
+  ~ThreadSafeVocabulary() { 
+    for (uint32_t bucket = 0; bucket < _vocab_size; bucket++) {
+      delete _hash_table[bucket].load();
+    }
+    delete[] _hash_table; 
+  }
 
  private:
   uint32_t getBucketIdx(const std::string& key) const {
