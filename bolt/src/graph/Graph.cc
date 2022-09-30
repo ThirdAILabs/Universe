@@ -132,7 +132,8 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        if (_updates % train_config.logLossFrequency() == 0) {
+        if (train_config.logLossFrequency() != 0 &&
+            _updates % train_config.logLossFrequency() == 0) {
           logging::info("train | epoch {} | updates {} | {}", (_epoch),
                         _updates, train_metrics.summary());
         }
