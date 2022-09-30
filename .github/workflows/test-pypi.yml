@@ -24,6 +24,7 @@ on:
 jobs:
   build_wheels:
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-2019, ubuntu-20.04, macos-12]
 
@@ -84,7 +85,7 @@ jobs:
           CIBW_ARCHS_MACOS: x86_64 arm64
 
           # Skip building on CPython <3.8 on the Mac
-          CIBW_SKIP: cp36-macosx_arm64 cp37-macox_arm64
+          CIBW_SKIP: "cp36-macosx_arm64 cp37-macox_arm64 cp311-*"
 
 
       - name: Upload wheels
