@@ -144,8 +144,8 @@ class TrainConfig {
     return *this;
   }
 
-  TrainConfig& logLossEvery(uint32_t log_loss_every) {
-    _log_loss_every = log_loss_every;
+  TrainConfig& withLogLossFrequency(uint32_t log_loss_frequency) {
+    _log_loss_frequency = log_loss_frequency;
     return *this;
   }
 
@@ -230,7 +230,7 @@ class TrainConfig {
     return deserialize_into;
   }
 
-  uint32_t log_loss_every() const { return _log_loss_every; }
+  uint32_t logLossFrequency() const { return _log_loss_frequency; }
 
  private:
   // Private constructor for cereal.
@@ -245,7 +245,7 @@ class TrainConfig {
         _reconstruct_hash_functions(std::nullopt),
         _callbacks({}),
         _validation_context(std::nullopt),
-        _log_loss_every(1) {}
+        _log_loss_frequency(1) {}
 
   friend class cereal::access;
   // We don't serialize the callbacks because they might be arbitrary functions
@@ -271,7 +271,8 @@ class TrainConfig {
 
   std::optional<ValidationContext> _validation_context;
 
-  uint32_t _log_loss_every;
+  /// Log loss frequency, in units of updates (1 batch = 1 update).
+  uint32_t _log_loss_frequency;
 };
 
 class TrainState {

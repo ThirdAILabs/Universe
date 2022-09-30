@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>

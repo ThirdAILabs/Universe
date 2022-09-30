@@ -12,14 +12,12 @@ __all__ = [
 
 # Include these so we can use them just by import the top level.
 import thirdai.bolt as bolt
-import thirdai.search as search
 import thirdai.dataset as dataset
 import thirdai.hashing as hashing
-
-from thirdai._thirdai import logging
+import thirdai.search as search
 
 # Relay __version__ from C++
-from thirdai._thirdai import __version__
+from thirdai._thirdai import __version__, logging
 
 # Import the top level methods so they are available directly from thirdai
 # If the import fails it means this build doesn't expose these methods, so we

@@ -2,6 +2,7 @@
 #include <bolt/python_bindings/BoltPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_classifiers/python_bindings/AutoClassifiersPython.h>
+#include <auto_ml/python_bindings/DeploymentConfigPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <utils/Logging.h>
@@ -122,4 +123,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::bolt::python::defineAutoClassifeirsInModule(bolt_submodule);
 
   thirdai::search::python::createSearchSubmodule(m);
+
+  thirdai::automl::deployment_config::python::createDeploymentConfigSubmodule(
+      m);
 }

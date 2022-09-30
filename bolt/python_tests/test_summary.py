@@ -1,6 +1,7 @@
-from thirdai import bolt
-import pytest
 import textwrap
+
+import pytest
+from thirdai import bolt
 
 
 @pytest.mark.unit

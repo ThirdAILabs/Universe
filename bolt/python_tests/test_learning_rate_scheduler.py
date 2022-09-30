@@ -1,7 +1,9 @@
-from thirdai import bolt
-from utils import gen_numpy_training_data, get_simple_dag_model
-import pytest
 import math
+
+import pytest
+from thirdai import bolt
+
+from utils import gen_numpy_training_data, get_simple_dag_model
 
 pytestmark = [pytest.mark.unit]
 N_CLASSES = 10
@@ -73,7 +75,7 @@ def test_exponential_lr_scheduler():
 
 @pytest.mark.unit
 def test_multistep_lr_scheduler():
-    lr_schedule = bolt.graph.callbacks.MultiStepLR(gamma=0.2, milestones=[2, 4])
+    lr_schedule = bolt.graph.callbacks.MultiStepLR(gamma=0.2, milestones=[1, 3])
     learning_rate_scheduler = train_model_with_scheduler(
         base_learning_rate=0.001,
         epochs=4,

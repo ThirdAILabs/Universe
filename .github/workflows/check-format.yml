@@ -38,12 +38,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Prepare Python
+      - name: Prepare Black
         run: |
           sudo pip3 install black
-      - name: Check Python format 
+      - name: Prepare isort
+        run: |
+          sudo pip3 install isort
+      - name: Check Black format 
         run: |
           black . --check --exclude "build|.venv|venv|.env|env|deps"
+      - name: Check isort format
+        run: |
+          isort . --check --profile black --skip-glob deps --skip _deps
 
   cmake-format:
     runs-on: ubuntu-latest

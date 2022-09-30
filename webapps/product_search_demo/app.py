@@ -1,13 +1,14 @@
-import time
-from flask import Flask, request, render_template
 import sys
+import time
 import warnings
+
+from flask import Flask, render_template, request
 
 warnings.filterwarnings("ignore")
 
 import thirdai
-from thirdai.search import DocRetrieval
 from thirdai.embeddings import DocSearchModel
+from thirdai.search import DocRetrieval
 
 product_index = None
 embedding_model = DocSearchModel()
