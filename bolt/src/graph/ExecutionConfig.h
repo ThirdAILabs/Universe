@@ -75,11 +75,11 @@ class ValidationContext {
   explicit ValidationContext(
       std::vector<dataset::BoltDatasetPtr> validation_data,
       dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config,
-      uint32_t validate_every)
+      uint32_t frequency)
       : _data(std::move(validation_data)),
         _labels(std::move(validation_labels)),
         _config(std::move(predict_config)),
-        _validate_every(validate_every) {}
+        _frequency(frequency) {}
 
   const std::vector<dataset::BoltDatasetPtr>& data() const { return _data; }
 
@@ -87,13 +87,13 @@ class ValidationContext {
 
   const PredictConfig& config() const { return _config; }
 
-  uint32_t validate_every() const { return _validate_every; }
+  uint32_t frequency() const { return _frequency; }
 
  private:
   std::vector<dataset::BoltDatasetPtr> _data;
   dataset::BoltDatasetPtr _labels;
   PredictConfig _config;
-  uint32_t _validate_every;
+  uint32_t _frequency;
 };
 
 class TrainConfig;
@@ -138,9 +138,10 @@ class TrainConfig {
   TrainConfig& withValidation(
       const std::vector<dataset::BoltDatasetPtr>& validation_data,
       const dataset::BoltDatasetPtr& validation_labels,
-      const PredictConfig& predict_config, uint32_t validate_every = 0) {
-    _validation_context = ValidationContext(validation_data, validation_labels,
-                                            predict_config, validate_every);
+      const PredictConfig& predict_config, uint32_t validation_frequency = 0) {
+    _validation_context =
+        ValidationContext(validation_data, validation_labels, predict_config,
+                          validation_frequency);
     return *this;
   }
 

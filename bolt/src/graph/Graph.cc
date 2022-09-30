@@ -137,7 +137,7 @@ MetricData BoltGraph::train(
                         _updates, train_metrics.summary());
         }
 
-        if (validation && (_updates % validation->validate_every() == 0)) {
+        if (validation && (_updates % validation->frequency() == 0)) {
           // TODO(jerin-thirdai): The implications of doing
           // cleanupAfterBatchProcessing and prepareToProcessBatches is not
           // fully understood here. These two functions should not exist, but
@@ -183,8 +183,8 @@ MetricData BoltGraph::train(
 
     cleanupAfterBatchProcessing();
 
-    // TODO(david): we should add a some type of "validate_every" parameter to
-    // the validation construct so we are not restricted to validating every
+    // TODO(david): we should add a some type of "validate_frequency" parameter
+    // to the validation construct so we are not restricted to validating every
     // epoch. this also lets us validate after N updates per say. Requires the
     // raii cleanup change mentioned above for validation after a batch
     if (validation) {
