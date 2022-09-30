@@ -172,7 +172,6 @@ MetricData BoltGraph::train(
     // epoch. this also lets us validate after N updates per say. Requires the
     // raii cleanup change mentioned above for validation after a batch
     if (validation) {
-      std::string label = fmt::format("valid | epoch {} | complete", _epoch);
       auto [val_metrics, _] = predict(validation->data(), validation->labels(),
                                       validation->config());
       train_state.updateValidationMetrics(val_metrics);
