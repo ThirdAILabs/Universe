@@ -139,7 +139,7 @@ MetricData BoltGraph::train(
                         updates, train_metrics.summary());
         }
 
-        if (validation && updates % validation->validate_every() == 0) {
+        if (validation && (updates % validation->validate_every() == 0)) {
           // TODO(jerin-thirdai): The implications of doing
           // cleanupAfterBatchProcessing and prepareToProcessBatches is not
           // fully understood here. These two functions should not exist, but
