@@ -217,6 +217,19 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
   }
 };
 
+/**
+ * This HyperParameter is intended to be used for sparsity in the output layer.
+ * The intended use case is that the output dimension may be user specified, and
+ * we may want to use sparsity in this layer if the number of neurons is large
+ * enough, but we don't want the user to be responsible for inputing a
+ * reasonable sparsity value. Hence this class allows you to specify that the
+ * sparsity in a given layer is auto-tuned based off of a user specified
+ * dimension. Note that using an OptionMappedParameter is not sufficient because
+ * it would require enumerating the possible dimensions. Also note that it is
+ * best practice to use OptionMappedParameters for hidden layer dimensions to
+ * ensure reasonable architectures, and so this should really only be used in
+ * the output layer.
+ */
 class AutotunedSparsityParameter final : public HyperParameter<float> {
  public:
   explicit AutotunedSparsityParameter(std::string dimension_param_name)
