@@ -22,6 +22,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -70,6 +71,11 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"));
+
+  py::class_<AutotunedSparsityParameter, HyperParameter<float>,
+             std::shared_ptr<AutotunedSparsityParameter>>(
+      submodule, "AutotunedSparsityParameter")
+      .def(py::init<std::string>(), py::arg("dimension_param_name"));
 
   py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig");  // NOLINT
 
@@ -127,11 +133,12 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
-                    bool, std::vector<std::string>>(),
+                    bool, std::vector<std::string>, std::optional<float>>(),
            py::arg("rebuild_hash_tables_interval"),
            py::arg("reconstruct_hash_functions_interval"),
            py::arg("default_batch_size"), py::arg("use_sparse_inference"),
-           py::arg("evaluation_metrics"));
+           py::arg("evaluation_metrics"),
+           py::arg("prediction_threshold") = std::nullopt);
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
@@ -162,6 +169,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"))
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"))
       .def("predict", &predictWrapper, py::arg("input_sample"))
+      .def("predict_token", &predictTokensWrapper, py::arg("tokens"))
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
@@ -245,7 +253,7 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source) {
-  auto [_, output] = model.evaluate(data_source);
+  auto output = model.evaluate(data_source);
 
   return convertInferenceTrackerToNumpy(output);
 }
@@ -260,6 +268,18 @@ py::object evaluateOnFileWrapper(ModelPipeline& model,
 py::object predictWrapper(ModelPipeline& model, const std::string& sample) {
   BoltVector output = model.predict(sample);
   return convertBoltVectorToNumpy(output);
+}
+
+py::object predictTokensWrapper(ModelPipeline& model,
+                                const std::vector<uint32_t>& tokens) {
+  std::stringstream sentence;
+  for (uint32_t i = 0; i < tokens.size(); i++) {
+    if (i > 0) {
+      sentence << ' ';
+    }
+    sentence << tokens[i];
+  }
+  return predictWrapper(model, sentence.str());
 }
 
 py::object predictBatchWrapper(ModelPipeline& model,

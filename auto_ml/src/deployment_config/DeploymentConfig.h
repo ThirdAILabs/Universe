@@ -91,7 +91,7 @@ class DeploymentConfig {
   TrainEvalParameters _train_test_parameters;
 
   // Private constructor for cereal
-  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}) {}
+  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}, {}) {}
 
   friend class cereal::access;
   template <typename Archive>

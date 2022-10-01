@@ -38,6 +38,9 @@ py::object evaluateOnFileWrapper(ModelPipeline& model,
 
 py::object predictWrapper(ModelPipeline& model, const std::string& sample);
 
+py::object predictTokensWrapper(ModelPipeline& model,
+                                const std::vector<uint32_t>& tokens);
+
 py::object predictBatchWrapper(ModelPipeline& model,
                                const std::vector<std::string>& samples);
 
