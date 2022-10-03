@@ -1,7 +1,8 @@
-from thirdai import bolt
-import pytest
 import os
+
 import numpy as np
+import pytest
+from thirdai import bolt
 
 
 @pytest.mark.unit

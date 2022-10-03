@@ -222,6 +222,8 @@ file(GLOB_RECURSE COMPRESSION_SOURCES compression/src/*.cc)
 
 file(GLOB_RECURSE UTILS_SOURCES utils/*.cc)
 
+file(GLOB RECURSE AUTOML_SOURCES auto_ml/src/*.cc)
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
 # from python, but honestly this is more trouble than it's worth so for now this
@@ -236,6 +238,7 @@ pybind11_add_module(
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_classifiers/python_bindings/AutoClassifiersPython.cc
+  auto_ml/python_bindings/DeploymentPython.cc
   ${BOLT_SOURCES}
   ${SEARCH_SOURCES}
   ${HASHING_SOURCES}
@@ -244,7 +247,8 @@ pybind11_add_module(
   ${WRAPPER_SOURCES}
   ${DATASET_SOURCES}
   ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES})
+  ${UTILS_SOURCES}
+  ${AUTOML_SOURCES})
 
 target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
 

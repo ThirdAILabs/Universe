@@ -1,8 +1,9 @@
-import boto3
-from moto import mock_s3
-import os
-import pytest
 import math
+import os
+
+import boto3
+import pytest
+from moto import mock_s3
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 

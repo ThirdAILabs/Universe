@@ -1,5 +1,6 @@
 #include <utils/Logging.h>
 #include <utils/Version.h>
+#include <chrono>
 #include <iostream>
 #include <string>
 
@@ -9,11 +10,19 @@
 
 namespace thirdai::logging {
 
-void setupLogging(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
-                  const std::string& path /*= DEFAULT_LOG_PATH*/,
-                  const std::string& level /*= DEFAULT_LOG_LEVEL*/,
-                  const std::string& pattern /*= DEFAULT_LOG_PATTERN*/) {
+void setup(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
+           const std::string& path /*= DEFAULT_LOG_PATH*/,
+           const std::string& level /*= DEFAULT_LOG_LEVEL*/,
+           const std::string& pattern /* = DEFAULT_LOG_PATTERN*/,
+           uint32_t flush_interval /*= DEFAULT_LOG_FLUSH_INTERVAL*/) {
   try {
+    // Flush any existing loggers. Useful when setup is called multiple times.
+    flush();
+
+    // Shutdown existing loggers, so we can start clean-slate
+    spdlog::shutdown();
+
+    // Construct new loggers.
     using FileSink = spdlog::sinks::basic_file_sink_mt;
     using StderrSink = spdlog::sinks::stderr_color_sink_mt;
 
@@ -34,6 +43,9 @@ void setupLogging(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
 
     spdlog::register_logger(logger);
     logger->set_pattern(pattern);
+
+    // This ensures that logs are periodically flushed.
+    spdlog::flush_every(std::chrono::seconds(flush_interval));
 
     // Convert a supplied string level into the corresponding
     // spdlog level and configures the logger accordingly.
