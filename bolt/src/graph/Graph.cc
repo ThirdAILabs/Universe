@@ -89,7 +89,29 @@ MetricData BoltGraph::train(
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
 
-  for (uint32_t _epoch = 0; _epoch < train_config.epochs(); _epoch++) {
+  /*
+   * There are a few cases of epoch calculation to handle here, which is not
+   * obvious reading the code here locally. We want _epoch to be the single
+   * source of truth for all cases.
+   *
+   * 1. Fresh training. The constructor would have set _epoch to 0.
+   * 2. There is currently the option for the client to incrementally train,
+   *    similar to an undocumented behaviour in Keras.
+   *
+   *    https://github.com/keras-team/keras/issues/4446
+   *
+   *    We do not want this behaviour broken to avoid surprises.
+   *
+   * 3. TODO(jerin): We have loaded a checkpoint and want to resume training. We
+   *    have epoch loaded from cereal archive here.
+   */
+
+  // Treat the supplied epochs as additional epochs. Use this to generate the
+  // total num_epochs. This way _epoch indicates how many passes have been made
+  // over the dataset.
+  uint32_t num_epochs = _epoch + train_config.epochs();
+
+  for (/*_epoch = _epoch*/; _epoch < num_epochs; _epoch++) {
     train_state.epoch = _epoch;
     callbacks.onEpochBegin(*this, train_state);
 
