@@ -189,10 +189,6 @@ MetricData BoltGraph::train(
 
     cleanupAfterBatchProcessing();
 
-    // TODO(david): we should add a some type of "validate_frequency" parameter
-    // to the validation construct so we are not restricted to validating every
-    // epoch. this also lets us validate after N updates per say. Requires the
-    // raii cleanup change mentioned above for validation after a batch
     if (validation) {
       auto [val_metrics, _] = predict(validation->data(), validation->labels(),
                                       validation->config());
