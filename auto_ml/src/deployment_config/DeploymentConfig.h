@@ -44,10 +44,10 @@ class DeploymentConfig {
  public:
   DeploymentConfig(DatasetLoaderFactoryConfigPtr dataset_config,
                    ModelConfigPtr model_config,
-                   TrainEvalParameters train_test_parameters)
+                   TrainEvalParametersConfigPtr train_eval_parameters)
       : _dataset_config(std::move(dataset_config)),
         _model_config(std::move(model_config)),
-        _train_test_parameters(std::move(train_test_parameters)) {}
+        _train_eval_parameters(std::move(train_eval_parameters)) {}
 
   std::pair<DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
   createDataLoaderAndModel(
@@ -61,8 +61,12 @@ class DeploymentConfig {
     return {std::move(dataset_factory), std::move(model)};
   }
 
-  const TrainEvalParameters& train_eval_parameters() const {
-    return _train_test_parameters;
+  TrainEvalParametersPtr resolveTrainEvalParameters(
+      const UserInputMap& user_specified_parameters) {
+    TrainEvalParametersPtr train_eval_params =
+        _train_eval_parameters->resolveConfig(user_specified_parameters);
+
+    return train_eval_params;
   }
 
   void save(const std::string& filename) {
@@ -88,15 +92,15 @@ class DeploymentConfig {
 
   // These are static parameters that need to be configurable for different
   // models, but that the user cannot modify.
-  TrainEvalParameters _train_test_parameters;
+  TrainEvalParametersConfigPtr _train_eval_parameters;
 
   // Private constructor for cereal
-  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}, {}) {}
+  DeploymentConfig() {}
 
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(_dataset_config, _model_config, _train_test_parameters);
+    archive(_dataset_config, _model_config, _train_eval_parameters);
   }
 };
 

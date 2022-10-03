@@ -54,7 +54,7 @@ def get_config(
         rebuild_hash_tables_interval=None,
         reconstruct_hash_functions_interval=None,
         default_batch_size=256,
-        use_sparse_inference=True,
+        use_sparse_inference=deployment.ConstantParameter(True),
         evaluation_metrics=[],
     )
 

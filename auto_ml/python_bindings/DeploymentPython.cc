@@ -131,9 +131,11 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
            py::arg("delimiter"));
 
-  py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
+  py::class_<TrainEvalParametersConfig, TrainEvalParametersConfigPtr>(
+      submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
-                    bool, std::vector<std::string>, std::optional<float>>(),
+                    HyperParameterPtr<bool>, std::vector<std::string>,
+                    std::optional<HyperParameterPtr<float>>>(),
            py::arg("rebuild_hash_tables_interval"),
            py::arg("reconstruct_hash_functions_interval"),
            py::arg("default_batch_size"), py::arg("use_sparse_inference"),
@@ -143,7 +145,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
       .def(py::init<DatasetLoaderFactoryConfigPtr, ModelConfigPtr,
-                    TrainEvalParameters>(),
+                    TrainEvalParametersConfigPtr>(),
            py::arg("dataset_config"), py::arg("model_config"),
            py::arg("train_eval_parameters"))
       .def("save", &DeploymentConfig::save, py::arg("filename"))
@@ -169,7 +171,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"))
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"))
       .def("predict", &predictWrapper, py::arg("input_sample"))
-      .def("predict_token", &predictTokensWrapper, py::arg("tokens"))
+      .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"))
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));

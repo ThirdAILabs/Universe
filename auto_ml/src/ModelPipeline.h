@@ -28,7 +28,7 @@ class ModelPipeline {
  public:
   ModelPipeline(DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,
-                TrainEvalParameters train_eval_parameters)
+                TrainEvalParametersPtr train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
         _train_eval_config(std::move(train_eval_parameters)) {}
@@ -39,8 +39,11 @@ class ModelPipeline {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
 
+    auto train_eval_params =
+        config->resolveTrainEvalParameters(user_specified_parameters);
+
     return ModelPipeline(std::move(dataset_factory), std::move(model),
-                         config->train_eval_parameters());
+                         train_eval_params);
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
@@ -84,15 +87,15 @@ class ModelPipeline {
 
     bolt::PredictConfig predict_cfg =
         bolt::PredictConfig::makeConfig()
-            .withMetrics(_train_eval_config.evaluationMetrics())
+            .withMetrics(_train_eval_config->evaluationMetrics())
             .returnActivations();
-    if (_train_eval_config.useSparseInference()) {
+    if (_train_eval_config->useSparseInference()) {
       predict_cfg.enableSparseInference();
     }
 
     auto [_, output] = _model->predict({data}, labels, predict_cfg);
 
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
+    if (auto threshold = _train_eval_config->predictionThreshold()) {
       uint32_t output_dim = output.numNonzerosInOutput();
       for (uint32_t i = 0; i < output.numSamples(); i++) {
         float* activations = output.activationsForSample(i);
@@ -111,9 +114,9 @@ class ModelPipeline {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
     BoltVector output = _model->predictSingle(
-        std::move(inputs), _train_eval_config.useSparseInference());
+        std::move(inputs), _train_eval_config->useSparseInference());
 
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
+    if (auto threshold = _train_eval_config->predictionThreshold()) {
       uint32_t prediction_index = argmax(output.activations, output.len);
       if (output.activations[prediction_index] < threshold.value()) {
         output.activations[prediction_index] = threshold.value() + 0.0001;
@@ -128,9 +131,9 @@ class ModelPipeline {
         _dataset_factory->featurizeInputBatch(samples);
 
     BoltBatch outputs = _model->predictSingleBatch(
-        std::move(input_batches), _train_eval_config.useSparseInference());
+        std::move(input_batches), _train_eval_config->useSparseInference());
 
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
+    if (auto threshold = _train_eval_config->predictionThreshold()) {
       for (auto& output : outputs) {
         uint32_t prediction_index = argmax(output.activations, output.len);
         if (output.activations[prediction_index] < threshold.value()) {
@@ -160,7 +163,7 @@ class ModelPipeline {
   }
 
   uint32_t defaultBatchSize() const {
-    return _train_eval_config.defaultBatchSize();
+    return _train_eval_config->defaultBatchSize();
   }
 
  private:
@@ -169,7 +172,7 @@ class ModelPipeline {
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
-    if (_train_eval_config.useSparseInference() && epochs > 1) {
+    if (_train_eval_config->useSparseInference() && epochs > 1) {
       bolt::TrainConfig train_cfg_initial =
           getTrainConfig(learning_rate, /* epochs= */ 1);
 
@@ -186,7 +189,7 @@ class ModelPipeline {
 
   void trainOnStream(DatasetLoaderPtr& dataset, float learning_rate,
                      uint32_t epochs, uint32_t max_in_memory_batches) {
-    if (_train_eval_config.useSparseInference() && epochs > 1) {
+    if (_train_eval_config->useSparseInference() && epochs > 1) {
       trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
@@ -217,12 +220,12 @@ class ModelPipeline {
         bolt::TrainConfig::makeConfig(learning_rate, epochs);
 
     if (auto hash_table_rebuild =
-            _train_eval_config.rebuildHashTablesInterval()) {
+            _train_eval_config->rebuildHashTablesInterval()) {
       train_config.withRebuildHashTables(hash_table_rebuild.value());
     }
 
     if (auto reconstruct_hash_fn =
-            _train_eval_config.reconstructHashFunctionsInterval()) {
+            _train_eval_config->reconstructHashFunctionsInterval()) {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
     return train_config;
@@ -243,7 +246,7 @@ class ModelPipeline {
   }
 
   // Private constructor for cereal.
-  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}, {}) {}
+  ModelPipeline() {}
 
   friend class cereal::access;
   template <class Archive>
@@ -253,7 +256,7 @@ class ModelPipeline {
 
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
-  TrainEvalParameters _train_eval_config;
+  TrainEvalParametersPtr _train_eval_config;
 };
 
 }  // namespace thirdai::automl::deployment
