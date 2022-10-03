@@ -81,9 +81,9 @@ class TabularClassifier final
     std::vector<std::string_view> input_row = inputRowToStringView(sample);
 
     auto result = getSignificanceSortedExplanations(
-        _model,featurizeInputForInference(sample), input_row,
+        _model, featurizeInputForInference(sample), input_row,
         _batch_processor);
-    
+
     return result;
   }
 
@@ -115,7 +115,8 @@ class TabularClassifier final
 
   BoltVector featurizeInputForInference(
       const std::vector<std::string>& values) final {
-    std::vector<std::string_view> encodable_values = inputRowToStringView(values);
+    std::vector<std::string_view> encodable_values =
+        inputRowToStringView(values);
 
     BoltVector input;
     if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
@@ -149,7 +150,8 @@ class TabularClassifier final
   }
 
  private:
-  std::vector<std::string_view> inputRowToStringView(const std::vector<std::string>& values) {
+  std::vector<std::string_view> inputRowToStringView(
+      const std::vector<std::string>& values) {
     if (!_batch_processor) {
       throw std::runtime_error(
           "Cannot call featurizeInputForInference on TabularClasssifier before "
@@ -174,7 +176,7 @@ class TabularClassifier final
     */
     encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
                             /* value = */ " ");
-    
+
     return encodable_values;
   }
   void createBatchProcessor() {
