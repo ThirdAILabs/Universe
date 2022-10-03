@@ -132,9 +132,31 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        if (_updates % train_config.logLossFrequency() == 0) {
+        if (train_config.logLossFrequency() != 0 &&
+            _updates % train_config.logLossFrequency() == 0) {
           logging::info("train | epoch {} | updates {} | {}", (_epoch),
                         _updates, train_metrics.summary());
+        }
+
+        if (validation && validation->frequency() != 0 &&
+            (_updates % validation->frequency() == 0)) {
+          // TODO(jerin-thirdai): The implications of doing
+          // cleanupAfterBatchProcessing and prepareToProcessBatches is not
+          // fully understood here. These two functions should not exist, but
+          // not doing this leads to assertion failure on node-state or a
+          // segfault on something set as a nullptr after
+          // cleanupAfterBatchProcessing if prepareToProcessBatches is not
+          // applied.
+          //
+          // Currently unsure of the implications of adding validationMetrics
+          // from mid-batch as well, these will still be logged, but is not
+          // added to the callback export.
+
+          cleanupAfterBatchProcessing();
+          predict(validation->data(), validation->labels(),
+                  validation->config());
+          prepareToProcessBatches(dataset_context.batchSize(),
+                                  /* use_sparsity=*/true);
         }
 
         callbacks.onBatchEnd(*this, train_state);
@@ -167,10 +189,6 @@ MetricData BoltGraph::train(
 
     cleanupAfterBatchProcessing();
 
-    // TODO(david): we should add a some type of "validate_every" parameter to
-    // the validation construct so we are not restricted to validating every
-    // epoch. this also lets us validate after N updates per say. Requires the
-    // raii cleanup change mentioned above for validation after a batch
     if (validation) {
       auto [val_metrics, _] = predict(validation->data(), validation->labels(),
                                       validation->config());
