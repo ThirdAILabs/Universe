@@ -142,7 +142,7 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
       .def("save", &DeploymentConfig::save, py::arg("filename"))
       .def_static("load", &DeploymentConfig::load, py::arg("filename"));
 
-  py::class_<ModelPipeline>(submodule, "ModelPipeline")
+  py::class_<ModelPipeline, ModelPipelinePtr>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
            py::arg("parameters") = py::dict())
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),

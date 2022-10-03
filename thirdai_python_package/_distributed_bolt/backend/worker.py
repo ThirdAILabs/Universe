@@ -18,7 +18,7 @@ class Worker:
         self,
         num_workers: int,
         model_to_wrap: bolt.graph,
-        train_file_name: str,
+        training_data_source: str,
         id: int,
         primary_worker,
         train_config: bolt.graph.TrainConfig,
@@ -31,7 +31,7 @@ class Worker:
         """
 
         self.train_data, self.train_labels = parse_svm_dataset(
-            train_file_name, batch_size
+            training_data_source, batch_size
         )
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,

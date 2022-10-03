@@ -104,7 +104,7 @@ class DatasetLoaderFactory {
   }
 };
 
-using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
+using DatasetLoaderFactoryPtr = std::shared_ptr<DatasetLoaderFactory>;
 
 class DatasetLoaderFactoryConfig {
  public:

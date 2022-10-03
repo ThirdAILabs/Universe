@@ -1,5 +1,5 @@
 import textwrap
-from typing import List
+from typing import List, Union
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
@@ -100,9 +100,9 @@ class DistributedDataParallel:
     def __init__(
         self,
         cluster_config: RayTrainingClusterConfig,
-        model: bolt.graph.Model,
+        model: bolt.deployment_config.ModelPipeline,
+        training_data_sources: Union[bolt.dataset.DataLoader, str],
         train_config: bolt.graph.TrainConfig,
-        train_file_names: List[str],
         batch_size: int,
     ):
         """
@@ -118,11 +118,11 @@ class DistributedDataParallel:
         self.logging = cluster_config.logging
         self.train_config = train_config
 
-        if len(train_file_names) != cluster_config.num_workers:
+        if len(training_data_sources) != cluster_config.num_workers:
             raise ValueError(
                 "Received ",
-                len(train_file_names),
-                " training datasets. Expected ",
+                len(training_data_sources),
+                " training data sources. Expected ",
                 cluster_config.num_workers,
                 " datasets, one for each node.",
             )
@@ -139,7 +139,7 @@ class DistributedDataParallel:
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
             model_to_wrap=ray_model_ref,
-            train_file_name=train_file_names[0],
+            training_data_source=training_data_sources[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             batch_size=batch_size,
@@ -153,7 +153,7 @@ class DistributedDataParallel:
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
                     model_to_wrap=ray_model_ref,
-                    train_file_name=train_file_names[worker_id + 1],
+                    training_data_source=training_data_sources[worker_id + 1],
                     train_config=train_config,
                     id=worker_id + 1,
                     primary_worker=self.primary_worker,

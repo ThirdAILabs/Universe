@@ -15,7 +15,17 @@
 #include <memory>
 #include <utility>
 
+namespace thirdai::bolt {
+
+// Forward declare this class so it can be a friend
+class DistributedTrainingWrapper;
+
+}  // namespace thirdai::bolt
+
 namespace thirdai::automl {
+
+class ModelPipeline;
+using ModelPipelinePtr = std::shared_ptr<ModelPipeline>;
 
 /**
  * This class represents an end-to-end data processing + model pipeline. It
@@ -26,6 +36,8 @@ namespace thirdai::automl {
  */
 class ModelPipeline {
  public:
+  friend class bolt::DistributedTrainingWrapper;
+
   ModelPipeline(deployment_config::DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,
                 deployment_config::TrainEvalParameters train_eval_parameters)
@@ -119,11 +131,11 @@ class ModelPipeline {
     oarchive(*this);
   }
 
-  static std::unique_ptr<ModelPipeline> load(const std::string& filename) {
+  static ModelPipelinePtr load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<ModelPipeline> deserialize_into(new ModelPipeline());
+    ModelPipelinePtr deserialize_into(new ModelPipeline());
     iarchive(*deserialize_into);
 
     return deserialize_into;

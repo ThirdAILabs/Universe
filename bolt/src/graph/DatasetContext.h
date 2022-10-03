@@ -149,4 +149,6 @@ class SingleBatchDatasetContext final : public DatasetContextBase {
   std::vector<BoltBatch> _data;
 };
 
+using DatasetContextPtr = std::shared_ptr<DatasetContext>;
+
 }  // namespace thirdai::bolt

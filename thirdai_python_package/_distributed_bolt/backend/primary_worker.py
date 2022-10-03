@@ -24,7 +24,7 @@ class PrimaryWorker(Worker):
         self,
         num_workers: int,
         model_to_wrap: bolt.graph.Model,
-        train_file_name: str,
+        training_data_source: str,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
         batch_size: int,
@@ -33,7 +33,7 @@ class PrimaryWorker(Worker):
         super().__init__(
             num_workers=num_workers,
             model_to_wrap=model_to_wrap,
-            train_file_name=train_file_name,
+            training_data_source=training_data_source,
             id=0,
             primary_worker=self,
             train_config=train_config,

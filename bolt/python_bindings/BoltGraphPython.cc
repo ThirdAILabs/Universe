@@ -20,6 +20,7 @@
 #include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
 #include <pybind11/pytypes.h>
+#include <limits>
 #include <optional>
 #include <string>
 
@@ -559,19 +560,24 @@ That's all for now, folks! More docs coming soon :)
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,
                                          "DistributedTrainingWrapper")
-      .def(py::init<BoltGraphPtr, std::vector<dataset::BoltDatasetPtr>,
-                    dataset::BoltDatasetPtr, TrainConfig>(),
-           py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
-           py::arg("train_config"))
-      .def("compute_and_store_batch_gradients",
-           &DistributedTrainingWrapper::computeAndSaveBatchGradients,
-           py::arg("batch_idx"))
+      .def(py::init<const automl::ModelPipelinePtr&, float,
+                    dataset::DataLoaderPtr, uint32_t>(),
+           py::arg("model_pipeline"), py::arg("learning_rate"),
+           py::arg("data_loader"),
+           py::arg("max_in_memory_batches") =
+               std::numeric_limits<uint32_t>::max())
+      .def("freeze_hash_tables", &DistributedTrainingWrapper::freezeHashTables)
+      .def("compute_and_save_next_batch_gradients",
+           &DistributedTrainingWrapper::computeAndSaveNextBatchGradients)
+      .def("move_to_next_epoch", &DistributedTrainingWrapper::moveToNextEpoch)
       .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
-      .def("finish_training", &DistributedTrainingWrapper::finishTraining)
+      .def("finish_training",
+           &DistributedTrainingWrapper::cleanupAfterBatchProcessing)
       .def_property_readonly(
           "model",
-          [](DistributedTrainingWrapper& node) { return node.getModel(); },
-          py::return_value_policy::reference_internal,
+          [](DistributedTrainingWrapper& wrapper) { return wrapper.model(); },
+          // We want a copy since this is a shared_ptr
+          py::return_value_policy::copy,
           "The underlying Bolt model wrapped by this "
           "DistributedTrainingWrapper.");
 

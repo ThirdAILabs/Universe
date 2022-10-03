@@ -23,6 +23,7 @@
 
 namespace thirdai::bolt {
 
+// Forward declare this class so it can be a friend
 class DistributedTrainingWrapper;
 
 class BoltGraph {
