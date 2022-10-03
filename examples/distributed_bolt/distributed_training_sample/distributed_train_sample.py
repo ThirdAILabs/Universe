@@ -21,9 +21,9 @@ def get_mnist_model():
 if __name__ == "__main__":
     model = get_mnist_model()
     dataset_paths = ["/share/pratik/mnist_a", "/share/pratik/mnist_b"]
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=10)
+    train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
     cluster_config = db.RayTrainingClusterConfig(
-        num_workers=2, requested_cpus_per_node=20, communication_type="linear"
+        num_workers=2, requested_cpus_per_node=1, communication_type="linear"
     )
     wrapped_model = db.DistributedDataParallel(
         cluster_config=cluster_config,
