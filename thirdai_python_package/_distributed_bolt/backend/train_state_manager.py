@@ -1,7 +1,7 @@
 import time
 
-import ray
 import numpy as np
+import ray
 
 
 class TrainStateManager:
@@ -67,6 +67,9 @@ class TrainStateManager:
         for gradient_id in range(len(self.gradient_averages)):
             self.gradient_averages[gradient_id] /= len(self.workers)
 
+        # Here we are putting the references for averaged gradients in the ray plasma store.
+        # which removes multiple copies created earlier by each of the worker, and gets the
+        # communication done with only one copy.
         gradient_averages_ref = ray.put(self.gradient_averages)
         ray.get(
             [
