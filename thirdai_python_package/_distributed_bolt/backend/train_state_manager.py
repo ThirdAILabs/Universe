@@ -77,6 +77,7 @@ class TrainStateManager:
                 for worker in self.workers
             ]
         )
+        del gradient_averages_ref
 
     def train_batch(self, epoch_id, batch_id):
         """

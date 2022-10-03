@@ -161,6 +161,9 @@ class DistributedDataParallel:
                     batch_size=batch_size,
                 )
             )
+        
+        
+        del ray_model_ref
 
         self.workers = [self.primary_worker] + self.replica_workers
 
