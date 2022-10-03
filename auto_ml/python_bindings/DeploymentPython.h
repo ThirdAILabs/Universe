@@ -10,9 +10,9 @@
 
 namespace py = pybind11;
 
-namespace thirdai::automl::deployment_config::python {
+namespace thirdai::automl::deployment::python {
 
-void createDeploymentConfigSubmodule(py::module_& thirdai_module);
+void createDeploymentSubmodule(py::module_& thirdai_module);
 
 template <typename T>
 void defConstantParameter(py::module_& submodule);
@@ -38,6 +38,9 @@ py::object evaluateOnFileWrapper(ModelPipeline& model,
 
 py::object predictWrapper(ModelPipeline& model, const std::string& sample);
 
+py::object predictTokensWrapper(ModelPipeline& model,
+                                const std::vector<uint32_t>& tokens);
+
 py::object predictBatchWrapper(ModelPipeline& model,
                                const std::vector<std::string>& samples);
 
@@ -47,4 +50,4 @@ py::object convertBoltVectorToNumpy(const BoltVector& vector);
 
 py::object convertBoltBatchToNumpy(const BoltBatch& batch);
 
-}  // namespace thirdai::automl::deployment_config::python
+}  // namespace thirdai::automl::deployment::python
