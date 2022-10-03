@@ -75,11 +75,11 @@ class ValidationContext {
   explicit ValidationContext(
       std::vector<dataset::BoltDatasetPtr> validation_data,
       dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config,
-      uint32_t validate_every)
+      uint32_t frequency)
       : _data(std::move(validation_data)),
         _labels(std::move(validation_labels)),
         _config(std::move(predict_config)),
-        _validate_every(validate_every) {}
+        _frequency(frequency) {}
 
   const std::vector<dataset::BoltDatasetPtr>& data() const { return _data; }
 
@@ -87,13 +87,13 @@ class ValidationContext {
 
   const PredictConfig& config() const { return _config; }
 
-  uint32_t validate_every() const { return _validate_every; }
+  uint32_t frequency() const { return _frequency; }
 
  private:
   std::vector<dataset::BoltDatasetPtr> _data;
   dataset::BoltDatasetPtr _labels;
   PredictConfig _config;
-  uint32_t _validate_every;
+  uint32_t _frequency;
 };
 
 class TrainConfig;
@@ -138,21 +138,22 @@ class TrainConfig {
   TrainConfig& withValidation(
       const std::vector<dataset::BoltDatasetPtr>& validation_data,
       const dataset::BoltDatasetPtr& validation_labels,
-      const PredictConfig& predict_config, uint32_t validate_every = 0) {
-    _validation_context = ValidationContext(validation_data, validation_labels,
-                                            predict_config, validate_every);
+      const PredictConfig& predict_config, uint32_t validation_frequency = 0) {
+    _validation_context =
+        ValidationContext(validation_data, validation_labels, predict_config,
+                          validation_frequency);
     return *this;
   }
 
-  TrainConfig& logLossEvery(uint32_t log_loss_every) {
-    _log_loss_every = log_loss_every;
+  TrainConfig& withLogLossFrequency(uint32_t log_loss_frequency) {
+    _log_loss_frequency = log_loss_frequency;
     return *this;
   }
 
   TrainConfig& withSaveParameters(const std::string& save_prefix,
-                                  uint32_t save_every) {
+                                  uint32_t save_frequency) {
     _save_prefix = save_prefix;
-    _save_every = save_every;
+    _save_frequency = save_frequency;
     return *this;
   }
 
@@ -237,10 +238,10 @@ class TrainConfig {
     return deserialize_into;
   }
 
-  uint32_t log_loss_every() const { return _log_loss_every; }
+  uint32_t logLossFrequency() const { return _log_loss_frequency; }
 
-  const std::string& save_prefix() const { return _save_prefix; }
-  uint32_t save_every() const { return _save_every; }
+  const std::string& savePrefix() const { return _save_prefix; }
+  uint32_t saveFrequency() const { return _save_frequency; }
 
  private:
   // Private constructor for cereal.
@@ -255,8 +256,8 @@ class TrainConfig {
         _reconstruct_hash_functions(std::nullopt),
         _callbacks({}),
         _validation_context(std::nullopt),
-        _log_loss_every(1),
-        _save_every(0) {}
+        _save_frequency(0),
+        _log_loss_frequency(1) {}
 
   friend class cereal::access;
   // We don't serialize the callbacks because they might be arbitrary functions
@@ -282,10 +283,11 @@ class TrainConfig {
 
   std::optional<ValidationContext> _validation_context;
 
-  uint32_t _log_loss_every;
-
   std::string _save_prefix;
-  uint32_t _save_every;
+  uint32_t _save_frequency;
+
+  /// Log loss frequency, in units of updates (1 batch = 1 update).
+  uint32_t _log_loss_frequency;
 };
 
 class TrainState {

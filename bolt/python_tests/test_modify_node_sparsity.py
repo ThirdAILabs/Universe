@@ -1,9 +1,7 @@
-from utils import (
-    gen_numpy_training_data,
-    get_simple_concat_model,
-)
-from thirdai import bolt
 import pytest
+from thirdai import bolt
+
+from utils import gen_numpy_training_data, get_simple_concat_model
 
 pytestmark = [pytest.mark.unit]
 

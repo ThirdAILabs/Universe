@@ -294,10 +294,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("reconstruct_hash_functions"))
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_save_parameters", &TrainConfig::withSaveParameters,
-           py::arg("save_prefix"), py::arg("save_every"))
+           py::arg("save_prefix"), py::arg("save_frequency"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("validate_every") = 0)
+           py::arg("predict_config"), py::arg("validation_frequency") = 0)
       .def_property_readonly(
           "num_epochs", [](TrainConfig& config) { return config.epochs(); },
           "Returns the number of epochs a model with this TrainConfig will "
@@ -308,8 +308,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "Returns the learning rate a model with this TrainConfig will train "
           "with.")
       .def(getPickleFunction<TrainConfig>())
-      .def("log_loss_every", &TrainConfig::logLossEvery,
-           py::arg("log_loss_every"));
+      .def("with_log_loss_frequency", &TrainConfig::withLogLossFrequency,
+           py::arg("log_loss_frequency"));
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
       .def_static("make", &PredictConfig::makeConfig)

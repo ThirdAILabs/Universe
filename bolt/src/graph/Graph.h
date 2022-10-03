@@ -38,8 +38,8 @@ class BoltGraph {
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
-        _epoch_count(0),
-        _batch_cnt(0) {
+        _epoch(0),
+        _updates(0) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
@@ -111,12 +111,6 @@ class BoltGraph {
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
 
-  InferenceResult namedPredict(
-      const std::string& label,
-      const std::vector<dataset::BoltDatasetPtr>& test_data,
-      const dataset::BoltDatasetPtr& test_labels,
-      const PredictConfig& predict_config);
-
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
 
@@ -177,7 +171,7 @@ class BoltGraph {
   void enableDistributedTraining();
 
   constexpr bool checkBatchInterval(uint32_t num_batches) const {
-    return (_batch_cnt % num_batches) == (num_batches - 1);
+    return (_updates % num_batches) == (num_batches - 1);
   }
 
   void rebuildHashTables();
@@ -208,10 +202,10 @@ class BoltGraph {
 
   std::shared_ptr<LossFunction> _loss;
 
-  // TODO(blaise/david): Factor out _epoch_count and _batch_cnt and put
+  // TODO(blaise/david): Factor out _epoch and _updates and put
   // them in TrainState
-  uint32_t _epoch_count;
-  uint32_t _batch_cnt;
+  uint32_t _epoch;
+  uint32_t _updates;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

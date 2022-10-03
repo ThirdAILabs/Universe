@@ -1,5 +1,6 @@
 import pytest
 from thirdai import bolt
+
 from utils import gen_numpy_training_data
 
 BATCH_SIZE = 32

@@ -1,8 +1,9 @@
-from sqlite3 import complete_statement
-from thirdai import bolt, dataset
-import numpy as np
-import os
 import math
+import os
+from sqlite3 import complete_statement
+
+import numpy as np
+from thirdai import bolt, dataset
 
 
 # Generates easy training data: the ground truth function is f(x_i) = i, where

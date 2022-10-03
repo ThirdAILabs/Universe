@@ -89,7 +89,8 @@ MetricData BoltGraph::train(
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
 
-  for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+  for (uint32_t _epoch = 0; _epoch < train_config.epochs(); _epoch++) {
+    train_state.epoch = _epoch;
     callbacks.onEpochBegin(*this, train_state);
 
     /*
@@ -109,7 +110,7 @@ MetricData BoltGraph::train(
     try {
       std::optional<ProgressBar> bar = makeOptionalProgressBar(
           /*make=*/train_config.verbose(),
-          /*description=*/fmt::format("train epoch {}", _epoch_count),
+          /*description=*/fmt::format("train epoch {}", _epoch),
           /*max_steps=*/dataset_context.numBatches());
 
       auto train_start = std::chrono::high_resolution_clock::now();
@@ -131,33 +132,37 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        uint32_t updates = 1 + epoch * dataset_context.numBatches() + batch_idx;
-
-        uint32_t log_loss_every = train_config.log_loss_every();
-        if (updates % log_loss_every == 0) {
-          logging::info("train | epoch {} | updates {} | {}", (_epoch_count),
-                        updates, train_metrics.summary());
+        if (train_config.logLossFrequency() != 0 &&
+            _updates % train_config.logLossFrequency() == 0) {
+          logging::info("train | epoch {} | updates {} | {}", (_epoch),
+                        _updates, train_metrics.summary());
         }
 
-        if (validation && updates % validation->validate_every() == 0) {
-          // This is not ideal and will have to be changed to be cleaned in the
-          // future.
-          // TODO(jerin-thirdai)
+        if (validation && validation->frequency() != 0 &&
+            (_updates % validation->frequency() == 0)) {
+          // TODO(jerin-thirdai): The implications of doing
+          // cleanupAfterBatchProcessing and prepareToProcessBatches is not
+          // fully understood here. These two functions should not exist, but
+          // not doing this leads to assertion failure on node-state or a
+          // segfault on something set as a nullptr after
+          // cleanupAfterBatchProcessing if prepareToProcessBatches is not
+          // applied.
+          //
+          // Currently unsure of the implications of adding validationMetrics
+          // from mid-batch as well, these will still be logged, but is not
+          // added to the callback export.
 
           cleanupAfterBatchProcessing();
-          std::string label =
-              fmt::format("valid | epoch {} | batch {}", epoch, batch_idx);
-          auto [val_metrics, _] =
-              namedPredict(label, validation->data(), validation->labels(),
-                           validation->config());
+          predict(validation->data(), validation->labels(),
+                  validation->config());
           prepareToProcessBatches(dataset_context.batchSize(),
                                   /* use_sparsity=*/true);
         }
 
-        uint32_t save_every = train_config.save_every();
-        if (save_every != 0 && updates % save_every == 0) {
+        uint32_t save_frequency = train_config.saveFrequency();
+        if (save_frequency != 0 && _updates % save_frequency == 0) {
           const std::string checkpoint_path =
-              train_config.save_prefix() + ".last.bolt";
+              train_config.savePrefix() + ".last.bolt";
           save(checkpoint_path);
         }
 
@@ -170,9 +175,10 @@ MetricData BoltGraph::train(
                                .count();
 
       std::string logline = fmt::format(
-          "train | epoch {} | complete | {} | batches {} | time {}s",
-          _epoch_count, train_metrics.summary(), dataset_context.numBatches(),
-          epoch_time);
+          "train | epoch {} | updates {} | {} | batches {} | time {}s | "
+          "complete",
+          _epoch, _updates, train_metrics.summary(),
+          dataset_context.numBatches(), epoch_time);
 
       logging::info(logline);
 
@@ -180,7 +186,6 @@ MetricData BoltGraph::train(
         bar->close(logline);
       }
 
-      _epoch_count++;
       train_metrics.logAndReset();
 
       train_state.epoch_times.push_back(static_cast<double>(epoch_time));
@@ -191,26 +196,19 @@ MetricData BoltGraph::train(
 
     cleanupAfterBatchProcessing();
 
-    // TODO(david): we should add a some type of "validate_every" parameter to
-    // the validation construct so we are not restricted to validating every
-    // epoch. this also lets us validate after N updates per say. Requires the
-    // raii cleanup change mentioned above for validation after a batch
     if (validation) {
-      std::string label = fmt::format("valid | epoch {} | complete", epoch);
-      auto [val_metrics, _] =
-          namedPredict(label, validation->data(), validation->labels(),
-                       validation->config());
+      auto [val_metrics, _] = predict(validation->data(), validation->labels(),
+                                      validation->config());
       train_state.updateValidationMetrics(val_metrics);
     }
 
-    if (not train_config.save_prefix().empty()) {
+    if (not train_config.savePrefix().empty()) {
       const std::string checkpoint_path =
-          train_config.save_prefix() + ".last.bolt";
+          train_config.savePrefix() + ".last.bolt";
       save(checkpoint_path);
     }
 
     callbacks.onEpochEnd(*this, train_state);
-    train_state.epoch = _epoch_count;
     if (train_state.stop_training) {
       break;
     }
@@ -252,8 +250,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
 void BoltGraph::updateParametersAndSampling(
     float learning_rate, uint32_t rebuild_hash_tables_batch,
     uint32_t reconstruct_hash_functions_batch) {
-  ++_batch_cnt;
-  updateParameters(learning_rate, _batch_cnt);
+  ++_updates;
+  updateParameters(learning_rate, _updates);
   updateSampling(
       /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
       /* reconstruct_hash_functions_batch= */
@@ -374,8 +372,12 @@ BoltGraph::getInputGradientSingle(
     input_vector.gradients = nullptr;
     cleanupAfterBatchProcessing();
 
+    // When activations are zero(in some rare cases) normalising will blow up
+    // the value so avoiding it.
     for (uint32_t i = 0; i < input_vector.len; i++) {
-      normalised_vec_grad[i] /= input_vector.activations[i];
+      if (input_vector.activations[i] != 0) {
+        normalised_vec_grad[i] /= input_vector.activations[i];
+      }
     }
 
     if (input_vector_indices.empty()) {
@@ -389,14 +391,6 @@ BoltGraph::getInputGradientSingle(
 }
 
 InferenceResult BoltGraph::predict(
-    const std::vector<dataset::BoltDatasetPtr>& test_data,
-    const dataset::BoltDatasetPtr& test_labels,
-    const PredictConfig& predict_config) {
-  return namedPredict("external", test_data, test_labels, predict_config);
-}
-
-InferenceResult BoltGraph::namedPredict(
-    const std::string& label,
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const dataset::BoltDatasetPtr& test_labels,
     const PredictConfig& predict_config) {
@@ -465,9 +459,9 @@ InferenceResult BoltGraph::namedPredict(
                           test_end - test_start)
                           .count();
 
-  std::string logline =
-      fmt::format("{} | {} | batches {} | time {}ms", label, metrics.summary(),
-                  predict_context.numBatches(), test_time);
+  std::string logline = fmt::format(
+      "predict | epoch {} | updates {} | {} | batches {} | time {}ms", _epoch,
+      _updates, metrics.summary(), predict_context.numBatches(), test_time);
 
   logging::info(logline);
   if (bar) {
@@ -809,7 +803,7 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-          _epoch_count, _batch_cnt);
+          _epoch, _updates);
 }
 
 void BoltGraph::save(const std::string& filename) const {

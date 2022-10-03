@@ -1,0 +1,131 @@
+#pragma once
+
+#include <cereal/access.hpp>
+#include "BlockConfig.h"
+#include <bolt/src/graph/nodes/Input.h>
+#include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/Datasets.h>
+#include <dataset/src/StreamingDataset.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <memory>
+#include <optional>
+
+namespace thirdai::automl::deployment_config {
+
+/**
+ * Structure of Dataset Configuration and Loading:
+ *
+ * DatasetConfig:
+        A config that specifies how to create the DatasetLoaderFactory.
+ *
+ * DatasetLoaderFactory:
+ *      takes in DataLoaders, for instance S3, a file, etc. and returns a
+ *      DatasetLoader for the given resource. This factory can also maintain any
+ *      state that's needed to load datasets, for instance in the Tabular and
+ *      Sequential data loaders which are stateful.
+ *
+ * DatasetLoader:
+ *      Can return bolt datasets form the associated data source until it is
+ *      exhausted. For instance a data loader would be returned by the factory
+ *      for each data source train or evaluate is invoked with.
+ *
+ */
+
+using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
+using LabelDataset = dataset::BoltDatasetPtr;
+
+class DatasetLoader {
+ public:
+  virtual std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
+      uint32_t max_in_memory_batches) = 0;
+
+  virtual void restart() = 0;
+
+  virtual ~DatasetLoader() = default;
+};
+
+class GenericDatasetLoader final : public DatasetLoader {
+ public:
+  GenericDatasetLoader(std::shared_ptr<dataset::DataLoader> data_loader,
+                       dataset::GenericBatchProcessorPtr batch_processor,
+                       bool shuffle)
+      : _dataset(std::move(data_loader), std::move(batch_processor), shuffle) {}
+
+  std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
+      uint32_t max_in_memory_batches) final {
+    auto datasets = _dataset.loadInMemoryWithMaxBatches(max_in_memory_batches);
+    if (!datasets) {
+      return std::nullopt;
+    }
+
+    auto& [data, labels] = datasets.value();
+
+    return std::make_optional<std::pair<InputDatasets, LabelDataset>>(
+        InputDatasets{data}, labels);
+  }
+
+  void restart() final { _dataset.restart(); }
+
+ private:
+  dataset::StreamingGenericDatasetLoader _dataset;
+};
+
+using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
+
+class DatasetLoaderFactory {
+ public:
+  virtual void preprocessDataset(
+      const std::shared_ptr<dataset::DataLoader>& data_loader,
+      std::optional<uint64_t> max_in_memory_batches) {
+    (void)data_loader;
+    (void)max_in_memory_batches;
+  }
+
+  virtual DatasetLoaderPtr getLabeledDatasetLoader(
+      std::shared_ptr<dataset::DataLoader> data_loader) = 0;
+
+  virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
+
+  virtual std::vector<BoltBatch> featurizeInputBatch(
+      const std::vector<std::string>& inputs) = 0;
+
+  virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
+
+  virtual ~DatasetLoaderFactory() = default;
+
+ private:
+  friend class cereal::access;
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
+};
+
+using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
+
+class DatasetLoaderFactoryConfig {
+ public:
+  virtual DatasetLoaderFactoryPtr createDatasetState(
+      const UserInputMap& user_specified_parameters) const = 0;
+
+  virtual ~DatasetLoaderFactoryConfig() = default;
+
+ protected:
+  // Private constructor for cereal.
+  DatasetLoaderFactoryConfig() {}
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
+};
+
+using DatasetLoaderFactoryConfigPtr =
+    std::shared_ptr<DatasetLoaderFactoryConfig>;
+
+}  // namespace thirdai::automl::deployment_config

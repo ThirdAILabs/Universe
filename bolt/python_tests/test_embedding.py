@@ -1,6 +1,6 @@
+import numpy as np
 import pytest
 from thirdai import bolt, dataset
-import numpy as np
 
 
 def get_sum_model(input_dim):

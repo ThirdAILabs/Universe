@@ -1,5 +1,6 @@
-import pytest
 import shutil
+
+import pytest
 
 # MockModel.tar.gz is a zipped directory containing just an empty pytorch.bin
 # file, an empty centroids.npy file, and an empty confiy.json file. We expect an
