@@ -77,7 +77,7 @@ class TrainStateManager:
                 for worker in self.workers
             ]
         )
-        
+
         # ray will clean up all the memory as soon as reference count become zero,
         # however, explicitly deleting them preemptively, frees up memory for upcoming
         # tasks
