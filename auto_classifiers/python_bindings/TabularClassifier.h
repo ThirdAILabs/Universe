@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <auto_classifiers/python_bindings/AutoClassifierBase.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
@@ -75,9 +76,15 @@ class TabularClassifier final
     return deserialize_into;
   }
 
-  std::vector<dataset::Explanation> explain(const std::vector<std::string>& sample) override {
-    (void)sample;
-    throw std::invalid_argument("not yet");
+  std::vector<dataset::Explanation> explain(
+      const std::vector<std::string>& sample) override {
+    std::vector<std::string_view> input_row = inputRowToStringView(sample);
+
+    auto result = getSignificanceSortedExplanations(
+        _model,featurizeInputForInference(sample), input_row,
+        _batch_processor);
+    
+    return result;
   }
 
  protected:
@@ -108,30 +115,7 @@ class TabularClassifier final
 
   BoltVector featurizeInputForInference(
       const std::vector<std::string>& values) final {
-    if (!_batch_processor) {
-      throw std::runtime_error(
-          "Cannot call featurizeInputForInference on TabularClasssifier before "
-          "training.");
-    }
-    if (values.size() != _metadata->numColumns() - 1) {
-      throw std::invalid_argument(
-          "Passed in an input of size " + std::to_string(values.size()) +
-          " but needed a vector of size " +
-          std::to_string(_metadata->numColumns() - 1) +
-          ". predict_single expects a vector of values in the same format as "
-          "the original csv but without the label present.");
-    }
-
-    std::vector<std::string_view> encodable_values(values.begin(),
-                                                   values.end());
-
-    /*
-      the batch processor fails if the number of columns mismatches with the
-      original format. since we are only creating an input vector here the
-      label is not relevant, thus we add some bogus here in the label's column
-    */
-    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
-                            /* value = */ " ");
+    std::vector<std::string_view> encodable_values = inputRowToStringView(values);
 
     BoltVector input;
     if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
@@ -165,6 +149,34 @@ class TabularClassifier final
   }
 
  private:
+  std::vector<std::string_view> inputRowToStringView(const std::vector<std::string>& values) {
+    if (!_batch_processor) {
+      throw std::runtime_error(
+          "Cannot call featurizeInputForInference on TabularClasssifier before "
+          "training.");
+    }
+    if (values.size() != _metadata->numColumns() - 1) {
+      throw std::invalid_argument(
+          "Passed in an input of size " + std::to_string(values.size()) +
+          " but needed a vector of size " +
+          std::to_string(_metadata->numColumns() - 1) +
+          ". predict_single expects a vector of values in the same format as "
+          "the original csv but without the label present.");
+    }
+
+    std::vector<std::string_view> encodable_values(values.begin(),
+                                                   values.end());
+
+    /*
+      the batch processor fails if the number of columns mismatches with the
+      original format. since we are only creating an input vector here the
+      label is not relevant, thus we add some bogus here in the label's column
+    */
+    encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
+                            /* value = */ " ");
+    
+    return encodable_values;
+  }
   void createBatchProcessor() {
     if (!_metadata) {
       throw std::runtime_error(
