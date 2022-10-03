@@ -54,7 +54,8 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
     return deserialize_into;
   }
 
-  std::vector<dataset::Explanation> explain(const std::string& sample) override {
+  std::vector<dataset::Explanation> explain(
+      const std::string& sample) override {
     (void)sample;
     throw std::invalid_argument("not yet");
   }
