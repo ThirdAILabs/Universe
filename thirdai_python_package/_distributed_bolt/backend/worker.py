@@ -128,7 +128,7 @@ class Worker:
         """
         return get_gradients(self.model)
 
-    def receive_gradients(self):
+    def receive_gradients(self, averaged_gradients_ref = None):
         """
         This function is called only when the communication pattern choosen
         is circular.
@@ -139,7 +139,11 @@ class Worker:
         :return: receive updated gradients
         :rtype: bool
         """
-        self.comm.receive_gradients()
+        if averaged_gradients_ref == None:
+            self.comm.receive_gradients()
+        else:
+            self.comm.receive_gradients(averaged_gradients_ref)
+
 
     def update_parameters(self):
         """
