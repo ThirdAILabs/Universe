@@ -124,6 +124,10 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
+  py::class_<MarginBCE, std::shared_ptr<MarginBCE>, LossFunction>(
+      bolt_submodule, "MarginBCE")
+      .def(py::init<float>(), py::arg("margin"));
+
   /**
    * Text Classifier Definition
    */
