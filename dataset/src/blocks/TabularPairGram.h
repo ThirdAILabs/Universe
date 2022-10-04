@@ -5,6 +5,7 @@
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exception>
 #include <sstream>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace thirdai::dataset {
@@ -29,41 +30,25 @@ class TabularPairGram : public Block {
   Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) final {
-    if (hashMapEmpty()) {
-      fillHashToWordMap(input_row);
-    }
+    fillHashToWordMap(input_row);
     auto res = _hash_to_word_map[index_within_block];
-    uint32_t col_number;
-    std::istringstream ss(res);
-    std::string word;
-    ss >> word;
-    auto it = std::find(input_row.begin(), input_row.end(), word);
-    if (it != input_row.end()) {
-      col_number = it - input_row.begin();
-    } else {
-      throw std::invalid_argument("couldn't find keyword in input row.");
-    }
-    return {col_number, res};
+    std::string reason = "col: " + std::to_string(res.first) + " - " +
+                         std::string(input_row[res.first]) +
+                         " col: " + std::to_string(res.second) + " - " +
+                         std::string(input_row[res.second]);
+    std::string column_names = _metadata->getColumnName(res.first) + "," +
+                               _metadata->getColumnName(res.second);
+    return {reason, column_names};
   }
 
   void fillHashToWordMap(const std::vector<std::string_view>& input_row) {
-    if (!hashMapEmpty()) {
-      throw std::invalid_argument(
-          "Clear the previous Map, before calling fill map.");
-    }
     std::exception_ptr err = fillHashesMap(input_row);
     if (err) {
       std::rethrow_exception(err);
     }
   }
 
-  void clearPreviousMap() {
-    if (hashMapEmpty()) {
-      throw std::invalid_argument(
-          "First call explain method, cannot clear empty map.");
-    }
-    _hash_to_word_map.clear();
-  }
+  void clearPreviousMap() { _hash_to_word_map.clear(); }
 
  protected:
   // TODO(david) We should always include all unigrams but if the number of
@@ -111,8 +96,9 @@ class TabularPairGram : public Block {
 
   std::exception_ptr fillHashesMap(
       const std::vector<std::string_view>& input_row) {
+    clearPreviousMap();
     std::vector<uint32_t> unigram_hashes;
-    std::unordered_map<uint32_t, std::string> unigram_hashes_map;
+    std::unordered_map<uint32_t, uint32_t> unigram_hashes_map;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       std::string str_val(input_row[col]);
       switch (_metadata->colType(col)) {
@@ -123,13 +109,13 @@ class TabularPairGram : public Block {
             return err;
           }
           unigram_hashes.push_back(unigram);
-          unigram_hashes_map.insert({unigram, str_val});
+          unigram_hashes_map.insert({unigram, col});
           break;
         }
         case TabularDataType::Categorical: {
           uint32_t unigram = _metadata->getStringHashValue(str_val, col);
           unigram_hashes.push_back(unigram);
-          unigram_hashes_map.insert({unigram, str_val});
+          unigram_hashes_map.insert({unigram, col});
           break;
         }
         case TabularDataType::Label:
@@ -149,7 +135,7 @@ class TabularPairGram : public Block {
   TabularMetadataPtr _metadata;
   uint32_t _output_range;
 
-  std::unordered_map<uint32_t, std::string> _hash_to_word_map;
+  std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>> _hash_to_word_map;
 };
 
 using TabularPairGramPtr = std::shared_ptr<TabularPairGram>;
