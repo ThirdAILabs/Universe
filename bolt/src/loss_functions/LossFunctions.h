@@ -211,7 +211,7 @@ class MarginBCE final : public LossFunction {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<LossFunction>(this));
+    archive(cereal::base_class<LossFunction>(this), _margin);
   }
 };
 
