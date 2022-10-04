@@ -92,6 +92,10 @@ class TabularMetadata {
     return TextEncodingUtils::computeUnigram(val_to_hash, /* len = */ 8);
   }
 
+  std::string getColumnName(uint32_t col_number) {
+    return _column_names[col_number];
+  }
+
  private:
   double getColBinsize(uint32_t col) {
     return (colMax(col) - colMin(col)) / numBins(col);

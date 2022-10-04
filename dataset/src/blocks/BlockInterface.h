@@ -36,6 +36,9 @@ struct Explanation {
   Explanation(uint32_t column_number, std::string keyword)
       : column_number(column_number), keyword(std::move(keyword)) {}
 
+  Explanation(std::string keyword, std::string column_name)
+      : keyword(std::move(keyword)), column_name(std::move(column_name)) {}
+
   uint32_t column_number;
   float percentage_significance = 0.0;
   // The following fields default to empty strings.

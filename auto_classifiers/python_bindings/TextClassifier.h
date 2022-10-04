@@ -54,6 +54,15 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
     return deserialize_into;
   }
 
+  std::vector<dataset::Explanation> explain(
+      const std::string& sample,
+      std::optional<std::string> target_label) override {
+    (void)sample;
+    (void)target_label;
+    throw std::invalid_argument(
+        "Explain method is not yet implemented in TextClassifier.");
+  }
+
  protected:
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,

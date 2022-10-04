@@ -57,6 +57,15 @@ class MultiLabelTextClassifier final
     return deserialize_into;
   }
 
+  std::vector<dataset::Explanation> explain(
+      const std::vector<uint32_t>& sample,
+      std::optional<std::string> target_label) override {
+    (void)sample;
+    (void)target_label;
+    throw std::invalid_argument(
+        "Explain method is not yet implemented in MultiLabelTextClassifier.");
+  }
+
   void updateThreshold(float new_threshold) { _threshold = new_threshold; }
 
  protected:

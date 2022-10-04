@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <auto_classifiers/python_bindings/AutoClassifierBase.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
@@ -75,6 +76,24 @@ class TabularClassifier final
     return deserialize_into;
   }
 
+  std::vector<dataset::Explanation> explain(
+      const std::vector<std::string>& sample,
+      std::optional<std::string> target_label) override {
+    std::vector<std::string_view> input_row = inputRowToStringView(sample);
+
+    std::optional<uint32_t> target_neuron;
+
+    if (target_label) {
+      target_neuron = getTargetNeuron(*target_label);
+    }
+
+    auto result = getSignificanceSortedExplanations(
+        _model, featurizeInputForInference(sample), input_row, _batch_processor,
+        target_neuron);
+
+    return result;
+  }
+
  protected:
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   getTrainingDataset(std::shared_ptr<dataset::DataLoader> data_loader,
@@ -103,6 +122,47 @@ class TabularClassifier final
 
   BoltVector featurizeInputForInference(
       const std::vector<std::string>& values) final {
+    std::vector<std::string_view> encodable_values =
+        inputRowToStringView(values);
+
+    BoltVector input;
+    if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
+      std::rethrow_exception(err);
+    }
+
+    return input;
+  }
+
+  std::string getClassName(uint32_t neuron_id) final {
+    return _metadata->getClassToIdMap()->getString(neuron_id);
+  }
+
+  uint32_t getTargetNeuron(const std::string& target_class) {
+    return _metadata->getClassToIdMap()->getUid(target_class);
+  }
+
+  uint32_t defaultBatchSize() const final { return 256; }
+
+  std::optional<uint32_t> defaultRebuildHashTablesInterval() const final {
+    return 10000;
+  }
+
+  std::optional<uint32_t> defaultReconstructHashFunctionsInterval()
+      const final {
+    return 50000;
+  }
+
+  bool freezeHashTablesAfterFirstEpoch() const final { return true; }
+
+  bool useSparseInference() const final { return true; }
+
+  std::vector<std::string> getEvaluationMetrics() const final {
+    return {"categorical_accuracy"};
+  }
+
+ private:
+  std::vector<std::string_view> inputRowToStringView(
+      const std::vector<std::string>& values) {
     if (!_batch_processor) {
       throw std::runtime_error(
           "Cannot call featurizeInputForInference on TabularClasssifier before "
@@ -128,38 +188,8 @@ class TabularClassifier final
     encodable_values.insert(encodable_values.begin() + _metadata->getLabelCol(),
                             /* value = */ " ");
 
-    BoltVector input;
-    if (auto err = _batch_processor->makeInputVector(encodable_values, input)) {
-      std::rethrow_exception(err);
-    }
-
-    return input;
+    return encodable_values;
   }
-
-  std::string getClassName(uint32_t neuron_id) final {
-    return _metadata->getClassToIdMap()->getString(neuron_id);
-  }
-
-  uint32_t defaultBatchSize() const final { return 256; }
-
-  std::optional<uint32_t> defaultRebuildHashTablesInterval() const final {
-    return 10000;
-  }
-
-  std::optional<uint32_t> defaultReconstructHashFunctionsInterval()
-      const final {
-    return 50000;
-  }
-
-  bool freezeHashTablesAfterFirstEpoch() const final { return true; }
-
-  bool useSparseInference() const final { return true; }
-
-  std::vector<std::string> getEvaluationMetrics() const final {
-    return {"categorical_accuracy"};
-  }
-
- private:
   void createBatchProcessor() {
     if (!_metadata) {
       throw std::runtime_error(
