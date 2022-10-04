@@ -77,12 +77,18 @@ class TabularClassifier final
   }
 
   std::vector<dataset::Explanation> explain(
-      const std::vector<std::string>& sample) override {
+      const std::vector<std::string>& sample,
+      std::optional<std::string> target_label) override {
     std::vector<std::string_view> input_row = inputRowToStringView(sample);
 
+    std::optional<uint32_t> target_neuron;
+    if (target_label) {
+      target_neuron = getTargetNeuron(*target_label);
+    }
+
     auto result = getSignificanceSortedExplanations(
-        _model, featurizeInputForInference(sample), input_row,
-        _batch_processor);
+        _model, featurizeInputForInference(sample), input_row, _batch_processor,
+        target_neuron);
 
     return result;
   }
@@ -128,6 +134,10 @@ class TabularClassifier final
 
   std::string getClassName(uint32_t neuron_id) final {
     return _metadata->getClassToIdMap()->getString(neuron_id);
+  }
+
+  uint32_t getTargetNeuron(const std::string& target_class) {
+    return _metadata->getClassToIdMap()->getUid(target_class);
   }
 
   uint32_t defaultBatchSize() const final { return 256; }
