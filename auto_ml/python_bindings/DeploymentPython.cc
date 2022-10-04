@@ -408,7 +408,7 @@ Notes:
     config which contains this block config.
 
 Example:
-    >>> data_block = deployment.TextBlockConfig(use_pairgrams=True)
+    >>> text_block = deployment.TextBlockConfig(use_pairgrams=True)
 
 )pbdoc")
       .def(py::init<bool>(), py::arg("use_pairgrams"), R"pbdoc(
@@ -522,34 +522,257 @@ Examples:
       .def(py::init<DatasetLoaderFactoryConfigPtr, ModelConfigPtr,
                     TrainEvalParameters>(),
            py::arg("dataset_config"), py::arg("model_config"),
-           py::arg("train_eval_parameters"))
-      .def("save", &DeploymentConfig::save, py::arg("filename"))
-      .def_static("load", &DeploymentConfig::load, py::arg("filename"));
+           py::arg("train_eval_parameters"), R"pbdoc(
+Constructs a DeploymentConfig which specifies a ModelPipeline.
+
+Args:
+    dataset_config (DatasetConfig): The config for the dataset loaders.
+    model_config (ModelConfig): The config for the model.
+    train_eval_parameters (TrainEvalParameters): The additional train and eval 
+        parameters.
+
+Returns:
+    DeploymentConfig:
+
+Examples:
+    >>> config = deployment.DeploymentConfig(
+            dataset_config=dataset_config,
+            model_config=model_config,
+            train_eval_parameters=train_eval_params,
+        )
+
+)pbdoc")
+      .def("save", &DeploymentConfig::save, py::arg("filename"), R"pbdoc(
+Saves a serialized version of the deployment config. This can be used to provide 
+a ModelPipeline architecture to a customer, as the ModelPipeline has a constructor 
+that allows it to be constructed directly from the serialized config.
+
+Args:
+    filename (str): The file to save the serialized config in.
+
+Returns:
+    None
+
+)pbdoc")
+      .def_static("load", &DeploymentConfig::load, py::arg("filename"), R"pbdoc(
+Loads a saved deployment config. 
+
+Args:
+    filename (str): The file which contains the serialized config.
+
+Returns:
+    DeploymentConfig:
+
+)pbdoc");
 
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
-           py::arg("parameters") = py::dict())
+           py::arg("parameters") = py::dict(), R"pbdoc(
+Constructs a ModelPipeline from a deployment config and a set of input parameters.
+
+Args:
+    deployment_config (DeploymentConfig): A config for the ModelPipeline.
+    parameters (Dict[str, Union[bool, int, float, str]]): A mapping from parameter 
+        names to values. This is used to pass in values to UserSpecifiedParameters, 
+        or provide the name of the option to use for OptionMappedParameters.
+
+Returns
+    ModelPipeline:
+
+Examples:
+    >>> model = deployment.ModelPipeline(
+            deployment_config=deployment.DeploymentConfig(...),
+            parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
+        )
+
+)pbdoc")
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
-           py::arg("parameters") = py::dict())
+           py::arg("parameters") = py::dict(), R"pbdoc(
+Constructs a ModelPipeline from a serialized deployment config and a set of input 
+parameters.
+
+Args:
+    config_path (str): A path to a serialized deployment config for the ModelPipeline.
+    parameters (Dict[str, Union[bool, int, float, str]]): A mapping from parameter 
+        names to values. This is used to pass in values to UserSpecifiedParameters, 
+        or provide the name of the option to use for OptionMappedParameters.
+
+Returns
+    ModelPipeline:
+
+Examples:
+    >>> model = deployment.ModelPipeline(
+            config_path="path_to_a_config",
+            parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
+        )
+
+)pbdoc")
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
                              std::optional<uint32_t>, std::optional<uint32_t>>(
                &ModelPipeline::train),
            py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
            py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt)
+           py::arg("max_in_memory_batches") = std::nullopt, R"pbdoc(
+Trains a ModelPipeline on a given dataset using a file on disk.
+
+Args:
+    filename (str): Path to the dataset file.
+    epochs (int): Number of epochs to train for.
+    learning_rate (float): The learning rate to use for training.
+    batch_size (Option[int]): This is an optional parameter indicating which batch
+        size to use for training. If not specified the default batch size from the 
+        TrainEvalParameters is used.
+    max_in_memory_batches (Option[int]): The maximum number of batches to load in
+        memory at a given time. If this is specified then the dataset will be processed
+        in a streaming fashion.
+
+Returns:
+    None
+
+Examples:
+    >>> model.train(
+            filename=TRAIN_FILE, epochs=5, learning_rate=0.01, max_in_memory_batches=12
+        )
+
+)pbdoc")
       .def("train",
            py::overload_cast<const dataset::DataLoaderPtr&, uint32_t, float,
                              std::optional<uint32_t>>(&ModelPipeline::train),
            py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("max_in_memory_batches") = std::nullopt)
-      .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"))
-      .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"))
-      .def("predict", &predictWrapper, py::arg("input_sample"))
-      .def("predict_token", &predictTokensWrapper, py::arg("tokens"))
-      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
-      .def("save", &ModelPipeline::save, py::arg("filename"))
-      .def_static("load", &ModelPipeline::load, py::arg("filename"));
+           py::arg("max_in_memory_batches") = std::nullopt, R"pbdoc(
+Trains a ModelPipeline on a given dataset using any DataLoader.
+
+Args:
+    data_source (dataset.DataLoader): A data loader for the given dataset.
+    epochs (int): Number of epochs to train for.
+    learning_rate (float): The learning rate to use for training.
+    max_in_memory_batches (Option[int]): The maximum number of batches to load in
+        memory at a given time. If this is specified then the dataset will be processed
+        in a streaming fashion.
+
+Returns:
+    None
+
+Examples:
+    >>> model.train(
+            data_source=dataset.S3DataLoader(...), epochs=5, learning_rate=0.01, max_in_memory_batches=12
+        )
+
+)pbdoc")
+      .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"), R"pbdoc(
+Evaluates the ModelPipeline on the given dataset and returns a numpy array of the 
+activations.
+
+Args:
+    filename (str): Path to the dataset file.
+
+Returns:
+    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
+    Returns a numpy array of the activations if the output is dense, or a tuple 
+    of the active neurons and activations if the output is sparse. The shape of 
+    each array will be (dataset_length, num_nonzeros_in_output).
+
+Examples:
+    >>> activations = model.evaluate(filename=TEST_FILE)
+
+)pbdoc")
+      .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
+           R"pbdoc(
+Evaluates the ModelPipeline on the given dataset and returns a numpy array of the 
+activations.
+
+Args:
+    data_source (dataset.DataLoader): A data loader for the given dataset.
+
+Returns:
+    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
+    Returns a numpy array of the activations if the output is dense, or a tuple 
+    of the active neurons and activations if the output is sparse. The shape of 
+    each array will be (dataset_length, num_nonzeros_in_output).
+
+Examples:
+    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.S3DataLoader(...))
+
+)pbdoc")
+      .def("predict", &predictWrapper, py::arg("input_sample"), R"pbdoc(
+Performs inference on a single sample.
+
+Args:
+    input_sample (str): A str representing the input. This will be processed in the 
+        same way as the dataset, and thus should be the same format as a line in 
+        the dataset, except with the label columns removed.
+
+Returns: 
+    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
+    Returns a numpy array of the activations if the output is dense, or a tuple 
+    of the active neurons and activations if the output is sparse. The shape of 
+    each array will be (num_nonzeros_in_output, ).
+
+Examples:
+    >>> activations = model.predict("The blue cat jumped")
+
+)pbdoc")
+      .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"), R"pbdoc(
+Performs inference on a single sample represented as bert tokens
+
+Args:
+    tokens (List[int]): A list of integers representing bert tokens.
+
+Returns: 
+    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
+    Returns a numpy array of the activations if the output is dense, or a tuple 
+    of the active neurons and activations if the output is sparse. The shape of 
+    each array will be (num_nonzeros_in_output, ).
+
+Examples:
+    >>> activations = model.predict_tokens(tokens=[9, 42, 19, 71, 33])
+
+)pbdoc")
+      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"),
+           R"pbdoc(
+Performs inference on a batch of samples samples in parallel.
+
+Args:
+    input_samples (List[str]): A list of strings representing each sample. Each 
+        input will be processed in the same way as the dataset, and thus should 
+        be the same format as a line in the dataset, except with the label columns 
+        removed.
+
+Returns: 
+    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
+    Returns a numpy array of the activations if the output is dense, or a tuple 
+    of the active neurons and activations if the output is sparse. The shape of 
+    each array will be (batch_size, num_nonzeros_in_output).
+
+Examples:
+    >>> activations = model.predict_batch([
+            "The cat ran",
+            "The dog sat", 
+            "The cow ate grass"
+        ])
+
+)pbdoc")
+      .def("save", &ModelPipeline::save, py::arg("filename"), R"pbdoc(
+Saves a serialized version of the ModelPipeline.
+
+Args:
+    filename (str): The file to save the serialized ModelPipeline in.
+
+Returns:
+    None
+
+)pbdoc")
+      .def_static("load", &ModelPipeline::load, py::arg("filename"), R"pbdoc(
+Loads a saved deployment config. 
+
+Args:
+    filename (str): The file which contains the serialized config.
+
+Returns:
+    DeploymentConfig:
+
+)pbdoc");
 }
 
 template <typename T>
