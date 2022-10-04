@@ -35,20 +35,84 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::module_ submodule = thirdai_module.def_submodule("deployment");
 
   py::class_<HyperParameter<uint32_t>, HyperParameterPtr<uint32_t>>(  // NOLINT
-      submodule, "UintHyperParameter");
+      submodule, "UintHyperParameter", R"pbdoc(
+Represents a integer parameter in the DeploymentConfig.
+
+Notes:
+    This class cannot be constructed directly. It should be constructed through 
+    the functions ConstantParameter, OptionMappedParameter, or UserSpecifiedParameter.
+
+Examples:
+    >>> param = deployment.ConstantParameter(10)
+    >>> param = deployment.OptionMappedParameter(option_name="size", values={"small": 10, "large": 20})
+    >>> param = deployment.UserSpecifiedParameter(name="n_classes", type=int)
+
+)pbdoc");
 
   py::class_<HyperParameter<float>, HyperParameterPtr<float>>(  // NOLINT
-      submodule, "FloatHyperParameter");
+      submodule, "FloatHyperParameter", R"pbdoc(
+Represents a float parameter in the DeploymentConfig.
+
+Notes:
+    This class cannot be constructed directly. It should be constructed through 
+    the functions ConstantParameter, OptionMappedParameter, or UserSpecifiedParameter.
+
+Examples:
+    >>> param = deployment.ConstantParameter(1.4)
+    >>> param = deployment.OptionMappedParameter(option_name="sparsity", values={"sparse": 0.1, "dense": 1.0})
+    >>> param = deployment.UserSpecifiedParameter(name="sparsity", type=float)
+
+)pbdoc");
 
   py::class_<HyperParameter<std::string>,  // NOLINT
-             HyperParameterPtr<std::string>>(submodule, "StrHyperParameter");
+             HyperParameterPtr<std::string>>(submodule, "StrHyperParameter",
+                                             R"pbdoc(
+Represents a string parameter in the DeploymentConfig.
+
+Notes:
+    This class cannot be constructed directly. It should be constructed through 
+    the functions ConstantParameter, OptionMappedParameter, or UserSepcifiedParameter.
+
+Examples:
+    >>> param = deployment.ConstantParameter("relu")
+    >>> param = deployment.OptionMappedParameter(option_name="task", values={"single_class": "softmax", "multi_class": "sigmoid"})
+    >>> param = deployment.UserSpecifiedParameter(name="activation", type=str)
+
+)pbdoc");
 
   py::class_<HyperParameter<bool>, HyperParameterPtr<bool>>(  // NOLINT
-      submodule, "BoolHyperParameter");
+      submodule, "BoolHyperParameter", R"pbdoc(
+Represents a boolean parameter in the DeploymentConfig.
+
+Notes:
+    This class cannot be constructed directly. It should be constructed through 
+    the functions ConstantParameter, OptionMappedParameter, or UserSepcifiedParameter.
+
+Examples:
+    >>> param = deployment.ConstantParameter(True)
+    >>> param = deployment.OptionMappedParameter(option_name="use_pairgrams", values={"small": False, "large": True})
+    >>> param = deployment.UserSpecifiedParameter(name="use_sparse_inference", type=bool)
+
+)pbdoc");
 
   py::class_<HyperParameter<bolt::SamplingConfigPtr>,  // NOLINT
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
-      submodule, "SamplingConfigHyperParameter");
+      submodule, "SamplingConfigHyperParameter", R"pbdoc(
+Represents a sampling config parameter in the DeploymentConfig.
+
+Notes:
+    This class cannot be constructed directly. It should be constructed through 
+    the functions ConstantParameter or OptionMappedParameter. Note that a sampling 
+    config hyper parameter cannot be constructed as a UserSpecifiedParameter as 
+    it is part of the complexity that should be abstracted away from the user API.
+
+Examples:
+    >>> param = deployment.ConstantParameter(bolt.DWTASamplingConfig(...))
+    >>> param = deployment.OptionMappedParameter(
+            option_name="size", values={"small": bolt.DWTASamplingConfig(...), "large": bolt.DWTASamplingConfig(...)}
+        )
+
+)pbdoc");
 
   /**
    * Do not change the order of these overloads. Because bool is a sublclass of
@@ -70,14 +134,77 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
-                py::arg("name"), py::arg("type"));
+                py::arg("name"), py::arg("type"), R"pbdoc(
+Constructs a UserSpecifiedHyperParameter which is a HyperParameter whose value is 
+determined by the key in the parameters map (passed to the constructor
+for the ModelPipeline) for the given parameter name. 
+
+Args:
+    name (str): The name of the parameter, this is used to search the parameter map.
+    type (type): This should be one of bool, int, float, or str. This is the type 
+    of the parameter, this is used to determine which staticly typed C++ class to 
+    instantiate. 
+
+Returns:
+    (BoolHyperParameter, UintHyperParameter, FloatHyperParameter, StrHyperParameter, or SamplingConfigHyperParameter):
+        This function is construct the appropriate hyper parameter based on the 
+        type argument.
+        
+Notes:
+    This function will actually return an instance of the OptionMappedParameter<T> 
+    class which is a subclass of HyperParameter<T> which is the underlying class 
+    for UintHyperParameter, FloatHyperParameter, etc.
+
+Examples:
+    >>> param = deployment.UserSpecifiedParameter(name="n_classes", type=int)
+
+    >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 32})
+ 
+)pbdoc");
 
   py::class_<AutotunedSparsityParameter, HyperParameter<float>,
              std::shared_ptr<AutotunedSparsityParameter>>(
       submodule, "AutotunedSparsityParameter")
-      .def(py::init<std::string>(), py::arg("dimension_param_name"));
+      .def(py::init<std::string>(), py::arg("dimension_param_name"), R"pbdoc(
+Constructs an AutoTunedSparsityParameter, which is a float HyperParameter whose 
+value is determined by a user input dimension. This is intended to be used to autotune 
+sparsity for a layer whose size is a user input. 
 
-  py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig");  // NOLINT
+Args:
+    dimension_parameter_name (str): The name of the user specified dimension parameter. 
+        This name should to an UserSpecifiedParameter of type int. 
+
+Returns:
+    AutotunedSparsityParameter:
+    A hyper parameter which can determine a value of the sparsity based off the 
+    supplied dimension.
+
+Notes:
+    This HyperParameter is intended to be used for sparsity in the output layer.
+    The intended use case is that the output dimension may be user specified, and
+    we may want to use sparsity in this layer if the number of neurons is large
+    enough, but we don't want the user to be responsible for inputing a
+    reasonable sparsity value. Hence this class allows you to specify that the
+    sparsity in a given layer is auto-tuned based off of a user specified
+    dimension. Note that using an OptionMappedParameter is not sufficient because
+    it would require enumerating the possible dimensions. Also note that it is
+    best practice to use OptionMappedParameters for hidden layer dimensions to
+    ensure reasonable architectures, and so this should really only be used in
+    the output layer.
+
+Examples:
+    >>> param = deployment.AutotunedSparsityParameter(dimension_parameter_name="n_classes")
+
+    >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 1000})
+
+)pbdoc");
+
+  py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig",  // NOLINT
+                                        R"pbdoc(
+This class connot be represented directly. It is the base class for the configs for 
+different nodes/layers in the model of the ModelConfig for the ModelPipeline.
+
+)pbdoc");
 
   py::class_<FullyConnectedNodeConfig, NodeConfig,
              std::shared_ptr<FullyConnectedNodeConfig>>(
@@ -89,39 +216,230 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
                    std::optional<HyperParameterPtr<bolt::SamplingConfigPtr>>>(),
           py::arg("name"), py::arg("dim"), py::arg("sparsity"),
           py::arg("activation"), py::arg("predecessor"),
-          py::arg("sampling_config") = std::nullopt)
+          py::arg("sampling_config") = std::nullopt, R"pbdoc(
+Constructs a FullyConnectedNodeConfig which represents a FullyConnected node in 
+the final bolt dag model.
+
+Args:
+    name (str): The name of the node. This is used by subsequent nodes to reference
+        this node as a predecessor.
+    dim (UintHyperParameter): The HyperParameter representing the dimension.
+    sparsity (FloatHyperParameter): The HyperParameter representing the sparsity.
+    activation (StrHyperParameter): The HyperParameter representing the activation 
+        function.
+    predecessor (str): The name of the node which should be used as this node's 
+        predecessor. This must be the name of another node in the config.
+    sampling_config (Optional[bolt.SamplingConfig]): This is an optional parameter 
+        which represents the sampling config to be used. If not specified this is 
+        autotuned if the sparsity ends up as less than 1.0. 
+
+Returns: 
+    FullyConnectedNodeConfig: 
+
+Examples:
+    >>> layer_config = deployment.FullyConnectedNodeConfig(
+            name="hidden",
+            dim=deployment.OptionMappedParameter(
+                option_name="size", values={"small": 100, "large": 200}
+            ),
+            sparsity=deployment.UserSpecifiedParameter("sparsity"),
+            activation=deployment.ConstantParameter("relu"),
+            predecessor="input",
+        )
+
+)pbdoc")
       .def(py::init<std::string, HyperParameterPtr<uint32_t>,
                     HyperParameterPtr<std::string>, std::string>(),
            py::arg("name"), py::arg("dim"), py::arg("activation"),
-           py::arg("predecessor"));
+           py::arg("predecessor"), R"pbdoc(
+Constructs a FullyConnectedNodeConfig which represents a dense FullyConnected node
+in the final bolt dag model. This differs from the other constructor as it does 
+not take in sparsity or sampling config parameters.
+
+Args:
+    name (str): The name of the node. This is used by subsequent nodes to reference
+        this node as a predecessor.
+    dim (UintHyperParameter): The HyperParameter representing the dimension.
+    activation (StrHyperParameter): The HyperParameter representing the activation 
+        function.
+    predecessor (str): The name of the node which should be used as this node's 
+        predecessor. This must be the name of another node in the config. 
+
+Returns: 
+    FullyConnectedNodeConfig: 
+
+Examples:
+    >>> layer_config = deployment.FullyConnectedNodeConfig(
+            name="hidden",
+            dim=deployment.OptionMappedParameter(
+                option_name="size", values={"small": 100, "large": 200}
+            ),
+            activation=deployment.ConstantParameter("relu"),
+            predecessor="input",
+        )
+
+)pbdoc");
 
   py::class_<ModelConfig, ModelConfigPtr>(submodule, "ModelConfig")
       .def(py::init<std::vector<std::string>, std::vector<NodeConfigPtr>,
                     std::shared_ptr<bolt::LossFunction>>(),
-           py::arg("input_names"), py::arg("nodes"), py::arg("loss"));
+           py::arg("input_names"), py::arg("nodes"), py::arg("loss"),
+           R"pbdoc(
+Constructs a ModelConfig which represents the complete bolt dag model for a ModelPipeline.
 
-  py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig");  // NOLINT
+Args:
+    input_names (List[str]): The names of the inputs to the model. The actual input nodes are 
+        constructed by the DatasetFactory in the ModelPipeline since it will have 
+        knowledge of the output of the dataset loaders. This list of names is simply
+        to refer to those inputs. It must be the same length as the number of inputs 
+        returned from the dataset loaders.
+    nodes (List[NodeConfig]): The list of nodes to be used in the dag model. Note 
+        that the last node in the list is assumed to be the output node. 
+    loss (bolt.LossFunction): The loss function to use to compile the model. 
+
+Returns:
+    ModelConfig:
+
+Examples:
+    >>> model_config = deployment.ModelConfig(
+            input_names=["input"],
+            nodes=[
+                deployment.FullyConnectedNodeConfig(
+                    name="hidden",
+                    dim=deployment.OptionMappedParameter(
+                        option_name="size", values={"small": 100, "large": 200}
+                    ),
+                    activation=deployment.ConstantParameter("relu"),
+                    predecessor="input",
+                ),
+                deployment.FullyConnectedNodeConfig(
+                    name="output",
+                    dim=deployment.UserSpecifiedParameter("output_dim", type=int),
+                    sparsity=deployment.ConstantParameter(1.0),
+                    activation=deployment.ConstantParameter("softmax"),
+                    predecessor="hidden",
+                ),
+            ],
+            loss=bolt.CategoricalCrossEntropyLoss(),
+        )
+           
+)pbdoc");
+
+  py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig",  // NOLINT
+                                          R"pbdoc(
+This class connot be represented directly. It is the base class for the configs for 
+different blocks in the dataset pipeline.
+
+)pbdoc");
 
   py::class_<NumericalCategoricalBlockConfig, BlockConfig,
              std::shared_ptr<NumericalCategoricalBlockConfig>>(
       submodule, "NumericalCategoricalBlockConfig")
       .def(py::init<HyperParameterPtr<uint32_t>,
                     HyperParameterPtr<std::string>>(),
-           py::arg("n_classes"), py::arg("delimiter"));
+           py::arg("n_classes"), py::arg("delimiter"), R"pbdoc(
+Constructs a config representing a NumericalCategoricalBlock in the dataset pipeline.
+
+Args:
+    n_classes (UintHyperParameter): The number of classes (categories) that could 
+        occur in the dataset at this column.
+    delimiter (StrHyperParameter): A character which will delineate the different 
+        labels in the column if it is multi-class.
+
+Returns:
+    NumericalCategoricalBlockConfig:
+
+Notes:
+    The column index will be passed passed to this config to construct the final
+    block for the dataset pipeline. The column index will be infered by the dataset
+    config which contains this block config.
+
+Example:
+    >>> label_block = deployment.NumericalCategoricalBlockConfig(
+            n_classes=deployment.UserSpecifiedParameter("output_dim", type=int),
+            delimiter=deployment.ConstantParameter(","),
+        )
+
+)pbdoc");
 
   py::class_<DenseArrayBlockConfig, BlockConfig,
              std::shared_ptr<DenseArrayBlockConfig>>(submodule,
                                                      "DenseArrayBlockConfig")
-      .def(py::init<HyperParameterPtr<uint32_t>>(), py::arg("dim"));
+      .def(py::init<HyperParameterPtr<uint32_t>>(), py::arg("dim"), R"pbdoc(
+Constructs a config representing a DenseArrayBlock in the dataset pipeline.
+
+Args:
+    dim (UintHyperParameter): The number of columns to be used to construct the array. 
+
+Returns:
+    DenseArrayBlockConfig:
+
+Notes:
+    The column index will be passed passed to this config to construct the final
+    block for the dataset pipeline. The column index will be infered by the dataset
+    config which contains this block config.
+
+Example:
+    >>> array_block = deployment.DenseArrayBlockConfig(
+            dim=deployment.ConstantParameter(8)
+        )
+
+)pbdoc");
 
   py::class_<TextBlockConfig, BlockConfig, std::shared_ptr<TextBlockConfig>>(
       submodule, "TextBlockConfig")
       .def(py::init<bool, HyperParameterPtr<uint32_t>>(),
-           py::arg("use_pairgrams"), py::arg("range"))
-      .def(py::init<bool>(), py::arg("use_pairgrams"));
+           py::arg("use_pairgrams"), py::arg("range"), R"pbdoc(
+Constructs a config representing a PairGramTextBlock or UniGramTextBlock in the 
+dataset pipeline.
+
+Args:
+    use_pairgrams (bool): Whether or not to use pairgrams on the text. This is not 
+        a hyperparameter because we want to abstract this decision away from the 
+        user.
+    range (UintHyperParameter): The range of the unigrams or pairgrams.
+
+Returns:
+    TextBlockConfig:
+
+Notes:
+    The column index will be passed passed to this config to construct the final
+    block for the dataset pipeline. The column index will be infered by the dataset
+    config which contains this block config.
+
+Example:
+    >>> data_block = deployment.TextBlockConfig(use_pairgrams=True)
+
+)pbdoc")
+      .def(py::init<bool>(), py::arg("use_pairgrams"), R"pbdoc(
+Constructs a config representing a PairGramTextBlock or UniGramTextBlock in the 
+dataset pipeline.
+
+Args:
+    use_pairgrams (bool): Whether or not to use pairgrams on the text. This is not 
+        a hyperparameter because we want to abstract this decision away from the 
+        user.
+
+Returns:
+    TextBlockConfig:
+
+Notes:
+    The column index will be passed passed to this config to construct the final
+    block for the dataset pipeline. The column index will be infered by the dataset
+    config which contains this block config.
+
+Example:
+    >>> data_block = deployment.TextBlockConfig(use_pairgrams=True)
+
+)pbdoc");
 
   py::class_<DatasetLoaderFactoryConfig,  // NOLINT
-             DatasetLoaderFactoryConfigPtr>(submodule, "DatasetConfig");
+             DatasetLoaderFactoryConfigPtr>(submodule, "DatasetConfig", R"pbdoc(
+This class cannot be constructed directly, and is the base class for all of the 
+dataset loader factory configs which are responsible for constructing the dataset 
+factories for the ModelPipeline. 
+
+)pbdoc");
 
   py::class_<SingleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
@@ -129,7 +447,33 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
                     HyperParameterPtr<std::string>>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
-           py::arg("delimiter"));
+           py::arg("delimiter"), R"pbdoc(
+This is a config for a simple dataset factory which has a single data block and 
+a single label block. It expects that the dataset will be a csv with two columns, 
+<label>,<data>. In the future we will want to add more complicated dataset factory
+configs, but this should be sufficient for our initial use cases.
+
+Args:
+    data_block (BlockConfig): The config for the data block.
+    label_block (BlockConfig): The config for the label block.
+    shuffle (bool): Whether or not to shuffle the data on loading.
+    delimiter (str): A character representing the delimiter of the columns.
+
+Returns:
+    SingleBlockDatasetFactory:
+
+Examples:
+    >>> dataset_config = deployment.SingleBlockDatasetFactory(
+            data_block=deployment.TextBlockConfig(use_pairgrams=True),
+            label_block=deployment.NumericalCategoricalBlockConfig(
+                n_classes=deployment.UserSpecifiedParameter("output_dim", type=int),
+                delimiter=deployment.ConstantParameter(","),
+            ),
+            shuffle=deployment.ConstantParameter(False),
+            delimiter=deployment.UserSpecifiedParameter("delimiter", type=str),
+        )
+
+)pbdoc");
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
@@ -138,7 +482,40 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("reconstruct_hash_functions_interval"),
            py::arg("default_batch_size"), py::arg("use_sparse_inference"),
            py::arg("evaluation_metrics"),
-           py::arg("prediction_threshold") = std::nullopt);
+           py::arg("prediction_threshold") = std::nullopt, R"pbdoc(
+This class represents additional parameters that are required for training, evaluation,
+or inference, but that we want to abstract away from the user.
+
+Args:
+    rebuild_hash_tables_interval (Option[int]): Interval (in number of samples) 
+        for rebuilding the hash tabels in sparse layers. This is autotuned if not 
+        specified.
+    reconstruct_hash_functions_interval (Option[int]): Interval (in number of samples)
+        for reconstructing the hash functions in sparse layers. This is autotuned
+        if not specified.
+    default_batch_size (int): The default batch size the ModelPipeline should use
+        for training if the user does not specify it. 
+    use_sparse_inference (bool): If sparse inference should be used for the model.
+    evaluation_metrics (List[str]): Any metrics that should be computed during 
+        evaluation.
+    prediction_threshold (Option[float]): Optional parameter, if specified the model
+        will ensure that the largest activation is always at least this threshold.
+        This is used for multi-class classification tasks that use a theshold to 
+        determine predictions.
+
+Returns:
+    TrainEvalParameters:
+
+Examples:
+    >>> train_eval_params = deployment.TrainEvalParameters(
+            rebuild_hash_tables_interval=None,
+            reconstruct_hash_functions_interval=None,
+            default_batch_size=256,
+            use_sparse_inference=True,
+            evaluation_metrics=["categorical_accuracy"],
+        )
+
+)pbdoc");
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
@@ -178,13 +555,66 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 template <typename T>
 void defConstantParameter(py::module_& submodule) {
   submodule.def("ConstantParameter", &ConstantParameter<T>::make,
-                py::arg("value").noconvert());
+                py::arg("value").noconvert(), R"pbdoc(
+Constructs a ConstantHyperParameter which is a HyperParameter with a fixed value 
+that cannot be impacted by user inputed parameters.
+
+Args:
+    value (bool, int, float, str, or bolt.SamplingConfig): The constant value that 
+        the constant parameter will take. 
+
+Returns:
+    (BoolHyperParameter, UintHyperParameter, FloatHyperParameter, StrHyperParameter, or SamplingConfigHyperParameter):
+        This function is overloaded and hence will construct the appropriate hyper 
+        parameter for the type of the input value. 
+        
+Notes:
+    This function will actually return an instance of the ConstantParameter<T> class 
+    which is a subclass of HyperParameter<T> which is the underlying class for 
+    UintHyperParameter, FloatHyperParameter, etc.
+
+Examples:
+    >>> param = deployment.ConstantParameter(10)
+    >>> param = deployment.ConstantParameter("relu")
+
+)pbdoc");
 }
 
 template <typename T>
 void defOptionMappedParameter(py::module_& submodule) {
   submodule.def("OptionMappedParameter", &OptionMappedParameter<T>::make,
-                py::arg("option_name"), py::arg("values").noconvert());
+                py::arg("option_name"), py::arg("values").noconvert(), R"pbdoc(
+Constructs an OptionMappedHyperParameter which is a HyperParameter which maps 
+user specified options (given as strings) to different possible values. Which 
+option is specified by the user is determined by parameters mapping passed into 
+the ModelPipeline constructor. The option_name argument is used to search this map, 
+and the corresponding value is used to query the the values mapping.
+
+Args:
+    option_name (str): The name of the option mapped parameter. This is used to 
+        search the parameters mapping to find the value of the option the user 
+        specified. 
+    values (Dict[str, bool], Dict[str, int], Dict[str, float], Dict[str, str], or Dict[str, bolt.SamplingConfig)]: 
+        A mapping between the different user specified options and their corresponding 
+        values.
+
+Returns:
+    (BoolHyperParameter, UintHyperParameter, FloatHyperParameter, StrHyperParameter, or SamplingConfigHyperParameter):
+        This function is overloaded and hence will construct the appropriate hyper 
+        parameter based on the type of the values of the dictionary. 
+        
+Notes:
+    This function will actually return an instance of the OptionMappedParameter<T> 
+    class which is a subclass of HyperParameter<T> which is the underlying class 
+    for UintHyperParameter, FloatHyperParameter, etc.
+
+Examples:
+    >>> param = deployment.OptionMappedParameter(option_name="size", values={"small": 10, "large": 20})
+
+    >>> model = deployment.ModelPipeline(config, parameters={"size": "small"})
+)pbdoc"
+
+  );
 }
 
 py::object makeUserSpecifiedParameter(const std::string& name,
