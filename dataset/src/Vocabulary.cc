@@ -6,18 +6,18 @@ FixedVocabulary::FixedVocabulary(const std::string& file_path) {
   // Add some special tokens before everything else.
   //
   // clang-tidy complains members should be initialized in initializer list,
-  // unfortunately not possible without cruft (unsafeAdd is a non-static
+  // unfortunately not possible without cruft (add is a non-static
   // member and expects the unordered map to be initialized).
-  _unk_id = unsafeAdd(special_tokens::UNK);    // NOLINT
-  _bos_id = unsafeAdd(special_tokens::BOS);    // NOLINT
-  _eos_id = unsafeAdd(special_tokens::EOS);    // NOLINT
-  _mask_id = unsafeAdd(special_tokens::MASK);  // NOLINT
+  _unk_id = add(special_tokens::UNK);    // NOLINT
+  _bos_id = add(special_tokens::BOS);    // NOLINT
+  _eos_id = add(special_tokens::EOS);    // NOLINT
+  _mask_id = add(special_tokens::MASK);  // NOLINT
 
   // Proceed to read from file to add the remaining vocabulary tokens.
   std::ifstream input = SafeFileIO::ifstream(file_path);
   std::string line;
   while (getline(input, line)) {
-    unsafeAdd(line);
+    add(line);
   }
 }
 
@@ -96,8 +96,14 @@ uint32_t FixedVocabulary::bosId() const { return _bos_id; }
 uint32_t FixedVocabulary::eosId() const { return _eos_id; }
 uint32_t FixedVocabulary::maskId() const { return _mask_id; }
 
-uint32_t FixedVocabulary::unsafeAdd(const std::string_view& token_view) {
+uint32_t FixedVocabulary::add(const std::string_view& token_view) {
   std::string token(token_view.data(), token_view.size());
+  auto query = _forward.find(token);
+  if (query != _forward.end()) {
+    uint32_t token_id = query->second;
+    return token_id;
+  }
+
   uint32_t token_id = _forward.size();
   _forward.emplace(token, token_id);
   _backward.emplace(token_id, token);

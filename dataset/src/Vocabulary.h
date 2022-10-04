@@ -96,7 +96,7 @@ class FixedVocabulary : public Vocabulary {
 
   // Does not check if token already exist, directly adds. This saves some
   // compute when we know there cannot be duplicates by construction.
-  uint32_t unsafeAdd(const std::string_view& token_view);
+  uint32_t add(const std::string_view& token_view);
 };
 
 }  // namespace thirdai::dataset
