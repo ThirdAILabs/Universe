@@ -27,7 +27,7 @@ def setup_module():
 
 
 def test_new_dimension():
-    vocab = FixedVocabulary(BERT_VOCAB_PATH)
+    vocab = FixedVocabulary.make(BERT_VOCAB_PATH)
     model = CookieMonster(
         vocab,
         input_dimension=100000,
@@ -42,7 +42,7 @@ def test_new_dimension():
 
 
 def test_train():
-    vocab = FixedVocabulary(BERT_VOCAB_PATH)
+    vocab = FixedVocabulary.make(BERT_VOCAB_PATH)
     model = CookieMonster(
         vocab,
         input_dimension=784,

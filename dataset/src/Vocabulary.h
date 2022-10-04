@@ -2,6 +2,7 @@
 
 #include <dataset/src/utils/SafeFileIO.h>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string_view>
 #include <unordered_map>
@@ -78,6 +79,10 @@ class FixedVocabulary : public Vocabulary {
   uint32_t eosId() const final;
 
   uint32_t maskId() const final;
+
+  static std::shared_ptr<Vocabulary> make(const std::string& file_path) {
+    return std::make_shared<FixedVocabulary>(file_path);
+  }
 
  private:
   // Stores the forward map from string-token to uint32_t ids.

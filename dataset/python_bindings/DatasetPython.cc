@@ -472,15 +472,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<FixedVocabulary, Vocabulary, std::shared_ptr<FixedVocabulary>>(
       dataset_submodule, "FixedVocabulary")
-      .def(py::init<const std::string&>(), py::arg("file_path"))
-      .def("size", &FixedVocabulary::size)
-      .def("unk_id", &FixedVocabulary::unkId)
-      .def("bos_id", &FixedVocabulary::bosId)
-      .def("eos_id", &FixedVocabulary::eosId)
-      .def("mask_id", &FixedVocabulary::maskId)
-      .def("encode", &FixedVocabulary::encode, py::arg("sequence"))
-      .def("decode", &FixedVocabulary::decode, py::arg("piece_ids"))
-      .def("id", &FixedVocabulary::id, py::arg("token"));
+      .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
