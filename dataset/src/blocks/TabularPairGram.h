@@ -132,7 +132,7 @@ class TabularPairGram : public Block {
       }
     }
 
-    TextEncodingUtils::computeRawPairgramsHashMapFromUnigrams(
+    TextEncodingUtils::computeRawPairgramsHashToColNumMapFromUnigrams(
         unigram_hashes, _output_range, unigram_hashes_map, _hash_to_word_map);
 
     return nullptr;

@@ -104,7 +104,7 @@ class TextEncodingUtils {
     return pairgram_hashes;
   }
 
-  static void computeRawPairgramsHashMapFromUnigrams(
+  static void computeRawPairgramsHashToColNumMapFromUnigrams(
       std::vector<uint32_t> unigram_hashes, uint32_t output_range,
       std::unordered_map<uint32_t, uint32_t> unigram_hashes_map,
       std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>&
