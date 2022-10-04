@@ -348,7 +348,7 @@ def compressed_training(
     )
     for epochs in range(epochs):
         for batch_num in range(num_training_batches):
-            wrapped_model.compute_and_store_batch_gradients(batch_num)
+            wrapped_model.compute_and_store_next_batch_gradients(batch_num)
             compressed_weight_grads = get_compressed_weight_gradients(
                 wrapped_model,
                 compression_scheme=compression_scheme,
@@ -361,6 +361,7 @@ def compressed_training(
                 compressed_weight_grads=compressed_weight_grads,
             )
             wrapped_model.update_parameters()
+            wrapped_model.move_to_next_epoch()
 
     wrapped_model.finish_training()
 

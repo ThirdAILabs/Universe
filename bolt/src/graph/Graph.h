@@ -23,10 +23,16 @@
 
 namespace thirdai::bolt {
 
-// Forward declare this class so it can be a friend
+// Forward declare these clases so they can be a friend
+// TODO(Josh): Clean this up when we refactor the dataset pipeline, there should
+// eventually be just one wrapper here
+class DistributedTabularTrainingWrapper;
+class DistributedInMemoryTrainingWrapper;
 class DistributedTrainingWrapper;
 
 class BoltGraph {
+  friend class DistributedTabularTrainingWrapper;
+  friend class DistributedInMemoryTrainingWrapper;
   friend class DistributedTrainingWrapper;
 
  public:

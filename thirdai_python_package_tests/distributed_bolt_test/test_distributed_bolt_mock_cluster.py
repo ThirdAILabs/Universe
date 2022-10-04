@@ -88,19 +88,12 @@ def train_distributed_bolt_check(request):
         cluster_address=mini_cluster.address,
     )
 
-    dataset_loader_factory_config = dc.SingleBlockDatasetFactory(
-        data_block=dc.TextBlockConfig(use_pairgrams=True),
-        label_block=dc.NumericalCategoricalBlockConfig(n_classes=dc.ConstantParameter(10)),
-        shuffle=dc.ConstantParameter(False),
-        delimiter=dc.ConstantParameter(" "),
-    )
-    dataset_loader_factory = dc.DatasetLoaderFactory(dataset_loader_factory_config)
-
     distributed_model = db.DistributedDataParallel(
         cluster_config=cluster_config,
         model=model,
         train_config=train_config,
-        train_file_names=dataset_paths,
+        train_formats=["svm" for _ in range(len(dataset_paths))],
+        train_data_sources=dataset_paths,
         batch_size=256,
     )
     distributed_model.train()

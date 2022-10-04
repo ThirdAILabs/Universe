@@ -6,7 +6,7 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, dataset
 
 from .utils import get_num_cpus, init_logging
 
@@ -100,8 +100,9 @@ class DistributedDataParallel:
     def __init__(
         self,
         cluster_config: RayTrainingClusterConfig,
-        model: bolt.deployment_config.ModelPipeline,
-        training_data_sources: Union[bolt.dataset.DataLoader, str],
+        model: bolt.graph.Model,
+        train_formats: List[str],
+        train_data_sources: List[Union[dataset.DataLoader, str]],
         train_config: bolt.graph.TrainConfig,
         batch_size: int,
     ):
@@ -118,13 +119,22 @@ class DistributedDataParallel:
         self.logging = cluster_config.logging
         self.train_config = train_config
 
-        if len(training_data_sources) != cluster_config.num_workers:
+        if len(train_data_sources) != cluster_config.num_workers:
             raise ValueError(
                 "Received ",
-                len(training_data_sources),
+                len(train_data_sources),
                 " training data sources. Expected ",
                 cluster_config.num_workers,
                 " datasets, one for each node.",
+            )
+
+        if len(train_data_sources) != len(train_formats):
+            raise ValueError(
+                "Received ",
+                len(train_formats),
+                " training formats. Expected ",
+                cluster_config.num_workers,
+                " datasets, one for each training daata source.",
             )
 
         self.logging.info("Training has started!")
@@ -139,7 +149,8 @@ class DistributedDataParallel:
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
             model_to_wrap=ray_model_ref,
-            training_data_source=training_data_sources[0],
+            train_data_format=train_formats[0],
+            train_data_source=train_data_sources[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             batch_size=batch_size,
@@ -153,7 +164,8 @@ class DistributedDataParallel:
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
                     model_to_wrap=ray_model_ref,
-                    training_data_source=training_data_sources[worker_id + 1],
+                    train_data_format=train_formats[worker_id + 1],
+                    train_data_source=train_data_sources[worker_id + 1],
                     train_config=train_config,
                     id=worker_id + 1,
                     primary_worker=self.primary_worker,
@@ -164,13 +176,7 @@ class DistributedDataParallel:
 
         self.workers = [self.primary_worker] + self.replica_workers
 
-        self.num_of_batches = min(
-            ray.get([worker.num_of_batches.remote() for worker in self.workers])
-        )
-
-        self.logging.info(
-            f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
-        )
+        self.logging.info(f"All nodes initialized")
 
     def train(self) -> None:
         """
@@ -184,11 +190,9 @@ class DistributedDataParallel:
         )
 
         for epoch in range(self.train_config.num_epochs):
-            for batch_id in range(self.num_of_batches):
-
-                # Here we are asking every worker to calculate their gradients and return
-                # once they all calculate their gradients
-                train_state_manager.train_batch(epoch, batch_id)
+            while train_state_manager.train_batch(epoch):
+                pass
+            train_state_manager.move_to_next_epoch()
 
         train_state_manager.finish_training()
 

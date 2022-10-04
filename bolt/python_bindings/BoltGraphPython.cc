@@ -558,24 +558,59 @@ That's all for now, folks! More docs coming soon :)
            "compiled.")
       .def(getPickleFunction<BoltGraph>());
 
-  py::class_<DistributedTrainingWrapper>(bolt_submodule,
-                                         "DistributedTrainingWrapper")
-      .def(py::init<const automl::ModelPipelinePtr&, float,
+  py::class_<DistributedTabularTrainingWrapper,
+             DistributedTabularTrainingWrapperPtr>(
+      bolt_submodule, "DistributedTabularTrainingWrapper")
+      .def(py::init<BoltGraphPtr, TrainConfig,
+                    automl::deployment_config::DatasetLoaderFactoryPtr,
                     dataset::DataLoaderPtr, uint32_t>(),
-           py::arg("model_pipeline"), py::arg("learning_rate"),
-           py::arg("data_loader"),
+           py::arg("model"), py::arg("train_config"), py::arg("factory"),
+           py::arg("loader"),
            py::arg("max_in_memory_batches") =
                std::numeric_limits<uint32_t>::max())
-      .def("freeze_hash_tables", &DistributedTrainingWrapper::freezeHashTables)
-      .def("compute_and_save_next_batch_gradients",
-           &DistributedTrainingWrapper::computeAndSaveNextBatchGradients)
-      .def("move_to_next_epoch", &DistributedTrainingWrapper::moveToNextEpoch)
-      .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
+      .def("freeze_hash_tables",
+           &DistributedTabularTrainingWrapper::freezeHashTables)
+      .def("compute_and_store_next_batch_gradients",
+           &DistributedTabularTrainingWrapper::computeAndSaveNextBatchGradients)
+      .def("move_to_next_epoch",
+           &DistributedTabularTrainingWrapper::moveToNextEpoch)
+      .def("update_parameters",
+           &DistributedTabularTrainingWrapper::updateParameters)
       .def("finish_training",
-           &DistributedTrainingWrapper::cleanupAfterBatchProcessing)
+           &DistributedTabularTrainingWrapper::cleanupAfterBatchProcessing)
       .def_property_readonly(
           "model",
-          [](DistributedTrainingWrapper& wrapper) { return wrapper.model(); },
+          [](DistributedTabularTrainingWrapper& wrapper) {
+            return wrapper.model();
+          },
+          // We want a copy since this is a shared_ptr
+          py::return_value_policy::copy,
+          "The underlying Bolt model wrapped by this "
+          "DistributedTrainingWrapper.");
+
+  py::class_<DistributedInMemoryTrainingWrapper,
+             DistributedInMemoryTrainingWrapperPtr>(
+      bolt_submodule, "DistributedInMemoryTrainingWrapper")
+      .def(py::init<BoltGraphPtr, const dataset::BoltDatasetList&,
+                    const dataset::BoltDatasetPtr&, TrainConfig>(),
+           py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
+           py::arg("train_config"))
+      .def("freeze_hash_tables",
+           &DistributedInMemoryTrainingWrapper::freezeHashTables)
+      .def(
+          "compute_and_store_next_batch_gradients",
+          &DistributedInMemoryTrainingWrapper::computeAndSaveNextBatchGradients)
+      .def("move_to_next_epoch",
+           &DistributedInMemoryTrainingWrapper::moveToNextEpoch)
+      .def("update_parameters",
+           &DistributedInMemoryTrainingWrapper::updateParameters)
+      .def("finish_training",
+           &DistributedInMemoryTrainingWrapper::cleanupAfterBatchProcessing)
+      .def_property_readonly(
+          "model",
+          [](DistributedInMemoryTrainingWrapper& wrapper) {
+            return wrapper.model();
+          },
           // We want a copy since this is a shared_ptr
           py::return_value_policy::copy,
           "The underlying Bolt model wrapped by this "

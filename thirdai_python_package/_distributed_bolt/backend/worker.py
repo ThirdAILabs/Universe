@@ -18,7 +18,8 @@ class Worker:
         self,
         num_workers: int,
         model_to_wrap: bolt.graph,
-        training_data_source: str,
+        train_data_format: str,
+        train_data_source: str,
         id: int,
         primary_worker,
         train_config: bolt.graph.TrainConfig,
@@ -30,15 +31,26 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
 
-        self.train_data, self.train_labels = parse_svm_dataset(
-            training_data_source, batch_size
-        )
-        self.model = bolt.DistributedTrainingWrapper(
-            model=model_to_wrap,
-            train_data=[self.train_data],
-            train_labels=self.train_labels,
-            train_config=train_config,
-        )
+        if train_data_format == "svm":
+            self.train_data, self.train_labels = parse_svm_dataset(
+                train_data_source, batch_size
+            )
+            self.model = bolt.DistributedInMemoryTrainingWrapper(
+                model=model_to_wrap,
+                train_data=[self.train_data],
+                train_labels=self.train_labels,
+                train_config=train_config,
+            )
+        elif train_data_format == "loader_and_factory":
+            self.model = bolt.DistributedTabularTrainingWrapper(
+                model=model_to_wrap,
+                train_config=train_config,
+                loader=train_data_source[0],
+                factory=train_data_source[1],
+                max_in_memory_batches=train_data_source[2],
+            )
+        else:
+            raise ValueError("Unknown format:", train_data_source)
 
         # Set up variables
         self.num_workers = num_workers
@@ -94,7 +106,7 @@ class Worker:
         """
         return self.comm.receive_array_partitions(update_id)
 
-    def compute_and_store_batch_gradients(self, batch_no: int):
+    def compute_and_store_next_batch_gradients(self) -> bool:
         """
         This function is called only when the mode of communication is
         linear.
@@ -106,12 +118,13 @@ class Worker:
         training batch with batch no. batch_no and with loss function
         specified in the config.
 
-        :param batch_no: training batch to calculate gradients on.
-        :type batch_no: int
-        :return: check whether training is complete or not
+        :return: whether this worker has another batch to process
         :rtype: bool
         """
-        self.comm.compute_and_store_batch_gradients(batch_no)
+        return self.comm.compute_and_store_next_batch_gradients()
+
+    def move_to_next_epoch(self):
+        self.model.move_to_next_epoch()
 
     def get_calculated_gradients(self):
         """

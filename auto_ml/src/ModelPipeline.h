@@ -18,7 +18,7 @@
 namespace thirdai::bolt {
 
 // Forward declare this class so it can be a friend
-class DistributedTrainingWrapper;
+class DistributedTabularTrainingWrapper;
 
 }  // namespace thirdai::bolt
 
@@ -36,7 +36,7 @@ using ModelPipelinePtr = std::shared_ptr<ModelPipeline>;
  */
 class ModelPipeline {
  public:
-  friend class bolt::DistributedTrainingWrapper;
+  friend class bolt::DistributedTabularTrainingWrapper;
 
   ModelPipeline(deployment_config::DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,

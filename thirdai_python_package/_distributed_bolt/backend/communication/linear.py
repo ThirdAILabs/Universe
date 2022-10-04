@@ -9,21 +9,19 @@ class Linear:
         self.id = id
         self.primary_worker = primary_worker
 
-    def compute_and_store_batch_gradients(self, batch_no):
+    def compute_and_store_next_batch_gradients(self) -> bool:
         """
-        This functions calls the API 'compute_and_store_batch_gradients',
+        This functions calls the API 'compute_and_store_next_batch_gradients',
         which calculates the gradients for the network managed by
-        this particular worker. The compute_and_store_batch_gradients trains
+        this particular worker. The compute_and_store_next_batch_gradients trains
         the network and calculates the gradient for the particular
         training batch with batch no. batch_no and with loss function
         specified in the config.
 
-        :param batch_no: training batch to calculate gradients on.
-        :type batch_no: int
-        :return: shows completion
+        :return: whether this worker has another batch to process
         :rtype: bool
         """
-        self.model.compute_and_store_batch_gradients(batch_no)
+        return self.model.compute_and_store_next_batch_gradients()
 
     def receive_gradients(self):
         """

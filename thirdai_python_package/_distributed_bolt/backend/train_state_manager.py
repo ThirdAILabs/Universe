@@ -28,6 +28,7 @@ class TrainStateManager:
         self.logging = logging
         self.communication_type = communication_type
         self.logging.info(f"Using {communication_type} method for communication")
+        self.batch_id = 0
         if communication_type == "circular":
             for i in range(len(self.workers)):
                 ray.get(
@@ -38,35 +39,34 @@ class TrainStateManager:
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
-    def train_batch(self, epoch_id, batch_id):
+    def train_batch(self, epoch_id) -> bool:
         """
-        Train the Model
-
-        :param epoch_id: Running Epoch
-        :type epoch_id: int
-        :param batch_id: Batch number to train on
-        :type batch_id: int
+        Trains the model and returns whether all workers have another batch.
         """
-        self._compute_and_store_batch_gradients(batch_id)
+        all_nodes_have_batch = self._compute_and_store_next_batch_gradients()
         self._communicate()
         self._update_parameters()
-        self._log_training(batch_id, epoch_id)
+        self._log_training(self.batch_id, epoch_id)
+        self.batch_id += 1
+        return all_nodes_have_batch
 
-    def _compute_and_store_batch_gradients(self, batch_no):
+    def move_to_next_epoch(self):
+        ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
+
+    def _compute_and_store_next_batch_gradients(self) -> bool:
         """
-        Call compute_and_store_batch_gradients function on each of the worker
-
-        :param batch_no: Batch Id for this particular training
-        :type batch_no: Integer
+        Calls compute_and_store_next_batch_gradients function on each of the
+        workers and returns whether all workers have another batch
         """
         start_calculating_gradients_time = time.time()
-        ray.get(
+        results = ray.get(
             [
-                worker.compute_and_store_batch_gradients.remote(batch_no)
+                worker.compute_and_store_next_batch_gradients.remote()
                 for worker in self.workers
             ]
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
+        return all(results)
 
     def _communicate(self):
         """
