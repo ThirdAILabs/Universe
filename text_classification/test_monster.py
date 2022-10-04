@@ -56,6 +56,11 @@ def test_train():
 
 def test_vocab():
     vocab = FixedVocabulary.make(BERT_VOCAB_PATH)
+
+    with open(BERT_VOCAB_PATH) as vocab_file:
+        lines = vocab_file.read().splitlines()
+        assert len(lines) == vocab.size()
+
     samples = [
         "popularity of thread ##ing has increased around 2003 , as the growth of the cpu frequency was replaced with the growth of number of cores , in turn requiring concurrency to utilize multiple cores .",
         "arkansas highway 59 business is a business route in gentry .",
@@ -68,6 +73,7 @@ def test_vocab():
         "october 27 – martin mu ##llen , 63 , right fielder in one game for the 1872 cleveland forest city ##s of the national association .",
         "mora ##ta de ta ##jun ##a is a municipality of the community of madrid , spain .",
     ]
+
     for sample in samples:
         pieces = vocab.encode(sample)
 
