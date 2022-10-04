@@ -31,20 +31,20 @@ class TabularPairGram : public Block {
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) final {
     fillHashToWordMap(input_row);
-    auto res = _hash_to_word_map[index_within_block];
+    auto column_num_pair = _hash_to_word_map[index_within_block];
     std::string reason;
     std::string column_names;
-    if (res.first != res.second) {
-      reason = "col: " + std::to_string(res.first) + " - " +
-               std::string(input_row[res.first]) +
-               ", col: " + std::to_string(res.second) + " - " +
-               std::string(input_row[res.second]);
-      column_names = _metadata->getColumnName(res.first) + "," +
-                     _metadata->getColumnName(res.second);
+    if (column_num_pair.first != column_num_pair.second) {
+      reason = "col: " + std::to_string(column_num_pair.first) + " - " +
+               std::string(input_row[column_num_pair.first]) +
+               ", col: " + std::to_string(column_num_pair.second) + " - " +
+               std::string(input_row[column_num_pair.second]);
+      column_names = _metadata->getColumnName(column_num_pair.first) + "," +
+                     _metadata->getColumnName(column_num_pair.second);
     } else {
-      reason = "col: " + std::to_string(res.first) + " - " +
-               std::string(input_row[res.first]);
-      column_names = _metadata->getColumnName(res.first);
+      reason = "col: " + std::to_string(column_num_pair.first) + " - " +
+               std::string(input_row[column_num_pair.first]);
+      column_names = _metadata->getColumnName(column_num_pair.first);
     }
 
     return {reason, column_names};
