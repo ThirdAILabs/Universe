@@ -157,7 +157,6 @@ Notes:
 
 Examples:
     >>> param = deployment.UserSpecifiedParameter(name="n_classes", type=int)
-
     >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 32})
  
 )pbdoc");
@@ -194,7 +193,6 @@ Notes:
 
 Examples:
     >>> param = deployment.AutotunedSparsityParameter(dimension_parameter_name="n_classes")
-
     >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 1000})
 
 )pbdoc");
@@ -833,7 +831,6 @@ Notes:
 
 Examples:
     >>> param = deployment.OptionMappedParameter(option_name="size", values={"small": 10, "large": 20})
-
     >>> model = deployment.ModelPipeline(config, parameters={"size": "small"})
 )pbdoc"
 
