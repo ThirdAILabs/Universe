@@ -59,7 +59,8 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
       std::optional<std::string> target_label) override {
     (void)sample;
     (void)target_label;
-    throw std::invalid_argument("Explain method is not yet implemented in TextClassifier.");
+    throw std::invalid_argument(
+        "Explain method is not yet implemented in TextClassifier.");
   }
 
  protected:
