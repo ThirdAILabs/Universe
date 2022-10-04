@@ -159,10 +159,12 @@ MetricData BoltGraph::train(
                                   /* use_sparsity=*/true);
         }
 
-        uint32_t save_frequency = train_config.saveFrequency();
-        if (save_frequency != 0 && _updates % save_frequency == 0) {
+        const std::optional<SaveContext>& save_context =
+            train_config.saveContext();
+        if (save_context && save_context->frequency() != 0 &&
+            _updates % save_context->frequency() == 0) {
           const std::string checkpoint_path =
-              train_config.savePrefix() + ".last.bolt";
+              save_context->prefix() + ".last.bolt";
           save(checkpoint_path);
         }
 
@@ -202,9 +204,9 @@ MetricData BoltGraph::train(
       train_state.updateValidationMetrics(val_metrics);
     }
 
-    if (not train_config.savePrefix().empty()) {
-      const std::string checkpoint_path =
-          train_config.savePrefix() + ".last.bolt";
+    const std::optional<SaveContext>& save_context = train_config.saveContext();
+    if (save_context) {
+      const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
       save(checkpoint_path);
     }
 
