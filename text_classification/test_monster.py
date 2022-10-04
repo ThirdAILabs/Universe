@@ -6,8 +6,9 @@ from thirdai.dataset import FixedVocabulary
 
 pytestmark = [pytest.mark.unit]
 
-BERT_VOCAB_PATH = "bert-large-uncased.vocab"
-BERT_VOCAB_URL = "https://huggingface.co/bert-large-uncased/resolve/main/vocab.txt"
+BERT_TAG = "bert-base-uncased"
+BERT_VOCAB_PATH = "{}.vocab".format(BERT_TAG)
+BERT_VOCAB_URL = "https://huggingface.co/{}/resolve/main/vocab.txt".format(BERT_TAG)
 
 
 def setup_module():
