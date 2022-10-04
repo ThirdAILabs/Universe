@@ -32,12 +32,21 @@ class TabularPairGram : public Block {
       const std::vector<std::string_view>& input_row) final {
     fillHashToWordMap(input_row);
     auto res = _hash_to_word_map[index_within_block];
-    std::string reason = "col: " + std::to_string(res.first) + " - " +
-                         std::string(input_row[res.first]) +
-                         " col: " + std::to_string(res.second) + " - " +
-                         std::string(input_row[res.second]);
-    std::string column_names = _metadata->getColumnName(res.first) + "," +
-                               _metadata->getColumnName(res.second);
+    std::string reason;
+    std::string column_names;
+    if (res.first != res.second) {
+      reason = "col: " + std::to_string(res.first) + " - " +
+               std::string(input_row[res.first]) +
+               ", col: " + std::to_string(res.second) + " - " +
+               std::string(input_row[res.second]);
+      column_names = _metadata->getColumnName(res.first) + "," +
+                     _metadata->getColumnName(res.second);
+    } else {
+      reason = "col: " + std::to_string(res.first) + " - " +
+               std::string(input_row[res.first]);
+      column_names = _metadata->getColumnName(res.first);
+    }
+
     return {reason, column_names};
   }
 
