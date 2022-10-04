@@ -11,6 +11,8 @@ FixedVocabulary::FixedVocabulary(const std::string& file_path) {
   _unk_id = add(special_tokens::UNK);    // NOLINT
   _bos_id = add(special_tokens::BOS);    // NOLINT
   _eos_id = add(special_tokens::EOS);    // NOLINT
+  _cls_id = add(special_tokens::CLS);    // NOLINT
+  _pad_id = add(special_tokens::PAD);    // NOLINT
   _mask_id = add(special_tokens::MASK);  // NOLINT
 
   // Proceed to read from file to add the remaining vocabulary tokens.
@@ -94,6 +96,8 @@ uint32_t FixedVocabulary::id(const std::string_view& token_view) const {
 uint32_t FixedVocabulary::unkId() const { return _unk_id; }
 uint32_t FixedVocabulary::bosId() const { return _bos_id; }
 uint32_t FixedVocabulary::eosId() const { return _eos_id; }
+uint32_t FixedVocabulary::padId() const { return _pad_id; }
+uint32_t FixedVocabulary::clsId() const { return _cls_id; }
 uint32_t FixedVocabulary::maskId() const { return _mask_id; }
 
 uint32_t FixedVocabulary::add(const std::string_view& token_view) {
