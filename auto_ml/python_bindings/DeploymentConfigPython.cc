@@ -116,7 +116,6 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
 
   py::class_<DatasetLoaderFactoryConfig,  // NOLINT
              DatasetLoaderFactoryConfigPtr>(submodule, "DatasetConfig");
-
   py::class_<SingleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
       submodule, "SingleBlockDatasetFactory")
@@ -132,6 +131,12 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
            py::arg("reconstruct_hash_functions_interval"),
            py::arg("default_batch_size"), py::arg("use_sparse_inference"),
            py::arg("evaluation_metrics"));
+
+#ifdef THIRDAI_EXPOSE_ALL
+  py::class_<DatasetLoaderFactory, DatasetLoaderFactoryPtr>(
+      submodule, "DatasetLoaderFactory")
+      .def(py::init(&createDatasetLoaderFactory), "parameters");
+#endif
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
@@ -203,8 +208,7 @@ py::object makeUserSpecifiedParameter(const std::string& name,
                               "of bool, int, float, or str.");
 }
 
-ModelPipeline createPipeline(const DeploymentConfigPtr& config,
-                             const py::dict& parameters) {
+UserInputMap userParametersToCpp(const py::dict& parameters) {
   UserInputMap cpp_parameters;
   for (const auto& [k, v] : parameters) {
     if (!py::isinstance<py::str>(k)) {
@@ -231,8 +235,17 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
                                   "bool, int, float, or str.");
     }
   }
+  return cpp_parameters;
+}
 
-  return ModelPipeline::make(config, cpp_parameters);
+DatasetLoaderFactoryPtr createDatasetLoaderFactory(
+    const DatasetLoaderFactoryConfig& config, const py::dict& parameters) {
+  return config.createDatasetState(userParametersToCpp(parameters));
+}
+
+ModelPipeline createPipeline(const DeploymentConfigPtr& config,
+                             const py::dict& parameters) {
+  return ModelPipeline::make(config, userParametersToCpp(parameters));
 }
 
 ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,

@@ -10,6 +10,7 @@ import sys
 import numpy as np
 import pytest
 from thirdai import bolt, dataset
+from thirdai import deployment_config as dc
 
 pytestmark = [pytest.mark.distributed]
 
@@ -86,6 +87,14 @@ def train_distributed_bolt_check(request):
         communication_type=request.param,
         cluster_address=mini_cluster.address,
     )
+
+    dataset_loader_factory_config = dc.SingleBlockDatasetFactory(
+        data_block=dc.TextBlockConfig(use_pairgrams=True),
+        label_block=dc.NumericalCategoricalBlockConfig(n_classes=dc.ConstantParameter(10)),
+        shuffle=dc.ConstantParameter(False),
+        delimiter=dc.ConstantParameter(" "),
+    )
+    dataset_loader_factory = dc.DatasetLoaderFactory(dataset_loader_factory_config)
 
     distributed_model = db.DistributedDataParallel(
         cluster_config=cluster_config,
