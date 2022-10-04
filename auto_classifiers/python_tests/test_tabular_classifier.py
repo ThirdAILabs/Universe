@@ -39,6 +39,14 @@ COLUMN_NAMES = [
 ]
 
 
+def get_header():
+    header = ""
+    for column_name in COLUMN_NAMES:
+        header += column_name + ","
+    header += "\n"
+    return header
+
+
 def setup_module():
     if not os.path.exists(TRAIN_FILE):
         os.system(
@@ -72,6 +80,32 @@ def get_census_income_metadata():
     test_labels = list(df[df.columns[-1]])
 
     return n_classes, column_datatypes, test_labels
+
+
+def create_single_test_samples():
+    with open(TEST_FILE, "r") as file:
+        lines = file.readlines()
+
+        samples = []
+        # Skip the header and the last line since it is empty.
+        for line in lines[1:-1]:
+            # ignore the label column
+            values = line.split(",")[:-1]
+            samples.append(values)
+
+    return samples
+
+
+TEMP_TABULAR_TRAIN_FILE = "./temp_tabular_classifier_train_file"
+
+
+def create_temp_file(contents):
+    with open(TEMP_TABULAR_TRAIN_FILE, "w") as file:
+        file.writelines(contents)
+
+
+def remove_temp_file():
+    os.remove(TEMP_TABULAR_TRAIN_FILE)
 
 
 def test_tabular_classifier_census_income_dataset():
@@ -112,30 +146,25 @@ def test_tabular_classifier_census_income_dataset():
     os.remove(SAVE_FILE)
 
 
-def create_single_test_samples():
-    with open(TEST_FILE, "r") as file:
-        lines = file.readlines()
+def test_tabular_classifier_explain():
+    (n_classes, column_datatypes, _) = get_census_income_metadata()
+    classifier = bolt.TabularClassifier(
+        internal_model_dim=1000, n_classes=n_classes, column_datatypes=column_datatypes
+    )
 
-        samples = []
-        # Skip the header and the last line since it is empty.
-        for line in lines[1:-1]:
-            # ignore the label column
-            values = line.split(",")[:-1]
-            samples.append(values)
+    classifier.train(
+        filename=TRAIN_FILE,
+        epochs=1,
+        learning_rate=0.01,
+    )
 
-    return samples
-
-
-TEMP_TABULAR_TRAIN_FILE = "./temp_tabular_classifier_train_file"
-
-
-def create_temp_file(contents):
-    with open(TEMP_TABULAR_TRAIN_FILE, "w") as file:
-        file.writelines(contents)
-
-
-def remove_temp_file():
-    os.remove(TEMP_TABULAR_TRAIN_FILE)
+    single_test_samples = create_single_test_samples()
+    for i in range(len(single_test_samples)):
+        explanations = classifier.explain(single_test_samples[i])
+        total_percent_sum = 0
+        for explanation in explanations:
+            total_percent_sum += abs(explanation.percentage_significance)
+        assert total_percent_sum > 99.9
 
 
 @pytest.mark.skipif(
