@@ -1,4 +1,5 @@
 import os
+
 import pytest
 from cookie_monster import CookieMonster
 from thirdai.dataset import FixedVocabulary
