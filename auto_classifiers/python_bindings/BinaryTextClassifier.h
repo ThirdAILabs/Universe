@@ -56,7 +56,7 @@ class BinaryTextClassifier final
       std::optional<std::string> target_label) override {
     (void)sample;
     (void)target_label;
-    throw std::invalid_argument("not yet");
+    throw std::invalid_argument("Explain method is not yet implemented in BinaryTextClassifier.");
   }
 
  protected:
