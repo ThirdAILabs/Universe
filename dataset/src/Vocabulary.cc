@@ -50,9 +50,11 @@ std::vector<uint32_t> FixedVocabulary::encode(
   // There could be potential overhang, we cleave words only at detection of
   // space in the above loop.
   size_t token_length = marker - base;
-  std::string_view token(base, token_length);
-  uint32_t piece_id = id(token);
-  piece_ids.push_back(piece_id);
+  if (token_length) {
+    std::string_view token(base, token_length);
+    uint32_t piece_id = id(token);
+    piece_ids.push_back(piece_id);
+  }
 
   return piece_ids;
 }
