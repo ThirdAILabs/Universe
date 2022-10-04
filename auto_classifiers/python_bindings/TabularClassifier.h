@@ -82,6 +82,7 @@ class TabularClassifier final
     std::vector<std::string_view> input_row = inputRowToStringView(sample);
 
     std::optional<uint32_t> target_neuron;
+
     if (target_label) {
       target_neuron = getTargetNeuron(*target_label);
     }
