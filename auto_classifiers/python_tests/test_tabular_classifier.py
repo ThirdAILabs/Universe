@@ -39,14 +39,6 @@ COLUMN_NAMES = [
 ]
 
 
-def get_header():
-    header = ""
-    for column_name in COLUMN_NAMES:
-        header += column_name + ","
-    header += "\n"
-    return header
-
-
 def setup_module():
     if not os.path.exists(TRAIN_FILE):
         os.system(
