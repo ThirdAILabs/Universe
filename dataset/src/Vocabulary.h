@@ -51,6 +51,9 @@ class Vocabulary {
 
   // Returns id of mask special token.
   virtual uint32_t maskId() const = 0;
+
+  // To satisfy clang
+  virtual ~Vocabulary() = default;
 };
 
 class FixedVocabulary : public Vocabulary {
