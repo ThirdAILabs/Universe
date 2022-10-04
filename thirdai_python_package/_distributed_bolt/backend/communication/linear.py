@@ -33,6 +33,5 @@ class Linear:
         :return: returns True, after functions complete
         :rtype: bool
         """
-        self.gradients = averaged_gradients
 
-        set_gradients(self.model, self.gradients)
+        set_gradients(self.model, averaged_gradients)

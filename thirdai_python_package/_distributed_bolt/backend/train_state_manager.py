@@ -49,11 +49,11 @@ class TrainStateManager:
         :param workers: batch number for the particular worker with worker id (id).
         :type workers: int
         """
-        
-        gradients_list_ref = [worker.get_calculated_gradients.remote() for worker in self.workers]
-        gradients_list = ray.get(gradients_list_ref)
+    
+        gradients_list = ray.get([worker.get_calculated_gradients.remote() for worker in self.workers])
 
-        # Here we are initializing the w_average_gradients for storing the sum
+        # We initialize the sum of gradient variables by setting them equal to the 
+        # first set of gradients
         self.gradient_averages = [
             np.array(gradients_list[0][i]) for i in range(len(gradients_list[0]))
         ]
@@ -69,8 +69,8 @@ class TrainStateManager:
 
 
         # Here we are putting the references for averaged gradients in the ray plasma store.
-        # which removes multiple copies created earlier by each of the worker, and gets the
-        # communication done with only one copy.
+        # This allows us to do just a single copy of the gradient array to shared disk, instead 
+        # of 1 per worker.
         gradient_averages_ref = ray.put(self.gradient_averages)
         ray.get(
             [
@@ -79,11 +79,7 @@ class TrainStateManager:
             ]
         )
 
-        # ray will clean up all the memory as soon as reference count become zero,
-        # however, explicitly deleting them preemptively, frees up memory for upcoming
-        # tasks
-        del gradients_list_ref
-        del gradient_averages_ref
+
 
 
     def train_batch(self, epoch_id, batch_id):

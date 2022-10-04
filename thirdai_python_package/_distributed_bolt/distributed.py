@@ -162,11 +162,6 @@ class DistributedDataParallel:
                 )
             )
 
-        # ray will clean up all the memory as soon as reference count become zero,
-        # however, explicitly deleting them preemptively, frees up memory for upcoming
-        # tasks
-        del ray_model_ref
-
         self.workers = [self.primary_worker] + self.replica_workers
 
         self.num_of_batches = min(
