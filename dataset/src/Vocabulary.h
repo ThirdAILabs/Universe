@@ -12,10 +12,6 @@ namespace thirdai::dataset {
 
 namespace special_tokens {
 constexpr std::string_view UNK = "[UNK]";
-constexpr std::string_view BOS = "[BOS]";
-constexpr std::string_view EOS = "[EOS]";
-constexpr std::string_view CLS = "[CLS]";
-constexpr std::string_view PAD = "[PAD]";
 constexpr std::string_view MASK = "[MASK]";
 }  // namespace special_tokens
 
@@ -46,18 +42,6 @@ class Vocabulary {
   // Returns the id of unknown token.
   virtual uint32_t unkId() const = 0;
 
-  // Returns id of beginning-of-sentence token.
-  virtual uint32_t bosId() const = 0;
-
-  // Returns id of end-of-sentence token.
-  virtual uint32_t eosId() const = 0;
-
-  // Returns id of pad special token.
-  virtual uint32_t padId() const = 0;
-
-  // Returns id of cls special token.
-  virtual uint32_t clsId() const = 0;
-
   // Returns id of mask special token.
   virtual uint32_t maskId() const = 0;
 
@@ -82,14 +66,6 @@ class FixedVocabulary : public Vocabulary {
 
   uint32_t unkId() const final;
 
-  uint32_t bosId() const final;
-
-  uint32_t eosId() const final;
-
-  uint32_t padId() const final;
-
-  uint32_t clsId() const final;
-
   uint32_t maskId() const final;
 
   static std::shared_ptr<Vocabulary> make(const std::string& file_path) {
@@ -104,7 +80,7 @@ class FixedVocabulary : public Vocabulary {
   // decoding.
   std::unordered_map<uint32_t, std::string> _backward;
 
-  uint32_t _unk_id, _bos_id, _eos_id, _cls_id, _pad_id, _mask_id;
+  uint32_t _unk_id, _mask_id;
 
   // Does not check if token already exist, directly adds. This saves some
   // compute when we know there cannot be duplicates by construction.

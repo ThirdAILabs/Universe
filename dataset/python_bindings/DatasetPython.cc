@@ -463,8 +463,6 @@ void createDatasetSubmodule(py::module_& module) {
                                                       "Vocabulary")
       .def("size", &Vocabulary::size)
       .def("unk_id", &Vocabulary::unkId)
-      .def("bos_id", &Vocabulary::bosId)
-      .def("eos_id", &Vocabulary::eosId)
       .def("mask_id", &Vocabulary::maskId)
       .def("encode", &Vocabulary::encode, py::arg("sequence"))
       .def("decode", &Vocabulary::decode, py::arg("piece_ids"))
