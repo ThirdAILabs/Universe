@@ -3,6 +3,7 @@
 #include "MultiLabelTextClassifer.h"
 #include "TabularClassifier.h"
 #include "TextClassifier.h"
+#include <optional>
 
 namespace thirdai::bolt::python {
 
@@ -31,7 +32,8 @@ void defineAutoClassifierCommonMethods(py::class_<CLASSIFIER>& py_class) {
            py::arg("data_source"))
       .def("predict", &CLASSIFIER::predict, py::arg("input"))
       .def("predict_batch", &CLASSIFIER::predictBatch, py::arg("inputs"))
-      .def("explain", &CLASSIFIER::explain, py::arg("inputs"))
+      .def("explain", &CLASSIFIER::explain, py::arg("inputs"),
+           py::arg("target_class") = std::nullopt)
       .def("save", &CLASSIFIER::save, py::arg("filename"))
       .def_static("load", &CLASSIFIER::load, py::arg("filename"));
 }

@@ -55,8 +55,10 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
 
   std::vector<dataset::Explanation> explain(
-      const std::string& sample) override {
+      const std::string& sample,
+      std::optional<std::string> target_label) override {
     (void)sample;
+    (void)target_label;
     throw std::invalid_argument("not yet");
   }
 

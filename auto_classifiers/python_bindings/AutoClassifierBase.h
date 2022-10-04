@@ -88,7 +88,8 @@ class AutoClassifierBase {
   }
 
   virtual std::vector<dataset::Explanation> explain(
-      const PREDICT_INPUT_TYPE& sample) = 0;
+      const PREDICT_INPUT_TYPE& sample,
+      std::optional<std::string> target_label) = 0;
 
   py::object predict(const PREDICT_INPUT_TYPE& sample) {
     BoltVector input = featurizeInputForInference(sample);
