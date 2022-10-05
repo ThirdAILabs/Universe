@@ -51,6 +51,7 @@ class TrainStateManager:
         return all_nodes_have_batch
 
     def move_to_next_epoch(self):
+        self.logging.info(f"Moving to next epoch")
         ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
         self.batch_id = 0
 

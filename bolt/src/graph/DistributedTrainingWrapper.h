@@ -112,6 +112,7 @@ class DistributedTabularTrainingWrapper final
 
   void moveToNextEpoch() final {
     _batch_idx_within_train_context = 0;
+    _out_of_batches = false;
 
     if (!_still_on_initial_dataset) {
       _data_loader->restart();

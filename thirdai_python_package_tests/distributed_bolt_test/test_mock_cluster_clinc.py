@@ -92,8 +92,9 @@ def ray_cluster():
 def trained_text_classifier(clinc_dataset, ray_cluster):
     num_classes, _ = clinc_dataset
     mini_cluster, cluster_config = ray_cluster
+    pairgram_range = 10000
 
-    input_layer = bolt.graph.Input(dim=1000)
+    input_layer = bolt.graph.Input(dim=pairgram_range)
     hidden_layer = bolt.graph.FullyConnected(
         dim=200,
         activation="relu",
@@ -106,7 +107,7 @@ def trained_text_classifier(clinc_dataset, ray_cluster):
 
     dataset_config = dc.SingleBlockDatasetFactoryConfig(
         data_block=dc.TextBlockConfig(
-            use_pairgrams=True, range=dc.ConstantParameter(1000)
+            use_pairgrams=True, range=dc.ConstantParameter(pairgram_range)
         ),
         label_block=dc.NumericalCategoricalBlockConfig(
             n_classes=dc.ConstantParameter(num_classes),
@@ -121,7 +122,7 @@ def trained_text_classifier(clinc_dataset, ray_cluster):
     train_data_sources = [
         {
             "train_file": TRAIN_FILE,
-            "batch_size": 2560,
+            "batch_size": 256,
             "dataset_factory": dataset_factory,
             "max_in_memory_batches": 12,
         }
@@ -145,7 +146,7 @@ def trained_text_classifier(clinc_dataset, ray_cluster):
         evaluation_metrics=[],
     )
     return dc.ModelPipeline(
-        dataset_factory, distributed_model.model(), train_eval_params
+        dataset_factory, distributed_model.get_model(), train_eval_params
     )
 
 
