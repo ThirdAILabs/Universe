@@ -157,7 +157,7 @@ void DragonVector<T>::add(const DragonVector<T>& vec) {
   uint32_t sketch_size = this->size();
 #pragma omp parallel for default(none) shared(sketch_size, vec)
   for (uint32_t index = 0; index < sketch_size; index++) {
-    if (vec._values[index] > _values[index]) {
+    if (std::abs(vec._values[index]) > std::abs(_values[index])) {
       _indices[index] = vec._indices[index];
       _values[index] = vec._values[index];
     }
