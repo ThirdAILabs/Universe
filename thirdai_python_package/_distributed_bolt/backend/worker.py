@@ -58,7 +58,9 @@ class Worker:
                 max_in_memory_batches=train_data_source["max_in_memory_batches"],
             )
         else:
-            raise ValueError("Unknown format:", train_data_source)
+            raise ValueError(
+                f"Unknown format {train_data_format} with corresponding source {train_data_source}"
+            )
 
         # Set up variables
         self.num_workers = num_workers
