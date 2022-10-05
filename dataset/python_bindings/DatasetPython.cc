@@ -8,6 +8,7 @@
 #include <dataset/src/NumpyDataset.h>
 #include <dataset/src/ShuffleBatchBuffer.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/Vocabulary.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -429,8 +430,10 @@ void createDatasetSubmodule(py::module_& module) {
       "Defaults to 100,000.");
 
   py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
-      .def(py::init<uint32_t>(), py::arg("pairgram_range"))
-      .def(py::init<uint32_t, float>(), py::arg("pairgram_range"),
+      .def(py::init<std::shared_ptr<Vocabulary>, uint32_t>(),
+           py::arg("vocabulary"), py::arg("pairgram_range"))
+      .def(py::init<std::shared_ptr<Vocabulary>, uint32_t, float>(),
+           py::arg("vocabulary"), py::arg("pairgram_range"),
            py::arg("masked_tokens_percentage"))
       .def("load", &MLMDatasetLoader::load, py::arg("filename"),
            py::arg("batch_size"));
@@ -459,6 +462,19 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("processRow", &processRow, py::arg("sequence"),
                         py::arg("masked_indices"), py::arg("pairgram_range"));
+
+  py::class_<Vocabulary, std::shared_ptr<Vocabulary>>(dataset_submodule,
+                                                      "Vocabulary")
+      .def("size", &Vocabulary::size)
+      .def("unk_id", &Vocabulary::unkId)
+      .def("mask_id", &Vocabulary::maskId)
+      .def("encode", &Vocabulary::encode, py::arg("sequence"))
+      .def("decode", &Vocabulary::decode, py::arg("piece_ids"))
+      .def("id", &Vocabulary::id, py::arg("token"));
+
+  py::class_<FixedVocabulary, Vocabulary, std::shared_ptr<FixedVocabulary>>(
+      dataset_submodule, "FixedVocabulary")
+      .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
