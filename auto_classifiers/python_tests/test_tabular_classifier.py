@@ -151,7 +151,7 @@ def test_tabular_classifier_explain():
     )
 
     single_test_samples = create_single_test_samples()
-    for i in range(len(single_test_samples)):
+    for i in range(10):
         explanations = classifier.explain(single_test_samples[i])
         total_percent_sum = 0
         for explanation in explanations:
