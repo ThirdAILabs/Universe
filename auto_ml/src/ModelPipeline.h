@@ -45,8 +45,8 @@ class ModelPipeline {
                          config->train_eval_parameters());
   }
 
-  void trainOnFile(const std::string& filename,
-                   const bolt::TrainConfig& train_config, uint32_t batch_size,
+  void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
+                   uint32_t batch_size,
                    std::optional<uint32_t> max_in_memory_batches) {
     trainOnDataLoader(
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size),
@@ -55,13 +55,15 @@ class ModelPipeline {
 
   void trainOnDataLoader(
       const std::shared_ptr<dataset::DataLoader>& data_source,
-      const bolt::TrainConfig& train_config,
+      bolt::TrainConfig& train_config,
       std::optional<uint32_t> max_in_memory_batches) {
     _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
     data_source->restart();
 
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
         data_source, /* training= */ true);
+
+    updateRehashRebuildInTrainConfig(train_config);
 
     if (max_in_memory_batches) {
       trainOnStream(dataset, train_config, max_in_memory_batches.value());
@@ -230,10 +232,7 @@ class ModelPipeline {
     dataset->restart();
   }
 
-  bolt::TrainConfig getTrainConfig(float learning_rate, uint32_t epochs) {
-    bolt::TrainConfig train_config =
-        bolt::TrainConfig::makeConfig(learning_rate, epochs);
-
+  void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config) {
     if (auto hash_table_rebuild =
             _train_eval_config.rebuildHashTablesInterval()) {
       train_config.withRebuildHashTables(hash_table_rebuild.value());
@@ -243,7 +242,6 @@ class ModelPipeline {
             _train_eval_config.reconstructHashFunctionsInterval()) {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
-    return train_config;
   }
 
   static uint32_t argmax(const float* const array, uint32_t len) {
