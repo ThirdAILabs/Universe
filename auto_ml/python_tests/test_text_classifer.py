@@ -194,9 +194,16 @@ def test_train_with_validation(trained_text_classifier):
 
     val_data, val_labels = trained_text_classifier.load_validation_data(TEST_FILE)
 
-    train_config = bolt.graph.TrainConfig.make(epochs=1, learning_rate=0.001).with_validation(
-        validation_data=val_data, validation_labels=val_labels, predict_config=predict_config, validation_frequency=10
-    ).silence()
+    train_config = (
+        bolt.graph.TrainConfig.make(epochs=1, learning_rate=0.001)
+        .with_validation(
+            validation_data=val_data,
+            validation_labels=val_labels,
+            predict_config=predict_config,
+            validation_frequency=10,
+        )
+        .silence()
+    )
 
     trained_text_classifier.train(
         filename=TEST_FILE, train_config=train_config, batch_size=256
