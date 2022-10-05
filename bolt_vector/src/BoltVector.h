@@ -150,6 +150,22 @@ struct BoltVector {
     return vector;
   }
 
+  std::vector<float> dense(uint64_t projected_dimension) const {
+    if (isDense()) {
+      assert(projected_dimension == len);
+      std::vector<float> _dense(activations, activations + len);
+      return _dense;
+    }
+
+    // Not dense, projecting sparse onto projected_dimension.
+    std::vector<float> _dense(projected_dimension, 0);
+    for (uint64_t sparse_index = 0; sparse_index < len; sparse_index++) {
+      assert(sparse_index < projected_dimension);
+      _dense[active_neurons[sparse_index]] = activations[sparse_index];
+    }
+    return _dense;
+  }
+
   BoltVector(const BoltVector& other) : len(other.len), _owns_data(true) {
     if (other.active_neurons != nullptr) {
       active_neurons = new uint32_t[len];

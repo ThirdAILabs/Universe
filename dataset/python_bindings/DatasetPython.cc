@@ -45,7 +45,8 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
-      .def("__repr__", &BoltVector::toString);
+      .def("__repr__", &BoltVector::toString)
+      .def("dense", &BoltVector::dense);
 
   py::class_<Explanation>(dataset_submodule, "Explanation",
                           R"pbdoc(
@@ -455,6 +456,9 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
+
+  dataset_submodule.def("processRow", &processRow, py::arg("sequence"),
+                        py::arg("masked_indices"), py::arg("pairgram_range"));
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>

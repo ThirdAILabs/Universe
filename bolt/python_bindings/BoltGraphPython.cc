@@ -557,7 +557,9 @@ That's all for now, folks! More docs coming soon :)
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
            "compiled.")
-      .def(getPickleFunction<BoltGraph>());
+      .def(getPickleFunction<BoltGraph>())
+      .def("get_activations", &BoltGraph::getActivations, py::arg("test_data"),
+           py::arg("use_sparse_inference"), py::arg("layer_name"));
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,
                                          "DistributedTrainingWrapper")

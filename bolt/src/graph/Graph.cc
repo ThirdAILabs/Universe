@@ -499,6 +499,35 @@ InferenceResult BoltGraph::predict(
   return {std::move(metric_vals), std::move(outputTracker)};
 }
 
+// Forking predictSingle for a convenience method to getActivations
+BoltVector BoltGraph::getActivations(const std::vector<BoltVector>& test_data,
+                                     bool use_sparse_inference,
+                                     const std::string& layer_name) {
+  std::vector<BoltVector> test_data_copy = test_data;
+  SingleBatchDatasetContext single_predict_context(std::move(test_data_copy));
+
+  verifyCanPredict(single_predict_context, /* has_labels = */ false,
+                   /* returning_activations = */ true,
+                   /* num_metrics_tracked = */ 0);
+
+  prepareToProcessBatches(/* batch_size = */ 1, use_sparse_inference);
+
+  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
+  // some sort of RAII training context object whose destructor will
+  // automatically delete the training state
+  try {
+    single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
+    forward(/* vec_index = */ 0, nullptr);
+    auto layer = getNodeByName(layer_name);
+    BoltVector output_copy = layer->getOutputVector(/* vec_index = */ 0);
+    cleanupAfterBatchProcessing();
+    return output_copy;
+  } catch (const std::exception& e) {
+    cleanupAfterBatchProcessing();
+    throw;
+  }
+}
+
 // Predicts on a single sample input for performance. Always returns
 // activations and doesn't calculate metrics.
 BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,

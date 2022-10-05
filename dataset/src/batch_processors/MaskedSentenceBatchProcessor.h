@@ -10,6 +10,41 @@
 
 namespace thirdai::dataset {
 
+// This function generates a prediction sample, unfortunately we cannot create
+// labels. This function should not be used during training.
+//
+// The objective here is to get a representation that is consistent given
+// hash-seeds to extract hidden layer representations.
+inline std::tuple<BoltVector, BoltVector, BoltVector> processRow(
+    const std::string& row, const std::vector<uint32_t>& masked_indices,
+    uint32_t output_range) {
+  auto unigrams = TextEncodingUtils::computeRawUnigrams(row);
+
+  std::vector<uint32_t> masked_word_hashes;
+
+  uint32_t unknown_token_hash = TextEncodingUtils::computeUnigram(
+      /* key= */ "[UNK]", /* len= */ 5);
+
+  // Mask the unigrams at specified indices.
+  for (const uint32_t& masked_index : masked_indices) {
+    masked_word_hashes.push_back(unigrams[masked_index]);
+    unigrams[masked_index] = unknown_token_hash;
+  }
+
+  std::vector<uint32_t> masked_word_ids(masked_indices.size(), 1);
+
+  BoltVector label = BoltVector::makeSparseVector(
+      masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
+
+  auto pairgrams =
+      TextEncodingUtils::computePairgramsFromUnigrams(unigrams, output_range);
+
+  return {std::move(pairgrams),
+          BoltVector::makeSparseVector(
+              masked_indices, std::vector<float>(masked_indices.size(), 1.0)),
+          std::move(label)};
+}
+
 class MaskedSentenceBatchProcessor final
     : public BatchProcessor<BoltBatch, BoltBatch, BoltBatch> {
  public:
