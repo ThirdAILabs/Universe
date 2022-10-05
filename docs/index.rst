@@ -32,6 +32,7 @@ contain complete documentation for each of the submodules within thirdai.
    distributed_tutorial
    thirdailog
 
+   thirdaideployment
    
    thirdaihashing
    

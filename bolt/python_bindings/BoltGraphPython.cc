@@ -294,9 +294,11 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"))
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      .def("with_save_parameters", &TrainConfig::withSaveParameters,
+           py::arg("save_prefix"), py::arg("save_frequency"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"))
+           py::arg("predict_config"), py::arg("validation_frequency") = 0)
       .def_property_readonly(
           "num_epochs", [](TrainConfig& config) { return config.epochs(); },
           "Returns the number of epochs a model with this TrainConfig will "

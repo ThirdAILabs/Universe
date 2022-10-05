@@ -4,8 +4,7 @@ import random
 import datasets
 import numpy as np
 import pytest
-from thirdai import bolt
-from thirdai import deployment_config as dc
+from thirdai import bolt, deployment
 
 try:
     import ray
@@ -105,16 +104,16 @@ def trained_text_classifier(clinc_dataset, ray_cluster):
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
     model.compile(bolt.CategoricalCrossEntropyLoss())
 
-    dataset_config = dc.SingleBlockDatasetFactoryConfig(
-        data_block=dc.TextBlockConfig(
-            use_pairgrams=True, range=dc.ConstantParameter(pairgram_range)
+    dataset_config = deployment.SingleBlockDatasetFactoryConfig(
+        data_block=deployment.TextBlockConfig(
+            use_pairgrams=True, range=deployment.ConstantParameter(pairgram_range)
         ),
-        label_block=dc.NumericalCategoricalBlockConfig(
-            n_classes=dc.ConstantParameter(num_classes),
-            delimiter=dc.ConstantParameter(","),
+        label_block=deployment.NumericalCategoricalBlockConfig(
+            n_classes=deployment.ConstantParameter(num_classes),
+            delimiter=deployment.ConstantParameter(","),
         ),
-        shuffle=dc.ConstantParameter(False),
-        delimiter=dc.ConstantParameter(","),
+        shuffle=deployment.ConstantParameter(False),
+        delimiter=deployment.ConstantParameter(","),
     )
     dataset_factory = dataset_config.to_factory({})
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=5)
@@ -138,7 +137,7 @@ def trained_text_classifier(clinc_dataset, ray_cluster):
     )
     distributed_model.train()
 
-    train_eval_params = dc.TrainEvalParameters(
+    train_eval_params = deployment.TrainEvalParameters(
         rebuild_hash_tables_interval=None,
         reconstruct_hash_functions_interval=None,
         default_batch_size=256,
@@ -146,7 +145,7 @@ def trained_text_classifier(clinc_dataset, ray_cluster):
         evaluation_metrics=[],
     )
 
-    model_pipeline = dc.ModelPipeline(
+    model_pipeline = deployment.ModelPipeline(
         dataset_factory, distributed_model.get_model(), train_eval_params
     )
 

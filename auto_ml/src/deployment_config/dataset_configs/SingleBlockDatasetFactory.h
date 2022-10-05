@@ -12,7 +12,7 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
  public:
@@ -33,9 +33,9 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
         _shuffle(shuffle) {}
 
   DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader) final {
+      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
     return std::make_shared<GenericDatasetLoader>(
-        data_loader, _labeled_batch_processor, _shuffle);
+        data_loader, _labeled_batch_processor, _shuffle && training);
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final {
@@ -165,10 +165,9 @@ class SingleBlockDatasetFactoryConfig final
   }
 };
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment
 
 CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::SingleBlockDatasetFactoryConfig)
+    thirdai::automl::deployment::SingleBlockDatasetFactoryConfig)
 
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment_config::SingleBlockDatasetFactory)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::SingleBlockDatasetFactory)

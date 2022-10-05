@@ -151,7 +151,7 @@ class Worker:
         """
         return get_gradients(self.model)
 
-    def receive_gradients(self):
+    def receive_gradients(self, averaged_gradients_ref=None):
         """
         This function is called only when the communication pattern choosen
         is circular.
@@ -159,10 +159,15 @@ class Worker:
         This function is called by the primary_worker to make set the updated
         gradients to the network.
 
-        :return: receive updated gradients
-        :rtype: bool
+        :param averaged_gradients_ref: gets the references for averaged gradients
+                    for linear communication, defaults to None for any other way
+                    to communicate
+        :type averaged_gradients_ref: RayObjectRef, optional
         """
-        self.comm.receive_gradients()
+        if averaged_gradients_ref == None:
+            self.comm.receive_gradients()
+        else:
+            self.comm.receive_gradients(averaged_gradients_ref)
 
     def update_parameters(self):
         """

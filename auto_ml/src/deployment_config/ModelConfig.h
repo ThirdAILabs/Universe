@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 /**
  * This config provides the structure for instantiating the bolt dag.
@@ -88,4 +88,4 @@ class ModelConfig {
 
 using ModelConfigPtr = std::shared_ptr<ModelConfig>;
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment

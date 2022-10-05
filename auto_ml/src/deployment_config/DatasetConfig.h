@@ -12,7 +12,7 @@
 #include <memory>
 #include <optional>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 /**
  * Structure of Dataset Configuration and Loading:
@@ -76,6 +76,11 @@ using DatasetLoaderPtr = std::shared_ptr<DatasetLoader>;
 
 class DatasetLoaderFactory {
  public:
+  /**
+   * Note that preprocess data is called at the begining of train before
+   * getLabeldDatasetLoader. It is the responsibility of the implementation to
+   * ensure that it maintains the state correctly if called multiple times.
+   */
   virtual void preprocessDataset(
       const std::shared_ptr<dataset::DataLoader>& data_loader,
       std::optional<uint64_t> max_in_memory_batches) {
@@ -84,7 +89,7 @@ class DatasetLoaderFactory {
   }
 
   virtual DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader) = 0;
+      std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
 
@@ -128,4 +133,4 @@ class DatasetLoaderFactoryConfig {
 using DatasetLoaderFactoryConfigPtr =
     std::shared_ptr<DatasetLoaderFactoryConfig>;
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment

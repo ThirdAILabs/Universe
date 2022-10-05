@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <unordered_set>
 
-namespace thirdai::automl::deployment_config {
+namespace thirdai::automl::deployment {
 
 /**
  * The DeploymentConfig acts as a meta config that internally allows us to
@@ -91,7 +91,7 @@ class DeploymentConfig {
   TrainEvalParameters _train_test_parameters;
 
   // Private constructor for cereal
-  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}) {}
+  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}, {}) {}
 
   friend class cereal::access;
   template <typename Archive>
@@ -102,4 +102,4 @@ class DeploymentConfig {
 
 using DeploymentConfigPtr = std::shared_ptr<DeploymentConfig>;
 
-}  // namespace thirdai::automl::deployment_config
+}  // namespace thirdai::automl::deployment
