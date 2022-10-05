@@ -26,7 +26,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, ubuntu-20.04, macos-12]
+        os: [windows-2019, ubuntu-20.04]
+        include:
+          - name: macos-x86_64
+            os: macos-12
+            archs: x86-64
+            deployment_target: 10.15
+          - name: macos-arm64
+            os: macos-12
+            archs: arm64
+            deployment_target: 12.0
+
 
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -53,7 +63,7 @@ jobs:
               KMP_DUPLICATE_LIB_OK=TRUE
 
           CIBW_ENVIRONMENT_MACOS:
-            MACOSX_DEPLOYMENT_TARGET=12.0
+            MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
 
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
@@ -72,7 +82,7 @@ jobs:
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
           # Build both x86_64 and arm64 (apple silicon)
-          CIBW_ARCHS_MACOS: x86_64 arm64
+          CIBW_ARCHS_MACOS: ${{ matrix.archs }}
 
           # Skip building on CPython <3.8 on the Mac
           CIBW_SKIP: "cp36-macosx_arm64 cp37-macox_arm64 cp311-*"
