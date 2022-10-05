@@ -120,7 +120,7 @@ def trained_text_classifier(clinc_dataset):
 
     model.train(
         filename=TRAIN_FILE,
-        epochs=5, 
+        epochs=5,
         learning_rate=0.01,
         batch_size=256,
         max_in_memory_batches=12,
@@ -194,18 +194,20 @@ def test_train_with_validation(trained_text_classifier):
     )
 
     validation = deployment.ValidationConfig(
-        filename=TEST_FILE,
-        metrics=["categorical_accuracy"],
-        validation_interval=10
+        filename=TEST_FILE, metrics=["categorical_accuracy"], validation_interval=10
     )
 
     trained_text_classifier.train(
-        filename=TEST_FILE, epochs=1, learning_rate=0.001, batch_size=256, validation=validation
+        filename=TEST_FILE,
+        epochs=1,
+        learning_rate=0.001,
+        batch_size=256,
+        validation=validation,
     )
 
 
 def test_model_save_and_load(trained_text_classifier, clinc_dataset):
-    old_predictions = np.argmax(trained_text_classifier.evaluate(TEST_FILE),axis=1)
+    old_predictions = np.argmax(trained_text_classifier.evaluate(TEST_FILE), axis=1)
 
     trained_text_classifier.save(SAVE_FILE)
 
