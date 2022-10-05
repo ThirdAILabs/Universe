@@ -136,8 +136,10 @@ class Worker:
         This function is called by the primary_worker to make set the updated
         gradients to the network.
 
-        :return: receive updated gradients
-        :rtype: bool
+        :param averaged_gradients_ref: gets the references for averaged gradients
+                    for linear communication, defaults to None for any other way
+                    to communicate
+        :type averaged_gradients_ref: RayObjectRef, optional
         """
         if averaged_gradients_ref == None:
             self.comm.receive_gradients()
