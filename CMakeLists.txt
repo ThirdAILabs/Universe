@@ -68,6 +68,31 @@ if(MSVC)
   target_compile_options(_thirdai_windows_llvm_openmp INTERFACE "/openmp:llvm")
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 else()
+
+  find_package(OpenMP)
+  if(NOT OpenMP_FOUND)
+    set(LLVM_OPENMP_VERSION "13.0.1")
+    set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/openmp")
+
+    if(NOT EXISTS ${LLVM_OPENMP_SOURCE_DIR})
+        message("Downloading openmp-${LLVM_OPENMP_VERSION} into ${LLVM_OPENMP_SOURCE_DIR}")
+        set(LLVM_OPENMP_DOWNLOAD_URL "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/openmp-${LLVM_OPENMP_VERSION}.src.tar.xz")
+        file(DOWNLOAD
+            ${LLVM_OPENMP_DOWNLOAD_URL} # URL
+            "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2" # FILE
+         )
+     file(ARCHIVE_EXTRACT INPUT "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+     file(RENAME "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src" "${LLVM_OPENMP_SOURCE_DIR}")
+    endif()
+
+    set(OPENMP_STANDALONE_BUILD ON)
+    add_subdirectory(${LLVM_OPENMP_SOURCE_DIR} EXCLUDE_FROM_ALL)
+
+    add_library(OpenMP::OpenMP_CXX ALIAS omp)
+  endif(NOT OpenMP_FOUND)
+    
+
+
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   add_compile_options(
     -Wall
@@ -101,7 +126,8 @@ else()
     $<$<CONFIG:RelWithAsan>:-g>
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
 
-  find_package(OpenMP REQUIRED)
+
+
 endif()
 
 # Add feature flags passed in from python
