@@ -4,6 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <auto_classifiers/python_bindings/AutoClassifierBase.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -57,10 +58,12 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   std::vector<dataset::Explanation> explain(
       const std::string& sample,
       std::optional<std::string> target_label) override {
-    (void)sample;
     (void)target_label;
-    throw std::invalid_argument(
-        "Explain method is not yet implemented in TextClassifier.");
+    std::vector<std::string_view> input_row = {"", sample};
+    auto batch_processor = makeBatchProcessor();
+    auto result = getSignificanceSortedExplanations(
+        _model, featurizeInputForInference(sample), input_row, batch_processor);
+    return result;
   }
 
  protected:
@@ -96,12 +99,17 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
 
  private:
-  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
-      std::shared_ptr<dataset::DataLoader> data_loader) {
+  dataset::GenericBatchProcessorPtr makeBatchProcessor() {
     auto label_block = dataset::StringLookupCategoricalBlock::make(
         /* col= */ 0, _label_id_lookup);
     auto batch_processor = dataset::GenericBatchProcessor::make(
         {dataset::PairGramTextBlock::make(/* col= */ 1)}, {label_block});
+
+    return batch_processor;
+  }
+  std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
+      std::shared_ptr<dataset::DataLoader> data_loader) {
+    auto batch_processor = makeBatchProcessor();
 
     return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
         std::move(data_loader), batch_processor);

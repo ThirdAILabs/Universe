@@ -2,6 +2,7 @@
 
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <functional>
 #include <string_view>
@@ -55,12 +56,17 @@ class TextEncodingUtils {
    * write seperate function than to overload the already existing function.
    */
   static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-      const std::string_view sentence, uint32_t output_range) {
+      const std::string_view sentence,
+      std::optional<uint32_t> output_range = std::nullopt) {
     std::unordered_map<uint32_t, std::string> index_to_word;
     forEachWordHash(sentence,
                     [&](uint32_t word_hash, const std::string_view& word) {
                       (void)word_hash;
-                      index_to_word[word_hash % output_range] = word;
+                      if (output_range) {
+                        index_to_word[word_hash % *output_range] = word;
+                      } else {
+                        index_to_word[word_hash] = word;
+                      }
                     });
     return index_to_word;
   }
@@ -104,10 +110,11 @@ class TextEncodingUtils {
     return pairgram_hashes;
   }
 
+  template <typename MapType>
   static void computeRawPairgramsHashToColNumMapFromUnigrams(
       std::vector<uint32_t> unigram_hashes, uint32_t output_range,
-      std::unordered_map<uint32_t, uint32_t> unigram_hashes_map,
-      std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>&
+      std::unordered_map<uint32_t, MapType> unigram_hashes_map,
+      std::unordered_map<uint32_t, std::pair<MapType, MapType>>&
           pairgram_hashes_map) {
     for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
       for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BlockInterface.h"
+#include <_types/_uint32_t.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exception>
@@ -132,7 +133,7 @@ class TabularPairGram : public Block {
       }
     }
 
-    TextEncodingUtils::computeRawPairgramsHashToColNumMapFromUnigrams(
+    TextEncodingUtils::computeRawPairgramsHashToColNumMapFromUnigrams<uint32_t>(
         unigram_hashes, _output_range, unigram_hashes_map, _hash_to_word_map);
 
     return nullptr;

@@ -8,6 +8,7 @@
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset {
 
@@ -78,10 +79,19 @@ class PairGramTextBlock final : public TextBlock {
 
   std::string getResponsibleWord(uint32_t index,
                                  const std::string_view& text) const final {
-    (void)index;
-    (void)text;
-    throw std::invalid_argument(
-        "Explain Index is not yet implemented for pairgram block.");
+    auto unigram_hashes_map =
+        TextEncodingUtils::buildUnigramHashToWordMap(text);
+
+    auto unigram_hashes = TextEncodingUtils::computeRawUnigrams(text);
+    std::unordered_map<uint32_t, std::pair<std::string, std::string>>
+        pairgram_hashes;
+    TextEncodingUtils::computeRawPairgramsHashToColNumMapFromUnigrams<
+        std::string>(unigram_hashes, _dim, unigram_hashes_map, pairgram_hashes);
+    auto [word_1, word_2] = pairgram_hashes[index];
+    if (word_1 == word_2) {
+      return word_1;
+    }
+    return word_1 + " " + word_2;
   }
 
  protected:
