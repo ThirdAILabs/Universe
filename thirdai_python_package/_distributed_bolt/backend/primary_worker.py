@@ -1,4 +1,3 @@
-import numpy as np
 import ray
 from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
@@ -71,34 +70,6 @@ class PrimaryWorker(Worker):
                     ]
                 )
                 update_id -= 1
-
-    def run_linear_cluster_communication(self, workers):
-        """
-        This function implements the linear way of communicating between the node.
-        In this way of communication, each of the worker calculates their gradients,
-        send their gradients to the supervisor and the supervisor sums the gradients,
-        averages it and and send the gradients back to the workers.
-
-        :param workers: batch number for the particular worker with worker id (id).
-        :type workers: int
-        """
-        gradients_list = ray.get(
-            [worker.get_calculated_gradients.remote() for worker in workers]
-        )
-
-        # Here we are initializing the w_average_gradients for storing the sum
-        self.gradient_averages = [
-            np.array(gradients_list[0][i]) for i in range(len(gradients_list[0]))
-        ]
-
-        for worker_id in range(1, len(gradients_list)):
-            for gradient_id in range(len(self.gradient_averages)):
-                self.gradient_averages[gradient_id] += gradients_list[worker_id][
-                    gradient_id
-                ]
-
-        for gradient_id in range(len(self.gradient_averages)):
-            self.gradient_averages[gradient_id] /= len(workers)
 
     def gradients_avg(self):
         """
