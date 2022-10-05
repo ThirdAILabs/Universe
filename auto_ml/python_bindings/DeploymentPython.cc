@@ -169,6 +169,11 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("use_sparse_inference") = false)
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"),
            py::arg("use_sparse_inference") = false)
+      .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
+           py::arg("filename"))
+      .def("load_validation_data",
+           &ModelPipeline::loadValidationDataFromDataLoader,
+           py::arg("data_source"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
 }

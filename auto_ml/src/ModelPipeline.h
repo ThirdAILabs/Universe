@@ -158,6 +158,20 @@ class ModelPipeline {
     return deserialize_into;
   }
 
+  auto loadValidationDataFromFile(const std::string& filename) {
+    auto file_loader = std::make_shared<dataset::SimpleFileDataLoader>(
+        filename, DEFAULT_EVALUATE_BATCH_SIZE);
+
+    return _dataset_factory->getLabeledDatasetLoader(file_loader,
+                                                     /* training= */ false);
+  }
+
+  auto loadValidationDataFromDataLoader(
+      std::shared_ptr<dataset::DataLoader> data_source) {
+    return _dataset_factory->getLabeledDatasetLoader(std::move(data_source),
+                                                     /* training= */ false);
+  }
+
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
