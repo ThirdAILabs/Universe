@@ -4,8 +4,7 @@ import random
 import datasets
 import numpy as np
 import pytest
-from thirdai import bolt
-from thirdai import deployment_config as dc
+from thirdai import bolt, deployment
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -67,39 +66,39 @@ def clinc_dataset():
 def trained_text_classifier(clinc_dataset):
     num_classes, _ = clinc_dataset
 
-    model_config = dc.ModelConfig(
+    model_config = deployment.ModelConfig(
         input_names=["input"],
         nodes=[
-            dc.FullyConnectedNodeConfig(
+            deployment.FullyConnectedNodeConfig(
                 name="hidden",
-                dim=dc.OptionMappedParameter(
+                dim=deployment.OptionMappedParameter(
                     option_name="size", values={"small": 100, "large": 200}
                 ),
-                activation=dc.ConstantParameter("relu"),
+                activation=deployment.ConstantParameter("relu"),
                 predecessor="input",
             ),
-            dc.FullyConnectedNodeConfig(
+            deployment.FullyConnectedNodeConfig(
                 name="output",
-                dim=dc.UserSpecifiedParameter("output_dim", type=int),
-                sparsity=dc.ConstantParameter(1.0),
-                activation=dc.ConstantParameter("softmax"),
+                dim=deployment.UserSpecifiedParameter("output_dim", type=int),
+                sparsity=deployment.ConstantParameter(1.0),
+                activation=deployment.ConstantParameter("softmax"),
                 predecessor="hidden",
             ),
         ],
         loss=bolt.CategoricalCrossEntropyLoss(),
     )
 
-    dataset_config = dc.SingleBlockDatasetFactory(
-        data_block=dc.TextBlockConfig(use_pairgrams=True),
-        label_block=dc.NumericalCategoricalBlockConfig(
-            n_classes=dc.UserSpecifiedParameter("output_dim", type=int),
-            delimiter=dc.ConstantParameter(","),
+    dataset_config = deployment.SingleBlockDatasetFactory(
+        data_block=deployment.TextBlockConfig(use_pairgrams=True),
+        label_block=deployment.NumericalCategoricalBlockConfig(
+            n_classes=deployment.UserSpecifiedParameter("output_dim", type=int),
+            delimiter=deployment.ConstantParameter(","),
         ),
-        shuffle=dc.ConstantParameter(False),
-        delimiter=dc.UserSpecifiedParameter("delimiter", type=str),
+        shuffle=deployment.ConstantParameter(False),
+        delimiter=deployment.UserSpecifiedParameter("delimiter", type=str),
     )
 
-    train_eval_params = dc.TrainEvalParameters(
+    train_eval_params = deployment.TrainEvalParameters(
         rebuild_hash_tables_interval=None,
         reconstruct_hash_functions_interval=None,
         default_batch_size=256,
@@ -107,7 +106,7 @@ def trained_text_classifier(clinc_dataset):
         evaluation_metrics=["categorical_accuracy"],
     )
 
-    config = dc.DeploymentConfig(
+    config = deployment.DeploymentConfig(
         dataset_config=dataset_config,
         model_config=model_config,
         train_eval_parameters=train_eval_params,
@@ -115,7 +114,7 @@ def trained_text_classifier(clinc_dataset):
 
     config.save(CONFIG_FILE)
 
-    model = dc.ModelPipeline(
+    model = deployment.ModelPipeline(
         config_path=CONFIG_FILE,
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
@@ -176,7 +175,7 @@ def batch_predictions(samples, original_predictions, batch_size=10):
 def test_model_save_and_load(trained_text_classifier, model_predictions, clinc_dataset):
     trained_text_classifier.save(SAVE_FILE)
 
-    model = dc.ModelPipeline.load(SAVE_FILE)
+    model = deployment.ModelPipeline.load(SAVE_FILE)
 
     # Check that predictions match after saving
     new_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)

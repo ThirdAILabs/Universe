@@ -146,6 +146,9 @@ class CMakeBuild(build_ext):
 version = None
 with open("thirdai.version") as version_file:
     version = version_file.read().strip()
+    suffix = os.environ.get("THIRDAI_BUILD_IDENTIFIER", None)
+    if suffix:
+        version = "{}+{}".format(version, suffix)
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
