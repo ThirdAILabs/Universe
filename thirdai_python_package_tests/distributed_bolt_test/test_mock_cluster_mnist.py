@@ -96,7 +96,7 @@ def train_distributed_bolt_check(request):
         model=model,
         train_config=train_config,
         train_formats=["svm" for _ in range(len(data_sources))],
-        train_data_sources=dataset_paths,
+        train_data_sources=data_sources,
     )
     distributed_model.train()
 

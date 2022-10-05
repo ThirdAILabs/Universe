@@ -20,7 +20,10 @@ def get_mnist_model():
 
 if __name__ == "__main__":
     model = get_mnist_model()
-    dataset_paths = ["/share/pratik/mnist_a", "/share/pratik/mnist_b"]
+    data_sources = [
+        {"train_file": "/share/pratik/mnist_a", "batch_size": 256},
+        {"train_file": "/share/pratik/mnist_b", "batch_size": 256},
+    ]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
     cluster_config = db.RayTrainingClusterConfig(
         num_workers=2, requested_cpus_per_node=1, communication_type="linear"
@@ -30,7 +33,7 @@ if __name__ == "__main__":
         model=model,
         train_config=train_config,
         train_formats=["svm", "svm"],
-        train_file_names=dataset_paths,
+        train_data_sources=data_sources,
         batch_size=256,
     )
     wrapped_model.train()

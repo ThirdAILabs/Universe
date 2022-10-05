@@ -118,23 +118,23 @@ class DistributedDataParallel:
         format:
 
         If the corresponding train_format is "svm":
-        {   
-            "train_file": <training file name>, 
+        {
+            "train_file": <training file name>,
             "batch_size": <training batch size>
         }
 
         If the corresponding train_format is "tabular_file":
         {
-                "train_file": <training file name>, 
-                "batch_size": <training batch size>, 
-                "dataset_factory": <DatasetLoaderFactory object>, 
+                "train_file": <training file name>,
+                "batch_size": <training batch size>,
+                "dataset_factory": <DatasetLoaderFactory object>,
                 "max_in_memory_batches": <max in memory batches>
         }
-        
+
         If the corresponding train_format is "tabular_loader":
         {
-                "loader": <DataLoader object>, 
-                "dataset_factory": <DatasetLoaderFactory object>, 
+                "loader": <DataLoader object>,
+                "dataset_factory": <DatasetLoaderFactory object>,
                 "max_in_memory_batches": <max in memory batches>
         }
         """
