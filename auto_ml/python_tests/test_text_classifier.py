@@ -101,6 +101,7 @@ def trained_text_classifier(clinc_dataset):
     train_eval_params = deployment.TrainEvalParameters(
         rebuild_hash_tables_interval=None,
         reconstruct_hash_functions_interval=None,
+        default_batch_size=256,
         freeze_hash_tables=True,
     )
 
@@ -117,10 +118,10 @@ def trained_text_classifier(clinc_dataset):
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
 
-    train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
     model.train(
         filename=TRAIN_FILE,
-        train_config=train_config,
+        epochs=5, 
+        learning_rate=0.01,
         batch_size=256,
         max_in_memory_batches=12,
     )
@@ -192,21 +193,14 @@ def test_train_with_validation(trained_text_classifier):
         .enable_sparse_inference()
     )
 
-    val_data, val_labels = trained_text_classifier.load_validation_data(TEST_FILE)
-
-    train_config = (
-        bolt.graph.TrainConfig.make(epochs=1, learning_rate=0.001)
-        .with_validation(
-            validation_data=val_data,
-            validation_labels=val_labels,
-            predict_config=predict_config,
-            validation_frequency=10,
-        )
-        .silence()
+    validation = deployment.ValidationConfig(
+        filename=TEST_FILE,
+        metrics=["categorical_accuracy"],
+        validation_interval=10
     )
 
     trained_text_classifier.train(
-        filename=TEST_FILE, train_config=train_config, batch_size=256
+        filename=TEST_FILE, epochs=1, learning_rate=0.001, batch_size=256, validation=validation
     )
 
 
@@ -222,8 +216,7 @@ def test_model_save_and_load(trained_text_classifier, clinc_dataset):
     assert np.array_equal(old_predictions, new_predictions)
 
     # Check that we can still fine tune the model
-    train_config = bolt.graph.TrainConfig.make(epochs=1, learning_rate=0.001)
-    model.train(filename=TRAIN_FILE, train_config=train_config, batch_size=256)
+    model.train(filename=TRAIN_FILE, epochs=1, learning_rate=0.001, batch_size=256)
 
     _, labels = clinc_dataset
     fine_tuned_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)

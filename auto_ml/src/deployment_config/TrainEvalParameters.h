@@ -13,10 +13,12 @@ class TrainEvalParameters {
   TrainEvalParameters(
       std::optional<uint32_t> rebuild_hash_tables_interval,
       std::optional<uint32_t> reconstruct_hash_functions_interval,
-      bool freeze_hash_tables, std::optional<float> prediction_threshold)
+      uint32_t default_batch_size, bool freeze_hash_tables,
+      std::optional<float> prediction_threshold)
       : _rebuild_hash_tables_interval(rebuild_hash_tables_interval),
         _reconstruct_hash_functions_interval(
             reconstruct_hash_functions_interval),
+        _default_batch_size(default_batch_size),
         _freeze_hash_tables(freeze_hash_tables),
         _prediction_threshold(prediction_threshold) {}
 
@@ -34,9 +36,12 @@ class TrainEvalParameters {
     return _prediction_threshold;
   }
 
+  uint32_t defaultBatchSize() const { return _default_batch_size; }
+
  private:
   std::optional<uint32_t> _rebuild_hash_tables_interval;
   std::optional<uint32_t> _reconstruct_hash_functions_interval;
+  uint32_t _default_batch_size;
   bool _freeze_hash_tables;
   std::optional<float> _prediction_threshold;
 
@@ -47,7 +52,7 @@ class TrainEvalParameters {
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(_rebuild_hash_tables_interval, _reconstruct_hash_functions_interval,
-            _freeze_hash_tables, _prediction_threshold);
+            _default_batch_size, _freeze_hash_tables, _prediction_threshold);
   }
 };
 

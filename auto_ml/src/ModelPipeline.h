@@ -19,6 +19,30 @@ namespace thirdai::automl::deployment {
 
 const uint32_t DEFAULT_EVALUATE_BATCH_SIZE = 2048;
 
+class ValidationConfig {
+ public:
+  ValidationConfig(std::string filename, std::vector<std::string> metrics,
+                   uint32_t validation_interval, bool use_sparse_inference)
+      : _filename(std::move(filename)),
+        _metrics(std::move(metrics)),
+        _validation_interval(validation_interval),
+        _use_sparse_inference(use_sparse_inference) {}
+
+  const std::string& filename() const { return _filename; }
+
+  const std::vector<std::string>& metrics() const { return _metrics; }
+
+  uint32_t validationInterval() const { return _validation_interval; }
+
+  bool useSparseInference() const { return _use_sparse_inference; }
+
+ private:
+  std::string _filename;
+  std::vector<std::string> _metrics;
+  uint32_t _validation_interval;
+  bool _use_sparse_inference;
+};
+
 /**
  * This class represents an end-to-end data processing + model pipeline. It
  * handles all functionality from loading data to training, evaulation, and
@@ -45,12 +69,53 @@ class ModelPipeline {
                          config->train_eval_parameters());
   }
 
+  void trainOnFileNoConfig(const std::string& filename, uint32_t epochs,
+                           float learning_rate,
+                           std::optional<uint32_t> batch_size_opt,
+                           const std::optional<ValidationConfig>& validation,
+                           std::optional<uint32_t> max_in_memory_batches) {
+    uint32_t batch_size =
+        batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
+    trainOnDataLoaderNoConfig(
+        dataset::SimpleFileDataLoader::make(filename, batch_size), epochs,
+        learning_rate, validation, max_in_memory_batches);
+  }
+
+  void trainOnDataLoaderNoConfig(
+      const std::shared_ptr<dataset::DataLoader>& data_source, uint32_t epochs,
+      float learning_rate, const std::optional<ValidationConfig>& validation,
+      std::optional<uint32_t> max_in_memory_batches) {
+    bolt::TrainConfig train_config = bolt::TrainConfig::makeConfig(
+        /* learning_rate= */ learning_rate, /* epochs= */ epochs);
+
+    if (validation) {
+      auto [val_data, val_labels] =
+          loadValidationDataFromFile(validation->filename());
+
+      bolt::PredictConfig validation_config =
+          bolt::PredictConfig::makeConfig().withMetrics(validation->metrics());
+
+      if (validation->useSparseInference()) {
+        validation_config.enableSparseInference();
+      }
+
+      train_config.withValidation(
+          /* validation_data= */ val_data,
+          /* validation_labels= */ val_labels,
+          /* predict_config= */ validation_config,
+          /* validation_frequency= */ validation->validationInterval());
+    }
+
+    trainOnDataLoader(data_source, train_config, max_in_memory_batches);
+  }
+
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
-                   uint32_t batch_size,
+                   std::optional<uint32_t> batch_size_opt,
                    std::optional<uint32_t> max_in_memory_batches) {
-    trainOnDataLoader(
-        std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size),
-        train_config, max_in_memory_batches);
+    uint32_t batch_size =
+        batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
+    trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
+                      train_config, max_in_memory_batches);
   }
 
   void trainOnDataLoader(
@@ -75,7 +140,7 @@ class ModelPipeline {
   bolt::InferenceOutputTracker evaulate(
       const std::string& filename,
       std::optional<bolt::PredictConfig>& predict_config_opt) {
-    return evaluate(std::make_shared<dataset::SimpleFileDataLoader>(
+    return evaluate(dataset::SimpleFileDataLoader::make(
                         filename, DEFAULT_EVALUATE_BATCH_SIZE),
                     predict_config_opt);
   }
@@ -164,22 +229,6 @@ class ModelPipeline {
     return deserialize_into;
   }
 
-  std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(
-      const std::string& filename) {
-    auto file_loader = std::make_shared<dataset::SimpleFileDataLoader>(
-        filename, DEFAULT_EVALUATE_BATCH_SIZE);
-
-    return loadValidationDataFromDataLoader(file_loader);
-  }
-
-  std::pair<InputDatasets, LabelDataset> loadValidationDataFromDataLoader(
-      std::shared_ptr<dataset::DataLoader> data_source) {
-    auto loader =
-        _dataset_factory->getLabeledDatasetLoader(std::move(data_source),
-                                                  /* training= */ false);
-    return loader->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
-  }
-
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
@@ -248,6 +297,18 @@ class ModelPipeline {
     }
   }
 
+  std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(
+      const std::string& filename) {
+    auto file_loader = dataset::SimpleFileDataLoader::make(
+        filename, DEFAULT_EVALUATE_BATCH_SIZE);
+
+    auto dataset_loader =
+        _dataset_factory->getLabeledDatasetLoader(std::move(file_loader),
+                                                  /* training= */ false);
+    return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
+        .value();
+  }
+
   static uint32_t argmax(const float* const array, uint32_t len) {
     assert(len > 0);
 
@@ -263,7 +324,7 @@ class ModelPipeline {
   }
 
   // Private constructor for cereal.
-  ModelPipeline() : _train_eval_config({}, {}, {}, {}) {}
+  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
 
   friend class cereal::access;
   template <class Archive>

@@ -53,6 +53,7 @@ def get_config(
     train_eval_params = deployment.TrainEvalParameters(
         rebuild_hash_tables_interval=None,
         reconstruct_hash_functions_interval=None,
+        default_batch_size=100,
         freeze_hash_tables=True,
     )
 

@@ -132,11 +132,11 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("delimiter"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
-      .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, bool,
-                    std::optional<float>>(),
+      .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
+                    bool, std::optional<float>>(),
            py::arg("rebuild_hash_tables_interval"),
            py::arg("reconstruct_hash_functions_interval"),
-           py::arg("freeze_hash_tables"),
+           py::arg("default_batch_size"), py::arg("freeze_hash_tables"),
            py::arg("prediction_threshold") = std::nullopt);
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
@@ -148,16 +148,25 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("save", &DeploymentConfig::save, py::arg("filename"))
       .def_static("load", &DeploymentConfig::load, py::arg("filename"));
 
+  py::class_<ValidationConfig>(submodule, "ValidationConfig")
+      .def(py::init<std::string, std::vector<std::string>, uint32_t, bool>(),
+           py::arg("filename"), py::arg("metrics"),
+           py::arg("validation_interval"),
+           py::arg("use_sparse_inference") = false);
+
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
            py::arg("parameters") = py::dict())
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
            py::arg("parameters") = py::dict())
-      .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
-           py::arg("train_config"), py::arg("batch_size"),
+      .def("train", &ModelPipeline::trainOnFileNoConfig, py::arg("filename"),
+           py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("batch_size") = std::nullopt,
+           py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt)
-      .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
-           py::arg("train_config"),
+      .def("train", &ModelPipeline::trainOnDataLoaderNoConfig,
+           py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt)
       .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"),
            py::arg("predict_config") = std::nullopt)
@@ -169,11 +178,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("use_sparse_inference") = false)
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"),
            py::arg("use_sparse_inference") = false)
-      .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
-           py::arg("filename"))
-      .def("load_validation_data",
-           &ModelPipeline::loadValidationDataFromDataLoader,
-           py::arg("data_source"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
 }
@@ -265,11 +269,10 @@ py::object evaluateOnDataLoaderWrapper(
 py::object evaluateOnFileWrapper(
     ModelPipeline& model, const std::string& filename,
     std::optional<bolt::PredictConfig>& predict_config) {
-  return evaluateOnDataLoaderWrapper(
-      model,
-      std::make_shared<dataset::SimpleFileDataLoader>(
-          filename, DEFAULT_EVALUATE_BATCH_SIZE),
-      predict_config);
+  return evaluateOnDataLoaderWrapper(model,
+                                     dataset::SimpleFileDataLoader::make(
+                                         filename, DEFAULT_EVALUATE_BATCH_SIZE),
+                                     predict_config);
 }
 
 py::object predictWrapper(ModelPipeline& model, const std::string& sample,
