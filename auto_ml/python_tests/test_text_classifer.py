@@ -210,21 +210,27 @@ def test_train_with_validation(trained_text_classifier):
     )
 
 
-def test_model_save_and_load(trained_text_classifier, model_predictions, clinc_dataset):
-    trained_text_classifier.save(SAVE_FILE)
-
-    model = deployment.ModelPipeline.load(SAVE_FILE)
-
-    # Check that predictions match after saving
+def test_model_save_and_load(trained_text_classifier, clinc_dataset):
     predict_config = (
         bolt.graph.PredictConfig.make()
         .with_metrics(["categorical_accuracy"])
         .enable_sparse_inference()
     )
+
+    old_predictions = np.argmax(
+        trained_text_classifier.evaluate(TEST_FILE, predict_config=predict_config),
+        axis=1,
+    )
+
+    trained_text_classifier.save(SAVE_FILE)
+
+    model = deployment.ModelPipeline.load(SAVE_FILE)
+
+    # Check that predictions match after saving
     new_predictions = np.argmax(
         model.evaluate(TEST_FILE, predict_config=predict_config), axis=1
     )
-    assert np.array_equal(model_predictions, new_predictions)
+    assert np.array_equal(old_predictions, new_predictions)
 
     # Check that we can still fine tune the model
     train_config = bolt.graph.TrainConfig.make(epochs=1, learning_rate=0.001)
