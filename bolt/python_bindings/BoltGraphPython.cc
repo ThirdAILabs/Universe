@@ -287,13 +287,11 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
       .def("silence", &TrainConfig::silence)
-#if THIRDAI_EXPOSE_ALL
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"))
-#endif
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_save_parameters", &TrainConfig::withSaveParameters,
            py::arg("save_prefix"), py::arg("save_frequency"))

@@ -72,21 +72,25 @@ class ModelPipeline {
     }
   }
 
-  bolt::InferenceOutputTracker evaulate(const std::string& filename,
-                                        bolt::PredictConfig& predict_config) {
+  bolt::InferenceOutputTracker evaulate(
+      const std::string& filename,
+      std::optional<bolt::PredictConfig>& predict_config_opt) {
     return evaluate(std::make_shared<dataset::SimpleFileDataLoader>(
                         filename, DEFAULT_EVALUATE_BATCH_SIZE),
-                    predict_config);
+                    predict_config_opt);
   }
 
   bolt::InferenceOutputTracker evaluate(
       const std::shared_ptr<dataset::DataLoader>& data_source,
-      bolt::PredictConfig& predict_config) {
+      std::optional<bolt::PredictConfig>& predict_config_opt) {
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
         data_source, /* training= */ false);
 
     auto [data, labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
+
+    bolt::PredictConfig predict_config =
+        predict_config_opt.value_or(bolt::PredictConfig::makeConfig());
 
     predict_config.returnActivations();
 

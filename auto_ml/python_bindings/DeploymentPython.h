@@ -32,11 +32,11 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source,
-    bolt::PredictConfig& predict_config);
+    std::optional<bolt::PredictConfig>& predict_config);
 
-py::object evaluateOnFileWrapper(ModelPipeline& model,
-                                 const std::string& filename,
-                                 bolt::PredictConfig& predict_config);
+py::object evaluateOnFileWrapper(
+    ModelPipeline& model, const std::string& filename,
+    std::optional<bolt::PredictConfig>& predict_config);
 
 py::object predictWrapper(ModelPipeline& model, const std::string& sample,
                           bool use_sparse_inference);

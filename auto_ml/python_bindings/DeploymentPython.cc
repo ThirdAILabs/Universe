@@ -160,9 +160,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("train_config"),
            py::arg("max_in_memory_batches") = std::nullopt)
       .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"),
-           py::arg("predict_config"))
+           py::arg("predict_config") = std::nullopt)
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
-           py::arg("predict_config"))
+           py::arg("predict_config") = std::nullopt)
       .def("predict", &predictWrapper, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
@@ -256,15 +256,15 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source,
-    bolt::PredictConfig& predict_config) {
+    std::optional<bolt::PredictConfig>& predict_config) {
   auto output = model.evaluate(data_source, predict_config);
 
   return convertInferenceTrackerToNumpy(output);
 }
 
-py::object evaluateOnFileWrapper(ModelPipeline& model,
-                                 const std::string& filename,
-                                 bolt::PredictConfig& predict_config) {
+py::object evaluateOnFileWrapper(
+    ModelPipeline& model, const std::string& filename,
+    std::optional<bolt::PredictConfig>& predict_config) {
   return evaluateOnDataLoaderWrapper(
       model,
       std::make_shared<dataset::SimpleFileDataLoader>(
