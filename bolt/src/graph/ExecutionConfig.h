@@ -233,6 +233,8 @@ class TrainConfig {
 
   uint32_t logLossFrequency() const { return _log_loss_frequency; }
 
+  void setEpochs(uint32_t new_epochs) { _epochs = new_epochs; }
+
  private:
   // Private constructor for cereal.
   TrainConfig() : TrainConfig(0, 0){};

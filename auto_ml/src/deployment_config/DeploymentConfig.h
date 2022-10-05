@@ -47,7 +47,7 @@ class DeploymentConfig {
                    TrainEvalParameters train_test_parameters)
       : _dataset_config(std::move(dataset_config)),
         _model_config(std::move(model_config)),
-        _train_test_parameters(std::move(train_test_parameters)) {}
+        _train_test_parameters(train_test_parameters) {}
 
   std::pair<DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
   createDataLoaderAndModel(
@@ -91,7 +91,7 @@ class DeploymentConfig {
   TrainEvalParameters _train_test_parameters;
 
   // Private constructor for cereal
-  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}, {}) {}
+  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}) {}
 
   friend class cereal::access;
   template <typename Archive>

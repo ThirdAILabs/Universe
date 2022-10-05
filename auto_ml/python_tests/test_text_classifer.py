@@ -101,9 +101,7 @@ def trained_text_classifier(clinc_dataset):
     train_eval_params = deployment.TrainEvalParameters(
         rebuild_hash_tables_interval=None,
         reconstruct_hash_functions_interval=None,
-        default_batch_size=256,
-        use_sparse_inference=True,
-        evaluation_metrics=["categorical_accuracy"],
+        freeze_hash_tables=True,
     )
 
     config = deployment.DeploymentConfig(
@@ -119,8 +117,12 @@ def trained_text_classifier(clinc_dataset):
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
 
+    train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
     model.train(
-        filename=TRAIN_FILE, epochs=5, learning_rate=0.01, max_in_memory_batches=12
+        filename=TRAIN_FILE,
+        train_config=train_config,
+        batch_size=256,
+        max_in_memory_batches=12,
     )
 
     return model
@@ -128,7 +130,14 @@ def trained_text_classifier(clinc_dataset):
 
 @pytest.fixture(scope="module")
 def model_predictions(trained_text_classifier):
-    logits = trained_text_classifier.evaluate(filename=TEST_FILE)
+    predict_config = (
+        bolt.graph.PredictConfig.make()
+        .with_metrics(["categorical_accuracy"])
+        .enable_sparse_inference()
+    )
+    logits = trained_text_classifier.evaluate(
+        filename=TEST_FILE, predict_config=predict_config
+    )
     predictions = np.argmax(logits, axis=1)
     return predictions
 
@@ -153,11 +162,15 @@ def test_different_predict_methods_have_same_result(
     test_samples = [x.split(",")[1] for x in test_set]
 
     for sample, original_prediction in zip(test_samples, model_predictions):
-        single_prediction = np.argmax(trained_text_classifier.predict(sample))
+        single_prediction = np.argmax(
+            trained_text_classifier.predict(sample, use_sparse_inference=True)
+        )
         assert single_prediction == original_prediction
 
     for samples, predictions in batch_predictions(test_samples, model_predictions):
-        predictions_for_batch = trained_text_classifier.predict_batch(samples)
+        predictions_for_batch = trained_text_classifier.predict_batch(
+            samples, use_sparse_inference=True
+        )
         batched_predictions = np.argmax(predictions_for_batch, axis=1)
         for prediction, original_prediction in zip(batched_predictions, predictions):
             assert prediction == original_prediction
@@ -178,19 +191,24 @@ def test_model_save_and_load(trained_text_classifier, model_predictions, clinc_d
     model = deployment.ModelPipeline.load(SAVE_FILE)
 
     # Check that predictions match after saving
-    new_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)
+    predict_config = (
+        bolt.graph.PredictConfig.make()
+        .with_metrics(["categorical_accuracy"])
+        .enable_sparse_inference()
+    )
+    new_predictions = np.argmax(
+        model.evaluate(TEST_FILE, predict_config=predict_config), axis=1
+    )
     assert np.array_equal(model_predictions, new_predictions)
 
     # Check that we can still fine tune the model
-
-    model.train(
-        filename=TRAIN_FILE,
-        epochs=1,
-        learning_rate=0.001,
-    )
+    train_config = bolt.graph.TrainConfig.make(epochs=1, learning_rate=0.001)
+    model.train(filename=TRAIN_FILE, train_config=train_config, batch_size=256)
 
     _, labels = clinc_dataset
-    fine_tuned_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)
+    fine_tuned_predictions = np.argmax(
+        model.evaluate(TEST_FILE, predict_config=predict_config), axis=1
+    )
     acc = np.mean(fine_tuned_predictions == np.array(labels))
 
     assert acc >= 0.7
