@@ -63,7 +63,7 @@ jobs:
               KMP_DUPLICATE_LIB_OK=TRUE
 
           CIBW_ENVIRONMENT_MACOS:
-            MACOXS_DEPLOYMENT_TARGET=12.0
+            MACOSX_DEPLOYMENT_TARGET=12.0
 
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
