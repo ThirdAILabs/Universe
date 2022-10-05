@@ -79,7 +79,10 @@ def train_distributed_bolt_check(request):
     mini_cluster.add_node(num_cpus=1)
 
     model = get_mnist_model()
-    dataset_paths = ["mnist_data/xaa", "mnist_data/xab"]
+    data_sources = [
+        {"train_file": "mnist_data/xaa", "batch_size": 256},
+        {"train_file": "mnist_data/xab", "batch_size": 256},
+    ]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
     cluster_config = db.RayTrainingClusterConfig(
         num_workers=2,
@@ -92,9 +95,8 @@ def train_distributed_bolt_check(request):
         cluster_config=cluster_config,
         model=model,
         train_config=train_config,
-        train_formats=["svm" for _ in range(len(dataset_paths))],
+        train_formats=["svm" for _ in range(len(data_sources))],
         train_data_sources=dataset_paths,
-        batch_size=256,
     )
     distributed_model.train()
 

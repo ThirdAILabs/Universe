@@ -55,7 +55,7 @@ class DistributedTabularTrainingWrapper final
   explicit DistributedTabularTrainingWrapper(
       BoltGraphPtr model, TrainConfig train_config,
       automl::deployment_config::DatasetLoaderFactoryPtr factory,
-      dataset::DataLoaderPtr loader, uint32_t max_in_memory_batches)
+      dataset::DataLoaderPtr loader, uint64_t max_in_memory_batches)
       : DistributedTrainingWrapper(std::move(model)),
         _dataset_loader_factory(std::move(factory)),
         _data_loader(std::move(loader)),
@@ -125,6 +125,17 @@ class DistributedTabularTrainingWrapper final
     }
   }
 
+  static DistributedTabularTrainingWrapperPtr makeFromFile(
+      BoltGraphPtr model, TrainConfig train_config,
+      automl::deployment_config::DatasetLoaderFactoryPtr factory,
+      const std::string& filename, uint64_t batch_size,
+      uint64_t max_in_memory_batches) {
+    dataset::DataLoaderPtr loader =
+        std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
+    return std::make_shared<DistributedTabularTrainingWrapper>(
+        model, train_config, factory, loader, max_in_memory_batches);
+  }
+
  private:
   automl::deployment_config::DatasetLoaderFactoryPtr _dataset_loader_factory;
   dataset::DataLoaderPtr _data_loader;
@@ -133,7 +144,7 @@ class DistributedTabularTrainingWrapper final
   uint64_t _batch_idx_within_train_context;
   // This should always have a non null value after the first load
   DatasetContextPtr _current_train_context;
-  uint32_t _max_in_memory_batches;
+  uint64_t _max_in_memory_batches;
 
   TrainConfig _train_config;
   MetricAggregator _metric_aggregator;

@@ -24,7 +24,6 @@ class Worker:
         primary_worker,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
-        batch_size: int,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
@@ -33,7 +32,7 @@ class Worker:
 
         if train_data_format == "svm":
             self.train_data, self.train_labels = parse_svm_dataset(
-                train_data_source, batch_size
+                train_data_source["train_file"], train_data_source["batch_size"]
             )
             self.model = bolt.DistributedInMemoryTrainingWrapper(
                 model=model_to_wrap,
@@ -41,13 +40,22 @@ class Worker:
                 train_labels=self.train_labels,
                 train_config=train_config,
             )
-        elif train_data_format == "loader_and_factory":
+        elif train_data_format == "tabular_file":
             self.model = bolt.DistributedTabularTrainingWrapper(
                 model=model_to_wrap,
                 train_config=train_config,
-                loader=train_data_source[0],
-                factory=train_data_source[1],
-                max_in_memory_batches=train_data_source[2],
+                filename=train_data_source["train_file"],
+                factory=train_data_source["dataset_factory"],
+                max_in_memory_batches=train_data_source["max_in_memory_batches"],
+                batch_size=train_data_source["batch_size"],
+            )
+        elif train_data_format == "tabular_loader":
+            self.model = bolt.DistributedTabularTrainingWrapper(
+                model=model_to_wrap,
+                train_config=train_config,
+                loader=train_data_source["loader"],
+                factory=train_data_source["dataset_factory"],
+                max_in_memory_batches=train_data_source["max_in_memory_batches"],
             )
         else:
             raise ValueError("Unknown format:", train_data_source)

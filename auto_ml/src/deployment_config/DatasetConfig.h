@@ -72,7 +72,7 @@ class GenericDatasetLoader final : public DatasetLoader {
   dataset::StreamingGenericDatasetLoader _dataset;
 };
 
-using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
+using DatasetLoaderPtr = std::shared_ptr<DatasetLoader>;
 
 class DatasetLoaderFactory {
  public:

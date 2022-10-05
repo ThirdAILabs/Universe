@@ -52,6 +52,7 @@ class TrainStateManager:
 
     def move_to_next_epoch(self):
         ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
+        self.batch_id = 0
 
     def _compute_and_store_next_batch_gradients(self) -> bool:
         """

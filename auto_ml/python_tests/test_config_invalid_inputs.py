@@ -41,7 +41,7 @@ def get_config(
         loss=bolt.CategoricalCrossEntropyLoss(),
     )
 
-    dataset_config = dc.SingleBlockDatasetFactory(
+    dataset_config = dc.SingleBlockDatasetFactoryConfig(
         data_block=dc.TextBlockConfig(use_pairgrams=True),
         label_block=dc.NumericalCategoricalBlockConfig(
             n_classes=dc.UserSpecifiedParameter("output_dim", type=int),

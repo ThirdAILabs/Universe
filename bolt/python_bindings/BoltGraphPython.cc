@@ -567,7 +567,12 @@ That's all for now, folks! More docs coming soon :)
            py::arg("model"), py::arg("train_config"), py::arg("factory"),
            py::arg("loader"),
            py::arg("max_in_memory_batches") =
-               std::numeric_limits<uint32_t>::max())
+               std::numeric_limits<uint64_t>::max())
+      .def(py::init(&DistributedTabularTrainingWrapper::makeFromFile),
+           py::arg("model"), py::arg("train_config"), py::arg("factory"),
+           py::arg("filename"), py::arg("batch_size"),
+           py::arg("max_in_memory_batches") =
+               std::numeric_limits<uint64_t>::max())
       .def("freeze_hash_tables",
            &DistributedTabularTrainingWrapper::freezeHashTables)
       .def("compute_and_store_next_batch_gradients",

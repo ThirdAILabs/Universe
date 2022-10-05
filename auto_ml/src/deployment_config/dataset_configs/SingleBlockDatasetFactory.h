@@ -34,7 +34,7 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
 
   DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader) final {
-    return std::make_unique<GenericDatasetLoader>(
+    return std::make_shared<GenericDatasetLoader>(
         data_loader, _labeled_batch_processor, _shuffle);
   }
 
@@ -65,13 +65,40 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
     return {bolt::Input::make(_unlabeled_batch_processor->getInputDim())};
   }
 
+  void save(const std::string& filename) const {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    save_stream(filestream);
+  }
+
+  void save_stream(std::ostream& output_stream) const {
+    cereal::BinaryOutputArchive oarchive(output_stream);
+    oarchive(*this);
+  }
+
+  static std::shared_ptr<SingleBlockDatasetFactory> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    return load_stream(filestream);
+  }
+
+  static std::shared_ptr<SingleBlockDatasetFactory> load_stream(
+      std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    std::shared_ptr<SingleBlockDatasetFactory> deserialize_into(
+        new SingleBlockDatasetFactory());
+    iarchive(*deserialize_into);
+    return deserialize_into;
+  }
+
+  // Private constructor for cereal.
+  SingleBlockDatasetFactory() {}
+
  private:
   dataset::GenericBatchProcessorPtr _labeled_batch_processor;
   dataset::GenericBatchProcessorPtr _unlabeled_batch_processor;
   bool _shuffle;
-
-  // Private constructor for cereal.
-  SingleBlockDatasetFactory() {}
 
   friend class cereal::access;
   template <class Archive>
@@ -114,7 +141,7 @@ class SingleBlockDatasetFactoryConfig final
           delimiter + "'.");
     }
 
-    return std::make_unique<SingleBlockDatasetFactory>(
+    return std::make_shared<SingleBlockDatasetFactory>(
         /* data_block= */ data_block,
         /* unlabeled_data_block= */ unlabeled_data_block,
         /* label_block=*/label_block, /* shuffle= */ shuffle,

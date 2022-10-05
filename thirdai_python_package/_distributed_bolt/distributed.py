@@ -104,7 +104,6 @@ class DistributedDataParallel:
         train_formats: List[str],
         train_data_sources: List[Union[dataset.DataLoader, str]],
         train_config: bolt.graph.TrainConfig,
-        batch_size: int,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -153,7 +152,6 @@ class DistributedDataParallel:
             train_data_source=train_data_sources[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
-            batch_size=batch_size,
         )
 
         self.replica_workers = []
@@ -170,7 +168,6 @@ class DistributedDataParallel:
                     id=worker_id + 1,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
-                    batch_size=batch_size,
                 )
             )
 

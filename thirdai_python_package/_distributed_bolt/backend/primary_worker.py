@@ -28,7 +28,6 @@ class PrimaryWorker(Worker):
         train_data_source: str,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
-        batch_size: int,
     ):
 
         super().__init__(
@@ -40,7 +39,6 @@ class PrimaryWorker(Worker):
             primary_worker=self,
             train_config=train_config,
             communication_type=communication_type,
-            batch_size=batch_size,
         )
 
     def run_circular_cluster_communication(self, workers):

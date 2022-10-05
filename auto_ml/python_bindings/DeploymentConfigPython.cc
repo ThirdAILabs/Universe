@@ -1,6 +1,7 @@
 #include "DeploymentConfigPython.h"
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -12,7 +13,6 @@
 #include <auto_ml/src/deployment_config/ModelConfig.h>
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
-#include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -118,11 +118,18 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
              DatasetLoaderFactoryConfigPtr>(submodule, "DatasetConfig");
   py::class_<SingleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
-      submodule, "SingleBlockDatasetFactory")
+      submodule, "SingleBlockDatasetFactoryConfig")
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
                     HyperParameterPtr<std::string>>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
-           py::arg("delimiter"));
+           py::arg("delimiter"))
+      .def(
+          "to_factory",
+          [](const SingleBlockDatasetFactoryConfig& config,
+             const py::dict& parameters) {
+            return createSingleBlockDatasetFactory(config, parameters);
+          },
+          py::arg("parameters"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
@@ -133,9 +140,15 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
            py::arg("evaluation_metrics"));
 
 #ifdef THIRDAI_EXPOSE_ALL
-  py::class_<DatasetLoaderFactory, DatasetLoaderFactoryPtr>(
-      submodule, "DatasetLoaderFactory")
-      .def(py::init(&createDatasetLoaderFactory), "parameters");
+  py::class_<DatasetLoaderFactory, DatasetLoaderFactoryPtr>(  // NOLINT
+      submodule, "DatasetLoaderFactory");
+  py::class_<SingleBlockDatasetFactory, DatasetLoaderFactory,
+             std::shared_ptr<SingleBlockDatasetFactory>>(
+      submodule, "SingleBlockDatasetFactory")
+      .def(bolt::python::getPickleFunction<SingleBlockDatasetFactory>())
+      .def("test",
+           [](const SingleBlockDatasetFactory& /*unused*/) { return "test"; });
+
 #endif
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
@@ -152,6 +165,13 @@ void createDeploymentConfigSubmodule(py::module_& thirdai_module) {
            py::arg("parameters") = py::dict())
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
            py::arg("parameters") = py::dict())
+#ifdef THIRDAI_EXPOSE_ALL
+      .def(py::init<deployment_config::DatasetLoaderFactoryPtr,
+                    bolt::BoltGraphPtr,
+                    deployment_config::TrainEvalParameters>(),
+           py::arg("dataset_factory"), py::arg("model"),
+           py::arg("train_eval_parameters"))
+#endif
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
                              std::optional<uint32_t>, std::optional<uint32_t>>(
@@ -238,8 +258,8 @@ UserInputMap userParametersToCpp(const py::dict& parameters) {
   return cpp_parameters;
 }
 
-DatasetLoaderFactoryPtr createDatasetLoaderFactory(
-    const DatasetLoaderFactoryConfig& config, const py::dict& parameters) {
+DatasetLoaderFactoryPtr createSingleBlockDatasetFactory(
+    const SingleBlockDatasetFactoryConfig& config, const py::dict& parameters) {
   return config.createDatasetState(userParametersToCpp(parameters));
 }
 
