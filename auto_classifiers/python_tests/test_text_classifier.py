@@ -77,6 +77,16 @@ def test_text_classifier_clinc_dataset():
 
     test_samples = [x.split(",")[1] for x in test_set]
 
+    total_percentage_explanations = 0
+    for test_sample in test_samples:
+        words = test_sample.split()
+        explanations = classifier.explain(test_sample)
+        for explanation in explanations:
+            total_percentage_explanations += abs(explanation.percentage_significance)
+            keywords = (explanation.keyword).split()
+            assert set(keywords).issubset(set(words))
+        assert total_percentage_explanations > 99.9
+
     check_autoclassifier_predict_correctness(new_classifier, test_samples, predictions)
 
     os.remove(SAVE_FILE)
