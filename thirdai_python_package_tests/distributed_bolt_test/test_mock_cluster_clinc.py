@@ -145,9 +145,15 @@ def trained_text_classifier(clinc_dataset, ray_cluster):
         use_sparse_inference=True,
         evaluation_metrics=[],
     )
-    return dc.ModelPipeline(
+
+    model_pipeline = dc.ModelPipeline(
         dataset_factory, distributed_model.get_model(), train_eval_params
     )
+
+    ray.shutdown()
+    mini_cluster.shutdown()
+
+    return model_pipeline
 
 
 @pytest.fixture(scope="module")

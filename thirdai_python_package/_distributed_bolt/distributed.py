@@ -1,5 +1,5 @@
 import textwrap
-from typing import List, Union
+from typing import Dict, List, Union
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
@@ -102,7 +102,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.graph.Model,
         train_formats: List[str],
-        train_data_sources: List[Union[dataset.DataLoader, str]],
+        train_data_sources: List[Dict],
         train_config: bolt.graph.TrainConfig,
     ):
         """
@@ -113,6 +113,30 @@ class DistributedDataParallel:
         training file name to each node in the cluster, thereby ensuring that
         each node is ready for training. After this constructor returns, the
         user can simply call train to train the model on the cluster.
+
+        Each train_data_source in train_data_sources should have the following
+        format:
+
+        If the corresponding train_format is "svm":
+        {   
+            "train_file": <training file name>, 
+            "batch_size": <training batch size>
+        }
+
+        If the corresponding train_format is "tabular_file":
+        {
+                "train_file": <training file name>, 
+                "batch_size": <training batch size>, 
+                "dataset_factory": <DatasetLoaderFactory object>, 
+                "max_in_memory_batches": <max in memory batches>
+        }
+        
+        If the corresponding train_format is "tabular_loader":
+        {
+                "loader": <DataLoader object>, 
+                "dataset_factory": <DatasetLoaderFactory object>, 
+                "max_in_memory_batches": <max in memory batches>
+        }
         """
         self.communication_type = cluster_config.communication_type
         self.logging = cluster_config.logging
