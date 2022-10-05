@@ -158,18 +158,20 @@ class ModelPipeline {
     return deserialize_into;
   }
 
-  auto loadValidationDataFromFile(const std::string& filename) {
+  std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(
+      const std::string& filename) {
     auto file_loader = std::make_shared<dataset::SimpleFileDataLoader>(
         filename, DEFAULT_EVALUATE_BATCH_SIZE);
 
-    return _dataset_factory->getLabeledDatasetLoader(file_loader,
-                                                     /* training= */ false);
+    return loadValidationDataFromDataLoader(file_loader);
   }
 
-  auto loadValidationDataFromDataLoader(
+  std::pair<InputDatasets, LabelDataset> loadValidationDataFromDataLoader(
       std::shared_ptr<dataset::DataLoader> data_source) {
-    return _dataset_factory->getLabeledDatasetLoader(std::move(data_source),
-                                                     /* training= */ false);
+    auto loader =
+        _dataset_factory->getLabeledDatasetLoader(std::move(data_source),
+                                                  /* training= */ false);
+    return loader->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
   }
 
  private:

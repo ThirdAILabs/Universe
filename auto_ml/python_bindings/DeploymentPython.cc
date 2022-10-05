@@ -165,7 +165,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("predict_config"))
       .def("predict", &predictWrapper, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false)
-      .def("predict_token", &predictTokensWrapper, py::arg("tokens"),
+      .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false)
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"),
            py::arg("use_sparse_inference") = false)
