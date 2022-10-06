@@ -69,6 +69,8 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
   std::string model_summary =
       summarize(/* print = */ print_when_done, /* detailed = */ false);
   logging::info(model_summary);
+#else
+  (void)print_when_done;
 #endif
 }
 
