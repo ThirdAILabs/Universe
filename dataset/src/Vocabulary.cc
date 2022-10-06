@@ -12,9 +12,9 @@ FixedVocabulary::FixedVocabulary(const std::string& file_path) {
   _mask_id = add(special_tokens::MASK);  // NOLINT
 
   // Proceed to read from file to add the remaining vocabulary tokens.
-  std::ifstream input = SafeFileIO::ifstream(file_path);
+  std::ifstream vocab_stream = SafeFileIO::ifstream(file_path);
   std::string line;
-  while (getline(input, line)) {
+  while (getline(vocab_stream, line)) {
     add(line);
   }
 }
