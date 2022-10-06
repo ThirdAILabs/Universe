@@ -35,18 +35,23 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
-    const std::shared_ptr<dataset::DataLoader>& data_source);
+    const std::shared_ptr<dataset::DataLoader>& data_source,
+    std::optional<bolt::PredictConfig>& predict_config);
 
-py::object evaluateOnFileWrapper(ModelPipeline& model,
-                                 const std::string& filename);
+py::object evaluateOnFileWrapper(
+    ModelPipeline& model, const std::string& filename,
+    std::optional<bolt::PredictConfig>& predict_config);
 
-py::object predictWrapper(ModelPipeline& model, const std::string& sample);
+py::object predictWrapper(ModelPipeline& model, const std::string& sample,
+                          bool use_sparse_inference);
 
 py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens);
+                                const std::vector<uint32_t>& tokens,
+                                bool use_sparse_inference);
 
 py::object predictBatchWrapper(ModelPipeline& model,
-                               const std::vector<std::string>& samples);
+                               const std::vector<std::string>& samples,
+                               bool use_sparse_inference);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 
