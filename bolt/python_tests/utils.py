@@ -217,7 +217,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
     )
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
     model.compile(bolt.CategoricalCrossEntropyLoss())
-    return bolt.DistributedTrainingWrapper(
+    return bolt.DistributedInMemoryTrainingWrapper(
         model=model,
         train_data=[data],
         train_labels=labels,
@@ -331,8 +331,6 @@ def compressed_training(
         n_classes=n_classes, n_samples=100, convert_to_bolt_dataset=False
     )
 
-    num_training_batches = math.ceil(len(train_data) / batch_size)
-
     wrapped_model = simple_bolt_model_in_distributed_training_wrapper(
         train_data=train_data,
         train_labels=train_labels,
@@ -347,8 +345,7 @@ def compressed_training(
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
     for epochs in range(epochs):
-        for batch_num in range(num_training_batches):
-            wrapped_model.compute_and_store_next_batch_gradients(batch_num)
+        while wrapped_model.compute_and_store_next_batch_gradients():
             compressed_weight_grads = get_compressed_weight_gradients(
                 wrapped_model,
                 compression_scheme=compression_scheme,
@@ -361,7 +358,7 @@ def compressed_training(
                 compressed_weight_grads=compressed_weight_grads,
             )
             wrapped_model.update_parameters()
-            wrapped_model.move_to_next_epoch()
+        wrapped_model.move_to_next_epoch()
 
     wrapped_model.finish_training()
 
