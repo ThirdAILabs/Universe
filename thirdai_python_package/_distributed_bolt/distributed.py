@@ -6,7 +6,7 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, dataset
 
 from .utils import get_num_cpus, init_logging
 
@@ -91,6 +91,25 @@ class RayTrainingClusterConfig:
         ]
 
 
+class SvmDataGenerator:
+    def __init__(self, filename, batch_size):
+        self.filename = filename
+        self.batch_size = batch_size
+        self.current_epoch = -1
+
+    def get_next_dataset(self):
+        if self.current_epoch == -1:
+            self.current_dataset = dataset.load_bolt_svm_dataset(
+                self.filename,
+                self.batch_size,
+            )
+        self.current_epoch += 1
+        return self.current_dataset
+
+    def get_current_epoch(self):
+        return self.current_epoch
+
+
 class DistributedDataParallel:
     """
     This class implements the public facing APIs for a distributed data parallel
@@ -102,8 +121,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.graph.Model,
         train_config: bolt.graph.TrainConfig,
-        train_file_names: List[str],
-        batch_size: int,
+        train_sources,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -118,10 +136,10 @@ class DistributedDataParallel:
         self.logging = cluster_config.logging
         self.train_config = train_config
 
-        if len(train_file_names) != cluster_config.num_workers:
+        if len(train_sources) != cluster_config.num_workers:
             raise ValueError(
                 "Received ",
-                len(train_file_names),
+                len(train_sources),
                 " training datasets. Expected ",
                 cluster_config.num_workers,
                 " datasets, one for each node.",
@@ -139,10 +157,9 @@ class DistributedDataParallel:
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
             model_to_wrap=ray_model_ref,
-            train_file_name=train_file_names[0],
+            train_source=train_sources[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
-            batch_size=batch_size,
         )
 
         self.replica_workers = []
@@ -153,12 +170,11 @@ class DistributedDataParallel:
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
                     model_to_wrap=ray_model_ref,
-                    train_file_name=train_file_names[worker_id + 1],
+                    train_source=train_sources[worker_id + 1],
                     train_config=train_config,
                     id=worker_id + 1,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
-                    batch_size=batch_size,
                 )
             )
 

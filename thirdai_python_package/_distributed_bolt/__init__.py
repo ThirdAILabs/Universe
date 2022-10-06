@@ -1,1 +1,5 @@
-from .distributed import DistributedDataParallel, RayTrainingClusterConfig
+from .distributed import (
+    DistributedDataParallel,
+    RayTrainingClusterConfig,
+    SvmDataGenerator,
+)

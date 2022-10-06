@@ -29,7 +29,7 @@ if __name__ == "__main__":
         cluster_config=cluster_config,
         model=model,
         train_config=train_config,
-        train_file_names=dataset_paths,
+        train_sources=dataset_paths,
         batch_size=256,
     )
     wrapped_model.train()

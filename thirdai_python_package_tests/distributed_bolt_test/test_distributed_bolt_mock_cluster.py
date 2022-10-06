@@ -66,6 +66,10 @@ def get_mnist_model():
     return model
 
 
+def parse_svm_dataset(train_filename, batch_size):
+    return
+
+
 @pytest.fixture(scope="module")
 def train_distributed_bolt_check(request):
     # Initilizing a mock cluster with two node
@@ -78,7 +82,14 @@ def train_distributed_bolt_check(request):
     mini_cluster.add_node(num_cpus=1)
 
     model = get_mnist_model()
-    dataset_paths = ["mnist_data/xaa", "mnist_data/xab"]
+    batch_size = 256
+    train_sources = [
+        db.SvmDataGenerator(
+            filename,
+            batch_size,
+        )
+        for filename in ["mnist_data/xaa", "mnist_data/xab"]
+    ]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
     cluster_config = db.RayTrainingClusterConfig(
         num_workers=2,
@@ -91,8 +102,7 @@ def train_distributed_bolt_check(request):
         cluster_config=cluster_config,
         model=model,
         train_config=train_config,
-        train_file_names=dataset_paths,
-        batch_size=256,
+        train_sources=train_sources,
     )
     distributed_model.train()
 

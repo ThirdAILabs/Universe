@@ -18,21 +18,18 @@ class Worker:
         self,
         num_workers: int,
         model_to_wrap: bolt.graph,
-        train_file_name: str,
+        train_source,
         id: int,
         primary_worker,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
-        batch_size: int,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
 
-        self.train_data, self.train_labels = parse_svm_dataset(
-            train_file_name, batch_size
-        )
+        self.train_data, self.train_labels = train_source.get_next_dataset()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
             train_data=[self.train_data],
