@@ -66,20 +66,46 @@ class DeploymentConfig {
   }
 
   void save(const std::string& filename) {
+    std::stringstream output;
+    cereal::PortableBinaryOutputArchive oarchive(output);
+    oarchive(*this);
+
+    std::string output_str = output.str();
+    applyBlockCipher(output_str);
+
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::PortableBinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
+
+    filestream.write(output_str.data(), output_str.size());
   }
 
   static std::shared_ptr<DeploymentConfig> load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::PortableBinaryInputArchive iarchive(filestream);
+
+    std::stringstream encrypted_buffer;
+    encrypted_buffer << filestream.rdbuf();
+
+    std::string input_str = encrypted_buffer.str();
+    applyBlockCipher(input_str);
+
+    std::stringstream decrypted_buffer;
+    decrypted_buffer.write(input_str.data(), input_str.size());
+
+    cereal::PortableBinaryInputArchive iarchive(decrypted_buffer);
     std::shared_ptr<DeploymentConfig> deserialize_into(new DeploymentConfig());
     iarchive(*deserialize_into);
 
     return deserialize_into;
+  }
+
+  static void applyBlockCipher(std::string& data,
+                               uint64_t cipher = 0xa829b24d) {
+    uint64_t* chunks = reinterpret_cast<uint64_t*>(data.data());
+    uint64_t len = data.size() >> 3;
+    for (uint64_t i = 0; i < len; i++) {
+      chunks[i] ^= cipher;
+    }
   }
 
  private:
