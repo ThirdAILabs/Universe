@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main, apple-silicon-cibw-ghci]
+    branches: [main]
   release:
     types:
       - published
