@@ -100,9 +100,9 @@ class DeploymentConfig {
   }
 
   static void applyBlockCipher(std::string& data,
-                               uint64_t cipher = 0xa829b24d) {
-    uint64_t* chunks = reinterpret_cast<uint64_t*>(data.data());
-    uint64_t len = data.size() >> 3;
+                               uint32_t cipher = 0xa829b24d) {
+    uint32_t* chunks = reinterpret_cast<uint32_t*>(data.data());
+    uint64_t len = data.size() >> 2;
     for (uint64_t i = 0; i < len; i++) {
       chunks[i] ^= cipher;
     }
