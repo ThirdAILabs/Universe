@@ -574,6 +574,9 @@ That's all for now, folks! More docs coming soon :)
            &DistributedTrainingWrapper::computeAndSaveBatchGradients,
            py::arg("batch_idx"))
       .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
+      .def("num_batches", &DistributedTrainingWrapper::numBatches)
+      .def("set_new_datasets", &DistributedTrainingWrapper::setNewDatasets,
+           py::arg("train_data"), py::arg("train_labels"))
       .def("finish_training", &DistributedTrainingWrapper::finishTraining)
       .def_property_readonly(
           "model",

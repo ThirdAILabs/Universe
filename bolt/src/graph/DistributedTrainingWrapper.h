@@ -8,6 +8,7 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -49,6 +50,22 @@ class DistributedTrainingWrapper {
   BoltGraphPtr getModel() { return _bolt_graph; }
 
   void finishTraining() { _bolt_graph->cleanupAfterBatchProcessing(); }
+
+  uint64_t numBatches() { return _train_context.numBatches(); }
+
+  void setNewDatasets(const dataset::BoltDatasetList& train_data,
+                      const dataset::BoltDatasetPtr& train_labels) {
+    DatasetContext new_context(train_data, train_labels);
+    _bolt_graph->verifyCanTrain(_train_context);
+    // We don't call prepare for batch processing again as long as we verify
+    // the batch size is the same
+    if (new_context.batchSize() != _train_context.batchSize()) {
+      throw std::invalid_argument(
+          "New datasets must have the same batch size as the original "
+          "datasets");
+    }
+    _train_context = new_context;
+  }
 
  private:
   BoltGraphPtr _bolt_graph;

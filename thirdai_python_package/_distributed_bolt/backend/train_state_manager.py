@@ -29,6 +29,7 @@ class TrainStateManager:
         self.logging = logging
         self.communication_type = communication_type
         self.logging.info(f"Using {communication_type} method for communication")
+        self.overall_batch_count = 0
         if communication_type == "circular":
             for i in range(len(self.workers)):
                 ray.get(
@@ -80,35 +81,31 @@ class TrainStateManager:
             ]
         )
 
-    def train_batch(self, epoch_id, batch_id):
+    def train_batch(self):
         """
-        Train the Model
-
-        :param epoch_id: Running Epoch
-        :type epoch_id: int
-        :param batch_id: Batch number to train on
-        :type batch_id: int
+        Trains the model and returns the minimum epoch across all workers.
         """
-        self._compute_and_store_batch_gradients(batch_id)
+        min_epoch = self._compute_and_store_next_batch_gradients()
         self._communicate()
         self._update_parameters()
-        self._log_training(batch_id, epoch_id)
+        self.overall_batch_count += 1
+        self._log_post_batch(min_epoch)
+        return min_epoch
 
-    def _compute_and_store_batch_gradients(self, batch_no):
+    def _compute_and_store_next_batch_gradients(self):
         """
-        Call compute_and_store_batch_gradients function on each of the worker
-
-        :param batch_no: Batch Id for this particular training
-        :type batch_no: Integer
+        Calls compute_and_store_batch_gradients function on each of the
+        workers and returns the minimum current epoch across all workers
         """
         start_calculating_gradients_time = time.time()
-        ray.get(
+        current_epochs = ray.get(
             [
-                worker.compute_and_store_batch_gradients.remote(batch_no)
+                worker.compute_and_store_next_batch_gradients.remote()
                 for worker in self.workers
             ]
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
+        return min(current_epochs)
 
     def _communicate(self):
         """
@@ -141,15 +138,13 @@ class TrainStateManager:
         )
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
-    def _log_training(self, batch_no, epoch):
+    def _log_post_batch(self, epoch):
         """
-        Logs the training after every batch
-
-        :param batch_no: Batch index for current training
-        :type batch_no: int
-        :param epoch: Current training epoch
-        :type epoch: int
+        Logs the training after every batch using the current minimum training
+        epoch across workers and the stored self.overall_batch_count in this
+        manager, which counts how many total "batches" (iterations of compute
+        gradients, communicate, update parameters) we have completed.
         """
         self.logging.info(
-            f"Epoch No: {epoch}, Batch No: {batch_no}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
+            f"Epoch No: {epoch}, Batch Count: {self.overall_batch_count}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
         )

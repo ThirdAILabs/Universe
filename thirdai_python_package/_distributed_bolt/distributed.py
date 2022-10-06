@@ -91,23 +91,33 @@ class RayTrainingClusterConfig:
         ]
 
 
-class SvmDataGenerator:
-    def __init__(self, filename, batch_size):
-        self.filename = filename
-        self.batch_size = batch_size
+class InMemoryDataGenerator:
+    def __init__(self, generator_lambda):
+        self.generator_lambda = generator_lambda
         self.current_epoch = -1
 
-    def get_next_dataset(self):
+    def next(self):
         if self.current_epoch == -1:
-            self.current_dataset = dataset.load_bolt_svm_dataset(
-                self.filename,
-                self.batch_size,
-            )
+            self.current_dataset, self.current_labels = self.generator_lambda()
+
+        if not (isinstance(self.current_dataset, list)):
+            self.current_dataset = [self.current_dataset]
+
         self.current_epoch += 1
-        return self.current_dataset
+        return self.current_dataset, self.current_labels
 
     def get_current_epoch(self):
         return self.current_epoch
+
+
+class SvmDataGenerator(InMemoryDataGenerator):
+    def __init__(self, filename, batch_size):
+        super().__init__(
+            lambda: dataset.load_bolt_svm_dataset(
+                filename,
+                batch_size,
+            )
+        )
 
 
 class DistributedDataParallel:
@@ -199,12 +209,8 @@ class DistributedDataParallel:
             self.communication_type,
         )
 
-        for epoch in range(self.train_config.num_epochs):
-            for batch_id in range(self.num_of_batches):
-
-                # Here we are asking every worker to calculate their gradients and return
-                # once they all calculate their gradients
-                train_state_manager.train_batch(epoch, batch_id)
+        while train_state_manager.train_batch() < self.train_config.num_epochs:
+            pass
 
         train_state_manager.finish_training()
 

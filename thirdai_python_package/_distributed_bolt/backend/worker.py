@@ -29,19 +29,20 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
 
-        self.train_data, self.train_labels = train_source.get_next_dataset()
+        self.train_source = train_source
+        self.train_data, self.train_labels = train_source.next()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
-            train_data=[self.train_data],
+            train_data=self.train_data,
             train_labels=self.train_labels,
             train_config=train_config,
         )
 
-        # Set up variables
         self.num_workers = num_workers
         self.id = id
         self.primary_worker = primary_worker
         self.communication_type = communication_type
+        self.batch_id_within_dataset = 0
 
         self.comm = (
             comm.Circular(self.model, self.id, self.primary_worker, self.num_workers)
@@ -91,24 +92,25 @@ class Worker:
         """
         return self.comm.receive_array_partitions(update_id)
 
-    def compute_and_store_batch_gradients(self, batch_no: int):
+    def compute_and_store_next_batch_gradients(self) -> int:
         """
-        This function is called only when the mode of communication is
-        linear.
-
-        This functions calls the API 'calculateGradientSingleNode',
-        which calculates the gradients for the network managed by
-        this particular worker. The calculateGradientSingleNode trains
-        the network and calculates the gradient for the particular
-        training batch with batch no. batch_no and with loss function
-        specified in the config.
-
-        :param batch_no: training batch to calculate gradients on.
-        :type batch_no: int
-        :return: check whether training is complete or not
-        :rtype: bool
+        Computes and stores the gradients on all nodes. After this returns,
+        all nodes are ready to communicate gradients. Returns the current
+        epoch of this worker
         """
-        self.comm.compute_and_store_batch_gradients(batch_no)
+        if self.batch_id_within_dataset == self.model.num_batches():
+            self.train_data, self.train_labels = self.train_source.next()
+            self.model.set_new_datasets(self.train_data, self.train_labels)
+            self.batch_id_within_dataset = 0
+        elif self.batch_id_within_dataset > self.model.num_batches():
+            raise ValueError(
+                "Found a batch id higher than the number of batches which we should have caught during the last batch."
+            )
+
+        self.comm.compute_and_store_batch_gradients(self.batch_id_within_dataset)
+
+        self.batch_id_within_dataset += 1
+        return self.train_source.get_current_epoch()
 
     def get_calculated_gradients(self):
         """

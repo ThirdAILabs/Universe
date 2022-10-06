@@ -346,21 +346,19 @@ def compressed_training(
     predict_config = (
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
-    for epochs in range(epochs):
-        for batch_num in range(num_training_batches):
-            wrapped_model.compute_and_store_batch_gradients(batch_num)
-            compressed_weight_grads = get_compressed_weight_gradients(
-                wrapped_model,
-                compression_scheme=compression_scheme,
-                compression_density=compression_density,
-                seed_for_hashing=np.random.randint(100),
-                sample_population_size=sample_population_size,
-            )
-            set_compressed_weight_gradients(
-                wrapped_model,
-                compressed_weight_grads=compressed_weight_grads,
-            )
-            wrapped_model.update_parameters()
+    while wrapped_model.compute_and_store_next_batch_gradients() < epochs:
+        compressed_weight_grads = get_compressed_weight_gradients(
+            wrapped_model,
+            compression_scheme=compression_scheme,
+            compression_density=compression_density,
+            seed_for_hashing=np.random.randint(100),
+            sample_population_size=sample_population_size,
+        )
+        set_compressed_weight_gradients(
+            wrapped_model,
+            compressed_weight_grads=compressed_weight_grads,
+        )
+        wrapped_model.update_parameters()
 
     wrapped_model.finish_training()
 

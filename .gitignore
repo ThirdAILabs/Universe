@@ -55,6 +55,7 @@ env
 
 # Datasets downloaded during tests
 mnist_data
+clinc_data
 
 # -- Begin vim .gitignore
 # Swap

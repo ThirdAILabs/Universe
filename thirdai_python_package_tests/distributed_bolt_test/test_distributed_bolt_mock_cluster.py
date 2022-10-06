@@ -90,7 +90,7 @@ def train_distributed_bolt_check(request):
         )
         for filename in ["mnist_data/xaa", "mnist_data/xab"]
     ]
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
+    train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=3)
     cluster_config = db.RayTrainingClusterConfig(
         num_workers=2,
         requested_cpus_per_node=1,
