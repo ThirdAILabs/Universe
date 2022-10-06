@@ -19,7 +19,7 @@ FixedVocabulary::FixedVocabulary(const std::string& file_path) {
   }
 }
 
-uint32_t FixedVocabulary::size() const { return _forward.size(); }
+uint32_t FixedVocabulary::size() const { return _token_to_id.size(); }
 
 std::vector<uint32_t> FixedVocabulary::encode(
     const std::string_view& sentence) const {
@@ -67,8 +67,8 @@ std::string FixedVocabulary::decode(
     if (i != 0) {
       stream << " ";
     }
-    auto query = _backward.find(piece_id);
-    if (query != _backward.end()) {
+    auto query = _id_to_token.find(piece_id);
+    if (query != _id_to_token.end()) {
       std::string token = query->second;
       stream << token;
     } else {
@@ -82,8 +82,8 @@ std::string FixedVocabulary::decode(
 
 uint32_t FixedVocabulary::id(const std::string_view& token_view) const {
   std::string token(token_view.data(), token_view.size());
-  auto query = _forward.find(token);
-  if (query == _forward.end()) {
+  auto query = _token_to_id.find(token);
+  if (query == _token_to_id.end()) {
     return _unk_id;
   }
 
@@ -96,15 +96,15 @@ uint32_t FixedVocabulary::maskId() const { return _mask_id; }
 
 uint32_t FixedVocabulary::add(const std::string_view& token_view) {
   std::string token(token_view.data(), token_view.size());
-  auto query = _forward.find(token);
-  if (query != _forward.end()) {
+  auto query = _token_to_id.find(token);
+  if (query != _token_to_id.end()) {
     uint32_t token_id = query->second;
     return token_id;
   }
 
-  uint32_t token_id = _forward.size();
-  _forward.emplace(token, token_id);
-  _backward.emplace(token_id, token);
+  uint32_t token_id = _token_to_id.size();
+  _token_to_id.emplace(token, token_id);
+  _id_to_token.emplace(token_id, token);
   return token_id;
 }
 

@@ -74,11 +74,11 @@ class FixedVocabulary : public Vocabulary {
 
  private:
   // Stores the forward map from string-token to uint32_t ids.
-  std::unordered_map<std::string, uint32_t> _forward;
+  std::unordered_map<std::string, uint32_t> _token_to_id;
 
   // Stores the inverse map from uint32_t id to token. Useful when needed for
   // decoding.
-  std::unordered_map<uint32_t, std::string> _backward;
+  std::unordered_map<uint32_t, std::string> _id_to_token;
 
   uint32_t _unk_id, _mask_id;
 
