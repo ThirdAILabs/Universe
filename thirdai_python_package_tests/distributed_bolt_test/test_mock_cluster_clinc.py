@@ -4,6 +4,7 @@ import random
 import datasets
 import numpy as np
 import pytest
+from cluster_utils import ray_two_node_cluster_config, split_into_2
 from thirdai import bolt, deployment
 
 try:
@@ -15,27 +16,13 @@ except ImportError:
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
-TRAIN_FILE = "./clinc_train.csv"
-TEST_FILE = "./clinc_test.csv"
-CONFIG_FILE = "./saved_clinc_config"
-SAVE_FILE = "./saved_clinc_model_pipeline"
+DIR = "clinc_data"
+TRAIN_FILE = f"{DIR}/clinc_train.csv"
+TEST_FILE = f"{DIR}/clinc_test.csv"
 
 
-# TODO(josh): Consolidate this code with the clinc test
-def remove_files():
-    for file in [TRAIN_FILE, TEST_FILE, CONFIG_FILE, SAVE_FILE]:
-        if os.path.exists(file):
-            os.remove(file)
-
-
-def setup_module():
-    remove_files()
-
-
-def teardown_module():
-    remove_files()
-
-
+# TODO(Josh): This is quite a bit of duplicated code, but we can't easily share
+# it until we change the structure of our python tests
 def write_dataset_to_csv(dataset, filename, return_labels=False):
     data = []
     for item in dataset:
@@ -59,7 +46,7 @@ def download_clinc_dataset():
     clinc_dataset = datasets.load_dataset("clinc_oos", "small")
     write_dataset_to_csv(clinc_dataset["train"], TRAIN_FILE)
     labels = write_dataset_to_csv(clinc_dataset["test"], TEST_FILE, return_labels=True)
-
+    split_into_2(file_to_split=TRAIN_FILE, destination_dir=DIR)
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
 
 
@@ -70,27 +57,8 @@ def clinc_dataset():
 
 
 @pytest.fixture(scope="module")
-def ray_cluster():
-    mini_cluster = Cluster(
-        initialize_head=True,
-        head_node_args={
-            "num_cpus": 1,
-        },
-    )
-    mini_cluster.add_node(num_cpus=1)
-    cluster_config = db.RayTrainingClusterConfig(
-        num_workers=2,
-        requested_cpus_per_node=1,
-        communication_type="linear",
-        cluster_address=mini_cluster.address,
-    )
-    return mini_cluster, cluster_config
-
-
-@pytest.fixture(scope="module")
-def trained_text_classifier(clinc_dataset, ray_cluster):
+def trained_text_classifier(clinc_dataset, ray_two_node_cluster_config):
     num_classes, _ = clinc_dataset
-    mini_cluster, cluster_config = ray_cluster
     pairgram_range = 10000
 
     input_layer = bolt.graph.Input(dim=pairgram_range)
@@ -120,16 +88,16 @@ def trained_text_classifier(clinc_dataset, ray_cluster):
 
     train_data_sources = [
         {
-            "train_file": TRAIN_FILE,
+            "train_file": train_filename,
             "batch_size": 256,
             "dataset_factory": dataset_factory,
             "max_in_memory_batches": 12,
         }
-        for _ in range(2)
+        for train_filename in [f"{DIR}/xaa", f"{DIR}/xab"]
     ]
 
     distributed_model = db.DistributedDataParallel(
-        cluster_config=cluster_config,
+        cluster_config=ray_two_node_cluster_config,
         model=model,
         train_config=train_config,
         train_formats=["tabular_file" for _ in range(len(train_data_sources))],
@@ -148,9 +116,6 @@ def trained_text_classifier(clinc_dataset, ray_cluster):
     model_pipeline = deployment.ModelPipeline(
         dataset_factory, distributed_model.get_model(), train_eval_params
     )
-
-    ray.shutdown()
-    mini_cluster.shutdown()
 
     return model_pipeline
 
