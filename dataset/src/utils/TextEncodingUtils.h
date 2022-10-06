@@ -61,7 +61,6 @@ class TextEncodingUtils {
     std::unordered_map<uint32_t, std::string> index_to_word;
     forEachWordHash(sentence,
                     [&](uint32_t word_hash, const std::string_view& word) {
-                      (void)word_hash;
                       if (output_range) {
                         index_to_word[word_hash % *output_range] = word;
                       } else {
@@ -112,7 +111,7 @@ class TextEncodingUtils {
 
   template <typename MapType>
   static void computeRawPairgramsHashToColNumMapFromUnigrams(
-      std::vector<uint32_t> unigram_hashes, uint32_t output_range,
+      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range,
       std::unordered_map<uint32_t, MapType> unigram_hashes_map,
       std::unordered_map<uint32_t, std::pair<MapType, MapType>>&
           pairgram_hashes_map) {

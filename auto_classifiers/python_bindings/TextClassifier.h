@@ -5,7 +5,6 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
-#include <_types/_uint32_t.h>
 #include <auto_classifiers/python_bindings/AutoClassifierBase.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
