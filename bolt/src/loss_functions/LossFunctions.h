@@ -189,29 +189,35 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
 
 class MarginBCE final : public LossFunction {
  public:
-  explicit MarginBCE(float margin) : _margin(margin) {}
-
-  static std::shared_ptr<MarginBCE> makeMarginBCE(float margin) {
-    return std::make_shared<MarginBCE>(margin);
-  }
+  MarginBCE(float positive_margin, float negative_margin, bool bound)
+      : _positive_margin(positive_margin),
+        _negative_margin(negative_margin),
+        _bound(bound) {}
 
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
     if (label == 0.0) {
-      activation += _margin;
+      activation += _negative_margin;
     } else {
-      activation -= _margin;
+      activation -= _positive_margin;
+    }
+    if (_bound) {
+      activation = std::min<float>(activation, 1.0);
+      activation = std::max<float>(activation, 0.0);
     }
     return (label - activation) / batch_size;
   }
 
-  float _margin;
+  float _positive_margin;
+  float _negative_margin;
+  bool _bound;
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<LossFunction>(this), _margin);
+    archive(cereal::base_class<LossFunction>(this), _positive_margin,
+            _negative_margin, _bound);
   }
 };
 

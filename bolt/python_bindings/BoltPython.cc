@@ -126,7 +126,8 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<MarginBCE, std::shared_ptr<MarginBCE>, LossFunction>(
       bolt_submodule, "MarginBCE")
-      .def(py::init<float>(), py::arg("margin"));
+      .def(py::init<float, float, bool>(), py::arg("positive_margin"),
+           py::arg("negative_margin"), py::arg("bound"));
 
   /**
    * Text Classifier Definition
