@@ -71,6 +71,21 @@ else()
 
   find_package(OpenMP)
   if(NOT OpenMP_FOUND)
+
+    # In this case, we were not able to find OpenMP. We are choosing to build
+    # openmp from scratch here, using the LLVM standalone OpenMP source.
+    #
+    # In practice, this is intended for use for cross-compiling M1 (arm64)
+    # wheels on MacOS GitHub runners (x86_64), where the possibility to use the
+    # host's libomp is missing, and the library needs to be cross compiled for
+    # target.
+
+    # The following works with only newer CMake versions (Download), but we get
+    # here only after all else has failed, and only for purposes of CI.
+
+    # This block needs to happen before all the compile-options are added to
+    # escape -Wall and -Werror being enforced on OpenMP library.
+
     set(LLVM_OPENMP_VERSION "13.0.1")
     set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/openmp")
 
@@ -96,8 +111,8 @@ else()
 
     set(OPENMP_STANDALONE_BUILD ON)
     add_subdirectory(${LLVM_OPENMP_SOURCE_DIR} EXCLUDE_FROM_ALL)
-
     add_library(OpenMP::OpenMP_CXX ALIAS omp)
+
   endif(NOT OpenMP_FOUND)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
