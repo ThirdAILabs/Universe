@@ -101,43 +101,6 @@ The following section illustrates defining a :obj:`TrainConfig
 
 
 
-.. code-block:: 
-
-   ======================= Bolt Model =======================
-   input_1 (Input): dim=784
-   input_1 -> fc_1 (FullyConnected): dim=256, sparsity=0.1, act_func=ReLU
-   fc_1 -> fc_2 (FullyConnected): dim=10, sparsity=1, act_func=Softmax
-   ============================================================
-   
-   train epoch 0:
-   
-   [==================================================] 100%
-   
-   train | epoch 0 | updates 240 | {mean_squared_error: 0.210946} | batches 240 | time 0s | complete
-   
-   train epoch 1:
-   
-   [==================================================] 100%
-   
-   train | epoch 1 | updates 480 | {mean_squared_error: 0.135266} | batches 240 | time 0s | complete
-   
-   train epoch 2:
-   
-   [==================================================] 100%
-   
-   train | epoch 2 | updates 720 | {mean_squared_error: 0.157786} | batches 240 | time 0s | complete
-   
-   train epoch 3:
-
-   ...
-   
-   train epoch 9:
-   
-   [==================================================] 100%
-   
-   train | epoch 9 | updates 2400 | {mean_squared_error: 0.121592} | batches 240 | time 0s | complete
-   
-
 
 Testing
 -------
@@ -152,14 +115,6 @@ The trained model can be used to test as illustrated below:
         predict_config=predict_config,
     )
 
-
-.. code-block:: 
-
-   test:
-   
-   [==================================================] 100%
-   
-   predict | epoch 9 | updates 2400 | {mean_squared_error: 0.0752482} | batches 40 | time 39ms
 
 
 Further training options
