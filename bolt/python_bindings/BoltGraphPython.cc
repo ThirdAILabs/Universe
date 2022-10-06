@@ -564,7 +564,7 @@ That's all for now, folks! More docs coming soon :)
              DistributedTabularTrainingWrapperPtr>(
       bolt_submodule, "DistributedTabularTrainingWrapper")
       .def(py::init<BoltGraphPtr, TrainConfig,
-                    automl::deployment_config::DatasetLoaderFactoryPtr,
+                    automl::deployment::DatasetLoaderFactoryPtr,
                     dataset::DataLoaderPtr, uint32_t>(),
            py::arg("model"), py::arg("train_config"), py::arg("factory"),
            py::arg("loader"),

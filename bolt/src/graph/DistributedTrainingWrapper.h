@@ -54,7 +54,7 @@ class DistributedTabularTrainingWrapper final
  public:
   explicit DistributedTabularTrainingWrapper(
       BoltGraphPtr model, TrainConfig train_config,
-      automl::deployment_config::DatasetLoaderFactoryPtr factory,
+      automl::deployment::DatasetLoaderFactoryPtr factory,
       dataset::DataLoaderPtr loader, uint64_t max_in_memory_batches)
       : DistributedTrainingWrapper(std::move(model)),
         _dataset_loader_factory(std::move(factory)),
@@ -128,7 +128,7 @@ class DistributedTabularTrainingWrapper final
 
   static DistributedTabularTrainingWrapperPtr makeFromFile(
       BoltGraphPtr model, TrainConfig train_config,
-      automl::deployment_config::DatasetLoaderFactoryPtr factory,
+      automl::deployment::DatasetLoaderFactoryPtr factory,
       const std::string& filename, uint64_t batch_size,
       uint64_t max_in_memory_batches) {
     dataset::DataLoaderPtr loader =
@@ -138,7 +138,7 @@ class DistributedTabularTrainingWrapper final
   }
 
  private:
-  automl::deployment_config::DatasetLoaderFactoryPtr _dataset_loader_factory;
+  automl::deployment::DatasetLoaderFactoryPtr _dataset_loader_factory;
   dataset::DataLoaderPtr _data_loader;
   bool _still_on_initial_dataset;
   bool _out_of_batches;
@@ -162,7 +162,8 @@ class DistributedTabularTrainingWrapper final
 
   void tryLoadingNextDataset(bool is_first_load) {
     auto attempted_load =
-        _dataset_loader_factory->getLabeledDatasetLoader(_data_loader)
+        _dataset_loader_factory
+            ->getLabeledDatasetLoader(_data_loader, /* training= */ true)
             ->loadInMemory(_max_in_memory_batches);
     if (!attempted_load.has_value()) {
       _out_of_batches = true;

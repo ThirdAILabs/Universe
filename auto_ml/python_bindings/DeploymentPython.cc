@@ -173,9 +173,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
            py::arg("parameters") = py::dict())
 #ifdef THIRDAI_EXPOSE_ALL
-      .def(py::init<deployment_config::DatasetLoaderFactoryPtr,
-                    bolt::BoltGraphPtr,
-                    deployment_config::TrainEvalParameters>(),
+      .def(py::init<DatasetLoaderFactoryPtr, bolt::BoltGraphPtr,
+                    TrainEvalParameters>(),
            py::arg("dataset_factory"), py::arg("model"),
            py::arg("train_eval_parameters"))
 #endif
