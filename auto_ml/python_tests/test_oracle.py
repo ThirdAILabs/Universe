@@ -5,6 +5,9 @@ import numpy as np
 import pytest
 from thirdai import bolt, deployment
 
+# TODO: remove the need for output_dim parameter by introducing the 
+# DataPipelineOutputDimParam. Also need to test that serialization works.
+
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
 CONFIG_FILE = "./saved_oracle_config"
