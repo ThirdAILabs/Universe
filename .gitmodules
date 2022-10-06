@@ -22,3 +22,6 @@
 [submodule "deps/spdlog"]
 	path = deps/spdlog
 	url = https://github.com/ThirdAILabs/SpdlogFork.git
+[submodule "deps/cryptopp-cmake"]
+	path = deps/cryptopp-cmake
+	url = https://github.com/abdes/cryptopp-cmake.git
