@@ -191,18 +191,22 @@ class CharKGramTextBlock final : public TextBlock {
                                  const std::string_view& text) const final {
     std::string lower_case_text = utils::lower(text);
 
-    std::unordered_map<uint32_t, std::string> char_k_grams_map;
-
     size_t n_kgrams = text.size() >= _k ? text.size() - (_k - 1) : 1;
     size_t len = std::min(text.size(), static_cast<size_t>(_k));
+
     for (uint32_t offset = 0; offset < n_kgrams; offset++) {
       uint32_t k_gram_hash = TextEncodingUtils::computeUnigram(
                                  /* key= */ &lower_case_text.at(offset), len) %
                              _dim;
-      std::string keyword = lower_case_text.substr(offset, len);
-      char_k_grams_map.insert({k_gram_hash, keyword});
+
+      if (k_gram_hash == index) {
+        std::string keyword = lower_case_text.substr(offset, len);
+        return keyword;
+      }
     }
-    return char_k_grams_map[index];
+
+    throw std::invalid_argument(
+        "Provided index is not possible from char-k block");
   }
 
  protected:
