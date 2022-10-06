@@ -405,12 +405,20 @@ def load_train_config(experiment_config):
         )
     if "rebuild_hash_tables" in experiment_config.keys():
         train_config.with_rebuild_hash_tables(experiment_config["rebuild_hash_tables"])
+
+    train_config = (
+        train_config.with_callbacks([bolt.graph.callbacks.KeyboardInterrupt()])
+        .with_log_loss_frequency(128)
+        .silence()
+    )
     return config_get_required(experiment_config, "epochs"), train_config
 
 
 def load_predict_config(experiment_config):
-    return bolt.graph.PredictConfig.make().with_metrics(
-        config_get_required(experiment_config, "test_metrics")
+    return (
+        bolt.graph.PredictConfig.make()
+        .with_metrics(config_get_required(experiment_config, "test_metrics"))
+        .silence()
     )
 
 
