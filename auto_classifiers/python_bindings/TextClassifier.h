@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
+#include <_types/_uint32_t.h>
 #include <auto_classifiers/python_bindings/AutoClassifierBase.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -58,11 +59,18 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   std::vector<dataset::Explanation> explain(
       const std::string& sample,
       std::optional<std::string> target_label) override {
-    (void)target_label;
-    std::vector<std::string_view> input_row = {"", sample};
+    std::vector<std::string_view> input_row = {" ", sample};
+
     auto batch_processor = makeBatchProcessor();
+
+    std::optional<uint32_t> target_neuron;
+    if (target_label) {
+      target_neuron = getTargetNeuron(*target_label);
+    }
+
     auto result = getSignificanceSortedExplanations(
-        _model, featurizeInputForInference(sample), input_row, batch_processor);
+        _model, featurizeInputForInference(sample), input_row, batch_processor,
+        target_neuron);
     return result;
   }
 
@@ -82,6 +90,10 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   BoltVector featurizeInputForInference(const std::string& input_str) final {
     return dataset::TextEncodingUtils::computePairgrams(
         input_str, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM);
+  }
+
+  uint32_t getTargetNeuron(const std::string& target_class) {
+    return _label_id_lookup->getUid(target_class);
   }
 
   std::string getClassName(uint32_t neuron_id) final {
