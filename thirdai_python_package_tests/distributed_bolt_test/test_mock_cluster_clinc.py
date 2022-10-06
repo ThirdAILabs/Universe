@@ -18,7 +18,7 @@ try:
 except ImportError:
     pass
 
-pytestmark = [pytest.mark.integration, pytest.mark.release]
+pytestmark = [pytest.mark.distributed]
 
 DIR = "clinc_data"
 TRAIN_FILE = f"{DIR}/clinc_train.csv"
