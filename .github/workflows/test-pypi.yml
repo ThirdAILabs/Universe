@@ -2,9 +2,9 @@ name: Upload to Test Pypi
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
-concurrency: 
-  group: testpypi-${{ github.head_ref }}
-  cancel-in-progress: false
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 # Run on pushes and releases. The actual upload will only happen on a 
 # release.

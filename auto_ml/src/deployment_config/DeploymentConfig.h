@@ -47,7 +47,7 @@ class DeploymentConfig {
                    TrainEvalParameters train_test_parameters)
       : _dataset_config(std::move(dataset_config)),
         _model_config(std::move(model_config)),
-        _train_test_parameters(std::move(train_test_parameters)) {}
+        _train_test_parameters(train_test_parameters) {}
 
   std::pair<DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
   createDataLoaderAndModel(
@@ -66,20 +66,57 @@ class DeploymentConfig {
   }
 
   void save(const std::string& filename) {
+    std::stringstream output;
+    cereal::PortableBinaryOutputArchive oarchive(output);
+    oarchive(*this);
+
+    // We are applying a simple block cipher here because cereal leaks some
+    // class names for polymorphic classes in the binary archive and we want to
+    // hide that information from customers.
+    // TODO(Nicholas): also add a checksum for the serialized config to make
+    // sure customers do not recieve a corrupted file.
+    std::string output_str = output.str();
+    applyBlockCipher(output_str);
+
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::PortableBinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
+
+    filestream.write(output_str.data(), output_str.size());
   }
 
   static std::shared_ptr<DeploymentConfig> load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::PortableBinaryInputArchive iarchive(filestream);
+
+    std::stringstream encrypted_buffer;
+    // Converting contents of file into string:
+    // https://stackoverflow.com/questions/2602013/read-whole-ascii-file-into-c-stdstring
+    encrypted_buffer << filestream.rdbuf();
+    std::string input_str = encrypted_buffer.str();
+    applyBlockCipher(input_str);
+
+    std::stringstream decrypted_buffer;
+    decrypted_buffer.write(input_str.data(), input_str.size());
+
+    cereal::PortableBinaryInputArchive iarchive(decrypted_buffer);
     std::shared_ptr<DeploymentConfig> deserialize_into(new DeploymentConfig());
     iarchive(*deserialize_into);
 
     return deserialize_into;
+  }
+
+  // For more information on what a block cipher is:
+  // https://en.wikipedia.org/wiki/Block_cipher
+  static void applyBlockCipher(std::string& data,
+                               uint32_t cipher = 0xa829b24d) {
+    uint32_t* chunks = reinterpret_cast<uint32_t*>(data.data());
+    // We are encrypting the block in 4 byte increments, so we right shift the
+    // length by 2 because it was originally in 1 byte increments in the string.
+    // This is equivalent to dividing by 4.
+    uint64_t len = data.size() >> 2;
+    for (uint64_t i = 0; i < len; i++) {
+      chunks[i] ^= cipher;
+    }
   }
 
  private:
@@ -91,7 +128,7 @@ class DeploymentConfig {
   TrainEvalParameters _train_test_parameters;
 
   // Private constructor for cereal
-  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}, {}) {}
+  DeploymentConfig() : _train_test_parameters({}, {}, {}, {}, {}) {}
 
   friend class cereal::access;
   template <typename Archive>

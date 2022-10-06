@@ -251,6 +251,8 @@ class TrainConfig {
 
   uint32_t logLossFrequency() const { return _log_loss_frequency; }
 
+  void setEpochs(uint32_t new_epochs) { _epochs = new_epochs; }
+
   const std::optional<SaveContext>& saveContext() const {
     return _save_context;
   }
