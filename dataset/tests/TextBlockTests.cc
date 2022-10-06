@@ -1,5 +1,7 @@
+#include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
@@ -225,6 +227,34 @@ TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
     }
     for (const auto& [key, val] : expected_char_trigram_feats) {
       ASSERT_EQ(val, entries[key]);
+    }
+  }
+}
+
+TEST_F(TextBlockTest, TestCharKGramExplainIndex) {
+  uint32_t num_rows = 10;
+  uint32_t num_columns = 1;
+  uint32_t word_length = 8;
+  uint32_t words_per_row = 5;
+  auto [sentence_matrix, word_matrix] = generateRandomStringMatrix(
+      num_rows, num_columns, word_length, words_per_row);
+
+  uint32_t dim_for_encodings = 50;
+  uint32_t k_chars = 3;
+  std::vector<TextBlockPtr> blocks = {
+      CharKGramTextBlock::make(/* col= */ 0, k_chars, dim_for_encodings)};
+
+  std::vector<SegmentedSparseFeatureVector> vecs =
+      makeSegmentedVecs(sentence_matrix, blocks);
+
+  for (uint32_t i = 0; i < vecs.size(); i++) {
+    BoltVector vector = vecs[i].toBoltVector();
+    for (uint32_t j = 0; j < vector.len; j++) {
+      Explanation explanation = blocks[0]->explainIndex(
+          vector.active_neurons[j], {(sentence_matrix[i][0])});
+      ASSERT_EQ(explanation.keyword.size(), k_chars);
+      ASSERT_TRUE(sentence_matrix[i][0].find(explanation.keyword) !=
+                  std::string::npos);
     }
   }
 }
