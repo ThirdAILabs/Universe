@@ -151,7 +151,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("rebuild_hash_tables_interval"),
            py::arg("reconstruct_hash_functions_interval"),
            py::arg("default_batch_size"), py::arg("freeze_hash_tables"),
-           py::arg("prediction_threshold") = std::nullopt);
+           py::arg("prediction_threshold") = std::nullopt,
+           docs::TRAIN_EVAL_PARAMETERS_CONFIG_INIT);
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
@@ -169,27 +170,37 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_CONFIG)
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
-           py::arg("parameters") = py::dict())
+           py::arg("parameters") = py::dict(),
+           docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG)
       .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt)
+           py::arg("max_in_memory_batches") = std::nullopt,
+           docs::MODEL_PIPELINE_TRAIN_FILE)
       .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
            py::arg("train_config"),
-           py::arg("max_in_memory_batches") = std::nullopt)
+           py::arg("max_in_memory_batches") = std::nullopt,
+           docs::MODEL_PIPELINE_TRAIN_DATA_LOADER)
       .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"),
-           py::arg("predict_config") = std::nullopt)
+           py::arg("predict_config") = std::nullopt,
+           docs::MODEL_PIPELINE_EVALUATE_FILE)
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
-           py::arg("predict_config") = std::nullopt)
+           py::arg("predict_config") = std::nullopt,
+           docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER)
       .def("predict", &predictWrapper, py::arg("input_sample"),
-           py::arg("use_sparse_inference") = false)
+           py::arg("use_sparse_inference") = false,
+           docs::MODEL_PIPELINE_PREDICT)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
-           py::arg("use_sparse_inference") = false)
+           py::arg("use_sparse_inference") = false,
+           docs::MODEL_PIPELINE_PREDICT_TOKENS)
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"),
-           py::arg("use_sparse_inference") = false)
+           py::arg("use_sparse_inference") = false,
+           docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
            py::arg("filename"))
-      .def("save", &ModelPipeline::save, py::arg("filename"))
-      .def_static("load", &ModelPipeline::load, py::arg("filename"));
+      .def("save", &ModelPipeline::save, py::arg("filename"),
+           docs::MODEL_PIPELINE_SAVE)
+      .def_static("load", &ModelPipeline::load, py::arg("filename"),
+                  docs::MODEL_PIPELINE_LOAD);
 }
 
 template <typename T>

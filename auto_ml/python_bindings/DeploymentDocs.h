@@ -443,9 +443,7 @@ Args:
         if not specified.
     default_batch_size (int): The default batch size the ModelPipeline should use
         for training if the user does not specify it. 
-    use_sparse_inference (bool): If sparse inference should be used for the model.
-    evaluation_metrics (List[str]): Any metrics that should be computed during 
-        evaluation.
+    freeze_hash_tables (bool): If true the hash tables will be frozen after the first epoch.
     prediction_threshold (Option[float]): Optional parameter, if specified the model
         will ensure that the largest activation is always at least this threshold.
         This is used for multi-class classification tasks that use a theshold to 
@@ -556,8 +554,10 @@ Trains a ModelPipeline on a given dataset using a file on disk.
 
 Args:
     filename (str): Path to the dataset file.
-    epochs (int): Number of epochs to train for.
-    learning_rate (float): The learning rate to use for training.
+    train_config (bolt.graph.TrainConfig): The training config specifies the number
+        of epochs and learning_rate, and optionally allows for specification of a
+        validation dataset, metrics, callbacks, and how frequently to log metrics 
+        during training. 
     batch_size (Option[int]): This is an optional parameter indicating which batch
         size to use for training. If not specified the default batch size from the 
         TrainEvalParameters is used.
@@ -569,8 +569,11 @@ Returns:
     None
 
 Examples:
+    >>> train_config = bolt.graph.TrainConfig.make(
+            epochs=5, learning_rate=0.01
+        ).with_metrics(["mean_squared_error"])
     >>> model.train(
-            filename=TRAIN_FILE, epochs=5, learning_rate=0.01, max_in_memory_batches=12
+            filename="./train_file", train_config=train_config , max_in_memory_batches=12
         )
 
 )pbdoc";
@@ -580,8 +583,10 @@ Trains a ModelPipeline on a given dataset using any DataLoader.
 
 Args:
     data_source (dataset.DataLoader): A data loader for the given dataset.
-    epochs (int): Number of epochs to train for.
-    learning_rate (float): The learning rate to use for training.
+    train_config (bolt.graph.TrainConfig): The training config specifies the number
+        of epochs and learning_rate, and optionally allows for specification of a
+        validation dataset, metrics, callbacks, and how frequently to log metrics 
+        during training. 
     max_in_memory_batches (Option[int]): The maximum number of batches to load in
         memory at a given time. If this is specified then the dataset will be processed
         in a streaming fashion.
@@ -590,8 +595,9 @@ Returns:
     None
 
 Examples:
+    >>> train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
     >>> model.train(
-            data_source=dataset.S3DataLoader(...), epochs=5, learning_rate=0.01, max_in_memory_batches=12
+            data_source=dataset.S3DataLoader(...), train_config=train_config, max_in_memory_batches=12
         )
 
 )pbdoc";
@@ -602,6 +608,9 @@ activations.
 
 Args:
     filename (str): Path to the dataset file.
+    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional
+        and allows for specification of metrics to compute and whether to use sparse
+        inference.
 
 Returns:
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -610,7 +619,8 @@ Returns:
     each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> activations = model.evaluate(filename=TEST_FILE)
+    >>> predict_config = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
+    >>> activations = model.evaluate(filename="./test_file", predict_config=predict_config)
 
 )pbdoc";
 
@@ -620,6 +630,9 @@ activations.
 
 Args:
     data_source (dataset.DataLoader): A data loader for the given dataset.
+    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional
+        and allows for specification of metrics to compute and whether to use sparse
+        inference.
 
 Returns:
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -639,6 +652,7 @@ Args:
     input_sample (str): A str representing the input. This will be processed in the 
         same way as the dataset, and thus should be the same format as a line in 
         the dataset, except with the label columns removed.
+    use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -656,6 +670,7 @@ Performs inference on a single sample represented as bert tokens
 
 Args:
     tokens (List[int]): A list of integers representing bert tokens.
+    use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -676,6 +691,7 @@ Args:
         input will be processed in the same way as the dataset, and thus should 
         be the same format as a line in the dataset, except with the label columns 
         removed.
+    use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -689,6 +705,41 @@ Examples:
             "The dog sat", 
             "The cow ate grass"
         ])
+
+)pbdoc";
+
+const char* const MODEL_PIPELINE_LOAD_VALIDATION_DATA = R"pbdoc(
+Loads a given dataset for validation. 
+
+Args:
+    filename (str): The validation dataset file.
+
+Returns:
+    Tuple[List[dataset.BoltDataset], dataset.BoltDataset]:
+    This function returns a tuple of input BoltDatasets and a BoltDataset for the
+    labels.
+
+Examples:
+    >>> predict_config = (
+            bolt.graph.PredictConfig.make()
+            .with_metrics(["categorical_accuracy"])
+            .enable_sparse_inference()
+        )
+    >>> val_data, val_labels = model.load_validation_data("./validation_file")
+    >>> train_config = bolt.graph.TrainConfig.make(
+            epochs=1, learning_rate=0.001
+        ).with_validation(
+            validation_data=val_data,
+            validation_labels=val_labels,
+            predict_config=predict_config,
+            validation_frequency=10,
+        )
+
+    >>> model.train(
+            filename="./train_file",
+            train_config=train_config,
+            batch_size=256,
+        )
 
 )pbdoc";
 
