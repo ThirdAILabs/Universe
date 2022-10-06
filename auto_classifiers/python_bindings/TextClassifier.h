@@ -36,6 +36,7 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
                 /* output_activation= */ ActivationFunction::Softmax),
             ReturnMode::ClassName) {
     _label_id_lookup = dataset::ThreadSafeVocabulary::make(n_classes);
+    _batch_processor = makeBatchProcessor();
   }
 
   void save(const std::string& filename) {
@@ -60,15 +61,13 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
       std::optional<std::string> target_label) override {
     std::vector<std::string_view> input_row = {" ", sample};
 
-    auto batch_processor = makeBatchProcessor();
-
     std::optional<uint32_t> target_neuron;
     if (target_label) {
       target_neuron = getTargetNeuron(*target_label);
     }
 
     auto result = getSignificanceSortedExplanations(
-        _model, featurizeInputForInference(sample), input_row, batch_processor,
+        _model, featurizeInputForInference(sample), input_row, _batch_processor,
         target_neuron);
     return result;
   }
@@ -120,16 +119,15 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>> getDataset(
       std::shared_ptr<dataset::DataLoader> data_loader) {
-    auto batch_processor = makeBatchProcessor();
-
     return std::make_unique<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
-        std::move(data_loader), batch_processor);
+        std::move(data_loader), _batch_processor);
   }
 
   // Private constructor for cereal.
   TextClassifier()
       : AutoClassifierBase(nullptr, ReturnMode::NumpyArray),
-        _label_id_lookup(nullptr) {}
+        _label_id_lookup(nullptr),
+        _batch_processor(nullptr) {}
 
   friend class cereal::access;
   template <class Archive>
@@ -138,6 +136,7 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
 
   dataset::ThreadSafeVocabularyPtr _label_id_lookup;
+  dataset::GenericBatchProcessorPtr _batch_processor;
 };
 
 }  // namespace thirdai::bolt::python
