@@ -85,6 +85,11 @@ jobs:
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
 
           # Skip building on CPython <3.8 on the Mac
+          # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
+          # of now because ray is unsupported. We expect ray to be present to
+          # test our distributed pipeline.
+          #
+          # TODO(any): A more future proof solution when stuff starts working.
           CIBW_SKIP: "cp36-macosx_arm64 cp37-macox_arm64 cp311-*"
 
 
