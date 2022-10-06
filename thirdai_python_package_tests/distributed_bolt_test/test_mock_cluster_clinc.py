@@ -4,7 +4,11 @@ import random
 import datasets
 import numpy as np
 import pytest
-from cluster_utils import ray_two_node_cluster_config, split_into_2
+from cluster_utils import (
+    check_models_are_same_on_first_two_nodes,
+    ray_two_node_cluster_config,
+    split_into_2,
+)
 from thirdai import bolt, deployment
 
 try:
@@ -43,6 +47,9 @@ def write_dataset_to_csv(dataset, filename, return_labels=False):
 
 
 def download_clinc_dataset():
+    if not os.path.exists(DIR):
+        os.makedirs(DIR)
+
     clinc_dataset = datasets.load_dataset("clinc_oos", "small")
     write_dataset_to_csv(clinc_dataset["train"], TRAIN_FILE)
     labels = write_dataset_to_csv(clinc_dataset["test"], TEST_FILE, return_labels=True)
@@ -104,13 +111,13 @@ def trained_text_classifier(clinc_dataset, ray_two_node_cluster_config):
         train_data_sources=train_data_sources,
     )
     distributed_model.train()
+    check_models_are_same_on_first_two_nodes(distributed_model)
 
     train_eval_params = deployment.TrainEvalParameters(
         rebuild_hash_tables_interval=None,
         reconstruct_hash_functions_interval=None,
         default_batch_size=256,
-        use_sparse_inference=True,
-        evaluation_metrics=[],
+        freeze_hash_tables=False,
     )
 
     model_pipeline = deployment.ModelPipeline(
