@@ -107,15 +107,9 @@ class DeploymentConfig {
 
   // For more information on what a block cipher is:
   // https://en.wikipedia.org/wiki/Block_cipher
-  static void applyBlockCipher(std::string& data,
-                               uint32_t cipher = 0xa829b24d) {
-    uint32_t* chunks = reinterpret_cast<uint32_t*>(data.data());
-    // We are encrypting the block in 4 byte increments, so we right shift the
-    // length by 2 because it was originally in 1 byte increments in the string.
-    // This is equivalent to dividing by 4.
-    uint64_t len = data.size() >> 2;
-    for (uint64_t i = 0; i < len; i++) {
-      chunks[i] ^= cipher;
+  static void applyBlockCipher(std::string& data, char cipher = '#') {
+    for (char& c : data) {
+      c ^= cipher;
     }
   }
 
