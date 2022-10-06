@@ -11,11 +11,12 @@ FixedVocabulary::FixedVocabulary(const std::string& file_path) {
   _unk_id = add(special_tokens::UNK);    // NOLINT
   _mask_id = add(special_tokens::MASK);  // NOLINT
 
-  // Proceed to read from file to add the remaining vocabulary tokens.
+  // Proceed to read from file to add the remaining vocabulary tokens. We
+  // expect supplied files to be one token per-line.
   std::ifstream vocab_stream = SafeFileIO::ifstream(file_path);
-  std::string line;
-  while (getline(vocab_stream, line)) {
-    add(line);
+  std::string vocab_token;
+  while (getline(vocab_stream, vocab_token)) {
+    add(vocab_token);
   }
 }
 
