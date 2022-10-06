@@ -3,13 +3,6 @@ import logging
 from thirdai._thirdai import bolt, dataset
 
 
-def parse_svm_dataset(train_filename, batch_size):
-    return dataset.load_bolt_svm_dataset(
-        train_filename,
-        batch_size,
-    )
-
-
 def init_logging(logger_file: str):
     """
     Returns logger from a logger file

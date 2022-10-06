@@ -6,7 +6,7 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._thirdai import bolt, dataset
+from thirdai._thirdai import bolt
 
 from .utils import get_num_cpus, init_logging
 
@@ -89,35 +89,6 @@ class RayTrainingClusterConfig:
             ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=100)
             for _ in range(self.num_workers - 1)
         ]
-
-
-class InMemoryDataGenerator:
-    def __init__(self, generator_lambda):
-        self.generator_lambda = generator_lambda
-        self.current_epoch = -1
-
-    def next(self):
-        if self.current_epoch == -1:
-            self.current_dataset, self.current_labels = self.generator_lambda()
-
-        if not (isinstance(self.current_dataset, list)):
-            self.current_dataset = [self.current_dataset]
-
-        self.current_epoch += 1
-        return self.current_dataset, self.current_labels
-
-    def get_current_epoch(self):
-        return self.current_epoch
-
-
-class SvmDataGenerator(InMemoryDataGenerator):
-    def __init__(self, filename, batch_size):
-        super().__init__(
-            lambda: dataset.load_bolt_svm_dataset(
-                filename,
-                batch_size,
-            )
-        )
 
 
 class DistributedDataParallel:

@@ -9,22 +9,24 @@ import sys
 
 import numpy as np
 import pytest
+from cluster_utils import (
+    check_models_are_same_on_first_two_nodes,
+    ray_two_node_cluster_config,
+    split_into_2,
+)
 from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.distributed]
 
 
 try:
-    import ray
     import thirdai.distributed_bolt as db
-    from ray.cluster_utils import Cluster
 except ImportError:
     pass
 
 
-# This is some duplicate code with the mnist loading in test_mnist, but
-# putting it somewhere both tests can read is more trouble than just having
-# the loading code twice
+# TODO(Josh): This is quite a bit of duplicated code, but we can't easily share
+# it until we change the structure of our python tests
 def setup_module():
     import os
 
@@ -37,10 +39,7 @@ def setup_module():
             "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
         )
         os.system("bzip2 -d mnist.bz2")
-        os.system("split -l 30000 mnist")
-
-        os.system("rm mnist")
-        os.system("mv xaa xab mnist_data/")
+        split_into_2(file_to_split="mnist", destination_dir="mnist_data")
 
     if not os.path.exists("mnist_data/mnist.t"):
         os.system(
@@ -66,48 +65,27 @@ def get_mnist_model():
     return model
 
 
-def parse_svm_dataset(train_filename, batch_size):
-    return
-
-
 @pytest.fixture(scope="module")
-def train_distributed_bolt_check(request):
-    # Initilizing a mock cluster with two node
-    mini_cluster = Cluster(
-        initialize_head=True,
-        head_node_args={
-            "num_cpus": 1,
-        },
-    )
-    mini_cluster.add_node(num_cpus=1)
-
+def train_distributed_bolt_check(ray_two_node_cluster_config):
     model = get_mnist_model()
-    batch_size = 256
+
     train_sources = [
         db.SvmDataGenerator(
             filename,
-            batch_size,
+            batch_size=256,
         )
         for filename in ["mnist_data/xaa", "mnist_data/xab"]
     ]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=3)
-    cluster_config = db.RayTrainingClusterConfig(
-        num_workers=2,
-        requested_cpus_per_node=1,
-        communication_type=request.param,
-        cluster_address=mini_cluster.address,
-    )
-
     distributed_model = db.DistributedDataParallel(
-        cluster_config=cluster_config,
+        cluster_config=ray_two_node_cluster_config,
         model=model,
         train_config=train_config,
         train_sources=train_sources,
     )
     distributed_model.train()
 
-    model_node_1 = distributed_model.get_model(worker_id=0)
-    model_node_2 = distributed_model.get_model(worker_id=1)
+    check_models_are_same_on_first_two_nodes(distributed_model)
 
     predict_config = (
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
@@ -115,27 +93,18 @@ def train_distributed_bolt_check(request):
     test_data, test_labels = dataset.load_bolt_svm_dataset(
         "mnist_data/mnist.t", batch_size=256
     )
-    metrics = model_node_1.predict(
+    metrics = distributed_model.get_model().predict(
         test_data=test_data, test_labels=test_labels, predict_config=predict_config
     )
 
-    nodes_1 = model_node_1.nodes()
-    nodes_2 = model_node_2.nodes()
-    for layer_1, layer_2 in zip(nodes_1, nodes_2):
-        if hasattr(layer_1, "weights"):
-            assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
-
     print(metrics)
-
-    ray.shutdown()
-    mini_cluster.shutdown()
 
     yield metrics
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
 @pytest.mark.parametrize(
-    "train_distributed_bolt_check", ["linear", "circular"], indirect=True
+    "ray_two_node_cluster_config", ["linear", "circular"], indirect=True
 )
 def test_distributed_bolt_on_mock_cluster(train_distributed_bolt_check):
     import multiprocessing
