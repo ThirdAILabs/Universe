@@ -13,6 +13,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::automl::deployment {
@@ -28,10 +29,13 @@ class ModelPipeline {
  public:
   ModelPipeline(DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,
-                TrainEvalParameters train_eval_parameters)
+                TrainEvalParameters train_eval_parameters,
+                std::unordered_map<std::string, UserParameterInput>
+                    user_specified_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
-        _train_eval_config(std::move(train_eval_parameters)) {}
+        _train_eval_config(std::move(train_eval_parameters)),
+        _user_specified_parameters(std::move(user_specified_parameters)) {}
 
   static auto make(const DeploymentConfigPtr& config,
                    const std::unordered_map<std::string, UserParameterInput>&
@@ -40,7 +44,8 @@ class ModelPipeline {
         config->createDataLoaderAndModel(user_specified_parameters);
 
     return ModelPipeline(std::move(dataset_factory), std::move(model),
-                         config->train_eval_parameters());
+                         config->train_eval_parameters(),
+                         user_specified_parameters);
   }
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
@@ -140,6 +145,10 @@ class ModelPipeline {
     }
 
     return outputs;
+  }
+
+  std::unordered_map<std::string, UserParameterInput> getInitParameters() {
+    return _user_specified_parameters;
   }
 
   void save(const std::string& filename) {
@@ -254,6 +263,8 @@ class ModelPipeline {
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   TrainEvalParameters _train_eval_config;
+  std::unordered_map<std::string, UserParameterInput>
+      _user_specified_parameters;
 };
 
 }  // namespace thirdai::automl::deployment

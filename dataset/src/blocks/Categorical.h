@@ -187,6 +187,15 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
 
  private:
   ThreadSafeVocabularyPtr _vocab;
+
+  // Private constructor for cereal.
+  StringLookupCategoricalBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<CategoricalBlock>(this), _vocab);
+  }
 };
 
 using StringLookupCategoricalBlockPtr =
@@ -196,3 +205,4 @@ using StringLookupCategoricalBlockPtr =
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::CategoricalBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::NumericalCategoricalBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::StringLookupCategoricalBlock)

@@ -13,6 +13,9 @@
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -62,12 +65,16 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defConstantParameter<float>(submodule);
   defConstantParameter<std::string>(submodule);
   defConstantParameter<bolt::SamplingConfigPtr>(submodule);
+  defConstantParameter<OracleConfigPtr>(submodule);
+  defConstantParameter<TemporalContextPtr>(submodule);
 
   defOptionMappedParameter<bool>(submodule);
   defOptionMappedParameter<uint32_t>(submodule);
   defOptionMappedParameter<float>(submodule);
   defOptionMappedParameter<std::string>(submodule);
   defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule);
+  defOptionMappedParameter<OracleConfigPtr>(submodule);
+  defOptionMappedParameter<TemporalContextPtr>(submodule);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"));
@@ -130,6 +137,13 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
                     HyperParameterPtr<std::string>>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
            py::arg("delimiter"));
+
+  py::class_<OracleDatasetFactoryConfig, DatasetLoaderFactoryConfig,
+             std::shared_ptr<OracleDatasetFactoryConfig>>(
+      submodule, "OracleDatasetFactory")
+      .def(py::init<HyperParameterPtr<OracleConfigPtr>,
+                    HyperParameterPtr<TemporalContextPtr>>(),
+           py::arg("config"), py::arg("temporal_context"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
@@ -231,6 +245,12 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
       cpp_parameters.emplace(name, UserParameterInput(value));
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
+      cpp_parameters.emplace(name, UserParameterInput(value));
+    } else if (py::isinstance<OracleConfigPtr>(v)) {
+      OracleConfigPtr value = v.cast<OracleConfigPtr>();
+      cpp_parameters.emplace(name, UserParameterInput(value));
+    } else if (py::isinstance<TemporalContextPtr>(v)) {
+      TemporalContextPtr value = v.cast<TemporalContextPtr>();
       cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
       throw std::invalid_argument("Invalid type '" +
