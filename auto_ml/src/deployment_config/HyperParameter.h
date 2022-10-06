@@ -215,15 +215,22 @@ class UserSpecifiedParameter : public HyperParameter<T> {
                 "std::string, OracleConfig, or TemporalContext.");
 
  public:
-  explicit UserSpecifiedParameter(std::string param_name)
-      : _param_name(std::move(param_name)) {}
+  explicit UserSpecifiedParameter(std::string param_name,
+                                  std::optional<T> default_value = std::nullopt)
+      : _param_name(std::move(param_name)),
+        _default_value(std::move(default_value)) {}
 
-  static HyperParameterPtr<T> make(std::string param_name) {
-    return std::make_shared<UserSpecifiedParameter<T>>(std::move(param_name));
+  static HyperParameterPtr<T> make(
+      std::string param_name, std::optional<T> default_value = std::nullopt) {
+    return std::make_shared<UserSpecifiedParameter<T>>(
+        std::move(param_name), std::move(default_value));
   }
 
   T resolve(const UserInputMap& user_specified_parameters) const final {
     if (!user_specified_parameters.count(_param_name)) {
+      if (_default_value) {
+        return _default_value.value();
+      }
       throw std::invalid_argument("UserSpecifiedParameter '" + _param_name +
                                   "' not specified by user but is required to "
                                   "construct ModelPipeline.");
@@ -245,10 +252,19 @@ class UserSpecifiedParameter : public HyperParameter<T> {
       return user_specified_parameters.at(_param_name)
           .resolveStringParam(_param_name);
     }
+    if constexpr (std::is_same<T, OracleConfigPtr>::value) {
+      return user_specified_parameters.at(_param_name)
+          .resolveOracleConfigPtr(_param_name);
+    }
+    if constexpr (std::is_same<T, TemporalContextPtr>::value) {
+      return user_specified_parameters.at(_param_name)
+          .resolveTemporalContextPtr(_param_name);
+    }
   }
 
  protected:
   std::string _param_name;
+  std::optional<T> _default_value;
 
  private:
   // Private constructor for cereal.
@@ -257,68 +273,8 @@ class UserSpecifiedParameter : public HyperParameter<T> {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<HyperParameter<T>>(this), _param_name);
-  }
-};
-
-template <typename T>
-class OptionalUserSpecifiedParameter : public HyperParameter<std::optional<T>> {
-  static_assert(std::is_same_v<T, bool> || std::is_same_v<T, uint32_t> ||
-                    std::is_same_v<T, float> ||
-                    std::is_same_v<T, std::string> ||
-                    std::is_same_v<T, OracleConfigPtr> ||
-                    std::is_same_v<T, TemporalContextPtr>,
-                "User specified parameter must be bool, uint32_t, float, or "
-                "std::string, OracleConfig, or TemporalContext");
-
- public:
-  explicit OptionalUserSpecifiedParameter(
-      std::string param_name, std::optional<T> default_value = std::nullopt)
-      : _param_name(std::move(param_name)),
-        _default(std::move(default_value)) {}
-
-  static HyperParameterPtr<std::optional<T>> make(
-      std::string param_name, std::optional<T> default_value = std::nullopt) {
-    return std::make_shared<OptionalUserSpecifiedParameter<T>>(
-        std::move(param_name), std::move(default_value));
-  }
-
-  std::optional<T> resolve(
-      const UserInputMap& user_specified_parameters) const final {
-    if (!user_specified_parameters.count(_param_name)) {
-      return _default;
-    }
-
-    if constexpr (std::is_same<T, bool>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveBooleanParam(_param_name);
-    }
-    if constexpr (std::is_same<T, uint32_t>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveIntegerParam(_param_name);
-    }
-    if constexpr (std::is_same<T, float>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveFloatParam(_param_name);
-    }
-    if constexpr (std::is_same<T, std::string>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveStringParam(_param_name);
-    }
-  }
-
- protected:
-  std::string _param_name;
-  std::optional<T> _default;
-
- private:
-  // Private constructor for cereal.
-  OptionalUserSpecifiedParameter() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<HyperParameter<T>>(this), _param_name, _default);
+    archive(cereal::base_class<HyperParameter<T>>(this), _param_name,
+            _default_value);
   }
 };
 

@@ -42,7 +42,6 @@ class ModelPipeline {
                        user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
-
     return ModelPipeline(std::move(dataset_factory), std::move(model),
                          config->train_eval_parameters(),
                          user_specified_parameters);

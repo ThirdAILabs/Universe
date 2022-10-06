@@ -8,9 +8,6 @@
 #include "OracleConfig.h"
 #include "TemporalContext.h"
 #include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
-#include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
-#include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifierConfig.h>
-#include <bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <_types/_uint64_t.h>
@@ -20,11 +17,13 @@
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -77,6 +76,8 @@ class ColumnNumberMap {
   }
 };
 
+using ColumnNumberMapPtr = std::shared_ptr<ColumnNumberMap>;
+
 class VocabularyManager {
  public:
   dataset::ThreadSafeVocabularyPtr forColumn(const std::string& column_name,
@@ -103,7 +104,14 @@ class VocabularyManager {
 class OracleDatasetFactory final : public DatasetLoaderFactory {
  public:
   OracleDatasetFactory(OracleConfigPtr config, TemporalContextPtr context)
-      : _config(std::move(config)), _context(std::move(context)) {}
+      : _config(std::move(config)), _context(std::move(context)) {
+    if (!_config->temporal_tracking_relationships.empty() &&
+        _context->isNone()) {
+      throw std::invalid_argument(
+          "Oracle requires a temporal context object if temporal tracking "
+          "relationships are specified.");
+    }
+  }
 
   DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
@@ -112,10 +120,11 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       throw std::invalid_argument("The dataset must have a header.");
     }
 
-    ColumnNumberMap current_column_number_map(*header, /* delimiter= */ ',');
+    auto current_column_number_map =
+        std::make_shared<ColumnNumberMap>(*header, /* delimiter= */ ',');
     if (!_column_number_map) {
       _column_number_map = std::move(current_column_number_map);
-    } else if (!(*_column_number_map).equals(current_column_number_map)) {
+    } else if (!_column_number_map->equals(*current_column_number_map)) {
       throw std::invalid_argument("Column positions should not change.");
     }
 
@@ -140,7 +149,12 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       const std::vector<std::string>& inputs) final {
     initializeInferenceBatchProcessor();
     auto [input_batch, _] = _inference_batch_processor->createBatch(inputs);
-    return {std::move(input_batch)};
+
+    // We cannot use the initializer list because the copy constructor is
+    // deleted for BoltBatch.
+    std::vector<BoltBatch> batch_list;
+    batch_list.emplace_back(std::move(input_batch));
+    return batch_list;
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {
@@ -154,7 +168,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
             buildInputBlocks(/* column_numbers= */ mock_column_number_map,
                              /* should_update_history= */ false),
             /* label_blocks= */ {})
-            ->getLabelDim();
+            ->getInputDim();
     return {bolt::Input::make(input_dim)};
   }
 
@@ -240,9 +254,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return input_blocks;
   }
 
-  std::vector<dataset::BlockPtr> addTemporalInputBlocks(
-      const ColumnNumberMap& column_numbers,
-      std::vector<dataset::BlockPtr> input_blocks, bool should_update_history) {
+  void addTemporalInputBlocks(const ColumnNumberMap& column_numbers,
+                              std::vector<dataset::BlockPtr>& input_blocks,
+                              bool should_update_history) {
     auto timestamp = getTimestamp();
 
     // Order of tracking keys is always consistent because
@@ -271,7 +285,6 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         id++;
       }
     }
-    return input_blocks;
   }
 
   std::unordered_set<std::string> trackableColumns() {
@@ -398,7 +411,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   OracleConfigPtr _config;
   TemporalContextPtr _context;
   VocabularyManager _vocabs;
-  std::optional<ColumnNumberMap> _column_number_map;
+  ColumnNumberMapPtr _column_number_map;
   dataset::GenericBatchProcessorPtr _labeled_batch_processor;
   dataset::GenericBatchProcessorPtr _inference_batch_processor;
 
@@ -409,7 +422,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config, _context,
-            _vocabs, _column_number_map);
+            _vocabs, _column_number_map, _labeled_batch_processor,
+            _inference_batch_processor);
   }
 };
 
@@ -424,8 +438,7 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
     auto config = _config->resolve(user_specified_parameters);
     auto context = _context->resolve(user_specified_parameters);
 
-    return std::make_unique<OracleDatasetFactory>(std::move(config),
-                                                  std::move(context));
+    return std::make_unique<OracleDatasetFactory>(config, context);
   }
 
  private:

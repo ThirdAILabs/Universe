@@ -15,6 +15,12 @@ namespace thirdai::automl::deployment {
 
 class TemporalContext {
  public:
+  TemporalContext() : _is_none(false) {}
+
+  static TemporalContext None() { return TemporalContext(/* is_none= */ true); }
+
+  bool isNone() const { return _is_none; }
+
   dataset::QuantityHistoryTrackerPtr numericalHistoryForId(
       uint32_t id, uint32_t lookahead, uint32_t history_length,
       dataset::QuantityTrackingGranularity time_granularity) {
@@ -60,7 +66,7 @@ class TemporalContext {
 
   void batchUpdate(const std::vector<std::string>& updates) {
     if (!_processor) {
-      throw std::invalid_argument(  
+      throw std::invalid_argument(
           "Attempted to manually update temporal context before training.");
     }
     // The following line updates the temporal context as a side effect,
@@ -68,6 +74,10 @@ class TemporalContext {
   }
 
  private:
+  // Private constructor for none type.
+  explicit TemporalContext(bool is_none) : _is_none(is_none) {}
+
+  bool _is_none;
   std::unordered_map<uint32_t, dataset::QuantityHistoryTrackerPtr>
       _numerical_histories;
   std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>

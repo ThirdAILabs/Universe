@@ -5,6 +5,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -22,6 +23,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -53,6 +55,14 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
       submodule, "SamplingConfigHyperParameter");
 
+  py::class_<HyperParameter<OracleConfigPtr>,  // NOLINT
+             HyperParameterPtr<OracleConfigPtr>>(submodule,
+                                                 "OracleConfigHyperParameter");
+
+  py::class_<HyperParameter<TemporalContextPtr>,  // NOLINT
+             HyperParameterPtr<TemporalContextPtr>>(
+      submodule, "TemporalContextHyperParameter");
+
   /**
    * Do not change the order of these overloads. Because bool is a sublclass of
    * int in python, it must be declared first or calling this function with a
@@ -77,7 +87,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defOptionMappedParameter<TemporalContextPtr>(submodule);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
-                py::arg("name"), py::arg("type"));
+                py::arg("name"), py::arg("type"),
+                py::arg("default_value") = std::nullopt);
 
   py::class_<AutotunedSparsityParameter, HyperParameter<float>,
              std::shared_ptr<AutotunedSparsityParameter>>(
@@ -187,6 +198,18 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
+
+  py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
+      .def(py::init<std::map<std::string, DataType>,
+                    AutotunableTemporalRelationships, std::string, std::string,
+                    uint32_t>(),
+           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
+           py::arg("target"), py::arg("time_granularity") = "daily",
+           py::arg("lookahead") = 0);
+
+  py::class_<TemporalContext, TemporalContextPtr>(submodule, "TemporalContext")
+      .def(py::init<>())
+      .def_static("NoneType", &TemporalContext::None);
 }
 
 template <typename T>
@@ -201,28 +224,54 @@ void defOptionMappedParameter(py::module_& submodule) {
                 py::arg("option_name"), py::arg("values").noconvert());
 }
 
+template <typename T>
+std::optional<T> castToOptional(
+    const std::optional<py::object>& optional_value) {
+  if (!optional_value) {
+    return std::nullopt;
+  }
+  return optional_value->cast<std::optional<T>>();
+}
+
 py::object makeUserSpecifiedParameter(const std::string& name,
-                                      const py::object& type) {
+                                      const py::object& type,
+                                      std::optional<py::object> default_value) {
   if (py::str(type).cast<std::string>() == "<class 'bool'>") {
-    return py::cast(UserSpecifiedParameter<bool>::make(name));
+    return py::cast(UserSpecifiedParameter<bool>::make(
+        name, castToOptional<bool>(default_value)));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'int'>") {
-    return py::cast(UserSpecifiedParameter<uint32_t>::make(name));
+    return py::cast(UserSpecifiedParameter<uint32_t>::make(
+        name, castToOptional<uint32_t>(default_value)));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'float'>") {
-    return py::cast(UserSpecifiedParameter<float>::make(name));
+    return py::cast(UserSpecifiedParameter<float>::make(
+        name, castToOptional<float>(default_value)));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'str'>") {
-    return py::cast(UserSpecifiedParameter<std::string>::make(name));
+    return py::cast(UserSpecifiedParameter<std::string>::make(
+        name, castToOptional<std::string>(default_value)));
   }
 
-  throw std::invalid_argument("Invalid type '" +
-                              py::str(type).cast<std::string>() +
-                              "' passed to UserSpecifiedParameter. Must be one "
-                              "of bool, int, float, or str.");
+  if (py::str(type).cast<std::string>() ==
+      "<class 'thirdai._thirdai.deployment.OracleConfig'>") {
+    return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(
+        name, castToOptional<OracleConfigPtr>(default_value)));
+  }
+
+  if (py::str(type).cast<std::string>() ==
+      "<class 'thirdai._thirdai.deployment.TemporalContext'>") {
+    return py::cast(UserSpecifiedParameter<TemporalContextPtr>::make(
+        name, castToOptional<TemporalContextPtr>(default_value)));
+  }
+
+  throw std::invalid_argument(
+      "Invalid type '" + py::str(type).cast<std::string>() +
+      "' passed to UserSpecifiedParameter. Must be one "
+      "of bool, int, float, str, OracleConfig, or TemporalContext.");
 }
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
@@ -246,17 +295,17 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
       cpp_parameters.emplace(name, UserParameterInput(value));
-    } else if (py::isinstance<OracleConfigPtr>(v)) {
+    } else if (py::isinstance<OracleConfig>(v)) {
       OracleConfigPtr value = v.cast<OracleConfigPtr>();
       cpp_parameters.emplace(name, UserParameterInput(value));
-    } else if (py::isinstance<TemporalContextPtr>(v)) {
+    } else if (py::isinstance<TemporalContext>(v)) {
       TemporalContextPtr value = v.cast<TemporalContextPtr>();
       cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
-      throw std::invalid_argument("Invalid type '" +
-                                  py::str(v.get_type()).cast<std::string>() +
-                                  "'. Values of parameters dictionary must be "
-                                  "bool, int, float, or str.");
+      throw std::invalid_argument(
+          "Invalid type '" + py::str(v.get_type()).cast<std::string>() +
+          "'. Values of parameters dictionary must be "
+          "bool, int, float, str, OracleConfig, or TemporalContext.");
     }
   }
 
