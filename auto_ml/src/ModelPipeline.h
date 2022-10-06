@@ -17,6 +17,32 @@
 
 namespace thirdai::automl::deployment {
 
+const uint32_t DEFAULT_EVALUATE_BATCH_SIZE = 2048;
+
+class ValidationConfig {
+ public:
+  ValidationConfig(std::string filename, std::vector<std::string> metrics,
+                   uint32_t validation_interval, bool use_sparse_inference)
+      : _filename(std::move(filename)),
+        _metrics(std::move(metrics)),
+        _validation_interval(validation_interval),
+        _use_sparse_inference(use_sparse_inference) {}
+
+  const std::string& filename() const { return _filename; }
+
+  const std::vector<std::string>& metrics() const { return _metrics; }
+
+  uint32_t validationInterval() const { return _validation_interval; }
+
+  bool useSparseInference() const { return _use_sparse_inference; }
+
+ private:
+  std::string _filename;
+  std::vector<std::string> _metrics;
+  uint32_t _validation_interval;
+  bool _use_sparse_inference;
+};
+
 /**
  * This class represents an end-to-end data processing + model pipeline. It
  * handles all functionality from loading data to training, evaulation, and
@@ -31,7 +57,7 @@ class ModelPipeline {
                 TrainEvalParameters train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
-        _train_eval_config(std::move(train_eval_parameters)) {}
+        _train_eval_config(train_eval_parameters) {}
 
   static auto make(const DeploymentConfigPtr& config,
                    const std::unordered_map<std::string, UserParameterInput>&
@@ -43,54 +69,97 @@ class ModelPipeline {
                          config->train_eval_parameters());
   }
 
-  void train(const std::string& filename, uint32_t epochs, float learning_rate,
-             std::optional<uint32_t> batch_size_opt,
-             std::optional<uint32_t> max_in_memory_batches) {
-    uint32_t batch_size = batch_size_opt.value_or(defaultBatchSize());
-
-    train(std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size),
-          epochs, learning_rate, max_in_memory_batches);
+  void trainOnFileNoConfig(const std::string& filename, uint32_t epochs,
+                           float learning_rate,
+                           std::optional<uint32_t> batch_size_opt,
+                           const std::optional<ValidationConfig>& validation,
+                           std::optional<uint32_t> max_in_memory_batches) {
+    uint32_t batch_size =
+        batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
+    trainOnDataLoaderNoConfig(
+        dataset::SimpleFileDataLoader::make(filename, batch_size), epochs,
+        learning_rate, validation, max_in_memory_batches);
   }
 
-  void train(const std::shared_ptr<dataset::DataLoader>& data_source,
-             uint32_t epochs, float learning_rate,
-             std::optional<uint32_t> max_in_memory_batches) {
+  void trainOnDataLoaderNoConfig(
+      const std::shared_ptr<dataset::DataLoader>& data_source, uint32_t epochs,
+      float learning_rate, const std::optional<ValidationConfig>& validation,
+      std::optional<uint32_t> max_in_memory_batches) {
+    bolt::TrainConfig train_config = bolt::TrainConfig::makeConfig(
+        /* learning_rate= */ learning_rate, /* epochs= */ epochs);
+
+    if (validation) {
+      auto [val_data, val_labels] =
+          loadValidationDataFromFile(validation->filename());
+
+      bolt::PredictConfig validation_config =
+          bolt::PredictConfig::makeConfig().withMetrics(validation->metrics());
+
+      if (validation->useSparseInference()) {
+        validation_config.enableSparseInference();
+      }
+
+      train_config.withValidation(
+          /* validation_data= */ val_data,
+          /* validation_labels= */ val_labels,
+          /* predict_config= */ validation_config,
+          /* validation_frequency= */ validation->validationInterval());
+    }
+
+    trainOnDataLoader(data_source, train_config, max_in_memory_batches);
+  }
+
+  void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
+                   std::optional<uint32_t> batch_size_opt,
+                   std::optional<uint32_t> max_in_memory_batches) {
+    uint32_t batch_size =
+        batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
+    trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
+                      train_config, max_in_memory_batches);
+  }
+
+  void trainOnDataLoader(
+      const std::shared_ptr<dataset::DataLoader>& data_source,
+      bolt::TrainConfig& train_config,
+      std::optional<uint32_t> max_in_memory_batches) {
     _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
     data_source->restart();
 
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
         data_source, /* training= */ true);
 
+    updateRehashRebuildInTrainConfig(train_config);
+
     if (max_in_memory_batches) {
-      trainOnStream(dataset, learning_rate, epochs,
-                    max_in_memory_batches.value());
+      trainOnStream(dataset, train_config, max_in_memory_batches.value());
     } else {
-      trainInMemory(dataset, learning_rate, epochs);
+      trainInMemory(dataset, train_config);
     }
   }
 
-  bolt::InferenceOutputTracker evaulate(const std::string& filename) {
-    return evaluate(std::make_shared<dataset::SimpleFileDataLoader>(
-        filename, defaultBatchSize()));
+  bolt::InferenceOutputTracker evaulate(
+      const std::string& filename,
+      std::optional<bolt::PredictConfig>& predict_config_opt) {
+    return evaluate(dataset::SimpleFileDataLoader::make(
+                        filename, DEFAULT_EVALUATE_BATCH_SIZE),
+                    predict_config_opt);
   }
 
   bolt::InferenceOutputTracker evaluate(
-      const std::shared_ptr<dataset::DataLoader>& data_source) {
+      const std::shared_ptr<dataset::DataLoader>& data_source,
+      std::optional<bolt::PredictConfig>& predict_config_opt) {
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
         data_source, /* training= */ false);
 
     auto [data, labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
-    bolt::PredictConfig predict_cfg =
-        bolt::PredictConfig::makeConfig()
-            .withMetrics(_train_eval_config.evaluationMetrics())
-            .returnActivations();
-    if (_train_eval_config.useSparseInference()) {
-      predict_cfg.enableSparseInference();
-    }
+    bolt::PredictConfig predict_config =
+        predict_config_opt.value_or(bolt::PredictConfig::makeConfig());
 
-    auto [_, output] = _model->predict({data}, labels, predict_cfg);
+    predict_config.returnActivations();
+
+    auto [_, output] = _model->predict({data}, labels, predict_config);
 
     if (auto threshold = _train_eval_config.predictionThreshold()) {
       uint32_t output_dim = output.numNonzerosInOutput();
@@ -107,11 +176,11 @@ class ModelPipeline {
     return output;
   }
 
-  BoltVector predict(const std::string& sample) {
+  BoltVector predict(const std::string& sample, bool use_sparse_inference) {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
-    BoltVector output = _model->predictSingle(
-        std::move(inputs), _train_eval_config.useSparseInference());
+    BoltVector output =
+        _model->predictSingle(std::move(inputs), use_sparse_inference);
 
     if (auto threshold = _train_eval_config.predictionThreshold()) {
       uint32_t prediction_index = argmax(output.activations, output.len);
@@ -123,12 +192,13 @@ class ModelPipeline {
     return output;
   }
 
-  BoltBatch predictBatch(const std::vector<std::string>& samples) {
+  BoltBatch predictBatch(const std::vector<std::string>& samples,
+                         bool use_sparse_inference) {
     std::vector<BoltBatch> input_batches =
         _dataset_factory->featurizeInputBatch(samples);
 
-    BoltBatch outputs = _model->predictSingleBatch(
-        std::move(input_batches), _train_eval_config.useSparseInference());
+    BoltBatch outputs = _model->predictSingleBatch(std::move(input_batches),
+                                                   use_sparse_inference);
 
     if (auto threshold = _train_eval_config.predictionThreshold()) {
       for (auto& output : outputs) {
@@ -159,50 +229,53 @@ class ModelPipeline {
     return deserialize_into;
   }
 
-  uint32_t defaultBatchSize() const {
-    return _train_eval_config.defaultBatchSize();
-  }
-
  private:
-  void trainInMemory(DatasetLoaderPtr& dataset, float learning_rate,
-                     uint32_t epochs) {
+  // We take in the TrainConfig by value to copy it so we can modify the number
+  // epochs.
+  void trainInMemory(DatasetLoaderPtr& dataset,
+                     bolt::TrainConfig train_config) {
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
-    if (_train_eval_config.useSparseInference() && epochs > 1) {
-      bolt::TrainConfig train_cfg_initial =
-          getTrainConfig(learning_rate, /* epochs= */ 1);
+    uint32_t epochs = train_config.epochs();
 
-      _model->train(train_data, train_labels, train_cfg_initial);
+    if (_train_eval_config.freezeHashTables() && epochs > 1) {
+      train_config.setEpochs(/* new_epochs=*/1);
+
+      _model->train(train_data, train_labels, train_config);
 
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
-      --epochs;
+      train_config.setEpochs(/* new_epochs= */ epochs - 1);
     }
 
-    bolt::TrainConfig train_cfg = getTrainConfig(learning_rate, epochs);
-    _model->train(train_data, train_labels, train_cfg);
+    _model->train(train_data, train_labels, train_config);
   }
 
-  void trainOnStream(DatasetLoaderPtr& dataset, float learning_rate,
-                     uint32_t epochs, uint32_t max_in_memory_batches) {
-    if (_train_eval_config.useSparseInference() && epochs > 1) {
-      trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
+  // We take in the TrainConfig by value to copy it so we can modify the number
+  // epochs.
+  void trainOnStream(DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+                     uint32_t max_in_memory_batches) {
+    uint32_t epochs = train_config.epochs();
+    // We want a single epoch in the train config in order to train for a single
+    // epoch for each pass over the dataset.
+    train_config.setEpochs(/* new_epochs= */ 1);
+
+    if (_train_eval_config.freezeHashTables() && epochs > 1) {
+      trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
       --epochs;
     }
 
     for (uint32_t e = 0; e < epochs; e++) {
-      trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
+      trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
     }
   }
 
-  void trainSingleEpochOnStream(DatasetLoaderPtr& dataset, float learning_rate,
+  void trainSingleEpochOnStream(DatasetLoaderPtr& dataset,
+                                const bolt::TrainConfig& train_config,
                                 uint32_t max_in_memory_batches) {
-    bolt::TrainConfig train_config =
-        getTrainConfig(learning_rate, /* epochs= */ 1);
-
     while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
       auto& [data, labels] = datasets.value();
 
@@ -212,10 +285,7 @@ class ModelPipeline {
     dataset->restart();
   }
 
-  bolt::TrainConfig getTrainConfig(float learning_rate, uint32_t epochs) {
-    bolt::TrainConfig train_config =
-        bolt::TrainConfig::makeConfig(learning_rate, epochs);
-
+  void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config) {
     if (auto hash_table_rebuild =
             _train_eval_config.rebuildHashTablesInterval()) {
       train_config.withRebuildHashTables(hash_table_rebuild.value());
@@ -225,7 +295,18 @@ class ModelPipeline {
             _train_eval_config.reconstructHashFunctionsInterval()) {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
-    return train_config;
+  }
+
+  std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(
+      const std::string& filename) {
+    auto file_loader = dataset::SimpleFileDataLoader::make(
+        filename, DEFAULT_EVALUATE_BATCH_SIZE);
+
+    auto dataset_loader =
+        _dataset_factory->getLabeledDatasetLoader(std::move(file_loader),
+                                                  /* training= */ false);
+    return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
+        .value();
   }
 
   static uint32_t argmax(const float* const array, uint32_t len) {
@@ -243,7 +324,7 @@ class ModelPipeline {
   }
 
   // Private constructor for cereal.
-  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}, {}) {}
+  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
 
   friend class cereal::access;
   template <class Archive>
