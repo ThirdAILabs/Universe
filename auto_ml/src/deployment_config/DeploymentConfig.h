@@ -70,6 +70,11 @@ class DeploymentConfig {
     cereal::PortableBinaryOutputArchive oarchive(output);
     oarchive(*this);
 
+    // We are applying a simple block cipher here because cereal leaks some
+    // class names for polymorphic classes in the binary archive and we want to
+    // hide that information from customers.
+    // TODO(Nicholas): also add a checksum for the serialized config to make
+    // sure customers do not recieve a corrupted file.
     std::string output_str = output.str();
     applyBlockCipher(output_str);
 
@@ -84,8 +89,9 @@ class DeploymentConfig {
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
 
     std::stringstream encrypted_buffer;
+    // Converting contents of file into string:
+    // https://stackoverflow.com/questions/2602013/read-whole-ascii-file-into-c-stdstring
     encrypted_buffer << filestream.rdbuf();
-
     std::string input_str = encrypted_buffer.str();
     applyBlockCipher(input_str);
 
@@ -99,9 +105,14 @@ class DeploymentConfig {
     return deserialize_into;
   }
 
+  // For more information on what a block cipher is:
+  // https://en.wikipedia.org/wiki/Block_cipher
   static void applyBlockCipher(std::string& data,
                                uint32_t cipher = 0xa829b24d) {
     uint32_t* chunks = reinterpret_cast<uint32_t*>(data.data());
+    // We are encrypting the block in 4 byte increments, so we right shift the
+    // length by 2 because it was originally in 1 byte increments in the string.
+    // This is equivalent to dividing by 4.
     uint64_t len = data.size() >> 2;
     for (uint64_t i = 0; i < len; i++) {
       chunks[i] ^= cipher;
