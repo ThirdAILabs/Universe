@@ -7,6 +7,7 @@
 #include "DatasetConfig.h"
 #include "ModelConfig.h"
 #include "TrainEvalParameters.h"
+#include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <memory>
 #include <stdexcept>
 #include <unordered_set>
@@ -50,10 +51,13 @@ class DeploymentConfig {
         _train_test_parameters(std::move(train_test_parameters)) {}
 
   std::pair<DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
-  createDataLoaderAndModel(
-      const UserInputMap& user_specified_parameters) const {
+  createDataLoaderAndModel(UserInputMap user_specified_parameters) const {
     DatasetLoaderFactoryPtr dataset_factory =
         _dataset_config->createDatasetState(user_specified_parameters);
+
+    user_specified_parameters.emplace(
+        DatasetLabelDimensionParameter::PARAM_NAME,
+        UserParameterInput(dataset_factory->getLabelDim()));
 
     bolt::BoltGraphPtr model = _model_config->createModel(
         dataset_factory->getInputNodes(), user_specified_parameters);

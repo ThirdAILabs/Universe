@@ -6,12 +6,15 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/variant.hpp>
 #include <bolt/src/layers/LayerConfig.h>
+#include <auto_ml/python_bindings/DeploymentPython.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
+#include <cstdint>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <variant>
@@ -19,6 +22,10 @@
 namespace thirdai::automl::deployment {
 
 class UserParameterInput {
+  struct UserParameterInputNoneType {};
+
+  static UserParameterInputNoneType NONE_TYPE;
+
  public:
   explicit UserParameterInput(bool bool_val) : _value(bool_val) {}
 
@@ -34,6 +41,9 @@ class UserParameterInput {
 
   explicit UserParameterInput(TemporalContextPtr temporal_context)
       : _value(std::move(temporal_context)) {}
+
+  // Needed to serialize UserInputMap
+  explicit UserParameterInput() : _value(NONE_TYPE) {}
 
   bool resolveBooleanParam(const std::string& param_name) const {
     try {
@@ -92,11 +102,11 @@ class UserParameterInput {
 
  private:
   std::variant<bool, uint32_t, float, std::string, OracleConfigPtr,
-               TemporalContextPtr>
+               TemporalContextPtr, UserParameterInputNoneType>
       _value;
 
   // Private constructor for cereal.
-  UserParameterInput() {}
+  // UserParameterInput() {}
 
   friend class cereal::access;
   template <class Archive>
@@ -340,6 +350,29 @@ class AutotunedSparsityParameter final : public HyperParameter<float> {
   }
 };
 
+class DatasetLabelDimensionParameter final : public HyperParameter<uint32_t> {
+ public:
+  DatasetLabelDimensionParameter() {}
+
+  uint32_t resolve(const UserInputMap& user_specified_parameters) const final {
+    if (!user_specified_parameters.count(PARAM_NAME)) {
+      throw std::invalid_argument("Could not get dataset label dimension.");
+    }
+
+    return user_specified_parameters.at(PARAM_NAME)
+        .resolveIntegerParam(PARAM_NAME);
+  }
+
+  static constexpr const char* PARAM_NAME = "<__dataset_label_dim__>";
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HyperParameter<uint32_t>>(this));
+  }
+};
+
 }  // namespace thirdai::automl::deployment
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<bool>)
@@ -379,3 +412,6 @@ CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<
                      thirdai::automl::deployment::TemporalContextPtr>)
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::AutotunedSparsityParameter)
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment::DatasetLabelDimensionParameter)

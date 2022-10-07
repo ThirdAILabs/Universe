@@ -10,7 +10,6 @@
 #include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint64_t.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
@@ -111,6 +110,16 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
           "Oracle requires a temporal context object if temporal tracking "
           "relationships are specified.");
     }
+
+    std::string header;
+    for (const auto& [col_name, _] : _config->data_types) {
+      header += col_name + ",";
+    }
+    ColumnNumberMap mock_column_number_map(header, /* delimiter= */ ',');
+    auto mock_processor = makeLabeledProcessor(mock_column_number_map);
+
+    _input_dim = mock_processor->getInputDim();
+    _label_dim = mock_processor->getLabelDim();
   }
 
   DatasetLoaderPtr getLabeledDatasetLoader(
@@ -158,28 +167,24 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {
-    std::string header;
-    for (const auto& [col_name, _] : _config->data_types) {
-      header += col_name + ",";
-    }
-    ColumnNumberMap mock_column_number_map(header, /* delimiter= */ ',');
-    auto input_dim =
-        dataset::GenericBatchProcessor::make(
-            buildInputBlocks(/* column_numbers= */ mock_column_number_map,
-                             /* should_update_history= */ false),
-            /* label_blocks= */ {})
-            ->getInputDim();
-    return {bolt::Input::make(input_dim)};
+    return {bolt::Input::make(_input_dim)};
   }
+
+  uint32_t getLabelDim() final { return _label_dim; }
 
  private:
   void initializeLabeledBatchProcessor() {
     if (_labeled_batch_processor || !_column_number_map) {
       return;
     }
+    _labeled_batch_processor = makeLabeledProcessor(*_column_number_map);
+    _context->initializeProcessor(_labeled_batch_processor);
+  }
 
+  dataset::GenericBatchProcessorPtr makeLabeledProcessor(
+      const ColumnNumberMap& column_number_map) {
     auto input_blocks =
-        buildInputBlocks(/* column_numbers= */ *_column_number_map,
+        buildInputBlocks(/* column_numbers= */ column_number_map,
                          /* should_update_history= */ true);
 
     auto target_type = _config->data_types.at(_config->target);
@@ -189,13 +194,11 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     }
 
     auto label_block =
-        makeCategoricalBlock(/* column_numbers= */ *_column_number_map,
+        makeCategoricalBlock(/* column_numbers= */ column_number_map,
                              /* column_name= */ _config->target);
 
-    _labeled_batch_processor = dataset::GenericBatchProcessor::make(
-        std::move(input_blocks), {label_block});
-
-    _context->initializeProcessor(_labeled_batch_processor);
+    return dataset::GenericBatchProcessor::make(std::move(input_blocks),
+                                                {label_block});
   }
 
   void initializeInferenceBatchProcessor() {
@@ -414,6 +417,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   ColumnNumberMapPtr _column_number_map;
   dataset::GenericBatchProcessorPtr _labeled_batch_processor;
   dataset::GenericBatchProcessorPtr _inference_batch_processor;
+  uint32_t _input_dim;
+  uint32_t _label_dim;
 
   // Private constructor for cereal.
   OracleDatasetFactory() {}
@@ -423,7 +428,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config, _context,
             _vocabs, _column_number_map, _labeled_batch_processor,
-            _inference_batch_processor);
+            _inference_batch_processor, _input_dim, _label_dim);
   }
 };
 

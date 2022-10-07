@@ -1,20 +1,16 @@
-import os
-import random
-
-import numpy as np
 import pytest
 from thirdai import bolt, deployment
 
-# TODO: remove the need for output_dim parameter by introducing the 
-# DataPipelineOutputDimParam. Also need to test that serialization works.
-
-pytestmark = [pytest.mark.integration, pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 CONFIG_FILE = "./saved_oracle_config"
+TRAIN_FILE = "tempTrainFile.csv"
+TEST_FILE = "tempTestFile.csv"
 
-def trained_text_classifier():
-    # num_classes, _ = clinc_dataset
+# TODO: return value of predict is label, score pairs
 
+
+def serialize_make_oracle_config():
     model_config = deployment.ModelConfig(
         input_names=["input"],
         nodes=[
@@ -26,7 +22,7 @@ def trained_text_classifier():
             ),
             deployment.FullyConnectedNodeConfig(
                 name="output",
-                dim=deployment.UserSpecifiedParameter("output_dim", type=int), # TODO: The value should come from data factory or
+                dim=deployment.DatasetLabelDimensionParameter(),
                 sparsity=deployment.ConstantParameter(1.0),
                 activation=deployment.ConstantParameter("softmax"),
                 predecessor="hidden",
@@ -36,8 +32,14 @@ def trained_text_classifier():
     )
 
     dataset_config = deployment.OracleDatasetFactory(
-        config=deployment.UserSpecifiedParameter("config", type=deployment.OracleConfig),
-        temporal_context=deployment.UserSpecifiedParameter("temporal_context", type=deployment.TemporalContext, default_value=deployment.TemporalContext.NoneType())
+        config=deployment.UserSpecifiedParameter(
+            "config", type=deployment.OracleConfig
+        ),
+        temporal_context=deployment.UserSpecifiedParameter(
+            "context",
+            type=deployment.TemporalContext,
+            default_value=deployment.TemporalContext.NoneType(),
+        ),
     )
 
     train_eval_params = deployment.TrainEvalParameters(
@@ -45,7 +47,7 @@ def trained_text_classifier():
         reconstruct_hash_functions_interval=None,
         default_batch_size=2048,
         use_sparse_inference=True,
-        evaluation_metrics=["recall@10"],
+        evaluation_metrics=["recall@1"],
     )
 
     config = deployment.DeploymentConfig(
@@ -56,31 +58,114 @@ def trained_text_classifier():
 
     config.save(CONFIG_FILE)
 
+
+def write_lines_to_file(file, lines):
+    with open(file, "w") as f:
+        for line in lines:
+            f.writelines(line + "\n")
+
+
+def make_simple_oracle_model():
+    serialize_make_oracle_config()
+
+    write_lines_to_file(
+        TRAIN_FILE,
+        [
+            "userId,movieId,timestamp",
+            "0,100,2022-08-29",
+            "1,100,2022-08-30",
+            "1,101,2022-08-31",
+            "1,102,2022-09-01",
+        ],
+    )
+
+    write_lines_to_file(
+        TEST_FILE,
+        [
+            "userId,movieId,timestamp",
+            "0,101,2022-08-31",
+            "2,100,2022-08-30",
+        ],
+    )
+
     context = deployment.TemporalContext()
 
     model = deployment.ModelPipeline(
         config_path=CONFIG_FILE,
         parameters={
-            "output_dim": 3706, 
             "config": deployment.OracleConfig(
                 data_types={
-                    "userId": bolt.types.categorical(n_unique_classes=6040),
-                    "movieId": bolt.types.categorical(n_unique_classes=3706),
-                    "timestamp": bolt.types.date()
+                    "userId": bolt.types.categorical(n_unique_classes=3),
+                    "movieId": bolt.types.categorical(n_unique_classes=3),
+                    "timestamp": bolt.types.date(),
                 },
-                temporal_tracking_relationships={
-                    "userId": ["movieId"]
-                },
-                target="movieId"
-            ), 
-            "context": context
+                temporal_tracking_relationships={"userId": ["movieId"]},
+                target="movieId",
+            ),
+            "context": context,
         },
     )
 
-    model.train(
-        filename='/Users/benitogeordie/Demos/movielens_train.csv', epochs=3, learning_rate=0.0001
-    )
+    return model, context
 
-    # return model
 
-trained_text_classifier()
+def test_sequential_classifier_save_load():
+    model, _ = make_simple_oracle_model()
+
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01)
+    model.save("saveLoc")
+    before_load_output = model.evaluate(TEST_FILE)
+    model = deployment.ModelPipeline.load("saveLoc")
+    after_load_output = model.evaluate(TEST_FILE)
+
+    assert (before_load_output == after_load_output).all()
+
+
+def test_multiple_predict_returns_same():
+    model, _ = make_simple_oracle_model()
+    model.train(TRAIN_FILE, 2, 0.01)
+
+    sample = "0,,2022-08-31"
+    prev_result = model.predict(sample)
+    for _ in range(5):
+        result = model.predict(sample)
+        assert (prev_result == result).all()
+        prev_result = result
+
+
+def test_index_changes_predict():
+    model, context = make_simple_oracle_model()
+    model.train(TRAIN_FILE, 2, 0.01)
+
+    sample = "0,,2022-08-31"
+
+    first_result = model.predict(sample)
+
+    context.update("0,101,2022-08-31")
+
+    second_result = model.predict(sample)
+
+    assert (first_result != second_result).any()
+
+
+def test_context_serialization():
+    model, context = make_simple_oracle_model()
+    model.train(TRAIN_FILE, 2, 0.01)
+
+    model.save("saveLoc")
+    saved_model = deployment.ModelPipeline.load("saveLoc")
+    saved_context = saved_model.get_parameter("context")
+
+    sample = "0,,2022-08-31"
+    update = "0,101,2022-08-31"
+
+    context.update(update)
+    saved_context.update(update)
+
+    original_model_result_after_context_update = model.predict(sample)
+    saved_model_result_after_context_update = saved_model.predict(sample)
+
+    assert (
+        original_model_result_after_context_update
+        == saved_model_result_after_context_update
+    ).any()

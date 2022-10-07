@@ -2,6 +2,8 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -146,7 +148,8 @@ class ModelPipeline {
     return outputs;
   }
 
-  std::unordered_map<std::string, UserParameterInput> getInitParameters() {
+  const std::unordered_map<std::string, UserParameterInput>&
+  getInitParameters() {
     return _user_specified_parameters;
   }
 
@@ -256,7 +259,8 @@ class ModelPipeline {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_dataset_factory, _model, _train_eval_config);
+    archive(_dataset_factory, _model, _train_eval_config,
+            _user_specified_parameters);
   }
 
   DatasetLoaderFactoryPtr _dataset_factory;

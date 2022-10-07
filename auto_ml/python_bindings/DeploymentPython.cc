@@ -24,6 +24,7 @@
 #include <pybind11/stl.h>
 #include <algorithm>
 #include <cstdint>
+#include <exception>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -94,6 +95,11 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              std::shared_ptr<AutotunedSparsityParameter>>(
       submodule, "AutotunedSparsityParameter")
       .def(py::init<std::string>(), py::arg("dimension_param_name"));
+
+  py::class_<DatasetLabelDimensionParameter, HyperParameter<uint32_t>,
+             std::shared_ptr<DatasetLabelDimensionParameter>>(
+      submodule, "DatasetLabelDimensionParameter")
+      .def(py::init<>());
 
   py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig");  // NOLINT
 
@@ -197,6 +203,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("predict_token", &predictTokensWrapper, py::arg("tokens"))
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
+      .def("get_parameter", &getInitParameterWrapper, py::arg("param_name"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
 
   py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
@@ -209,6 +216,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 
   py::class_<TemporalContext, TemporalContextPtr>(submodule, "TemporalContext")
       .def(py::init<>())
+      .def("reset", &TemporalContext::reset)
+      .def("update", &TemporalContext::update, py::arg("update"))
+      .def("batch_update", &TemporalContext::batchUpdate, py::arg("updates"))
       .def_static("NoneType", &TemporalContext::None);
 }
 
@@ -358,6 +368,15 @@ py::object predictBatchWrapper(ModelPipeline& model,
   return convertBoltBatchToNumpy(outputs);
 }
 
+py::object getInitParameterWrapper(ModelPipeline& model,
+                                   const std::string& param_name) {
+  const auto& params = model.getInitParameters();
+  if (!params.count(param_name)) {
+    throw std::invalid_argument("Parameter '" + param_name + "' not found.");
+  }
+  return convertUserParameterInputToPyObject(params.at(param_name), param_name);
+}
+
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
@@ -444,6 +463,40 @@ py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
                           std::move(activations_array));
   }
   return py::object(std::move(activations_array));
+}
+
+py::object convertUserParameterInputToPyObject(const UserParameterInput& param,
+                                               const std::string& param_name) {
+  try {
+    return py::cast(param.resolveBooleanParam(param_name));
+  } catch (const std::exception& e) {
+  }
+  try {
+    return py::cast(param.resolveFloatParam(param_name));
+    ;
+  } catch (const std::exception& e) {
+  }
+  try {
+    return py::cast(param.resolveIntegerParam(param_name));
+    ;
+  } catch (const std::exception& e) {
+  }
+  try {
+    return py::cast(param.resolveStringParam(param_name));
+    ;
+  } catch (const std::exception& e) {
+  }
+  try {
+    return py::cast(param.resolveOracleConfigPtr(param_name));
+    ;
+  } catch (const std::exception& e) {
+  }
+  try {
+    return py::cast(param.resolveTemporalContextPtr(param_name));
+    ;
+  } catch (const std::exception& e) {
+  }
+  throw std::invalid_argument("'" + param_name + "' is not a valid parameter.");
 }
 
 }  // namespace thirdai::automl::deployment::python

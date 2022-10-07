@@ -89,7 +89,7 @@ class TemporalContext {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_numerical_histories, _categorical_histories, _processor);
+    archive(_numerical_histories, _categorical_histories, _processor, _is_none);
   }
 };
 

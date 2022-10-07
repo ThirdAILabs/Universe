@@ -9,6 +9,7 @@
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <cstdint>
 #include <memory>
 #include <optional>
 
@@ -97,6 +98,8 @@ class DatasetLoaderFactory {
       const std::vector<std::string>& inputs) = 0;
 
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
+
+  virtual uint32_t getLabelDim() = 0;
 
   virtual ~DatasetLoaderFactory() = default;
 
