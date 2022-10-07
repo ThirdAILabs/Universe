@@ -34,4 +34,4 @@ def test_dropout_layer():
     )
     metrics = model.predict(test_x, test_y, predict_cfg)
 
-    assert metrics[0]["categorical_accuracy"] >= 0.9
+    assert metrics[0]["categorical_accuracy"] >= 0.8

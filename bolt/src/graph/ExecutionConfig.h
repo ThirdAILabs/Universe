@@ -70,6 +70,18 @@ class PredictConfig {
   std::optional<std::function<void(const BoltVector&)>> _output_callback;
 };
 
+class SaveContext {
+ public:
+  SaveContext(std::string prefix, uint32_t frequency)
+      : _prefix(std::move(prefix)), _frequency(frequency) {}
+  const std::string& prefix() const { return _prefix; }
+  uint32_t frequency() const { return _frequency; }
+
+ private:
+  std::string _prefix;
+  uint32_t _frequency;
+};
+
 class ValidationContext {
  public:
   explicit ValidationContext(
@@ -147,6 +159,12 @@ class TrainConfig {
 
   TrainConfig& withLogLossFrequency(uint32_t log_loss_frequency) {
     _log_loss_frequency = log_loss_frequency;
+    return *this;
+  }
+
+  TrainConfig& withSaveParameters(const std::string& save_prefix,
+                                  uint32_t save_frequency) {
+    _save_context = SaveContext(save_prefix, save_frequency);
     return *this;
   }
 
@@ -233,6 +251,12 @@ class TrainConfig {
 
   uint32_t logLossFrequency() const { return _log_loss_frequency; }
 
+  void setEpochs(uint32_t new_epochs) { _epochs = new_epochs; }
+
+  const std::optional<SaveContext>& saveContext() const {
+    return _save_context;
+  }
+
  private:
   // Private constructor for cereal.
   TrainConfig() : TrainConfig(0, 0){};
@@ -246,6 +270,7 @@ class TrainConfig {
         _reconstruct_hash_functions(std::nullopt),
         _callbacks({}),
         _validation_context(std::nullopt),
+        _save_context(std::nullopt),
         _log_loss_frequency(1) {}
 
   friend class cereal::access;
@@ -271,6 +296,7 @@ class TrainConfig {
   CallbackList _callbacks;
 
   std::optional<ValidationContext> _validation_context;
+  std::optional<SaveContext> _save_context;
 
   /// Log loss frequency, in units of updates (1 batch = 1 update).
   uint32_t _log_loss_frequency;
