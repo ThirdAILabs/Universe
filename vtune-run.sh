@@ -1,6 +1,9 @@
 #!/bin/bash
 
+source /opt/intel/oneapi/vtune/latest/env/vars.sh
+
 set -x;
+
 
 VERSION=$(python3 -c "import thirdai; print(thirdai.__version__)")
 RESULTS_BASE=perf/$VERSION
