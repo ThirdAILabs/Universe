@@ -14,7 +14,6 @@ import numpy as np
 
 @pytest.fixture(scope="module")
 def ray_two_node_cluster_config(communication_type="linear"):
-    worker_dir = os.path.dirname(os.path.realpath(__file__))
     mini_cluster = Cluster(
         initialize_head=True,
         head_node_args={
@@ -22,12 +21,19 @@ def ray_two_node_cluster_config(communication_type="linear"):
         },
     )
     mini_cluster.add_node(num_cpus=1)
+
+    # We set the working_dir for the cluster equal to this directory
+    # so that pickle works. Otherwise, unpickling the function
+    # defined in test_mock_cluster_arbitrary_streaming_data_loader.py would not
+    # work, since pickle needs to be able to import the file the object/function
+    # was originally defined in.
+    working_dir = os.path.dirname(os.path.realpath(__file__))
     cluster_config = db.RayTrainingClusterConfig(
         num_workers=2,
         requested_cpus_per_node=1,
         communication_type=communication_type,
         cluster_address=mini_cluster.address,
-        runtime_env={"working_dir": worker_dir},
+        runtime_env={"working_dir": working_dir},
     )
     yield cluster_config
 

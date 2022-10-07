@@ -1,5 +1,6 @@
 import copy
 import textwrap
+import time
 from typing import Dict
 
 import ray
@@ -7,6 +8,7 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
+from thirdai._distributed_bolt.data_generators import TrainGenerator
 from thirdai._thirdai import bolt
 
 from .utils import get_num_cpus, init_logging
@@ -108,7 +110,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.graph.Model,
         train_config: bolt.graph.TrainConfig,
-        train_sources,
+        train_sources: TrainGenerator,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -177,8 +179,11 @@ class DistributedDataParallel:
 
     def train(self) -> None:
         """
-        Trains the network using the communication type choosen.
+        Trains the network using the communication type choosen. Returns a
+        dictionary with some statistics about training, including total batches
+        trained and total real time.
         """
+        start = time.time()
         train_state_manager = TrainStateManager(
             self.workers,
             self.primary_worker,
@@ -186,10 +191,15 @@ class DistributedDataParallel:
             self.communication_type,
         )
 
+        total_batches_trained = 0
         while train_state_manager.train_batch() < self.train_config.num_epochs:
-            pass
+            total_batches_trained += 1
 
         train_state_manager.finish_training()
+        return {
+            "time": time.time() - start,
+            "total_batches_trained": total_batches_trained,
+        }
 
     def get_model(self, worker_id=0):
         return ray.get(self.workers[worker_id].model.remote())

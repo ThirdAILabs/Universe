@@ -57,8 +57,8 @@ def train_simple_streaming(ray_two_node_cluster_config):
     model = get_simple_model()
 
     train_sources = [
-        db.GenericStreamingDataGenerator(lambda i: get_dataset(i, low=0, high=5)),
-        db.GenericStreamingDataGenerator(lambda i: get_dataset(i, low=5, high=10)),
+        db.GenericStreamingTrainGenerator(lambda i: get_dataset(i, low=0, high=5)),
+        db.GenericStreamingTrainGenerator(lambda i: get_dataset(i, low=5, high=10)),
     ]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
     distributed_model = db.DistributedDataParallel(
@@ -67,7 +67,10 @@ def train_simple_streaming(ray_two_node_cluster_config):
         train_config=train_config,
         train_sources=train_sources,
     )
-    distributed_model.train()
+    train_stats = distributed_model.train()
+    # (high - low) * ceil(dataset_size / batch_size) * num_epochs
+    assert train_stats["total_batches_trained"] == 200
+    print(train_stats)
 
     check_models_are_same_on_first_two_nodes(distributed_model)
 
@@ -84,9 +87,7 @@ def train_simple_streaming(ray_two_node_cluster_config):
     )
 
     print(metrics)
-
     yield metrics
-
 
 
 @pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
@@ -94,6 +95,6 @@ def test_simple_streaming_with_distributed(train_simple_streaming):
     """
     Tests that a two worker cluster can learn f(x) = x, where the first worker
     gets data between 0 and 4 and the second worker gets data between 5 and 9.
-    Uses a streaming data generator to pass in the training data. 
+    Uses a streaming data generator to pass in the training data.
     """
     assert train_simple_streaming[0]["categorical_accuracy"] > 0.9
