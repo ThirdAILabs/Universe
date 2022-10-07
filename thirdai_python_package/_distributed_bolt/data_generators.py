@@ -5,6 +5,15 @@ from thirdai._thirdai import dataset
 
 
 class TrainGenerator(metaclass=ABCMeta):
+    """
+    TrainGenerator is a helper class (currently used by the distributed module)
+    that represents an infinitely streaming training dataset, chunked into
+    tuples of List[dataset.BoltDataset] (training data) and dataset.BoltDataset
+    (labels). The generator automatically loops back to the beginning when the
+    current training dataset runs out, incrementing an internal epoch counter
+    that can be fetched by calling get_current_epoch().
+    """
+
     @abstractmethod
     def next(self) -> Tuple[List[dataset.BoltDataset], dataset.BoltDataset]:
         pass

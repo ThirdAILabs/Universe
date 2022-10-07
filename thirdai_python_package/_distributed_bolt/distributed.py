@@ -1,7 +1,7 @@
 import copy
 import textwrap
 import time
-from typing import Dict
+from typing import Dict, List
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
@@ -59,6 +59,9 @@ class RayTrainingClusterConfig:
         num_omp_threads = str(get_num_cpus())
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
 
+        # We do a deepcopy here so we do not unexpectedly modify the input.
+        # This should not be a performance hit because it is just a shallow
+        # config.
         runtime_env = copy.deepcopy(runtime_env)
         if "env_vars" not in runtime_env:
             runtime_env["env_vars"] = {}
@@ -110,7 +113,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.graph.Model,
         train_config: bolt.graph.TrainConfig,
-        train_sources: TrainGenerator,
+        train_sources: List[TrainGenerator],
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -179,9 +182,12 @@ class DistributedDataParallel:
 
     def train(self) -> None:
         """
-        Trains the network using the communication type choosen. Returns a
-        dictionary with some statistics about training, including total batches
-        trained and total real time.
+        Runs distributed training on the passed in Bolt model on the passed in
+        Ray cluster.
+
+        Returns:
+            Dict: A dictionary with some statistics about training, including
+            total batches trained and total real time.
         """
         start = time.time()
         train_state_manager = TrainStateManager(

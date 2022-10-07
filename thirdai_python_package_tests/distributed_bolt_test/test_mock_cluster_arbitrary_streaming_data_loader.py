@@ -90,7 +90,11 @@ def train_simple_streaming(ray_two_node_cluster_config):
     yield metrics
 
 
-@pytest.mark.skipif("ray" not in sys.modules, reason="requires the ray library")
+# This test requires the Ray library, but we don't skip it if Ray isn't
+# installed because if someone is running it part of the test may be if the
+# Ray install is working at all. Marking it only with
+# pytestmark.mark.distributed prevents it from running in our normal unit and
+# integration test pipeline where ray isn't a dependency.
 def test_simple_streaming_with_distributed(train_simple_streaming):
     """
     Tests that a two worker cluster can learn f(x) = x, where the first worker
