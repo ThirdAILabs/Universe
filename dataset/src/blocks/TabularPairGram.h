@@ -30,8 +30,8 @@ class TabularPairGram : public Block {
   Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) final {
-    auto hash_to_word_map = fillHashesMap(input_row);
-    auto column_num_pair = hash_to_word_map[index_within_block];
+    auto hash_to_col_num_map = fillHashesMap(input_row);
+    auto column_num_pair = hash_to_col_num_map[index_within_block];
     std::string reason;
     std::string column_names;
     if (column_num_pair.first != column_num_pair.second) {
