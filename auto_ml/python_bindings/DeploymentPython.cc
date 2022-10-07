@@ -164,11 +164,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
-                    bool, std::vector<std::string>, std::optional<float>>(),
+                    bool, std::optional<float>>(),
            py::arg("rebuild_hash_tables_interval"),
            py::arg("reconstruct_hash_functions_interval"),
-           py::arg("default_batch_size"), py::arg("use_sparse_inference"),
-           py::arg("evaluation_metrics"),
+           py::arg("default_batch_size"), py::arg("freeze_hash_tables"),
            py::arg("prediction_threshold") = std::nullopt);
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
@@ -185,23 +184,24 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("parameters") = py::dict())
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
            py::arg("parameters") = py::dict())
-      .def("train",
-           py::overload_cast<const std::string&, uint32_t, float,
-                             std::optional<uint32_t>, std::optional<uint32_t>>(
-               &ModelPipeline::train),
-           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("batch_size") = std::nullopt,
+      .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
+           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt)
-      .def("train",
-           py::overload_cast<const dataset::DataLoaderPtr&, uint32_t, float,
-                             std::optional<uint32_t>>(&ModelPipeline::train),
-           py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
+      .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
+           py::arg("train_config"),
            py::arg("max_in_memory_batches") = std::nullopt)
-      .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"))
-      .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"))
-      .def("predict", &predictWrapper, py::arg("input_sample"))
-      .def("predict_token", &predictTokensWrapper, py::arg("tokens"))
-      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
+      .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"),
+           py::arg("predict_config") = std::nullopt)
+      .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
+           py::arg("predict_config") = std::nullopt)
+      .def("predict", &predictWrapper, py::arg("input_sample"),
+           py::arg("use_sparse_inference") = false)
+      .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
+           py::arg("use_sparse_inference") = false)
+      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"),
+           py::arg("use_sparse_inference") = false)
+      .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
+           py::arg("filename"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def("get_parameter", &getInitParameterWrapper, py::arg("param_name"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
@@ -331,26 +331,31 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
-    const std::shared_ptr<dataset::DataLoader>& data_source) {
-  auto output = model.evaluate(data_source);
+    const std::shared_ptr<dataset::DataLoader>& data_source,
+    std::optional<bolt::PredictConfig>& predict_config) {
+  auto output = model.evaluate(data_source, predict_config);
 
   return convertInferenceTrackerToNumpy(output);
 }
 
-py::object evaluateOnFileWrapper(ModelPipeline& model,
-                                 const std::string& filename) {
-  return evaluateOnDataLoaderWrapper(
-      model, std::make_shared<dataset::SimpleFileDataLoader>(
-                 filename, model.defaultBatchSize()));
+py::object evaluateOnFileWrapper(
+    ModelPipeline& model, const std::string& filename,
+    std::optional<bolt::PredictConfig>& predict_config) {
+  return evaluateOnDataLoaderWrapper(model,
+                                     dataset::SimpleFileDataLoader::make(
+                                         filename, DEFAULT_EVALUATE_BATCH_SIZE),
+                                     predict_config);
 }
 
-py::object predictWrapper(ModelPipeline& model, const std::string& sample) {
-  BoltVector output = model.predict(sample);
+py::object predictWrapper(ModelPipeline& model, const std::string& sample,
+                          bool use_sparse_inference) {
+  BoltVector output = model.predict(sample, use_sparse_inference);
   return convertBoltVectorToNumpy(output);
 }
 
 py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens) {
+                                const std::vector<uint32_t>& tokens,
+                                bool use_sparse_inference) {
   std::stringstream sentence;
   for (uint32_t i = 0; i < tokens.size(); i++) {
     if (i > 0) {
@@ -358,12 +363,13 @@ py::object predictTokensWrapper(ModelPipeline& model,
     }
     sentence << tokens[i];
   }
-  return predictWrapper(model, sentence.str());
+  return predictWrapper(model, sentence.str(), use_sparse_inference);
 }
 
 py::object predictBatchWrapper(ModelPipeline& model,
-                               const std::vector<std::string>& samples) {
-  BoltBatch outputs = model.predictBatch(samples);
+                               const std::vector<std::string>& samples,
+                               bool use_sparse_inference) {
+  BoltBatch outputs = model.predictBatch(samples, use_sparse_inference);
 
   return convertBoltBatchToNumpy(outputs);
 }

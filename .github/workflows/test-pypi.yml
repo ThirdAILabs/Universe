@@ -2,9 +2,9 @@ name: Upload to Test Pypi
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
-concurrency: 
-  group: testpypi-${{ github.head_ref }}
-  cancel-in-progress: false
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 # Run on pushes and releases. The actual upload will only happen on a 
 # release.
@@ -23,12 +23,23 @@ on:
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, ubuntu-20.04, macos-12]
+        os: [windows-2019, ubuntu-20.04]
+        include:
+          - name: macos-x86_64
+            os: macos-12
+            archs: x86_64
+            deployment_target: "10.15"
+          - name: macos-arm64
+            os: macos-12
+            archs: arm64
+            deployment_target: "11.0"
+
+
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v2
@@ -36,18 +47,8 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
-      # Build CryptoPP static lib on windows first
-      - uses: ilammy/msvc-dev-cmd@v1
-        if: matrix.os == 'windows-2019'
-      - name: Build CryptoPP static lib
-        run: |
-          cd deps/cryptopp
-          nmake /f cryptest.nmake
-        if: matrix.os == 'windows-2019'
-
-
       - name: Build and test wheels
-        uses: pypa/cibuildwheel@v2.5.0
+        uses: pypa/cibuildwheel@v2.9.0
         env:
           # The following is to relax the discovery timeout (from a default 5) so that
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
@@ -61,11 +62,8 @@ jobs:
               CMAKE_ARGS="-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30"
               KMP_DUPLICATE_LIB_OK=TRUE
 
-          # TODO(TSK-561): Proper MacOS wheels.
-          CIBW_ENVIRONMENT_MACOS: >
-              CC=/usr/local/bin/gcc-11
-              CXX=/usr/local/bin/g++-11
-              MACOSX_DEPLOYMENT_TARGET=10.15
+          CIBW_ENVIRONMENT_MACOS:
+            MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
 
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
@@ -75,14 +73,24 @@ jobs:
           # advantage to JIT compilation of python since most of our processing
           # happens in C++ (it can actually make it slower!). Also, on some
           # platforms numpy isn't available so our tests don't work.
-          CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64"
+          CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64 cp*macosx_arm64"
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
 
           # On linux we copy a valid license to the home directory within the docker
           CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+
+          # Build both x86_64 and arm64 (apple silicon)
+          CIBW_ARCHS_MACOS: ${{ matrix.archs }}
+
+          # Skip building on CPython <3.8 on the Mac
+          # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
+          # of now because ray is unsupported. We expect ray to be present to
+          # test our distributed pipeline.
+          #
+          # TODO(any): A more future proof solution when stuff starts working.
+          CIBW_SKIP: "cp36-macosx_arm64 cp37-macox_arm64 cp311-*"
 
 
       - name: Upload wheels
