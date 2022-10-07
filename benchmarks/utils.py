@@ -89,7 +89,10 @@ def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
         mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
 
     mlflow.set_experiment(experiment_name)
-    mlflow.start_run(run_name=run_name, tags={"dataset": dataset, "model": model_name})
+    mlflow.start_run(
+        run_name=run_name,
+        tags={"dataset": dataset, "model": model_name},
+    )
 
 
 def log_params(params, mlflow_args):
@@ -145,7 +148,7 @@ def log_machine_info():
         "architecture": platform.machine(),
         "processor": platform.processor(),
         "hostname": socket.gethostname(),
-        "ram_gb": round(psutil.virtual_memory().total / (1024.0 ** 3)),
+        "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
         "num_cores": psutil.cpu_count(logical=True),
     }
 

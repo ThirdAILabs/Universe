@@ -125,7 +125,7 @@ class TrainStateManager:
                 )
             )
             ray.get([worker.receive_gradients.remote() for worker in self.workers])
-        elif self.communication_type == "gloo":
+        elif self.communication_type== "gloo":
             ray.get([worker.receive_gradients.remote() for worker in self.workers])
 
         self.averaging_and_communication_time += time.time() - start_communication_time

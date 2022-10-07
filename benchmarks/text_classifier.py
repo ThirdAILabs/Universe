@@ -44,7 +44,9 @@ def train_classifier(
 
 
 def evaluate_classifier(classifier, test_dataset):
-    _, predictions = classifier.evaluate(test_file=test_dataset)
+    _, predictions = classifier.evaluate(
+        test_file=test_dataset,
+    )
     accuracy = compute_accuracy(test_dataset, predictions)
     mlflow.log_metric("accuracy", accuracy)
 

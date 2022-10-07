@@ -86,7 +86,11 @@ def test_tabular_classifier_census_income_dataset():
         internal_model_dim=1000, n_classes=n_classes, column_datatypes=column_datatypes
     )
 
-    classifier.train(filename=TRAIN_FILE, epochs=1, learning_rate=0.01)
+    classifier.train(
+        filename=TRAIN_FILE,
+        epochs=1,
+        learning_rate=0.01,
+    )
 
     _, predictions = classifier.evaluate(filename=TEST_FILE)
 

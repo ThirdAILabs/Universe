@@ -69,7 +69,12 @@ def get_mnist_model():
 @pytest.fixture(scope="module")
 def train_distributed_bolt_check(request):
     # Initilizing a mock cluster with two node
-    mini_cluster = Cluster(initialize_head=True, head_node_args={"num_cpus": 1})
+    mini_cluster = Cluster(
+        initialize_head=True,
+        head_node_args={
+            "num_cpus": 1,
+        },
+    )
     mini_cluster.add_node(num_cpus=1)
 
     model = get_mnist_model()

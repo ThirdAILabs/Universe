@@ -68,7 +68,7 @@ class MlflowCallback(graph.callbacks.Callback):
             "architecture": platform.machine(),
             "processor": platform.processor(),
             "hostname": socket.gethostname(),
-            "ram_gb": round(psutil.virtual_memory().total / (1024.0 ** 3)),
+            "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
             "num_cores": psutil.cpu_count(logical=True),
         }
 

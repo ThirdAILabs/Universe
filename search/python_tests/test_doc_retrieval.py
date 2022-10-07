@@ -103,7 +103,7 @@ def test_add_doc_find_centroids_is_fast():
     of the test, but this seems unlikely.
     """
 
-    num_centroids = 2 ** 18  # 262144
+    num_centroids = 2**18  # 262144
     data_dim = 128
     words_per_doc = 256
     num_docs = 10

@@ -204,7 +204,9 @@ def test_train_with_validation(trained_text_classifier):
     )
 
     trained_text_classifier.train(
-        filename=TRAIN_FILE, train_config=train_config, batch_size=256
+        filename=TRAIN_FILE,
+        train_config=train_config,
+        batch_size=256,
     )
 
 

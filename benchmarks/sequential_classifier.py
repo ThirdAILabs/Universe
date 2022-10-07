@@ -80,7 +80,10 @@ def train_and_evaluate_one_epoch(model, config):
     logged_metrics = {}
 
     train_metrics = model.train(
-        train_data_full_path, epochs=1, learning_rate=learning_rate, metrics=metrics
+        train_data_full_path,
+        epochs=1,
+        learning_rate=learning_rate,
+        metrics=metrics,
     )
 
     logged_params.update({"model_summary": model.summarize_model()})

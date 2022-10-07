@@ -83,7 +83,12 @@ class Circular:
         """
         set_gradients(self.model, self.gradients)
 
-    def update_partitions(self, partition_id, reduce, avg_gradients):
+    def update_partitions(
+        self,
+        partition_id,
+        reduce,
+        avg_gradients,
+    ):
         """
         Update the partitions with the partitioned array received from its friend
 
@@ -117,7 +122,10 @@ class Circular:
                     ] = self.friend_gradients[i]
 
     def process_ring(
-        self, update_id: int, reduce: bool = True, avg_gradients: bool = False
+        self,
+        update_id: int,
+        reduce: bool = True,
+        avg_gradients: bool = False,
     ):
         """
         The function first calculates the partition index range on which it will

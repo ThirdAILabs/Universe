@@ -205,7 +205,12 @@ def main():
     )
     args = parser.parse_args()
 
-    datasets = ["ChurnModeling", "CensusIncome", "EyeMovements", "PokerHandInduction"]
+    datasets = [
+        "ChurnModeling",
+        "CensusIncome",
+        "EyeMovements",
+        "PokerHandInduction",
+    ]
     large_datasets = [
         "OttoGroupProductClassificationChallenge",
         "BNPParibasCardifClaimsManagement",
