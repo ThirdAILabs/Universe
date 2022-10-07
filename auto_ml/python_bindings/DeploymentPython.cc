@@ -5,6 +5,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -370,7 +371,9 @@ py::object getInitParameterWrapper(ModelPipeline& model,
   if (!params.count(param_name)) {
     throw std::invalid_argument("Parameter '" + param_name + "' not found.");
   }
-  return convertUserParameterInputToPyObject(params.at(param_name), param_name);
+  return py::cast(params.at(param_name).getValue());
+  // return convertUserParameterInputToPyObject(params.at(param_name),
+  // param_name);
 }
 
 template <typename T>
@@ -459,40 +462,6 @@ py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
                           std::move(activations_array));
   }
   return py::object(std::move(activations_array));
-}
-
-py::object convertUserParameterInputToPyObject(const UserParameterInput& param,
-                                               const std::string& param_name) {
-  try {
-    return py::cast(param.resolveBooleanParam(param_name));
-  } catch (const std::exception& e) {
-  }
-  try {
-    return py::cast(param.resolveFloatParam(param_name));
-    ;
-  } catch (const std::exception& e) {
-  }
-  try {
-    return py::cast(param.resolveIntegerParam(param_name));
-    ;
-  } catch (const std::exception& e) {
-  }
-  try {
-    return py::cast(param.resolveStringParam(param_name));
-    ;
-  } catch (const std::exception& e) {
-  }
-  try {
-    return py::cast(param.resolveOracleConfigPtr(param_name));
-    ;
-  } catch (const std::exception& e) {
-  }
-  try {
-    return py::cast(param.resolveTemporalContextPtr(param_name));
-    ;
-  } catch (const std::exception& e) {
-  }
-  throw std::invalid_argument("'" + param_name + "' is not a valid parameter.");
 }
 
 }  // namespace thirdai::automl::deployment::python
