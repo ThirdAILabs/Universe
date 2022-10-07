@@ -7,9 +7,6 @@ CONFIG_FILE = "./saved_oracle_config"
 TRAIN_FILE = "tempTrainFile.csv"
 TEST_FILE = "tempTestFile.csv"
 
-# TODO: return value of predict is label, score pairs
-
-
 def serialize_make_oracle_config():
     model_config = deployment.ModelConfig(
         input_names=["input"],
