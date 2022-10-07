@@ -27,9 +27,9 @@ class Vocabulary {
   virtual std::vector<uint32_t> encode(
       const std::string_view& sentence) const = 0;
 
-  // Decodes given piece_ids into a string. Throws out of bounds exception if
+  // Decodes given token_ids into a string. Throws out of bounds exception if
   // piece outside what's known to the vocabulary.
-  virtual std::string decode(const std::vector<uint32_t>& piece_ids) const = 0;
+  virtual std::string decode(const std::vector<uint32_t>& token_ids) const = 0;
 
   // Returns the id of a given token, if it exists in the vocabulary.
   // If token not present, returns unkId, indicating the token is unknown to the
@@ -60,7 +60,7 @@ class FixedVocabulary : public Vocabulary {
 
   std::vector<uint32_t> encode(const std::string_view& sentence) const final;
 
-  std::string decode(const std::vector<uint32_t>& piece_ids) const final;
+  std::string decode(const std::vector<uint32_t>& token_ids) const final;
 
   uint32_t id(const std::string_view& token_view) const final;
 

@@ -24,7 +24,7 @@ uint32_t FixedVocabulary::size() const { return _token_to_id.size(); }
 
 std::vector<uint32_t> FixedVocabulary::encode(
     const std::string_view& sentence) const {
-  std::vector<uint32_t> piece_ids;
+  std::vector<uint32_t> token_ids;
 
   const char* base = sentence.data();
   const char* end = base + sentence.size();
@@ -34,8 +34,8 @@ std::vector<uint32_t> FixedVocabulary::encode(
       // A word terminated by a space.
       size_t token_length = marker - base;
       std::string_view token(base, token_length);
-      uint32_t piece_id = id(token);
-      piece_ids.push_back(piece_id);
+      uint32_t token_id = id(token);
+      token_ids.push_back(token_id);
 
       // Advance marker until the next non-space character, also update base
       // to point accordingly.
@@ -53,28 +53,28 @@ std::vector<uint32_t> FixedVocabulary::encode(
   size_t token_length = marker - base;
   if (token_length) {
     std::string_view token(base, token_length);
-    uint32_t piece_id = id(token);
-    piece_ids.push_back(piece_id);
+    uint32_t token_id = id(token);
+    token_ids.push_back(token_id);
   }
 
-  return piece_ids;
+  return token_ids;
 }
 
 std::string FixedVocabulary::decode(
-    const std::vector<uint32_t>& piece_ids) const {
+    const std::vector<uint32_t>& token_ids) const {
   std::stringstream stream;
-  for (size_t i = 0; i < piece_ids.size(); i++) {
-    uint32_t piece_id = piece_ids[i];
+  for (size_t i = 0; i < token_ids.size(); i++) {
+    uint32_t token_id = token_ids[i];
     if (i != 0) {
       stream << " ";
     }
-    auto query = _id_to_token.find(piece_id);
+    auto query = _id_to_token.find(token_id);
     if (query != _id_to_token.end()) {
       std::string token = query->second;
       stream << token;
     } else {
       throw std::out_of_range(
-          "Supplied piece_ids contain out of bounds value.");
+          "Supplied token_ids contain out of bounds value.");
     }
   }
 
