@@ -1,5 +1,6 @@
 import time
 
+import numpy as np
 import ray
 
 
@@ -38,6 +39,47 @@ class TrainStateManager:
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
+    def run_linear_cluster_communication(self):
+        """
+        This function implements the linear way of communicating between the node.
+        In this way of communication, each of the worker calculates their gradients,
+        send their gradients to the supervisor and the supervisor sums the gradients,
+        averages it and and send the gradients back to the workers.
+
+        :param workers: batch number for the particular worker with worker id (id).
+        :type workers: int
+        """
+
+        gradients_list = ray.get(
+            [worker.get_calculated_gradients.remote() for worker in self.workers]
+        )
+
+        # We initialize the sum of gradient variables by setting them equal to the
+        # first set of gradients
+        self.gradient_averages = [
+            np.array(gradients_list[0][i]) for i in range(len(gradients_list[0]))
+        ]
+
+        for worker_id in range(1, len(gradients_list)):
+            for gradient_id in range(len(self.gradient_averages)):
+                self.gradient_averages[gradient_id] += gradients_list[worker_id][
+                    gradient_id
+                ]
+
+        for gradient_id in range(len(self.gradient_averages)):
+            self.gradient_averages[gradient_id] /= len(self.workers)
+
+        # Here we are putting the references for averaged gradients in the ray plasma store.
+        # This allows us to do just a single copy of the gradient array to shared disk, instead
+        # of 1 per worker.
+        gradient_averages_ref = ray.put(self.gradient_averages)
+        ray.get(
+            [
+                worker.receive_gradients.remote(gradient_averages_ref)
+                for worker in self.workers
+            ]
+        )
+
     def train_batch(self, epoch_id, batch_id):
         """
         Train the Model
@@ -75,18 +117,15 @@ class TrainStateManager:
         """
         start_communication_time = time.time()
         if self.communication_type == "linear":
-            ray.get(
-                self.primary_worker.run_linear_cluster_communication.remote(
-                    self.workers
-                )
-            )
+            self.run_linear_cluster_communication()
         elif self.communication_type == "circular":
             ray.get(
                 self.primary_worker.run_circular_cluster_communication.remote(
                     self.workers
                 )
             )
-        ray.get([worker.receive_gradients.remote() for worker in self.workers])
+            ray.get([worker.receive_gradients.remote() for worker in self.workers])
+
         self.averaging_and_communication_time += time.time() - start_communication_time
 
     def finish_training(self):
