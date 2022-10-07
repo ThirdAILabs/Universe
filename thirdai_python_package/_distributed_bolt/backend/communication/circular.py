@@ -147,10 +147,10 @@ class Circular:
 
         partition_id = (update_id + self.id - 1) % self.num_workers
 
-        self.friend_gradients = ray.get(
-            self.friend.receive_array_partitions.remote(update_id)
-        )
+        friend_gradients_ref = self.friend.receive_array_partitions.remote(update_id)
+        self.friend_gradients = ray.get(friend_gradients_ref)
         self.update_partitions(partition_id, reduce, avg_gradients)
+        del friend_gradients_ref
 
     def receive_array_partitions(self, update_id: int):
         """

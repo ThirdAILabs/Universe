@@ -1,5 +1,5 @@
-Instructions to use Distributed Bolt
-====================================
+Distributed training
+====================
 
 
 

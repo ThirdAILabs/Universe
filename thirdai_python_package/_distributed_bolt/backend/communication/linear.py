@@ -25,7 +25,7 @@ class Linear:
         """
         self.model.compute_and_store_batch_gradients(batch_no)
 
-    def receive_gradients(self):
+    def receive_gradients(self, averaged_gradients):
         """
         This function is called by the primary_worker to first, get the updated gradients
         from the primary_worker and then set those updated gradients to the network.
@@ -33,9 +33,5 @@ class Linear:
         :return: returns True, after functions complete
         :rtype: bool
         """
-        if self.id is 0:
-            self.gradients = self.primary_worker.gradients_avg()
-        else:
-            self.gradients = ray.get(self.primary_worker.gradients_avg.remote())
 
-        set_gradients(self.model, self.gradients)
+        set_gradients(self.model, averaged_gradients)

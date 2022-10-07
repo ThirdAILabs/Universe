@@ -46,7 +46,7 @@ def download_clinc_dataset():
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
 
 
-def test_text_classifier_clinc_dataset():
+def test_text_auto_classifier_clinc_dataset():
     """
     This test creates and trains a text classifier on the clinc dataset and
     checks that it acheives the correct accuracy. Then it saves the trained

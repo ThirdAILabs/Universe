@@ -65,9 +65,13 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
         node_layers.end());
   }
 
+#if THIRDAI_EXPOSE_ALL
   std::string model_summary =
       summarize(/* print = */ print_when_done, /* detailed = */ false);
   logging::info(model_summary);
+#else
+  (void)print_when_done;
+#endif
 }
 
 MetricData BoltGraph::train(
@@ -89,7 +93,29 @@ MetricData BoltGraph::train(
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
 
-  for (uint32_t _epoch = 0; _epoch < train_config.epochs(); _epoch++) {
+  /*
+   * There are a few cases of epoch calculation to handle here, which is not
+   * obvious reading the code here locally. We want _epoch to be the single
+   * source of truth for all cases.
+   *
+   * 1. Fresh training. The constructor would have set _epoch to 0.
+   * 2. There is currently the option for the client to incrementally train,
+   *    similar to an undocumented behaviour in Keras.
+   *
+   *    https://github.com/keras-team/keras/issues/4446
+   *
+   *    We do not want this behaviour broken to avoid surprises.
+   *
+   * 3. TODO(jerin): We have loaded a checkpoint and want to resume training. We
+   *    have epoch loaded from cereal archive here.
+   */
+
+  // Treat the supplied epochs as additional epochs. Use this to generate the
+  // total num_epochs. This way _epoch indicates how many passes have been made
+  // over the dataset.
+  uint32_t num_epochs = _epoch + train_config.epochs();
+
+  for (/*_epoch = _epoch*/; _epoch < num_epochs; _epoch++) {
     train_state.epoch = _epoch;
     callbacks.onEpochBegin(*this, train_state);
 
@@ -159,6 +185,15 @@ MetricData BoltGraph::train(
                                   /* use_sparsity=*/true);
         }
 
+        const std::optional<SaveContext>& save_context =
+            train_config.saveContext();
+        if (save_context && save_context->frequency() != 0 &&
+            _updates % save_context->frequency() == 0) {
+          const std::string checkpoint_path =
+              save_context->prefix() + ".last.bolt";
+          save(checkpoint_path);
+        }
+
         callbacks.onBatchEnd(*this, train_state);
       }
 
@@ -193,6 +228,12 @@ MetricData BoltGraph::train(
       auto [val_metrics, _] = predict(validation->data(), validation->labels(),
                                       validation->config());
       train_state.updateValidationMetrics(val_metrics);
+    }
+
+    const std::optional<SaveContext>& save_context = train_config.saveContext();
+    if (save_context) {
+      const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
+      save(checkpoint_path);
     }
 
     callbacks.onEpochEnd(*this, train_state);
