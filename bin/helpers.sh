@@ -22,6 +22,6 @@ function thirdai-install {
     WHEEL_TAG="$(cat $THIRDAI_SOURCE_DIR/thirdai.version)+$(git -C $THIRDAI_SOURCE_DIR rev-parse --short HEAD)"
     set -x;
     python3 -m pip install --force-reinstall --upgrade \
-        $THIRDAI_SOURCE_DIR/dist/thirdai-${WHEEL_TAG}-cp310-cp310-macosx_12_0_arm64.whl
+        $THIRDAI_SOURCE_DIR/dist/thirdai-${WHEEL_TAG}-cp*.whl
     set +x;
 }
