@@ -2,6 +2,8 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -13,6 +15,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::automl::deployment {
@@ -30,19 +33,22 @@ class ModelPipeline {
  public:
   ModelPipeline(DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,
-                TrainEvalParameters train_eval_parameters)
+                TrainEvalParameters train_eval_parameters,
+                std::unordered_map<std::string, UserParameterInput>
+                    user_specified_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
-        _train_eval_config(train_eval_parameters) {}
+        _train_eval_config(train_eval_parameters),
+        _user_specified_parameters(std::move(user_specified_parameters)) {}
 
   static auto make(const DeploymentConfigPtr& config,
                    const std::unordered_map<std::string, UserParameterInput>&
                        user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
-
     return ModelPipeline(std::move(dataset_factory), std::move(model),
-                         config->train_eval_parameters());
+                         config->train_eval_parameters(),
+                         user_specified_parameters);
   }
 
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
@@ -146,6 +152,11 @@ class ModelPipeline {
     }
 
     return outputs;
+  }
+
+  const std::unordered_map<std::string, UserParameterInput>&
+  getInitParameters() {
+    return _user_specified_parameters;
   }
 
   void save(const std::string& filename) {
@@ -265,12 +276,15 @@ class ModelPipeline {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_dataset_factory, _model, _train_eval_config);
+    archive(_dataset_factory, _model, _train_eval_config,
+            _user_specified_parameters);
   }
 
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   TrainEvalParameters _train_eval_config;
+  std::unordered_map<std::string, UserParameterInput>
+      _user_specified_parameters;
 };
 
 }  // namespace thirdai::automl::deployment

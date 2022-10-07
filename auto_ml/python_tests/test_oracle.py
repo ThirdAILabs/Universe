@@ -1,0 +1,171 @@
+import pytest
+from thirdai import bolt, deployment
+
+pytestmark = [pytest.mark.unit]
+
+CONFIG_FILE = "./saved_oracle_config"
+TRAIN_FILE = "tempTrainFile.csv"
+TEST_FILE = "tempTestFile.csv"
+
+def serialize_make_oracle_config():
+    model_config = deployment.ModelConfig(
+        input_names=["input"],
+        nodes=[
+            deployment.FullyConnectedNodeConfig(
+                name="hidden",
+                dim=deployment.ConstantParameter(1024),
+                activation=deployment.ConstantParameter("relu"),
+                predecessor="input",
+            ),
+            deployment.FullyConnectedNodeConfig(
+                name="output",
+                dim=deployment.DatasetLabelDimensionParameter(),
+                sparsity=deployment.ConstantParameter(1.0),
+                activation=deployment.ConstantParameter("softmax"),
+                predecessor="hidden",
+            ),
+        ],
+        loss=bolt.CategoricalCrossEntropyLoss(),
+    )
+
+    dataset_config = deployment.OracleDatasetFactory(
+        config=deployment.UserSpecifiedParameter(
+            "config", type=deployment.OracleConfig
+        ),
+        temporal_context=deployment.UserSpecifiedParameter(
+            "context",
+            type=deployment.TemporalContext,
+            default_value=deployment.TemporalContext.NoneType(),
+        ),
+    )
+
+    train_eval_params = deployment.TrainEvalParameters(
+        rebuild_hash_tables_interval=None,
+        reconstruct_hash_functions_interval=None,
+        default_batch_size=2048,
+        freeze_hash_tables=True,
+    )
+
+    config = deployment.DeploymentConfig(
+        dataset_config=dataset_config,
+        model_config=model_config,
+        train_eval_parameters=train_eval_params,
+    )
+
+    config.save(CONFIG_FILE)
+
+
+def write_lines_to_file(file, lines):
+    with open(file, "w") as f:
+        for line in lines:
+            f.writelines(line + "\n")
+
+
+def make_simple_oracle_model():
+    serialize_make_oracle_config()
+
+    write_lines_to_file(
+        TRAIN_FILE,
+        [
+            "userId,movieId,timestamp",
+            "0,0,2022-08-29",
+            "1,0,2022-08-30",
+            "1,1,2022-08-31",
+            "1,2,2022-09-01",
+        ],
+    )
+
+    write_lines_to_file(
+        TEST_FILE,
+        [
+            "userId,movieId,timestamp",
+            "0,1,2022-08-31",
+            "2,0,2022-08-30",
+        ],
+    )
+
+    context = deployment.TemporalContext()
+
+    model = deployment.ModelPipeline(
+        config_path=CONFIG_FILE,
+        parameters={
+            "config": deployment.OracleConfig(
+                data_types={
+                    "userId": bolt.types.categorical(n_unique_classes=3),
+                    "movieId": bolt.types.categorical(n_unique_classes=3),
+                    "timestamp": bolt.types.date(),
+                },
+                temporal_tracking_relationships={"userId": ["movieId"]},
+                target="movieId",
+            ),
+            "context": context,
+        },
+    )
+
+    return model, context
+
+
+def test_sequential_classifier_save_load():
+    model, _ = make_simple_oracle_model()
+
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.save("saveLoc")
+    before_load_output = model.evaluate(TEST_FILE)
+    model = deployment.ModelPipeline.load("saveLoc")
+    after_load_output = model.evaluate(TEST_FILE)
+
+    assert (before_load_output == after_load_output).all()
+
+
+def test_multiple_predict_returns_same():
+    model, _ = make_simple_oracle_model()
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
+
+    sample = "0,,2022-08-31"
+    prev_result = model.predict(sample)
+    for _ in range(5):
+        result = model.predict(sample)
+        assert (prev_result == result).all()
+        prev_result = result
+
+
+def test_index_changes_predict():
+    model, context = make_simple_oracle_model()
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
+
+    sample = "0,,2022-08-31"
+
+    first_result = model.predict(sample)
+
+    context.update("0,1,2022-08-31")
+
+    second_result = model.predict(sample)
+
+    assert (first_result != second_result).any()
+
+
+def test_context_serialization():
+    model, context = make_simple_oracle_model()
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
+
+    model.save("saveLoc")
+    saved_model = deployment.ModelPipeline.load("saveLoc")
+    saved_context = saved_model.get_parameter("context")
+
+    sample = "0,,2022-08-31"
+    update = "0,1,2022-08-31"
+
+    context.update(update)
+    saved_context.update(update)
+
+    original_model_result_after_context_update = model.predict(sample)
+    saved_model_result_after_context_update = saved_model.predict(sample)
+
+    assert (
+        original_model_result_after_context_update
+        == saved_model_result_after_context_update
+    ).any()

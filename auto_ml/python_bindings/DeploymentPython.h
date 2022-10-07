@@ -6,6 +6,7 @@
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
+#include <optional>
 #include <unordered_map>
 
 namespace py = pybind11;
@@ -20,8 +21,9 @@ void defConstantParameter(py::module_& submodule);
 template <typename T>
 void defOptionMappedParameter(py::module_& submodule);
 
-py::object makeUserSpecifiedParameter(const std::string& name,
-                                      const py::object& type);
+py::object makeUserSpecifiedParameter(
+    const std::string& name, const py::object& type,
+    const py::object& default_value = py::cast(std::nullopt));
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
                              const py::dict& parameters);
@@ -49,10 +51,15 @@ py::object predictBatchWrapper(ModelPipeline& model,
                                const std::vector<std::string>& samples,
                                bool use_sparse_inference);
 
+py::object getInitParameterWrapper(ModelPipeline& model,
+                                   const std::string& param_name);
+
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 
 py::object convertBoltVectorToNumpy(const BoltVector& vector);
 
 py::object convertBoltBatchToNumpy(const BoltBatch& batch);
 
+py::object convertUserParameterInputToPyObject(const UserParameterInput& param,
+                                               const std::string& param_name);
 }  // namespace thirdai::automl::deployment::python
