@@ -41,8 +41,8 @@ class RayTrainingClusterConfig:
             raise ValueError(
                 textwrap.dedent(
                     """
-                        Currently only two modes of communication is supported.
-                        Use: "circular" or "linear". 
+                        Currently only three modes of communication is supported.
+                        Use: "circular" or "linear" or "gloo". 
                     """
                 )
             )
