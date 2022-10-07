@@ -1,13 +1,15 @@
-import os
-import sys
-import warnings
-
-import numpy as np
 import ray
+
+import warnings
+import sys, os
+
 import ray.util.collective as col
 from ray.util.collective.types import Backend, ReduceOp
 
-from ...utils import get_gradients, set_gradients
+
+import numpy as np
+
+from ...utils import set_gradients, get_gradients
 
 
 class Gloo:
