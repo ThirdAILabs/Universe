@@ -1,6 +1,7 @@
+import textwrap
+
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt
-import textwrap
 
 from ..utils import get_gradients, parse_svm_dataset
 
