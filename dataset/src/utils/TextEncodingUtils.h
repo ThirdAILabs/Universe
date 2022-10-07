@@ -105,9 +105,9 @@ class TextEncodingUtils {
   }
 
   static std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>
-  computeRawPairgramsHashToColNumMapFromUnigrams(
-      std::vector<uint32_t> unigram_hashes, uint32_t output_range,
-      uint32_t label_col) {
+  computePairgramsColNumMapFromUnigrams(std::vector<uint32_t> unigram_hashes,
+                                        uint32_t output_range,
+                                        uint32_t label_col) {
     std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>
         pairgram_hashes_map;
     for (uint32_t token = 0; token < label_col; token++) {

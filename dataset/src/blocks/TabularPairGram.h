@@ -112,9 +112,8 @@ class TabularPairGram : public Block {
       std::rethrow_exception(err);
     }
 
-    auto hashes_map =
-        TextEncodingUtils::computeRawPairgramsHashToColNumMapFromUnigrams(
-            unigram_hashes, _output_range, _metadata->getLabelCol());
+    auto hashes_map = TextEncodingUtils::computePairgramsColNumMapFromUnigrams(
+        unigram_hashes, _output_range, _metadata->getLabelCol());
 
     return hashes_map;
   }
