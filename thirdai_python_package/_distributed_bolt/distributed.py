@@ -1,5 +1,6 @@
+import copy
 import textwrap
-from typing import List
+from typing import Dict
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
@@ -24,6 +25,7 @@ class RayTrainingClusterConfig:
         requested_cpus_per_node: int = -1,
         communication_type: str = "circular",
         cluster_address: str = "auto",
+        runtime_env: Dict = {},
     ):
         """
         This constructor connects to an already existing Ray cluster,
@@ -54,7 +56,11 @@ class RayTrainingClusterConfig:
         # So, we need to change the OMP_NUM_THREADS to support parallization
         num_omp_threads = str(get_num_cpus())
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
-        runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
+
+        runtime_env = copy.deepcopy(runtime_env)
+        if "env_vars" not in runtime_env:
+            runtime_env["env_vars"] = {}
+        runtime_env["env_vars"]["OMP_NUM_THREADS"] = str(get_num_cpus())
 
         ray.init(address=cluster_address, runtime_env=runtime_env)
         if not ray.is_initialized():

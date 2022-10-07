@@ -14,6 +14,7 @@ import numpy as np
 
 @pytest.fixture(scope="module")
 def ray_two_node_cluster_config(communication_type="linear"):
+    worker_dir = os.path.dirname(os.path.realpath(__file__))
     mini_cluster = Cluster(
         initialize_head=True,
         head_node_args={
@@ -26,6 +27,7 @@ def ray_two_node_cluster_config(communication_type="linear"):
         requested_cpus_per_node=1,
         communication_type=communication_type,
         cluster_address=mini_cluster.address,
+        runtime_env={"working_dir": worker_dir},
     )
     yield cluster_config
 

@@ -106,7 +106,7 @@ def train_distributed_bolt_check(ray_two_node_cluster_config):
 @pytest.mark.parametrize(
     "ray_two_node_cluster_config", ["linear", "circular"], indirect=True
 )
-def test_distributed_bolt_on_mock_cluster(train_distributed_bolt_check):
+def test_distributed_mnist(train_distributed_bolt_check):
     import multiprocessing
 
     if multiprocessing.cpu_count() < 2:
