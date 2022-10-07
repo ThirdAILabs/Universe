@@ -104,22 +104,33 @@ class TextEncodingUtils {
     return pairgram_hashes;
   }
 
-  static void computeRawPairgramsHashToColNumMapFromUnigrams(
+  static std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>
+  computeRawPairgramsHashToColNumMapFromUnigrams(
       std::vector<uint32_t> unigram_hashes, uint32_t output_range,
-      std::unordered_map<uint32_t, uint32_t> unigram_hashes_map,
-      std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>&
-          pairgram_hashes_map) {
-    for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
+      uint32_t label_col) {
+    std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>
+        pairgram_hashes_map;
+    for (uint32_t token = 0; token < label_col; token++) {
       for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
         uint32_t combined_hash = hashing::HashUtils::combineHashes(
             unigram_hashes[prev_token], unigram_hashes[token]);
         combined_hash = combined_hash % output_range;
         pairgram_hashes_map.insert(
-            {combined_hash,
-             {unigram_hashes_map[unigram_hashes[prev_token]],
-              unigram_hashes_map[unigram_hashes[token]]}});
+            {combined_hash, {token, prev_token}});
       }
     }
+    for (uint32_t token = label_col; token < unigram_hashes.size(); token++) {
+      for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
+        uint32_t combined_hash = hashing::HashUtils::combineHashes(
+            unigram_hashes[prev_token], unigram_hashes[token]);
+        combined_hash = combined_hash % output_range;
+        uint32_t col_num = prev_token;
+        if(prev_token>=label_col) {col_num = prev_token + 1;}
+        pairgram_hashes_map.insert(
+            {combined_hash, {token+1, col_num}});
+      }
+    }
+    return pairgram_hashes_map;
   }
 
   /**
