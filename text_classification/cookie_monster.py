@@ -38,9 +38,7 @@ class CookieMonster:
     def construct(self, output_dim):
         self.input_layer = bolt.graph.Input(dim=self.input_dimension)
         self.hidden_layer = bolt.graph.FullyConnected(
-            dim=self.hidden_dim,
-            sparsity=self.hidden_sparsity,
-            activation="relu",
+            dim=self.hidden_dim, sparsity=self.hidden_sparsity, activation="relu"
         )(self.input_layer)
         self.output_layer = bolt.graph.FullyConnected(
             dim=output_dim, activation="softmax"
@@ -81,12 +79,7 @@ class CookieMonster:
             )
         return data, label
 
-    def eat_corpus(
-        self,
-        path_to_config_directory,
-        evaluate=False,
-        verbose=False,
-    ):
+    def eat_corpus(self, path_to_config_directory, evaluate=False, verbose=False):
         """
         Given a directory containing only .txt config files, this function trains each dataset with the parameters specified in each config file.
         Each config file must contain the following parameters: train_file, test_file, num_classes, batch_size, epochs, learning_rate, task.

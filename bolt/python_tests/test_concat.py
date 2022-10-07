@@ -39,9 +39,7 @@ def run_simple_test(
     ).silence()
 
     metrics = model.train(
-        train_data=train_data,
-        train_labels=train_labels,
-        train_config=train_config,
+        train_data=train_data, train_labels=train_labels, train_config=train_config
     )
 
     predict_config = (
@@ -49,9 +47,7 @@ def run_simple_test(
     )
 
     metrics = model.predict(
-        test_data=train_data,
-        test_labels=train_labels,
-        predict_config=predict_config,
+        test_data=train_data, test_labels=train_labels, predict_config=predict_config
     )
 
     assert metrics[0]["categorical_accuracy"] >= accuracy_threshold

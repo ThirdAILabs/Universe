@@ -47,16 +47,17 @@ class Worker:
         self.primary_worker = primary_worker
         self.communication_type = communication_type
 
-
         if self.communication_type == "circular":
-            self.comm = comm.Circular(self.model, self.id, self.primary_worker, self.num_workers)
+            self.comm = comm.Circular(
+                self.model, self.id, self.primary_worker, self.num_workers
+            )
         elif self.communication_type == "linear":
             self.comm = comm.Linear(self.model, self.id, self.primary_worker)
         elif self.communication_type == "gloo":
             # We are using "default", as a global group name for all the workers, as
             # right now, we connect all the worker in one cluster
             self.comm = comm.Gloo(self.model, self.id, self.num_workers, "default")
-        else: 
+        else:
             raise ValueError(
                 textwrap.dedent(
                     """
@@ -80,10 +81,7 @@ class Worker:
         self.comm.set_friend(friend)
 
     def process_ring(
-        self,
-        update_id: int,
-        reduce: bool = True,
-        avg_gradients: bool = False,
+        self, update_id: int, reduce: bool = True, avg_gradients: bool = False
     ):
         """
         This function handles the circular all reduce

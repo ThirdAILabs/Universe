@@ -26,12 +26,7 @@ def make_simple_sequential_model():
     )
 
     write_lines_to_file(
-        TEST_FILE,
-        [
-            "userId,movieId,timestamp",
-            "0,101,2022-08-31",
-            "2,100,2022-08-30",
-        ],
+        TEST_FILE, ["userId,movieId,timestamp", "0,101,2022-08-31", "2,100,2022-08-30"]
     )
 
     return bolt.Oracle(
@@ -135,14 +130,7 @@ def test_fail_on_relationships_with_no_datetime():
     )
 
     write_lines_to_file(
-        TRAIN_FILE,
-        [
-            "userId,movieId",
-            "0,100",
-            "1,100",
-            "1,101",
-            "1,102",
-        ],
+        TRAIN_FILE, ["userId,movieId", "0,100", "1,100", "1,101", "1,102"]
     )
 
     with pytest.raises(
@@ -173,10 +161,7 @@ def test_fail_on_multiple_datetime():
             "1,102,2022-09-01,2022-09-01",
         ],
     )
-    with pytest.raises(
-        ValueError,
-        match=r"There can only be one timestamp column.",
-    ):
+    with pytest.raises(ValueError, match=r"There can only be one timestamp column."):
         model.train(TRAIN_FILE, 1, 0.01)
 
 

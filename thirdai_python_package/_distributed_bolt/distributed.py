@@ -177,10 +177,7 @@ class DistributedDataParallel:
         Trains the network using the communication type choosen.
         """
         train_state_manager = TrainStateManager(
-            self.workers,
-            self.primary_worker,
-            self.logging,
-            self.communication_type,
+            self.workers, self.primary_worker, self.logging, self.communication_type
         )
 
         for epoch in range(self.train_config.num_epochs):

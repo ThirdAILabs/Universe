@@ -21,11 +21,7 @@ def get_trained_model(n_samples):
 
     train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
 
-    model.train(
-        train_x,
-        train_y,
-        train_cfg,
-    )
+    model.train(train_x, train_y, train_cfg)
 
     return model
 
@@ -64,10 +60,7 @@ def test_no_inf_input_gradients_zero_base_value():
     )
 
     test_x_np, _ = gen_numpy_training_data(
-        n_classes=n_classes,
-        n_samples=3000,
-        convert_to_bolt_dataset=False,
-        noise_std=0,
+        n_classes=n_classes, n_samples=3000, convert_to_bolt_dataset=False, noise_std=0
     )
 
     test_x = dataset.from_numpy(test_x_np, batch_size=batch_size)
@@ -112,9 +105,7 @@ def test_indices_for_sparse_dense_inputs():
     )
 
     test_x_np, _ = gen_numpy_training_data(
-        n_classes=n_classes,
-        convert_to_bolt_dataset=False,
-        noise_std=0,
+        n_classes=n_classes, convert_to_bolt_dataset=False, noise_std=0
     )
     test_x = dataset.from_numpy(test_x_np, batch_size=batch_size)
 

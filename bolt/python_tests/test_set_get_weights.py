@@ -40,9 +40,7 @@ def test_dag_get_set_weights():
     )
 
     metrics = model.predict(
-        test_data=train_data,
-        test_labels=train_labels,
-        predict_config=predict_config,
+        test_data=train_data, test_labels=train_labels, predict_config=predict_config
     )
 
     untrained_model = get_simple_dag_model(

@@ -55,11 +55,7 @@ def train_single_node_distributed_network(
     network, train_data, train_labels, epochs, learning_rate=0.0005
 ):
     batch_size = network.prepareNodeForDistributedTraining(
-        train_data,
-        train_labels,
-        rehash=3000,
-        rebuild=10000,
-        verbose=True,
+        train_data, train_labels, rehash=3000, rebuild=10000, verbose=True
     )
     for epoch_num in range(epochs):
         for batch_num in range(batch_size):
@@ -121,9 +117,7 @@ def get_simple_concat_model(
     input_layer = bolt.graph.Input(dim=num_classes)
 
     hidden_layer_top = bolt.graph.FullyConnected(
-        dim=hidden_layer_top_dim,
-        sparsity=hidden_layer_top_sparsity,
-        activation="relu",
+        dim=hidden_layer_top_dim, sparsity=hidden_layer_top_sparsity, activation="relu"
     )(input_layer)
 
     hidden_layer_bottom = bolt.graph.FullyConnected(
@@ -166,17 +160,12 @@ def remove_files(files):
         os.remove(file)
 
 
-def build_simple_hidden_layer_model(
-    input_dim=10,
-    hidden_dim=10,
-    output_dim=10,
-):
+def build_simple_hidden_layer_model(input_dim=10, hidden_dim=10, output_dim=10):
     input_layer = bolt.graph.Input(dim=input_dim)
 
-    hidden_layer = bolt.graph.FullyConnected(
-        dim=hidden_dim,
-        activation="relu",
-    )(input_layer)
+    hidden_layer = bolt.graph.FullyConnected(dim=hidden_dim, activation="relu")(
+        input_layer
+    )
 
     output_layer = bolt.graph.FullyConnected(dim=output_dim, activation="softmax")(
         hidden_layer
@@ -201,9 +190,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
 
     input_layer = bolt.graph.Input(dim=num_classes)
     hidden_layer = bolt.graph.FullyConnected(
-        dim=hidden_layer_dim,
-        sparsity=sparsity,
-        activation="relu",
+        dim=hidden_layer_dim, sparsity=sparsity, activation="relu"
     )(input_layer)
     output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
         hidden_layer
@@ -218,10 +205,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
     model.compile(bolt.CategoricalCrossEntropyLoss())
     return bolt.DistributedTrainingWrapper(
-        model=model,
-        train_data=[data],
-        train_labels=labels,
-        train_config=train_config,
+        model=model, train_data=[data], train_labels=labels, train_config=train_config
     )
 
 
@@ -299,10 +283,7 @@ def get_compressed_weight_gradients(
 
 
 # Assumes that the model has only two layers
-def set_compressed_weight_gradients(
-    wrapped_model,
-    compressed_weight_grads,
-):
+def set_compressed_weight_gradients(wrapped_model, compressed_weight_grads):
     model = wrapped_model.model
     nodes_with_weight_gradients = [
         layer for layer in model.nodes() if hasattr(layer, "weight_gradients")
@@ -357,8 +338,7 @@ def compressed_training(
                 sample_population_size=sample_population_size,
             )
             set_compressed_weight_gradients(
-                wrapped_model,
-                compressed_weight_grads=compressed_weight_grads,
+                wrapped_model, compressed_weight_grads=compressed_weight_grads
             )
             wrapped_model.update_parameters()
 
