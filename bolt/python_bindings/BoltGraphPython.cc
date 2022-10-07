@@ -287,14 +287,19 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
       .def("silence", &TrainConfig::silence)
+#if THIRDAI_EXPOSE_ALL
+      // We do not want to expose these methods to customers to hide complexity.
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"))
-      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      // We do not want to expose this method because it will not work correctly
+      // with the ModelPipeline since it won't sae the entire pipeline.
       .def("with_save_parameters", &TrainConfig::withSaveParameters,
            py::arg("save_prefix"), py::arg("save_frequency"))
+#endif
+      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
            py::arg("predict_config"), py::arg("validation_frequency") = 0)
