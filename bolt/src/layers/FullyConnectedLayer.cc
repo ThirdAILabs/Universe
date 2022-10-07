@@ -176,16 +176,19 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
     }
 
     if (_use_sparse_sparse_optimization) {
-      std::unique_ptr<ActiveNeuronsPair> active_pairs =
-          std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
-                                              std::vector<uint64_t>());
+      ActiveNeuronsPair active_pairs;
+
+
+      active_pairs.first.reserve(input.len);
       for (uint64_t i = 0; i < input.len; i++) {
-        active_pairs->first.push_back(input.active_neurons[i]);
+        active_pairs.first.push_back(input.active_neurons[i]);
       }
+
+      active_pairs.second.reserve(len_out);
       for (uint64_t n = 0; n < len_out; n++) {
-        active_pairs->second.push_back(output.active_neurons[n]);
+        active_pairs.second.push_back(output.active_neurons[n]);
       }
-#pragma omp critical
+      #pragma omp critical
       _active_pairs_raw.push_back(std::move(active_pairs));
     }
   }
@@ -566,8 +569,8 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParametersOptimized(
     // (but clang-tidy wants the range based for loop, so we need NOLINT
     // above)
     const auto& active_pair = _active_pairs_raw[pair_id];
-    for (uint64_t prev_neuron : active_pair->first) {
-      for (uint64_t cur_neuron : active_pair->second) {
+    for (uint64_t prev_neuron : active_pair.first) {
+      for (uint64_t cur_neuron : active_pair.second) {
         uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
         // This is a race condition but it is probably okay, it just means that
         // we might by mistake update the same active pair twice.

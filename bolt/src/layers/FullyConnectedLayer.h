@@ -216,7 +216,7 @@ class FullyConnectedLayer final {
   std::vector<bool> _active_pairs_array;
   using ActiveNeuronsPair =
       std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
-  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs_raw;
+  std::vector<ActiveNeuronsPair> _active_pairs_raw;
 
   // -------------------------------------------------------------------------
 
