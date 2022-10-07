@@ -10,6 +10,7 @@
 #include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
@@ -193,9 +194,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
           "Target column must be a categorical column.");
     }
 
-    auto label_block =
-        makeCategoricalBlock(/* column_numbers= */ column_number_map,
-                             /* column_name= */ _config->target);
+    auto label_block = makeCategoricalBlock(
+        /* column_numbers= */ column_number_map,
+        /* column_name= */ _config->target, /* from_string= */ false);
 
     return dataset::GenericBatchProcessor::make(std::move(input_blocks),
                                                 {label_block});
@@ -306,13 +307,21 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   dataset::BlockPtr makeCategoricalBlock(const ColumnNumberMap& column_numbers,
-                                         const std::string& column_name) {
+                                         const std::string& column_name,
+                                         bool from_string = true) {
     auto vocab_size =
         _config->data_types.at(column_name).asCategorical().n_unique_classes;
 
-    return dataset::StringLookupCategoricalBlock::make(
-        /* col= */ column_numbers.at(column_name),
-        /* vocab= */ _vocabs.forColumn(column_name, vocab_size));
+    uint32_t col = column_numbers.at(column_name);
+
+    if (from_string) {
+      return dataset::StringLookupCategoricalBlock::make(
+          /* col= */ col,
+          /* vocab= */ _vocabs.forColumn(column_name, vocab_size));
+    }
+
+    return dataset::NumericalCategoricalBlock::make(
+        /* col= */ col, /* n_classes= */ vocab_size);
   }
 
   dataset::BlockPtr makeTextBlock(const ColumnNumberMap& column_numbers,

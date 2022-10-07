@@ -46,8 +46,7 @@ def serialize_make_oracle_config():
         rebuild_hash_tables_interval=None,
         reconstruct_hash_functions_interval=None,
         default_batch_size=2048,
-        use_sparse_inference=True,
-        evaluation_metrics=["recall@1"],
+        freeze_hash_tables=True,
     )
 
     config = deployment.DeploymentConfig(
@@ -72,10 +71,10 @@ def make_simple_oracle_model():
         TRAIN_FILE,
         [
             "userId,movieId,timestamp",
-            "0,100,2022-08-29",
-            "1,100,2022-08-30",
-            "1,101,2022-08-31",
-            "1,102,2022-09-01",
+            "0,0,2022-08-29",
+            "1,0,2022-08-30",
+            "1,1,2022-08-31",
+            "1,2,2022-09-01",
         ],
     )
 
@@ -83,8 +82,8 @@ def make_simple_oracle_model():
         TEST_FILE,
         [
             "userId,movieId,timestamp",
-            "0,101,2022-08-31",
-            "2,100,2022-08-30",
+            "0,1,2022-08-31",
+            "2,0,2022-08-30",
         ],
     )
 
@@ -112,7 +111,8 @@ def make_simple_oracle_model():
 def test_sequential_classifier_save_load():
     model, _ = make_simple_oracle_model()
 
-    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01)
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
     model.save("saveLoc")
     before_load_output = model.evaluate(TEST_FILE)
     model = deployment.ModelPipeline.load("saveLoc")
@@ -123,7 +123,8 @@ def test_sequential_classifier_save_load():
 
 def test_multiple_predict_returns_same():
     model, _ = make_simple_oracle_model()
-    model.train(TRAIN_FILE, 2, 0.01)
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     sample = "0,,2022-08-31"
     prev_result = model.predict(sample)
@@ -135,13 +136,14 @@ def test_multiple_predict_returns_same():
 
 def test_index_changes_predict():
     model, context = make_simple_oracle_model()
-    model.train(TRAIN_FILE, 2, 0.01)
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     sample = "0,,2022-08-31"
 
     first_result = model.predict(sample)
 
-    context.update("0,101,2022-08-31")
+    context.update("0,1,2022-08-31")
 
     second_result = model.predict(sample)
 
@@ -150,14 +152,15 @@ def test_index_changes_predict():
 
 def test_context_serialization():
     model, context = make_simple_oracle_model()
-    model.train(TRAIN_FILE, 2, 0.01)
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     model.save("saveLoc")
     saved_model = deployment.ModelPipeline.load("saveLoc")
     saved_context = saved_model.get_parameter("context")
 
     sample = "0,,2022-08-31"
-    update = "0,101,2022-08-31"
+    update = "0,1,2022-08-31"
 
     context.update(update)
     saved_context.update(update)
