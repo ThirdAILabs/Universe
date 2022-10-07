@@ -99,6 +99,8 @@ class UserParameterInput {
     }
   }
 
+  const auto& getValue() const { return _value; }
+
  private:
   std::variant<bool, uint32_t, float, std::string, OracleConfigPtr,
                TemporalContextPtr, UserParameterInputNoneType>

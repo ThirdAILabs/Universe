@@ -60,6 +60,4 @@ py::object convertBoltVectorToNumpy(const BoltVector& vector);
 
 py::object convertBoltBatchToNumpy(const BoltBatch& batch);
 
-py::object convertUserParameterInputToPyObject(const UserParameterInput& param,
-                                               const std::string& param_name);
 }  // namespace thirdai::automl::deployment::python
