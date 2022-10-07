@@ -14,6 +14,7 @@
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <indexer/src/Indexer.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
@@ -173,6 +174,13 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("filename"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
+
+  py::class_<thirdai::deployments::Indexer>(submodule, "Indexer")
+      .def(py::init<std::string>(), py::arg("config_file_path"),
+           "Initializes an Indexer object which constructs a Flash object"
+           "The config file should at least contain the following elements:\n"
+           "     - num_hash_tables: Number of Hash Tables to construct.\n"
+           "     - hashes_per_table: Hash functions for each hash table.\n");
 }
 
 template <typename T>
