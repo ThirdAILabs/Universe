@@ -6,7 +6,6 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/variant.hpp>
 #include <bolt/src/layers/LayerConfig.h>
-#include <auto_ml/python_bindings/DeploymentPython.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
 #include <cstdint>
