@@ -9,7 +9,7 @@ export THIRDAI_DATASET_PATH="$HOME/data"
 export THIRDAI_BUILD_MODE=RelWithDebInfo
 
 
-BASEDIR=$(dirname "$0")
+BASEDIR=$(dirname -- "${BASH_SOURCE[0]}")
 THIRDAI_SOURCE_DIR="$BASEDIR/.."
 
 function thirdai-build {
