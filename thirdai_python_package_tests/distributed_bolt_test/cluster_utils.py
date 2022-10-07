@@ -34,6 +34,7 @@ def ray_two_node_cluster_config(communication_type="linear"):
         communication_type=communication_type,
         cluster_address=mini_cluster.address,
         runtime_env={"working_dir": working_dir},
+        ignore_reinit_error=True,
     )
     yield cluster_config
 

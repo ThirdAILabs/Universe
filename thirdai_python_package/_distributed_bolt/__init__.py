@@ -1,2 +1,2 @@
-from .data_generators import GenericStreamingTrainGenerator, SvmTrainGenerator
 from .distributed import DistributedDataParallel, RayTrainingClusterConfig
+from .train_generators import GenericStreamingTrainGenerator, SvmTrainGenerator

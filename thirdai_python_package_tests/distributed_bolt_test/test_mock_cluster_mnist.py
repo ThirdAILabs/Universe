@@ -69,12 +69,20 @@ def get_mnist_model():
 def train_distributed_bolt_check(ray_two_node_cluster_config):
     model = get_mnist_model()
 
+    # Because we explicitly specified the Ray working folder as this test
+    # directory, we give explicit paths for the mnist filenames
+    import os
+
+    working_dir = os.path.dirname(os.path.realpath(__file__))
     train_sources = [
-        db.SvmDataGenerator(
+        db.SvmTrainGenerator(
             filename,
             batch_size=256,
         )
-        for filename in ["mnist_data/xaa", "mnist_data/xab"]
+        for filename in [
+            f"{working_dir}/../../mnist_data/xaa",
+            f"{working_dir}/../../mnist_data/xab",
+        ]
     ]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=3)
     distributed_model = db.DistributedDataParallel(

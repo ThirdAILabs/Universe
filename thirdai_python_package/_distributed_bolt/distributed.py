@@ -28,6 +28,7 @@ class RayTrainingClusterConfig:
         communication_type: str = "circular",
         cluster_address: str = "auto",
         runtime_env: Dict = {},
+        ignore_reinit_error=False,
     ):
         """
         This constructor connects to an already existing Ray cluster,
@@ -67,7 +68,11 @@ class RayTrainingClusterConfig:
             runtime_env["env_vars"] = {}
         runtime_env["env_vars"]["OMP_NUM_THREADS"] = str(get_num_cpus())
 
-        ray.init(address=cluster_address, runtime_env=runtime_env)
+        ray.init(
+            address=cluster_address,
+            runtime_env=runtime_env,
+            ignore_reinit_error=ignore_reinit_error,
+        )
         if not ray.is_initialized():
             raise Exception(
                 textwrap.dedent(
