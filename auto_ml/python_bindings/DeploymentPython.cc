@@ -5,6 +5,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -233,48 +234,39 @@ void defOptionMappedParameter(py::module_& submodule) {
                 py::arg("option_name"), py::arg("values").noconvert());
 }
 
-template <typename T>
-std::optional<T> castToOptional(
-    const std::optional<py::object>& optional_value) {
-  if (!optional_value) {
-    return std::nullopt;
-  }
-  return optional_value->cast<std::optional<T>>();
-}
-
 py::object makeUserSpecifiedParameter(const std::string& name,
                                       const py::object& type,
-                                      std::optional<py::object> default_value) {
+                                      const py::object& default_value) {
   if (py::str(type).cast<std::string>() == "<class 'bool'>") {
     return py::cast(UserSpecifiedParameter<bool>::make(
-        name, castToOptional<bool>(default_value)));
+        name, default_value.cast<std::optional<bool>>()));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'int'>") {
     return py::cast(UserSpecifiedParameter<uint32_t>::make(
-        name, castToOptional<uint32_t>(default_value)));
+        name, default_value.cast<std::optional<uint32_t>>()));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'float'>") {
     return py::cast(UserSpecifiedParameter<float>::make(
-        name, castToOptional<float>(default_value)));
+        name, default_value.cast<std::optional<float>>()));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'str'>") {
     return py::cast(UserSpecifiedParameter<std::string>::make(
-        name, castToOptional<std::string>(default_value)));
+        name, default_value.cast<std::optional<std::string>>()));
   }
 
   if (py::str(type).cast<std::string>() ==
       "<class 'thirdai._thirdai.deployment.OracleConfig'>") {
     return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(
-        name, castToOptional<OracleConfigPtr>(default_value)));
+        name, default_value.cast<std::optional<OracleConfigPtr>>()));
   }
 
   if (py::str(type).cast<std::string>() ==
       "<class 'thirdai._thirdai.deployment.TemporalContext'>") {
     return py::cast(UserSpecifiedParameter<TemporalContextPtr>::make(
-        name, castToOptional<TemporalContextPtr>(default_value)));
+        name, default_value.cast<std::optional<TemporalContextPtr>>()));
   }
 
   throw std::invalid_argument(

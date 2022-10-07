@@ -23,7 +23,7 @@ void defOptionMappedParameter(py::module_& submodule);
 
 py::object makeUserSpecifiedParameter(
     const std::string& name, const py::object& type,
-    std::optional<py::object> default_value = std::nullopt);
+    const py::object& default_value = py::cast(std::nullopt));
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
                              const py::dict& parameters);
