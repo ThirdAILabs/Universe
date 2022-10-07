@@ -115,8 +115,7 @@ class TextEncodingUtils {
         uint32_t combined_hash = hashing::HashUtils::combineHashes(
             unigram_hashes[prev_token], unigram_hashes[token]);
         combined_hash = combined_hash % output_range;
-        pairgram_hashes_map.insert(
-            {combined_hash, {token, prev_token}});
+        pairgram_hashes_map.insert({combined_hash, {token, prev_token}});
       }
     }
     for (uint32_t token = label_col; token < unigram_hashes.size(); token++) {
@@ -125,9 +124,10 @@ class TextEncodingUtils {
             unigram_hashes[prev_token], unigram_hashes[token]);
         combined_hash = combined_hash % output_range;
         uint32_t col_num = prev_token;
-        if(prev_token>=label_col) {col_num = prev_token + 1;}
-        pairgram_hashes_map.insert(
-            {combined_hash, {token+1, col_num}});
+        if (prev_token >= label_col) {
+          col_num = prev_token + 1;
+        }
+        pairgram_hashes_map.insert({combined_hash, {token + 1, col_num}});
       }
     }
     return pairgram_hashes_map;
