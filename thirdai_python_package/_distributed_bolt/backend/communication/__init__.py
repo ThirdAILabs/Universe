@@ -1,9 +1,5 @@
 from .circular import Circular
-from .linear import Linear
 from .gloo import Gloo
+from .linear import Linear
 
-AVAILABLE_METHODS = {
-    "circular": Circular,
-    "linear": Linear,
-    "gloo": Gloo
-}
+AVAILABLE_METHODS = {"circular": Circular, "linear": Linear, "gloo": Gloo}
