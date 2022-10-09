@@ -30,9 +30,15 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
 
-        self.train_data, self.train_labels = parse_svm_dataset(
-            train_file_name, batch_size
-        )
+        if data_loader_config["data_loader"] == "svm":
+            self.train_data, self.train_labels = load_training_data(
+                data_loader_config, batch_size
+            )
+        elif data_loader_config["data_loader"] == "mlm":
+            self.train_data, self.train_labels, valid_data, valid,labels = load_training_data(
+                data_loader_config, 
+            )
+
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
             train_data=[self.train_data],
