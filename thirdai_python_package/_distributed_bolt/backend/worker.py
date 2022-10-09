@@ -62,7 +62,7 @@ class Worker:
             raise ValueError(
                 textwrap.dedent(
                     """
-                        Currently only three modes of communication is supported.
+                        Currently only three modes of communication are supported.
                         Use: "circular" or "linear" or "gloo". 
                     """
                 )
