@@ -36,29 +36,6 @@ namespace thirdai::automl::deployment {
 using ColumnNumberMap = bolt::sequential_classifier::ColumnNumberMap;
 using ColumnNumberMapPtr = std::shared_ptr<ColumnNumberMap>;
 
-class VocabularyManager {
- public:
-  dataset::ThreadSafeVocabularyPtr forColumn(const std::string& column_name,
-                                             uint32_t vocab_size) {
-    if (!_col_name_to_vocab.count(column_name)) {
-      _col_name_to_vocab[column_name] =
-          dataset::ThreadSafeVocabulary::make(vocab_size);
-    }
-    return _col_name_to_vocab.at(column_name);
-  }
-
- private:
-  std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr>
-      _col_name_to_vocab;
-
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_col_name_to_vocab);
-  }
-};
-
 class OracleDatasetFactory final : public DatasetLoaderFactory {
  public:
   explicit OracleDatasetFactory(OracleConfigPtr config)
@@ -281,7 +258,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     if (from_string) {
       return dataset::StringLookupCategoricalBlock::make(
           /* col= */ col,
-          /* vocab= */ _vocabs.forColumn(column_name, vocab_size));
+          /* vocab= */ vocabForColumn(column_name, vocab_size));
     }
 
     return dataset::NumericalCategoricalBlock::make(
@@ -345,9 +322,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         /* user_col= */ column_numbers.at(key_column),
         /* item_col= */ column_numbers.at(tracked_column),
         /* timestamp_col= */ column_numbers.at(timestamp_column),
-        /* user_id_map= */ _vocabs.forColumn(key_column, key_vocab_size),
+        /* user_id_map= */ vocabForColumn(key_column, key_vocab_size),
         /* item_id_map= */
-        _vocabs.forColumn(tracked_column, tracked_vocab_size),
+        vocabForColumn(tracked_column, tracked_vocab_size),
         /* records= */
         _context->categoricalHistoryForId(id, /* n_users= */ key_vocab_size),
         /* track_last_n= */ temporal_meta.track_last_n,
@@ -384,9 +361,17 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         /* include_current_row= */ temporal_meta.include_current_row);
   }
 
+  dataset::ThreadSafeVocabularyPtr& vocabForColumn(
+      const std::string& column_name, uint32_t vocab_size) {
+    if (!_vocabs.count(column_name)) {
+      _vocabs[column_name] = dataset::ThreadSafeVocabulary::make(vocab_size);
+    }
+    return _vocabs.at(column_name);
+  }
+
   OracleConfigPtr _config;
   TemporalContextPtr _context;
-  VocabularyManager _vocabs;
+  std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
   ColumnNumberMapPtr _column_number_map;
   dataset::GenericBatchProcessorPtr _labeled_batch_processor;
   dataset::GenericBatchProcessorPtr _inference_batch_processor;
