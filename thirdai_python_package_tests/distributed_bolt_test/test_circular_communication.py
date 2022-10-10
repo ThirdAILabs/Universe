@@ -1,12 +1,3 @@
-import sys
-
-try:
-    from thirdai._distributed_bolt.backend.communication.circular import (
-        Circular as Circular,
-    )
-except ImportError:
-    pass
-
 import numpy as np
 import pytest
 
@@ -19,6 +10,12 @@ pytestmark = [pytest.mark.distributed]
 # pytestmark.mark.distributed prevents it from running in our normal unit and
 # integration test pipeline where ray isn't a dependency.
 def test_all_reduce_circular_communication():
+
+    # Do this import here so pytest collection doesn't fail if ray isn't installed
+    from thirdai._distributed_bolt.backend.communication.circular import (
+        Circular as Circular,
+    )
+
     num_workers = 16
     circular_communicating_workers = [
         Circular(None, i, None, num_workers) for i in range(num_workers)

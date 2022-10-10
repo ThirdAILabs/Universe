@@ -1,19 +1,18 @@
-import pytest
-
-try:
-    import ray
-    import thirdai.distributed_bolt as db
-    from ray.cluster_utils import Cluster
-except ImportError:
-    pass
 import math
 import os
 
 import numpy as np
+import pytest
 
 
 @pytest.fixture(scope="module")
 def ray_two_node_cluster_config(communication_type="linear"):
+
+    # Do these imports here so pytest collection doesn't fail if ray isn't installed
+    import ray
+    import thirdai.distributed_bolt as db
+    from ray.cluster_utils import Cluster
+
     mini_cluster = Cluster(
         initialize_head=True,
         head_node_args={
