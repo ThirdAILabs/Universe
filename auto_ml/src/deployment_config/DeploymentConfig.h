@@ -8,6 +8,7 @@
 #include "ModelConfig.h"
 #include "TrainEvalParameters.h"
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <unordered_set>
@@ -55,6 +56,12 @@ class DeploymentConfig {
     DatasetLoaderFactoryPtr dataset_factory =
         _dataset_config->createDatasetState(user_specified_parameters);
 
+    if (user_specified_parameters.count(
+            DatasetLabelDimensionParameter::PARAM_NAME)) {
+      throw std::invalid_argument(
+          "User specified parameter has reserved parameter name '" +
+          DatasetLabelDimensionParameter::PARAM_NAME + "'.");
+    }
     user_specified_parameters.emplace(
         DatasetLabelDimensionParameter::PARAM_NAME,
         UserParameterInput(dataset_factory->getLabelDim()));
