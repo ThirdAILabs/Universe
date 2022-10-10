@@ -59,17 +59,19 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
    * that overloads are tried in the order they were registered so this is safe
    * to do.
    */
-  defConstantParameter<bool>(submodule);
-  defConstantParameter<uint32_t>(submodule);
-  defConstantParameter<float>(submodule);
-  defConstantParameter<std::string>(submodule);
-  defConstantParameter<bolt::SamplingConfigPtr>(submodule);
+  defConstantParameter<bool>(submodule, /* add_docs= */ true);
+  defConstantParameter<uint32_t>(submodule, /* add_docs= */ false);
+  defConstantParameter<float>(submodule, /* add_docs= */ false);
+  defConstantParameter<std::string>(submodule, /* add_docs= */ false);
+  defConstantParameter<bolt::SamplingConfigPtr>(submodule,
+                                                /* add_docs= */ false);
 
-  defOptionMappedParameter<bool>(submodule);
-  defOptionMappedParameter<uint32_t>(submodule);
-  defOptionMappedParameter<float>(submodule);
-  defOptionMappedParameter<std::string>(submodule);
-  defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule);
+  defOptionMappedParameter<bool>(submodule, /* add_docs= */ true);
+  defOptionMappedParameter<uint32_t>(submodule, /* add_docs= */ false);
+  defOptionMappedParameter<float>(submodule, /* add_docs= */ false);
+  defOptionMappedParameter<std::string>(submodule, /* add_docs= */ false);
+  defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule,
+                                                    /* add_docs= */ false);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"),
@@ -204,16 +206,28 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 }
 
 template <typename T>
-void defConstantParameter(py::module_& submodule) {
+void defConstantParameter(py::module_& submodule, bool add_docs) {
+  // Because this is an overloaded function, the docsstring will be rendered for
+  // each overload. This option is to ensure that it can only be rendered for
+  // the first one.
+  const char* const docstring =
+      add_docs ? docs::CONSTANT_PARAMETER : "See docs above.";
+
   submodule.def("ConstantParameter", &ConstantParameter<T>::make,
-                py::arg("value").noconvert(), docs::CONSTANT_PARAMETER);
+                py::arg("value").noconvert(), docstring);
 }
 
 template <typename T>
-void defOptionMappedParameter(py::module_& submodule) {
+void defOptionMappedParameter(py::module_& submodule, bool add_docs) {
+  // Because this is an overloaded function, the docsstring will be rendered for
+  // each overload. This option is to ensure that it can only be rendered for
+  // the first one.
+  const char* const docstring =
+      add_docs ? docs::OPTION_MAPPED_PARAMETER : "See docs above.";
+
   submodule.def("OptionMappedParameter", &OptionMappedParameter<T>::make,
                 py::arg("option_name"), py::arg("values").noconvert(),
-                docs::OPTION_MAPPED_PARAMETER);
+                docstring);
 }
 
 py::object makeUserSpecifiedParameter(const std::string& name,
