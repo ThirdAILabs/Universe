@@ -4,9 +4,13 @@ add_executable(svm_dataset_test SvmDatasetTests.cc)
 
 target_link_libraries(svm_dataset_test PRIVATE gtest_main)
 
+target_link_libraries(svm_dataset_test PUBLIC logging_utils_lib)
+
 add_executable(click_through_dataset_test ClickThroughDatasetTests.cc)
 
 target_link_libraries(click_through_dataset_test PRIVATE gtest_main)
+
+target_link_libraries(click_through_dataset_test PUBLIC logging_utils_lib)
 
 add_executable(segmented_feature_vectors_test SegmentedFeatureVectorsTests.cc)
 
@@ -63,6 +67,9 @@ add_executable(streaming_generic_dataset_loader_tests
 target_link_libraries(streaming_generic_dataset_loader_tests PRIVATE gtest_main)
 
 target_link_libraries(streaming_generic_dataset_loader_tests
+                      PUBLIC logging_utils_lib)
+
+target_link_libraries(streaming_generic_dataset_loader_tests
                       PUBLIC OpenMP::OpenMP_CXX)
 
 add_executable(mlm_batch_processor_tests MlmBatchProcessorTests.cc)
@@ -74,6 +81,8 @@ target_link_libraries(mlm_batch_processor_tests PUBLIC OpenMP::OpenMP_CXX)
 
 add_executable(save_load_dataset_test SaveLoadInMemoryDatasetTest.cc)
 target_link_libraries(save_load_dataset_test PRIVATE gtest_main)
+
+target_link_libraries(save_load_dataset_test PUBLIC logging_utils_lib)
 
 include(GoogleTest)
 

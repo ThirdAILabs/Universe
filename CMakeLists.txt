@@ -190,7 +190,7 @@ include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 include_directories(deps/googletest/googletest/include)
 include_directories(deps/googletest/googlemock/include)
-include_directories(deps/spdlog/include)
+# include_directories(deps/spdlog/include)
 
 # Source dependencies
 add_subdirectory(deps/pybind11)
@@ -281,10 +281,10 @@ pybind11_add_module(
   ${WRAPPER_SOURCES}
   ${DATASET_SOURCES}
   ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES}
   ${AUTOML_SOURCES})
 
 target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(_thirdai PUBLIC logging_utils_lib)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
