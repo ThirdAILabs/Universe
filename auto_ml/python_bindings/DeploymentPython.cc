@@ -83,8 +83,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defOptionMappedParameter<OracleConfigPtr>(submodule);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
-                py::arg("name"), py::arg("type"),
-                py::arg("default_value") = std::nullopt);
+                py::arg("name"), py::arg("type"));
 
   py::class_<AutotunedSparsityParameter, HyperParameter<float>,
              std::shared_ptr<AutotunedSparsityParameter>>(
@@ -230,32 +229,26 @@ void defOptionMappedParameter(py::module_& submodule) {
 }
 
 py::object makeUserSpecifiedParameter(const std::string& name,
-                                      const py::object& type,
-                                      const py::object& default_value) {
+                                      const py::object& type) {
   if (py::str(type).cast<std::string>() == "<class 'bool'>") {
-    return py::cast(UserSpecifiedParameter<bool>::make(
-        name, default_value.cast<std::optional<bool>>()));
+    return py::cast(UserSpecifiedParameter<bool>::make(name));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'int'>") {
-    return py::cast(UserSpecifiedParameter<uint32_t>::make(
-        name, default_value.cast<std::optional<uint32_t>>()));
+    return py::cast(UserSpecifiedParameter<uint32_t>::make(name));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'float'>") {
-    return py::cast(UserSpecifiedParameter<float>::make(
-        name, default_value.cast<std::optional<float>>()));
+    return py::cast(UserSpecifiedParameter<float>::make(name));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'str'>") {
-    return py::cast(UserSpecifiedParameter<std::string>::make(
-        name, default_value.cast<std::optional<std::string>>()));
+    return py::cast(UserSpecifiedParameter<std::string>::make(name));
   }
 
   if (py::str(type).cast<std::string>() ==
       "<class 'thirdai._thirdai.deployment.OracleConfig'>") {
-    return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(
-        name, default_value.cast<std::optional<OracleConfigPtr>>()));
+    return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(name));
   }
 
   throw std::invalid_argument("Invalid type '" +
