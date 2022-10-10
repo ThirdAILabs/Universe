@@ -32,11 +32,8 @@ class Worker:
         """
 
         self.train_source = train_source
-        self.train_data, self.train_labels = train_source.next()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
-            train_data=self.train_data,
-            train_labels=self.train_labels,
             train_config=train_config,
         )
 
@@ -172,7 +169,7 @@ class Worker:
         """
         This function returns the total number of batches the workers have.
         """
-        return len(self.train_data)
+        return self.model.num_batches()
 
     def finish_training(self):
         self.model.finish_training()

@@ -17,8 +17,7 @@ namespace thirdai::bolt {
 
 class DistributedTrainingWrapper {
  public:
-  DistributedTrainingWrapper(BoltGraphPtr bolt_graph,
-                             TrainConfig train_config)
+  DistributedTrainingWrapper(BoltGraphPtr bolt_graph, TrainConfig train_config)
       : _bolt_graph(std::move(bolt_graph)),
         _train_context(std::nullopt),
         _train_config(std::move(train_config)),
@@ -47,9 +46,17 @@ class DistributedTrainingWrapper {
 
   BoltGraphPtr getModel() { return _bolt_graph; }
 
-  void finishTraining() { _bolt_graph->cleanupAfterBatchProcessing(); }
+  void finishTraining() {
+    requireTrainContext();
+    _bolt_graph->cleanupAfterBatchProcessing();
+  }
 
-  uint64_t numBatches() { requireTrainContext(); return _train_context->numBatches(); }
+  uint64_t numBatches() {
+    if (!_train_context.has_value()) {
+      return 0;
+    }
+    return _train_context->numBatches();
+  }
 
   void setNewDatasets(const dataset::BoltDatasetList& train_data,
                       const dataset::BoltDatasetPtr& train_labels) {
@@ -58,11 +65,10 @@ class DistributedTrainingWrapper {
 
     if (!_train_context.has_value()) {
       _bolt_graph->prepareToProcessBatches(new_context.batchSize(),
-                                      /* use_sparsity=*/true);
+                                           /* use_sparsity=*/true);
       _train_context = new_context;
       return;
     }
-
 
     if (new_context.batchSize() != _train_context->batchSize()) {
       throw std::invalid_argument(
@@ -71,16 +77,17 @@ class DistributedTrainingWrapper {
     }
 
     // Since we have verified that the new DatasetContext has the same batch
-    // size as the original, we don't need to call prepareForBatchProcessing 
+    // size as the original, we don't need to call prepareToProcessBatches
     // again.
     _train_context = new_context;
   }
 
  private:
-
   void requireTrainContext() {
     if (!_train_context.has_value()) {
-      throw std::runtime_error("You must call setNewDataasets before you can train the wrapped model");
+      throw std::runtime_error(
+          "You must call setNewDataasets before you can train the wrapped "
+          "model");
     }
   }
 

@@ -196,8 +196,8 @@ def simple_bolt_model_in_distributed_training_wrapper(
     hidden_layer_dim=2000,
     batch_size=64,
 ):
-    data = dataset.from_numpy(train_data, batch_size=batch_size)
-    labels = dataset.from_numpy(train_labels, batch_size=batch_size)
+    train_data = dataset.from_numpy(train_data, batch_size=batch_size)
+    train_labels = dataset.from_numpy(train_labels, batch_size=batch_size)
 
     input_layer = bolt.graph.Input(dim=num_classes)
     hidden_layer = bolt.graph.FullyConnected(
@@ -217,12 +217,13 @@ def simple_bolt_model_in_distributed_training_wrapper(
     )
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
     model.compile(bolt.CategoricalCrossEntropyLoss())
-    return bolt.DistributedTrainingWrapper(
+
+    wrapper = bolt.DistributedTrainingWrapper(
         model=model,
-        train_data=[data],
-        train_labels=labels,
         train_config=train_config,
     )
+    wrapper.set_new_datasets([train_data], train_labels)
+    return wrapper
 
 
 # Builds, trains, and does prediction on a model using numpy data and numpy
