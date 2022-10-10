@@ -31,12 +31,7 @@ def serialize_make_oracle_config():
     dataset_config = deployment.OracleDatasetFactory(
         config=deployment.UserSpecifiedParameter(
             "config", type=deployment.OracleConfig
-        ),
-        temporal_context=deployment.UserSpecifiedParameter(
-            "context",
-            type=deployment.TemporalContext,
-            default_value=deployment.TemporalContext.NoneType(),
-        ),
+        )
     )
 
     train_eval_params = deployment.TrainEvalParameters(
@@ -84,8 +79,6 @@ def make_simple_oracle_model():
         ],
     )
 
-    context = deployment.TemporalContext()
-
     model = deployment.ModelPipeline(
         config_path=CONFIG_FILE,
         parameters={
@@ -97,16 +90,15 @@ def make_simple_oracle_model():
                 },
                 temporal_tracking_relationships={"userId": ["movieId"]},
                 target="movieId",
-            ),
-            "context": context,
+            )
         },
     )
 
-    return model, context
+    return model
 
 
 def test_sequential_classifier_save_load():
-    model, _ = make_simple_oracle_model()
+    model = make_simple_oracle_model()
 
     train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
@@ -119,7 +111,7 @@ def test_sequential_classifier_save_load():
 
 
 def test_multiple_predict_returns_same():
-    model, _ = make_simple_oracle_model()
+    model = make_simple_oracle_model()
     train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
@@ -132,7 +124,8 @@ def test_multiple_predict_returns_same():
 
 
 def test_index_changes_predict():
-    model, context = make_simple_oracle_model()
+    model = make_simple_oracle_model()
+    context = model.get_artifact("temporal_context")
     train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
@@ -148,13 +141,14 @@ def test_index_changes_predict():
 
 
 def test_context_serialization():
-    model, context = make_simple_oracle_model()
+    model = make_simple_oracle_model()
+    context = model.get_artifact("temporal_context")
     train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     model.save("saveLoc")
     saved_model = deployment.ModelPipeline.load("saveLoc")
-    saved_context = saved_model.get_parameter("context")
+    saved_context = saved_model.get_artifact("temporal_context")
 
     sample = "0,,2022-08-31"
     update = "0,1,2022-08-31"

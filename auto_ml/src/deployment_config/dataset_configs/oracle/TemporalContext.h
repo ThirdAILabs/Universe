@@ -2,24 +2,21 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include <_types/_uint32_t.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+
 namespace thirdai::automl::deployment {
 
 class TemporalContext {
  public:
-  TemporalContext() : _is_none(false) {}
-
-  static TemporalContext None() { return TemporalContext(/* is_none= */ true); }
-
-  bool isNone() const { return _is_none; }
+  TemporalContext() {}
 
   dataset::QuantityHistoryTrackerPtr numericalHistoryForId(
       uint32_t id, uint32_t lookahead, uint32_t history_length,
@@ -74,10 +71,6 @@ class TemporalContext {
   }
 
  private:
-  // Private constructor for none type.
-  explicit TemporalContext(bool is_none) : _is_none(is_none) {}
-
-  bool _is_none;
   std::unordered_map<uint32_t, dataset::QuantityHistoryTrackerPtr>
       _numerical_histories;
   std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
@@ -89,7 +82,7 @@ class TemporalContext {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_numerical_histories, _categorical_histories, _processor, _is_none);
+    archive(_numerical_histories, _categorical_histories, _processor);
   }
 };
 

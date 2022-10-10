@@ -7,7 +7,6 @@
 #include <cereal/types/variant.hpp>
 #include <bolt/src/layers/LayerConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
 #include <cstdint>
 #include <optional>
 #include <sstream>
@@ -21,10 +20,6 @@
 namespace thirdai::automl::deployment {
 
 class UserParameterInput {
-  struct UserParameterInputNoneType {};
-
-  static UserParameterInputNoneType NONE_TYPE;
-
  public:
   explicit UserParameterInput(bool bool_val) : _value(bool_val) {}
 
@@ -37,12 +32,6 @@ class UserParameterInput {
 
   explicit UserParameterInput(OracleConfigPtr oracle_config)
       : _value(std::move(oracle_config)) {}
-
-  explicit UserParameterInput(TemporalContextPtr temporal_context)
-      : _value(std::move(temporal_context)) {}
-
-  // Needed to serialize UserInputMap
-  explicit UserParameterInput() : _value(NONE_TYPE) {}
 
   bool resolveBooleanParam(const std::string& param_name) const {
     try {
@@ -89,22 +78,13 @@ class UserParameterInput {
     }
   }
 
-  TemporalContextPtr resolveTemporalContextPtr(
-      const std::string& param_name) const {
-    try {
-      return std::get<TemporalContextPtr>(_value);
-    } catch (const std::bad_variant_access& e) {
-      throw std::invalid_argument("Expected parameter '" + param_name +
-                                  "'to be of type TemporalContext.");
-    }
-  }
-
   const auto& getValue() const { return _value; }
 
  private:
-  std::variant<bool, uint32_t, float, std::string, OracleConfigPtr,
-               TemporalContextPtr, UserParameterInputNoneType>
-      _value;
+  // Private constructor for Cereal.
+  UserParameterInput() {}
+
+  std::variant<bool, uint32_t, float, std::string, OracleConfigPtr> _value;
 
   // Private constructor for cereal.
   // UserParameterInput() {}
@@ -220,10 +200,9 @@ class UserSpecifiedParameter : public HyperParameter<T> {
   static_assert(std::is_same_v<T, bool> || std::is_same_v<T, uint32_t> ||
                     std::is_same_v<T, float> ||
                     std::is_same_v<T, std::string> ||
-                    std::is_same_v<T, OracleConfigPtr> ||
-                    std::is_same_v<T, TemporalContextPtr>,
+                    std::is_same_v<T, OracleConfigPtr>,
                 "User specified parameter must be bool, uint32_t, float, "
-                "std::string, OracleConfig, or TemporalContext.");
+                "std::string, or OracleConfig");
 
  public:
   explicit UserSpecifiedParameter(std::string param_name,
@@ -266,10 +245,6 @@ class UserSpecifiedParameter : public HyperParameter<T> {
     if constexpr (std::is_same<T, OracleConfigPtr>::value) {
       return user_specified_parameters.at(_param_name)
           .resolveOracleConfigPtr(_param_name);
-    }
-    if constexpr (std::is_same<T, TemporalContextPtr>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveTemporalContextPtr(_param_name);
     }
   }
 
@@ -385,8 +360,6 @@ CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<
                      thirdai::bolt::SamplingConfigPtr>)
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<
                      thirdai::automl::deployment::OracleConfigPtr>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<
-                     thirdai::automl::deployment::TemporalContextPtr>)
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<bool>)
 CEREAL_REGISTER_TYPE(
@@ -398,8 +371,6 @@ CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<
                      thirdai::bolt::SamplingConfigPtr>)
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<
                      thirdai::automl::deployment::OracleConfigPtr>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<
-                     thirdai::automl::deployment::TemporalContextPtr>)
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<bool>)
 CEREAL_REGISTER_TYPE(
@@ -409,8 +380,6 @@ CEREAL_REGISTER_TYPE(
     thirdai::automl::deployment::UserSpecifiedParameter<std::string>)
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<
                      thirdai::automl::deployment::OracleConfigPtr>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<
-                     thirdai::automl::deployment::TemporalContextPtr>)
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::AutotunedSparsityParameter)
 

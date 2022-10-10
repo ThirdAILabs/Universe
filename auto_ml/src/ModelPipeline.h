@@ -7,6 +7,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -33,13 +34,10 @@ class ModelPipeline {
  public:
   ModelPipeline(DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,
-                TrainEvalParameters train_eval_parameters,
-                std::unordered_map<std::string, UserParameterInput>
-                    user_specified_parameters)
+                TrainEvalParameters train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
-        _train_eval_config(train_eval_parameters),
-        _user_specified_parameters(std::move(user_specified_parameters)) {}
+        _train_eval_config(train_eval_parameters) {}
 
   static auto make(const DeploymentConfigPtr& config,
                    const std::unordered_map<std::string, UserParameterInput>&
@@ -47,8 +45,7 @@ class ModelPipeline {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
     return ModelPipeline(std::move(dataset_factory), std::move(model),
-                         config->train_eval_parameters(),
-                         user_specified_parameters);
+                         config->train_eval_parameters());
   }
 
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
@@ -154,11 +151,6 @@ class ModelPipeline {
     return outputs;
   }
 
-  const std::unordered_map<std::string, UserParameterInput>&
-  getInitParameters() {
-    return _user_specified_parameters;
-  }
-
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -186,6 +178,10 @@ class ModelPipeline {
                                                   /* training= */ false);
     return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
         .value();
+  }
+
+  Artifact getArtifact(const std::string& name) {
+    return _dataset_factory->getArtifact(name);
   }
 
  private:
@@ -276,15 +272,12 @@ class ModelPipeline {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_dataset_factory, _model, _train_eval_config,
-            _user_specified_parameters);
+    archive(_dataset_factory, _model, _train_eval_config);
   }
 
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   TrainEvalParameters _train_eval_config;
-  std::unordered_map<std::string, UserParameterInput>
-      _user_specified_parameters;
 };
 
 }  // namespace thirdai::automl::deployment

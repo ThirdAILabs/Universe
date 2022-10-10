@@ -103,15 +103,9 @@ class VocabularyManager {
 
 class OracleDatasetFactory final : public DatasetLoaderFactory {
  public:
-  OracleDatasetFactory(OracleConfigPtr config, TemporalContextPtr context)
-      : _config(std::move(config)), _context(std::move(context)) {
-    if (!_config->temporal_tracking_relationships.empty() &&
-        _context->isNone()) {
-      throw std::invalid_argument(
-          "Oracle requires a temporal context object if temporal tracking "
-          "relationships are specified.");
-    }
-
+  explicit OracleDatasetFactory(OracleConfigPtr config)
+      : _config(std::move(config)),
+        _context(std::make_shared<TemporalContext>()) {
     std::string header;
     for (const auto& [col_name, _] : _config->data_types) {
       header += col_name + ",";
@@ -172,6 +166,14 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   uint32_t getLabelDim() final { return _label_dim; }
+
+ protected:
+  std::optional<Artifact> getArtifactImpl(const std::string& name) final {
+    if (name == "temporal_context") {
+      return {_context};
+    }
+    return nullptr;
+  }
 
  private:
   void initializeLabeledBatchProcessor() {
@@ -443,16 +445,14 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
 class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
  public:
-  OracleDatasetFactoryConfig(HyperParameterPtr<OracleConfigPtr> config,
-                             HyperParameterPtr<TemporalContextPtr> context)
-      : _config(std::move(config)), _context(std::move(context)) {}
+  explicit OracleDatasetFactoryConfig(HyperParameterPtr<OracleConfigPtr> config)
+      : _config(std::move(config)) {}
 
   DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const final {
     auto config = _config->resolve(user_specified_parameters);
-    auto context = _context->resolve(user_specified_parameters);
 
-    return std::make_unique<OracleDatasetFactory>(config, context);
+    return std::make_unique<OracleDatasetFactory>(config);
   }
 
  private:
