@@ -168,26 +168,7 @@ class DataProcessing {
     auto file_reader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
 
-    return buildDatasetLoaderForDataSource(file_reader, config, state,
-                                           delimiter, for_training);
-  }
-
-  static dataset::GenericBatchProcessorPtr buildSingleSampleBatchProcessor(
-      const SequentialClassifierConfig& config, DataState& state,
-      const ColumnNumberMap& col_nums, bool should_update_history) {
-    auto input_blocks =
-        buildInputBlocks(config, state, col_nums, /* for_training= */ false,
-                         /* should_update_history= */ should_update_history);
-    return dataset::GenericBatchProcessor::make(
-        /* input_blocks= */ input_blocks, /* label_blocks= */ {});
-  }
-
- private:
-  static dataset::StreamingGenericDatasetLoader buildDatasetLoaderForDataSource(
-      std::shared_ptr<dataset::DataLoader> data_loader,
-      const SequentialClassifierConfig& config, DataState& state,
-      char delimiter, bool for_training) {
-    auto header = data_loader->nextLine();
+    auto header = file_reader->nextLine();
     if (!header) {
       throw std::runtime_error("File header not found.");
     }
@@ -204,7 +185,7 @@ class DataProcessing {
     label_blocks.push_back(makeCategoricalBlock(
         config.target, target_meta.n_unique_classes, state, col_nums));
 
-    return {data_loader,
+    return {file_reader,
             input_blocks,
             label_blocks,
             /* shuffle = */ for_training,
@@ -216,6 +197,17 @@ class DataProcessing {
                                       // parallel.
   }
 
+  static dataset::GenericBatchProcessorPtr buildSingleSampleBatchProcessor(
+      const SequentialClassifierConfig& config, DataState& state,
+      const ColumnNumberMap& col_nums, bool should_update_history) {
+    auto input_blocks =
+        buildInputBlocks(config, state, col_nums, /* for_training= */ false,
+                         /* should_update_history= */ should_update_history);
+    return dataset::GenericBatchProcessor::make(
+        /* input_blocks= */ input_blocks, /* label_blocks= */ {});
+  }
+
+ private:
   static std::vector<dataset::BlockPtr> buildInputBlocks(
       const SequentialClassifierConfig& config, DataState& state,
       const ColumnNumberMap& col_nums, bool for_training,
