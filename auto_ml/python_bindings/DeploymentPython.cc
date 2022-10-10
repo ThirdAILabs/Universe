@@ -199,6 +199,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            [&](ModelPipeline& model, const std::string& name) {
              return py::cast(model.getArtifact(name));
            })
+      .def("list_artifact_names", &ModelPipeline::listArtifactNames)
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
 
   py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")

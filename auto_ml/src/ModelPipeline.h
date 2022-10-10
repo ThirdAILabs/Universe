@@ -14,6 +14,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace thirdai::automl::deployment {
@@ -177,8 +178,12 @@ class ModelPipeline {
         .value();
   }
 
-  Artifact getArtifact(const std::string& name) {
+  Artifact getArtifact(const std::string& name) const {
     return _dataset_factory->getArtifact(name);
+  }
+
+  std::vector<std::string> listArtifactNames() const {
+    return _dataset_factory->listArtifactNames();
   }
 
  private:
