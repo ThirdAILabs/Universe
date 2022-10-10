@@ -97,7 +97,7 @@ def make_simple_oracle_model():
     return model
 
 
-def test_sequential_classifier_save_load():
+def test_oracle_save_load():
     model = make_simple_oracle_model()
 
     train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
