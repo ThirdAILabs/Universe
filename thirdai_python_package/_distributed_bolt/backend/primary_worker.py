@@ -1,6 +1,6 @@
 import ray
 from thirdai._distributed_bolt.backend.worker import Worker
-from thirdai._distributed_bolt.data_generators import TrainGenerator
+from thirdai._distributed_bolt.train_generators import TrainGenerator
 from thirdai._thirdai import bolt
 
 
