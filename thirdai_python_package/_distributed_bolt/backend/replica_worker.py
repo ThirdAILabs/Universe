@@ -26,7 +26,7 @@ class ReplicaWorker(Worker):
         self,
         num_workers: int,
         model_to_wrap: bolt.graph.Model,
-        train_file_name: str,
+        data_loader_config,
         train_config: bolt.graph.TrainConfig,
         id: int,
         primary_worker,
@@ -52,7 +52,7 @@ class ReplicaWorker(Worker):
         super().__init__(
             num_workers=num_workers,
             model_to_wrap=model_to_wrap,
-            train_file_name=train_file_name,
+            data_loader_config=data_loader_config,
             id=id,
             primary_worker=primary_worker,
             train_config=train_config,

@@ -8,6 +8,7 @@ from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
 from thirdai._thirdai import bolt
 
+import toml
 from .utils import get_num_cpus, init_logging
 
 
@@ -102,7 +103,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.graph.Model,
         train_config: bolt.graph.TrainConfig,
-        train_file_names: List[str],
+        data_loader_config: str,
         batch_size: int,
     ):
         """
@@ -118,10 +119,11 @@ class DistributedDataParallel:
         self.logging = cluster_config.logging
         self.train_config = train_config
 
-        if len(train_file_names) != cluster_config.num_workers:
+        data_loader_config = toml.load(data_loader_config)
+        if len(data_loader_config["train_file_name"]) != cluster_config.num_workers:
             raise ValueError(
                 "Received ",
-                len(train_file_names),
+                len(data_loader_config["train_file_name"]),
                 " training datasets. Expected ",
                 cluster_config.num_workers,
                 " datasets, one for each node.",
@@ -139,7 +141,7 @@ class DistributedDataParallel:
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
             model_to_wrap=ray_model_ref,
-            train_file_name=train_file_names[0],
+            data_loader_config=data_loader_config,
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             batch_size=batch_size,
@@ -153,7 +155,7 @@ class DistributedDataParallel:
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
                     model_to_wrap=ray_model_ref,
-                    train_file_name=train_file_names[worker_id + 1],
+                    data_loader_config=data_loader_config,
                     train_config=train_config,
                     id=worker_id + 1,
                     primary_worker=self.primary_worker,

@@ -3,13 +3,13 @@ from thirdai import bolt, dataset
 
 
 def get_mnist_model():
-    input_layer = bolt.graph.Input(dim=784)
+    input_layer = bolt.graph.Input(dim=100000)
 
     hidden_layer = bolt.graph.FullyConnected(dim=256, sparsity=0.5, activation="Relu")(
         input_layer
     )
 
-    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(hidden_layer)
+    output_layer = bolt.graph.FullyConnected(dim=30224, activation="softmax")(hidden_layer)
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
 
@@ -20,7 +20,6 @@ def get_mnist_model():
 
 if __name__ == "__main__":
     model = get_mnist_model()
-    dataset_paths = ["/share/pratik/mnist_a", "/share/pratik/mnist_b"]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
     cluster_config = db.RayTrainingClusterConfig(
         num_workers=2, requested_cpus_per_node=1, communication_type="linear"
@@ -29,7 +28,7 @@ if __name__ == "__main__":
         cluster_config=cluster_config,
         model=model,
         train_config=train_config,
-        train_file_names=dataset_paths,
+        data_loader_config="data_loader_config.txt",
         batch_size=256,
     )
     wrapped_model.train()

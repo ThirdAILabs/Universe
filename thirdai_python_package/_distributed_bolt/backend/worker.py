@@ -1,7 +1,8 @@
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt
 
-from ..utils import get_gradients, parse_svm_dataset
+
+from ..utils import get_gradients, load_training_data
 
 
 class Worker:
@@ -18,7 +19,7 @@ class Worker:
         self,
         num_workers: int,
         model_to_wrap: bolt.graph,
-        train_file_name: str,
+        data_loader_config,
         id: int,
         primary_worker,
         train_config: bolt.graph.TrainConfig,
@@ -32,11 +33,21 @@ class Worker:
 
         if data_loader_config["data_loader"] == "svm":
             self.train_data, self.train_labels = load_training_data(
-                data_loader_config, batch_size
+                data_loader_config, batch_size, id
             )
         elif data_loader_config["data_loader"] == "mlm":
-            self.train_data, self.train_labels, valid_data, valid,labels = load_training_data(
-                data_loader_config, 
+            self.train_data, self.train_labels, valid_data, valid_labels = load_training_data(
+                data_loader_config, batch_size, id
+            )
+        tracked_metrics = ["mean_squared_error"]
+        predict_config = bolt.graph.PredictConfig.make().with_metrics(tracked_metrics)
+
+        if data_loader_config["valid"] != 0:
+            train_config.with_validation(
+                    [valid_data],
+                    valid_labels,
+                    predict_config,
+                    validation_frequency=32,
             )
 
         self.model = bolt.DistributedTrainingWrapper(

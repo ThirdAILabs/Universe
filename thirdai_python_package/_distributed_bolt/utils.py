@@ -1,25 +1,22 @@
 import logging
 
 from thirdai._thirdai import bolt, dataset
+from thirdai.dataset import FixedVocabulary
 
-
-def parse_svm_dataset(train_filename, batch_size):
-    
-
-def load_training_data(data_loader_config, batch_size):
+def load_training_data(data_loader_config, batch_size, id):
     data_loader_type = data_loader_config["data_loader"]
     if data_loader_type == "svm":
         return dataset.load_bolt_svm_dataset(
-            data_loader_config["train_file_name"],
+            data_loader_config["train_file_name"][id],
             batch_size,
         )
     elif data_loader_type == "mlm":
-        vocab = dataset.FixedVocabulary(data_loader_config["vocab_path"])
+        vocab = FixedVocabulary.make(data_loader_config["vocab_path"])
         mlm_loader = dataset.MLMDatasetLoader(vocab, data_loader_config["pairgram_range"])
 
-        train_data , _ , train_labels  = mlm_loader.load(data_loader_config["train_file_name"], batch_size)
-        valid_data , _ , train_labels = mlm_loader.load(data_loader_config["valid_file_name"], batch_size)
-        return train_data, train_labels, valid_data,, valid_labels
+        train_data , _ , train_labels  = mlm_loader.load(data_loader_config["train_file_name"][id], batch_size)
+        valid_data , _ , valid_labels = mlm_loader.load(data_loader_config["valid_file_name"], batch_size)
+        return train_data, train_labels, valid_data, valid_labels
 
 def init_logging(logger_file: str):
     """
