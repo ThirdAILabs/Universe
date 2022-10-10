@@ -137,6 +137,10 @@ class ColumnNumberMap {
     return _name_to_num.at(col_name);
   }
 
+  bool equals(const ColumnNumberMap& other) {
+    return other._name_to_num == _name_to_num;
+  }
+
   size_t size() const { return _name_to_num.size(); }
 
   std::unordered_map<uint32_t, std::string> getColumnNumToColNameMap() {

@@ -8,6 +8,7 @@
 #include "OracleConfig.h"
 #include "TemporalContext.h"
 #include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
+#include <bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -32,47 +33,7 @@
 
 namespace thirdai::automl::deployment {
 
-class ColumnNumberMap {
- public:
-  ColumnNumberMap(const std::string& header, char delimiter) {
-    auto header_columns =
-        dataset::ProcessorUtils::parseCsvRow(header, delimiter);
-    for (uint32_t col_num = 0; col_num < header_columns.size(); col_num++) {
-      std::string col_name(header_columns[col_num]);
-      _name_to_num[col_name] = col_num;
-    }
-  }
-
-  uint32_t at(const std::string& col_name) const {
-    if (_name_to_num.count(col_name) == 0) {
-      std::stringstream error_ss;
-      error_ss << "Expected a column named '" << col_name
-               << "' in header but could not find it.";
-      throw std::runtime_error(error_ss.str());
-    }
-    return _name_to_num.at(col_name);
-  }
-
-  bool equals(const ColumnNumberMap& other) {
-    return other._name_to_num == _name_to_num;
-  }
-
-  size_t size() const { return _name_to_num.size(); }
-
- private:
-  std::unordered_map<std::string, uint32_t> _name_to_num;
-
-  // Private constructor for cereal
-  ColumnNumberMap() {}
-
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_name_to_num);
-  }
-};
-
+using ColumnNumberMap = bolt::sequential_classifier::ColumnNumberMap;
 using ColumnNumberMapPtr = std::shared_ptr<ColumnNumberMap>;
 
 class VocabularyManager {
