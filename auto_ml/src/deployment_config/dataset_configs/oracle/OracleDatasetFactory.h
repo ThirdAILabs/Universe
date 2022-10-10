@@ -10,7 +10,6 @@
 #include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
@@ -32,8 +31,6 @@
 #include <vector>
 
 namespace thirdai::automl::deployment {
-
-using DataType = bolt::sequential_classifier::DataType;
 
 class ColumnNumberMap {
  public:
@@ -366,7 +363,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       uint32_t id, const ColumnNumberMap& column_numbers,
       const std::string& key_column, const std::string& tracked_column,
       const std::string& timestamp_column,
-      const TemporalConfig& temporal_config, bool should_update_history) {
+      const OracleTemporalConfig& temporal_config, bool should_update_history) {
     if (!_config->data_types.at(tracked_column).isCategorical()) {
       throw std::invalid_argument(
           "temporal.categorical can only be used with categorical "
@@ -403,7 +400,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       uint32_t id, const ColumnNumberMap& column_numbers,
       const std::string& key_column, const std::string& tracked_column,
       const std::string& timestamp_column,
-      const TemporalConfig& temporal_config, bool should_update_history) {
+      const OracleTemporalConfig& temporal_config, bool should_update_history) {
     if (!_config->data_types.at(tracked_column).isNumerical()) {
       throw std::invalid_argument(
           "temporal.numerical can only be used with numerical columns.");
@@ -461,7 +458,6 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
 
  private:
   HyperParameterPtr<OracleConfigPtr> _config;
-  HyperParameterPtr<TemporalContextPtr> _context;
 
   // Private constructor for cereal.
   OracleDatasetFactoryConfig() {}
@@ -469,8 +465,7 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _config,
-            _context);
+    archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _config);
   }
 };
 
