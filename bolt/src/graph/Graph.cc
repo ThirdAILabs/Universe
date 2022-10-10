@@ -194,6 +194,12 @@ MetricData BoltGraph::train(
           save(checkpoint_path);
         }
 
+        if (train_config.stopAfter() &&
+            train_config.stopAfter().value() == _updates) {
+          train_state.stop_training = true;
+          break;
+        }
+
         callbacks.onBatchEnd(*this, train_state);
       }
 

@@ -298,6 +298,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       // with the ModelPipeline since it won't sae the entire pipeline.
       .def("with_save_parameters", &TrainConfig::withSaveParameters,
            py::arg("save_prefix"), py::arg("save_frequency"))
+      .def("with_stop_after", &TrainConfig::withStopAfter,
+           py::arg("stop_after"))
 #endif
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,

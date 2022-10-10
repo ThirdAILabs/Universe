@@ -157,6 +157,11 @@ class TrainConfig {
     return *this;
   }
 
+  TrainConfig& withStopAfter(uint32_t updates) {
+    _stop_after = updates;
+    return *this;
+  }
+
   TrainConfig& withLogLossFrequency(uint32_t log_loss_frequency) {
     _log_loss_frequency = log_loss_frequency;
     return *this;
@@ -257,6 +262,8 @@ class TrainConfig {
     return _save_context;
   }
 
+  const std::optional<uint32_t>& stopAfter() const { return _stop_after; }
+
  private:
   // Private constructor for cereal.
   TrainConfig() : TrainConfig(0, 0){};
@@ -297,6 +304,8 @@ class TrainConfig {
 
   std::optional<ValidationContext> _validation_context;
   std::optional<SaveContext> _save_context;
+
+  std::optional<uint32_t> _stop_after;
 
   /// Log loss frequency, in units of updates (1 batch = 1 update).
   uint32_t _log_loss_frequency;
