@@ -47,7 +47,12 @@ class TemporalContext {
   }
 
   void initializeProcessor(dataset::GenericBatchProcessorPtr processor) {
-    _processor = std::move(processor);
+    if (!processor) {
+      _processor = std::move(processor);
+    } else if (_processor != processor) {
+      throw std::invalid_argument(
+          "Temporal context already initialized with a different processor.");
+    }
   }
 
   void update(const std::string& update) {

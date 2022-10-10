@@ -41,11 +41,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   explicit OracleDatasetFactory(OracleConfigPtr config)
       : _config(std::move(config)),
         _context(std::make_shared<TemporalContext>()) {
-    std::string header;
-    for (const auto& [col_name, _] : _config->data_types) {
-      header += col_name + ",";
-    }
-    ColumnNumberMap mock_column_number_map(header, /* delimiter= */ ',');
+    ColumnNumberMap mock_column_number_map(_config->data_types);
     auto mock_processor = makeLabeledProcessor(mock_column_number_map);
 
     _input_dim = mock_processor->getInputDim();
@@ -67,7 +63,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       throw std::invalid_argument("Column positions should not change.");
     }
 
-    initializeLabeledBatchProcessor();
+    if (!_labeled_batch_processor) {
+      _labeled_batch_processor = makeLabeledProcessor(*_column_number_map);
+    }
+    _context->initializeProcessor(_labeled_batch_processor);
 
     return std::make_unique<GenericDatasetLoader>(data_loader,
                                                   _labeled_batch_processor,
@@ -75,8 +74,6 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final {
-    // Build an inference batch processor if it does not exist yet
-    // Think about serialization.
     initializeInferenceBatchProcessor();
     BoltVector vector;
     auto sample = dataset::ProcessorUtils::parseCsvRow(input, ',');
@@ -115,20 +112,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
  private:
-  void initializeLabeledBatchProcessor() {
-    if (_labeled_batch_processor || !_column_number_map) {
-      return;
-    }
-    _labeled_batch_processor = makeLabeledProcessor(*_column_number_map);
-    _context->initializeProcessor(_labeled_batch_processor);
-  }
-
   dataset::GenericBatchProcessorPtr makeLabeledProcessor(
       const ColumnNumberMap& column_number_map) {
-    auto input_blocks =
-        buildInputBlocks(/* column_numbers= */ column_number_map,
-                         /* should_update_history= */ true);
-
     auto target_type = _config->data_types.at(_config->target);
     if (!target_type.isCategorical()) {
       throw std::invalid_argument(
@@ -138,6 +123,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     auto label_block = makeCategoricalBlock(
         /* column_numbers= */ column_number_map,
         /* column_name= */ _config->target, /* from_string= */ false);
+
+    auto input_blocks =
+        buildInputBlocks(/* column_numbers= */ column_number_map,
+                         /* should_update_history= */ true);
 
     return dataset::GenericBatchProcessor::make(std::move(input_blocks),
                                                 {label_block});
@@ -188,7 +177,13 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       }
 
       if (data_type.isText()) {
-        input_blocks.push_back(makeTextBlock(column_numbers, col_name));
+        auto text_meta = _config->data_types.at(col_name).asText();
+        auto col_num = column_numbers.at(col_name);
+        if (text_meta.average_n_words && text_meta.average_n_words <= 15) {
+          input_blocks.push_back(dataset::PairGramTextBlock::make(col_num));
+        } else {
+          input_blocks.push_back(dataset::UniGramTextBlock::make(col_num));
+        }
       }
 
       if (data_type.isDate()) {
@@ -204,8 +199,11 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
                               bool should_update_history) {
     auto timestamp = getTimestamp();
 
-    // Order of tracking keys is always consistent because
-    // temporal_tracking_relationships is an ordered map.
+    /*
+      Order of tracking keys is always consistent because
+      temporal_tracking_relationships is an ordered map.
+      Therefore, the order of ids is also consistent.
+    */
     uint32_t id = 0;
     for (const auto& [tracking_key, temporal_configs] :
          _config->temporal_tracking_relationships) {
@@ -217,14 +215,14 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       for (const auto& config : temporal_configs) {
         if (config.isCategorical()) {
           input_blocks.push_back(makeTemporalCategoricalBlock(
-              id, column_numbers, tracking_key, config.columnName(), timestamp,
-              config, should_update_history));
+              id, column_numbers, tracking_key, timestamp, config,
+              should_update_history));
         }
 
         if (config.isNumerical()) {
           input_blocks.push_back(makeTemporalNumericalBlock(
-              id, column_numbers, tracking_key, config.columnName(), timestamp,
-              config, should_update_history));
+              id, column_numbers, tracking_key, timestamp, config,
+              should_update_history));
         }
 
         id++;
@@ -265,17 +263,6 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         /* col= */ col, /* n_classes= */ vocab_size);
   }
 
-  dataset::BlockPtr makeTextBlock(const ColumnNumberMap& column_numbers,
-                                  const std::string& column_name) {
-    auto text_meta = _config->data_types.at(column_name).asText();
-    if (text_meta.average_n_words && text_meta.average_n_words <= 15) {
-      return dataset::PairGramTextBlock::make(
-          /* col= */ column_numbers.at(column_name));
-    }
-    return dataset::UniGramTextBlock::make(
-        /* col= */ column_numbers.at(column_name));
-  }
-
   std::string getTimestamp() {
     std::optional<std::string> timestamp;
     if (!_config->temporal_tracking_relationships.empty()) {
@@ -299,9 +286,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   dataset::BlockPtr makeTemporalCategoricalBlock(
       uint32_t id, const ColumnNumberMap& column_numbers,
-      const std::string& key_column, const std::string& tracked_column,
-      const std::string& timestamp_column,
+      const std::string& key_column, const std::string& timestamp_column,
       const OracleTemporalConfig& temporal_config, bool should_update_history) {
+    const auto& tracked_column = temporal_config.columnName();
+
     if (!_config->data_types.at(tracked_column).isCategorical()) {
       throw std::invalid_argument(
           "temporal.categorical can only be used with categorical "
@@ -336,9 +324,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   dataset::BlockPtr makeTemporalNumericalBlock(
       uint32_t id, const ColumnNumberMap& column_numbers,
-      const std::string& key_column, const std::string& tracked_column,
-      const std::string& timestamp_column,
+      const std::string& key_column, const std::string& timestamp_column,
       const OracleTemporalConfig& temporal_config, bool should_update_history) {
+    const auto& tracked_column = temporal_config.columnName();
+
     if (!_config->data_types.at(tracked_column).isNumerical()) {
       throw std::invalid_argument(
           "temporal.numerical can only be used with numerical columns.");
