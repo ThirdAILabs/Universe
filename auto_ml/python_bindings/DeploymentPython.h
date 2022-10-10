@@ -51,9 +51,6 @@ py::object predictBatchWrapper(ModelPipeline& model,
                                const std::vector<std::string>& samples,
                                bool use_sparse_inference);
 
-py::object getInitParameterWrapper(ModelPipeline& model,
-                                   const std::string& param_name);
-
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 
 py::object convertBoltVectorToNumpy(const BoltVector& vector);

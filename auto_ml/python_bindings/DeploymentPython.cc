@@ -7,6 +7,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <_types/_uint32_t.h>
 #include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -18,6 +19,7 @@
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
@@ -60,10 +62,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              HyperParameterPtr<OracleConfigPtr>>(submodule,
                                                  "OracleConfigHyperParameter");
 
-  py::class_<HyperParameter<TemporalContextPtr>,  // NOLINT
-             HyperParameterPtr<TemporalContextPtr>>(
-      submodule, "TemporalContextHyperParameter");
-
   /**
    * Do not change the order of these overloads. Because bool is a sublclass of
    * int in python, it must be declared first or calling this function with a
@@ -77,7 +75,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defConstantParameter<std::string>(submodule);
   defConstantParameter<bolt::SamplingConfigPtr>(submodule);
   defConstantParameter<OracleConfigPtr>(submodule);
-  defConstantParameter<TemporalContextPtr>(submodule);
 
   defOptionMappedParameter<bool>(submodule);
   defOptionMappedParameter<uint32_t>(submodule);
@@ -85,7 +82,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defOptionMappedParameter<std::string>(submodule);
   defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule);
   defOptionMappedParameter<OracleConfigPtr>(submodule);
-  defOptionMappedParameter<TemporalContextPtr>(submodule);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"),
@@ -158,9 +154,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<OracleDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<OracleDatasetFactoryConfig>>(
       submodule, "OracleDatasetFactory")
-      .def(py::init<HyperParameterPtr<OracleConfigPtr>,
-                    HyperParameterPtr<TemporalContextPtr>>(),
-           py::arg("config"), py::arg("temporal_context"));
+      .def(py::init<HyperParameterPtr<OracleConfigPtr>>(), py::arg("config"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
@@ -203,7 +197,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
            py::arg("filename"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
-      .def("get_parameter", &getInitParameterWrapper, py::arg("param_name"))
+      .def("get_artifact",
+           [&](ModelPipeline& model, const std::string& name) {
+             return py::cast(model.getArtifact(name));
+           })
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
 
   py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
@@ -218,8 +215,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def(py::init<>())
       .def("reset", &TemporalContext::reset)
       .def("update", &TemporalContext::update, py::arg("update"))
-      .def("batch_update", &TemporalContext::batchUpdate, py::arg("updates"))
-      .def_static("NoneType", &TemporalContext::None);
+      .def("batch_update", &TemporalContext::batchUpdate, py::arg("updates"));
 }
 
 template <typename T>
@@ -263,16 +259,10 @@ py::object makeUserSpecifiedParameter(const std::string& name,
         name, default_value.cast<std::optional<OracleConfigPtr>>()));
   }
 
-  if (py::str(type).cast<std::string>() ==
-      "<class 'thirdai._thirdai.deployment.TemporalContext'>") {
-    return py::cast(UserSpecifiedParameter<TemporalContextPtr>::make(
-        name, default_value.cast<std::optional<TemporalContextPtr>>()));
-  }
-
-  throw std::invalid_argument(
-      "Invalid type '" + py::str(type).cast<std::string>() +
-      "' passed to UserSpecifiedParameter. Must be one "
-      "of bool, int, float, str, OracleConfig, or TemporalContext.");
+  throw std::invalid_argument("Invalid type '" +
+                              py::str(type).cast<std::string>() +
+                              "' passed to UserSpecifiedParameter. Must be one "
+                              "of bool, int, float, str, or OracleConfig.");
 }
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
@@ -298,9 +288,6 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
       cpp_parameters.emplace(name, UserParameterInput(value));
     } else if (py::isinstance<OracleConfig>(v)) {
       OracleConfigPtr value = v.cast<OracleConfigPtr>();
-      cpp_parameters.emplace(name, UserParameterInput(value));
-    } else if (py::isinstance<TemporalContext>(v)) {
-      TemporalContextPtr value = v.cast<TemporalContextPtr>();
       cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
       throw std::invalid_argument(
@@ -363,17 +350,6 @@ py::object predictBatchWrapper(ModelPipeline& model,
   BoltBatch outputs = model.predictBatch(samples, use_sparse_inference);
 
   return convertBoltBatchToNumpy(outputs);
-}
-
-py::object getInitParameterWrapper(ModelPipeline& model,
-                                   const std::string& param_name) {
-  const auto& params = model.getInitParameters();
-  if (!params.count(param_name)) {
-    throw std::invalid_argument("Parameter '" + param_name + "' not found.");
-  }
-  return py::cast(params.at(param_name).getValue());
-  // return convertUserParameterInputToPyObject(params.at(param_name),
-  // param_name);
 }
 
 template <typename T>
