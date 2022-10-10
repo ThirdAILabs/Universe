@@ -1,14 +1,16 @@
 import textwrap
 from typing import List
 
+import os, tempfile
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, logging
 
 from .utils import get_num_cpus, init_logging
+
 
 
 class RayTrainingClusterConfig:
@@ -24,6 +26,7 @@ class RayTrainingClusterConfig:
         requested_cpus_per_node: int = -1,
         communication_type: str = "circular",
         cluster_address: str = "auto",
+        log_dir: str = os.path.join(tempfile.gettempdir(), 'thirdai')
     ):
         """
         This constructor connects to an already existing Ray cluster,
@@ -32,8 +35,12 @@ class RayTrainingClusterConfig:
         a number of useful fields, including num_workers, communication_type,
         logging, primary_worker_config, and replica_worker_configs.
         """
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
 
-        self.logging = init_logging("distributed_fully_connected.log")
+        
+        self.logging = init_logging(f"{log_dir}/distributed_bolt.log")
+        self.log_dir = log_dir
         self.logging.info("Building Ray training cluster")
         self.communication_type = communication_type
 
@@ -142,6 +149,7 @@ class DistributedDataParallel:
             train_file_name=train_file_names[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
+            log_dir = cluster_config.log_dir,
             batch_size=batch_size,
         )
 
@@ -158,6 +166,7 @@ class DistributedDataParallel:
                     id=worker_id + 1,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
+                    log_dir = cluster_config.log_dir,
                     batch_size=batch_size,
                 )
             )

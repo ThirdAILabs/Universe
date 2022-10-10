@@ -74,6 +74,44 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #endif
 }
 
+void BoltGraph::log_validate_and_save(
+    std::optional<ValidationContext> validation,
+    uint32_t batch_size, const TrainConfig& train_config,
+    MetricAggregator& train_metrics) {
+  if (train_config.logLossFrequency() != 0 &&
+      _updates % train_config.logLossFrequency() == 0) {
+    logging::info("train | epoch {} | updates {} | {}", (_epoch), _updates,
+                  train_metrics.summary());
+  }
+
+  if (validation && validation->frequency() != 0 &&
+      (_updates % validation->frequency() == 0)) {
+    // TODO(jerin-thirdai): The implications of doing
+    // cleanupAfterBatchProcessing and prepareToProcessBatches is not
+    // fully understood here. These two functions should not exist, but
+    // not doing this leads to assertion failure on node-state or a
+    // segfault on something set as a nullptr after
+    // cleanupAfterBatchProcessing if prepareToProcessBatches is not
+    // applied.
+    //
+    // Currently unsure of the implications of adding validationMetrics
+    // from mid-batch as well, these will still be logged, but is not
+    // added to the callback export.
+
+    cleanupAfterBatchProcessing();
+    predict(validation->data(), validation->labels(), validation->config());
+    prepareToProcessBatches(batch_size,
+                            /* use_sparsity=*/true);
+  }
+
+  const std::optional<SaveContext>& save_context = train_config.saveContext();
+  if (save_context && save_context->frequency() != 0 &&
+      _updates % save_context->frequency() == 0) {
+    const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
+    save(checkpoint_path);
+  }
+}
+
 MetricData BoltGraph::train(
     const std::vector<dataset::BoltDatasetPtr>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
@@ -158,41 +196,7 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        if (train_config.logLossFrequency() != 0 &&
-            _updates % train_config.logLossFrequency() == 0) {
-          logging::info("train | epoch {} | updates {} | {}", (_epoch),
-                        _updates, train_metrics.summary());
-        }
-
-        if (validation && validation->frequency() != 0 &&
-            (_updates % validation->frequency() == 0)) {
-          // TODO(jerin-thirdai): The implications of doing
-          // cleanupAfterBatchProcessing and prepareToProcessBatches is not
-          // fully understood here. These two functions should not exist, but
-          // not doing this leads to assertion failure on node-state or a
-          // segfault on something set as a nullptr after
-          // cleanupAfterBatchProcessing if prepareToProcessBatches is not
-          // applied.
-          //
-          // Currently unsure of the implications of adding validationMetrics
-          // from mid-batch as well, these will still be logged, but is not
-          // added to the callback export.
-
-          cleanupAfterBatchProcessing();
-          predict(validation->data(), validation->labels(),
-                  validation->config());
-          prepareToProcessBatches(dataset_context.batchSize(),
-                                  /* use_sparsity=*/true);
-        }
-
-        const std::optional<SaveContext>& save_context =
-            train_config.saveContext();
-        if (save_context && save_context->frequency() != 0 &&
-            _updates % save_context->frequency() == 0) {
-          const std::string checkpoint_path =
-              save_context->prefix() + ".last.bolt";
-          save(checkpoint_path);
-        }
+        log_validate_and_save(validation, dataset_context.batchSize(), train_config, train_metrics);
 
         callbacks.onBatchEnd(*this, train_state);
       }

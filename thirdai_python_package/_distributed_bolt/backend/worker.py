@@ -1,10 +1,10 @@
 import textwrap
 
 import thirdai._distributed_bolt.backend.communication as comm
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, logging
 
 from ..utils import get_gradients, parse_svm_dataset
-
+import os
 
 class Worker:
     """
@@ -25,6 +25,7 @@ class Worker:
         primary_worker,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
+        log_dir: str,
         batch_size: int,
     ):
         """
@@ -32,15 +33,20 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
 
+        logging.setup(log_to_stderr=False, path=os.path.join(log_dir,f"worker-{id}.log"))
+        
+        logging.info("Loading Dataset into memory")
         self.train_data, self.train_labels = parse_svm_dataset(
             train_file_name, batch_size
         )
+        logging.info("Dataset Loaded! Loading the model now.")
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
             train_data=[self.train_data],
             train_labels=self.train_labels,
             train_config=train_config,
         )
+        logging.info(f"Model Loaded! Now, initializing {communication_type} communication class for this worker")
 
         # Set up variables
         self.num_workers = num_workers
@@ -67,6 +73,7 @@ class Worker:
                     """
                 )
             )
+        logging.info(f"Done with initialization of worker on this node.")
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
@@ -97,6 +104,7 @@ class Worker:
         :param avg_gradients: whether the update requires updating the gradients, defaults to False
         :type avg_gradients: bool
         """
+        logging.info(f'Starting ring communication with update_id={update_id}, reduce={reduce}, avg_gradients={avg_gradients}')
         self.comm.process_ring(update_id, reduce, avg_gradients)
 
     def receive_array_partitions(self, update_id: int):
@@ -108,6 +116,7 @@ class Worker:
         :return: subarray partition
         :rtype: numpy.ndarray
         """
+        logging.info(f'Receiving array partition for update_id={update_id}')
         return self.comm.receive_array_partitions(update_id)
 
     def compute_and_store_batch_gradients(self, batch_no: int):
@@ -127,7 +136,9 @@ class Worker:
         :return: check whether training is complete or not
         :rtype: bool
         """
+        logging.info(f'Starting to train model on this worker with data batch with batch_no={batch_no}')
         self.comm.compute_and_store_batch_gradients(batch_no)
+        logging.info(f'Done with training model on this worker! Starting to communicate!')
 
     def get_calculated_gradients(self):
         """
@@ -167,6 +178,7 @@ class Worker:
         This function calls updateParameter function inside bolt, which
         inherently updates the entire network.
         """
+        logging.info(f'Updating parameters with updated gradients of the model on this node.')
         self.model.update_parameters()
 
     def num_of_batches(self) -> int:
@@ -176,6 +188,7 @@ class Worker:
         return len(self.train_data)
 
     def finish_training(self):
+        logging.info(f"Finishing training for this node.")
         self.model.finish_training()
 
     def model(self):
