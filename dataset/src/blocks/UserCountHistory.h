@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
@@ -175,8 +178,21 @@ class UserCountHistoryBlock final : public Block {
 
   bool _should_update_history;
   bool _include_current_row;
+
+  // Constructor for Cereal
+  UserCountHistoryBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _user_col, _count_col,
+            _timestamp_col, _history, _should_update_history,
+            _include_current_row);
+  }
 };
 
 using UserCountHistoryBlockPtr = std::shared_ptr<UserCountHistoryBlock>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::UserCountHistoryBlock)
