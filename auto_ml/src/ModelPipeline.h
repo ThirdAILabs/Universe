@@ -2,8 +2,6 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/unordered_map.hpp>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -16,7 +14,6 @@
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 
 namespace thirdai::automl::deployment {
