@@ -167,8 +167,12 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final { return _label_dim; }
 
+  std::vector<std::string> listArtifactNames() const final {
+    return {"temporal_context"};
+  }
+
  protected:
-  std::optional<Artifact> getArtifactImpl(const std::string& name) final {
+  std::optional<Artifact> getArtifactImpl(const std::string& name) const final {
     if (name == "temporal_context") {
       return {_context};
     }

@@ -106,15 +106,18 @@ class DatasetLoaderFactory {
 
   virtual ~DatasetLoaderFactory() = default;
 
-  Artifact getArtifact(const std::string& name) {
+  Artifact getArtifact(const std::string& name) const {
     if (auto artifact = getArtifactImpl(name)) {
       return *artifact;
     }
     throw std::invalid_argument("Artifact '" + name + "' not found.");
   }
 
+  virtual std::vector<std::string> listArtifactNames() const { return {}; }
+
  protected:
-  virtual std::optional<Artifact> getArtifactImpl(const std::string& name) {
+  virtual std::optional<Artifact> getArtifactImpl(
+      const std::string& name) const {
     (void)name;
     return std::nullopt;
   }
