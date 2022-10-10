@@ -241,10 +241,9 @@ class UserSpecifiedParameter : public HyperParameter<T> {
     }
   }
 
- protected:
+ private:
   std::string _param_name;
 
- private:
   // Private constructor for cereal.
   UserSpecifiedParameter() {}
 

@@ -11,6 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <unordered_set>
 
 namespace thirdai::automl::deployment {
@@ -58,9 +59,10 @@ class DeploymentConfig {
 
     if (user_specified_parameters.count(
             DatasetLabelDimensionParameter::PARAM_NAME)) {
-      throw std::invalid_argument(
-          "User specified parameter has reserved parameter name '" +
-          DatasetLabelDimensionParameter::PARAM_NAME + "'.");
+      std::stringstream ss;
+      ss << "User specified parameter has reserved parameter name '"
+         << DatasetLabelDimensionParameter::PARAM_NAME << "'.";
+      throw std::invalid_argument(ss.str());
     }
     user_specified_parameters.emplace(
         DatasetLabelDimensionParameter::PARAM_NAME,
