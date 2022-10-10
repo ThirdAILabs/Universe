@@ -84,7 +84,12 @@ def test_vocab():
         tokens = sample.split()
         if "THIRDAI_TEST_DEBUG" in os.environ:
             for piece, token in zip(pieces, tokens):
+                # Assert reconstruction works
+                assert vocab.id_to_token(piece) == token
                 print("{}: {}".format(token, piece), end=" ")
+
+            # Assert sentence-level reconstruction
+            assert vocab.decode(pieces) == sample
             print()
 
         assert len(pieces) == len(tokens)
