@@ -127,8 +127,8 @@ MetricData BoltGraph::train(
 
       This is done per epoch so callbacks can call predict during training.
     */
-    prepareToProcessBatches(dataset_context.batchSize(),
-                            /* use_sparsity=*/true);
+    prepareForBatchProcessing(dataset_context.batchSize(),
+                              /* use_sparsity=*/true);
 
     std::optional<ProgressBar> bar = makeOptionalProgressBar(
         /*make=*/train_config.verbose(),
@@ -163,11 +163,11 @@ MetricData BoltGraph::train(
       if (validation && validation->frequency() != 0 &&
           (_updates % validation->frequency() == 0)) {
         // TODO(jerin-thirdai): The implications of doing
-        // cleanupAfterBatchProcessing and prepareToProcessBatches is not
+        // cleanupAfterBatchProcessing and prepareForBatchProcessing is not
         // fully understood here. These two functions should not exist, but
         // not doing this leads to assertion failure on node-state or a
         // segfault on something set as a nullptr after
-        // cleanupAfterBatchProcessing if prepareToProcessBatches is not
+        // cleanupAfterBatchProcessing if prepareForBatchProcessing is not
         // applied.
         //
         // Currently unsure of the implications of adding validationMetrics
@@ -176,8 +176,8 @@ MetricData BoltGraph::train(
 
         cleanupAfterBatchProcessing();
         predict(validation->data(), validation->labels(), validation->config());
-        prepareToProcessBatches(dataset_context.batchSize(),
-                                /* use_sparsity=*/true);
+        prepareForBatchProcessing(dataset_context.batchSize(),
+                                  /* use_sparsity=*/true);
       }
 
       const std::optional<SaveContext>& save_context =
@@ -332,7 +332,7 @@ BoltGraph::getInputGradientSingle(
   SingleBatchDatasetContext single_input_gradients_context(
       std::move(input_data));
 
-  prepareToProcessBatches(/*batch_size= */ 1, /* use_sparsity=*/true);
+  prepareForBatchProcessing(/*batch_size= */ 1, /* use_sparsity=*/true);
 
   verifyCanGetInputGradientSingle(single_input_gradients_context,
                                   explain_prediction_using_highest_activation,
@@ -424,8 +424,8 @@ InferenceResult BoltGraph::predict(
    datastructures to store the activations for every batch during training so
    we need this to be able to support the largest batch size.
   */
-  prepareToProcessBatches(predict_context.batchSize(),
-                          predict_config.sparseInferenceEnabled());
+  prepareForBatchProcessing(predict_context.batchSize(),
+                            predict_config.sparseInferenceEnabled());
 
   InferenceOutputTracker outputTracker(
       _output, predict_config.shouldReturnActivations(),
@@ -490,7 +490,7 @@ BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
                    /* returning_activations = */ true,
                    /* num_metrics_tracked = */ 0);
 
-  prepareToProcessBatches(/* batch_size = */ 1, use_sparse_inference);
+  prepareForBatchProcessing(/* batch_size = */ 1, use_sparse_inference);
 
   single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
   forward(/* vec_index = */ 0, nullptr);
@@ -510,7 +510,7 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
 
   uint32_t batch_size = single_predict_context.batchSize();
 
-  prepareToProcessBatches(batch_size, use_sparse_inference);
+  prepareForBatchProcessing(batch_size, use_sparse_inference);
 
   single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
 
@@ -575,8 +575,8 @@ void BoltGraph::backpropagate(uint32_t vec_index) {
   }
 }
 
-void BoltGraph::prepareToProcessBatches(uint32_t batch_size,
-                                        bool use_sparsity) {
+void BoltGraph::prepareForBatchProcessing(uint32_t batch_size,
+                                          bool use_sparsity) {
   for (auto& node : _nodes) {
     node->prepareForBatchProcessing(batch_size, use_sparsity);
   }
