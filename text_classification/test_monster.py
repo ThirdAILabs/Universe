@@ -2,6 +2,7 @@ import os
 
 import pytest
 from cookie_monster import CookieMonster
+from thirdai import dataset
 from thirdai.dataset import FixedVocabulary
 
 pytestmark = [pytest.mark.unit]
@@ -87,3 +88,20 @@ def test_vocab():
             print()
 
         assert len(pieces) == len(tokens)
+
+
+def test_dataset_with_vocab(tmp_path):
+    vocab = FixedVocabulary.make(BERT_VOCAB_PATH)
+    mlm_loader = dataset.MLMDatasetLoader(vocab, pairgram_range=100)
+
+    dataset_path = tmp_path / "bert.head.10.txt"
+    dataset_path = str(dataset_path)
+    with open(dataset_path, "w+") as dataset_file:
+        dataset_file.write("\n".join(BERT_SAMPLES))
+
+    batch_size = 2
+    features, tokens, labels = mlm_loader.load(dataset_path, batch_size=batch_size)
+    for features_batch, tokens_batch, labels_batch in zip(features, tokens, labels):
+        assert len(features_batch) <= batch_size
+        assert len(tokens_batch) <= batch_size
+        assert len(labels_batch) <= batch_size
