@@ -65,9 +65,13 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
         node_layers.end());
   }
 
+#if THIRDAI_EXPOSE_ALL
   std::string model_summary =
       summarize(/* print = */ print_when_done, /* detailed = */ false);
   logging::info(model_summary);
+#else
+  (void)print_when_done;
+#endif
 }
 
 MetricData BoltGraph::train(
