@@ -1,3 +1,5 @@
+import textwrap
+
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt
 
@@ -46,11 +48,25 @@ class Worker:
         self.primary_worker = primary_worker
         self.communication_type = communication_type
 
-        self.comm = (
-            comm.Circular(self.model, self.id, self.primary_worker, self.num_workers)
-            if self.communication_type == "circular"
-            else comm.Linear(self.model, self.id, self.primary_worker)
-        )
+        if self.communication_type == "circular":
+            self.comm = comm.Circular(
+                self.model, self.id, self.primary_worker, self.num_workers
+            )
+        elif self.communication_type == "linear":
+            self.comm = comm.Linear(self.model, self.id, self.primary_worker)
+        elif self.communication_type == "gloo":
+            # We are using "default", as a global group name for all the workers, as
+            # right now, we connect all the worker in one cluster
+            self.comm = comm.Gloo(self.model, self.id, self.num_workers, "default")
+        else:
+            raise ValueError(
+                textwrap.dedent(
+                    """
+                        Currently only three modes of communication are supported.
+                        Use: "circular" or "linear" or "gloo". 
+                    """
+                )
+            )
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
@@ -128,7 +144,7 @@ class Worker:
         """
         return get_gradients(self.model)
 
-    def receive_gradients(self):
+    def receive_gradients(self, averaged_gradients_ref=None):
         """
         This function is called only when the communication pattern choosen
         is circular.
@@ -136,10 +152,15 @@ class Worker:
         This function is called by the primary_worker to make set the updated
         gradients to the network.
 
-        :return: receive updated gradients
-        :rtype: bool
+        :param averaged_gradients_ref: gets the references for averaged gradients
+                    for linear communication, defaults to None for any other way
+                    to communicate
+        :type averaged_gradients_ref: RayObjectRef, optional
         """
-        self.comm.receive_gradients()
+        if averaged_gradients_ref == None:
+            self.comm.receive_gradients()
+        else:
+            self.comm.receive_gradients(averaged_gradients_ref)
 
     def update_parameters(self):
         """

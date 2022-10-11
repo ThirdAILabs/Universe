@@ -38,6 +38,11 @@ class SimpleFileDataLoader final : public DataLoader {
         _file(SafeFileIO::ifstream(filename)),
         _filename(filename) {}
 
+  static std::shared_ptr<SimpleFileDataLoader> make(
+      const std::string& filename, uint32_t target_batch_size) {
+    return std::make_shared<SimpleFileDataLoader>(filename, target_batch_size);
+  }
+
   std::optional<std::vector<std::string>> nextBatch() final {
     if (_file.eof()) {
       return std::nullopt;

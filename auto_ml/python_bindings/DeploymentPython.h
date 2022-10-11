@@ -15,10 +15,10 @@ namespace thirdai::automl::deployment::python {
 void createDeploymentSubmodule(py::module_& thirdai_module);
 
 template <typename T>
-void defConstantParameter(py::module_& submodule);
+void defConstantParameter(py::module_& submodule, bool add_docs);
 
 template <typename T>
-void defOptionMappedParameter(py::module_& submodule);
+void defOptionMappedParameter(py::module_& submodule, bool add_docs);
 
 py::object makeUserSpecifiedParameter(const std::string& name,
                                       const py::object& type);
@@ -31,18 +31,23 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
-    const std::shared_ptr<dataset::DataLoader>& data_source);
+    const std::shared_ptr<dataset::DataLoader>& data_source,
+    std::optional<bolt::PredictConfig>& predict_config);
 
-py::object evaluateOnFileWrapper(ModelPipeline& model,
-                                 const std::string& filename);
+py::object evaluateOnFileWrapper(
+    ModelPipeline& model, const std::string& filename,
+    std::optional<bolt::PredictConfig>& predict_config);
 
-py::object predictWrapper(ModelPipeline& model, const std::string& sample);
+py::object predictWrapper(ModelPipeline& model, const std::string& sample,
+                          bool use_sparse_inference);
 
 py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens);
+                                const std::vector<uint32_t>& tokens,
+                                bool use_sparse_inference);
 
 py::object predictBatchWrapper(ModelPipeline& model,
-                               const std::vector<std::string>& samples);
+                               const std::vector<std::string>& samples,
+                               bool use_sparse_inference);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 
