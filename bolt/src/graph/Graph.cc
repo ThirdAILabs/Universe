@@ -115,7 +115,8 @@ MetricData BoltGraph::train(
   // over the dataset.
   uint32_t num_epochs = _epoch + train_config.epochs();
 
-  for (/*_epoch = _epoch*/; _epoch < num_epochs; _epoch++) {
+  for (/*_epoch = _epoch*/; _epoch < num_epochs && !train_state.stop_training;
+       _epoch++) {
     train_state.epoch = _epoch;
     callbacks.onEpochBegin(*this, train_state);
 
