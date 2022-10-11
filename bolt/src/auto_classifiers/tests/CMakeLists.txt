@@ -1,8 +1,8 @@
 enable_testing()
 
 add_executable(bolt_sequential_classifier_test SequentialClassifierTest.cc)
-target_link_libraries(bolt_sequential_classifier_test
-                      PRIVATE auto_classifier_lib gtest_main)
+target_link_libraries(bolt_sequential_classifier_test PRIVATE thirdai
+                                                              gtest_main)
 
 include(GoogleTest)
 

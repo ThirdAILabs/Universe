@@ -188,9 +188,6 @@ include_directories(deps/pybind11/include)
 include_directories(deps/cereal/include)
 include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
-include_directories(deps/googletest/googletest/include)
-include_directories(deps/googletest/googlemock/include)
-include_directories(deps/spdlog/include)
 
 # Source dependencies
 add_subdirectory(deps/pybind11)
@@ -258,6 +255,20 @@ file(GLOB_RECURSE UTILS_SOURCES utils/*.cc)
 
 file(GLOB RECURSE AUTOML_SOURCES auto_ml/src/*.cc)
 
+add_library(
+  thirdai STATIC
+  ${BOLT_SOURCES}
+  ${SEARCH_SOURCES}
+  ${HASHING_SOURCES}
+  ${HASHTABLE_SOURCES}
+  ${DATASET_SOURCES}
+  ${WRAPPER_SOURCES}
+  ${COMPRESSION_SOURCES}
+  ${UTILS_SOURCES}
+  ${AUTOML_SOURCES})
+
+target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog)
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
 # from python, but honestly this is more trouble than it's worth so for now this
@@ -272,19 +283,9 @@ pybind11_add_module(
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_classifiers/python_bindings/AutoClassifiersPython.cc
-  auto_ml/python_bindings/DeploymentPython.cc
-  ${BOLT_SOURCES}
-  ${SEARCH_SOURCES}
-  ${HASHING_SOURCES}
-  ${HASHTABLE_SOURCES}
-  ${DATASET_SOURCES}
-  ${WRAPPER_SOURCES}
-  ${DATASET_SOURCES}
-  ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES}
-  ${AUTOML_SOURCES})
+  auto_ml/python_bindings/DeploymentPython.cc)
 
-target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(_thirdai PUBLIC thirdai)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
