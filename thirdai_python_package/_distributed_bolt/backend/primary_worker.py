@@ -26,6 +26,7 @@ class PrimaryWorker(Worker):
         data_loader_config,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
+        log_dir: str,
         batch_size: int,
     ):
 
@@ -37,6 +38,7 @@ class PrimaryWorker(Worker):
             primary_worker=self,
             train_config=train_config,
             communication_type=communication_type,
+            log_dir=log_dir,
             batch_size=batch_size,
         )
 
