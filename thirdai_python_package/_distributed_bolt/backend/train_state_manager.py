@@ -81,31 +81,34 @@ class TrainStateManager:
             ]
         )
 
-    def train_batch(self):
+    def train_batch(self, epoch):
         """
-        Trains the model and returns the minimum epoch across all workers.
+        Trains the model and returns whether all workers have a next batch.
         """
-        min_epoch = self._compute_and_store_next_batch_gradients()
+        has_next_batch = self._compute_and_store_next_batch_gradients()
         self._communicate()
         self._update_parameters()
         self.overall_batch_count += 1
-        self._log_post_batch(min_epoch)
-        return min_epoch
+        self._log_post_batch(epoch)
+        return has_next_batch
+
+    def move_to_next_epoch(self):
+        ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
 
     def _compute_and_store_next_batch_gradients(self):
         """
         Calls compute_and_store_batch_gradients function on each of the
-        workers and returns the minimum current epoch across all workers
+        workers and returns whether all workers have a next batch.
         """
         start_calculating_gradients_time = time.time()
-        current_epochs = ray.get(
+        has_next_batches = ray.get(
             [
                 worker.compute_and_store_next_batch_gradients.remote()
                 for worker in self.workers
             ]
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
-        return min(current_epochs)
+        return all(has_next_batches)
 
     def _communicate(self):
         """

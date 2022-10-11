@@ -41,7 +41,6 @@ class Worker:
         self.id = id
         self.primary_worker = primary_worker
         self.communication_type = communication_type
-        self.batch_id_within_dataset = 0
 
         if self.communication_type == "circular":
             self.comm = comm.Circular(
@@ -61,6 +60,11 @@ class Worker:
                         Use: "circular" or "linear" or "gloo". 
                     """
                 )
+            )
+
+        if not self._try_load_new_datasets_into_model():
+            raise ValueError(
+                "There must be at least one loadable dataset in the passed in data source."
             )
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
@@ -105,25 +109,31 @@ class Worker:
         """
         return self.comm.receive_array_partitions(update_id)
 
-    def compute_and_store_next_batch_gradients(self) -> int:
+    def compute_and_store_next_batch_gradients(self) -> bool:
         """
         Computes and stores the gradients on all nodes. After this returns,
-        all nodes are ready to communicate gradients. Returns the current
-        epoch of this worker
+        all nodes are ready to communicate gradients. Returns whether this
+        worker has another batch.
         """
+        if self.train_data == None or self.train_labels == None:
+            raise ValueError(
+                "Cannot call train when we have run out of training data (this function has previously returned False without a subsequent call to move_to_next_epoch())"
+            )
+        self.comm.compute_and_store_batch_gradients(self.batch_id_within_dataset)
+
+        self.batch_id_within_dataset += 1
         if self.batch_id_within_dataset == self.model.num_batches():
-            self.train_data, self.train_labels = self.train_source.next()
-            self.model.set_new_datasets(self.train_data, self.train_labels)
-            self.batch_id_within_dataset = 0
+            return self._try_load_new_datasets_into_model()
         elif self.batch_id_within_dataset > self.model.num_batches():
             raise ValueError(
                 "Found a batch id higher than the number of batches which we should have caught during the last batch."
             )
+        else:
+            return True
 
-        self.comm.compute_and_store_batch_gradients(self.batch_id_within_dataset)
-
-        self.batch_id_within_dataset += 1
-        return self.train_source.get_current_epoch()
+    def move_to_next_epoch(self):
+        self.train_source.restart()
+        self._try_load_new_datasets_into_model()
 
     def get_calculated_gradients(self):
         """
@@ -176,3 +186,20 @@ class Worker:
 
     def model(self):
         return self.model.model
+
+    def _try_load_new_datasets_into_model(self) -> bool:
+        """
+        Returns whether the load was successful (if the generator stream is over
+        then this will fail until we call restart on it).
+        """
+        load = self.train_source.next()
+
+        if load == None:
+            self.train_data = None
+            self.train_labels = None
+            return False
+
+        self.train_data, self.train_labels = load
+        self.model.set_new_datasets(self.train_data, self.train_labels)
+        self.batch_id_within_dataset = 0
+        return True

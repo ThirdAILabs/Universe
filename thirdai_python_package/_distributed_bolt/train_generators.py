@@ -1,29 +1,9 @@
-from abc import ABCMeta, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
 from thirdai._thirdai import dataset
 
 
-class TrainGenerator(metaclass=ABCMeta):
-    """
-    TrainGenerator is a helper class (currently used by the distributed module)
-    that represents an infinitely streaming training dataset, chunked into
-    tuples of List[dataset.BoltDataset] (training data) and dataset.BoltDataset
-    (labels). The generator automatically loops back to the beginning when the
-    current training dataset runs out, incrementing an internal epoch counter
-    that can be fetched by calling get_current_epoch().
-    """
-
-    @abstractmethod
-    def next(self) -> Tuple[List[dataset.BoltDataset], dataset.BoltDataset]:
-        pass
-
-    @abstractmethod
-    def get_current_epoch(self) -> int:
-        pass
-
-
-class GenericInMemoryTrainGenerator(TrainGenerator):
+class GenericInMemoryTrainGenerator:
     """
     Wraps a generator function that returns a single pair of training and label
     datasets into an in memory data generator ready to pass into the distributed
@@ -41,20 +21,25 @@ class GenericInMemoryTrainGenerator(TrainGenerator):
         ],
     ):
         self.generator = generator
-        self.current_epoch = -1
+        self.current_dataset = None
+        self.current_labels = None
+        self.generated_for_this_epoch = False
 
     def next(self):
-        if self.current_epoch == -1:
+        if self.generated_for_this_epoch:
+            return None
+        self.generated_for_this_epoch = True
+
+        if self.current_dataset == None:
             self.current_dataset, self.current_labels = self.generator()
 
-        if not (isinstance(self.current_dataset, list)):
-            self.current_dataset = [self.current_dataset]
+            if not (isinstance(self.current_dataset, list)):
+                self.current_dataset = [self.current_dataset]
 
-        self.current_epoch += 1
         return self.current_dataset, self.current_labels
 
-    def get_current_epoch(self):
-        return self.current_epoch
+    def restart(self):
+        self.generated_for_this_epoch = False
 
 
 class SvmTrainGenerator(GenericInMemoryTrainGenerator):
@@ -74,7 +59,7 @@ class SvmTrainGenerator(GenericInMemoryTrainGenerator):
         )
 
 
-class GenericStreamingTrainGenerator(TrainGenerator):
+class GenericStreamingTrainGenerator:
     """
     Wraps a simple dataset generator function into a multi-epoch generator
     ready to pass into the distributed API.
@@ -103,21 +88,14 @@ class GenericStreamingTrainGenerator(TrainGenerator):
             once per epoch.
         """
         self.backing_stream = backing_stream
-        self.current_epoch = 0
         self.current_dataset_id_within_epoch = 0
 
     def next(self):
         load = self.backing_stream(self.current_dataset_id_within_epoch)
         if load == None:
-            self.current_epoch += 1
-            load = self.backing_stream(0)
-            self.current_dataset_id_within_epoch = 0
-
-            if load == None:
-                raise ValueError("Stream load cannot be None after a restart")
+            return None
 
         current_dataset, current_labels = load
-
         if not (isinstance(current_dataset, list)):
             current_dataset = [current_dataset]
 
@@ -125,5 +103,5 @@ class GenericStreamingTrainGenerator(TrainGenerator):
 
         return current_dataset, current_labels
 
-    def get_current_epoch(self):
-        return self.current_epoch
+    def restart(self):
+        self.current_dataset_id_within_epoch = 0

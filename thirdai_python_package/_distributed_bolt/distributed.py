@@ -8,7 +8,6 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._distributed_bolt.train_generators import TrainGenerator
 from thirdai._thirdai import bolt
 
 from .utils import get_num_cpus, init_logging
@@ -118,7 +117,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.graph.Model,
         train_config: bolt.graph.TrainConfig,
-        train_sources: List[TrainGenerator],
+        train_sources,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -203,8 +202,11 @@ class DistributedDataParallel:
         )
 
         total_batches_trained = 0
-        while train_state_manager.train_batch() < self.train_config.num_epochs:
+        for epoch in range(self.train_config.num_epochs):
+            while train_state_manager.train_batch(epoch):
+                total_batches_trained += 1
             total_batches_trained += 1
+            train_state_manager.move_to_next_epoch()
 
         train_state_manager.finish_training()
         return {

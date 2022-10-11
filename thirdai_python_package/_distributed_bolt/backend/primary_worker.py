@@ -1,6 +1,5 @@
 import ray
 from thirdai._distributed_bolt.backend.worker import Worker
-from thirdai._distributed_bolt.train_generators import TrainGenerator
 from thirdai._thirdai import bolt
 
 
@@ -24,7 +23,7 @@ class PrimaryWorker(Worker):
         self,
         num_workers: int,
         model_to_wrap: bolt.graph.Model,
-        train_source: TrainGenerator,
+        train_source,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
     ):
