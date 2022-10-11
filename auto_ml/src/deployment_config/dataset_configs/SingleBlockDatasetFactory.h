@@ -33,9 +33,13 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
         _shuffle(shuffle) {}
 
   DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
+      std::shared_ptr<dataset::DataLoader> data_loader, bool training,
+      uint32_t max_in_memory_batches) final {
     return std::make_unique<GenericDatasetLoader>(
-        data_loader, _labeled_batch_processor, _shuffle && training);
+        /* data_loader = */ data_loader,
+        /* batch_processor = */ _labeled_batch_processor,
+        /* shuffle = */ _shuffle && training,
+        /* max_in_memory_batches = */ max_in_memory_batches);
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final {

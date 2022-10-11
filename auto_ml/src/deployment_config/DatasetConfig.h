@@ -38,8 +38,7 @@ using LabelDataset = dataset::BoltDatasetPtr;
 
 class DatasetLoader {
  public:
-  virtual std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
-      uint32_t max_in_memory_batches) = 0;
+  virtual std::optional<std::pair<InputDatasets, LabelDataset>> next() = 0;
 
   virtual void restart() = 0;
 
@@ -50,12 +49,12 @@ class GenericDatasetLoader final : public DatasetLoader {
  public:
   GenericDatasetLoader(std::shared_ptr<dataset::DataLoader> data_loader,
                        dataset::GenericBatchProcessorPtr batch_processor,
-                       bool shuffle)
-      : _dataset(std::move(data_loader), std::move(batch_processor), shuffle) {}
+                       bool shuffle, uint32_t max_in_memory_batches)
+      : _dataset(std::move(data_loader), std::move(batch_processor), shuffle),
+        _max_in_memory_batches(max_in_memory_batches) {}
 
-  std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
-      uint32_t max_in_memory_batches) final {
-    auto datasets = _dataset.loadInMemoryWithMaxBatches(max_in_memory_batches);
+  std::optional<std::pair<InputDatasets, LabelDataset>> next() final {
+    auto datasets = _dataset.loadInMemoryWithMaxBatches(_max_in_memory_batches);
     if (!datasets) {
       return std::nullopt;
     }
@@ -70,6 +69,7 @@ class GenericDatasetLoader final : public DatasetLoader {
 
  private:
   dataset::StreamingGenericDatasetLoader _dataset;
+  uint32_t _max_in_memory_batches;
 };
 
 using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
@@ -89,7 +89,8 @@ class DatasetLoaderFactory {
   }
 
   virtual DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
+      std::shared_ptr<dataset::DataLoader> data_loader, bool training,
+      uint32_t max_in_memory_batches) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
 
