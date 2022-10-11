@@ -7,5 +7,5 @@ to_validate = 1
 
 [validation]
 file_name = "/share/data/BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
-metrics = ["mean_squared_error"]
+metrics = ["categorical_accuracy"]
 frequency = 1
