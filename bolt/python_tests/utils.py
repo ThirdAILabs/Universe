@@ -1,6 +1,5 @@
 import math
 import os
-from sqlite3 import complete_statement
 
 import numpy as np
 from thirdai import bolt, dataset

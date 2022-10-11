@@ -8,7 +8,7 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, deployment
 
 from .utils import get_num_cpus, init_logging
 
@@ -216,3 +216,21 @@ class DistributedDataParallel:
 
     def get_model(self, worker_id=0):
         return ray.get(self.workers[worker_id].model.remote())
+
+
+def distribute_model_pipeline(
+    cluster_config: RayTrainingClusterConfig,
+    model_pipeline: deployment.ModelPipeline,
+    train_config: bolt.graph.TrainConfig,
+    data_loaders,
+    max_in_memory_batches: int
+):
+    dataset_loaders = [
+        model_pipeline.create_dataset_loader(loader, max_in_memory_batches) for loader in data_loaders
+    ]
+    return DistributedDataParallel(
+        cluster_config=cluster_config,
+        model=model_pipeline.model,
+        train_config=train_config,
+        train_sources=dataset_loaders,
+    )

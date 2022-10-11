@@ -5,6 +5,7 @@
 # For reference: https://docs.ray.io/en/latest/ray-core/examples/testing-tips.html#tip-3-create-a-mini-cluster-with-ray-cluster-utils-cluster
 
 
+import os
 import sys
 
 import numpy as np
@@ -17,13 +18,6 @@ from cluster_utils import (
 from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.distributed]
-
-
-try:
-    import thirdai.distributed_bolt as db
-except ImportError:
-    pass
-
 
 # TODO(Josh): This is quite a bit of duplicated code, but we can't easily share
 # it until we change the structure of our python tests
@@ -67,12 +61,12 @@ def get_mnist_model():
 
 @pytest.fixture(scope="module")
 def train_distributed_bolt_check(ray_two_node_cluster_config):
+    import thirdai.distributed_bolt as db
+
     model = get_mnist_model()
 
     # Because we explicitly specified the Ray working folder as this test
     # directory, we give explicit paths for the mnist filenames
-    import os
-
     working_dir = os.path.dirname(os.path.realpath(__file__))
     train_sources = [
         db.SvmTrainGenerator(
