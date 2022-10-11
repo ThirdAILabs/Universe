@@ -11,6 +11,8 @@ namespace thirdai::automl::deployment {
   e.g. bool has to come before int because bool is a subclass of int and not
   the other way around.
   https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html#c-17-library-containers
+
+  Every type in this variant must have a python binding.
 */
 using Artifact = std::variant<TemporalContextPtr>;
 
