@@ -51,6 +51,8 @@ class Vocabulary {
 
 class FixedVocabulary : public Vocabulary {
  public:
+  explicit FixedVocabulary(std::istream& istream);
+
   // Construct vocabulary from a given file. The file is expected to contain
   // each unique token in a line. The initial ids are assigned to special
   // tokens, and the tokens in file are read.
@@ -73,6 +75,8 @@ class FixedVocabulary : public Vocabulary {
   }
 
  private:
+  void loadFromStream(std::istream& vocab_stream);
+
   // Stores the forward map from string-token to uint32_t ids.
   std::unordered_map<std::string, uint32_t> _token_to_id;
 

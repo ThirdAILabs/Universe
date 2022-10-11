@@ -1,8 +1,18 @@
 #include "Vocabulary.h"
+#include <iostream>
 
 namespace thirdai::dataset {
 
 FixedVocabulary::FixedVocabulary(const std::string& file_path) {
+  std::ifstream vocab_stream = SafeFileIO::ifstream(file_path);
+  loadFromStream(vocab_stream);
+}
+
+FixedVocabulary::FixedVocabulary(std::istream& istream) {
+  loadFromStream(istream);
+}
+
+void FixedVocabulary::loadFromStream(std::istream& vocab_stream) {
   // Add some special tokens before everything else.
   //
   // clang-tidy complains members should be initialized in initializer list,
@@ -13,7 +23,6 @@ FixedVocabulary::FixedVocabulary(const std::string& file_path) {
 
   // Proceed to read from file to add the remaining vocabulary tokens. We
   // expect supplied files to be one token per-line.
-  std::ifstream vocab_stream = SafeFileIO::ifstream(file_path);
   std::string vocab_token;
   while (getline(vocab_stream, vocab_token)) {
     add(vocab_token);
