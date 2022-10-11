@@ -6,6 +6,20 @@ from thirdai._thirdai import bolt, logging
 from ..utils import get_gradients, parse_svm_dataset
 import os
 
+
+from functools import wraps
+from time import time
+
+def timed(f):
+  @wraps(f)
+  def wrapper(*args, **kwds):
+    start = time()
+    result = f(*args, **kwds)
+    elapsed = time() - start
+    logging.info("%s took %d milliSeconds to finish" % (f.__name__, elapsed*1000))
+    return result
+  return wrapper
+
 class Worker:
     """
     This is a ray remote class(Actor). Read about them here.
@@ -15,7 +29,7 @@ class Worker:
     functionalities between the Distributed Bolt APIs and
     Bolt native code.
     """
-
+    @timed
     def __init__(
         self,
         num_workers: int,
@@ -36,17 +50,21 @@ class Worker:
         logging.setup(log_to_stderr=False, path=os.path.join(log_dir,f"worker-{id}.log"))
         
         logging.info("Loading Dataset into memory")
+        start = time()
         self.train_data, self.train_labels = parse_svm_dataset(
             train_file_name, batch_size
         )
-        logging.info("Dataset Loaded! Loading the model now.")
+        end = time()
+        logging.info(f"Dataset Loaded! Loading the model now. Time taken:{(end - start)*1000}milliSeconds")
+        start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
             train_data=[self.train_data],
             train_labels=self.train_labels,
             train_config=train_config,
         )
-        logging.info(f"Model Loaded! Now, initializing {communication_type} communication class for this worker")
+        end = time()
+        logging.info(f"Model Loaded! Time taken:{(end - start)*1000}milliSeconds")
 
         # Set up variables
         self.num_workers = num_workers
@@ -73,7 +91,6 @@ class Worker:
                     """
                 )
             )
-        logging.info(f"Done with initialization of worker on this node.")
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
@@ -88,6 +105,7 @@ class Worker:
         """
         self.comm.set_friend(friend)
 
+    @timed
     def process_ring(
         self,
         update_id: int,
@@ -104,9 +122,9 @@ class Worker:
         :param avg_gradients: whether the update requires updating the gradients, defaults to False
         :type avg_gradients: bool
         """
-        logging.info(f'Starting ring communication with update_id={update_id}, reduce={reduce}, avg_gradients={avg_gradients}')
         self.comm.process_ring(update_id, reduce, avg_gradients)
 
+    @timed
     def receive_array_partitions(self, update_id: int):
         """
         This function returns the array partition for the worker is is called.
@@ -119,6 +137,7 @@ class Worker:
         logging.info(f'Receiving array partition for update_id={update_id}')
         return self.comm.receive_array_partitions(update_id)
 
+    @timed
     def compute_and_store_batch_gradients(self, batch_no: int):
         """
         This function is called only when the mode of communication is
@@ -136,10 +155,9 @@ class Worker:
         :return: check whether training is complete or not
         :rtype: bool
         """
-        logging.info(f'Starting to train model on this worker with data batch with batch_no={batch_no}')
         self.comm.compute_and_store_batch_gradients(batch_no)
-        logging.info(f'Done with training model on this worker! Starting to communicate!')
 
+    @timed
     def get_calculated_gradients(self):
         """
         This function is called only when the mode of communication
@@ -155,6 +173,7 @@ class Worker:
         """
         return get_gradients(self.model)
 
+    @timed
     def receive_gradients(self, averaged_gradients_ref=None):
         """
         This function is called only when the communication pattern choosen
@@ -172,23 +191,23 @@ class Worker:
             self.comm.receive_gradients()
         else:
             self.comm.receive_gradients(averaged_gradients_ref)
-
+    
+    @timed
     def update_parameters(self):
         """
         This function calls updateParameter function inside bolt, which
         inherently updates the entire network.
         """
-        logging.info(f'Updating parameters with updated gradients of the model on this node.')
         self.model.update_parameters()
-
+    
     def num_of_batches(self) -> int:
         """
         This function returns the total number of batches the workers have.
         """
         return len(self.train_data)
 
+    @timed
     def finish_training(self):
-        logging.info(f"Finishing training for this node.")
         self.model.finish_training()
 
     def model(self):
