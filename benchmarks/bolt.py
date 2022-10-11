@@ -409,6 +409,7 @@ def load_train_config(experiment_config):
     train_config = (
         train_config.with_callbacks([bolt.graph.callbacks.KeyboardInterrupt()])
         .with_log_loss_frequency(128)
+        .with_stop_after(10)
         .silence()
     )
     return config_get_required(experiment_config, "epochs"), train_config
