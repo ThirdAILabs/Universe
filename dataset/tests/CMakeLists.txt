@@ -67,8 +67,9 @@ target_link_libraries(streaming_generic_dataset_loader_tests
 
 add_executable(mlm_batch_processor_tests MlmBatchProcessorTests.cc)
 
-target_link_libraries(mlm_batch_processor_tests
-                      PRIVATE gtest_main dataset_core_lib hash_function_lib vocab_lib)
+target_link_libraries(
+  mlm_batch_processor_tests PRIVATE gtest_main dataset_core_lib
+                                    hash_function_lib vocab_lib)
 
 target_link_libraries(mlm_batch_processor_tests PUBLIC OpenMP::OpenMP_CXX)
 
