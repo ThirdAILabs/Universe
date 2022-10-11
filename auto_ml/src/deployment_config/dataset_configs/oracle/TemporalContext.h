@@ -47,7 +47,7 @@ class TemporalContext {
   }
 
   void initializeProcessor(dataset::GenericBatchProcessorPtr processor) {
-    if (!processor) {
+    if (!_processor) {
       _processor = std::move(processor);
     } else if (_processor != processor) {
       throw std::invalid_argument(

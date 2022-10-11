@@ -195,10 +195,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
            py::arg("filename"))
       .def("save", &ModelPipeline::save, py::arg("filename"))
-      .def("get_artifact",
-           [&](ModelPipeline& model, const std::string& name) {
-             return py::cast(model.getArtifact(name));
-           })
+      // getArtifact returns a variant which then gets resolved to one of its
+      // contained types.
+      .def("get_artifact", &ModelPipeline::getArtifact)
       .def("list_artifact_names", &ModelPipeline::listArtifactNames)
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
 
