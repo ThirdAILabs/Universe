@@ -15,7 +15,9 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <utils/StringManipulation.h>
+#include <algorithm>
 #include <chrono>
+#include <iostream>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -51,7 +53,22 @@ class SequentialClassifier {
     _single_inference_col_nums = ColumnNumberMap(_config.data_types);
   }
 
-  MetricData train(const std::string& train_filename, uint32_t epochs,
+  MetricData train(const std::string& train_filename,
+                   TrainConfig train_config) {
+    auto pipeline =
+        DataProcessing::buildDataLoaderForFile(_config, _state, train_filename,
+                                               /* delimiter = */ ',',
+                                               /* for_training = */ true);
+    auto [train_data, train_labels] = pipeline.loadInMemory();
+
+    return _model->train({train_data}, train_labels, train_config);
+  }
+
+  void override(const std::string key, const std::string value) {
+    std::cout << key;
+    std::cout << value;
+  }
+  MetricData train_old(const std::string& train_filename, uint32_t epochs,
                    float learning_rate,
                    std::vector<std::string> metrics = {"recall@1"}) {
     auto pipeline =
@@ -85,6 +102,19 @@ class SequentialClassifier {
             .withMetrics(std::move(metrics));
 
     return _model->train({train_data}, train_labels, train_config);
+  }
+
+  void hiddenRepresentation(
+      const std::unordered_map<std::string, std::string>& sample) {
+    auto input_row = inputMapToInputRow(sample);
+
+    auto processor = DataProcessing::buildSingleSampleBatchProcessor(
+        _config, _state, _single_inference_col_nums,
+        /* should_update_history= */ false);
+
+    auto output = _model->predictSingle(
+        {makeInputForSingleInference(processor, input_row)},
+        /* use_sparse_inference= */ false);
   }
 
   InferenceMetricData predict(

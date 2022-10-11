@@ -275,7 +275,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
    */
   py::class_<SequentialClassifier>(bolt_submodule, "Oracle",
                                    R"pbdoc( 
-    An all-purpose classifier for tabular datasets. In addition to learning from
+    Third AI universal Deep Transformers for a variety of supervised dataset with built in 
+    explainabilty. Oracle can be used for Forcasting, Personalization and recomendation, Query-Product Recommendation,
+    Classification and many more use cases.
+    
+    In addition to learning from
     the columns of a single row, Oracle can make use of "temporal context". For 
     example, if used to build a movie recommender, Oracle may use information 
     about the last 5 movies that a user has watched to recommend the next movie.
@@ -311,7 +315,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
             If `temporal_tracking_relationships` is non-empty, there must one 
             bolt.types.date() column. This column contains date strings in YYYY-MM-DD format.
             There can only be one bolt.types.date() column.
-        temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): A mapping 
+        temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): Optional. A mapping 
             from column name to a list of either other column names or bolt.temporal objects.
             This mapping tells Oracle what columns can be tracked over time for each key.
             For example, we may want to tell Oracle that we want to track a user's watch 
@@ -340,6 +344,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
             (predict the immediate next thing).
 
     Examples:
+        >>> # Forcasting
         >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
         >>> # We want to predict next week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
@@ -365,6 +370,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 time_granularity="weekly",
                 lookahead=2 # predict 2 weeks ahead
             )
+        >>> # Personalization and recomendation
         >>> # Alternatively suppose our data has the following columns: "user_id", "movie_id", "hours_watched", "timestamp"
         >>> # We want to build a movie recommendation system.
         >>> # Then we may configure Oracle as follows:
@@ -383,27 +389,47 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 },
                 target="movie_id"
             )
+        >>> # Query-Product Recommendation 
+        >>> # Alternatively suppose our data has the following columns: "query", "categories"
+        >>> # We want to build a category classification given an input query.
+        >>> # sample data : yellow shirt, Mens Shirts;Women Shirts;Shirts
+        >>> # Then we may configure Oracle as follows:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "query": bolt.types.text(),
+                    "categories": bolt.types.categorical_text(n_unique_classes=3000, sep=";"),
+                },
+                target="categories"
+            )
+        >>> # Sentiment Classification
+        >>> # Alternatively suppose our data has the following columns: "sentence", "sentiment"
+        >>> # We want to build a category classification given an input query.
+        >>> # sample data : i like the movie<tab>positive
+        >>> # Then we may configure Oracle as follows:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "sentence": bolt.types.text(),
+                    "sentiment": bolt.types.categorical(n_unique_classes=2),
+                },
+                target="sentiment"
+            )
+
 
     Notes:
         - Refer to the documentation bolt.types.ColumnType and bolt.temporal.TemporalConfig to better understand column types 
           and temporal tracking configurations.
 
     )pbdoc")
-      .def("train", &SequentialClassifier::train, py::arg("train_file"),
-           py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("metrics") = std::vector<std::string>({"recall@1"}),
+
+      .def("train", &SequentialClassifier::train, py::arg("train_filename"),
+           py::arg("train_config"),
            R"pbdoc(  
     Trains the model using the data provided in train_file.
 
     Args:
         train_file (str): The path to the training dataset. The dataset
             has to be a CSV file with a header.
-        epochs (int): Number of epochs to train the model.
-        learning_rate (float): Learning rate. We recommend a learning 
-            rate of 0.0001 or lower.
-        metrics (List[str]): Metrics to track during training. Defaults to 
-            ["recall@1"]. Metrics are currently restricted to any 'recall@k' 
-            where k is a positive (nonzero) integer.
+        train_config (TrainConfig): training config (point to training config doc)
 
     Returns:
         Dict[Str, List[float]]:
@@ -413,8 +439,13 @@ py::module_ createBoltSubmodule(py::module_& module) {
         passed to the `metrics` parameter.
     
     Example:
+        >>> train_config = (
+                bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+                .with_metrics(["recall@1", "recall@10"])
+                .with_save_parameters(save_prefix="model", save_frequency=32)
+            )
         >>> metrics = model.train(
-                train_file="train_file.csv", epochs=3, learning_rate=0.0001, metrics=["recall@1", "recall@10"]
+                train_file="train_file.csv", train_config=train_config,
             )
         >>> print(metrics)
         {'epoch_times': [1.7, 3.4, 5.2], 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
@@ -426,7 +457,77 @@ py::module_ createBoltSubmodule(py::module_& module) {
           `model.train()` automatically updates Oracle's temporal context.
         - `model.train()` resets Oracle's temporal context at the start of training to 
           prevent unwanted information from leaking into the training routine.
-           )pbdoc")
+           
+    TODO:
+        - Add train_config support in Oracle aka sequential)pbdoc")
+
+      .def("override", &SequentialClassifier::override, py::arg("key"),
+           py::arg("value"),
+           R"pbdoc(  
+    Override model parameters to accomodate any hyper parameter changes desired.
+
+    Args:
+        key (str): model parameter key name.
+        value (str): model parameter value to be changed.
+
+    Returns:
+        void
+    
+    Example:
+        >>> model.override("hidden","1024")
+        >>> model.override("sparsity","0.01") // just placeholder lets fix the params we want to expose to users
+      
+    
+    Notes: 
+        - If number of training records are large one could try increaisng model size.
+        - List of parameters can be changed
+        - hidden : "1024" 
+        - All hidden layers will be of same dimentions.
+        - depth : ["small","medium","large"] // can map this to number of tables internally
+        - input_embedding : ["small","medium","large"]
+      )pbdoc")
+
+      .def("hidden", &SequentialClassifier::hiddenRepresentation,
+            py::arg("input_sample"),
+           R"pbdoc(  
+    Provide hidden representation (embedding representation) from penaltimate layer.
+
+    Args:
+        input_sample (Dict[str, str]): The input sample as a dictionary 
+            where the keys are column names as specified in data_types and the "
+            values are the respective column values. 
+
+    Returns:
+        Numpy array of hidden dimension
+    
+    Example:
+        >>> # Suppose we configure and train Oracle as follows:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "user_id": bolt.types.categorical(n_unique_classes=5000),
+                    "timestamp": bolt.types.date(),
+                    "special_event": bolt.types.categorical(n_unique_classes=20),
+                    "movie_title": bolt.types.categorical(n_unique_classes=500)
+                },
+                temporal_tracking_relationships={
+                    "user_id": ["movie_title"]
+                },
+                target="movie_title"
+            )
+        >>> model.train(
+                train_file="train_file.csv", train_config=train_config
+            )
+        >>> # Make a single prediction
+        >>> hidden_representaion = model.hidden(
+                input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, top_k=3
+            )
+        >>> print(hidden_representaion)
+        [0.12, 0.14, ...]
+    
+    Notes: 
+        - Only penaltimate layer representations can be extracted.
+        - Hidden represntation will be dense irrespective of sparsity.
+)pbdoc")
 #if THIRDAI_EXPOSE_ALL
       .def("summarizeModel", &SequentialClassifier::summarizeModel,
            "Deprecated\n")
@@ -590,7 +691,52 @@ py::module_ createBoltSubmodule(py::module_& module) {
         -22.3
         >>> print(explanations[1].keyword)
         "Previously seen 'Die Hard'"
-    
+    Example:
+        >>> # Suppose we configure and train Oracle as follows for a loan approval system:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "user_id": bolt.types.categorical(n_unique_classes=5000),
+                    "age": bolt.types.numerical(),
+                    "education": bolt.types.categorical(n_unique_classes=20),
+                    "approved": bolt.types.categorical(n_unique_classes=2)
+                },
+                target="education"
+            )
+        >>> model.train(
+                train_file="train_file.csv", train_config=train_config
+            )
+        >>> # Make a single prediction
+        >>> explanations = model.explain(
+                input_sample={"user_id": "A33225", "age": "25", "education": "graduate"}, target="approved"
+            )
+        >>> print(explanations[0].column_name)
+        "education"
+        >>> print(explanations[0].percentage_significance)
+        65.4
+        >>> print(explanations[1].column_name)
+        "age"
+        >>> print(explanations[1].percentage_significance)
+        15.3
+
+        Example: ## We can add this as well, need changes.
+        >>> # Suppose we configure and train Oracle as follows for a loan approval system:
+        >>> model = bolt.Oracle(
+                data_types={
+                    "sentence": bolt.types.text(),
+                    "sentiment": bolt.types.categorical(n_unique_classes=2),
+                },
+                target="sentiment"
+            )
+        >>> model.train(
+                train_file="train_file.csv", train_config=train_config
+            )
+        >>> # Make a single prediction
+        >>> explanations = model.explain(
+                input_sample={"sentence": "i really like the movie"}, comprehensive=true
+            )
+        >>> print(explanations)
+        {sentiment:positive, reason: [1, 2]} # index of words responsible
+
     Notes: 
         - The `column_name` field of the `Explanation` object is irrelevant in this case
           since `model.explain()` uses column names.
@@ -684,4 +830,4 @@ py::module_ createBoltSubmodule(py::module_& module) {
   return bolt_submodule;
 }
 
-}  // namespace thirdai::bolt::python
+}  // namespace thirdai::bolt::pythons
