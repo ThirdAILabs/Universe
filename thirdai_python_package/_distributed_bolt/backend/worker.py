@@ -1,24 +1,25 @@
+import os
 import textwrap
+from functools import wraps
+from time import time
 
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
 
 from ..utils import get_gradients, parse_svm_dataset
-import os
 
-
-from functools import wraps
-from time import time
 
 def timed(f):
-  @wraps(f)
-  def wrapper(*args, **kwds):
-    start = time()
-    result = f(*args, **kwds)
-    elapsed = time() - start
-    logging.info("func %s | time %d ms" % (f.__name__, elapsed*1000))
-    return result
-  return wrapper
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        logging.info("func %s | time %d ms" % (f.__name__, elapsed * 1000))
+        return result
+
+    return wrapper
+
 
 class Worker:
     """
@@ -29,6 +30,7 @@ class Worker:
     functionalities between the Distributed Bolt APIs and
     Bolt native code.
     """
+
     @timed
     def __init__(
         self,
@@ -47,16 +49,18 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
 
-        logging.setup(log_to_stderr=False, path=os.path.join(log_dir,f"worker-{id}.log"))
-        
+        logging.setup(
+            log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
+        )
+
         start = time()
         self.train_data, self.train_labels = parse_svm_dataset(
             train_file_name, batch_size
         )
         end = time()
-        
+
         logging.info(f"func data_loading | time {(end - start)*1000} ms")
-        
+
         start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
@@ -65,7 +69,7 @@ class Worker:
             train_config=train_config,
         )
         end = time()
-        
+
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
 
         # Set up variables
@@ -192,7 +196,7 @@ class Worker:
             self.comm.receive_gradients()
         else:
             self.comm.receive_gradients(averaged_gradients_ref)
-    
+
     @timed
     def update_parameters(self):
         """
@@ -200,7 +204,7 @@ class Worker:
         inherently updates the entire network.
         """
         self.model.update_parameters()
-    
+
     def num_of_batches(self) -> int:
         """
         This function returns the total number of batches the workers have.

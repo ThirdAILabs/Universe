@@ -114,10 +114,10 @@ class BoltGraph {
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
 
-  void log_validate_and_save(
-      const std::optional<ValidationContext> &validation,
-     uint32_t batch_size, const TrainConfig& train_config,
-    MetricAggregator& train_metrics);
+  void log_validate_and_save(const std::optional<ValidationContext>& validation,
+                             uint32_t batch_size,
+                             const TrainConfig& train_config,
+                             MetricAggregator& train_metrics);
 
   void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);

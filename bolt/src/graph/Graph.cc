@@ -75,9 +75,8 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 }
 
 void BoltGraph::log_validate_and_save(
-    const std::optional<ValidationContext> &validation,
-    uint32_t batch_size, const TrainConfig& train_config,
-    MetricAggregator& train_metrics) {
+    const std::optional<ValidationContext>& validation, uint32_t batch_size,
+    const TrainConfig& train_config, MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
     logging::info("train | epoch {} | updates {} | {}", (_epoch), _updates,
@@ -99,9 +98,9 @@ void BoltGraph::log_validate_and_save(
     // added to the callback export.
 
     cleanupAfterBatchProcessing();
-    logging::info("Validation Dataset Length:{}",validation->data().size());
+    logging::info("Validation Dataset Length:{}", validation->data().size());
     predict(validation->data(), validation->labels(), validation->config());
-    
+
     prepareToProcessBatches(batch_size,
                             /* use_sparsity=*/true);
   }
@@ -198,7 +197,8 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        log_validate_and_save(validation, dataset_context.batchSize(), train_config, train_metrics);
+        log_validate_and_save(validation, dataset_context.batchSize(),
+                              train_config, train_metrics);
 
         callbacks.onBatchEnd(*this, train_state);
       }

@@ -38,7 +38,7 @@ class PrimaryWorker(Worker):
             primary_worker=self,
             train_config=train_config,
             communication_type=communication_type,
-            log_dir = log_dir,
+            log_dir=log_dir,
             batch_size=batch_size,
         )
 
