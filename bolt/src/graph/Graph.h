@@ -115,7 +115,7 @@ class BoltGraph {
                             MetricAggregator& metrics);
 
   void log_validate_and_save(
-      std::optional<ValidationContext> validation,
+      const std::optional<ValidationContext> &validation,
      uint32_t batch_size, const TrainConfig& train_config,
     MetricAggregator& train_metrics);
 

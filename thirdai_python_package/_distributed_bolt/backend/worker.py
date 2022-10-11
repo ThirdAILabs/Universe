@@ -16,7 +16,7 @@ def timed(f):
     start = time()
     result = f(*args, **kwds)
     elapsed = time() - start
-    logging.info("%s took %d milliSeconds to finish" % (f.__name__, elapsed*1000))
+    logging.info("func %s | time %d ms" % (f.__name__, elapsed*1000))
     return result
   return wrapper
 
@@ -49,13 +49,14 @@ class Worker:
 
         logging.setup(log_to_stderr=False, path=os.path.join(log_dir,f"worker-{id}.log"))
         
-        logging.info("Loading Dataset into memory")
         start = time()
         self.train_data, self.train_labels = parse_svm_dataset(
             train_file_name, batch_size
         )
         end = time()
-        logging.info(f"Dataset Loaded! Loading the model now. Time taken:{(end - start)*1000}milliSeconds")
+        
+        logging.info(f"func data_loading | time {(end - start)*1000} ms")
+        
         start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
@@ -64,7 +65,8 @@ class Worker:
             train_config=train_config,
         )
         end = time()
-        logging.info(f"Model Loaded! Time taken:{(end - start)*1000}milliSeconds")
+        
+        logging.info(f"func initializing_model | time {(end - start)*1000} ms")
 
         # Set up variables
         self.num_workers = num_workers
@@ -134,7 +136,6 @@ class Worker:
         :return: subarray partition
         :rtype: numpy.ndarray
         """
-        logging.info(f'Receiving array partition for update_id={update_id}')
         return self.comm.receive_array_partitions(update_id)
 
     @timed

@@ -23,7 +23,7 @@ class DistributedTrainingWrapper {
         _train_context(DatasetContext(train_data, train_labels)),
         _train_config(std::move(train_config)),
         _metric_aggregator(_train_config.getMetricAggregator()),
-        _validation(train_config.getValidationContext()) {
+        _validation(_train_config.getValidationContext()) {
     _bolt_graph->verifyCanTrain(_train_context);
     _bolt_graph->prepareToProcessBatches(_train_context.batchSize(),
                                          /* use_sparsity=*/true);
