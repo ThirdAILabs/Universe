@@ -103,7 +103,6 @@ void BoltGraph::log_validate_and_save(
     // added to the callback export.
 
     cleanupAfterBatchProcessing();
-    logging::info("Validation Dataset Length:{}", validation->data().size());
     predict(validation->data(), validation->labels(), validation->config());
 
     prepareToProcessBatches(batch_size,
