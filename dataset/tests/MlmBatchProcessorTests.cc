@@ -99,6 +99,11 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatchMultipleMaskedTokens) {
     auto unigrams = ids_from_words(vocab, split_sentences[index]);
     ASSERT_EQ(masked_indices[index].len,
               static_cast<uint32_t>(unigrams.size() * 0.3));
+    for (uint32_t j = 0; j < masked_indices[index].len; j++) {
+      uint32_t masked_index = masked_indices[index].active_neurons[j];
+      uint32_t label = labels[index].active_neurons[j];
+      ASSERT_EQ(label, unigrams.at(masked_index));
+    }
   }
 }
 
