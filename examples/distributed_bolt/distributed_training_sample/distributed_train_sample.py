@@ -1,5 +1,6 @@
 import thirdai.distributed_bolt as db
 from thirdai import bolt, dataset
+import thirdai
 
 
 def get_mnist_model():
@@ -9,7 +10,7 @@ def get_mnist_model():
         input_layer
     )
 
-    output_layer = bolt.graph.FullyConnected(dim=30224, activation="softmax")(hidden_layer)
+    output_layer = bolt.graph.FullyConnected(dim=30522, activation="softmax")(hidden_layer)
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
 

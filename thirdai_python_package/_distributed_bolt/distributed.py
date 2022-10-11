@@ -120,10 +120,10 @@ class DistributedDataParallel:
         self.train_config = train_config
 
         data_loader_config = toml.load(data_loader_config)
-        if len(data_loader_config["train_file_name"]) != cluster_config.num_workers:
+        if len(data_loader_config["datasets"]["train_file_name"]) != cluster_config.num_workers:
             raise ValueError(
                 "Received ",
-                len(data_loader_config["train_file_name"]),
+                len(data_loader_config["datasets"]["train_file_name"]),
                 " training datasets. Expected ",
                 cluster_config.num_workers,
                 " datasets, one for each node.",
@@ -163,6 +163,7 @@ class DistributedDataParallel:
                     batch_size=batch_size,
                 )
             )
+
 
         self.workers = [self.primary_worker] + self.replica_workers
 

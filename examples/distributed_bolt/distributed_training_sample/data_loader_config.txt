@@ -1,6 +1,11 @@
+[datasets]
 data_loader = "mlm"
 train_file_name = ["/share/data/BERT/sentences_tokenized_shuffled_trimmed_1M.txt", "/share/data/BERT/sentences_tokenized_shuffled_trimmed_1M.txt"]
-valid = 1
 pairgram_range = 100000
-valid_file_name = "/share/data/BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
 vocab_path = "/share/pratik/bert-base-uncased.vocab"
+to_validate = 1
+
+[validation]
+file_name = "/share/data/BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
+metrics = ["mean_squared_error"]
+frequency = 1
