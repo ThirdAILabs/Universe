@@ -3,7 +3,6 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
-#include <dataset/src/core/BlockBatchProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/gil.h>
 #include <pybind11/numpy.h>
@@ -50,25 +49,6 @@ bool denseBoltDatasetIsPermutationOfDenseMatrix(
  * For testing purposes only.
  */
 bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2);
-
-class PyBlockBatchProcessor : public BlockBatchProcessor {
- public:
-  PyBlockBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
-                        std::vector<std::shared_ptr<Block>> target_blocks,
-                        uint32_t output_batch_size, size_t est_num_elems)
-      : BlockBatchProcessor(std::move(input_blocks), std::move(target_blocks),
-                            output_batch_size, est_num_elems) {}
-
-  /**
-   * Just like the original processBatch method but GIL is released
-   * so we can process batches while the next input rows are
-   * processed in python.
-   */
-  void processBatchPython(std::vector<std::vector<std::string>>& batch) {
-    py::gil_scoped_release release;
-    processBatch(batch);
-  }
-};
 
 class MLMDatasetLoader {
  public:

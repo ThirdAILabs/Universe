@@ -47,11 +47,6 @@ add_executable(user_count_history_block_tests UserCountHistoryBlockTests.cc)
 target_link_libraries(user_count_history_block_tests
                       PRIVATE gtest_main hash_function_lib OpenMP::OpenMP_CXX)
 
-add_executable(block_batch_processor_test BlockBatchProcessorTests.cc)
-
-target_link_libraries(block_batch_processor_test PRIVATE gtest_main
-                                                         dataset_core_lib)
-
 add_executable(generic_batch_processor_test GenericBatchProcessorTests.cc)
 
 target_link_libraries(generic_batch_processor_test PRIVATE gtest_main
@@ -88,7 +83,6 @@ set(DATASET_TESTS
     thread_safe_vocabulary_tests
     user_item_history_block_tests
     user_count_history_block_tests
-    block_batch_processor_test
     generic_batch_processor_test
     mlm_batch_processor_tests
     save_load_dataset_test
