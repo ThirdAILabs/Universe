@@ -123,6 +123,16 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<DatasetLoaderFactoryConfig,  // NOLINT
              DatasetLoaderFactoryConfigPtr>(submodule, "DatasetConfig");
 
+  // TODO(Josh): Make this a proper inheritable python class
+  py::class_<DatasetLoader, DatasetLoaderPtr>(submodule, "DatasetLoader")
+      .def("next", &DatasetLoader::next)
+      .def("restart", &DatasetLoader::restart);
+
+  py::class_<GenericDatasetLoader, DatasetLoader, GenericDatasetLoaderPtr>(
+      submodule, "GenericDatasetLoader")
+      .def("next", &DatasetLoader::next)
+      .def("restart", &DatasetLoader::restart);
+
   py::class_<SingleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
       submodule, "SingleBlockDatasetFactory")
@@ -171,6 +181,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("use_sparse_inference") = false)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
            py::arg("filename"))
+      .def("create_dataset_loader", &ModelPipeline::createTrainingDatasetLoader,
+           py::arg("data_source"), py::arg("max_in_memory_batches"))
+      .def_property_readonly(
+          "model", [](ModelPipeline& pipeline) { return pipeline.model(); })
       .def("save", &ModelPipeline::save, py::arg("filename"))
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
 }

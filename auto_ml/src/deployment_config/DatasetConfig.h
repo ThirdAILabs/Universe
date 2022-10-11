@@ -72,7 +72,8 @@ class GenericDatasetLoader final : public DatasetLoader {
   uint32_t _max_in_memory_batches;
 };
 
-using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
+using DatasetLoaderPtr = std::shared_ptr<DatasetLoader>;
+using GenericDatasetLoaderPtr = std::shared_ptr<GenericDatasetLoader>;
 
 class DatasetLoaderFactory {
  public:
@@ -110,7 +111,7 @@ class DatasetLoaderFactory {
   }
 };
 
-using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
+using DatasetLoaderFactoryPtr = std::shared_ptr<DatasetLoaderFactory>;
 
 class DatasetLoaderFactoryConfig {
  public:
