@@ -16,10 +16,10 @@ namespace thirdai::automl::deployment::python {
 void createDeploymentSubmodule(py::module_& thirdai_module);
 
 template <typename T>
-void defConstantParameter(py::module_& submodule);
+void defConstantParameter(py::module_& submodule, bool add_docs);
 
 template <typename T>
-void defOptionMappedParameter(py::module_& submodule);
+void defOptionMappedParameter(py::module_& submodule, bool add_docs);
 
 py::object makeUserSpecifiedParameter(const std::string& name,
                                       const py::object& type);

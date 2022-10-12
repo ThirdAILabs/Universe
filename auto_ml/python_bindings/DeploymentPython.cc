@@ -1,4 +1,5 @@
 #include "DeploymentPython.h"
+#include "DeploymentDocs.h"
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/LayerConfig.h>
@@ -35,20 +36,21 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::module_ submodule = thirdai_module.def_submodule("deployment");
 
   py::class_<HyperParameter<uint32_t>, HyperParameterPtr<uint32_t>>(  // NOLINT
-      submodule, "UintHyperParameter");
+      submodule, "UintHyperParameter", docs::UINT_HYPERPARAMETER);
 
   py::class_<HyperParameter<float>, HyperParameterPtr<float>>(  // NOLINT
-      submodule, "FloatHyperParameter");
+      submodule, "FloatHyperParameter", docs::FLOAT_HYPERPARAMETER);
 
   py::class_<HyperParameter<std::string>,  // NOLINT
-             HyperParameterPtr<std::string>>(submodule, "StrHyperParameter");
+             HyperParameterPtr<std::string>>(submodule, "StrHyperParameter",
+                                             docs::STR_HYPERPARAMETER);
 
   py::class_<HyperParameter<bool>, HyperParameterPtr<bool>>(  // NOLINT
-      submodule, "BoolHyperParameter");
+      submodule, "BoolHyperParameter", docs::BOOL_HYPERPARAMETER);
 
   py::class_<HyperParameter<bolt::SamplingConfigPtr>,  // NOLINT
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
-      submodule, "SamplingConfigHyperParameter");
+      submodule, "SamplingConfigHyperParameter", docs::STR_HYPERPARAMETER);
 
   /**
    * Do not change the order of these overloads. Because bool is a sublclass of
@@ -57,27 +59,32 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
    * that overloads are tried in the order they were registered so this is safe
    * to do.
    */
-  defConstantParameter<bool>(submodule);
-  defConstantParameter<uint32_t>(submodule);
-  defConstantParameter<float>(submodule);
-  defConstantParameter<std::string>(submodule);
-  defConstantParameter<bolt::SamplingConfigPtr>(submodule);
+  defConstantParameter<bool>(submodule, /* add_docs= */ true);
+  defConstantParameter<uint32_t>(submodule, /* add_docs= */ false);
+  defConstantParameter<float>(submodule, /* add_docs= */ false);
+  defConstantParameter<std::string>(submodule, /* add_docs= */ false);
+  defConstantParameter<bolt::SamplingConfigPtr>(submodule,
+                                                /* add_docs= */ false);
 
-  defOptionMappedParameter<bool>(submodule);
-  defOptionMappedParameter<uint32_t>(submodule);
-  defOptionMappedParameter<float>(submodule);
-  defOptionMappedParameter<std::string>(submodule);
-  defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule);
+  defOptionMappedParameter<bool>(submodule, /* add_docs= */ true);
+  defOptionMappedParameter<uint32_t>(submodule, /* add_docs= */ false);
+  defOptionMappedParameter<float>(submodule, /* add_docs= */ false);
+  defOptionMappedParameter<std::string>(submodule, /* add_docs= */ false);
+  defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule,
+                                                    /* add_docs= */ false);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
-                py::arg("name"), py::arg("type"));
+                py::arg("name"), py::arg("type"),
+                docs::USER_SPECIFIED_PARAMETER);
 
   py::class_<AutotunedSparsityParameter, HyperParameter<float>,
              std::shared_ptr<AutotunedSparsityParameter>>(
       submodule, "AutotunedSparsityParameter")
-      .def(py::init<std::string>(), py::arg("dimension_param_name"));
+      .def(py::init<std::string>(), py::arg("dimension_param_name"),
+           docs::AUTOTUNED_SPARSITY_PARAMETER_INIT);
 
-  py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig");  // NOLINT
+  py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig",  // NOLINT
+                                        docs::NODE_CONFIG);
 
   py::class_<FullyConnectedNodeConfig, NodeConfig,
              std::shared_ptr<FullyConnectedNodeConfig>>(
@@ -89,46 +96,55 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
                    std::optional<HyperParameterPtr<bolt::SamplingConfigPtr>>>(),
           py::arg("name"), py::arg("dim"), py::arg("sparsity"),
           py::arg("activation"), py::arg("predecessor"),
-          py::arg("sampling_config") = std::nullopt)
+          py::arg("sampling_config") = std::nullopt,
+          docs::FULLY_CONNECTED_CONFIG_INIT_WITH_SPARSITY)
       .def(py::init<std::string, HyperParameterPtr<uint32_t>,
                     HyperParameterPtr<std::string>, std::string>(),
            py::arg("name"), py::arg("dim"), py::arg("activation"),
-           py::arg("predecessor"));
+           py::arg("predecessor"), docs::FULLY_CONNECTED_CONFIG_INIT_DENSE);
 
   py::class_<ModelConfig, ModelConfigPtr>(submodule, "ModelConfig")
       .def(py::init<std::vector<std::string>, std::vector<NodeConfigPtr>,
                     std::shared_ptr<bolt::LossFunction>>(),
-           py::arg("input_names"), py::arg("nodes"), py::arg("loss"));
+           py::arg("input_names"), py::arg("nodes"), py::arg("loss"),
+           docs::MODEL_CONFIG_INIT);
 
-  py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig");  // NOLINT
+  py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig",  // NOLINT
+                                          docs::BLOCK_CONFIG);
 
   py::class_<NumericalCategoricalBlockConfig, BlockConfig,
              std::shared_ptr<NumericalCategoricalBlockConfig>>(
       submodule, "NumericalCategoricalBlockConfig")
       .def(py::init<HyperParameterPtr<uint32_t>,
                     HyperParameterPtr<std::string>>(),
-           py::arg("n_classes"), py::arg("delimiter"));
+           py::arg("n_classes"), py::arg("delimiter"),
+           docs::NUMERICAL_CATEGORICAL_BLOCK_CONFIG_INIT);
 
   py::class_<DenseArrayBlockConfig, BlockConfig,
              std::shared_ptr<DenseArrayBlockConfig>>(submodule,
                                                      "DenseArrayBlockConfig")
-      .def(py::init<HyperParameterPtr<uint32_t>>(), py::arg("dim"));
+      .def(py::init<HyperParameterPtr<uint32_t>>(), py::arg("dim"),
+           docs::DENSE_ARRAY_BLOCK_CONFIG_INIT);
 
   py::class_<TextBlockConfig, BlockConfig, std::shared_ptr<TextBlockConfig>>(
       submodule, "TextBlockConfig")
       .def(py::init<bool, HyperParameterPtr<uint32_t>>(),
-           py::arg("use_pairgrams"), py::arg("range"))
-      .def(py::init<bool>(), py::arg("use_pairgrams"));
+           py::arg("use_pairgrams"), py::arg("range"),
+           docs::TEXT_BLOCK_CONFIG_INIT_WITH_RANGE)
+      .def(py::init<bool>(), py::arg("use_pairgrams"),
+           docs::TEXT_BLOCK_CONFIG_INIT);
 
   py::class_<DatasetLoaderFactoryConfig,  // NOLINT
-             DatasetLoaderFactoryConfigPtr>(submodule, "DatasetConfig");
+             DatasetLoaderFactoryConfigPtr>(
+      submodule, "DatasetConfig", docs::DATASET_LOADER_FACTORY_CONFIG);
   py::class_<SingleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
       submodule, "SingleBlockDatasetFactoryConfig")
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
                     HyperParameterPtr<std::string>>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
-           py::arg("delimiter"));
+           py::arg("delimiter"),
+           docs::SINGLE_BLOCK_DATASET_FACTORY_CONFIG_INIT);
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
@@ -136,7 +152,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("rebuild_hash_tables_interval"),
            py::arg("reconstruct_hash_functions_interval"),
            py::arg("default_batch_size"), py::arg("freeze_hash_tables"),
-           py::arg("prediction_threshold") = std::nullopt);
+           py::arg("prediction_threshold") = std::nullopt,
+           docs::TRAIN_EVAL_PARAMETERS_CONFIG_INIT);
 
 #ifdef THIRDAI_EXPOSE_ALL
   // TODO(Josh): Make this a proper inheritable python class
@@ -167,31 +184,42 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def(py::init<DatasetLoaderFactoryConfigPtr, ModelConfigPtr,
                     TrainEvalParameters>(),
            py::arg("dataset_config"), py::arg("model_config"),
-           py::arg("train_eval_parameters"))
-      .def("save", &DeploymentConfig::save, py::arg("filename"))
-      .def_static("load", &DeploymentConfig::load, py::arg("filename"));
+           py::arg("train_eval_parameters"), docs::DEPLOYMENT_CONFIG_INIT)
+      .def("save", &DeploymentConfig::save, py::arg("filename"),
+           docs::DEPLOYMENT_CONFIG_SAVE)
+      .def_static("load", &DeploymentConfig::load, py::arg("filename"),
+                  docs::DEPLOYMENT_CONFIG_LOAD);
 
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
-           py::arg("parameters") = py::dict())
+           py::arg("parameters") = py::dict(),
+           docs::MODEL_PIPELINE_INIT_FROM_CONFIG)
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
-           py::arg("parameters") = py::dict())
+           py::arg("parameters") = py::dict(),
+           docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG)
       .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt)
+           py::arg("max_in_memory_batches") = std::nullopt,
+           docs::MODEL_PIPELINE_TRAIN_FILE)
       .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
            py::arg("train_config"),
-           py::arg("max_in_memory_batches") = std::nullopt)
+           py::arg("max_in_memory_batches") = std::nullopt,
+           docs::MODEL_PIPELINE_TRAIN_DATA_LOADER)
       .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"),
-           py::arg("predict_config") = std::nullopt)
+           py::arg("predict_config") = std::nullopt,
+           docs::MODEL_PIPELINE_EVALUATE_FILE)
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
-           py::arg("predict_config") = std::nullopt)
+           py::arg("predict_config") = std::nullopt,
+           docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER)
       .def("predict", &predictWrapper, py::arg("input_sample"),
-           py::arg("use_sparse_inference") = false)
+           py::arg("use_sparse_inference") = false,
+           docs::MODEL_PIPELINE_PREDICT)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
-           py::arg("use_sparse_inference") = false)
+           py::arg("use_sparse_inference") = false,
+           docs::MODEL_PIPELINE_PREDICT_TOKENS)
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"),
-           py::arg("use_sparse_inference") = false)
+           py::arg("use_sparse_inference") = false,
+           docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
            py::arg("filename"))
       .def("create_dataset_loader", &ModelPipeline::createTrainingDatasetLoader,
@@ -199,25 +227,40 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 #ifdef THIRDAI_EXPOSE_ALL
       .def_property("model", &ModelPipeline::get_model,
                     &ModelPipeline::set_model)
-#endif
       .def_property_readonly("dataset_loader_factory",
                              [](ModelPipeline& pipeline) {
                                return pipeline.datasetLoaderFactory();
                              })
-      .def("save", &ModelPipeline::save, py::arg("filename"))
-      .def_static("load", &ModelPipeline::load, py::arg("filename"));
+#endif
+      .def("save", &ModelPipeline::save, py::arg("filename"),
+           docs::MODEL_PIPELINE_SAVE)
+      .def_static("load", &ModelPipeline::load, py::arg("filename"),
+                  docs::MODEL_PIPELINE_LOAD);
 }
 
 template <typename T>
-void defConstantParameter(py::module_& submodule) {
+void defConstantParameter(py::module_& submodule, bool add_docs) {
+  // Because this is an overloaded function, the docsstring will be rendered for
+  // each overload. This option is to ensure that it can only be rendered for
+  // the first one.
+  const char* const docstring =
+      add_docs ? docs::CONSTANT_PARAMETER : "See docs above.";
+
   submodule.def("ConstantParameter", &ConstantParameter<T>::make,
-                py::arg("value").noconvert());
+                py::arg("value").noconvert(), docstring);
 }
 
 template <typename T>
-void defOptionMappedParameter(py::module_& submodule) {
+void defOptionMappedParameter(py::module_& submodule, bool add_docs) {
+  // Because this is an overloaded function, the docsstring will be rendered for
+  // each overload. This option is to ensure that it can only be rendered for
+  // the first one.
+  const char* const docstring =
+      add_docs ? docs::OPTION_MAPPED_PARAMETER : "See docs above.";
+
   submodule.def("OptionMappedParameter", &OptionMappedParameter<T>::make,
-                py::arg("option_name"), py::arg("values").noconvert());
+                py::arg("option_name"), py::arg("values").noconvert(),
+                docstring);
 }
 
 py::object makeUserSpecifiedParameter(const std::string& name,
