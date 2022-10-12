@@ -75,9 +75,8 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 }
 
 /*
-  This additional function is declared here to provide support
-  for logging, validation and model saving to distributed
-  training.
+  Provides support for logging, validation, and model saving
+  to distributed training.
 */
 void BoltGraph::log_validate_and_save(uint32_t batch_size,
                                       const TrainConfig& train_config,
