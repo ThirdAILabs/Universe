@@ -564,23 +564,23 @@ That's all for now, folks! More docs coming soon :)
            "compiled.")
       .def(getPickleFunction<BoltGraph>());
 
-  py::class_<DistributedTrainingWrapper>(bolt_submodule,
-                                         "DistributedTrainingWrapper")
-      .def(py::init<BoltGraphPtr, std::vector<dataset::BoltDatasetPtr>,
-                    dataset::BoltDatasetPtr, TrainConfig>(),
-           py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
-           py::arg("train_config"))
-      .def("compute_and_store_batch_gradients",
-           &DistributedTrainingWrapper::computeAndSaveBatchGradients,
-           py::arg("batch_idx"))
-      .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
-      .def("finish_training", &DistributedTrainingWrapper::finishTraining)
-      .def_property_readonly(
-          "model",
-          [](DistributedTrainingWrapper& node) { return node.getModel(); },
-          py::return_value_policy::reference_internal,
-          "The underlying Bolt model wrapped by this "
-          "DistributedTrainingWrapper.");
+//   py::class_<DistributedTrainingWrapper>(bolt_submodule,
+//                                          "DistributedTrainingWrapper")
+//       .def(py::init<BoltGraphPtr, std::vector<dataset::BoltDatasetPtr>,
+//                     dataset::BoltDatasetPtr, TrainConfig>(),
+//            py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
+//            py::arg("train_config"))
+//       .def("compute_and_store_batch_gradients",
+//            &DistributedTrainingWrapper::computeAndSaveBatchGradients,
+//            py::arg("batch_idx"))
+//       .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
+//       .def("finish_training", &DistributedTrainingWrapper::finishTraining)
+//       .def_property_readonly(
+//           "model",
+//           [](DistributedTrainingWrapper& node) { return node.getModel(); },
+//           py::return_value_policy::reference_internal,
+//           "The underlying Bolt model wrapped by this "
+//           "DistributedTrainingWrapper.");
 
   createCallbacksSubmodule(graph_submodule);
 }

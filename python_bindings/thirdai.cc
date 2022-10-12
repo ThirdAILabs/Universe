@@ -120,7 +120,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   auto bolt_submodule = thirdai::bolt::python::createBoltSubmodule(m);
 
-  thirdai::bolt::python::defineAutoClassifeirsInModule(bolt_submodule);
+//   thirdai::bolt::python::defineAutoClassifeirsInModule(bolt_submodule);
 
   thirdai::search::python::createSearchSubmodule(m);
 

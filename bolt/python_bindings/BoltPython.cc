@@ -60,47 +60,47 @@ py::module_ createBoltSubmodule(py::module_& module) {
     there is a polymorphic relationship.
     See: https://pybind11.readthedocs.io/en/stable/advanced/classes.html
   */
-  py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
-      bolt_submodule, "LossFunction", "Base class for all loss functions");
+//   py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
+//       bolt_submodule, "LossFunction", "Base class for all loss functions");
 
-  py::class_<CategoricalCrossEntropyLoss,
-             std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
-      bolt_submodule, "CategoricalCrossEntropyLoss",
-      "A loss function for multi-class (one label per sample) classification "
-      "tasks.")
-      .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
+//   py::class_<CategoricalCrossEntropyLoss,
+//              std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
+//       bolt_submodule, "CategoricalCrossEntropyLoss",
+//       "A loss function for multi-class (one label per sample) classification "
+//       "tasks.")
+//       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
-  py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
-             LossFunction>(
-      bolt_submodule, "BinaryCrossEntropyLoss",
-      "A loss function for multi-label (multiple class labels per each sample) "
-      "classification tasks.")
-      .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
+//   py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
+//              LossFunction>(
+//       bolt_submodule, "BinaryCrossEntropyLoss",
+//       "A loss function for multi-label (multiple class labels per each sample) "
+//       "classification tasks.")
+//       .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
-  py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
-      bolt_submodule, "MeanSquaredError",
-      "A loss function that minimizes mean squared error (MSE) for regression "
-      "tasks. "
-      ":math:`MSE = sum( (actual - prediction)^2 )`")
-      .def(py::init<>(), "Constructs a MeanSquaredError object.");
+//   py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
+//       bolt_submodule, "MeanSquaredError",
+//       "A loss function that minimizes mean squared error (MSE) for regression "
+//       "tasks. "
+//       ":math:`MSE = sum( (actual - prediction)^2 )`")
+//       .def(py::init<>(), "Constructs a MeanSquaredError object.");
 
-  py::class_<WeightedMeanAbsolutePercentageErrorLoss,
-             std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>,
-             LossFunction>(
-      bolt_submodule, "WeightedMeanAbsolutePercentageError",
-      "A loss function to minimize weighted mean absolute percentage error "
-      "(WMAPE) "
-      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
-      "/ sum(|actual|)`")
-      .def(py::init<>(),
-           "Constructs a WeightedMeanAbsolutePercentageError object.");
+//   py::class_<WeightedMeanAbsolutePercentageErrorLoss,
+//              std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>,
+//              LossFunction>(
+//       bolt_submodule, "WeightedMeanAbsolutePercentageError",
+//       "A loss function to minimize weighted mean absolute percentage error "
+//       "(WMAPE) "
+//       "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
+//       "/ sum(|actual|)`")
+//       .def(py::init<>(),
+//            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
-  auto oracle_types_submodule = bolt_submodule.def_submodule("types");
+  auto universal_transformer_types_submodule = bolt_submodule.def_submodule("types");
 
   py::class_<sequential_classifier::DataType>(  // NOLINT
-      oracle_types_submodule, "ColumnType", "Base class for bolt types.");
+      universal_transformer_types_submodule, "ColumnType", "Base class for bolt types.");
 
-  oracle_types_submodule.def("categorical",
+  universal_transformer_types_submodule.def("categorical",
                              sequential_classifier::DataType::categorical,
                              py::arg("n_unique_classes"),
                              R"pbdoc(
@@ -110,18 +110,18 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
     Args:
         n_unique_classes (int): Number of unique categories in the column.
-            Oracle throws an error if the column contains more than the 
+            UniversalTransformer throws an error if the column contains more than the 
             specified number of unique values.
     
     Example:
-        >>> bolt.Oracle(
+        >>> bolt.UniversalTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(n_unique_classes=5000)
                 }
                 ...
             )
                              )pbdoc");
-  oracle_types_submodule.def("numerical",
+  universal_transformer_types_submodule.def("numerical",
                              sequential_classifier::DataType::numerical,
                              R"pbdoc(
     Numerical column type. Use this object if a column contains numerical 
@@ -129,14 +129,14 @@ py::module_ createBoltSubmodule(py::module_& module) {
     a movie watched, sale quantity, or population size.
 
     Example:
-        >>> bolt.Oracle(
+        >>> bolt.UniversalTransformer(
                 data_types: {
                     "hours_watched": bolt.types.numerical()
                 }
                 ...
             )
                              )pbdoc");
-  oracle_types_submodule.def("text", sequential_classifier::DataType::text,
+  universal_transformer_types_submodule.def("text", sequential_classifier::DataType::text,
                              py::arg("average_n_words") = std::nullopt,
                              R"pbdoc(
     Text column type. Use this object if a column contains text data 
@@ -145,11 +145,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
     Args:
         average_n_words (int): Optional. Average number of words in the 
-            text column in each row. If provided, Oracle may make 
+            text column in each row. If provided, UniversalTransformer may make 
             optimizations as appropriate.
     
     Example:
-        >>> bolt.Oracle(
+        >>> bolt.UniversalTransformer(
                 data_types: {
                     "user_motto": bolt.types.text(average_n_words=10),
                     "user_bio": bolt.types.text()
@@ -158,13 +158,13 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
 
                              )pbdoc");
-  oracle_types_submodule.def("date", sequential_classifier::DataType::date,
+  universal_transformer_types_submodule.def("date", sequential_classifier::DataType::date,
                              R"pbdoc(
     Date column type. Use this object if a column contains date strings. 
     Date strings must be in YYYY-MM-DD format.
  
     Example:
-        >>> bolt.Oracle(
+        >>> bolt.UniversalTransformer(
                 data_types: {
                     "timestamp": bolt.types.date()
                 }
@@ -172,13 +172,13 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
                              )pbdoc");
 
-  auto oracle_temporal_submodule = bolt_submodule.def_submodule("temporal");
+  auto universal_transformer_temporal_submodule = bolt_submodule.def_submodule("temporal");
 
   py::class_<sequential_classifier::TemporalConfig>(  // NOLINT
-      oracle_temporal_submodule, "TemporalConfig",
+      universal_transformer_temporal_submodule, "TemporalConfig",
       "Base class for temporal feature configs.");
 
-  oracle_temporal_submodule.def(
+  universal_transformer_temporal_submodule.def(
       "categorical", sequential_classifier::TemporalConfig::categorical,
       py::arg("column_name"), py::arg("track_last_n"),
       py::arg("column_known_during_inference") = false,
@@ -198,8 +198,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend_level", "sales_performance"
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend level and sales performance over time.
-        >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure UniversalTransformer as follows:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -222,7 +222,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         - The same column can be tracked more than once, allowing us to capture both short and
           long term trends.
       )pbdoc");
-  oracle_temporal_submodule.def(
+  universal_transformer_temporal_submodule.def(
       "numerical", sequential_classifier::TemporalConfig::numerical,
       py::arg("column_name"), py::arg("history_length"),
       py::arg("column_known_during_inference") = false,
@@ -233,7 +233,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Args:
         column_name (str): The name of the tracked column.
         history_length (int): Amount of time to look back. Time is in terms 
-            of the time granularity passed to the Oracle constructor.
+            of the time granularity passed to the UniversalTransformer constructor.
         column_known_during_inference (bool): Optional. Whether the 
             value of the tracked column is known during inference. Defaults 
             to False.
@@ -242,8 +242,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_performance"
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend and sales performance over time.
-        >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure UniversalTransformer as follows:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -273,17 +273,17 @@ py::module_ createBoltSubmodule(py::module_& module) {
   /**
    * Sequential Classifier
    */
-  py::class_<SequentialClassifier>(bolt_submodule, "Oracle",
+  py::class_<SequentialClassifier>(bolt_submodule, "UniversalTransformer",
                                    R"pbdoc( 
-    Third AI universal Deep Transformers for a variety of supervised dataset with built in 
-    explainabilty. Oracle can be used for Forcasting, Personalization and recomendation, Query-Product Recommendation,
-    Classification and many more use cases.
+    ThirdAI's universal deep learning engine for a variety of supervised datasets with built in 
+    explainabilty. UniversalTransformer can be used for Forecasting, Personalization Recommendation, Query-Product Recommendation,
+    Text Classification and many more use cases.
     
     In addition to learning from
-    the columns of a single row, Oracle can make use of "temporal context". For 
-    example, if used to build a movie recommender, Oracle may use information 
+    the columns of a single row, UniversalTransformer can make use of "temporal context". For 
+    example, if used to build a movie recommender, UniversalTransformer may use information 
     about the last 5 movies that a user has watched to recommend the next movie.
-    Similarly, if used to forecast the outcome of marketing campaigns, Oracle may 
+    Similarly, if used to forecast the outcome of marketing campaigns, UniversalTransformer may 
     use several months' worth of campaign history for each product to make better
     forecasts.
     
@@ -305,50 +305,64 @@ py::module_ createBoltSubmodule(py::module_& module) {
             This map specifies the columns that we want to pass into the model; it does 
             not need to include all columns in the dataset.
 
-            Column type is one of:
-            - `bolt.types.categorical(n_unique_values: int)`
-            - `bolt.types.numerical()`
-            - `bolt.types.text(average_n_words: int=None)`
-            - `bolt.types.date()`
+            ColumnType is one of:
+                - `bolt.types.categorical(n_unique_values: int)`
+                - `bolt.types.numerical()`
+                - `bolt.types.text(average_n_words: int=None)`
+                - `bolt.types.date()`
             See bolt.types for details.
 
-            If `temporal_tracking_relationships` is non-empty, there must one 
-            bolt.types.date() column. This column contains date strings in YYYY-MM-DD format.
-            There can only be one bolt.types.date() column.
+            If `temporal_tracking_relationships` is non-empty, there must be a 
+            `bolt.types.date()` column. This column contains date strings in YYYY-MM-DD format.
+            There can only be one `bolt.types.date()` column.
         temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): Optional. A mapping 
-            from column name to a list of either other column names or bolt.temporal objects.
-            This mapping tells Oracle what columns can be tracked over time for each key.
-            For example, we may want to tell Oracle that we want to track a user's watch 
-            history by passing in a map like `{"user_id": ["movie_id"]}`
+            from column name to a list of either other column names or `bolt.temporal()` objects.
+            This mapping tells UniversalTransformer what columns can be tracked over time for each key.
+            For example, we may want to tell UniversalTransformer that we want to track a user's watch 
+            history by passing in a map like `{"user_id": ["movie_id"]}`.
 
             If we provide a mapping from a string to a list of strings like the above, 
-            the temporal tracking configuration will be autotuned. We can take control by 
-            passing in bolt.temporal objects intead of strings.
+            the temporal tracking configuration will be autotuned. Alternatively, you can specify the `history_length` by 
+            passing in `bolt.temporal` objects intead of strings (please refer to the examples section below).
 
-            bolt.temporal object is one of:
-            - `bolt.temporal.categorical(column_name: str, track_last_n: int, column_known_during_inference: bool=False)
-            - `bolt.temporal.numerical(column_name: str, history_length: int, column_known_during_inference: bool=False)
+            `bolt.temporal` object is one of:
+                - `bolt.temporal.categorical(column_name: str, track_last_n: int, column_known_during_inference: bool=False)`
+                - `bolt.temporal.numerical(column_name: str, history_length: int, column_known_during_inference: bool=False)`
+            
             See bolt.temporal for details.
         target (str): Name of the column that contains the value to be predicted by
-            Oracle. The target column has to be a categorical column.
-        time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
-            or `"monthly"`/`"m"`. Interval of time that we are interested in. Temporal numerical 
-            features are clubbed according to this time granularity. E.g. if 
-            `time_granularity="w"` and the numerical values on days 1 and 2 are
-            345.25 and 201.1 respectively, then Oracle captures a single numerical 
+            UniversalTransformer. If the target column is of type `bolt.types.categorical()`, the task is automatically assumed to be classification. 
+            If the target column is of type `bolt.types.numerical()`, the task us automatically assumed to be regression.
+        time_granularity (str): Optional. 
+            Either of:
+                - "daily"/"d" 
+                - "weekly"/"w"
+                - "biweekly"/"b" 
+                - "monthly"/"m"
+            
+
+            Interval of time that we are interested in. Temporal numerical 
+            features are clubbed according to this time granularity. 
+            
+
+            E.g. if `time_granularity="w"` and the numerical values on days 1 and 2 are
+            345.25 and 201.1 respectively, then UniversalTransformer captures a single numerical 
             value of 546.26 for the week instead of individual values for the two days.
+            
+
             Defaults to "daily".
         lookahead (str): Optional. How far into the future the model needs to predict. This length of
-            time is in terms of time_granularity. E.g. 'time_granularity="daily"` and 
-            `lookahead=5` means the model needs to learn to predict 5 days ahead. Defaults to 0
-            (predict the immediate next thing).
+            time is in terms of time_granularity. 
+            
+            E.g. 'time_granularity="daily"` and `lookahead=5` means the model needs to learn to predict 5 days ahead. Defaults to 0
+            (predict the target in the current row only).
 
     Examples:
-        >>> # Forcasting
+        >>> # Example 1: Forecasting
         >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
         >>> # We want to predict next week's sales performance for each product using temporal context.
-        >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
-        >>> model = bolt.Oracle(
+        >>> # For each `product_id`, we would like to track both their ad spend and sales quantity over time.
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -370,11 +384,13 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 time_granularity="weekly",
                 lookahead=2 # predict 2 weeks ahead
             )
-        >>> # Personalization and recomendation
+
+
+        >>> # Example 2: Personalized Recommendations
         >>> # Alternatively suppose our data has the following columns: "user_id", "movie_id", "hours_watched", "timestamp"
         >>> # We want to build a movie recommendation system.
-        >>> # Then we may configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> # Then we may configure UniversalTransformer as follows:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "user_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -389,24 +405,28 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 },
                 target="movie_id"
             )
-        >>> # Query-Product Recommendation 
+        
+
+        >>> # Example 3: Query-Product Recommendation 
         >>> # Alternatively suppose our data has the following columns: "query", "categories"
         >>> # We want to build a category classification given an input query.
         >>> # sample data : yellow shirt, Mens Shirts;Women Shirts;Shirts
-        >>> # Then we may configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> # Then we may configure UniversalTransformer as follows:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "query": bolt.types.text(),
                     "categories": bolt.types.categorical_text(n_unique_classes=3000, sep=";"),
                 },
                 target="categories"
             )
-        >>> # Sentiment Classification
+        
+
+        >>> # Example 4: Sentiment Classification
         >>> # Alternatively suppose our data has the following columns: "sentence", "sentiment"
         >>> # We want to build a category classification given an input query.
         >>> # sample data : i like the movie<tab>positive
-        >>> # Then we may configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> # Then we may configure UniversalTransformer as follows:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "sentence": bolt.types.text(),
                     "sentiment": bolt.types.categorical(n_unique_classes=2),
@@ -428,8 +448,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
     Args:
         train_file (str): The path to the training dataset. The dataset
-            has to be a CSV file with a header.
-        train_config (TrainConfig): training config (point to training config doc)
+            has to be a CSV file with a header. All columns names used in the `__init__`
+            step have to be present in the csv. Additional columns will be ignored.
+        train_config (TrainConfig): please see the examples and refer to `training_config` 
+            documentation for more details
 
     Returns:
         Dict[Str, List[float]]:
@@ -451,15 +473,15 @@ py::module_ createBoltSubmodule(py::module_& module) {
         {'epoch_times': [1.7, 3.4, 5.2], 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
     
     Notes:
-        - If temporal tracking relationships are provided, Oracle can make better predictions 
-          by taking temporal context into account. For example, Oracle may keep track of 
+        - If temporal tracking relationships are provided, UniversalTransformer can make better predictions 
+          by taking temporal context into account. For example, UniversalTransformer may keep track of 
           the last few movies that a user has watched to better recommend the next movie.
-          `model.train()` automatically updates Oracle's temporal context.
-        - `model.train()` resets Oracle's temporal context at the start of training to 
+          `model.train()` automatically updates UniversalTransformer's temporal context.
+        - `model.train()` resets UniversalTransformer's temporal context at the start of training to 
           prevent unwanted information from leaking into the training routine.
            
     TODO:
-        - Add train_config support in Oracle aka sequential)pbdoc")
+        - Add train_config support in UniversalTransformer aka sequential)pbdoc")
 
       .def("override", &SequentialClassifier::override, py::arg("key"),
            py::arg("value"),
@@ -474,23 +496,21 @@ py::module_ createBoltSubmodule(py::module_& module) {
         void
     
     Example:
-        >>> model.override("hidden","1024")
-        >>> model.override("sparsity","0.01") // just placeholder lets fix the params we want to expose to users
+        >>> model.override("embedding_representation","1024")
+        >>> model.override("sparsity","0.01")
       
     
     Notes: 
-        - If number of training records are large one could try increaisng model size.
+        - If number of training records are large one could try increasing model size.
         - List of parameters can be changed
-        - hidden : "1024" 
-        - All hidden layers will be of same dimentions.
-        - depth : ["small","medium","large"] // can map this to number of tables internally
-        - input_embedding : ["small","medium","large"]
+            - embedding_representation : "1024" 
+        - All embedding layers (other than the input) will be of same dimension.
       )pbdoc")
 
-      .def("hidden", &SequentialClassifier::hiddenRepresentation,
+      .def("embedding_representation", &SequentialClassifier::hiddenRepresentation,
             py::arg("input_sample"),
            R"pbdoc(  
-    Provide hidden representation (embedding representation) from penaltimate layer.
+    Provide embedding representation from penultimate layer.
 
     Args:
         input_sample (Dict[str, str]): The input sample as a dictionary 
@@ -498,11 +518,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
             values are the respective column values. 
 
     Returns:
-        Numpy array of hidden dimension
+        1-D Numpy array of embedding dimension
     
     Example:
-        >>> # Suppose we configure and train Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> # Suppose we configure and train UniversalTransformer as follows:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "user_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -518,15 +538,15 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 train_file="train_file.csv", train_config=train_config
             )
         >>> # Make a single prediction
-        >>> hidden_representaion = model.hidden(
+        >>> embedding = model.embedding_representation(
                 input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, top_k=3
             )
-        >>> print(hidden_representaion)
+        >>> print(embedding)
         [0.12, 0.14, ...]
     
     Notes: 
-        - Only penaltimate layer representations can be extracted.
-        - Hidden represntation will be dense irrespective of sparsity.
+        - Only penultimate layer representations can be extracted.
+        - embedding representation will be dense irrespective of sparsity.
 )pbdoc")
 #if THIRDAI_EXPOSE_ALL
       .def("summarizeModel", &SequentialClassifier::summarizeModel,
@@ -538,17 +558,17 @@ py::module_ createBoltSubmodule(py::module_& module) {
            py::arg("output_file") = std::nullopt,
            py::arg("write_top_k_to_file") = 1,
            R"pbdoc(  
-    Evaluates how well the model predicts output classes on a validation 
-    dataset. Optionally writes top k predictions to a file if output file 
+    Evaluates the model predictions with respect to the output classes on a validation/test 
+    dataset. Optionally, writes top k predictions to a file if output file 
     name is provided for external evaluation. This method cannot be called 
     on an untrained model.
 
     Args:
         validation_file (str): The path to the validation dataset to 
-            evaluate on. The dataset has to be a CSV file with a header.
+            evaluate on. The dataset has to be a CSV file with a header (with the columns that were used in the training).
         metrics (List[str]): Metrics to track during training. Defaults to 
-            ["recall@1"]. Metrics are currently restricted to any 'recall@k' 
-            where k is a positive (nonzero) integer.
+            ["precision@1"]. Metrics are currently restricted to 'precision@1' and 'f_measure(t)' 
+            where t is a threshold between 0 and 1.
         output_file (str): An optional path to a file to write predictions 
             to. If not provided, predictions will not be written to file.
         write_top_k_to_file (int): Only relevant if `output_file` is provided. 
@@ -564,16 +584,16 @@ py::module_ createBoltSubmodule(py::module_& module) {
     
     Example:
         >>> metrics = model.evaluate(
-                validation_file="validation_file.csv", metrics=["recall@1", "recall@10"], output_file="predictions.txt", write_top_k_to_file=10
+                validation_file="validation_file.csv", metrics=["precision@1", "f_measure(0.9)"], output_file="predictions.txt", write_top_k_to_file=10
             )
         >>> print(metrics)
-        {'test_time': 20.0, 'recall@1': [0.0922, 0.187, 0.268], 'recall@10': [0.4665, 0.887, 0.9685]}
+        {'test_time': 20.0, 'precision@1': 0.0922, 'f_measure(0.9)': 0.4665}
     
     Notes: 
-        - If temporal tracking relationships are provided, Oracle can make better predictions 
-          by taking temporal context into account. For example, Oracle may keep track of 
+        - If temporal tracking relationships are provided, UniversalTransformer can make better predictions 
+          by taking temporal context into account. For example, UniversalTransformer may keep track of 
           the last few movies that a user has watched to better recommend the next movie.
-          `model.evaluate()` automatically updates Oracle's temporal context.
+          `model.evaluate()` automatically updates UniversalTransformer's temporal context.
            )pbdoc")
 
       .def("predict", &SequentialClassifier::predictSingle,
@@ -594,8 +614,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
         score to lowest score.
     
     Example:
-        >>> # Suppose we configure and train Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> # Suppose we configure and train UniversalTransformer as follows:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "user_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -624,29 +644,29 @@ py::module_ createBoltSubmodule(py::module_& module) {
           This is because we do not know the movie title at the time of inference – that 
           is the target that we are trying to predict after all.
 
-        - If temporal tracking relationships are provided, Oracle can make better predictions 
-          by taking temporal context into account. For example, Oracle may keep track of 
+        - If temporal tracking relationships are provided, UniversalTransformer can make better predictions 
+          by taking temporal context into account. For example, UniversalTransformer may keep track of 
           the last few movies that a user has watched to better recommend the next movie. 
-          Thus, Oracle is at its best when its internal temporal context gets updated with
-          new true samples. `model.predict()` does not update Oracle's temporal context.
+          Thus, UniversalTransformer is at its best when its internal temporal context gets updated with
+          new true samples. `model.predict()` does not update UniversalTransformer's temporal context.
           To do this, we need to use `model.index()`. Read about `model.index()` for details.
            )pbdoc")
       .def("explain", &SequentialClassifier::explain, py::arg("input_sample"),
            py::arg("target") = std::nullopt,
            R"pbdoc(  
     Identifies the columns that are most responsible for a predicted outcome 
-    and provides a brief description of the column's value.
+    and provides a numerical insight into the column's content/value.
     
     If a target is provided, the model will identify the columns that need 
     to change for the model to predict the target class.
     
     Args:
         input_sample (Dict[str, str]): The input sample as a dictionary 
-            where the keys are column names as specified in data_types and the "
+            where the keys are column names as specified in data_types and the
             values are the respective column values. 
         target (str): Optional. The desired target class. If provided, the
-        model will identify the columns that need to change for the model to 
-        predict the target class.
+            method will identify the columns that need to change for the model to 
+            predict the target class.
 
     Returns:
         List[Explanation]:
@@ -659,8 +679,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
         absolute value of the `percentage_significance` field of each element.
     
     Example:
-        >>> # Suppose we configure and train Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> # Example 1: Suppose we configure and train UniversalTransformer as follows:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "user_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -692,8 +712,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> print(explanations[1].keyword)
         "Previously seen 'Die Hard'"
     Example:
-        >>> # Suppose we configure and train Oracle as follows for a loan approval system:
-        >>> model = bolt.Oracle(
+        >>> # Example 2: Suppose we configure and train UniversalTransformer as follows for a loan approval system:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "user_id": bolt.types.categorical(n_unique_classes=5000),
                     "age": bolt.types.numerical(),
@@ -718,9 +738,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> print(explanations[1].percentage_significance)
         15.3
 
-        Example: ## We can add this as well, need changes.
-        >>> # Suppose we configure and train Oracle as follows for a loan approval system:
-        >>> model = bolt.Oracle(
+    Example:
+        >>> # Example 3: Suppose we configure and train UniversalTransformer as follows for sentiment analysis.
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "sentence": bolt.types.text(),
                     "sentiment": bolt.types.categorical(n_unique_classes=2),
@@ -735,7 +755,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 input_sample={"sentence": "i really like the movie"}, comprehensive=true
             )
         >>> print(explanations)
-        {sentiment:positive, reason: [1, 2]} # index of words responsible
+        {sentiment:positive, reason: "'really like'"} # index of words responsible
 
     Notes: 
         - The `column_name` field of the `Explanation` object is irrelevant in this case
@@ -750,22 +770,22 @@ py::module_ createBoltSubmodule(py::module_& module) {
           column in the `data_types` argument, we did not pass it to `model.explain()`. 
           This is because we do not know the movie title at the time of inference – that 
           is the target that we are trying to predict after all.
-        - If temporal tracking relationships are provided, Oracle can make better predictions 
-          by taking temporal context into account. For example, Oracle may keep track of 
+        - If temporal tracking relationships are provided, UniversalTransformer can make better predictions 
+          by taking temporal context into account. For example, UniversalTransformer may keep track of 
           the last few movies that a user has watched to better recommend the next movie. 
-          Thus, Oracle is at its best when its internal temporal context gets updated with
-          new true samples. `model.explain()` does not update Oracle's temporal context.
+          Thus, UniversalTransformer is at its best when its internal temporal context gets updated with
+          new true samples. `model.explain()` does not update UniversalTransformer's temporal context.
           To do this, we need to use `model.index()`. Read about `model.index()` for details.
            )pbdoc")
       .def("index", &SequentialClassifier::indexSingle, py::arg("sample"),
            R"pbdoc(
 
-    Indexes a single true sample to keep Oracle's temporal context up to date.
+    Indexes a single true sample to keep UniversalTransformer's temporal context up to date.
 
-    If temporal tracking relationships are provided, Oracle can make better predictions 
-    by taking temporal context into account. For example, Oracle may keep track of 
+    If temporal tracking relationships are provided, UniversalTransformer can make better predictions 
+    by taking temporal context into account. For example, UniversalTransformer may keep track of 
     the last few movies that a user has watched to better recommend the next movie. 
-    Thus, Oracle is at its best when its internal temporal context gets updated with
+    Thus, UniversalTransformer is at its best when its internal temporal context gets updated with
     new true samples. `model.index()` does exactly this. 
 
     Args: 
@@ -774,8 +794,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
             values are the respective column values. 
 
     Example:
-        >>> # Suppose we configure and train Oracle to do movie recommendation as follows:
-        >>> model = bolt.Oracle(
+        >>> # Suppose we configure and train UniversalTransformer to do movie recommendation as follows:
+        >>> model = bolt.UniversalTransformer(
                 data_types={
                     "user_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -795,34 +815,32 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, top_k=3
             )
         >>> # Suppose we later learn that user "A33225" ends up watching "Die Hard 3". 
-        >>> # We can call model.index() to keep Oracle's temporal context up to date.
+        >>> # We can call model.index() to keep UniversalTransformer's temporal context up to date.
         >>> model.index(
                 input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas", "movie_title": "Die Hard 3"}
             )
           )pbdoc")
       .def("save", &SequentialClassifier::save, py::arg("filename"),
            R"pbdoc(  
-    Serializes an instance of Oracle into a file on disk. The serialized Oracle includes 
+    Serializes an instance of UniversalTransformer into a file on disk. The serialized UniversalTransformer includes 
     its current temporal context.
     
     Args:
-        filename (str): The file on disk to serialize this instance of Oracle into.
+        filename (str): The file on disk to serialize this instance of UniversalTransformer into.
 
     Example:
-        >>> model.Oracle(...)
-        >>> model.save("oracle_savefile.bolt")
+        >>> model.save("universal_transformer_savefile.bolt")
            )pbdoc")
       .def_static("load", &SequentialClassifier::load, py::arg("filename"),
                   R"pbdoc(  
-    Loads a serialized instance of Oracle from a file on disk. The loaded Oracle includes 
+    Loads a serialized instance of UniversalTransformer from a file on disk. The loaded UniversalTransformer includes 
     the temporal context from before serialization.
     
     Args:
-        filename (str): The file on disk to load the instance of Oracle from.
+        filename (str): The file on disk to load the instance of UniversalTransformer from.
 
     Example:
-        >>> model.Oracle(...)
-        >>> model = bolt.Oracle.load("oracle_savefile.bolt")
+        >>> model = bolt.UniversalTransformer.load("universal_transformer_savefile.bolt")
            )pbdoc");
 
   createBoltGraphSubmodule(bolt_submodule);
