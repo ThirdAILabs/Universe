@@ -30,4 +30,10 @@ class NodeStateMachineError : public std::logic_error {
                          message) {}
 };
 
+class FlashIndexException : public std::logic_error {
+ public:
+  explicit FlashIndexException(const std::string& message)
+      : std::logic_error("Flash Index Error: " + message) {}
+};
+
 }  // namespace thirdai::exceptions

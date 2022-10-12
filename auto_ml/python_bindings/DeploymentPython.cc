@@ -205,13 +205,19 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
                   docs::MODEL_PIPELINE_LOAD);
 
-  py::class_<thirdai::deployments::Indexer>(submodule, "Indexer")
+  py::class_<deployment::FlashIndexConfig, deployment::FlashIndexConfigPtr>(
+      submodule, "FlashIndexConfig")
+      .def(py::init<std::string>(), py::arg("file_name"))
+      .def("save", &FlashIndexConfig::save, py::arg("file_name"));
+
+  py::class_<deployment::Indexer>(submodule, "Indexer")
       .def(py::init<std::string>(), py::arg("config_file_path"),
            "Initializes an Indexer object which constructs a Flash object"
            "The config file should at least contain the following elements:\n"
            "     - num_hash_tables: Number of Hash Tables to construct.\n"
-           "     - hashes_per_table: Hash functions for each hash table.\n");
-
+           "     - hashes_per_table: Hash functions for each hash table.\n")
+      .def("build_index", &Indexer::buildFlashIndex<uint32_t>,
+           py::arg("file_name"));
 }
 
 template <typename T>
