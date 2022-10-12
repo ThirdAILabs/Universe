@@ -21,6 +21,18 @@ def timed(f):
     return wrapper
 
 
+def timed(f):
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        logging.info("func %s | time %d ms" % (f.__name__, elapsed * 1000))
+        return result
+
+    return wrapper
+
+
 class Worker:
     """
     This is a ray remote class(Actor). Read about them here.
@@ -49,30 +61,14 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
 
-        start = time()
-        
-        if data_loader_config["datasets"]["to_validate"] == 0:
-            self.train_data, self.train_labels = load_training_data(
-                data_loader_config, batch_size, id
-            )
-        else:
-            self.train_data, self.train_labels, valid_data, valid_labels = load_training_data(
-                data_loader_config, batch_size, id
-            )
-            tracked_metrics = data_loader_config["validation"]["metrics"]
-            predict_config = bolt.graph.PredictConfig.make().with_metrics(tracked_metrics).silence()
-            train_config.with_validation(
-                    [valid_data],
-                    valid_labels,
-                    predict_config,
-                    validation_frequency=data_loader_config["validation"]["frequency"],
-            )
-            
-
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
+        start = time()
+        self.train_data, self.train_labels = parse_svm_dataset(
+            train_file_name, batch_size
+        )
         end = time()
 
         logging.info(f"func data_loading | time {(end - start)*1000} ms")
