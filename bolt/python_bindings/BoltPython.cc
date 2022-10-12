@@ -100,9 +100,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
   py::class_<sequential_classifier::DataType>(  // NOLINT
       universal_transformer_types_submodule, "ColumnType", "Base class for bolt types.");
 
-  universal_transformer_types_submodule.def("categorical",
-                             sequential_classifier::DataType::categorical,
-                             py::arg("n_unique_classes"),
+  universal_transformer_types_submodule.def(
+      "categorical", sequential_classifier::DataType::categorical,
+      py::arg("n_unique_classes"),
+      py::arg("seperator"),
                              R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
@@ -112,7 +113,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         n_unique_classes (int): Number of unique categories in the column.
             UniversalTransformer throws an error if the column contains more than the 
             specified number of unique values.
-    
+        seperator (str): `Optional.` seperator if multiple categories need to be mapped 
     Example:
         >>> bolt.UniversalTransformer(
                 data_types: {
@@ -136,7 +137,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 ...
             )
                              )pbdoc");
-  universal_transformer_types_submodule.def("text", sequential_classifier::DataType::text,
+  universal_transformer_types_submodule.def(
+      "text", sequential_classifier::DataType::text,
+                             py::arg("input_embedding_size"),
                              py::arg("average_n_words") = std::nullopt,
                              R"pbdoc(
     Text column type. Use this object if a column contains text data 
@@ -144,6 +147,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
     search queries, and user bios.
 
     Args:
+        input_embedding_size (str): Optional. select from choice of small, medium and large depending on number of data samples.
         average_n_words (int): Optional. Average number of words in the 
             text column in each row. If provided, UniversalTransformer may make 
             optimizations as appropriate.
@@ -293,9 +297,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
                              std::vector<std::variant<
                                  std::string,
                                  sequential_classifier::TemporalConfig>>>,
-                    std::string, std::string, uint32_t>(),
+                    std::string, std::map<std::string, std::string>, std::string, uint32_t>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
-           py::arg("target"), py::arg("time_granularity") = "daily",
+           py::arg("target"), py::arg("model_parameters"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0,
            R"pbdoc(  
     Constructor.
@@ -333,6 +337,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
         target (str): Name of the column that contains the value to be predicted by
             UniversalTransformer. If the target column is of type `bolt.types.categorical()`, the task is automatically assumed to be classification. 
             If the target column is of type `bolt.types.numerical()`, the task us automatically assumed to be regression.
+        model_parameters (Dict[str, str]): `Optional.` Model parameters to accomodate any hyper parameter changes desired. 
+            Parameters like hidden embedding size, sparsity can be changed.
         time_granularity (str): Optional. 
             Either of:
                 - "daily"/"d" 
@@ -351,7 +357,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
             
 
             Defaults to "daily".
-        lookahead (str): Optional. How far into the future the model needs to predict. This length of
+        lookahead (str): `Optional.` How far into the future the model needs to predict. This length of
             time is in terms of time_granularity. 
             
             E.g. 'time_granularity="daily"` and `lookahead=5` means the model needs to learn to predict 5 days ahead. Defaults to 0
@@ -407,17 +413,18 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
         
 
-        >>> # Example 3: Query-Product Recommendation 
+        >>> # Example 3: Query-Category Recommendation 
         >>> # Alternatively suppose our data has the following columns: "query", "categories"
         >>> # We want to build a category classification given an input query.
         >>> # sample data : yellow shirt, Mens Shirts;Women Shirts;Shirts
         >>> # Then we may configure UniversalTransformer as follows:
         >>> model = bolt.UniversalTransformer(
                 data_types={
-                    "query": bolt.types.text(),
+                    "query": bolt.types.text(embedding="medium"),
                     "categories": bolt.types.categorical_text(n_unique_classes=3000, sep=";"),
                 },
-                target="categories"
+                target="categories",
+                model_parameters={"embedding_representation":"1024"}
             )
         
 
@@ -482,31 +489,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
            
     TODO:
         - Add train_config support in UniversalTransformer aka sequential)pbdoc")
-
-      .def("override", &SequentialClassifier::override, py::arg("key"),
-           py::arg("value"),
-           R"pbdoc(  
-    Override model parameters to accomodate any hyper parameter changes desired.
-
-    Args:
-        key (str): model parameter key name.
-        value (str): model parameter value to be changed.
-
-    Returns:
-        void
     
-    Example:
-        >>> model.override("embedding_representation","1024")
-        >>> model.override("sparsity","0.01")
-      
-    
-    Notes: 
-        - If number of training records are large one could try increasing model size.
-        - List of parameters can be changed
-            - embedding_representation : "1024" 
-        - All embedding layers (other than the input) will be of same dimension.
-      )pbdoc")
-
       .def("embedding_representation", &SequentialClassifier::hiddenRepresentation,
             py::arg("input_sample"),
            R"pbdoc(  
@@ -627,8 +610,13 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 },
                 target="movie_title"
             )
+        >>> train_config = (
+                        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+                        .with_metrics(["recall@1", "recall@10"])
+                        .with_save_parameters(save_prefix="model", save_frequency=32)
+                    )
         >>> model.train(
-                train_file="train_file.csv", epochs=3, learning_rate=0.0001, metrics=["recall@1", "recall@10"]
+                train_file="train_file.csv", train_config=train_config
             )
         >>> # Make a single prediction
         >>> predictions = model.predict(
@@ -652,7 +640,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
           To do this, we need to use `model.index()`. Read about `model.index()` for details.
            )pbdoc")
       .def("explain", &SequentialClassifier::explain, py::arg("input_sample"),
-           py::arg("target") = std::nullopt,
+           py::arg("target") = std::nullopt, py::arg("comprehensive") = std::nullopt,
            R"pbdoc(  
     Identifies the columns that are most responsible for a predicted outcome 
     and provides a numerical insight into the column's content/value.
@@ -667,7 +655,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         target (str): Optional. The desired target class. If provided, the
             method will identify the columns that need to change for the model to 
             predict the target class.
-
+        comprehensive (bool): Optional. Comprehensive explanation in case of text inputs.
     Returns:
         List[Explanation]:
         A sorted list of `Explanation` objects that each contain the following fields:
@@ -692,8 +680,13 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 },
                 target="movie_title"
             )
+        >>> train_config = (
+                        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+                        .with_metrics(["recall@1", "recall@10"])
+                        .with_save_parameters(save_prefix="model", save_frequency=32)
+                    )
         >>> model.train(
-                train_file="train_file.csv", epochs=3, learning_rate=0.0001, metrics=["recall@1", "recall@10"]
+                train_file="train_file.csv", train_config=train_config
             )
         >>> # Make a single prediction
         >>> explanations = model.explain(

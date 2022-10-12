@@ -30,13 +30,16 @@ class DataType {
  public:
   DataType() : _type(Type::no_type) {}
 
-  static auto categorical(uint32_t n_unique_classes) {
+  static auto categorical(uint32_t n_unique_classes, std::string seperator) {
+    if (seperator.empty()){}
     return DataType(/* type= */ Type::categorical,
                     /* n_unique_classes= */ n_unique_classes,
                     /* average_n_words= */ 0);
   }
 
-  static auto text(std::optional<uint32_t> average_n_words = std::nullopt) {
+  static auto text(std::string input_embedding_size,std::optional<uint32_t> average_n_words = std::nullopt
+                   ) {
+    if (input_embedding_size.empty()){}
     return DataType(/* type= */ Type::text, /* n_unique_classes= */ 0,
                     /* average_n_words= */ average_n_words);
   }

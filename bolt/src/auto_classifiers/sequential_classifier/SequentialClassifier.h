@@ -24,6 +24,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -42,7 +43,8 @@ class SequentialClassifier {
       std::map<std::string,
                std::vector<std::variant<std::string, TemporalConfig>>>
           temporal_tracking_relationships,
-      std::string target, std::string time_granularity = "d",
+      
+      std::string target, std::map<std::string, std::string> model_parameters, std::string time_granularity = "d",
       uint32_t lookahead = 0) {
     _config.data_types = std::move(data_types),
     _config.target = std::move(target);
@@ -51,6 +53,7 @@ class SequentialClassifier {
     autotuneTemporalFeatures(_config,
                              std::move(temporal_tracking_relationships));
     _single_inference_col_nums = ColumnNumberMap(_config.data_types);
+    auto over = model_parameters;
   }
 
   MetricData train(const std::string& train_filename,
@@ -180,7 +183,9 @@ class SequentialClassifier {
 
   std::vector<dataset::Explanation> explain(
       const std::unordered_map<std::string, std::string>& sample,
-      std::optional<std::string> target_label = std::nullopt) {
+
+      std::optional<std::string> target_label = std::nullopt,
+      bool comprehensive = false) {
     auto input_row = inputMapToInputRow(sample);
 
     auto processor = DataProcessing::buildSingleSampleBatchProcessor(
@@ -207,7 +212,7 @@ class SequentialClassifier {
     for (auto& response : result) {
       response.column_name = column_num_to_name[response.column_number];
     }
-
+    if (comprehensive){}
     return result;
   }
 
