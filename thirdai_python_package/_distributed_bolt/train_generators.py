@@ -105,3 +105,46 @@ class GenericStreamingTrainGenerator:
 
     def restart(self):
         self.current_dataset_id_within_epoch = 0
+
+
+# This gets around having to write serialization code for all of our
+# batch processors
+# TODO(Josh): We should probably write all of the serialization code
+class ModelPipelineWrapper:
+    def __init__(
+        self,
+        data_loader: Union[Tuple[str, int], dataset.DataLoader],
+        model_pipeline,
+        max_in_memory_batches,
+    ):
+        self.data_loader = data_loader
+        self.dataset_loader_factory = model_pipeline.dataset_loader_factory
+        self.max_in_memory_batches = max_in_memory_batches
+        self.initialized = False
+
+    def next(self):
+        if not self.initialized:
+            if isinstance(self.data_loader, tuple):
+                self.dataset_loader = (
+                    self.dataset_loader_factory.get_labeled_dataset_loader(
+                        max_in_memory_batches=self.max_in_memory_batches,
+                        training=True,
+                        data_loader=dataset.SimpleFileDataLoader(
+                            filename=self.data_loader[0],
+                            target_batch_size=self.data_loader[1],
+                        ),
+                    )
+                )
+            else:
+                self.dataset_loader = (
+                    self.dataset_loader_factory.get_labeled_dataset_loader(
+                        max_in_memory_batches=self.max_in_memory_batches,
+                        training=True,
+                        data_loader=self.data_loader,
+                    )
+                )
+
+        return self.dataset_loader.next()
+
+    def restart(self):
+        self.dataset_loader.restart()

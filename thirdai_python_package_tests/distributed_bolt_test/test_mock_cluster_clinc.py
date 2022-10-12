@@ -1,12 +1,12 @@
 import os
 
+import numpy as np
 import pytest
 from cluster_utils import (
     check_models_are_same_on_first_two_nodes,
     ray_two_node_cluster_config,
     split_into_2,
 )
-import numpy as np
 
 # test_classifier_utils are not actually in this folder, but it works as long
 # as you are running through pytest because pytest automatically adds all
@@ -31,7 +31,9 @@ pytestmark = [pytest.mark.integration, pytest.mark.release]
 
 
 @pytest.fixture(scope="module")
-def distributed_trained_text_classifier(saved_config, clinc_dataset, ray_two_node_cluster_config):
+def distributed_trained_text_classifier(
+    saved_config, clinc_dataset, ray_two_node_cluster_config
+):
     import thirdai.distributed_bolt as db
 
     num_classes, _ = clinc_dataset
@@ -51,11 +53,8 @@ def distributed_trained_text_classifier(saved_config, clinc_dataset, ray_two_nod
         cluster_config=ray_two_node_cluster_config,
         model_pipeline=model,
         train_config=train_config,
-        data_loaders=[
-            dataset.SimpleFileDataLoader(filename="clinc_data/xaa", target_batch_size=256),
-            dataset.SimpleFileDataLoader(filename="clinc_data/xab", target_batch_size=256),
-        ],
-        max_in_memory_batches=10
+        data_loaders=[("clinc_data/xaa", 256), ("clinc_data/xab", 256)],
+        max_in_memory_batches=10,
     )
 
     wrapper.train()
@@ -63,9 +62,7 @@ def distributed_trained_text_classifier(saved_config, clinc_dataset, ray_two_nod
     return wrapper.get_model()
 
 
-@pytest.mark.parametrize(
-    "ray_two_node_cluster_config", ["linear"], indirect=True
-)
+@pytest.mark.parametrize("ray_two_node_cluster_config", ["linear"], indirect=True)
 def test_distributed_classifer_accuracy(
     distributed_trained_text_classifier, clinc_dataset
 ):

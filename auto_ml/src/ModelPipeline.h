@@ -184,6 +184,8 @@ class ModelPipeline {
 
   bolt::BoltGraphPtr model() { return _model; }
 
+  DatasetLoaderFactoryPtr datasetLoaderFactory() { return _dataset_factory; }
+
   DatasetLoaderPtr createTrainingDatasetLoader(dataset::DataLoaderPtr loader,
                                                uint32_t max_in_memory_batches) {
     return _dataset_factory->getLabeledDatasetLoader(

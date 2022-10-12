@@ -1,14 +1,15 @@
 import copy
 import textwrap
 import time
-from typing import Dict, List
+from typing import Dict, List, Tuple, Union
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._thirdai import bolt, deployment
+from thirdai._distributed_bolt.train_generators import ModelPipelineWrapper
+from thirdai._thirdai import bolt, dataset, deployment
 
 from .utils import get_num_cpus, init_logging
 
@@ -222,11 +223,16 @@ def distribute_model_pipeline(
     cluster_config: RayTrainingClusterConfig,
     model_pipeline: deployment.ModelPipeline,
     train_config: bolt.graph.TrainConfig,
-    data_loaders,
-    max_in_memory_batches: int
+    data_loaders: Union[Tuple[str, int], dataset.DataLoader],
+    max_in_memory_batches: int,
 ):
     dataset_loaders = [
-        model_pipeline.create_dataset_loader(loader, max_in_memory_batches) for loader in data_loaders
+        ModelPipelineWrapper(
+            model_pipeline=model_pipeline,
+            data_loader=loader,
+            max_in_memory_batches=max_in_memory_batches,
+        )
+        for loader in data_loaders
     ]
     return DistributedDataParallel(
         cluster_config=cluster_config,

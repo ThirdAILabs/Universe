@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
@@ -22,6 +23,9 @@ void defOptionMappedParameter(py::module_& submodule);
 
 py::object makeUserSpecifiedParameter(const std::string& name,
                                       const py::object& type);
+
+DatasetLoaderFactoryPtr createSingleBlockDatasetFactory(
+    const SingleBlockDatasetFactoryConfig& config, const py::dict& parameters);
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
                              const py::dict& parameters);
