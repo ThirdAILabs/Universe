@@ -1,9 +1,24 @@
+import os
 import textwrap
+from functools import wraps
+from time import time
 
 import thirdai._distributed_bolt.backend.communication as comm
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, logging
 
 from ..utils import get_gradients, parse_svm_dataset
+
+
+def timed(f):
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        logging.info("func %s | time %d ms" % (f.__name__, elapsed * 1000))
+        return result
+
+    return wrapper
 
 
 class Worker:
@@ -16,6 +31,7 @@ class Worker:
     Bolt native code.
     """
 
+    @timed
     def __init__(
         self,
         num_workers: int,
@@ -25,6 +41,7 @@ class Worker:
         primary_worker,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
+        log_dir: str,
         batch_size: int,
     ):
         """
@@ -32,15 +49,28 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
 
+        logging.setup(
+            log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
+        )
+
+        start = time()
         self.train_data, self.train_labels = parse_svm_dataset(
             train_file_name, batch_size
         )
+        end = time()
+
+        logging.info(f"func data_loading | time {(end - start)*1000} ms")
+
+        start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
             train_data=[self.train_data],
             train_labels=self.train_labels,
             train_config=train_config,
         )
+        end = time()
+
+        logging.info(f"func initializing_model | time {(end - start)*1000} ms")
 
         # Set up variables
         self.num_workers = num_workers
@@ -81,6 +111,7 @@ class Worker:
         """
         self.comm.set_friend(friend)
 
+    @timed
     def process_ring(
         self,
         update_id: int,
@@ -99,6 +130,7 @@ class Worker:
         """
         self.comm.process_ring(update_id, reduce, avg_gradients)
 
+    @timed
     def receive_array_partitions(self, update_id: int):
         """
         This function returns the array partition for the worker is is called.
@@ -110,6 +142,7 @@ class Worker:
         """
         return self.comm.receive_array_partitions(update_id)
 
+    @timed
     def compute_and_store_batch_gradients(self, batch_no: int):
         """
         This function is called only when the mode of communication is
@@ -129,6 +162,7 @@ class Worker:
         """
         self.comm.compute_and_store_batch_gradients(batch_no)
 
+    @timed
     def get_calculated_gradients(self):
         """
         This function is called only when the mode of communication
@@ -144,6 +178,7 @@ class Worker:
         """
         return get_gradients(self.model)
 
+    @timed
     def receive_gradients(self, averaged_gradients_ref=None):
         """
         This function is called only when the communication pattern choosen
@@ -162,6 +197,7 @@ class Worker:
         else:
             self.comm.receive_gradients(averaged_gradients_ref)
 
+    @timed
     def update_parameters(self):
         """
         This function calls updateParameter function inside bolt, which
@@ -175,6 +211,7 @@ class Worker:
         """
         return len(self.train_data)
 
+    @timed
     def finish_training(self):
         self.model.finish_training()
 
