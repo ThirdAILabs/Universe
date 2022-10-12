@@ -11,7 +11,6 @@ set(DATASET_TESTS
     ThreadSafeVocabularyTests
     UserItemHistoryBlockTests
     UserCountHistoryBlockTests
-    BlockBatchProcessorTests
     GenericBatchProcessorTests
     MlmBatchProcessorTests
     SaveLoadInMemoryDatasetTest
