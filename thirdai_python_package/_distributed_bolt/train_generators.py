@@ -144,6 +144,7 @@ class ModelPipelineWrapper:
                     )
                 )
 
+        self.initialized = True
         return self.dataset_loader.next()
 
     def restart(self):

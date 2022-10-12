@@ -139,7 +139,17 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("prediction_threshold") = std::nullopt);
 
 #ifdef THIRDAI_EXPOSE_ALL
-  py::class_<DatasetLoaderFactory, DatasetLoaderFactoryPtr>(  // NOLINT
+  // TODO(Josh): Make this a proper inheritable python class
+  py::class_<DatasetLoader, DatasetLoaderPtr>(submodule, "DatasetLoader")
+      .def("next", &DatasetLoader::next)
+      .def("restart", &DatasetLoader::restart);
+
+  py::class_<GenericDatasetLoader, DatasetLoader, GenericDatasetLoaderPtr>(
+      submodule, "GenericDatasetLoader")
+      .def("next", &DatasetLoader::next)
+      .def("restart", &DatasetLoader::restart);
+
+  py::class_<DatasetLoaderFactory, DatasetLoaderFactoryPtr>(
       submodule, "DatasetLoaderFactory")
       .def("get_labeled_dataset_loader",
            &DatasetLoaderFactory::getLabeledDatasetLoader,
@@ -186,8 +196,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("filename"))
       .def("create_dataset_loader", &ModelPipeline::createTrainingDatasetLoader,
            py::arg("data_source"), py::arg("max_in_memory_batches"))
-      .def_property_readonly(
-          "model", [](ModelPipeline& pipeline) { return pipeline.model(); })
+#ifdef THIRDAI_EXPOSE_ALL
+      .def_property("model", &ModelPipeline::get_model,
+                    &ModelPipeline::set_model)
+#endif
       .def_property_readonly("dataset_loader_factory",
                              [](ModelPipeline& pipeline) {
                                return pipeline.datasetLoaderFactory();

@@ -182,7 +182,9 @@ class ModelPipeline {
     return dataset_loader->next().value();
   }
 
-  bolt::BoltGraphPtr model() { return _model; }
+  bolt::BoltGraphPtr get_model() { return _model; }
+
+  void set_model(bolt::BoltGraphPtr model) { _model = std::move(model); }
 
   DatasetLoaderFactoryPtr datasetLoaderFactory() { return _dataset_factory; }
 

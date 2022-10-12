@@ -41,12 +41,15 @@ def ray_two_node_cluster_config(communication_type="linear"):
     mini_cluster.shutdown()
 
 
-def split_into_2(file_to_split, destination_dir):
-    num_lines = sum(1 for _ in open(file_to_split))
-    os.system(f"split -l {math.ceil(num_lines/2)} {file_to_split}")
-
-    os.system(f"rm {file_to_split}")
-    os.system(f"mv xaa xab {destination_dir}/")
+def split_into_2(file_to_split, destination_file_1, destination_file_2):
+    with open(file_to_split, "r") as input_file:
+        with open(destination_file_1, "w+") as f_1:
+            with open(destination_file_2, "w+") as f_2:
+                for i, line in enumerate(input_file):
+                    if i % 2 == 0:
+                        f_1.write(line)
+                    else:
+                        f_2.write(line)
 
 
 def check_models_are_same_on_first_two_nodes(distributed_model):

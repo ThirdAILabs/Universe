@@ -33,7 +33,11 @@ def setup_module():
             "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
         )
         os.system("bzip2 -d mnist.bz2")
-        split_into_2(file_to_split="mnist", destination_dir="mnist_data")
+        split_into_2(
+            file_to_split="mnist",
+            destination_file_1="mnist_data/part1",
+            destination_file_2="mnist_data/part2",
+        )
 
     if not os.path.exists("mnist_data/mnist.t"):
         os.system(
@@ -66,16 +70,16 @@ def train_distributed_bolt_check(ray_two_node_cluster_config):
     model = get_mnist_model()
 
     # Because we explicitly specified the Ray working folder as this test
-    # directory, we give explicit paths for the mnist filenames
-    working_dir = os.path.dirname(os.path.realpath(__file__))
+    # directory, but the current working directory where we downloaded mnist
+    # may be anywhere, we give explicit paths for the mnist filenames
     train_sources = [
         db.SvmTrainGenerator(
             filename,
             batch_size=256,
         )
         for filename in [
-            f"{working_dir}/../../mnist_data/xaa",
-            f"{working_dir}/../../mnist_data/xab",
+            f"{os.getcwd()}/mnist_data/part1",
+            f"{os.getcwd()}/mnist_data/part2",
         ]
     ]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=3)

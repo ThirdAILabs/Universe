@@ -38,7 +38,7 @@ def distributed_trained_text_classifier(
 
     num_classes, _ = clinc_dataset
 
-    model = deployment.ModelPipeline(
+    model_pipeline = deployment.ModelPipeline(
         config_path=saved_config,
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
@@ -46,20 +46,32 @@ def distributed_trained_text_classifier(
     path = "clinc_data"
     if not os.path.exists(path):
         os.makedirs(path)
-    split_into_2(file_to_split=TRAIN_FILE, destination_dir="clinc_data")
+    split_into_2(
+        file_to_split=TRAIN_FILE,
+        destination_file_1=f"clinc_data/part1",
+        destination_file_2=f"clinc_data/part2",
+    )
 
+    # Because we explicitly specified the Ray working folder as this test
+    # directory, but the current working directory where we downloaded clinc
+    # may be anywhere, we give explicit paths for the mnist filenames
     train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
     wrapper = db.distribute_model_pipeline(
         cluster_config=ray_two_node_cluster_config,
-        model_pipeline=model,
+        model_pipeline=model_pipeline,
         train_config=train_config,
-        data_loaders=[("clinc_data/xaa", 256), ("clinc_data/xab", 256)],
+        data_loaders=[
+            (f"{os.getcwd()}/clinc_data/part1", 2560),
+            (f"{os.getcwd()}/clinc_data/part2", 2560),
+        ],
         max_in_memory_batches=10,
     )
 
     wrapper.train()
 
-    return wrapper.get_model()
+    model_pipeline.model = wrapper.get_model()
+
+    return model_pipeline
 
 
 @pytest.mark.parametrize("ray_two_node_cluster_config", ["linear"], indirect=True)
