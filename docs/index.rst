@@ -17,6 +17,7 @@ To get access to our package, refer to `thirdai.com
    installation
    getting_started
    distributed_tutorial
+   deployment_config_example
 
    python_api/index
 

@@ -1,8 +1,18 @@
 #include "Vocabulary.h"
+#include <iostream>
 
 namespace thirdai::dataset {
 
 FixedVocabulary::FixedVocabulary(const std::string& file_path) {
+  std::ifstream vocab_stream = SafeFileIO::ifstream(file_path);
+  loadFromStream(vocab_stream);
+}
+
+FixedVocabulary::FixedVocabulary(std::istream& istream) {
+  loadFromStream(istream);
+}
+
+void FixedVocabulary::loadFromStream(std::istream& vocab_stream) {
   // Add some special tokens before everything else.
   //
   // clang-tidy complains members should be initialized in initializer list,
@@ -13,7 +23,6 @@ FixedVocabulary::FixedVocabulary(const std::string& file_path) {
 
   // Proceed to read from file to add the remaining vocabulary tokens. We
   // expect supplied files to be one token per-line.
-  std::ifstream vocab_stream = SafeFileIO::ifstream(file_path);
   std::string vocab_token;
   while (getline(vocab_stream, vocab_token)) {
     add(vocab_token);
@@ -26,9 +35,21 @@ std::vector<uint32_t> FixedVocabulary::encode(
     const std::string_view& sentence) const {
   std::vector<uint32_t> token_ids;
 
+  // The following describes a simple whitespace tokenization algorithm.
+  // Multiple whitespaces are treated as a single separator. Any leading or
+  // trailing whitespaces are discarded.
   const char* base = sentence.data();
   const char* end = base + sentence.size();
   const char* marker = base;
+
+  // Advance marker until the next non-space character, also update base
+  // to point accordingly - this is stripping leading spaces.
+  while (marker != end && isspace(*marker)) {
+    ++marker;
+  }
+
+  base = marker;
+
   while (marker != end) {
     if (isspace(*marker)) {
       // A word terminated by a space.
@@ -38,7 +59,8 @@ std::vector<uint32_t> FixedVocabulary::encode(
       token_ids.push_back(token_id);
 
       // Advance marker until the next non-space character, also update base
-      // to point accordingly.
+      // to point accordingly - strips trailing spaces and multiple spaces
+      // between tokens.
       while (marker != end && isspace(*marker)) {
         ++marker;
       }
@@ -49,7 +71,8 @@ std::vector<uint32_t> FixedVocabulary::encode(
   }
 
   // There could be potential overhang, we cleave words only at detection of
-  // space in the above loop.
+  // space in the above loop. The overhang is detected to be a legit-token by
+  // token length > 0.
   size_t token_length = marker - base;
   if (token_length) {
     std::string_view token(base, token_length);
