@@ -177,9 +177,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetLoaderFactory>(this), _config, _context,
-            _vocabs, _column_number_map, _labeled_batch_processor,
-            _inference_batch_processor, _input_dim, _label_dim);
+    archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
+            _temporal_relationships, _context, _vocabs, _column_number_map,
+            _labeled_batch_processor, _inference_batch_processor, _input_dim,
+            _label_dim);
   }
 };
 
