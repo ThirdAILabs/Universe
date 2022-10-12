@@ -189,14 +189,14 @@ include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 
 # Source dependencies
-add_subdirectory(deps/pybind11)
-add_subdirectory(deps/googletest)
+add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
+add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 
-add_subdirectory(deps/spdlog)
+add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 
 # We don't need this, since this breaks cereal
 set(SKIP_PERFORMANCE_COMPARISON ON)
-add_subdirectory(deps/cereal)
+add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
