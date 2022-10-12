@@ -82,15 +82,16 @@ def test_vocab():
         # Nothing maps to unknown, as the above is taken from BERT (thirdai)
         assert vocab.unk_id() not in pieces
         tokens = sample.split()
-        if "THIRDAI_TEST_DEBUG" in os.environ:
-            for piece, token in zip(pieces, tokens):
-                # Assert reconstruction works
-                assert vocab.id_to_token(piece) == token
+        for piece, token in zip(pieces, tokens):
+            # Assert reconstruction works
+            if "THIRDAI_TEST_DEBUG" in os.environ:
                 print("{}: {}".format(token, piece), end=" ")
 
             # Assert sentence-level reconstruction
             assert vocab.decode(pieces) == sample
-            print()
+
+            if "THIRDAI_TEST_DEBUG" in os.environ:
+                print()
 
         assert len(pieces) == len(tokens)
 
