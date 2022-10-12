@@ -44,7 +44,7 @@ class DistributedTrainingWrapper {
         /* reconstruct_hash_functions_batch = */
         _train_config.getReconstructHashFunctionsBatchInterval(
             _train_context.batchSize(), _train_context.len()));
-    _bolt_graph->log_validate_and_save(_train_config.getValidationContext(), _train_context.batchSize(),
+    _bolt_graph->log_validate_and_save(_train_context.batchSize(),
                                        _train_config, _metric_aggregator);
   }
 
