@@ -185,7 +185,6 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
 
 # Header only dependencies
 include_directories(deps/pybind11/include)
-# include_directories(deps/cereal/include)
 include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 
@@ -193,6 +192,7 @@ include_directories(deps/eigen)
 add_subdirectory(deps/pybind11)
 add_subdirectory(deps/googletest)
 add_subdirectory(deps/spdlog)
+add_subdirectory(deps/cereal)
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
