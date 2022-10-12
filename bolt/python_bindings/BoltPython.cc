@@ -342,7 +342,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
             
 
             Interval of time that we are interested in. Temporal numerical 
-            features are clubbed according to this time granularity. 
+            features are grouped according to this time granularity. 
             
 
             E.g. if `time_granularity="w"` and the numerical values on days 1 and 2 are
@@ -510,7 +510,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
       .def("embedding_representation", &SequentialClassifier::hiddenRepresentation,
             py::arg("input_sample"),
            R"pbdoc(  
-    Provide embedding representation from penultimate layer.
+    Provide embedding representation from the penultimate layer.
 
     Args:
         input_sample (Dict[str, str]): The input sample as a dictionary 
