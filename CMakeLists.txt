@@ -191,7 +191,11 @@ include_directories(deps/eigen)
 # Source dependencies
 add_subdirectory(deps/pybind11)
 add_subdirectory(deps/googletest)
+
 add_subdirectory(deps/spdlog)
+
+# We don't need this, since this breaks cereal
+set(SKIP_PERFORMANCE_COMPARISON ON)
 add_subdirectory(deps/cereal)
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
