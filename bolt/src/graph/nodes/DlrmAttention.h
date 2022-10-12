@@ -241,6 +241,11 @@ class DlrmAttentionNode final
     // NOOP since the DlrmAttention node doesn't have any paramters
   }
 
+  bool trainable(bool flag) final {
+    (void)flag;
+    return false;
+  }
+
  private:
   template <bool FC_OUTPUT_DENSE>
   static float fcOutputEmbeddingDotProduct(const BoltVector& fc_output,

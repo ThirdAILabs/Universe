@@ -71,6 +71,12 @@ class Input final : public Node {
     // NOOP since the Input node doesn't have any paramters
   }
 
+  bool trainable(bool flag) final {
+    // No-op, since we don't have update anyway.
+    (void)flag;
+    return false;
+  }
+
  private:
   void compileImpl() final {
     if (_expected_input_dim == 0) {

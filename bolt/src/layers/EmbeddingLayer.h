@@ -54,6 +54,10 @@ class EmbeddingLayer {
     return _optimizer->gradients;
   }
 
+  void setTrainable(bool flag) { _trainable = flag; }
+
+  bool getTrainable() const { return _trainable; }
+
   EmbeddingLayer(const EmbeddingLayer&) = delete;
   EmbeddingLayer(EmbeddingLayer&&) = delete;
   EmbeddingLayer& operator=(const EmbeddingLayer&) = delete;
@@ -139,6 +143,9 @@ class EmbeddingLayer {
   // input. This is used for backpropagation and for update paramters to know
   // what parts of the embedding block were used.
   std::vector<std::vector<uint64_t>> _embedding_block_offsets;
+
+  // Marking trainable or not.
+  bool _trainable;
 };
 
 }  // namespace thirdai::bolt
