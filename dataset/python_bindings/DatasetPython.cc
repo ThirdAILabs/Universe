@@ -242,52 +242,6 @@ void createDatasetSubmodule(py::module_& module) {
            "features.");
 #endif
 
-  py::class_<PyBlockBatchProcessor>(
-      internal_dataset_submodule, "BatchProcessor",
-      "Encodes input samples – each represented by a sequence of strings – "
-      "as input and target BoltVectors according to the given blocks. "
-      "It processes these sequences in batches.\n\n"
-      "This is not consumer-facing.")
-      .def(
-          py::init<std::vector<std::shared_ptr<Block>>,
-                   std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
-          py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::arg("est_num_elems") = 0,
-          "Constructor\n\n"
-          "Arguments:\n"
-          " * input_blocks: List of Blocks - Blocks that encode input samples "
-          "as input vectors.\n"
-          " * target_blocks: List of Blocks - Blocks that encode input samples "
-          "as target vectors.\n"
-          " * output_batch_size: Int (positive) - Size of batches in the "
-          "produced dataset.\n"
-          " * est_num_elems: Int (positive) - Estimated number of samples. "
-          "This "
-          "speeds up the loading process by allowing the data loader to "
-          "preallocate memory. If the actual number of samples turns out to be "
-          "greater than the estimate, then the loader will automatically "
-          "allocate more memory as needed.")
-      .def("process_batch", &PyBlockBatchProcessor::processBatchPython,
-           py::arg("row_batch"),
-           "Consumes a batch of input samples and encodes them as vectors.\n\n"
-           "Arguments:\n"
-           " * row_batch: List of lists of strings - We expect to read tabular "
-           "data "
-           "where each row is a sample, and each sample has many columns. "
-           "row_batch represents a batch of such samples.")
-      .def("export_in_memory_dataset",
-           &PyBlockBatchProcessor::exportInMemoryDataset,
-           py::arg("shuffle") = false, py::arg("shuffle_seed") = std::rand(),
-           "Produces a tuple of BoltDatasets for input and target "
-           "vectors processed so far. This method can optionally produce a "
-           "shuffled dataset.\n\n"
-           "Arguments:\n"
-           " * shuffle: Boolean (Optional) - The dataset will be shuffled if "
-           "True.\n"
-           " * shuffle_seed: Int (Optional) - The seed for the RNG for "
-           "shuffling the "
-           "dataset.");
-
   py::class_<DataLoader, PyDataLoader, std::shared_ptr<DataLoader>>(
       dataset_submodule, "DataLoader")
       .def(py::init<uint32_t>(), py::arg("target_batch_size"))
