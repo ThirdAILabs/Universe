@@ -188,13 +188,6 @@ class ModelPipeline {
 
   DatasetLoaderFactoryPtr datasetLoaderFactory() { return _dataset_factory; }
 
-  DatasetLoaderPtr createTrainingDatasetLoader(dataset::DataLoaderPtr loader,
-                                               uint32_t max_in_memory_batches) {
-    return _dataset_factory->getLabeledDatasetLoader(
-        std::move(loader), /* training = */ true,
-        /* max_in_memory_batches = */ max_in_memory_batches);
-  }
-
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.

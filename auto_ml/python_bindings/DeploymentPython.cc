@@ -222,8 +222,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
            py::arg("filename"))
-      .def("create_dataset_loader", &ModelPipeline::createTrainingDatasetLoader,
-           py::arg("data_source"), py::arg("max_in_memory_batches"))
 #ifdef THIRDAI_EXPOSE_ALL
       .def_property("model", &ModelPipeline::get_model,
                     &ModelPipeline::set_model)

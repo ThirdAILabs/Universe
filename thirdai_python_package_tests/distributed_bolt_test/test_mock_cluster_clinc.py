@@ -27,7 +27,7 @@ from cluster_utils import (
 from text_classifier_utils import *
 from thirdai import bolt, dataset, deployment
 
-pytestmark = [pytest.mark.integration, pytest.mark.release]
+pytestmark = [pytest.mark.distributed]
 
 
 @pytest.fixture(scope="module")
