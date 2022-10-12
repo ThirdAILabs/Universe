@@ -1,4 +1,6 @@
 import copy
+import os
+import tempfile
 import textwrap
 import time
 from typing import Dict, List, Tuple, Union
@@ -29,6 +31,7 @@ class RayTrainingClusterConfig:
         cluster_address: str = "auto",
         runtime_env: Dict = {},
         ignore_reinit_error=False,
+        log_dir: str = os.path.join(tempfile.gettempdir(), "thirdai"),
     ):
         """
         This constructor connects to an already existing Ray cluster,
@@ -37,8 +40,13 @@ class RayTrainingClusterConfig:
         a number of useful fields, including num_workers, communication_type,
         logging, primary_worker_config, and replica_worker_configs.
         """
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
 
-        self.logging = init_logging("distributed_fully_connected.log")
+        distributed_training_log_file = os.path.join(log_dir, "distributed_bolt.log")
+
+        self.logging = init_logging(distributed_training_log_file)
+        self.log_dir = log_dir
         self.logging.info("Building Ray training cluster")
         self.communication_type = communication_type
 
@@ -157,6 +165,7 @@ class DistributedDataParallel:
             train_source=train_sources[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
+            log_dir=cluster_config.log_dir,
         )
 
         self.replica_workers = []
@@ -172,6 +181,7 @@ class DistributedDataParallel:
                     id=worker_id + 1,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
+                    log_dir=cluster_config.log_dir,
                 )
             )
 

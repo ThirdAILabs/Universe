@@ -1,9 +1,24 @@
+import os
 import textwrap
+from functools import wraps
+from time import time
 
 import thirdai._distributed_bolt.backend.communication as comm
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, logging
 
 from ..utils import get_gradients
+
+
+def timed(f):
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        logging.info("func %s | time %d ms" % (f.__name__, elapsed * 1000))
+        return result
+
+    return wrapper
 
 
 class Worker:
@@ -16,6 +31,7 @@ class Worker:
     Bolt native code.
     """
 
+    @timed
     def __init__(
         self,
         num_workers: int,
@@ -25,6 +41,7 @@ class Worker:
         primary_worker,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
+        log_dir: str,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
@@ -32,10 +49,18 @@ class Worker:
         """
 
         self.train_source = train_source
+        logging.setup(
+            log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
+        )
+
+        start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
             train_config=train_config,
         )
+        end = time()
+
+        logging.info(f"func initializing_model | time {(end - start)*1000} ms")
 
         self.num_workers = num_workers
         self.id = id
@@ -80,6 +105,7 @@ class Worker:
         """
         self.comm.set_friend(friend)
 
+    @timed
     def process_ring(
         self,
         update_id: int,
@@ -98,6 +124,7 @@ class Worker:
         """
         self.comm.process_ring(update_id, reduce, avg_gradients)
 
+    @timed
     def receive_array_partitions(self, update_id: int):
         """
         This function returns the array partition for the worker is is called.
@@ -135,6 +162,7 @@ class Worker:
         self.train_source.restart()
         self._try_load_new_datasets_into_model()
 
+    @timed
     def get_calculated_gradients(self):
         """
         This function is called only when the mode of communication
@@ -150,6 +178,7 @@ class Worker:
         """
         return get_gradients(self.model)
 
+    @timed
     def receive_gradients(self, averaged_gradients_ref=None):
         """
         This function is called only when the communication pattern choosen
@@ -168,6 +197,7 @@ class Worker:
         else:
             self.comm.receive_gradients(averaged_gradients_ref)
 
+    @timed
     def update_parameters(self):
         """
         This function calls updateParameter function inside bolt, which
@@ -181,12 +211,14 @@ class Worker:
         """
         return self.model.num_batches()
 
+    @timed
     def finish_training(self):
         self.model.finish_training()
 
     def model(self):
         return self.model.model
 
+    @timed
     def _try_load_new_datasets_into_model(self) -> bool:
         """
         Returns whether the load was successful (if the generator stream is over

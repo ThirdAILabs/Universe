@@ -61,3 +61,5 @@ def check_models_are_same_on_first_two_nodes(distributed_model):
     for layer_1, layer_2 in zip(nodes_1, nodes_2):
         if hasattr(layer_1, "weights"):
             assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
+        if hasattr(layer_1, "biases"):
+            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()

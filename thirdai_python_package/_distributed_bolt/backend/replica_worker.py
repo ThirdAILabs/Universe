@@ -31,6 +31,7 @@ class ReplicaWorker(Worker):
         id: int,
         primary_worker,
         communication_type,
+        log_dir: str,
     ):
         """
         Calls the constructor for Worker
@@ -56,4 +57,5 @@ class ReplicaWorker(Worker):
             primary_worker=primary_worker,
             train_config=train_config,
             communication_type=communication_type,
+            log_dir=log_dir,
         )

@@ -21,7 +21,11 @@ def get_mnist_model():
 if __name__ == "__main__":
     model = get_mnist_model()
     dataset_paths = ["/share/pratik/mnist_a", "/share/pratik/mnist_b"]
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
+    train_config = (
+        bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
+        .with_metrics(["mean_squared_error"])
+        .with_log_loss_frequency(32)
+    )
     cluster_config = db.RayTrainingClusterConfig(
         num_workers=2, requested_cpus_per_node=1, communication_type="linear"
     )
@@ -35,6 +39,7 @@ if __name__ == "__main__":
     wrapped_model.train()
 
     model = wrapped_model.get_model()
+
     predict_config = (
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
