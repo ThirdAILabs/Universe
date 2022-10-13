@@ -194,19 +194,10 @@ class DotProductNode final
 
     float total = 0.0;
 
-    uint32_t a_index = 0;
-    uint32_t b_index = 0;
-    while (a_index < a.len && b_index < b.len) {
-      if (a.active_neurons[a_index] == b.active_neurons[b_index]) {
-        total += a.activations[a_index] * b.activations[b_index];
-        a_index++;
-        b_index++;
-      } else if (a.active_neurons[a_index] < b.active_neurons[b_index]) {
-        a_index++;
-      } else {
-        b_index++;
-      }
-    }
+    applyFunctionToOverlappingNeurons(
+        a, b, [&](uint32_t a_index, uint32_t b_index) {
+          total += a.activations[a_index] * b.activations[b_index];
+        });
 
     return total;
   }
@@ -215,12 +206,23 @@ class DotProductNode final
                                              BoltVector& b) {
     assert(!a.isDense() && !b.isDense());
 
+    applyFunctionToOverlappingNeurons(
+        a, b, [&](uint32_t a_index, uint32_t b_index) {
+          a.gradients[a_index] += grad * b.activations[b_index];
+          b.gradients[b_index] += grad * a.activations[a_index];
+        });
+  }
+
+  static std::vector<uint32_t> applyFunctionToOverlappingNeurons(
+      BoltVector& a, BoltVector& b,
+      const std::function<void(uint32_t, uint32_t)>& func) {
+    std::vector<uint32_t> overlapping_neurons;
+
     uint32_t a_index = 0;
     uint32_t b_index = 0;
     while (a_index < a.len && b_index < b.len) {
       if (a.active_neurons[a_index] == b.active_neurons[b_index]) {
-        a.gradients[a_index] += grad * b.activations[b_index];
-        b.gradients[b_index] += grad * a.activations[a_index];
+        func(a_index, b_index);
         a_index++;
         b_index++;
       } else if (a.active_neurons[a_index] < b.active_neurons[b_index]) {
@@ -229,6 +231,8 @@ class DotProductNode final
         b_index++;
       }
     }
+
+    return overlapping_neurons;
   }
 
   NodePtr _lhs;
