@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/memory.hpp>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
-// #include <hashing/src/HashFunction.h>
-// #include <hashing/src/SRP.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -13,7 +14,7 @@
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exceptions/src/Exceptions.h>
 #include <indexer/src/Flash.h>
-#include <spdlog/fmt/bundled/core.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -31,7 +32,35 @@ class FlashIndexConfig {
         _range(0),
         _hashes_per_table(0) {}
 
-  void setParametersFromConfig() {}
+  void saveFlashIndexConfig(const std::string& config_file_name) {
+    std::stringstream output;
+    cereal::PortableBinaryInputArchive output_archive(output);
+
+    output_archive(*this);
+
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(config_file_name, std::ios::binary);
+
+    std::string string_representation = output.str();
+    filestream.write(string_representation.data(),
+                     string_representation.size());
+  }
+
+  static std::shared_ptr<FlashIndexConfig> loadAndSetParametersFromConfig(
+      const std::string& config_file_name) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(config_file_name, std::ios::binary);
+
+    std::stringstream buffer;
+    buffer << filestream.rdbuf();
+
+    cereal::PortableBinaryInputArchive input_archive(buffer);
+    std::shared_ptr<FlashIndexConfig> deserialized_config(
+        new FlashIndexConfig());
+    input_archive(*deserialized_config);
+
+    return deserialized_config;
+  }
 
   std::shared_ptr<hashing::HashFunction> getHashFunction() const {
     if (_hash_function == "DensiFiedMinHash") {
@@ -54,7 +83,15 @@ class FlashIndexConfig {
     throw exceptions::NotImplemented("Unsupported Hash Function");
   }
 
-  static void save(const std::string& file_name) { (void)file_name; }
+ private:
+  // Private constructor for cereal
+  FlashIndexConfig() {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(_config_file_path);
+  }
 
   std::optional<std::string> _config_file_path;
   std::string _hash_function;
@@ -83,7 +120,8 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
   template <typename LABEL_T>
   std::shared_ptr<Indexer> buildFlashIndex(const std::string& file_name) {
     auto data = loadDataInMemory(file_name);
-    _flash_index = std::make_unique<Flash<LABEL_T>>(*_flash_index_config.getHashFunction());
+    _flash_index = std::make_unique<Flash<LABEL_T>>(
+        *_flash_index_config.getHashFunction());
     _flash_index->addDataset(*data);
 
     return shared_from_this();

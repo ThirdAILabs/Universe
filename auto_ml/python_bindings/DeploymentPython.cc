@@ -207,8 +207,11 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 
   py::class_<deployment::FlashIndexConfig, deployment::FlashIndexConfigPtr>(
       submodule, "FlashIndexConfig")
-      .def(py::init<std::string>(), py::arg("file_name"))
-      .def_static("save", &FlashIndexConfig::save, py::arg("file_name"));
+      .def(py::init(
+               &deployment::FlashIndexConfig::loadAndSetParametersFromConfig),
+           py::arg("config_file_name"))
+      .def("save", &deployment::FlashIndexConfig::saveFlashIndexConfig,
+           py::arg("file_name"));
 
   py::class_<deployment::Indexer, deployment::IndexerPtr>(submodule, "Indexer")
       .def(py::init<std::string>(), py::arg("config_file_path"),
