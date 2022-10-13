@@ -114,8 +114,6 @@ class FullyConnectedNode final
     oarchive(*_layer);
   }
 
-  void enableDistributedTraining() { _layer->enableDistributedTraining(); }
-
   void loadParameters(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
@@ -224,6 +222,10 @@ class FullyConnectedNode final
     } else {
       _layer->enableSparseSparseOptimization();
     }
+  }
+
+  void enableDistributedTraining() final {
+    _layer->enableDistributedTraining();
   }
 
  private:

@@ -78,6 +78,10 @@ class LayerNormNode final : public Node,
 
   void initOptimizer() final {}
 
+  void enableDistributedTraining() final {
+    // NOOP since the LayerNorm node doesn't have any paramters
+  }
+
  private:
   void compileImpl() final { _compiled = true; }
 

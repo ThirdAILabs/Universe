@@ -38,6 +38,29 @@ class DateBlock : public Block {
     return _col + 1;
   };
 
+  Explanation explainIndex(
+      uint32_t index_within_block,
+      const std::vector<std::string_view>& input_row) final {
+    (void)input_row;
+    std::string reason;
+    if (index_within_block >= featureDim()) {
+      throw std::invalid_argument("index is out of bounds for date block.");
+    }
+    if (index_within_block < day_of_week_dim) {
+      reason = "day_of_week";
+    } else if (index_within_block < (day_of_week_dim + month_of_year_dim)) {
+      reason = "month_of_year";
+    } else if (index_within_block <
+               (day_of_week_dim + month_of_year_dim + week_of_month_dim)) {
+      reason = "week_of_month";
+    } else {
+      reason = "week_of_year";
+    }
+    return {_col, reason};
+  }
+
+  static auto make(uint32_t col) { return std::make_shared<DateBlock>(col); }
+
  protected:
   static constexpr uint32_t day_of_week_dim = 7;
   static constexpr uint32_t month_of_year_dim = 12;

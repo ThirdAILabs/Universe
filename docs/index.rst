@@ -5,31 +5,22 @@
 .. whenever you add a new module or submodule to the thirdai python package.
 .. Thanks!
 
-Welcome to thirdai's documentation!
-===================================
+thirdai
+=======
 
-This is the *complete* API documentation for the ThirdAI python package. 
 To get access to our package, refer to `thirdai.com
-<https://www.thirdai.com/>`_. Once you have access, you can simply run
-``import thirdai`` in a python notebook or script! The following packages
-contain complete documentation for each of the submodules within thirdai.
+<https://www.thirdai.com/>`_. 
 
 .. toctree::
    :maxdepth: 2
 
-   thirdaibase
-
-   thirdaibolt
-   thirdaiboltgraph
-   thirdaiboltgraphcallbacks
-
-   thirdaidataset
-   thirdaidatasetblocks
-
-   thirdaidistributed
+   installation
+   getting_started
    distributed_tutorial
-   
-   thirdaihashing
-   
-   thirdaisearch
+   deployment_config_example
+
+   python_api/index
+
+
+
 

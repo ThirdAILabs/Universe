@@ -2,6 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <utils/StringManipulation.h>
 #include <algorithm>
 #include <memory>
 #include <stdexcept>
@@ -222,10 +223,7 @@ class MarginBCE final : public LossFunction {
 };
 
 static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
-  std::string lower_name;
-  for (char c : name) {
-    lower_name.push_back(std::tolower(c));
-  }
+  std::string lower_name = utils::lower(name);
   if (lower_name == "categoricalcrossentropyloss") {
     return CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
   }

@@ -6,6 +6,7 @@
 #include "nodes/FullyConnected.h"
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
@@ -64,9 +65,57 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
         node_layers.end());
   }
 
+#if THIRDAI_EXPOSE_ALL
   std::string model_summary =
       summarize(/* print = */ print_when_done, /* detailed = */ false);
   logging::info(model_summary);
+#else
+  (void)print_when_done;
+#endif
+}
+
+/*
+  Provides support for logging, validation, and model saving
+  to distributed training.
+*/
+void BoltGraph::log_validate_and_save(uint32_t batch_size,
+                                      const TrainConfig& train_config,
+                                      MetricAggregator& train_metrics) {
+  if (train_config.logLossFrequency() != 0 &&
+      _updates % train_config.logLossFrequency() == 0) {
+    logging::info("train | epoch {} | updates {} | {}", (_epoch), _updates,
+                  train_metrics.summary());
+  }
+
+  const std::optional<ValidationContext>& validation =
+      train_config.getValidationContext();
+  if (validation && validation->frequency() != 0 &&
+      (_updates % validation->frequency() == 0)) {
+    // TODO(jerin-thirdai): The implications of doing
+    // cleanupAfterBatchProcessing and prepareToProcessBatches is not
+    // fully understood here. These two functions should not exist, but
+    // not doing this leads to assertion failure on node-state or a
+    // segfault on something set as a nullptr after
+    // cleanupAfterBatchProcessing if prepareToProcessBatches is not
+    // applied.
+    //
+    // Currently unsure of the implications of adding validationMetrics
+    // from mid-batch as well, these will still be logged, but is not
+    // added to the callback export.
+
+    cleanupAfterBatchProcessing();
+    predict(validation->data(), validation->labels(), validation->config());
+
+    prepareToProcessBatches(batch_size,
+                            /* use_sparsity=*/true);
+  }
+
+  const std::optional<SaveContext>& save_context = train_config.saveContext();
+  if (save_context && save_context->frequency() != 0 &&
+      _updates % save_context->frequency() == 0) {
+    const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
+    save(checkpoint_path);
+  }
 }
 
 MetricData BoltGraph::train(
@@ -80,15 +129,35 @@ MetricData BoltGraph::train(
   TrainState train_state(train_config, dataset_context.batchSize(),
                          dataset_context.len());
 
-  std::optional<ValidationContext> validation =
-      train_config.getValidationContext();
-
   MetricAggregator& train_metrics = train_state.getTrainMetricAggregator();
 
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
 
-  for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+  /*
+   * There are a few cases of epoch calculation to handle here, which is not
+   * obvious reading the code here locally. We want _epoch to be the single
+   * source of truth for all cases.
+   *
+   * 1. Fresh training. The constructor would have set _epoch to 0.
+   * 2. There is currently the option for the client to incrementally train,
+   *    similar to an undocumented behaviour in Keras.
+   *
+   *    https://github.com/keras-team/keras/issues/4446
+   *
+   *    We do not want this behaviour broken to avoid surprises.
+   *
+   * 3. TODO(jerin): We have loaded a checkpoint and want to resume training. We
+   *    have epoch loaded from cereal archive here.
+   */
+
+  // Treat the supplied epochs as additional epochs. Use this to generate the
+  // total num_epochs. This way _epoch indicates how many passes have been made
+  // over the dataset.
+  uint32_t num_epochs = _epoch + train_config.epochs();
+
+  for (/*_epoch = _epoch*/; _epoch < num_epochs; _epoch++) {
+    train_state.epoch = _epoch;
     callbacks.onEpochBegin(*this, train_state);
 
     /*
@@ -108,13 +177,14 @@ MetricData BoltGraph::train(
     try {
       std::optional<ProgressBar> bar = makeOptionalProgressBar(
           /*make=*/train_config.verbose(),
-          /*description=*/fmt::format("train epoch {}", _epoch_count),
+          /*description=*/fmt::format("train epoch {}", _epoch),
           /*max_steps=*/dataset_context.numBatches());
 
       auto train_start = std::chrono::high_resolution_clock::now();
 
       for (uint64_t batch_idx = 0; batch_idx < dataset_context.numBatches();
            batch_idx++) {
+        train_state.batch_cnt = batch_idx;
         callbacks.onBatchBegin(*this, train_state);
 
         dataset_context.setInputs(batch_idx, _inputs);
@@ -129,8 +199,8 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        logging::info("epoch {} | batch {} | {}", (_epoch_count), batch_idx,
-                      train_metrics.summary());
+        log_validate_and_save(dataset_context.batchSize(), train_config,
+                              train_metrics);
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -141,9 +211,10 @@ MetricData BoltGraph::train(
                                .count();
 
       std::string logline = fmt::format(
-          "train | epoch {} | complete |  batches {} | time {}s | {}",
-          _epoch_count, dataset_context.numBatches(), epoch_time,
-          train_metrics.summary());
+          "train | epoch {} | updates {} | {} | batches {} | time {}s | "
+          "complete",
+          _epoch, _updates, train_metrics.summary(),
+          dataset_context.numBatches(), epoch_time);
 
       logging::info(logline);
 
@@ -151,7 +222,6 @@ MetricData BoltGraph::train(
         bar->close(logline);
       }
 
-      _epoch_count++;
       train_metrics.logAndReset();
 
       train_state.epoch_times.push_back(static_cast<double>(epoch_time));
@@ -162,14 +232,18 @@ MetricData BoltGraph::train(
 
     cleanupAfterBatchProcessing();
 
-    // TODO(david): we should add a some type of "validate_every" parameter to
-    // the validation construct so we are not restricted to validating every
-    // epoch. this also lets us validate after N updates per say. Requires the
-    // raii cleanup change mentioned above for validation after a batch
+    const std::optional<ValidationContext>& validation =
+        train_config.getValidationContext();
     if (validation) {
       auto [val_metrics, _] = predict(validation->data(), validation->labels(),
                                       validation->config());
       train_state.updateValidationMetrics(val_metrics);
+    }
+
+    const std::optional<SaveContext>& save_context = train_config.saveContext();
+    if (save_context) {
+      const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
+      save(checkpoint_path);
     }
 
     callbacks.onEpochEnd(*this, train_state);
@@ -214,8 +288,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
 void BoltGraph::updateParametersAndSampling(
     float learning_rate, uint32_t rebuild_hash_tables_batch,
     uint32_t reconstruct_hash_functions_batch) {
-  ++_batch_cnt;
-  updateParameters(learning_rate, _batch_cnt);
+  ++_updates;
+  updateParameters(learning_rate, _updates);
   updateSampling(
       /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
       /* reconstruct_hash_functions_batch= */
@@ -259,6 +333,16 @@ BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
   return label_vector;
 }
 
+/**
+ * @brief For given input get the input gradients when backpropagated the loss
+ * with respect to the mentioned label by user.
+ *
+ * @returns
+ * 1. Indices : the indices corresponding to which we are returning gradients in
+ * the input vector(we only return indices if input is sparse).
+ * 2. gradients ratios: (gradient_value)/(input_value) , this is for
+ * normalizing the gradients.
+ */
 std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
 BoltGraph::getInputGradientSingle(
     std::vector<BoltVector>&& input_data,
@@ -326,8 +410,12 @@ BoltGraph::getInputGradientSingle(
     input_vector.gradients = nullptr;
     cleanupAfterBatchProcessing();
 
+    // When activations are zero(in some rare cases) normalising will blow up
+    // the value so avoiding it.
     for (uint32_t i = 0; i < input_vector.len; i++) {
-      normalised_vec_grad[i] /= input_vector.activations[i];
+      if (input_vector.activations[i] != 0) {
+        normalised_vec_grad[i] /= input_vector.activations[i];
+      }
     }
 
     if (input_vector_indices.empty()) {
@@ -409,9 +497,10 @@ InferenceResult BoltGraph::predict(
                           test_end - test_start)
                           .count();
 
-  std::string logline =
-      fmt::format("test | complete |  batches {} | time {}ms | {}",
-                  predict_context.numBatches(), test_time, metrics.summary());
+  std::string logline = fmt::format(
+      "predict | epoch {} | updates {} | {} | batches {} | time {}ms", _epoch,
+      _updates, metrics.summary(), predict_context.numBatches(), test_time);
+
   logging::info(logline);
   if (bar) {
     bar->close(logline);
@@ -562,13 +651,7 @@ void BoltGraph::resetOutputGradients(uint32_t vec_index) {
 
 void BoltGraph::enableDistributedTraining() {
   for (NodePtr& node : _nodes) {
-    FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
-    if (fc_node != nullptr) {
-      fc_node->enableDistributedTraining();
-    } else {
-      throw thirdai::exceptions::NotImplemented(
-          "Only Implemented for Fully Connected Node");
-    }
+    node->enableDistributedTraining();
   }
 }
 
@@ -682,6 +765,11 @@ void BoltGraph::verifyCanGetInputGradientSingle(
         "The sparse output dimension should be atleast 2 to call "
         "getSecondHighestActivationId.");
   }
+
+  for (auto& node : _nodes) {
+    node->initOptimizer();
+  }
+
   verifyInputForGraph(single_input_gradients_context);
 }
 
@@ -753,25 +841,33 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-          _epoch_count, _batch_cnt);
+          _epoch, _updates);
 }
 
-void BoltGraph::save(const std::string& filename) {
+void BoltGraph::save(const std::string& filename) const {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(filestream);
+}
+
+void BoltGraph::save_stream(std::ostream& output_stream) const {
   if (!graphCompiled()) {
     throw exceptions::NodeStateMachineError(
         "Cannot save graph that is not compiled.");
   }
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  cereal::BinaryOutputArchive oarchive(filestream);
+  cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
 
-std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {
+BoltGraphPtr BoltGraph::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  cereal::BinaryInputArchive iarchive(filestream);
-  std::unique_ptr<BoltGraph> deserialize_into(new BoltGraph());
+  return load_stream(filestream);
+}
+
+BoltGraphPtr BoltGraph::load_stream(std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<BoltGraph> deserialize_into(new BoltGraph());
   iarchive(*deserialize_into);
   return deserialize_into;
 }

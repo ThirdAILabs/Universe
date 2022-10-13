@@ -4,6 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include "LayerUtils.h"
 #include "SamplingConfig.h"
+#include <utils/StringManipulation.h>
 #include <cmath>
 #include <exception>
 #include <iostream>
@@ -232,10 +233,7 @@ class EmbeddingLayerConfig {
 
   static EmbeddingReductionType getReductionType(
       const std::string& reduction_name) {
-    std::string lower_name;
-    for (char c : reduction_name) {
-      lower_name.push_back(std::tolower(c));
-    }
+    std::string lower_name = utils::lower(reduction_name);
     if (lower_name == "sum") {
       return EmbeddingReductionType::SUM;
     }

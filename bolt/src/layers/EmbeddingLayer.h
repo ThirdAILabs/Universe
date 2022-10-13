@@ -48,6 +48,12 @@ class EmbeddingLayer {
     }
   }
 
+  std::vector<float>& getRawEmbeddingBlock() { return _embedding_block; }
+
+  std::vector<float>& getRawEmbeddingBlockGradient() {
+    return _optimizer->gradients;
+  }
+
   EmbeddingLayer(const EmbeddingLayer&) = delete;
   EmbeddingLayer(EmbeddingLayer&&) = delete;
   EmbeddingLayer& operator=(const EmbeddingLayer&) = delete;

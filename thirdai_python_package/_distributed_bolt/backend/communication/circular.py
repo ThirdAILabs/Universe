@@ -1,84 +1,180 @@
+from typing import Optional
+
 import ray
-import time
+
+from ...utils import get_gradients, set_gradients
 
 
-class CircularCommunication:
-    """This class implements function for circular communication"""
+class Circular:
+    def __init__(self, model, id, primary_worker, num_workers):
 
-    def __init__(self, workers, primary_worker, logging):
-        """Initializes the circular all reduce algorithm
-
-        Args:
-            workers (List[Ray Actor]): List of all the workers which includes the primary worker
-            primary_worker (Ray Actor): Primary Actor
-            logging (Logging): Logs the Training using circular communication pattern
-        """
-        self.workers = workers
+        self.model = model
+        self.id = id
         self.primary_worker = primary_worker
-        self.logging = logging
-        self.logging.info("Circular communication pattern is choosen")
-        for i in range(len(self.workers)):
-            ray.get(
-                self.workers[i].set_friend.remote(
-                    self.workers[(i - 1) % (len(self.workers))]
-                )
-            )
-        self.bolt_computation_time = 0
-        self.averaging_and_communication_time = 0
+        self.num_workers = num_workers
 
-    def calculate_gradients(self, batch_id):
-        """Calls calculate Gradient function for circular communication
+        self.friend = None  # this variable is set up in set_friend
+        self.partitions = []
+        self.friend_gradients = []
+        self.gradients = []
 
-        Args:
-            batch_id (Integer): Batch Id for this particular training
+    def set_friend(self, friend):
         """
-        start_calculating_gradients_time = time.time()
-        ray.get(
-            [
-                worker.calculate_gradients_circular.remote(batch_id)
-                for worker in self.workers
-            ]
-        )
-        self.bolt_computation_time += time.time() - start_calculating_gradients_time
+        This function assigns each of the worker their friend to which
+        they will be communicating their gradients. Look at this link:
+        https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/
 
-    def communicate(self):
-        """This functions calls primary worker to complete the circular communication
-        and then asks all the worker to get the updated gradients
+        :param friend: storing the friend for this worker
+        :type friend: ray.actor
         """
-        start_communication_time = time.time()
-        ray.get(self.primary_worker.subwork_circular_communication.remote())
-        ray.get(
-            [
-                worker.receive_gradients_circular_communication.remote()
-                for worker in self.workers
-            ]
-        )
-        self.averaging_and_communication_time += time.time() - start_communication_time
+        self.friend = friend
 
-    def update_parameters(self, learning_rate):
-        """Calls primary worker for updating parameters across all nodes
+    def calculate_gradient_partitions(self):
+        for gradient in self.gradients:
+            partition_length = int(len(gradient) / self.num_workers)
+            remaining_length = len(gradient) % self.num_workers
+            partition_start_end_list = []
+            current_index = 0
+            for i in range(self.num_workers):
+                if i < remaining_length:
+                    partition_start_end_list.append(
+                        (current_index, current_index + partition_length + 1)
+                    )
+                    current_index += partition_length + 1
+                else:
+                    partition_start_end_list.append(
+                        (current_index, current_index + partition_length)
+                    )
+                    current_index += partition_length
 
-        Args:
-            learning_rate (float): Learning rate for training
+            self.partitions.append(partition_start_end_list)
+
+    def compute_and_store_batch_gradients(self, batch_no: int):
         """
-        start_update_parameter_time = time.time()
-        ray.get(self.primary_worker.subwork_update_parameters.remote(learning_rate))
-        self.bolt_computation_time += time.time() - start_update_parameter_time
+        This functions calls the API 'compute_and_store_batch_gradients',
+        which calculates the gradients for the network managed by
+        this particular worker. The compute_and_store_batch_gradients trains
+        the network and calculates the gradient for the particular
+        training batch with batch no. batch_no and with loss function
+        specified in the config.
 
-    def log_training(self, batch_no, epoch):
-        """Logs the training after every batch
+        This function also defines the partition size which defines the
+        size of block of gradients which are communicated between a worker
+        and its friend.
 
-        Args:
-            batch_no (Integer): Batch index for current training
-            epoch (Integer): Current training epoch
+        :param batch_no: training batch to calculate gradients on
+        :type batch_no: int
         """
-        self.logging.info(
-            "Epoch No: "
-            + str(epoch)
-            + ", Batch No: "
-            + str(batch_no)
-            + ", Bolt Computation Time: "
-            + str(self.bolt_computation_time)
-            + ", Averaging and Communcation Time: "
-            + str(self.averaging_and_communication_time)
-        )
+        self.model.compute_and_store_batch_gradients(batch_no)
+
+        self.partitions = []
+        self.gradients = get_gradients(self.model)
+
+        self.calculate_gradient_partitions()
+
+    def receive_gradients(self):
+        """
+        This function is called by the primary_worker to set the updated
+        gradients to the network (after the circular communication has
+        finished).
+
+        :return: returns True, after functions complete
+        :rtype: bool
+        """
+        set_gradients(self.model, self.gradients)
+
+    def update_partitions(
+        self,
+        partition_id,
+        reduce,
+        avg_gradients,
+    ):
+        """
+        Update the partitions with the partitioned array received from its friend
+
+        :param partition_id: Partition index for partition to be updated
+        :type partition_id: int
+        :param reduce: This bool determines whether we need
+                        to reduce or gather, True: reduce, False: Gather. Defaults to True.
+        :type reduce: bool, optional
+        :param avg_gradients: Defaults to False.
+        :type avg_gradients: bool, optional
+        """
+        for i in range(len(self.friend_gradients)):
+
+            # Getting the indices of the partition to work on
+            start_row_index, end_row_index = self.partitions[i][partition_id]
+
+            if start_row_index < end_row_index:
+
+                # arrays should be numpy arrays for the following operation, otherwise it will just get appened to the list
+                if reduce:
+                    self.gradients[i][
+                        start_row_index:end_row_index
+                    ] += self.friend_gradients[i]
+                    if avg_gradients:
+                        self.gradients[i][
+                            start_row_index:end_row_index
+                        ] /= self.num_workers
+                else:
+                    self.gradients[i][
+                        start_row_index:end_row_index
+                    ] = self.friend_gradients[i]
+
+    def process_ring(
+        self,
+        update_id: int,
+        reduce: bool = True,
+        avg_gradients: bool = False,
+    ):
+        """
+        The function first calculates the partition index range on which it will
+        work, then get the gradients on that range from its friend worker and sums
+        it to the partition the partition the current worker.
+
+        Here each of the node communicates the partitioned gradients with
+        their friend nodes, and those friend node communicate with their friends
+        and the communication there by happens in a circle.
+
+        :param update_id: This id is use to calculate the partition to work on.
+        :type update_id: int
+        :param reduce: This bool determines whether we need,
+                    to reduce or gather, True: reduce, False: Gather. defaults to True
+        :type reduce: bool
+        :param avg_gradients: _description_, defaults to False
+        :type avg_gradients: bool
+        """
+
+        partition_id = (update_id + self.id - 1) % self.num_workers
+
+        friend_gradients_ref = self.friend.receive_array_partitions.remote(update_id)
+        self.friend_gradients = ray.get(friend_gradients_ref)
+        self.update_partitions(partition_id, reduce, avg_gradients)
+        del friend_gradients_ref
+
+    def receive_array_partitions(self, update_id: int):
+        """
+        This function returns the array partition to the worker it is called by.
+
+        :param update_id: This id is use to calculate the partition to work on.
+        :type update_id: int
+        :return: gradients subarray
+        :rtype: numpy.ndarray
+        """
+        partition_id = (update_id + self.id) % self.num_workers
+        our_partitions = [partition[partition_id] for partition in self.partitions]
+
+        gradient_subarrays = []
+        for (start_row_index, end_row_index), gradient in zip(
+            our_partitions, self.gradients
+        ):
+            if start_row_index < end_row_index:
+                gradient_subarrays.append(gradient[start_row_index:end_row_index])
+            else:
+                # This won't happen in most use cases since the number
+                # of parameters in the array would have to be less than the
+                # number of nodes (assuming even partitions), but we include
+                # it to handle the edge case gracefully.
+                gradient_subarrays.append(None)
+
+        return gradient_subarrays

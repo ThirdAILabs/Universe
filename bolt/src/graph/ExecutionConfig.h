@@ -1,10 +1,15 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Datasets.h>
 #include <limits>
+#include <memory>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -65,14 +70,28 @@ class PredictConfig {
   std::optional<std::function<void(const BoltVector&)>> _output_callback;
 };
 
+class SaveContext {
+ public:
+  SaveContext(std::string prefix, uint32_t frequency)
+      : _prefix(std::move(prefix)), _frequency(frequency) {}
+  const std::string& prefix() const { return _prefix; }
+  uint32_t frequency() const { return _frequency; }
+
+ private:
+  std::string _prefix;
+  uint32_t _frequency;
+};
+
 class ValidationContext {
  public:
   explicit ValidationContext(
       std::vector<dataset::BoltDatasetPtr> validation_data,
-      dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config)
+      dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config,
+      uint32_t frequency)
       : _data(std::move(validation_data)),
         _labels(std::move(validation_labels)),
-        _config(std::move(predict_config)) {}
+        _config(std::move(predict_config)),
+        _frequency(frequency) {}
 
   const std::vector<dataset::BoltDatasetPtr>& data() const { return _data; }
 
@@ -80,11 +99,17 @@ class ValidationContext {
 
   const PredictConfig& config() const { return _config; }
 
+  uint32_t frequency() const { return _frequency; }
+
  private:
   std::vector<dataset::BoltDatasetPtr> _data;
   dataset::BoltDatasetPtr _labels;
   PredictConfig _config;
+  uint32_t _frequency;
 };
+
+class TrainConfig;
+using TrainConfigPtr = std::shared_ptr<TrainConfig>;
 
 class TrainConfig {
  public:
@@ -125,9 +150,21 @@ class TrainConfig {
   TrainConfig& withValidation(
       const std::vector<dataset::BoltDatasetPtr>& validation_data,
       const dataset::BoltDatasetPtr& validation_labels,
-      const PredictConfig& predict_config) {
+      const PredictConfig& predict_config, uint32_t validation_frequency = 0) {
     _validation_context =
-        ValidationContext(validation_data, validation_labels, predict_config);
+        ValidationContext(validation_data, validation_labels, predict_config,
+                          validation_frequency);
+    return *this;
+  }
+
+  TrainConfig& withLogLossFrequency(uint32_t log_loss_frequency) {
+    _log_loss_frequency = log_loss_frequency;
+    return *this;
+  }
+
+  TrainConfig& withSaveParameters(const std::string& save_prefix,
+                                  uint32_t save_frequency) {
+    _save_context = SaveContext(save_prefix, save_frequency);
     return *this;
   }
 
@@ -180,7 +217,50 @@ class TrainConfig {
     return std::max<uint32_t>(reconstruct_param / batch_size, 1);
   }
 
+  void save(const std::string& filename) const {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    save_stream(filestream);
+  }
+
+  void save_stream(std::ostream& output_stream) const {
+    if (_callbacks.numCallbacks() != 0) {
+      throw std::runtime_error(
+          "Cannot serialize a training config that has callbacks.");
+    }
+    if (_validation_context.has_value()) {
+      throw std::runtime_error(
+          "Cannot serialize a training config that has a validation context.");
+    }
+    cereal::BinaryOutputArchive oarchive(output_stream);
+    oarchive(*this);
+  }
+
+  static TrainConfigPtr load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    return load_stream(filestream);
+  }
+
+  static TrainConfigPtr load_stream(std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    std::shared_ptr<TrainConfig> deserialize_into(new TrainConfig());
+    iarchive(*deserialize_into);
+    return deserialize_into;
+  }
+
+  uint32_t logLossFrequency() const { return _log_loss_frequency; }
+
+  void setEpochs(uint32_t new_epochs) { _epochs = new_epochs; }
+
+  const std::optional<SaveContext>& saveContext() const {
+    return _save_context;
+  }
+
  private:
+  // Private constructor for cereal.
+  TrainConfig() : TrainConfig(0, 0){};
+
   TrainConfig(float learning_rate, uint32_t epochs)
       : _epochs(epochs),
         _learning_rate(learning_rate),
@@ -189,7 +269,21 @@ class TrainConfig {
         _rebuild_hash_tables(std::nullopt),
         _reconstruct_hash_functions(std::nullopt),
         _callbacks({}),
-        _validation_context(std::nullopt) {}
+        _validation_context(std::nullopt),
+        _save_context(std::nullopt),
+        _log_loss_frequency(1) {}
+
+  friend class cereal::access;
+  // We don't serialize the callbacks because they might be arbitrary functions
+  // from python. Instead, we throw an error in the save method if the callbacks
+  // are nonempty.
+  // For now, we also don't serialize the validation context, and similarly
+  // check this in the save method.
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_epochs, _learning_rate, _metric_names, _verbose,
+            _rebuild_hash_tables, _reconstruct_hash_functions);
+  }
 
   uint32_t _epochs;
   float _learning_rate;
@@ -202,6 +296,10 @@ class TrainConfig {
   CallbackList _callbacks;
 
   std::optional<ValidationContext> _validation_context;
+  std::optional<SaveContext> _save_context;
+
+  /// Log loss frequency, in units of updates (1 batch = 1 update).
+  uint32_t _log_loss_frequency;
 };
 
 class TrainState {
@@ -209,6 +307,8 @@ class TrainState {
   TrainState(const TrainConfig& train_config, uint32_t batch_size,
              uint32_t data_len)
       : learning_rate(train_config.learningRate()),
+        epoch(train_config.epochs()),
+        batch_cnt(0),
         verbose(train_config.verbose()),
         rebuild_hash_tables_batch(
             train_config.getRebuildHashTablesBatchInterval(batch_size,
@@ -220,6 +320,8 @@ class TrainState {
         train_metric_aggregator(train_config.getMetricAggregator()) {}
 
   float learning_rate;
+  uint32_t epoch;
+  uint64_t batch_cnt;
   bool verbose;
 
   uint32_t rebuild_hash_tables_batch;
@@ -243,6 +345,10 @@ class TrainState {
     return train_metric_aggregator.getSingleOutput(metric_name);
   }
 
+  MetricData getAllTrainMetrics() {
+    return train_metric_aggregator.getOutput();
+  }
+
   const std::vector<double>& getValidationMetrics(
       const std::string& metric_name) {
     if (validation_metrics.count(metric_name) != 0) {
@@ -251,6 +357,8 @@ class TrainState {
     throw std::invalid_argument("Could not find metric name '" + metric_name +
                                 "' in list of computed validation metrics. ");
   }
+
+  const auto& getAllValidationMetrics() { return validation_metrics; }
 
  private:
   MetricAggregator train_metric_aggregator;

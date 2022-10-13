@@ -1,11 +1,17 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exception>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset {
 
@@ -27,6 +33,21 @@ class CategoricalBlock : public Block {
   bool isDense() const final { return false; };
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
+
+  Explanation explainIndex(
+      uint32_t index_within_block,
+      const std::vector<std::string_view>& input_row) final {
+    return {_col, getResponsibleCategory(index_within_block, input_row[_col])};
+  }
+
+  /*
+  Although as of now we don't need the category_value to get the responsible
+  category, in future it might be helpful, so passing the value as we do in text
+  block.
+  */
+  virtual std::string getResponsibleCategory(
+      uint32_t index_within_block,
+      const std::string_view& category_value) const = 0;
 
  protected:
   std::exception_ptr buildSegment(
@@ -54,9 +75,18 @@ class CategoricalBlock : public Block {
 
   uint32_t _n_classes;
 
+  // Constructor for cereal.
+  CategoricalBlock() {}
+
  private:
   uint32_t _col;
   std::optional<char> _delimiter;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _n_classes, _col, _delimiter);
+  }
 };
 
 using CategoricalBlockPtr = std::shared_ptr<CategoricalBlock>;
@@ -73,6 +103,13 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
                                                        delimiter);
   }
 
+  std::string getResponsibleCategory(
+      uint32_t index_within_block,
+      const std::string_view& category_value) const final {
+    (void)category_value;
+    return std::to_string(index_within_block);
+  }
+
  protected:
   std::exception_ptr encodeCategory(std::string_view category,
                                     SegmentedFeatureVector& vec) final {
@@ -85,6 +122,16 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
     }
     vec.addSparseFeatureToSegment(id, 1.0);
     return nullptr;
+  }
+
+ private:
+  // Private constructor for cereal.
+  NumericalCategoricalBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<CategoricalBlock>(this));
   }
 };
 
@@ -116,6 +163,12 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
 
   ThreadSafeVocabularyPtr getVocabulary() const { return _vocab; }
 
+  std::string getResponsibleCategory(
+      uint32_t index, const std::string_view& category_value) const final {
+    (void)category_value;
+    return _vocab->getString(index);
+  }
+
  protected:
   std::exception_ptr encodeCategory(std::string_view category,
                                     SegmentedFeatureVector& vec) final {
@@ -140,3 +193,6 @@ using StringLookupCategoricalBlockPtr =
     std::shared_ptr<StringLookupCategoricalBlock>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::CategoricalBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::NumericalCategoricalBlock)
