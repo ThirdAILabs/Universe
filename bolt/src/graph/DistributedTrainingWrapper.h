@@ -22,7 +22,8 @@ class DistributedTrainingWrapper {
       : _bolt_graph(std::move(bolt_graph)),
         _train_context(DatasetContext(train_data, train_labels)),
         _train_config(std::move(train_config)),
-        _metric_aggregator(_train_config.getMetricAggregator()) {
+        _metric_aggregator(_train_config.getMetricAggregator()),
+        _validation(_train_config.getValidationContext()) {
     _bolt_graph->verifyCanTrain(_train_context);
     _bolt_graph->prepareToProcessBatches(_train_context.batchSize(),
                                          /* use_sparsity=*/true);
@@ -57,6 +58,7 @@ class DistributedTrainingWrapper {
   DatasetContext _train_context;
   TrainConfig _train_config;
   MetricAggregator _metric_aggregator;
+  std::optional<ValidationContext> _validation;
 };
 
 }  // namespace thirdai::bolt
