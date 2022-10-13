@@ -39,7 +39,8 @@ class BoltGraph {
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
         _epoch(0),
-        _updates(0) {
+        _updates(0),
+        _tracked_metric(nullptr) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
