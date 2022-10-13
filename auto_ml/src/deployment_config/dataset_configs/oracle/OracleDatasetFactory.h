@@ -18,10 +18,6 @@
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/blocks/Date.h>
-#include <dataset/src/blocks/DenseArray.h>
-#include <dataset/src/blocks/UserCountHistory.h>
-#include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdint>
 #include <memory>
@@ -78,7 +74,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     initializeInferenceBatchProcessor();
     BoltVector vector;
     auto sample = dataset::ProcessorUtils::parseCsvRow(input, ',');
-    _inference_batch_processor->makeInputVector(sample, vector);
+    if (auto exception =
+            _inference_batch_processor->makeInputVector(sample, vector)) {
+      std::rethrow_exception(exception);
+    }
     return {std::move(vector)};
   }
 

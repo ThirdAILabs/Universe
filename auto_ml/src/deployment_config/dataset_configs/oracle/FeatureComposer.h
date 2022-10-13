@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace thirdai::automl::deployment {
@@ -25,34 +26,30 @@ class FeatureComposer {
       const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies) {
     std::vector<dataset::BlockPtr> blocks;
 
-    auto trackable_oolumns = trackableColumns(temporal_relationships);
+    auto unknown_during_inference =
+        getUnknownDuringInferenceColumns(temporal_relationships);
 
     // Order of column names and data types is always consistent because
     // data_types is an ordered map.
     for (const auto& [col_name, data_type] : config.data_types) {
-      if (data_type.isCategorical()) {
-        if (col_name != config.target &&
-            (isTrackingKey(col_name, temporal_relationships) ||
-             !trackable_oolumns.count(col_name))) {
-          auto vocab_size = data_type.asCategorical().n_unique_classes;
-          uint32_t col_num = column_numbers.at(col_name);
+      if (unknown_during_inference[col_name] || col_name == config.target) {
+        continue;
+      }
 
-          blocks.push_back(dataset::StringLookupCategoricalBlock::make(
-              /* col= */ col_num,
-              /* vocab= */ vocabForColumn(vocabularies, col_name, vocab_size)));
-        }
+      uint32_t col_num = column_numbers.at(col_name);
+
+      if (data_type.isCategorical()) {
+        auto vocab_size = data_type.asCategorical().n_unique_classes;
+        blocks.push_back(dataset::StringLookupCategoricalBlock::make(
+            col_num, vocabForColumn(vocabularies, col_name, vocab_size)));
       }
 
       if (data_type.isNumerical()) {
-        if (!trackable_oolumns.count(col_name)) {
-          blocks.push_back(dataset::DenseArrayBlock::make(
-              /* start_col= */ column_numbers.at(col_name), /* dim= */ 1));
-        }
+        blocks.push_back(dataset::DenseArrayBlock::makeSingle(col_num));
       }
 
       if (data_type.isText()) {
-        auto text_meta = config.data_types.at(col_name).asText();
-        auto col_num = column_numbers.at(col_name);
+        auto text_meta = data_type.asText();
         if (text_meta.average_n_words && text_meta.average_n_words <= 15) {
           blocks.push_back(dataset::PairGramTextBlock::make(col_num));
         } else {
@@ -61,8 +58,7 @@ class FeatureComposer {
       }
 
       if (data_type.isDate()) {
-        blocks.push_back(dataset::DateBlock::make(
-            /* col= */ column_numbers.at(col_name)));
+        blocks.push_back(dataset::DateBlock::make(col_num));
       }
     }
     return blocks;
@@ -75,7 +71,7 @@ class FeatureComposer {
       TemporalContext& context, bool should_update_history) {
     std::vector<dataset::BlockPtr> blocks;
 
-    auto timestamp = getTimestamp(config, temporal_relationships);
+    auto timestamp_col_name = getTimestampColumnName(config);
 
     /*
       Order of tracking keys is always consistent because
@@ -83,24 +79,25 @@ class FeatureComposer {
       Therefore, the order of ids is also consistent.
     */
     uint32_t id = 0;
-    for (const auto& [tracking_key, temporal_configs] :
+    for (const auto& [tracking_key_col_name, temporal_configs] :
          temporal_relationships) {
-      auto tracking_key_type = config.data_types.at(tracking_key);
-      if (!tracking_key_type.isCategorical()) {
+      if (!config.data_types.at(tracking_key_col_name).isCategorical()) {
         throw std::invalid_argument("Tracking keys must be categorical.");
       }
 
       for (const auto& temporal_config : temporal_configs) {
         if (temporal_config.isCategorical()) {
           blocks.push_back(makeTemporalCategoricalBlock(
-              config, context, vocabularies, id, column_numbers, tracking_key,
-              timestamp, temporal_config, should_update_history));
+              id, config, context, column_numbers, vocabularies,
+              temporal_config, tracking_key_col_name, timestamp_col_name,
+              should_update_history));
         }
 
         if (temporal_config.isNumerical()) {
           blocks.push_back(makeTemporalNumericalBlock(
-              config, context, id, column_numbers, tracking_key, timestamp,
-              temporal_config, should_update_history));
+              id, config, context, column_numbers, temporal_config,
+              tracking_key_col_name, timestamp_col_name,
+              should_update_history));
         }
 
         id++;
@@ -110,15 +107,17 @@ class FeatureComposer {
   }
 
  private:
-  static std::unordered_set<std::string> trackableColumns(
+  static std::unordered_map<std::string, bool> getUnknownDuringInferenceColumns(
       const TemporalRelationships& temporal_relationships) {
-    std::unordered_set<std::string> trackables_set;
-    for (const auto& [_, trackables] : temporal_relationships) {
-      for (const auto& trackable : trackables) {
-        trackables_set.insert(trackable.columnName());
+    std::unordered_map<std::string, bool> is_unknown_during_inference;
+    for (const auto& [_, temporal_configs] : temporal_relationships) {
+      for (const auto& temporal_config : temporal_configs) {
+        auto col_name = temporal_config.columnName();
+        is_unknown_during_inference[col_name] &=
+            !temporal_config.includesCurrentRow();
       }
     }
-    return trackables_set;
+    return is_unknown_during_inference;
   }
 
   static bool isTrackingKey(
@@ -127,19 +126,15 @@ class FeatureComposer {
     return temporal_relationships.count(column_name);
   }
 
-  static std::string getTimestamp(
-      const OracleConfig& config,
-      const TemporalRelationships& temporal_relationships) {
+  static std::string getTimestampColumnName(const OracleConfig& config) {
     std::optional<std::string> timestamp;
-    if (!temporal_relationships.empty()) {
-      for (const auto& [col_name, data_type] : config.data_types) {
-        if (data_type.isDate()) {
-          if (timestamp) {
-            throw std::invalid_argument(
-                "There can only be one timestamp column.");
-          }
-          timestamp = col_name;
+    for (const auto& [col_name, data_type] : config.data_types) {
+      if (data_type.isDate()) {
+        if (timestamp) {
+          throw std::invalid_argument(
+              "There can only be one timestamp column.");
         }
+        timestamp = col_name;
       }
     }
     if (!timestamp) {
@@ -151,11 +146,10 @@ class FeatureComposer {
   }
 
   static dataset::BlockPtr makeTemporalCategoricalBlock(
-      const OracleConfig& config, TemporalContext& context,
-      ColumnVocabularies& vocabs, uint32_t id,
-      const ColumnNumberMap& column_numbers, const std::string& key_column,
-      const std::string& timestamp_column,
-      const TemporalConfig& temporal_config, bool should_update_history) {
+      uint32_t id, const OracleConfig& config, TemporalContext& context,
+      const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabs,
+      const TemporalConfig& temporal_config, const std::string& key_column,
+      const std::string& timestamp_column, bool should_update_history) {
     const auto& tracked_column = temporal_config.columnName();
 
     if (!config.data_types.at(tracked_column).isCategorical()) {
@@ -191,10 +185,10 @@ class FeatureComposer {
   }
 
   static dataset::BlockPtr makeTemporalNumericalBlock(
-      const OracleConfig& config, TemporalContext& context, uint32_t id,
-      const ColumnNumberMap& column_numbers, const std::string& key_column,
-      const std::string& timestamp_column,
-      const TemporalConfig& temporal_config, bool should_update_history) {
+      uint32_t id, const OracleConfig& config, TemporalContext& context,
+      const ColumnNumberMap& column_numbers,
+      const TemporalConfig& temporal_config, const std::string& key_column,
+      const std::string& timestamp_column, bool should_update_history) {
     const auto& tracked_column = temporal_config.columnName();
 
     if (!config.data_types.at(tracked_column).isNumerical()) {

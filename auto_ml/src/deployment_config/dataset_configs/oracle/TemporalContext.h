@@ -63,7 +63,9 @@ class TemporalContext {
     BoltVector vector;
     auto sample = dataset::ProcessorUtils::parseCsvRow(update, ',');
     // The following line updates the temporal context as a side effect,
-    _processor->makeInputVector(sample, vector);
+    if (auto exception = _processor->makeInputVector(sample, vector)) {
+      std::rethrow_exception(exception);
+    }
   }
 
   void batchUpdate(const std::vector<std::string>& updates) {
