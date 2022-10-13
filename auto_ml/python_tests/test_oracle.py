@@ -14,7 +14,7 @@ def serialize_make_oracle_config():
         nodes=[
             deployment.FullyConnectedNodeConfig(
                 name="hidden",
-                dim=deployment.ConstantParameter(1024),
+                dim=deployment.ConstantParameter(512),
                 activation=deployment.ConstantParameter("relu"),
                 predecessor="input",
             ),
@@ -32,7 +32,8 @@ def serialize_make_oracle_config():
     )
 
     dataset_config = deployment.OracleDatasetFactory(
-        config=deployment.UserSpecifiedParameter("config", type=deployment.OracleConfig)
+        config=deployment.UserSpecifiedParameter("config", type=deployment.OracleConfig),
+        parallel=deployment.ConstantParameter(False)
     )
 
     train_eval_params = deployment.TrainEvalParameters(

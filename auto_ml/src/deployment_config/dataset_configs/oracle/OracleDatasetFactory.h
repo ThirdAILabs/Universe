@@ -32,12 +32,13 @@ namespace thirdai::automl::deployment {
 
 class OracleDatasetFactory final : public DatasetLoaderFactory {
  public:
-  explicit OracleDatasetFactory(OracleConfigPtr config)
+  explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel)
       : _config(std::move(config)),
         _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
             _config->data_types, _config->provided_relationships,
             _config->lookahead)),
-        _context(std::make_shared<TemporalContext>()) {
+        _context(std::make_shared<TemporalContext>()),
+        _parallel(parallel) {
     ColumnNumberMap mock_column_number_map(_config->data_types);
     auto mock_processor = makeLabeledProcessor(mock_column_number_map);
 
@@ -122,14 +123,16 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
     auto label_block = dataset::NumericalCategoricalBlock::make(
         /* col= */ column_number_map.at(_config->target),
-        /* vocab_size= */ target_type.asCategorical().n_unique_classes);
+        /* n_classes= */ target_type.asCategorical().n_unique_classes);
 
     auto input_blocks =
         buildInputBlocks(/* column_numbers= */ column_number_map,
                          /* should_update_history= */ true);
 
-    return dataset::GenericBatchProcessor::make(std::move(input_blocks),
-                                                {label_block});
+    auto processor = dataset::GenericBatchProcessor::make(
+        std::move(input_blocks), {label_block});
+    processor->setParallelism(_parallel);
+    return processor;
   }
 
   void initializeInferenceBatchProcessor() {
@@ -143,6 +146,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         buildInputBlocks(/* column_numbers= */ *_column_number_map,
                          /* should_update_history= */ false),
         /* label_blocks= */ {});
+    _inference_batch_processor->setParallelism(_parallel);
   }
 
   std::vector<dataset::BlockPtr> buildInputBlocks(
@@ -169,6 +173,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   dataset::GenericBatchProcessorPtr _inference_batch_processor;
   uint32_t _input_dim;
   uint32_t _label_dim;
+  bool _parallel;
 
   // Private constructor for cereal.
   OracleDatasetFactory() {}
@@ -179,24 +184,26 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
             _temporal_relationships, _context, _vocabs, _column_number_map,
             _labeled_batch_processor, _inference_batch_processor, _input_dim,
-            _label_dim);
+            _label_dim, _parallel);
   }
 };
 
 class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
  public:
-  explicit OracleDatasetFactoryConfig(HyperParameterPtr<OracleConfigPtr> config)
-      : _config(std::move(config)) {}
+  explicit OracleDatasetFactoryConfig(HyperParameterPtr<OracleConfigPtr> config,
+                                      HyperParameterPtr<bool> parallel)
+      : _config(std::move(config)), _parallel(std::move(parallel)) {}
 
   DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const final {
     auto config = _config->resolve(user_specified_parameters);
 
-    return std::make_unique<OracleDatasetFactory>(config);
+    return std::make_unique<OracleDatasetFactory>(config, );
   }
 
  private:
   HyperParameterPtr<OracleConfigPtr> _config;
+  HyperParameterPtr<bool> _parallel;
 
   // Private constructor for cereal.
   OracleDatasetFactoryConfig() {}
@@ -204,7 +211,8 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _config);
+    archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _config,
+            _parallel);
   }
 };
 
