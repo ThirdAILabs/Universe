@@ -2,6 +2,7 @@
 
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/Datasets.h>
 
 namespace thirdai::automl::deployment {
@@ -60,11 +61,10 @@ class Flash {
 
  private:
   /**
-   * Returns a pointer to the hashes of the input batch. These hashes will need
-   * to be deleted by the calling function.
+   * Returns a vector of hashes for the input batch
    */
   template <typename BATCH_T>
-  std::unique_ptr<uint32_t const> hash(const BATCH_T& batch) const;
+  std::vector<uint32_t> hash_batch(const BATCH_T& batch) const;
 
   /**
    * Get the top_k labels that occur most often in the input vector using a
@@ -89,6 +89,13 @@ class Flash {
   const hashing::HashFunction& _hash_function;
   const uint32_t _num_tables, _range;
   std::shared_ptr<hashtable::HashTable<LABEL_T>> _hashtable;
+
+  // Handle serialization
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(_hash_function, _hashtable, _num_tables, _range);
+  }
 };
 
 }  // namespace thirdai::automl::deployment

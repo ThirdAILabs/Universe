@@ -73,7 +73,7 @@ template void Flash<uint64_t>::addBatch<thirdai::BoltBatch>(
 template <typename LABEL_T>
 template <typename BATCH_T>
 void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
-  auto hashes = hash(batch);
+  std::vector<uint32_t> hashes = hash_batch(batch);
   try {
     verifyBatchSequentialIds(batch);
   } catch (std::invalid_argument& error) {
@@ -81,16 +81,13 @@ void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
   }
   // check the LABEL_T start function parameter
   _hashtable->insertSequential(batch.getBatchSize(), batch.getBatchSize(),
-                               hashes.get());
+                               hashes.data());
 }
 
 template <typename LABEL_T>
 template <typename BATCH_T>
-std::unique_ptr<const uint32_t> Flash<LABEL_T>::hash(
-    const BATCH_T& batch) const {
-  uint32_t* hashes = new uint32_t[batch.getBatchSize() * _num_tables];
-  _hash_function.hashBatchParallel(batch, hashes);
-  return std::unique_ptr<uint32_t>(hashes);
+std::vector<uint32_t> Flash<LABEL_T>::hash_batch(const BATCH_T& batch) const {
+  return _hash_function.hashBatchParallel(batch);
 }
 
 template <typename LABEL_T>
@@ -129,13 +126,13 @@ template <typename BATCH_T>
 std::vector<std::vector<LABEL_T>> Flash<LABEL_T>::queryBatch(
     const BATCH_T& batch, uint32_t top_k, bool pad_zeros) const {
   std::vector<std::vector<LABEL_T>> results(batch.getBatchSize());
-  auto hashes = hash(batch);
+  auto hashes = hash_batch(batch);
 
 #pragma omp parallel for default(none) \
     shared(batch, top_k, results, hashes, pad_zeros)
   for (uint64_t vec_id = 0; vec_id < batch.getBatchSize(); vec_id++) {
     std::vector<LABEL_T> query_result;
-    _hashtable->queryByVector(hashes.get() + vec_id * _num_tables,
+    _hashtable->queryByVector(hashes.data() + vec_id * _num_tables,
                               query_result);
     results.at(vec_id) = getTopKUsingPriorityQueue(query_result, top_k);
     if (pad_zeros) {
