@@ -168,9 +168,12 @@ class SequentialClassifier {
       neuron_to_explain = label_vocab->getUid(*target_label);
     }
 
+    auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
+        {makeInputForSingleInference(processor, input_row)}, true,
+        neuron_to_explain);
+
     auto result = getSignificanceSortedExplanations(
-        _model, makeInputForSingleInference(processor, input_row), input_row,
-        processor, neuron_to_explain);
+        gradients_indices, gradients_ratio, input_row, processor);
 
     auto column_num_to_name =
         _single_inference_col_nums.getColumnNumToColNameMap();
