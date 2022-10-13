@@ -75,20 +75,19 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 }
 
 /*
-  Provides support for logging, validation, and model saving
-  to distributed training.
+  This additional function is declared here to provide support
+  for logging, validation and model saving to distributed
+  training.
 */
-void BoltGraph::log_validate_and_save(uint32_t batch_size,
-                                      const TrainConfig& train_config,
-                                      MetricAggregator& train_metrics) {
+void BoltGraph::log_validate_and_save(
+    const std::optional<ValidationContext>& validation, uint32_t batch_size,
+    const TrainConfig& train_config, MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
     logging::info("train | epoch {} | updates {} | {}", (_epoch), _updates,
                   train_metrics.summary());
   }
 
-  const std::optional<ValidationContext>& validation =
-      train_config.getValidationContext();
   if (validation && validation->frequency() != 0 &&
       (_updates % validation->frequency() == 0)) {
     // TODO(jerin-thirdai): The implications of doing
@@ -128,6 +127,9 @@ MetricData BoltGraph::train(
 
   TrainState train_state(train_config, dataset_context.batchSize(),
                          dataset_context.len());
+
+  std::optional<ValidationContext> validation =
+      train_config.getValidationContext();
 
   MetricAggregator& train_metrics = train_state.getTrainMetricAggregator();
 
@@ -199,8 +201,8 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        log_validate_and_save(dataset_context.batchSize(), train_config,
-                              train_metrics);
+        log_validate_and_save(validation, dataset_context.batchSize(),
+                              train_config, train_metrics);
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -232,8 +234,6 @@ MetricData BoltGraph::train(
 
     cleanupAfterBatchProcessing();
 
-    const std::optional<ValidationContext>& validation =
-        train_config.getValidationContext();
     if (validation) {
       auto [val_metrics, _] = predict(validation->data(), validation->labels(),
                                       validation->config());

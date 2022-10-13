@@ -39,9 +39,7 @@ class RayTrainingClusterConfig:
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
 
-        distributed_training_log_file = os.path.join(log_dir, "distributed_bolt.log")
-
-        self.logging = init_logging(distributed_training_log_file)
+        self.logging = init_logging(f"{log_dir}/distributed_bolt.log")
         self.log_dir = log_dir
         self.logging.info("Building Ray training cluster")
         self.communication_type = communication_type

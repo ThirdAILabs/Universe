@@ -21,7 +21,6 @@ def get_mnist_model():
 
 if __name__ == "__main__":
     model = get_mnist_model()
-    dataset_paths = ["/share/pratik/mnist_a", "/share/pratik/mnist_b"]
     train_config = (
         bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
         .with_metrics(["mean_squared_error"])
