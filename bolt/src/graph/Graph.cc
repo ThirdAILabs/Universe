@@ -150,8 +150,8 @@ MetricData BoltGraph::train(
   callbacks.onTrainBegin(*this, train_state);
 
   // The following initializes validation best metric at the start of training.
-  // TODO(jerin): I'd like to organize this better, but this will need a
-  // holistic take of refactor.
+  // TODO(jerin): Would like to organize this better, but this will need a
+  // holistic take during a later refactor.
   const auto& validation = train_config.getValidationContext();
   if (validation) {
     _tracked_metric = validation->metric();
@@ -159,6 +159,7 @@ MetricData BoltGraph::train(
       _best_validation_metric = _tracked_metric->worst();
     }
   }
+
   /*
    * There are a few cases of epoch calculation to handle here, which is not
    * obvious reading the code here locally. We want _epoch to be the single
