@@ -197,8 +197,9 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
   DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const final {
     auto config = _config->resolve(user_specified_parameters);
+    auto parallel = _parallel->resolve(user_specified_parameters);
 
-    return std::make_unique<OracleDatasetFactory>(config, );
+    return std::make_unique<OracleDatasetFactory>(config, parallel);
   }
 
  private:
