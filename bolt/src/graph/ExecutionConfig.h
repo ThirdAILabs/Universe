@@ -292,7 +292,7 @@ class TrainConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_epochs, _learning_rate, _metric_names, _verbose,
-            _rebuild_hash_tables, _reconstruct_hash_functions);
+            _rebuild_hash_tables, _reconstruct_hash_functions, _log_loss_frequency);
   }
 
   uint32_t _epochs;

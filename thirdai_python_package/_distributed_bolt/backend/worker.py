@@ -66,7 +66,8 @@ class Worker:
                     valid_labels,
                     predict_config,
                     validation_frequency=data_loader_config["validation"]["frequency"],
-            )
+                    save_best_per_metric=tracked_metrics[0],
+            ).with_save_parameters(save_prefix="model",save_frequency=data_loader_config["validation"]["frequency"])
             
 
         logging.setup(

@@ -27,6 +27,14 @@ class DistributedTrainingWrapper {
     _bolt_graph->prepareToProcessBatches(_train_context.batchSize(),
                                          /* use_sparsity=*/true);
     _bolt_graph->enableDistributedTraining();
+    const auto& validation = _train_config.getValidationContext();
+  if (validation) {
+    _bolt_graph->_tracked_metric = validation->metric();
+    if (_bolt_graph->_tracked_metric != nullptr) {
+
+      _bolt_graph->_best_validation_metric = _bolt_graph->_tracked_metric->worst();
+    }
+  }
   }
 
   void computeAndSaveBatchGradients(uint32_t batch_idx) {
