@@ -94,7 +94,12 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<DatasetLabelDimensionParameter, HyperParameter<uint32_t>,
              std::shared_ptr<DatasetLabelDimensionParameter>>(
       submodule, "DatasetLabelDimensionParameter")
-      .def(py::init<>());
+      .def(py::init<>())
+      // This is why we pass in a py::object:
+      // https://stackoverflow.com/questions/70504125/pybind11-pyclass-def-property-readonly-static-incompatible-function-arguments
+      .def_property_readonly_static("dimension_param_name", [](py::object&) {
+        return DatasetLabelDimensionParameter::PARAM_NAME;
+      });
 
   py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig");  // NOLINT
 

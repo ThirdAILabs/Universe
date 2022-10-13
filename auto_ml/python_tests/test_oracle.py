@@ -7,6 +7,7 @@ CONFIG_FILE = "./saved_oracle_config"
 TRAIN_FILE = "tempTrainFile.csv"
 TEST_FILE = "tempTestFile.csv"
 
+
 def serialize_make_oracle_config():
     model_config = deployment.ModelConfig(
         input_names=["input"],
@@ -20,7 +21,9 @@ def serialize_make_oracle_config():
             deployment.FullyConnectedNodeConfig(
                 name="output",
                 dim=deployment.DatasetLabelDimensionParameter(),
-                sparsity=deployment.ConstantParameter(1.0),
+                sparsity=deployment.AutotunedSparsityParameter(
+                    deployment.DatasetLabelDimensionParameter.dimension_param_name
+                ),
                 activation=deployment.ConstantParameter("softmax"),
                 predecessor="hidden",
             ),
@@ -29,9 +32,7 @@ def serialize_make_oracle_config():
     )
 
     dataset_config = deployment.OracleDatasetFactory(
-        config=deployment.UserSpecifiedParameter(
-            "config", type=deployment.OracleConfig
-        )
+        config=deployment.UserSpecifiedParameter("config", type=deployment.OracleConfig)
     )
 
     train_eval_params = deployment.TrainEvalParameters(
