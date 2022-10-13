@@ -4,6 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/graph/callbacks/Callback.h>
+#include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Datasets.h>
 #include <limits>
@@ -87,11 +88,12 @@ class ValidationContext {
   explicit ValidationContext(
       std::vector<dataset::BoltDatasetPtr> validation_data,
       dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config,
-      uint32_t frequency)
+      uint32_t frequency, const std::string& save_best_per_metric = "")
       : _data(std::move(validation_data)),
         _labels(std::move(validation_labels)),
         _config(std::move(predict_config)),
-        _frequency(frequency) {}
+        _frequency(frequency),
+        _save_best_per_metric(save_best_per_metric) {}
 
   const std::vector<dataset::BoltDatasetPtr>& data() const { return _data; }
 
@@ -101,11 +103,18 @@ class ValidationContext {
 
   uint32_t frequency() const { return _frequency; }
 
+  std::shared_ptr<Metric> metric() const {
+    return _save_best_per_metric.empty() ? nullptr
+                                         : makeMetric(_save_best_per_metric);
+  }
+
  private:
   std::vector<dataset::BoltDatasetPtr> _data;
   dataset::BoltDatasetPtr _labels;
   PredictConfig _config;
   uint32_t _frequency;
+
+  std::string _save_best_per_metric;
 };
 
 class TrainConfig;
@@ -150,10 +159,11 @@ class TrainConfig {
   TrainConfig& withValidation(
       const std::vector<dataset::BoltDatasetPtr>& validation_data,
       const dataset::BoltDatasetPtr& validation_labels,
-      const PredictConfig& predict_config, uint32_t validation_frequency = 0) {
-    _validation_context =
-        ValidationContext(validation_data, validation_labels, predict_config,
-                          validation_frequency);
+      const PredictConfig& predict_config, uint32_t validation_frequency = 0,
+      const std::string& validation_save_best_per_metric = "") {
+    _validation_context = ValidationContext(
+        validation_data, validation_labels, predict_config,
+        validation_frequency, validation_save_best_per_metric);
     return *this;
   }
 
