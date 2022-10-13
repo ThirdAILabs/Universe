@@ -154,7 +154,7 @@ MetricData BoltGraph::train(
   // holistic take of refactor.
   const auto& validation = train_config.getValidationContext();
   if (validation) {
-    std::shared_ptr<Metric> _tracked_metric = validation->metric();
+    _tracked_metric = validation->metric();
     if (_tracked_metric != nullptr) {
       _best_validation_metric = _tracked_metric->worst();
     }
