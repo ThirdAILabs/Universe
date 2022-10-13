@@ -88,12 +88,12 @@ class ValidationContext {
   explicit ValidationContext(
       std::vector<dataset::BoltDatasetPtr> validation_data,
       dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config,
-      uint32_t frequency, const std::string& save_best_per_metric = "")
+      uint32_t frequency, std::string save_best_per_metric = "")
       : _data(std::move(validation_data)),
         _labels(std::move(validation_labels)),
         _config(std::move(predict_config)),
         _frequency(frequency),
-        _save_best_per_metric(save_best_per_metric) {}
+        _save_best_per_metric(std::move(save_best_per_metric)) {}
 
   const std::vector<dataset::BoltDatasetPtr>& data() const { return _data; }
 
@@ -160,10 +160,10 @@ class TrainConfig {
       const std::vector<dataset::BoltDatasetPtr>& validation_data,
       const dataset::BoltDatasetPtr& validation_labels,
       const PredictConfig& predict_config, uint32_t validation_frequency = 0,
-      const std::string& validation_save_best_per_metric = "") {
+      std::string validation_save_best_per_metric = "") {
     _validation_context = ValidationContext(
         validation_data, validation_labels, predict_config,
-        validation_frequency, validation_save_best_per_metric);
+        validation_frequency, std::move(validation_save_best_per_metric));
     return *this;
   }
 
