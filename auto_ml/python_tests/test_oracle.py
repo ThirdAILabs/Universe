@@ -20,7 +20,9 @@ def serialize_make_oracle_config():
             deployment.FullyConnectedNodeConfig(
                 name="output",
                 dim=deployment.DatasetLabelDimensionParameter(),
-                sparsity=deployment.ConstantParameter(1.0),
+                sparsity=deployment.AutotunedSparsityParameter(
+                    deployment.DatasetLabelDimensionParameter.dimension_param_name
+                ),
                 activation=deployment.ConstantParameter("softmax"),
                 predecessor="hidden",
             ),
