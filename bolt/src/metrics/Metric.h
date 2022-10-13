@@ -40,10 +40,14 @@ class Metric {
   // Returns the name of the metric
   virtual std::string name() = 0;
 
-  // returns whether its better if the metric is smaller. for example, with a
-  // an accuracy related metric this would return false since larger is better
-  // (larger means more accurate)
+  // Returns the worst value a metric can hold. Useful to initialize a best
+  // value, which is then updated from time to time.
   virtual double worst() const = 0;
+
+  // Compare x, y and tell if x is better than y, when a metric of this class is
+  // considered. Follows a convention to use non-strict better than so an update
+  // at a later time-step in code run is marked as an improvement over a prior,
+  // for the same value.
   virtual bool betterThan(double x, double y) const = 0;
 
   virtual ~Metric() = default;
@@ -116,7 +120,8 @@ class CategoricalAccuracy final : public Metric {
   }
 
   double worst() const final { return 0.0; }
-  bool betterThan(double x, double y) const final { return x > y; }
+
+  bool betterThan(double x, double y) const final { return x >= y; }
 
  private:
   std::atomic<uint32_t> _correct;
@@ -169,7 +174,8 @@ class MeanSquaredErrorMetric final : public Metric {
   }
 
   double worst() const final { return std::numeric_limits<double>::max(); }
-  bool betterThan(double x, double y) const final { return x < y; }
+
+  bool betterThan(double x, double y) const final { return x <= y; }
 
  private:
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
@@ -274,7 +280,8 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   }
 
   double worst() const final { return std::numeric_limits<double>::max(); }
-  bool betterThan(double x, double y) const final { return x < y; }
+
+  bool betterThan(double x, double y) const final { return x <= y; }
 
  private:
   std::atomic<float> _sum_of_deviations;
@@ -322,7 +329,8 @@ class RecallAtK : public Metric {
   }
 
   double worst() const final { return 0.0f; }
-  bool betterThan(double x, double y) const final { return x > y; }
+
+  bool betterThan(double x, double y) const final { return x >= y; }
 
   static inline bool isRecallAtK(const std::string& name) {
     return std::regex_match(name, std::regex("recall@[1-9]\\d*"));
@@ -452,7 +460,8 @@ class FMeasure final : public Metric {
   }
 
   double worst() const final { return 0.0f; }
-  bool betterThan(double x, double y) const final { return x > y; }
+
+  bool betterThan(double x, double y) const final { return x >= y; }
 
   static bool isFMeasure(const std::string& name) {
     return std::regex_match(name, std::regex(R"(f_measure\(0\.\d+\))"));
