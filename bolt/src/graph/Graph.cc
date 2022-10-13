@@ -88,6 +88,14 @@ void BoltGraph::log_validate_and_save(uint32_t batch_size,
                   train_metrics.summary());
   }
 
+  const std::optional<SaveContext>& save_context = train_config.saveContext();
+
+  if (save_context && save_context->frequency() != 0 &&
+      _updates % save_context->frequency() == 0) {
+    const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
+    save(checkpoint_path);
+  }
+
   const std::optional<ValidationContext>& validation =
       train_config.getValidationContext();
   if (validation && validation->frequency() != 0 &&
@@ -118,13 +126,6 @@ void BoltGraph::log_validate_and_save(uint32_t batch_size,
 
     prepareToProcessBatches(batch_size,
                             /* use_sparsity=*/true);
-  }
-
-  const std::optional<SaveContext>& save_context = train_config.saveContext();
-  if (save_context && save_context->frequency() != 0 &&
-      _updates % save_context->frequency() == 0) {
-    const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
-    save(checkpoint_path);
   }
 }
 
