@@ -1,3 +1,3 @@
 enable_testing()
 
-add_subdirectory(core)
+add_library(vocab_lib Vocabulary.cc)

@@ -113,7 +113,9 @@ def train_distributed_bolt_check(request):
     nodes_2 = model_node_2.nodes()
     for layer_1, layer_2 in zip(nodes_1, nodes_2):
         if hasattr(layer_1, "weights"):
-            assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
+            assert np.equal(layer_1.weights.get(), layer_2.weights.get()).all()
+        if hasattr(layer_1, "biases"):
+            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
 
     print(metrics)
 
