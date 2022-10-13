@@ -6,6 +6,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -24,13 +25,17 @@ namespace thirdai::automl::deployment {
 
 class FlashIndexConfig {
  public:
-  explicit FlashIndexConfig(const std::string& config_file_path)
-      : _config_file_path(config_file_path),
-        _hash_function(),
-        _input_dim(100000),
-        _num_tables(0),
-        _range(0),
-        _hashes_per_table(0) {}
+  FlashIndexConfig(std::string hash_function, uint32_t input_dim,
+                   uint32_t batch_size, uint32_t num_tables,
+                   uint32_t hashes_per_table, uint32_t range)
+      : _hash_function(std::move(hash_function)),
+        _input_dim(input_dim),
+        _batch_size(batch_size),
+        _num_tables(num_tables),
+        _range(range),
+        _hashes_per_table(hashes_per_table) {}
+
+  // FlashIndexConfig(FlashIndexConfig&&) = default;
 
   void saveFlashIndexConfig(const std::string& config_file_name) {
     std::stringstream output;
@@ -90,12 +95,13 @@ class FlashIndexConfig {
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(_config_file_path);
+    archive(_hash_function, _input_dim, _batch_size, _num_tables, _range,
+            _hashes_per_table);
   }
 
-  std::optional<std::string> _config_file_path;
   std::string _hash_function;
   std::optional<uint32_t> _input_dim;
+  uint32_t _batch_size;
   uint32_t _num_tables;
   uint32_t _range;
   uint32_t _hashes_per_table;
@@ -105,11 +111,29 @@ using FlashIndexConfigPtr = std::shared_ptr<FlashIndexConfig>;
 
 class Indexer : public std::enable_shared_from_this<Indexer> {
  public:
-  explicit Indexer(const std::string& config_file_path)
-      : _flash_index_config(config_file_path),
+  explicit Indexer(FlashIndexConfigPtr flash_index_config)
+      : _flash_index_config(std::move(flash_index_config)),
         _dimension_for_encodings(
+            dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {}
+
+  explicit Indexer(const std::string& config_file_path)
+      : _dimension_for_encodings(
             dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM),
-        _batch_size(32) {}
+        _batch_size(32) {
+    (void)config_file_path;
+  }
+
+  static auto make(const FlashIndexConfigPtr& flash_index_config) {
+    return Indexer(flash_index_config);
+  }
+
+  static std::shared_ptr<Indexer> buildIndexerFromSerializedConfig(
+      const std::string& config_file_name) {
+    auto flash_index_config =
+        FlashIndexConfig::loadAndSetParametersFromConfig(config_file_name);
+
+    return std::make_shared<Indexer>(flash_index_config);
+  }
 
   /**
    * @brief Builds a Flash index
@@ -121,7 +145,7 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
   std::shared_ptr<Indexer> buildFlashIndex(const std::string& file_name) {
     auto data = loadDataInMemory(file_name);
     _flash_index = std::make_unique<Flash<LABEL_T>>(
-        *_flash_index_config.getHashFunction());
+        *_flash_index_config->getHashFunction());
     _flash_index->addDataset(*data);
 
     return shared_from_this();
@@ -173,7 +197,7 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
     return data;
   }
 
-  FlashIndexConfig _flash_index_config;
+  std::shared_ptr<FlashIndexConfig> _flash_index_config;
 
   std::unique_ptr<Flash<uint32_t>> _flash_index;
   uint32_t _dimension_for_encodings;

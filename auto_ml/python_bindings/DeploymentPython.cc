@@ -214,7 +214,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("file_name"));
 
   py::class_<deployment::Indexer, deployment::IndexerPtr>(submodule, "Indexer")
-      .def(py::init<std::string>(), py::arg("config_file_path"),
+      .def(py::init(&deployment::Indexer::buildIndexerFromSerializedConfig),
+           py::arg("config_file_path"),
            "Initializes an Indexer object which constructs a Flash object"
            "The config file should at least contain the following elements:\n"
            "     - num_hash_tables: Number of Hash Tables to construct.\n"
