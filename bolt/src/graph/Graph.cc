@@ -93,6 +93,7 @@ void BoltGraph::log_validate_and_save(uint32_t batch_size,
   if (save_context && save_context->frequency() != 0 &&
       _updates % save_context->frequency() == 0) {
     const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
+    logging::info("Saving most recent model to {}", checkpoint_path);
     save(checkpoint_path);
   }
 
@@ -122,6 +123,7 @@ void BoltGraph::log_validate_and_save(uint32_t batch_size,
         _best_validation_metric = candidate;
         const std::string checkpoint_path =
             save_context->prefix() + ".best.bolt";
+        logging::info("Saving best model to {}", checkpoint_path);
         save(checkpoint_path);
       }
     }
