@@ -16,6 +16,31 @@
 namespace thirdai::automl::deployment {
 
 struct OracleConfig {
+  /**
+   * data_types: mapping from column names (strings) to DataType objects,
+   *   e.g. {"user_id_column": types.categorical(n_unique_classes=5)}
+   *
+   * temporal_tracking_relationships: mapping from column names (strings) to
+   *   a list of other columns can be tracked against it (either strings or
+   *   TemporalConfig objects).
+   *   e.g. {"user_id": [
+   *            "movie_id",
+   *            temporal.categorical("movie_id", track_last_n=20)
+   *        ]}
+   *   When a TemporalConfig object is provided, Oracle will track the column
+   *   as manually configured. When a string is provided, the tracking
+   *   configuration will be autotuned.
+   *
+   * target: column name of target variable.
+   *
+   * time_granularity: Temporal tracking granularity. Either "daily"/"d",
+   *   "weekly"/"w", "biweekly"/"b", or "monthly"/"m".
+   *
+   * lookahead: How far in the future Oracle has to predict. The given number
+   *   is relative to the provided time_granularity.
+   *   e.g. if time_granularity = "w" and lookahead = 5, then Oracle learns to
+   *   predict 5 weeks into the future.
+   */
   OracleConfig(
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
