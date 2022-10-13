@@ -210,6 +210,10 @@ class BoltGraph {
   // them in TrainState
   uint32_t _epoch;
   uint32_t _updates;
+
+  // We need this value saved across training. Reset should be done by force.
+  double _best_validation_metric;
+  std::shared_ptr<Metric> _tracked_metric;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

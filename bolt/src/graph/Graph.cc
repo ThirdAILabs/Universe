@@ -9,6 +9,7 @@
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -104,7 +105,16 @@ void BoltGraph::log_validate_and_save(uint32_t batch_size,
     // added to the callback export.
 
     cleanupAfterBatchProcessing();
-    predict(validation->data(), validation->labels(), validation->config());
+    auto [validation_metrics, _] =
+        predict(validation->data(), validation->labels(), validation->config());
+
+    double candidate = validation_metrics[_tracked_metric->name()];
+    if (save_context && _tracked_metric != nullptr &&
+        _tracked_metric->betterThan(candidate, _best_validation_metric)) {
+      _best_validation_metric = candidate;
+      const std::string checkpoint_path = save_context->prefix() + ".best.bolt";
+      save(checkpoint_path);
+    }
 
     prepareToProcessBatches(batch_size,
                             /* use_sparsity=*/true);
@@ -134,6 +144,14 @@ MetricData BoltGraph::train(
   CallbackList callbacks = train_config.getCallbacks();
   callbacks.onTrainBegin(*this, train_state);
 
+  // The following initializes validation best metric at the start of training.
+  // TODO(jerin): I'd like to organize this better, but this will need a
+  // holistic take of refactor.
+  const auto& validation = train_config.getValidationContext();
+  if (validation) {
+    std::shared_ptr<Metric> _tracked_metric = validation->metric();
+    _best_validation_metric = _tracked_metric->worst();
+  }
   /*
    * There are a few cases of epoch calculation to handle here, which is not
    * obvious reading the code here locally. We want _epoch to be the single
