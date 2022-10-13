@@ -31,6 +31,8 @@ class Flash {
    **/
   Flash(const hashing::HashFunction& function, uint32_t reservoir_size);
 
+  Flash& operator=(Flash&& flash_index) = default;
+
   /**
    * Insert all batches in the dataset the Flash data structure.
    * loadNextBatches on the dataset should not have been called yet, and this

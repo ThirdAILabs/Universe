@@ -3,8 +3,8 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
-#include <hashing/src/HashFunction.h>
-#include <hashing/src/SRP.h>
+// #include <hashing/src/HashFunction.h>
+// #include <hashing/src/SRP.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -12,7 +12,7 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exceptions/src/Exceptions.h>
-#include <indexer/src/flash.h>
+#include <indexer/src/Flash.h>
 #include <spdlog/fmt/bundled/core.h>
 #include <optional>
 #include <stdexcept>
@@ -83,7 +83,7 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
   template <typename LABEL_T>
   std::shared_ptr<Indexer> buildFlashIndex(const std::string& file_name) {
     auto data = loadDataInMemory(file_name);
-    _flash_index = Flash<LABEL_T>(*_flash_index_config.getHashFunction());
+    _flash_index = std::make_unique<Flash<LABEL_T>>(*_flash_index_config.getHashFunction());
     _flash_index->addDataset(*data);
 
     return shared_from_this();
@@ -143,5 +143,7 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
 
   // uint32_t batch_size;
 };
+
+using IndexerPtr = std::shared_ptr<Indexer>;
 
 }  // namespace thirdai::automl::deployment

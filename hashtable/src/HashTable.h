@@ -10,7 +10,7 @@ namespace thirdai::hashtable {
 /**
  * This is the abstract HashTable interface, which represents n hash tables
  * with a certain range. It abstracts batch indexing and single queries.
- * Implementations are intended to parallilize batch indexing.
+ * Implementations are intended to parallelize batch indexing.
  */
 template <typename LABEL_T>
 class HashTable {
