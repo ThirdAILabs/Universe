@@ -116,12 +116,14 @@ void BoltGraph::log_validate_and_save(uint32_t batch_size,
     auto [validation_metrics, _] =
         predict(validation->data(), validation->labels(), validation->config());
 
-    double candidate = validation_metrics[_tracked_metric->name()];
-    if (save_context && _tracked_metric != nullptr &&
-        _tracked_metric->betterThan(candidate, _best_validation_metric)) {
-      _best_validation_metric = candidate;
-      const std::string checkpoint_path = save_context->prefix() + ".best.bolt";
-      save(checkpoint_path);
+    if (save_context && _tracked_metric != nullptr) {
+      double candidate = validation_metrics[_tracked_metric->name()];
+      if (_tracked_metric->betterThan(candidate, _best_validation_metric)) {
+        _best_validation_metric = candidate;
+        const std::string checkpoint_path =
+            save_context->prefix() + ".best.bolt";
+        save(checkpoint_path);
+      }
     }
 
     prepareToProcessBatches(batch_size,
@@ -151,7 +153,9 @@ MetricData BoltGraph::train(
   const auto& validation = train_config.getValidationContext();
   if (validation) {
     std::shared_ptr<Metric> _tracked_metric = validation->metric();
-    _best_validation_metric = _tracked_metric->worst();
+    if (_tracked_metric != nullptr) {
+      _best_validation_metric = _tracked_metric->worst();
+    }
   }
   /*
    * There are a few cases of epoch calculation to handle here, which is not
