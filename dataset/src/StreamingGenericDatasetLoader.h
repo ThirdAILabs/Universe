@@ -103,7 +103,7 @@ class StreamingGenericDatasetLoader
   }
 
   std::optional<std::tuple<BoltDatasetPtr, BoltDatasetPtr>>
-  loadInMemoryWithMaxBatches(uint32_t max_in_memory_batches) {
+  loadInMemoryWithMaxBatches(uint64_t max_in_memory_batches) {
     std::cout << "Loading vectors from '" + _data_loader->resourceName() + "'"
               << std::endl;
     auto start = std::chrono::high_resolution_clock::now();

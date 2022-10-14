@@ -39,6 +39,18 @@ class RayTrainingClusterConfig:
         Ray primary and replica worker configs. It computes and stores a
         a number of useful fields, including num_workers, communication_type,
         logging, primary_worker_config, and replica_worker_configs.
+
+
+        Args:
+            runtime_env: Environment variables, package dependencies, working
+            directory, and other dependencies a worker needs in its environment
+            to run. See
+            https://docs.ray.io/en/latest/ray-core/handling-dependencies.html#:~:text=A%20runtime%20environment%20describes%20the,on%20the%20cluster%20at%20runtime
+            ignore_reinit_error: Whether to supress the error that a cluster
+            already exists when this method tries to create a Ray cluster. If
+            this is true and a cluster exists, this constructor will just
+            connect to that cluster.
+
         """
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
@@ -170,15 +182,15 @@ class DistributedDataParallel:
 
         self.replica_workers = []
         for worker_id, replica_worker_config in enumerate(
-            cluster_config.replica_worker_configs
+            cluster_config.replica_worker_configs, start=1
         ):
             self.replica_workers.append(
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
                     model_to_wrap=ray_model_ref,
-                    train_source=train_sources[worker_id + 1],
+                    train_source=train_sources[worker_id],
                     train_config=train_config,
-                    id=worker_id + 1,
+                    id=worker_id,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
                     log_dir=cluster_config.log_dir,

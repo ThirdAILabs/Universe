@@ -226,9 +226,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def_property("model", &ModelPipeline::get_model,
                     &ModelPipeline::set_model)
       .def_property_readonly("dataset_loader_factory",
-                             [](ModelPipeline& pipeline) {
-                               return pipeline.datasetLoaderFactory();
-                             })
+                             &ModelPipeline::datasetLoaderFactory)
 #endif
       .def("save", &ModelPipeline::save, py::arg("filename"),
            docs::MODEL_PIPELINE_SAVE)

@@ -34,7 +34,7 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
 
   DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training,
-      uint32_t max_in_memory_batches) final {
+      uint64_t max_in_memory_batches) final {
     return std::make_unique<GenericDatasetLoader>(
         /* data_loader = */ data_loader,
         /* batch_processor = */ _labeled_batch_processor,

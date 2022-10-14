@@ -221,7 +221,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
         model=model,
         train_config=train_config,
     )
-    wrapper.set_new_datasets([train_data], train_labels)
+    wrapper.set_datasets([train_data], train_labels)
     return wrapper
 
 

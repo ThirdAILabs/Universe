@@ -47,7 +47,7 @@ class ModelPipeline {
 
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
                    std::optional<uint32_t> batch_size_opt,
-                   std::optional<uint32_t> max_in_memory_batches) {
+                   std::optional<uint64_t> max_in_memory_batches) {
     uint32_t batch_size =
         batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
     trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
@@ -57,21 +57,21 @@ class ModelPipeline {
   void trainOnDataLoader(
       const std::shared_ptr<dataset::DataLoader>& data_source,
       bolt::TrainConfig& train_config,
-      std::optional<uint32_t> max_in_memory_batches) {
-    _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
+      std::optional<uint64_t> max_in_memory_batches_opt) {
+    _dataset_factory->preprocessDataset(data_source, max_in_memory_batches_opt);
     data_source->restart();
 
-    uint32_t max_in_memory_general = max_in_memory_batches.has_value()
-                                         ? *max_in_memory_batches
+    uint64_t max_in_memory_batches = max_in_memory_batches_opt.has_value()
+                                         ? *max_in_memory_batches_opt
                                          : std::numeric_limits<uint32_t>::max();
 
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
         data_source, /* training= */ true,
-        /* max_in_memory_batches = */ max_in_memory_general);
+        /* max_in_memory_batches = */ max_in_memory_batches);
 
     updateRehashRebuildInTrainConfig(train_config);
 
-    if (max_in_memory_batches) {
+    if (max_in_memory_batches_opt) {
       trainOnStream(dataset, train_config);
     } else {
       trainInMemory(dataset, train_config);

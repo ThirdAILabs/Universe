@@ -232,6 +232,6 @@ class Worker:
             return False
 
         self.train_data, self.train_labels = load
-        self.model.set_new_datasets(self.train_data, self.train_labels)
+        self.model.set_datasets(self.train_data, self.train_labels)
         self.batch_id_within_dataset = 0
         return True

@@ -577,12 +577,26 @@ That's all for now, folks! More docs coming soon :)
            py::arg("train_config"))
       .def("compute_and_store_batch_gradients",
            &DistributedTrainingWrapper::computeAndSaveBatchGradients,
-           py::arg("batch_idx"))
-      .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
+           py::arg("batch_idx"),
+           "Uses the batch_idx'th batch of the currently "
+           "set dataset to accumulate a single batche's gradients in the "
+           "wrapped Bolt model.")
+      .def("update_parameters", &DistributedTrainingWrapper::updateParameters,
+           "Updates the parameters of the wrapped Bolt model. You should call "
+           "this manually after setting the gradients of the wrapped model.")
       .def("num_batches", &DistributedTrainingWrapper::numBatches)
-      .def("set_new_datasets", &DistributedTrainingWrapper::setNewDatasets,
-           py::arg("train_data"), py::arg("train_labels"))
-      .def("finish_training", &DistributedTrainingWrapper::finishTraining)
+      .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
+           py::arg("train_data"), py::arg("train_labels"),
+           "Sets the current "
+           "train data and labels the wrapper class usese for "
+           "computeAndSaveBatchGradients. We need this method instead of just "
+           "passing in a single pair of training data and training labels at "
+           "construction time because we might have a streaming dataset we "
+           "want to train on, which will entail switching out the current "
+           "datasets dynamically. If this is not the first time this method "
+           "been called, the batch sizes of the passed in datasets must be the "
+           "same as when this method was called the first time.")
+      .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
       .def_property_readonly(
           "model",
           [](DistributedTrainingWrapper& node) { return node.getModel(); },

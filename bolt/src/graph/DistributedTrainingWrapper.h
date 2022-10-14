@@ -60,8 +60,8 @@ class DistributedTrainingWrapper {
     return _train_context->numBatches();
   }
 
-  void setNewDatasets(const dataset::BoltDatasetList& train_data,
-                      const dataset::BoltDatasetPtr& train_labels) {
+  void setDatasets(const dataset::BoltDatasetList& train_data,
+                   const dataset::BoltDatasetPtr& train_labels) {
     DatasetContext new_context(train_data, train_labels);
     _bolt_graph->verifyCanTrain(new_context);
 
