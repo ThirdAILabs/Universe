@@ -43,6 +43,7 @@ def get_random_dense_bolt_dataset(rows, cols):
 def test_bad_dense_input_dim():
     input_and_output_dim = 10
     num_train = 10
+    model = get_good_model(input_and_output_dim)
     train_config = get_simple_train_config()
     predict_config = get_simple_predict_config()
 
@@ -54,10 +55,8 @@ def test_bad_dense_input_dim():
             ValueError,
             match=f".*Received dense BoltVector with dimension={bad_dim}, but was supposed to have dimension={input_and_output_dim}.*",
         ):
-            model = get_good_model(input_and_output_dim)
             model.train(data, labels, train_config)
 
-    model = get_good_model(input_and_output_dim)
     data = get_random_dense_bolt_dataset(num_train, input_and_output_dim)
     model.train(data, labels, train_config)
 
@@ -69,10 +68,8 @@ def test_bad_dense_input_dim():
             ValueError,
             match=f".*Received dense BoltVector with dimension={bad_dim}, but was supposed to have dimension={input_and_output_dim}.*",
         ):
-            model = get_good_model(input_and_output_dim)
             model.predict(data, labels, predict_config)
 
-    model = get_good_model(input_and_output_dim)
     data = get_random_dense_bolt_dataset(num_train, input_and_output_dim)
     model.predict(data, labels, predict_config)
 
@@ -105,6 +102,7 @@ def test_bad_inference_metrics():
 def test_bad_label_dim_dense():
     input_and_output_dim = 10
     num_train = 10
+    model = get_good_model(input_and_output_dim)
     train_config = get_simple_train_config()
     predict_config = get_simple_predict_config()
 
@@ -116,7 +114,6 @@ def test_bad_label_dim_dense():
             ValueError,
             match=f".*Received dense BoltVector with dimension={bad_dim}, but was supposed to have dimension={input_and_output_dim}.*",
         ):
-            model = get_good_model(input_and_output_dim)
             model.train(data, labels, train_config)
 
 
