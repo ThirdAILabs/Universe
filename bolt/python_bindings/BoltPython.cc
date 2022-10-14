@@ -95,6 +95,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
+  py::class_<MarginBCE, std::shared_ptr<MarginBCE>, LossFunction>(
+      bolt_submodule, "MarginBCE")
+      .def(py::init<float, float, bool>(), py::arg("positive_margin"),
+           py::arg("negative_margin"), py::arg("bound"));
+
   auto oracle_types_submodule = bolt_submodule.def_submodule("types");
 
   py::class_<sequential_classifier::DataType>(  // NOLINT
