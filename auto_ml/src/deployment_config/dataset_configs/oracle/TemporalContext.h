@@ -55,7 +55,7 @@ class TemporalContext {
     }
   }
 
-  void update(const std::string& update) {
+  void updateTemporalTrackers(const std::string& update) {
     if (!_processor) {
       throw std::invalid_argument(
           "Attempted to manually update temporal context before training.");
@@ -68,7 +68,7 @@ class TemporalContext {
     }
   }
 
-  void batchUpdate(const std::vector<std::string>& updates) {
+  void batchUpdateTemporalTrackers(const std::vector<std::string>& updates) {
     if (!_processor) {
       throw std::invalid_argument(
           "Attempted to manually update temporal context before training.");

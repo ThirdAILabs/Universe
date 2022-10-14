@@ -1,3 +1,4 @@
+from re import M
 import pytest
 from thirdai import bolt, deployment
 
@@ -32,8 +33,11 @@ def serialize_make_oracle_config():
     )
 
     dataset_config = deployment.OracleDatasetFactory(
-        config=deployment.UserSpecifiedParameter("config", type=deployment.OracleConfig),
-        parallel=deployment.ConstantParameter(False)
+        config=deployment.UserSpecifiedParameter(
+            "config", type=deployment.OracleConfig
+        ),
+        parallel=deployment.ConstantParameter(False),
+        text_pairgram_word_limit=deployment.ConstantParameter(15),
     )
 
     train_eval_params = deployment.TrainEvalParameters(
@@ -135,7 +139,7 @@ def test_index_changes_predict():
 
     first_result = model.predict(sample)
 
-    context.update("0,1,2022-08-31")
+    context.update_temporal_trackers("0,1,2022-08-31")
 
     second_result = model.predict(sample)
 
@@ -155,8 +159,8 @@ def test_context_serialization():
     sample = "0,,2022-08-31"
     update = "0,1,2022-08-31"
 
-    context.update(update)
-    saved_context.update(update)
+    context.update_temporal_trackers(update)
+    saved_context.update_temporal_trackers(update)
 
     original_model_result_after_context_update = model.predict(sample)
     saved_model_result_after_context_update = saved_model.predict(sample)
