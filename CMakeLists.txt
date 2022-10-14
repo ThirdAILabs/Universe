@@ -271,7 +271,8 @@ add_library(
   ${UTILS_SOURCES}
   ${AUTOML_SOURCES})
 
-target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal)
+target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
+                                     cereal::cereal)
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
