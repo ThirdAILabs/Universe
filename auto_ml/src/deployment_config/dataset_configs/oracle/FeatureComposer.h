@@ -24,7 +24,7 @@ class FeatureComposer {
       const OracleConfig& config,
       const TemporalRelationships& temporal_relationships,
       const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
-      uint32_t use_text_pairgrams_if_under_n_words) {
+      uint32_t text_pairgrams_word_limit) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto unknown_during_inference =
@@ -52,7 +52,7 @@ class FeatureComposer {
       if (data_type.isText()) {
         auto text_meta = data_type.asText();
         if (text_meta.average_n_words &&
-            text_meta.average_n_words < use_text_pairgrams_if_under_n_words) {
+            text_meta.average_n_words <= text_pairgrams_word_limit) {
           blocks.push_back(dataset::PairGramTextBlock::make(col_num));
         } else {
           blocks.push_back(dataset::UniGramTextBlock::make(col_num));
