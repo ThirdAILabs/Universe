@@ -6,6 +6,7 @@
 #include <indexer/src/Flash.h>
 #include <indexer/src/Indexer.h>
 #include <algorithm>
+#include <memory>
 #include <iostream>
 #include <random>
 #include <vector>
@@ -13,7 +14,7 @@
 using thirdai::automl::deployment::Flash;
 using thirdai::hashing::DensifiedMinHash;
 
-namespace thirdai::testing {
+namespace thirdai::deployment::testing {
 
 const uint32_t HASHES_PER_TABLE = 15;
 const uint32_t NUM_TABLES = 100;
@@ -122,4 +123,4 @@ TEST(FlashIndexTest, SerializeAndDeserializeFlashIndexTest) {
   }
 }
 
-}  // namespace thirdai::testing
+}  // namespace thirdai::deployment::testing
