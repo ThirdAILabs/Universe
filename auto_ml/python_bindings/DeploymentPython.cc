@@ -158,9 +158,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<OracleDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<OracleDatasetFactoryConfig>>(
       submodule, "OracleDatasetFactory")
-      .def(py::init<HyperParameterPtr<OracleConfigPtr>,
-                    HyperParameterPtr<bool>>(),
-           py::arg("config"), py::arg("parallel"));
+      .def(py::init<HyperParameterPtr<OracleConfigPtr>, HyperParameterPtr<bool>,
+                    HyperParameterPtr<uint32_t>>(),
+           py::arg("config"), py::arg("parallel"),
+           py::arg("text_pairgram_word_limit"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
@@ -221,8 +222,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<TemporalContext, TemporalContextPtr>(submodule, "TemporalContext")
       .def(py::init<>())
       .def("reset", &TemporalContext::reset)
-      .def("update", &TemporalContext::update, py::arg("update"))
-      .def("batch_update", &TemporalContext::batchUpdate, py::arg("updates"));
+      .def("update_temporal_trackers", &TemporalContext::updateTemporalTrackers,
+           py::arg("update"))
+      .def("batch_update_temporal_trackers",
+           &TemporalContext::batchUpdateTemporalTrackers, py::arg("updates"));
 }
 
 template <typename T>

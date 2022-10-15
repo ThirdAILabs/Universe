@@ -33,8 +33,13 @@ struct OracleConfig {
    *
    * target: column name of target variable.
    *
-   * time_granularity: Temporal tracking granularity. Either "daily"/"d",
-   *   "weekly"/"w", "biweekly"/"b", or "monthly"/"m".
+   * time_granularity: Either "daily"/"d", "weekly"/"w", "biweekly"/"b",
+   *   or `"monthly"`/`"m"`. Interval of time that we are interested in.
+   *   Temporal numerical features are clubbed according to this time
+   *   granularity. E.g. if time_granularity="w" and the numerical values
+   *   on days 1 and 2 are 345.25 and 201.1 respectively, then Oracle
+   *   captures a single numerical value of 546.26 for the week instead of
+   *   individual values for the two days. Defaults to "d" (daily).
    *
    * lookahead: How far in the future Oracle has to predict. The given number
    *   is relative to the provided time_granularity.

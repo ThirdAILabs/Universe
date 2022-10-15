@@ -35,13 +35,15 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   static constexpr const char DELIMITER = ',';
 
  public:
-  explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel)
+  explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel,
+                                uint32_t text_pairgram_word_limit)
       : _config(std::move(config)),
         _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
             _config->data_types, _config->provided_relationships,
             _config->lookahead)),
         _context(std::make_shared<TemporalContext>()),
-        _parallel(parallel) {
+        _parallel(parallel),
+        _text_pairgram_word_limit(text_pairgram_word_limit) {
     ColumnNumberMap mock_column_number_map(_config->data_types);
     auto mock_processor = makeLabeledProcessor(mock_column_number_map);
 
@@ -53,7 +55,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
     auto header = data_loader->nextLine();
     if (!header) {
-      throw std::invalid_argument("The dataset must have a header.");
+      throw std::invalid_argument(
+          "The dataset must have a header that contains column names.");
     }
 
     auto current_column_number_map =
@@ -68,6 +71,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     if (!_labeled_batch_processor) {
       _labeled_batch_processor = makeLabeledProcessor(*_column_number_map);
     }
+    if (!_inference_batch_processor) {
+      _inference_batch_processor = makeInferenceProcessor(*_column_number_map);
+    }
     _context->initializeProcessor(_labeled_batch_processor);
 
     return std::make_unique<GenericDatasetLoader>(data_loader,
@@ -76,7 +82,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final {
-    initializeInferenceBatchProcessor();
+    verifyInferenceProcessorIsInitialized();
     BoltVector vector;
     auto sample = dataset::ProcessorUtils::parseCsvRow(input, DELIMITER);
     if (auto exception =
@@ -88,7 +94,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatch(
       const std::vector<std::string>& inputs) final {
-    initializeInferenceBatchProcessor();
+    verifyInferenceProcessorIsInitialized();
     auto [input_batch, _] = _inference_batch_processor->createBatch(inputs);
 
     // We cannot use the initializer list because the copy constructor is
@@ -102,7 +108,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const std::string& sample) final {
-    initializeInferenceBatchProcessor();
+    verifyInferenceProcessorIsInitialized();
 
     auto input_row = dataset::ProcessorUtils::parseCsvRow(sample, DELIMITER);
     auto result = bolt::getSignificanceSortedExplanations(
@@ -157,25 +163,28 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return processor;
   }
 
-  void initializeInferenceBatchProcessor() {
-    if (_inference_batch_processor) {
-      return;
-    }
-    if (!_column_number_map) {
-      throw std::invalid_argument("Attempted inference before training.");
-    }
-    _inference_batch_processor = dataset::GenericBatchProcessor::make(
-        buildInputBlocks(/* column_numbers= */ *_column_number_map,
+  dataset::GenericBatchProcessorPtr makeInferenceProcessor(
+      const ColumnNumberMap& column_number_map) {
+    auto processor = dataset::GenericBatchProcessor::make(
+        buildInputBlocks(/* column_numbers= */ column_number_map,
                          /* should_update_history= */ false),
         /* label_blocks= */ {});
-    _inference_batch_processor->setParallelism(_parallel);
+    processor->setParallelism(_parallel);
+    return processor;
+  }
+
+  void verifyInferenceProcessorIsInitialized() {
+    if (!_inference_batch_processor) {
+      throw std::invalid_argument("Attempted inference before training.");
+    }
   }
 
   std::vector<dataset::BlockPtr> buildInputBlocks(
       const ColumnNumberMap& column_numbers, bool should_update_history) {
     std::vector<dataset::BlockPtr> blocks =
-        FeatureComposer::makeSingleRowFeatureBlocks(
-            *_config, _temporal_relationships, column_numbers, _vocabs);
+        FeatureComposer::makeNonTemporalFeatureBlocks(
+            *_config, _temporal_relationships, column_numbers, _vocabs,
+            _text_pairgram_word_limit);
 
     auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
         *_config, _temporal_relationships, column_numbers, _vocabs, *_context,
@@ -201,6 +210,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   uint32_t _input_dim;
   uint32_t _label_dim;
   bool _parallel;
+  uint32_t _text_pairgram_word_limit;
 
   // Private constructor for cereal.
   OracleDatasetFactory() {}
@@ -211,27 +221,36 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
             _temporal_relationships, _context, _vocabs, _column_number_map,
             _column_number_to_name, _labeled_batch_processor,
-            _inference_batch_processor, _input_dim, _label_dim, _parallel);
+            _inference_batch_processor, _input_dim, _label_dim, _parallel,
+            _text_pairgram_word_limit);
   }
 };
 
 class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
  public:
-  explicit OracleDatasetFactoryConfig(HyperParameterPtr<OracleConfigPtr> config,
-                                      HyperParameterPtr<bool> parallel)
-      : _config(std::move(config)), _parallel(std::move(parallel)) {}
+  explicit OracleDatasetFactoryConfig(
+      HyperParameterPtr<OracleConfigPtr> config,
+      HyperParameterPtr<bool> parallel,
+      HyperParameterPtr<uint32_t> text_pairgram_word_limit)
+      : _config(std::move(config)),
+        _parallel(std::move(parallel)),
+        _text_pairgram_word_limit(std::move(text_pairgram_word_limit)) {}
 
   DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const final {
     auto config = _config->resolve(user_specified_parameters);
     auto parallel = _parallel->resolve(user_specified_parameters);
+    auto text_pairgram_word_limit =
+        _text_pairgram_word_limit->resolve(user_specified_parameters);
 
-    return std::make_unique<OracleDatasetFactory>(config, parallel);
+    return std::make_unique<OracleDatasetFactory>(config, parallel,
+                                                  text_pairgram_word_limit);
   }
 
  private:
   HyperParameterPtr<OracleConfigPtr> _config;
   HyperParameterPtr<bool> _parallel;
+  HyperParameterPtr<uint32_t> _text_pairgram_word_limit;
 
   // Private constructor for cereal.
   OracleDatasetFactoryConfig() {}
@@ -240,7 +259,7 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _config,
-            _parallel);
+            _parallel, _text_pairgram_word_limit);
   }
 };
 

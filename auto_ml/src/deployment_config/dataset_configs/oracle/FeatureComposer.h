@@ -20,10 +20,11 @@ namespace thirdai::automl::deployment {
 
 class FeatureComposer {
  public:
-  static std::vector<dataset::BlockPtr> makeSingleRowFeatureBlocks(
+  static std::vector<dataset::BlockPtr> makeNonTemporalFeatureBlocks(
       const OracleConfig& config,
       const TemporalRelationships& temporal_relationships,
-      const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies) {
+      const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
+      uint32_t text_pairgrams_word_limit) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto unknown_during_inference =
@@ -50,7 +51,8 @@ class FeatureComposer {
 
       if (data_type.isText()) {
         auto text_meta = data_type.asText();
-        if (text_meta.average_n_words && text_meta.average_n_words <= 15) {
+        if (text_meta.average_n_words &&
+            text_meta.average_n_words <= text_pairgrams_word_limit) {
           blocks.push_back(dataset::PairGramTextBlock::make(col_num));
         } else {
           blocks.push_back(dataset::UniGramTextBlock::make(col_num));
@@ -78,7 +80,7 @@ class FeatureComposer {
       temporal_tracking_relationships is an ordered map.
       Therefore, the order of ids is also consistent.
     */
-    uint32_t id = 0;
+    uint32_t temporal_relationship_id = 0;
     for (const auto& [tracking_key_col_name, temporal_configs] :
          temporal_relationships) {
       if (!config.data_types.at(tracking_key_col_name).isCategorical()) {
@@ -88,19 +90,19 @@ class FeatureComposer {
       for (const auto& temporal_config : temporal_configs) {
         if (temporal_config.isCategorical()) {
           blocks.push_back(makeTemporalCategoricalBlock(
-              id, config, context, column_numbers, vocabularies,
-              temporal_config, tracking_key_col_name, timestamp_col_name,
-              should_update_history));
+              temporal_relationship_id, config, context, column_numbers,
+              vocabularies, temporal_config, tracking_key_col_name,
+              timestamp_col_name, should_update_history));
         }
 
         if (temporal_config.isNumerical()) {
           blocks.push_back(makeTemporalNumericalBlock(
-              id, config, context, column_numbers, temporal_config,
-              tracking_key_col_name, timestamp_col_name,
+              temporal_relationship_id, config, context, column_numbers,
+              temporal_config, tracking_key_col_name, timestamp_col_name,
               should_update_history));
         }
 
-        id++;
+        temporal_relationship_id++;
       }
     }
     return blocks;
@@ -113,6 +115,9 @@ class FeatureComposer {
     for (const auto& [_, temporal_configs] : temporal_relationships) {
       for (const auto& temporal_config : temporal_configs) {
         auto col_name = temporal_config.columnName();
+        if (!is_unknown_during_inference.count(col_name)) {
+          is_unknown_during_inference[col_name] = true;
+        }
         is_unknown_during_inference[col_name] &=
             !temporal_config.includesCurrentRow();
       }
@@ -146,10 +151,11 @@ class FeatureComposer {
   }
 
   static dataset::BlockPtr makeTemporalCategoricalBlock(
-      uint32_t id, const OracleConfig& config, TemporalContext& context,
-      const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabs,
-      const TemporalConfig& temporal_config, const std::string& key_column,
-      const std::string& timestamp_column, bool should_update_history) {
+      uint32_t temporal_relationship_id, const OracleConfig& config,
+      TemporalContext& context, const ColumnNumberMap& column_numbers,
+      ColumnVocabularies& vocabs, const TemporalConfig& temporal_config,
+      const std::string& key_column, const std::string& timestamp_column,
+      bool should_update_history) {
     const auto& tracked_column = temporal_config.columnName();
 
     if (!config.data_types.at(tracked_column).isCategorical()) {
@@ -176,17 +182,18 @@ class FeatureComposer {
         /* item_id_map= */
         vocabForColumn(vocabs, tracked_column, tracked_vocab_size),
         /* records= */
-        context.categoricalHistoryForId(id, /* n_users= */ key_vocab_size),
+        context.categoricalHistoryForId(temporal_relationship_id,
+                                        /* n_users= */ key_vocab_size),
         /* track_last_n= */ temporal_meta.track_last_n,
         /* should_update_history= */ should_update_history,
-        /* inlcude_current_row= */ temporal_meta.include_current_row,
+        /* include_current_row= */ temporal_meta.include_current_row,
         /* item_col_delimiter= */ std::nullopt,
         /* time_lag= */ time_lag);
   }
 
   static dataset::BlockPtr makeTemporalNumericalBlock(
-      uint32_t id, const OracleConfig& config, TemporalContext& context,
-      const ColumnNumberMap& column_numbers,
+      uint32_t temporal_relationship_id, const OracleConfig& config,
+      TemporalContext& context, const ColumnNumberMap& column_numbers,
       const TemporalConfig& temporal_config, const std::string& key_column,
       const std::string& timestamp_column, bool should_update_history) {
     const auto& tracked_column = temporal_config.columnName();
@@ -199,7 +206,7 @@ class FeatureComposer {
     auto temporal_meta = temporal_config.asNumerical();
 
     auto numerical_history = context.numericalHistoryForId(
-        /* id= */ id,
+        /* id= */ temporal_relationship_id,
         /* lookahead= */ config.lookahead,
         /* history_length= */ temporal_meta.history_length,
         /* time_granularity= */ config.time_granularity);
