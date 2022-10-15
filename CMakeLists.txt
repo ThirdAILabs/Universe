@@ -251,7 +251,7 @@ set(HASHING_SOURCES
 set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
                       hashtable/src/VectorHashTable.cc)
 
-set(WRAPPER_SOURCES wrappers/src/LicenseWrapper.cc)
+set(LICENSE_WRAPPER_SOURCES wrappers/src/LicenseWrapper.cc)
 
 set(DATASET_SOURCES dataset/src/Vocabulary.cc)
 
@@ -266,7 +266,7 @@ add_library(
   ${SEARCH_SOURCES}
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
-  ${WRAPPER_SOURCES}
+  ${LICENSE_WRAPPER_SOURCES}
   ${DATASET_SOURCES}
   ${COMPRESSION_SOURCES}
   ${UTILS_SOURCES})
