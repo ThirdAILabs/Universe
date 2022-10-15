@@ -49,7 +49,6 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
-  set(CRYPTOPP_LIB cryptopp::cryptopp)
 endif()
 
 if(MSVC)
@@ -293,5 +292,5 @@ pybind11_add_module(
 target_link_libraries(_thirdai PUBLIC thirdai)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
+  target_link_libraries(_thirdai PRIVATE cryptopp::cryptopp)
 endif()
