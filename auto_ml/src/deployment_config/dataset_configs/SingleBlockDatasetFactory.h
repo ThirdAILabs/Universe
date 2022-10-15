@@ -74,10 +74,6 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
         gradients_indices, gradients_ratio, input_row,
         _unlabeled_batch_processor);
 
-    for (auto& response : result) {
-      response.column_name = "input column";
-    }
-
     return result;
   }
 
