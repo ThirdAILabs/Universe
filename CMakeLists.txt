@@ -49,7 +49,6 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
-  set(CRYPTOPP_LIB cryptopp::cryptopp)
 endif()
 
 if(MSVC)
@@ -194,7 +193,11 @@ add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 
-# We don't need this, since this breaks cereal
+# PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
+# requires the boost and we dont want to add the boost dependencies, hence
+# skipping the performance comparison. Earlier we use to include only header(so
+# not using any CMakeLists) but now we have used target based hence including
+# CMakelists thats why we need this.
 set(SKIP_PERFORMANCE_COMPARISON ON)
 add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
@@ -271,6 +274,21 @@ add_library(
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
 
+add_library(
+  thirdai STATIC
+  ${BOLT_SOURCES}
+  ${SEARCH_SOURCES}
+  ${HASHING_SOURCES}
+  ${HASHTABLE_SOURCES}
+  ${DATASET_SOURCES}
+  ${WRAPPER_SOURCES}
+  ${COMPRESSION_SOURCES}
+  ${UTILS_SOURCES}
+  ${AUTOML_SOURCES})
+
+target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
+                                     cereal::cereal)
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
 # from python, but honestly this is more trouble than it's worth so for now this
@@ -290,5 +308,5 @@ pybind11_add_module(
 target_link_libraries(_thirdai PUBLIC thirdai)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
+  target_link_libraries(_thirdai PRIVATE cryptopp::cryptopp)
 endif()
