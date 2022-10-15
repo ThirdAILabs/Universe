@@ -193,7 +193,11 @@ add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 
-# We don't need this, since this breaks cereal
+# PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
+# requires the boost and we dont want to add the boost dependencies, hence
+# skipping the performance comparison. Earlier we use to include only header(so
+# not using any CMakeLists) but now we have used target based hence including
+# CMakelists thats why we need this.
 set(SKIP_PERFORMANCE_COMPARISON ON)
 add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
