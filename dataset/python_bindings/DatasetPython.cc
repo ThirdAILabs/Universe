@@ -16,6 +16,8 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularPairGram.h>
 #include <dataset/src/blocks/Text.h>
+#include <dataset/src/data_pipeline/FeaturizationPipeline.h>
+#include <dataset/src/data_pipeline/columns/NumpyColumns.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -46,7 +48,22 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
-      .def("__repr__", &BoltVector::toString);
+      .def("__repr__", &BoltVector::toString)
+      .def("numpy", [](const BoltVector& vector) -> py::object {
+        NumpyArray<float> activations_array(vector.len);
+        std::copy(vector.activations, vector.activations + vector.len,
+                  activations_array.mutable_data());
+
+        if (vector.isDense()) {
+          return py::object(std::move(activations_array));
+        }
+
+        NumpyArray<uint32_t> active_neurons_array(vector.len);
+        std::copy(vector.active_neurons, vector.active_neurons + vector.len,
+                  active_neurons_array.mutable_data());
+
+        return py::make_tuple(active_neurons_array, activations_array);
+      });
 
   py::class_<Explanation>(dataset_submodule, "Explanation",
                           R"pbdoc(
@@ -425,6 +442,37 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<FixedVocabulary, Vocabulary, std::shared_ptr<FixedVocabulary>>(
       dataset_submodule, "FixedVocabulary")
       .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
+
+  auto columns_submodule = dataset_submodule.def_submodule("columns");
+
+  py::class_<NumpyValueColumn<uint32_t>, Column,
+             std::shared_ptr<NumpyValueColumn<uint32_t>>>(
+      columns_submodule, "NumpyIntegerValueColumn")
+      .def(py::init<const NumpyArray<uint32_t>&>(), py::arg("array"));
+
+  py::class_<NumpyValueColumn<float>, Column,
+             std::shared_ptr<NumpyValueColumn<float>>>(columns_submodule,
+                                                       "NumpyFloatValueColumn")
+      .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
+
+  py::class_<NumpyArrayColumn<uint32_t>, Column,
+             std::shared_ptr<NumpyArrayColumn<uint32_t>>>(
+      columns_submodule, "NumpyIntegerArrayColumn")
+      .def(py::init<const NumpyArray<uint32_t>&>(), py::arg("array"));
+
+  py::class_<NumpyArrayColumn<float>, Column,
+             std::shared_ptr<NumpyArrayColumn<float>>>(columns_submodule,
+                                                       "NumpyFloatArrayColumn")
+      .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
+
+  py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
+      .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
+           py::arg("columns"));
+
+  py::class_<FeaturizationPipeline>(dataset_submodule, "FeaturizationPipeline")
+      .def(py::init<std::vector<TransformationPtr>, std::vector<std::string>>(),
+           py::arg("transformations"), py::arg("output_columns"))
+      .def("featurize", &FeaturizationPipeline::featurize, py::arg("columns"));
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
