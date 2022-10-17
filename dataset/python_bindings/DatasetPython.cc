@@ -445,10 +445,13 @@ void createDatasetSubmodule(py::module_& module) {
 
   auto columns_submodule = dataset_submodule.def_submodule("columns");
 
+  py::class_<Column, ColumnPtr>(columns_submodule, "Column");  // NOLINT
+
   py::class_<NumpyValueColumn<uint32_t>, Column,
              std::shared_ptr<NumpyValueColumn<uint32_t>>>(
       columns_submodule, "NumpyIntegerValueColumn")
-      .def(py::init<const NumpyArray<uint32_t>&>(), py::arg("array"));
+      .def(py::init<const NumpyArray<uint32_t>&, uint32_t>(), py::arg("array"),
+           py::arg("dim"));
 
   py::class_<NumpyValueColumn<float>, Column,
              std::shared_ptr<NumpyValueColumn<float>>>(columns_submodule,
@@ -458,7 +461,8 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<NumpyArrayColumn<uint32_t>, Column,
              std::shared_ptr<NumpyArrayColumn<uint32_t>>>(
       columns_submodule, "NumpyIntegerArrayColumn")
-      .def(py::init<const NumpyArray<uint32_t>&>(), py::arg("array"));
+      .def(py::init<const NumpyArray<uint32_t>&, uint32_t>(), py::arg("array"),
+           py::arg("dim"));
 
   py::class_<NumpyArrayColumn<float>, Column,
              std::shared_ptr<NumpyArrayColumn<float>>>(columns_submodule,

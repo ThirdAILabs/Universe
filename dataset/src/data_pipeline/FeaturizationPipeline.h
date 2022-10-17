@@ -25,21 +25,21 @@ class FeaturizationPipeline {
     std::vector<BoltVector> output_vectors;
     output_vectors.reserve(columns.numRows());
 
-    bool is_dense = std::any_of(output_columns.begin(), output_columns.end(),
+    bool is_dense = std::all_of(output_columns.begin(), output_columns.end(),
                                 [](auto& column) { return column->isDense(); });
 
     for (uint64_t row_index = 0; row_index < columns.numRows(); row_index++) {
       if (is_dense) {
         SegmentedDenseFeatureVector vector;
         for (const auto& column : output_columns) {
-          // Call addFeatureSegment
+          vector.addFeatureSegment(column->dim());
           column->appendRowToVector(vector, row_index);
         }
         output_vectors.push_back(vector.toBoltVector());
       } else {
         SegmentedSparseFeatureVector vector;
         for (const auto& column : output_columns) {
-          // Call addFeatureSegment
+          vector.addFeatureSegment(column->dim());
           column->appendRowToVector(vector, row_index);
         }
         output_vectors.push_back(vector.toBoltVector());

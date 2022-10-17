@@ -4,6 +4,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 namespace thirdai::dataset {
 
@@ -12,6 +13,8 @@ class Column {
   virtual uint64_t numRows() const = 0;
 
   virtual bool isDense() const = 0;
+
+  virtual uint32_t dim() const = 0;
 
   virtual void appendRowToVector(SegmentedFeatureVector& vector,
                                  uint64_t row) const = 0;
@@ -24,7 +27,7 @@ using ColumnPtr = std::shared_ptr<Column>;
 template <typename T>
 class ValueColumn : public Column {
  public:
-  virtual const T& operator[](size_t n) const = 0;
+  virtual const T& operator[](uint64_t n) const = 0;
 
   bool isDense() const final { return std::is_same<T, float>::value; }
 
@@ -64,7 +67,7 @@ class ArrayColumn : public Column {
                                 " of Rowreference of length " +
                                 std::to_string(_len) + ".");
       }
-      return *(_data + i);
+      return _data[i];
     }
 
     uint64_t size() const { return _len; }
@@ -78,36 +81,35 @@ class ArrayColumn : public Column {
     uint64_t _len;
   };
 
-  virtual RowReference operator[](size_t n) const = 0;
+  virtual RowReference operator[](uint64_t n) const = 0;
 
   bool isDense() const final { return std::is_same<T, float>::value; }
 
   void appendRowToVector(SegmentedFeatureVector& vector,
                          uint64_t row) const final {
+    static_assert(std::is_same<T, uint32_t>::value ||
+                      std::is_same<T, float>::value ||
+                      std::is_same<T, std::pair<uint32_t, float>>::value,
+                  "Can only convert columns of type uint32, float32, or "
+                  "(uint32, float32) to BoltVector.");
+
     if constexpr (std::is_same<T, uint32_t>::value) {
       for (uint32_t index : this->operator[](row)) {
         vector.addSparseFeatureToSegment(index, 1.0);
       }
-      return;
     }
 
     if constexpr (std::is_same<T, float>::value) {
-      for (uint32_t value : this->operator[](row)) {
+      for (float value : this->operator[](row)) {
         vector.addDenseFeatureToSegment(value);
       }
-      return;
     }
 
     if constexpr (std::is_same<T, std::pair<uint32_t, float>>::value) {
       for (const auto& [index, value] : this->operator[](row)) {
         vector.addSparseFeatureToSegment(index, value);
       }
-      return;
     }
-
-    throw std::runtime_error(
-        "Cannot convert ArrayColumn to BoltVector if its type is not int, "
-        "float, or (int, float) pair.");
   }
 
   virtual ~ArrayColumn() = default;
