@@ -183,7 +183,6 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
-include_directories(deps/pybind11/include)
 include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 
@@ -237,30 +236,28 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
-file(
-  GLOB
-  BOLT_SOURCES
-  bolt/src/auto_classifiers/*.cc
-  bolt/src/graph/*.cc
-  bolt/src/layers/*.cc
-  bolt/src/networks/*.cc
-  bolt/src/utils/*.cc)
+set(BOLT_SOURCES
+    bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
+    bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
+    bolt/src/layers/ConvLayer.cc)
 
-file(GLOB_RECURSE SEARCH_SOURCES search/src/*.cc)
+set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 
-file(GLOB_RECURSE HASHING_SOURCES hashing/src/*.cc)
+set(HASHING_SOURCES
+    hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
+    hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
 
-file(GLOB_RECURSE HASHTABLE_SOURCES hashtable/src/*.cc)
+set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
+                      hashtable/src/VectorHashTable.cc)
 
-file(GLOB_RECURSE WRAPPER_SOURCES wrappers/src/*.cc)
+set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
-file(GLOB_RECURSE DATASET_SOURCES dataset/src/*.cc)
+set(DATASET_SOURCES dataset/src/Vocabulary.cc)
 
-file(GLOB_RECURSE COMPRESSION_SOURCES compression/src/*.cc)
+set(COMPRESSION_SOURCES compression/src/CountSketch.cc
+                        compression/src/DragonVector.cc)
 
-file(GLOB_RECURSE UTILS_SOURCES utils/*.cc)
-
-file(GLOB RECURSE AUTOML_SOURCES auto_ml/src/*.cc)
+set(UTILS_SOURCES utils/Logging.cc)
 
 add_library(
   thirdai STATIC
@@ -268,11 +265,10 @@ add_library(
   ${SEARCH_SOURCES}
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
+  ${LICENSE_SOURCES}
   ${DATASET_SOURCES}
-  ${WRAPPER_SOURCES}
   ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES}
-  ${AUTOML_SOURCES})
+  ${UTILS_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
