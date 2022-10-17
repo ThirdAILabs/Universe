@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>
-#include <_types/_uint32_t.h>
+#include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/Datasets.h>
 
 namespace thirdai::automl::deployment {
@@ -23,15 +25,19 @@ class Flash {
    * may have to mod it and change the range, or do that in the hashfunction
    * implementation).
    **/
-  explicit Flash(const hashing::HashFunction& function);
+  explicit Flash(hashing::HashFunction* function);
 
   /**
    * This is the same as the single argument constructor, except the supporting
    * hash table has a max reservoir size.
    **/
-  Flash(const hashing::HashFunction& function, uint32_t reservoir_size);
+  Flash(hashing::HashFunction* function, uint32_t reservoir_size);
 
-  Flash& operator=(Flash&& flash_index) = default;
+  /* Constructor called when creating temporary Flash objects to serialize
+   * into */
+  Flash<LABEL_T>() {}
+
+  // Flash& operator=(Flash&& flash_index) = default;
 
   /**
    * Insert all batches in the dataset the Flash data structure.
@@ -58,8 +64,6 @@ class Flash {
   std::vector<std::vector<LABEL_T>> queryBatch(const BATCH_T& batch,
                                                uint32_t top_k,
                                                bool pad_zeros = false) const;
-
-  ~Flash();
 
  private:
   /**
@@ -88,15 +92,17 @@ class Flash {
    */
   LABEL_T verify_and_convert_id(uint64_t id) const;
 
-  const hashing::HashFunction& _hash_function;
-  const uint32_t _num_tables, _range;
+  std::unique_ptr<hashing::HashFunction> _hash_function;
+
+  uint32_t _num_tables;
+  uint32_t _range;
   std::shared_ptr<hashtable::HashTable<LABEL_T>> _hashtable;
 
   // Handle serialization
   friend class cereal::access;
-  template <typename Archive>
+  template <class Archive>
   void serialize(Archive& archive) {
-    archive(_hash_function, _hashtable, _num_tables, _range);
+    archive(_hash_function, _num_tables, _range, _hashtable);
   }
 };
 

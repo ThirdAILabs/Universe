@@ -2,7 +2,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <indexer/src/Flash.h>
 #include <algorithm>
@@ -12,25 +11,23 @@
 
 namespace thirdai::automl::deployment {
 
-template class Flash<uint32_t>;
-template class Flash<uint64_t>;
+// template class Flash<uint32_t>::Flash() {};
 
 template <typename LABEL_T>
-Flash<LABEL_T>::Flash(const hashing::HashFunction& function)
+Flash<LABEL_T>::Flash(hashing::HashFunction* function)
     : _hash_function(function),
-      _num_tables(_hash_function.numTables()),
-      _range(_hash_function.range()),
+      _num_tables(_hash_function->numTables()),
+      _range(_hash_function->range()),
       _hashtable(
           new hashtable::VectorHashTable<LABEL_T, false>(_num_tables, _range)) {
   thirdai::licensing::LicenseWrapper::checkLicense();
 }
 
 template <typename LABEL_T>
-Flash<LABEL_T>::Flash(const hashing::HashFunction& function,
-                      uint32_t reservoir_size)
+Flash<LABEL_T>::Flash(hashing::HashFunction* function, uint32_t reservoir_size)
     : _hash_function(function),
-      _num_tables(_hash_function.numTables()),
-      _range(_hash_function.range()),
+      _num_tables(_hash_function->numTables()),
+      _range(_hash_function->range()),
       _hashtable(new hashtable::VectorHashTable<LABEL_T, true>(
           _num_tables, reservoir_size, _range)) {}
 
@@ -87,7 +84,8 @@ void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
 template <typename LABEL_T>
 template <typename BATCH_T>
 std::vector<uint32_t> Flash<LABEL_T>::hash_batch(const BATCH_T& batch) const {
-  return _hash_function.hashBatchParallel(batch);
+  auto hashes = _hash_function->hashBatchParallel(batch);
+  return hashes;
 }
 
 template <typename LABEL_T>
@@ -142,14 +140,7 @@ std::vector<std::vector<LABEL_T>> Flash<LABEL_T>::queryBatch(
     }
   }
 
-  //   delete[] hashes;
-
   return results;
-}
-
-template <typename LABEL_T>
-Flash<LABEL_T>::~Flash<LABEL_T>() {
-  delete _hashtable;
 }
 
 template <typename LABEL_T>
@@ -191,5 +182,8 @@ std::vector<LABEL_T> Flash<LABEL_T>::getTopKUsingPriorityQueue(
 
   return result;
 }
+
+template class Flash<uint32_t>;
+template class Flash<uint64_t>;
 
 }  // namespace thirdai::automl::deployment

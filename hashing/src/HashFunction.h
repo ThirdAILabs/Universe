@@ -29,7 +29,7 @@ class HashFunction {
   }
 
   void hashBatchParallel(const BoltBatch& batch, uint32_t* output) const {
-#pragma omp parallel for default(none) shared(batch, output)
+#pragma omp parallel for default(none) shared(batch, output, std::cout)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       if (batch[v].isDense()) {
         hashSingleDense(batch[v].activations, batch[v].len,

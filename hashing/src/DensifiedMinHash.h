@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
 #include "MurmurHash.h"
 #include <cstdint>
@@ -29,7 +30,19 @@ class DensifiedMinHash final : public HashFunction {
   std::string getName() const final { return "DensifiedMinhash"; }
 
  private:
-  const uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed;
+  uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HashFunction>(this), _hashes_per_table,
+            _total_num_hashes, _binsize, _seed);
+  }
+
+  // constructor for cereal
+  DensifiedMinHash() : HashFunction(0, 0){};
 };
 
 }  // namespace thirdai::hashing
+
+CEREAL_REGISTER_TYPE(thirdai::hashing::DensifiedMinHash)

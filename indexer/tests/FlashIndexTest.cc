@@ -6,15 +6,15 @@
 #include <indexer/src/Flash.h>
 #include <indexer/src/Indexer.h>
 #include <algorithm>
-#include <memory>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <vector>
 
 using thirdai::automl::deployment::Flash;
 using thirdai::hashing::DensifiedMinHash;
 
-namespace thirdai::deployment::testing {
+namespace thirdai::tests {
 
 const uint32_t HASHES_PER_TABLE = 15;
 const uint32_t NUM_TABLES = 100;
@@ -44,16 +44,22 @@ std::vector<BoltBatch> createBatches(std::vector<BoltVector>& input_vectors,
 }
 
 /* Generates random bolt vectors for testing */
-std::vector<BoltVector> createRandomVectors(
+std::vector<BoltVector> createRandomSparseVectors(
     uint32_t dim, uint32_t num_vectors,
     std::normal_distribution<float> distribution) {
   std::vector<BoltVector> result;
   std::default_random_engine generator;
-  for (uint32_t i = 0; i < num_vectors; i++) {
-    BoltVector vec(/* l = */ dim, /* is_dense = */ true,
-                   /* has_gradient = */ false);
-    std::generate(vec.activations, vec.activations + dim,
+  for (uint32_t vec_index = 0; vec_index < num_vectors; vec_index++) {
+    std::vector<uint32_t> active_neurons(dim);
+    std::vector<float> activations(dim);
+    for (uint32_t i = 0; i < dim; i++) {
+      active_neurons[i] = i;
+    }
+    std::generate(activations.begin(), activations.end(),
                   [&]() { return distribution(generator); });
+
+    auto vec = BoltVector::makeSparseVector(active_neurons, activations);
+
     result.push_back(std::move(vec));
   }
   return result;
@@ -68,22 +74,21 @@ TEST(FlashIndexTest, SerializeAndDeserializeFlashIndexTest) {
   uint32_t top_k = 5;
 
   auto random_vectors_for_index =
-      createRandomVectors(input_vector_dimension, NUM_VECTORS,
-                          std::normal_distribution<float>(0, 1));
+      createRandomSparseVectors(input_vector_dimension, NUM_VECTORS,
+                                std::normal_distribution<float>(0, 1));
 
   auto batches = createBatches(random_vectors_for_index, batch_size);
 
-  auto random_vectors_for_queries = createRandomVectors(
+  auto random_vectors_for_queries = createRandomSparseVectors(
       input_vector_dimension, 1000, std::normal_distribution<float>(0, 1));
   auto flash_index_queries =
       createBatches(random_vectors_for_queries, words_per_query);
 
   // Create a Flash Index
-  Flash<uint32_t> flash_index(
-      DensifiedMinHash(HASHES_PER_TABLE, NUM_TABLES, RANGE));
-
-  Flash<uint32_t> deserialized_index(
-      DensifiedMinHash(HASHES_PER_TABLE, NUM_TABLES, RANGE));
+  auto* hash_function =
+      new DensifiedMinHash(HASHES_PER_TABLE, NUM_TABLES, RANGE);
+  auto flash_index = Flash<uint32_t>(hash_function);
+  Flash<uint32_t> deserialized_index;
 
   for (BoltBatch& batch : batches) {
     flash_index.addBatch(batch);
@@ -123,4 +128,4 @@ TEST(FlashIndexTest, SerializeAndDeserializeFlashIndexTest) {
   }
 }
 
-}  // namespace thirdai::deployment::testing
+}  // namespace thirdai::tests

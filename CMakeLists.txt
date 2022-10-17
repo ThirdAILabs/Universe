@@ -221,6 +221,7 @@ add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
 add_subdirectory(exceptions)
+add_subdirectory(indexer)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
@@ -243,6 +244,8 @@ file(
   bolt/src/utils/*.cc)
 
 file(GLOB_RECURSE SEARCH_SOURCES search/src/*.cc)
+
+file(GLOB_RECURSE FLASH_INDEXER_SOURCES indexer/src/*.cc)
 
 file(GLOB_RECURSE HASHING_SOURCES hashing/src/*.cc)
 
@@ -275,6 +278,7 @@ pybind11_add_module(
   auto_ml/python_bindings/DeploymentPython.cc
   ${BOLT_SOURCES}
   ${SEARCH_SOURCES}
+  ${FLASH_INDEXER_SOURCES}
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
   ${DATASET_SOURCES}
