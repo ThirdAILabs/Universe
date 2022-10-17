@@ -115,7 +115,10 @@ else()
   endif(NOT OpenMP_FOUND)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  add_compile_options(
+
+endif()
+
+set(COMPILE_OPTIONS
     -Wall
     -Wextra
     -Werror
@@ -147,25 +150,8 @@ else()
     $<$<CONFIG:RelWithAsan>:-g>
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
 
-endif()
-
-# Add feature flags passed in from python
-add_compile_definitions(${FEATURE_FLAGS})
-
-# In debug mode we are using ASan (address sanitizer) to provide better
-# information on errors. We only run with this in debug mode because it carries
-# a performace penalty. See
-# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
-# information.
-
-# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang.
-if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
-  add_compile_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                      $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-
-  add_link_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                   $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-endif()
+set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
+                         $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
 # Custom command line options
 
@@ -290,6 +276,33 @@ pybind11_add_module(
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
+
+if(NOT MSVC)
+  target_compile_options(thirdai PRIVATE ${COMPILE_OPTIONS})
+  target_compile_options(_thirdai PRIVATE ${COMPILE_OPTIONS})
+endif()
+
+# Add feature flags passed in from python
+target_compile_definitions(thirdai PRIVATE ${FEATURE_FLAGS})
+target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
+
+# In debug mode we are using ASan (address sanitizer) to provide better
+# information on errors. We only run with this in debug mode because it carries
+# a performace penalty. See
+# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
+# information.
+
+# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang.
+
+if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
+  target_compile_options(thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+
+  target_link_options(thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+
+  target_compile_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+
+  target_link_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+endif()
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE cryptopp::cryptopp)
