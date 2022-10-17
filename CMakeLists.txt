@@ -183,7 +183,6 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
-include_directories(deps/pybind11/include)
 include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 
@@ -251,7 +250,7 @@ set(HASHING_SOURCES
 set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
                       hashtable/src/VectorHashTable.cc)
 
-set(LICENSE_WRAPPER_SOURCES wrappers/src/LicenseWrapper.cc)
+set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
 set(DATASET_SOURCES dataset/src/Vocabulary.cc)
 
@@ -266,7 +265,7 @@ add_library(
   ${SEARCH_SOURCES}
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
-  ${LICENSE_WRAPPER_SOURCES}
+  ${LICENSE_SOURCES}
   ${DATASET_SOURCES}
   ${COMPRESSION_SOURCES}
   ${UTILS_SOURCES})
