@@ -1,10 +1,15 @@
 from typing import Callable, List, Optional, Tuple, Union
 
 from thirdai._thirdai import dataset
-from thirdai._thirdai.deployment import DatasetLoader
 
+# These classes implement the DatasetGenerator interact, but when I tried making
+# them extend it explicitly using Pybind I ran into problems pickling these
+# classes, since they didn't know how to pickle the parent class. Since we 
+# currently don't need to pass DatasetGenerators into C++, we can leave the
+# inheritance as python style "duck" inheritance for now (if it quacks like a
+# DatasetGenerator then its a DatasetGenerator).
 
-class GenericInMemoryTrainGenerator(DatasetLoader):
+class GenericInMemoryDatasetLoader():
     """
     Wraps a generator function that returns a single pair of training and label
     datasets into an in memory data generator ready to pass into the distributed
@@ -43,7 +48,7 @@ class GenericInMemoryTrainGenerator(DatasetLoader):
         self.generated_for_this_epoch = False
 
 
-class SvmTrainGenerator(GenericInMemoryTrainGenerator):
+class SvmDatasetLoader(GenericInMemoryDatasetLoader):
     """
     Returns a simple in memory data generator ready to pass into the distributed
     API that will read in the given file name with the given batch_size. The
@@ -60,7 +65,7 @@ class SvmTrainGenerator(GenericInMemoryTrainGenerator):
         )
 
 
-class GenericStreamingTrainGenerator(DatasetLoader):
+class GenericStreamingDatasetLoader():
     """
     Wraps a simple dataset generator function into a multi-epoch generator
     ready to pass into the distributed API.
@@ -111,7 +116,7 @@ class GenericStreamingTrainGenerator(DatasetLoader):
 # This gets around having to write serialization code for all of our
 # batch processors
 # TODO(Josh): We should probably write all of the serialization code
-class DatasetLoaderFactoryWrapper(DatasetLoader):
+class DatasetLoaderFactoryWrapper():
     def __init__(
         self,
         data_loader: Union[Tuple[str, int], dataset.DataLoader],

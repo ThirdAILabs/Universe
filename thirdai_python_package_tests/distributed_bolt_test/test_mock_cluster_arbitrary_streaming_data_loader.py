@@ -57,8 +57,8 @@ def train_simple_streaming(ray_two_node_cluster_config):
     model = get_simple_model()
 
     train_sources = [
-        db.GenericStreamingTrainGenerator(lambda i: get_dataset(i, low=0, high=5)),
-        db.GenericStreamingTrainGenerator(lambda i: get_dataset(i, low=5, high=10)),
+        db.GenericStreamingDatasetLoader(lambda i: get_dataset(i, low=0, high=5)),
+        db.GenericStreamingDatasetLoader(lambda i: get_dataset(i, low=5, high=10)),
     ]
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
     distributed_model = db.DistributedDataParallel(

@@ -3,4 +3,4 @@ from .distributed import (
     RayTrainingClusterConfig,
     distribute_model_pipeline,
 )
-from .train_generators import GenericStreamingTrainGenerator, SvmTrainGenerator
+from .dataset_loaders import GenericStreamingDatasetLoader, SvmDatasetLoader
