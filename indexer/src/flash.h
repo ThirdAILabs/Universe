@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <hashing/src/HashFunction.h>
@@ -37,7 +38,9 @@ class Flash {
    * into */
   Flash<LABEL_T>() {}
 
-  // Flash& operator=(Flash&& flash_index) = default;
+  /* delete copy constructor and assignment operator */
+  Flash& operator=(Flash&& flash_index) = delete;
+  Flash(const Flash& flash_index) = delete;
 
   /**
    * Insert all batches in the dataset the Flash data structure.
