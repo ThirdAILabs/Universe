@@ -1,9 +1,10 @@
 from typing import Callable, List, Optional, Tuple, Union
 
 from thirdai._thirdai import dataset
+from thirdai._thirdai.deployment import DatasetLoader
 
 
-class GenericInMemoryTrainGenerator:
+class GenericInMemoryTrainGenerator(DatasetLoader):
     """
     Wraps a generator function that returns a single pair of training and label
     datasets into an in memory data generator ready to pass into the distributed
@@ -59,7 +60,7 @@ class SvmTrainGenerator(GenericInMemoryTrainGenerator):
         )
 
 
-class GenericStreamingTrainGenerator:
+class GenericStreamingTrainGenerator(DatasetLoader):
     """
     Wraps a simple dataset generator function into a multi-epoch generator
     ready to pass into the distributed API.
@@ -110,7 +111,7 @@ class GenericStreamingTrainGenerator:
 # This gets around having to write serialization code for all of our
 # batch processors
 # TODO(Josh): We should probably write all of the serialization code
-class ModelPipelineWrapper:
+class DatasetLoaderFactoryWrapper(DatasetLoader):
     def __init__(
         self,
         data_loader: Union[Tuple[str, int], dataset.DataLoader],

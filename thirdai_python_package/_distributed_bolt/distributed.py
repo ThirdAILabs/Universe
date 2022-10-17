@@ -10,8 +10,9 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._distributed_bolt.train_generators import ModelPipelineWrapper
+from thirdai._distributed_bolt.train_generators import DatasetLoaderFactoryWrapper
 from thirdai._thirdai import bolt, dataset, deployment
+from thirdai._thirdai.deployment import DatasetLoader
 
 from .utils import get_num_cpus, init_logging
 
@@ -138,7 +139,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.graph.Model,
         train_config: bolt.graph.TrainConfig,
-        train_sources,
+        train_sources: List[DatasetLoader],
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -216,7 +217,7 @@ class DistributedDataParallel:
             Dict: A dictionary with some statistics about training, including
             total batches trained and total real time.
         """
-        start = time.time()
+        train_start = time.time()
         train_state_manager = TrainStateManager(
             self.workers,
             self.primary_worker,
@@ -233,7 +234,7 @@ class DistributedDataParallel:
 
         train_state_manager.finish_training()
         return {
-            "time": time.time() - start,
+            "time": time.time() - train_start,
             "total_batches_trained": total_batches_trained,
         }
 
@@ -249,7 +250,7 @@ def distribute_model_pipeline(
     max_in_memory_batches: int,
 ):
     dataset_loaders = [
-        ModelPipelineWrapper(
+        DatasetLoaderFactoryWrapper(
             model_pipeline=model_pipeline,
             data_loader=loader,
             max_in_memory_batches=max_in_memory_batches,

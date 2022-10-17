@@ -29,7 +29,13 @@ class TrainStateManager:
         self.logging = logging
         self.communication_type = communication_type
         self.logging.info(f"Using {communication_type} method for communication")
-        self.overall_batch_count = 0
+        # This tracks the total number of batches completed in this epoch for
+        # the distributed job.
+        # This differs from the batch count on each worker, which just tracks
+        # the current batch within the current dataset on the worker, which will
+        # be different if each worker has multiple datasets streamed in, or if
+        # something causes a worker to be restarted in the middle of training.
+        self.current_batch_id = 0
         if communication_type == "circular":
             for i in range(len(self.workers)):
                 ray.get(
@@ -88,11 +94,12 @@ class TrainStateManager:
         has_next_batch = self._compute_and_store_next_batch_gradients()
         self._communicate()
         self._update_parameters()
-        self.overall_batch_count += 1
         self._log_post_batch(epoch)
+        self.current_batch_id += 1
         return has_next_batch
 
     def move_to_next_epoch(self):
+        self.current_batch_id = 0
         ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
 
     def _compute_and_store_next_batch_gradients(self):
@@ -146,10 +153,11 @@ class TrainStateManager:
     def _log_post_batch(self, epoch):
         """
         Logs the training after every batch using the current minimum training
-        epoch across workers and the stored self.overall_batch_count in this
+        epoch across workers and the stored self.current_batch_id in this
         manager, which counts how many total "batches" (iterations of compute
-        gradients, communicate, update parameters) we have completed.
+        gradients, communicate, update parameters) we have completed in this
+        epoch so far.
         """
         self.logging.info(
-            f"Epoch No: {epoch}, Batch Count: {self.overall_batch_count}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
+            f"Epoch No: {epoch}, Batch Count: {self.current_batch_id}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
         )

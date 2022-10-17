@@ -11,14 +11,14 @@ void defineAutoClassifierCommonMethods(py::class_<CLASSIFIER>& py_class) {
   py_class
       .def("train",
            py::overload_cast<const std::string&, uint32_t, float,
-                             std::optional<uint32_t>, std::optional<uint32_t>>(
+                             std::optional<uint32_t>, std::optional<uint64_t>>(
                &CLASSIFIER::train),
            py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
            py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt)
       .def("train",
            py::overload_cast<const std::shared_ptr<dataset::DataLoader>&,
-                             uint32_t, float, std::optional<uint32_t>>(
+                             uint32_t, float, std::optional<uint64_t>>(
                &CLASSIFIER::train),
            py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
            py::arg("max_in_memory_batches") = std::nullopt)

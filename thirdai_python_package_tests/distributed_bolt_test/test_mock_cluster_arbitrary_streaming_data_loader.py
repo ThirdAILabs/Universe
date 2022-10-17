@@ -43,9 +43,9 @@ def get_dataset(dataset_id, low, high, dataset_size=1000, batch_size=256):
     if dataset_id + low >= high or dataset_id < 0:
         return None
 
-    dataset_and_labels_np = (np.ones((dataset_size,)) * (low + dataset_id)).astype(
-        "uint32"
-    )
+    dataset_and_labels_np = np.full(
+        shape=(dataset_size,), fill_value=low + dataset_id
+    ).astype("uint32")
     dataset_and_labels = dataset.from_numpy(
         dataset_and_labels_np, batch_size=batch_size
     )
