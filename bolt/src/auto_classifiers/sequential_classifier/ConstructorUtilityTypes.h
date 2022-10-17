@@ -3,109 +3,152 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/variant.hpp>
+#include <utils/StringManipulation.h>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <variant>
 
 namespace thirdai::bolt::sequential_classifier {
 
 struct CategoricalDataType {
+  explicit CategoricalDataType(uint32_t n_unique_classes,
+                               std::optional<char> delimiter)
+      : n_unique_classes(n_unique_classes), delimiter(delimiter) {}
+
   uint32_t n_unique_classes;
+  std::optional<char> delimiter;
+
+ private:
+  // Private constructor for Cereal.
+  CategoricalDataType() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(n_unique_classes, delimiter);
+  }
 };
 
 struct TextDataType {
+  explicit TextDataType(std::optional<uint32_t> average_n_words,
+                        const std::string& embedding_size, bool force_pairgram)
+      : average_n_words(average_n_words), force_pairgram(force_pairgram) {
+    auto embedding_size_lower = utils::lower(embedding_size);
+    if (embedding_size_lower == "s" || embedding_size_lower == "small") {
+      this->dim = 30000;
+    } else if (embedding_size_lower == "m" ||
+               embedding_size_lower == "medium") {
+      this->dim = 100000;
+    } else if (embedding_size_lower == "l" || embedding_size_lower == "large") {
+      this->dim = 500000;
+    } else {
+      throw std::invalid_argument(
+          embedding_size +
+          " is not a valid embedding size option. Choose between 'small'/'s', "
+          "'medium'/'m', and 'large'/'l'.");
+    }
+  }
   std::optional<uint32_t> average_n_words;
+  uint32_t dim;
+  bool force_pairgram;
+
+ private:
+  // Private constructor for Cereal
+  TextDataType() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(average_n_words, dim, force_pairgram);
+  }
 };
 
 struct NumericalDataType {};
 
 struct DateDataType {};
 
-enum class Type { categorical, text, numerical, date, no_type };
+struct NoneDataType {};
+
+using AnyDataType = std::variant<CategoricalDataType, TextDataType,
+                                 NumericalDataType, DateDataType, NoneDataType>;
 
 class DataType {
  public:
-  DataType() : _type(Type::no_type) {}
+  DataType() : _value(NoneDataType()) {}
 
-  static auto categorical(uint32_t n_unique_classes) {
-    return DataType(/* type= */ Type::categorical,
-                    /* n_unique_classes= */ n_unique_classes,
-                    /* average_n_words= */ 0);
+  static auto categorical(uint32_t n_unique_classes,
+                          std::optional<char> delimiter = std::nullopt) {
+    return DataType(CategoricalDataType(n_unique_classes, delimiter));
   }
 
-  static auto text(std::optional<uint32_t> average_n_words = std::nullopt) {
-    return DataType(/* type= */ Type::text, /* n_unique_classes= */ 0,
-                    /* average_n_words= */ average_n_words);
+  static auto text(std::optional<uint32_t> average_n_words = std::nullopt,
+                   const std::string& embedding_size = "m",
+                   bool use_attention = false) {
+    return DataType(TextDataType(average_n_words, embedding_size,
+                                 /* force_pairgram= */ use_attention));
   }
 
-  static auto numerical() {
-    return DataType(/* type= */ Type::numerical, /* n_unique_classes= */ 0,
-                    /* average_n_words= */ 0);
+  static auto numerical() { return DataType(NumericalDataType()); }
+
+  static auto date() { return DataType(DateDataType()); }
+
+  bool isCategorical() const {
+    return std::holds_alternative<CategoricalDataType>(_value);
   }
-
-  static auto date() {
-    return DataType(/* type= */ Type::date, /* n_unique_classes= */ 0,
-                    /* average_n_words= */ 0);
+  bool isNumerical() const {
+    return std::holds_alternative<NumericalDataType>(_value);
   }
+  bool isText() const { return std::holds_alternative<TextDataType>(_value); }
+  bool isDate() const { return std::holds_alternative<DateDataType>(_value); }
 
-  bool isCategorical() const { return _type == Type::categorical; }
-  bool isNumerical() const { return _type == Type::numerical; }
-  bool isText() const { return _type == Type::text; }
-  bool isDate() const { return _type == Type::date; }
-
-  CategoricalDataType asCategorical() const {
+  const CategoricalDataType& asCategorical() const {
     if (!isCategorical()) {
-      throw std::invalid_argument(
-          "[DataType] Tried to cast non-categorical datatype as a categorical "
-          "datatype.");
+      throwCastError("categorical");
     }
-    return {_n_unique_classes};
+    return std::get<CategoricalDataType>(_value);
   }
 
-  TextDataType asText() const {
+  const TextDataType& asText() const {
     if (!isText()) {
-      throw std::invalid_argument(
-          "[DataType] Tried to cast non-text datatype as a text datatype.");
+      throwCastError("text");
     }
-    return {_average_n_words};
+    return std::get<TextDataType>(_value);
   }
 
-  NumericalDataType asNumerical() const {
+  const NumericalDataType& asNumerical() const {
     if (!isNumerical()) {
-      throw std::invalid_argument(
-          "[DataType] Tried to cast non-numerical datatype as a numerical "
-          "datatype.");
+      throwCastError("numerical");
     }
-    return {};
+    return std::get<NumericalDataType>(_value);
   }
 
-  DateDataType asDate() const {
+  const DateDataType& asDate() const {
     if (!isDate()) {
-      throw std::invalid_argument(
-          "[DataType] Tried to cast non-date datatype as a date datatype.");
+      throwCastError("date");
     }
-    return {};
+    return std::get<DateDataType>(_value);
   }
 
  private:
-  explicit DataType(Type type, uint32_t n_unique_classes,
-                    std::optional<uint32_t> average_n_words)
-      : _type(type),
-        _n_unique_classes(n_unique_classes),
-        _average_n_words(average_n_words) {}
+  static void throwCastError(std::string&& type_name) {
+    throw std::invalid_argument("[DataType] Tried to cast non-" + type_name +
+                                " datatype as a " + type_name + " datatype.");
+  }
 
-  Type _type;
-  uint32_t _n_unique_classes;
-  std::optional<uint32_t> _average_n_words;
+  explicit DataType(AnyDataType value) : _value(value) {}
+
+  AnyDataType _value;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_type, _n_unique_classes, _average_n_words);
+    archive(_value);
   }
 };
 

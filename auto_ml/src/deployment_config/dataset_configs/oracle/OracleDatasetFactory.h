@@ -32,8 +32,6 @@
 namespace thirdai::automl::deployment {
 
 class OracleDatasetFactory final : public DatasetLoaderFactory {
-  static constexpr const char DELIMITER = ',';
-
  public:
   explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel,
                                 uint32_t text_pairgram_word_limit)
@@ -60,7 +58,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     }
 
     auto current_column_number_map =
-        std::make_shared<ColumnNumberMap>(*header, DELIMITER);
+        std::make_shared<ColumnNumberMap>(*header, _config->delimiter);
     if (!_column_number_map) {
       _column_number_map = std::move(current_column_number_map);
       _column_number_to_name = _column_number_map->getColumnNumToColNameMap();
@@ -84,7 +82,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   std::vector<BoltVector> featurizeInput(const std::string& input) final {
     verifyInferenceProcessorIsInitialized();
     BoltVector vector;
-    auto sample = dataset::ProcessorUtils::parseCsvRow(input, DELIMITER);
+    auto sample =
+        dataset::ProcessorUtils::parseCsvRow(input, _config->delimiter);
     if (auto exception =
             _inference_batch_processor->makeInputVector(sample, vector)) {
       std::rethrow_exception(exception);
@@ -110,7 +109,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       const std::string& sample) final {
     verifyInferenceProcessorIsInitialized();
 
-    auto input_row = dataset::ProcessorUtils::parseCsvRow(sample, DELIMITER);
+    auto input_row =
+        dataset::ProcessorUtils::parseCsvRow(sample, _config->delimiter);
     auto result = bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, input_row,
         _inference_batch_processor);
@@ -151,7 +151,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
     auto label_block = dataset::NumericalCategoricalBlock::make(
         /* col= */ column_number_map.at(_config->target),
-        /* n_classes= */ target_type.asCategorical().n_unique_classes);
+        /* n_classes= */ target_type.asCategorical().n_unique_classes,
+        /* delimiter= */ target_type.asCategorical().delimiter);
 
     auto input_blocks =
         buildInputBlocks(/* column_numbers= */ column_number_map,

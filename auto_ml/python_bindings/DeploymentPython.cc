@@ -84,7 +84,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defOptionMappedParameter<OracleConfigPtr>(submodule);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
-                py::arg("name"), py::arg("type"));
+                py::arg("name"), py::arg("type"),
+                py::arg("default_value") = py::cast(std::nullopt));
 
   py::class_<AutotunedSparsityParameter, HyperParameter<float>,
              std::shared_ptr<AutotunedSparsityParameter>>(
@@ -197,8 +198,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("predict_config") = std::nullopt)
       .def("predict", &predictWrapper, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false)
-      .def("explain", &ModelPipeline::explain, py::arg("input_sample"),
-           py::arg("target_class") = std::nullopt)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false)
       .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"),
@@ -214,10 +213,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 
   py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
-                    std::string, std::string, uint32_t>(),
+                    std::string, std::string, uint32_t, char>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
            py::arg("target"), py::arg("time_granularity") = "daily",
-           py::arg("lookahead") = 0);
+           py::arg("lookahead") = 0, py::arg("delimiter") = ',');
 
   py::class_<TemporalContext, TemporalContextPtr>(submodule, "TemporalContext")
       .def(py::init<>())
@@ -241,26 +240,32 @@ void defOptionMappedParameter(py::module_& submodule) {
 }
 
 py::object makeUserSpecifiedParameter(const std::string& name,
-                                      const py::object& type) {
+                                      const py::object& type,
+                                      const py::object& default_value) {
   if (py::str(type).cast<std::string>() == "<class 'bool'>") {
-    return py::cast(UserSpecifiedParameter<bool>::make(name));
+    return py::cast(UserSpecifiedParameter<bool>::make(
+        name, default_value.cast<std::optional<bool>>()));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'int'>") {
-    return py::cast(UserSpecifiedParameter<uint32_t>::make(name));
+    return py::cast(UserSpecifiedParameter<uint32_t>::make(
+        name, default_value.cast<std::optional<uint32_t>>()));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'float'>") {
-    return py::cast(UserSpecifiedParameter<float>::make(name));
+    return py::cast(UserSpecifiedParameter<float>::make(
+        name, default_value.cast<std::optional<float>>()));
   }
 
   if (py::str(type).cast<std::string>() == "<class 'str'>") {
-    return py::cast(UserSpecifiedParameter<std::string>::make(name));
+    return py::cast(UserSpecifiedParameter<std::string>::make(
+        name, default_value.cast<std::optional<std::string>>()));
   }
 
   if (py::str(type).cast<std::string>() ==
       "<class 'thirdai._thirdai.deployment.OracleConfig'>") {
-    return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(name));
+    return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(
+        name, default_value.cast<std::optional<OracleConfigPtr>>()));
   }
 
   throw std::invalid_argument("Invalid type '" +
