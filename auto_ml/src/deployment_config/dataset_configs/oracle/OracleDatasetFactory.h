@@ -67,6 +67,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     if (!_labeled_batch_processor) {
       _labeled_batch_processor = makeLabeledProcessor(*_column_number_map);
     }
+
+    // We initialize the inference batch processor here because we need the
+    // column number map.
     if (!_inference_batch_processor) {
       _inference_batch_processor = makeInferenceProcessor(*_column_number_map);
     }
