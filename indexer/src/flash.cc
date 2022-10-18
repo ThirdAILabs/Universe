@@ -18,6 +18,7 @@ Flash<LABEL_T>::Flash(hashing::HashFunction* function)
     : _hash_function(function),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
+      _batch_elements_counter(0),
       _hashtable(
           new hashtable::VectorHashTable<LABEL_T, false>(_num_tables, _range)) {
   thirdai::licensing::LicenseWrapper::checkLicense();
@@ -31,11 +32,6 @@ Flash<LABEL_T>::Flash(hashing::HashFunction* function, uint32_t reservoir_size)
       _hashtable(new hashtable::VectorHashTable<LABEL_T, true>(
           _num_tables, reservoir_size, _range)) {}
 
-template void Flash<uint32_t>::addDataset(
-    dataset::InMemoryDataset<thirdai::BoltBatch>&);
-
-template void Flash<uint64_t>::addDataset(
-    dataset::InMemoryDataset<thirdai::BoltBatch>&);
 
 template <typename LABEL_T>
 template <typename BATCH_T>
@@ -61,12 +57,6 @@ void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BATCH_T>& dataset) {
   }
 }
 
-template void Flash<uint32_t>::addBatch<thirdai::BoltBatch>(
-    const thirdai::BoltBatch&);
-
-template void Flash<uint64_t>::addBatch<thirdai::BoltBatch>(
-    const thirdai::BoltBatch&);
-
 template <typename LABEL_T>
 template <typename BATCH_T>
 void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
@@ -76,9 +66,11 @@ void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
   } catch (std::invalid_argument& error) {
     throw error;
   }
-  // check the LABEL_T start function parameter
-  _hashtable->insertSequential(batch.getBatchSize(), batch.getBatchSize(),
+  
+  _hashtable->insertSequential(batch.getBatchSize(), _batch_elements_counter,
                                hashes.data());
+
+  incrementBatchElementsCounter(batch.getBatchSize());
 }
 
 template <typename LABEL_T>
@@ -91,7 +83,7 @@ std::vector<uint32_t> Flash<LABEL_T>::hash_batch(const BATCH_T& batch) const {
 template <typename LABEL_T>
 template <typename BATCH_T>
 void Flash<LABEL_T>::verifyBatchSequentialIds(const BATCH_T& batch) const {
-  uint64_t largest_batch_id = 2 * batch.getBatchSize();
+  uint64_t largest_batch_id = _batch_elements_counter + batch.getBatchSize();
   verify_and_convert_id(largest_batch_id);
 }
 

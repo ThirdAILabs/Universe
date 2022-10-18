@@ -3,7 +3,7 @@ include(GoogleTest)
 
 add_executable(flash_index_test FlashIndexTest.cc)
 
-target_link_libraries(flash_index_test PUBLIC hash_function_lib flash_indexer_lib gmock_main gtest_main)
+target_link_libraries(flash_index_test PRIVATE thirdai gmock_main gtest_main)
 
 set(FLASH_INDEX_TESTS flash_index_test)
 

@@ -207,14 +207,15 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 
   py::class_<deployment::FlashIndexConfig, deployment::FlashIndexConfigPtr>(
       submodule, "FlashIndexConfig")
-      // .def(py::init(&deployment::FlashIndexConfig::load),
-      //      py::arg("config_file_name"))
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("input_dim"))
       .def("save", &deployment::FlashIndexConfig::save, py::arg("file_name"))
       .def_static("load", &deployment::FlashIndexConfig::load,
                   py::arg("config_file_name"));
+
+  py::class_<deployment::Flash<uint32_t>>(submodule, "Flash");
+  py::class_<deployment::Flash<uint64_t>>(submodule, "Flash");
 
   py::class_<deployment::Indexer, deployment::IndexerPtr>(submodule, "Indexer")
       .def(py::init(&deployment::Indexer::buildIndexerFromSerializedConfig),
