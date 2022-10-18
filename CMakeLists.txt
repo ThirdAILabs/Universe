@@ -148,7 +148,10 @@ set(THIRDAI_COMPILE_OPTIONS
     $<$<CONFIG:RelWithAsan>:-funroll-loops>
     $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
     $<$<CONFIG:RelWithAsan>:-g>
-    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
+    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
+    
+    $<$<CONFIG:CompileTrace>:-ftime-trace>
+    )
 
 set(THIRDAI_ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
                                  $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
