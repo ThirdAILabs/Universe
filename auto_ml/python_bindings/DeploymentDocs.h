@@ -916,7 +916,7 @@ If temporal tracking relationships are provided, Oracle can make better predicti
 by taking temporal context into account. For example, Oracle may keep track of 
 the last few movies that a user has watched to better recommend the next movie. 
 Thus, Oracle is at its best when its internal temporal context gets updated with
-new true samples. `.update()` does exactly this. 
+new true samples. `.update_temporal_trackers()` does exactly this. 
 
 )pbdoc";
 
@@ -927,8 +927,8 @@ If temporal tracking relationships are provided, Oracle can make better predicti
 by taking temporal context into account. For example, Oracle may keep track of 
 the last few movies that a user has watched to better recommend the next movie. 
 Thus, Oracle is at its best when its internal temporal context gets updated with
-new true samples. Just like `.update()`, `.update_batch()` does exactly this, except
-with a batch input.
+new true samples. Just like `.update_temporal_trackers()`, 
+`.batch_update_temporal_trackers()` does exactly this, except with a batch input.
 
 )pbdoc";
 
