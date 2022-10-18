@@ -35,7 +35,7 @@ struct OracleConfig {
    *
    * time_granularity: Either "daily"/"d", "weekly"/"w", "biweekly"/"b",
    *   or `"monthly"`/`"m"`. Interval of time that we are interested in.
-   *   Temporal numerical features are clubbed according to this time
+   *   Temporal numerical features are grouped according to this time
    *   granularity. E.g. if time_granularity="w" and the numerical values
    *   on days 1 and 2 are 345.25 and 201.1 respectively, then Oracle
    *   captures a single numerical value of 546.26 for the week instead of

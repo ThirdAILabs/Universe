@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/variant.hpp>
@@ -23,10 +24,9 @@ struct CategoricalDataType {
   uint32_t n_unique_classes;
   std::optional<char> delimiter;
 
- private:
-  // Private constructor for Cereal.
   CategoricalDataType() {}
 
+ private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
@@ -57,10 +57,9 @@ struct TextDataType {
   uint32_t dim;
   bool force_pairgram;
 
- private:
-  // Private constructor for Cereal
   TextDataType() {}
 
+ private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
@@ -74,8 +73,8 @@ struct DateDataType {};
 
 struct NoneDataType {};
 
-using AnyDataType = std::variant<CategoricalDataType, TextDataType,
-                                 NumericalDataType, DateDataType, NoneDataType>;
+using AnyDataType = std::variant<NoneDataType, DateDataType, NumericalDataType,
+                                 CategoricalDataType, TextDataType>;
 
 class DataType {
  public:
