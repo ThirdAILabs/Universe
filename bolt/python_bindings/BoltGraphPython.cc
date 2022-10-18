@@ -11,6 +11,7 @@
 #include <bolt/src/graph/callbacks/LearningRateScheduler.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/DlrmAttention.h>
+#include <bolt/src/graph/nodes/DotProduct.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -259,6 +260,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           py::return_value_policy::reference_internal,
           "Returns a ParameterReference object to the weight gradients "
           "matrix.");
+
+  py::class_<DotProductNode, DotProductNodePtr, Node>(graph_submodule,
+                                                      "DotProduct")
+      .def(py::init(&DotProductNode::make))
+      .def("__call__", &DotProductNode::setPredecessors, py::arg("lhs"),
+           py::arg("rhs"));
 
   graph_submodule.def("TokenInput", &Input::makeTokenInput, py::arg("dim"),
                       py::arg("num_tokens_range"));
