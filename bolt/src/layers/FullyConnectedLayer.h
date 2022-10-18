@@ -4,7 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
 #include "LayerUtils.h"
-#include <bolt/src/layers/Optimizer.h>
+#include <bolt/src/optimizers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
@@ -46,7 +46,7 @@ class FullyConnectedLayer final {
 
   void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  void updateParameters(float learning_rate);
 
   void enableDistributedTraining() { _is_distributed = true; };
 
@@ -91,9 +91,9 @@ class FullyConnectedLayer final {
 
   float* getBiasesPtr() { return _biases.data(); }
 
-  float* getWeightGradientsPtr() { return _weight_optimizer->gradients.data(); }
+  float* getWeightGradientsPtr() { return _weight_gradients.data(); }
 
-  float* getBiasGradientsPtr() { return _bias_optimizer->gradients.data(); }
+  float* getBiasGradientsPtr() { return _bias_gradients.data(); }
 
   float* getWeights() const;
 
@@ -142,10 +142,12 @@ class FullyConnectedLayer final {
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
+  std::vector<float> _weight_gradients;
   std::vector<float> _biases;
+  std::vector<float> _bias_gradients;
 
-  std::optional<AdamOptimizer> _weight_optimizer = std::nullopt;
-  std::optional<AdamOptimizer> _bias_optimizer = std::nullopt;
+  OptimizerPtr _weight_optimizer = nullptr;
+  OptimizerPtr _bias_optimizer = nullptr;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
@@ -226,33 +228,15 @@ class FullyConnectedLayer final {
     return _sampling_mode == BoltSamplingMode::RandomSampling;
   }
 
-  inline void updateSparseSparseWeightParametersNormal(float lr, float B1,
-                                                       float B2, float eps,
-                                                       float B1_bias_corrected,
-                                                       float B2_bias_corrected);
-  inline void updateSparseSparseWeightParametersOptimized(
-      float lr, float B1, float B2, float eps, float B1_bias_corrected,
-      float B2_bias_corrected);
-  inline void updateSparseDenseWeightParameters(float lr, float B1, float B2,
-                                                float eps,
-                                                float B1_bias_corrected,
-                                                float B2_bias_corrected);
-  inline void updateDenseSparseWeightParameters(float lr, float B1, float B2,
-                                                float eps,
-                                                float B1_bias_corrected,
-                                                float B2_bias_corrected);
-  inline void updateDenseDenseWeightParameters(float lr, float B1, float B2,
-                                               float eps,
-                                               float B1_bias_corrected,
-                                               float B2_bias_corrected);
-  inline void updateSingleWeightParameters(uint64_t prev_neuron,
-                                           uint64_t cur_neuron, float lr,
-                                           float B1, float B2, float eps,
-                                           float B1_bias_corrected,
-                                           float B2_bias_corrected);
-  inline void updateBiasParameters(float lr, float B1, float B2, float eps,
-                                   float B1_bias_corrected,
-                                   float B2_bias_corrected);
+  inline void updateSparseSparseWeightParametersNormal(float learning_rate);
+
+  inline void updateSparseSparseWeightParametersOptimized(float learning_rate);
+
+  inline void updateSparseDenseWeightParameters(float learning_rate);
+
+  inline void updateDenseSparseWeightParameters(float learning_rate);
+
+  inline void updateDenseDenseWeightParameters(float learning_rate);
 
   inline void cleanupWithinBatchVars();
 
