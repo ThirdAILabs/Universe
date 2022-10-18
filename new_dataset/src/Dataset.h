@@ -14,10 +14,19 @@ using DatasetPtr = std::shared_ptr<Dataset>;
 using UnderlyingDataset = std::vector<BoltVector>;
 using UnderlyingDatasetPtr = std::shared_ptr<UnderlyingDataset>;
 
-// TODO(Josh): Describe design
-// The only downside of this design is that while any dataset slice pointing
-// to the original entire dataset exists, the entire dataset will stay in
-// memory.
+/**
+ * The Dataset class is at its heart a shared pointer to a vector of
+ * BoltVectors, a starting index, and a length. This design allows there to be
+ * multiple Dataset objects that all point to different slices of an underlying
+ * vector of BoltVectors, and allows all Dataset objects to have a reference to
+ * their data without needing to worry about memory management. One downside of
+ * this design is that while any dataset slice pointing to the original entire
+ * dataset exists, the entire dataset will stay in memory. Numpy does this too:
+ * https://stackoverflow.com/questions/50195197/reduce-memory-usage-when-slicing-numpy-arrays.
+ * For the use cases we envision this tradeoff seems acceptable. For instace,
+ * during batch processing in training, each batch has a shorter
+ * lifetime than the entire dataset.
+ */
 class Dataset {
  public:
   explicit Dataset(UnderlyingDataset&& vectors)

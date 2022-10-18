@@ -15,8 +15,9 @@ void createNewDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("from_np", &numpy::denseNumpyToDataset,
                         py::arg("data"));
 
+  // For reference on binding iterable C++ types in python, see
+  // https://github.com/pybind/pybind11/blob/master/tests/test_sequences_and_iterators.cpp
   py::class_<Dataset, DatasetPtr>(dataset_submodule, "Dataset")
-      /// Bare bones interface
       .def("__getitem__",
            [](const Dataset& d, size_t i) {
              if (i >= d.len()) {
@@ -72,7 +73,7 @@ void createNewDatasetSubmodule(py::module_& module) {
   py::class_<numpy::NumpyDataset, Dataset, numpy::NumpyDatasetPtr>(
       dataset_submodule, "NumpyDataset");  // NOLINT
 
-  // TODO(Josh): We can always add various other helper methods later:
+  // TODO(Josh): We can always add various other python specific methods later:
   //  contains, reverse, append, concatenate, etc.
 }
 
