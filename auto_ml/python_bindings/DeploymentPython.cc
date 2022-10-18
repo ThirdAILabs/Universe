@@ -14,6 +14,7 @@
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/Aliases.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
@@ -157,7 +158,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<OracleDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<OracleDatasetFactoryConfig>>(
       submodule, "OracleDatasetFactory")
-      .def(py::init<HyperParameterPtr<OracleConfigPtr>>(), py::arg("config"));
+      .def(py::init<HyperParameterPtr<OracleConfigPtr>, HyperParameterPtr<bool>,
+                    HyperParameterPtr<uint32_t>>(),
+           py::arg("config"), py::arg("parallel"),
+           py::arg("text_pairgram_word_limit"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
@@ -207,9 +211,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def_static("load", &ModelPipeline::load, py::arg("filename"));
 
   py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
-      .def(py::init<std::map<std::string, OracleDataType>,
-                    OracleAutotunableTemporalRelationships, std::string,
-                    std::string, uint32_t>(),
+      .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
+                    std::string, std::string, uint32_t>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0);
@@ -217,8 +220,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<TemporalContext, TemporalContextPtr>(submodule, "TemporalContext")
       .def(py::init<>())
       .def("reset", &TemporalContext::reset)
-      .def("update", &TemporalContext::update, py::arg("update"))
-      .def("batch_update", &TemporalContext::batchUpdate, py::arg("updates"));
+      .def("update_temporal_trackers", &TemporalContext::updateTemporalTrackers,
+           py::arg("update"))
+      .def("batch_update_temporal_trackers",
+           &TemporalContext::batchUpdateTemporalTrackers, py::arg("updates"));
 }
 
 template <typename T>
