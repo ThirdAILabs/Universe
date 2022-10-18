@@ -2,11 +2,12 @@ import pytest
 from thirdai import bolt
 
 from utils import gen_numpy_training_data
+import numpy as np
 
 pytestmark = [pytest.mark.unit]
 
 
-def test_freeze_dag_hash_tables():
+def test_freeze_layers():
     n_classes = 100
 
     input_dim = n_classes
@@ -14,7 +15,7 @@ def test_freeze_dag_hash_tables():
     hidden_layer_sparsity = 0.15
     output_dim = n_classes
     output_activation = "softmax"
-    loss = (bolt.CategoricalCrossEntropyLoss(),)
+    loss = bolt.CategoricalCrossEntropyLoss()
 
     input_layer = bolt.graph.Input(dim=input_dim)
 
@@ -46,6 +47,11 @@ def test_freeze_dag_hash_tables():
     test_metrics1 = model.predict(data, labels, predict_config)[0]
     assert test_metrics1["categorical_accuracy"] >= 0.8
 
+    before = {
+        "weights": hidden_layer.weights.copy().flatten(),
+        "biases": hidden_layer.biases.copy().flatten(),
+    }
+
     hidden_layer.trainable(False)
     # weights = hidden_layer.get_weights()
 
@@ -54,7 +60,16 @@ def test_freeze_dag_hash_tables():
     )(hidden_layer)
 
     model_new = bolt.graph.Model(inputs=[input_layer], output=output_layer_new)
-    model.compile(loss)
+    model_new.compile(loss)
     model_new.train(data, labels, train_config)
+    after = {
+        "weights": hidden_layer.weights.copy().flatten(),
+        "biases": hidden_layer.biases.copy().flatten(),
+    }
+
+    for key in ["weights", "biases"]:
+        assert np.all(np.equal(before[key], after[key]))
+        print(np.all(np.equal(before[key], after[key])))
+
     test_metrics2 = model_new.predict(data, labels, predict_config)[0]
     assert test_metrics2["categorical_accuracy"] >= 0.8
