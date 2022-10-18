@@ -1,4 +1,3 @@
-from re import M
 import pytest
 from thirdai import bolt, deployment
 
