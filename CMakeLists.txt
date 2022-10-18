@@ -295,9 +295,9 @@ target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
 # ASan does not work with GCC on M1 Macs yet. We would have to switch to clang.
 
 if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
-  target_compile_options(thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+  target_compile_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
 
-  target_link_options(thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+  target_link_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
 
   target_compile_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
 
