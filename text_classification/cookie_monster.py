@@ -9,6 +9,7 @@ from thirdai.dataset import DataPipeline, blocks
 class CookieMonster:
     def __init__(
         self,
+        vocab,
         input_dimension,
         hidden_dimension=2000,
         output_dimension=2,
@@ -17,12 +18,13 @@ class CookieMonster:
     ):
         import toml
 
+        self.vocab = vocab
         self.input_dimension = input_dimension
         self.hidden_dim = hidden_dimension
         self.hidden_sparsity = hidden_sparsity
         self.mlflow_enabled = mlflow_enabled
         self.construct(output_dimension)
-        self.mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
+        self.mlm_loader = dataset.MLMDatasetLoader(vocab, self.input_dimension)
 
         self.config_file_dir = os.path.dirname(os.path.abspath(__file__))
         self.config_file_name = os.path.join(

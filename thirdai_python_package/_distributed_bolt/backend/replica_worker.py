@@ -31,6 +31,7 @@ class ReplicaWorker(Worker):
         id: int,
         primary_worker,
         communication_type,
+        log_dir: str,
         batch_size,
     ):
         """
@@ -57,5 +58,6 @@ class ReplicaWorker(Worker):
             primary_worker=primary_worker,
             train_config=train_config,
             communication_type=communication_type,
+            log_dir=log_dir,
             batch_size=batch_size,
         )
