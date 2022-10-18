@@ -1,7 +1,11 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <cereal/types/deque.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
@@ -41,6 +45,15 @@ class ItemHistoryCollection {
   uint32_t numHistories() const { return _histories.size(); }
 
   auto& at(uint32_t history_id) { return _histories.at(history_id); }
+
+  /**
+   * Clears all tracked categories.
+   */
+  void reset() {
+    for (auto& history : _histories) {
+      history.clear();
+    }
+  }
 
   static std::shared_ptr<ItemHistoryCollection> make(uint32_t n_histories) {
     return std::make_shared<ItemHistoryCollection>(n_histories);
@@ -284,6 +297,20 @@ class UserItemHistoryBlock final : public Block {
   bool _include_current_row;
   std::optional<char> _item_col_delimiter;
   int64_t _time_lag;
+
+  // Constructor for Cereal
+  UserItemHistoryBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _user_col, _item_col,
+            _timestamp_col, _track_last_n, _user_id_lookup, _item_id_lookup,
+            _per_user_history, _should_update_history, _include_current_row,
+            _item_col_delimiter, _time_lag);
+  }
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::UserItemHistoryBlock)
