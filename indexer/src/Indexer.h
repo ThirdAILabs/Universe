@@ -24,9 +24,9 @@
 
 namespace thirdai::automl::deployment {
 
-class FlashIndexConfig {
+class IndexerConfig {
  public:
-  FlashIndexConfig(std::string hash_function, uint32_t num_tables,
+  IndexerConfig(std::string hash_function, uint32_t num_tables,
                    uint32_t hashes_per_table, uint32_t input_dim,
                    uint32_t batch_size = 100, uint32_t range = 1000000)
       : _hash_function(std::move(hash_function)),
@@ -37,8 +37,8 @@ class FlashIndexConfig {
         _range(range) {}
 
   // Copy and move constructors
-  FlashIndexConfig(FlashIndexConfig&& other) = default;
-  FlashIndexConfig(const FlashIndexConfig& other) = default;
+  IndexerConfig(IndexerConfig&& other) = default;
+  IndexerConfig(const IndexerConfig& other) = default;
 
   void save(const std::string& config_file_name) const {
     std::stringstream output;
@@ -54,7 +54,7 @@ class FlashIndexConfig {
                      string_representation.size());
   }
 
-  static std::shared_ptr<FlashIndexConfig> load(
+  static std::shared_ptr<IndexerConfig> load(
       const std::string& config_file_name) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(config_file_name, std::ios::binary);
@@ -63,8 +63,8 @@ class FlashIndexConfig {
     buffer << filestream.rdbuf();
 
     cereal::BinaryInputArchive input_archive(buffer);
-    std::shared_ptr<FlashIndexConfig> deserialized_config(
-        new FlashIndexConfig());
+    std::shared_ptr<IndexerConfig> deserialized_config(
+        new IndexerConfig());
     input_archive(*deserialized_config);
 
     return deserialized_config;
@@ -105,7 +105,7 @@ class FlashIndexConfig {
   uint32_t _range;
 
   // Private constructor for cereal
-  FlashIndexConfig() {}
+  IndexerConfig() {}
 
   friend class cereal::access;
   template <class Archive>
@@ -115,19 +115,19 @@ class FlashIndexConfig {
   }
 };
 
-using FlashIndexConfigPtr = std::shared_ptr<FlashIndexConfig>;
+using IndexerConfigPtr = std::shared_ptr<IndexerConfig>;
 
 class Indexer : public std::enable_shared_from_this<Indexer> {
   const uint32_t TOP_K = 10;
 
  public:
-  explicit Indexer(FlashIndexConfigPtr flash_index_config)
+  explicit Indexer(IndexerConfigPtr flash_index_config)
       : _flash_index_config(std::move(flash_index_config)),
         _dimension_for_encodings(
             dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {}
 
   static std::shared_ptr<Indexer> make(
-      const FlashIndexConfigPtr& flash_index_config) {
+      const IndexerConfigPtr& flash_index_config) {
     return std::make_shared<Indexer>(flash_index_config);
   }
 
@@ -169,7 +169,7 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
 
   std::vector<BoltVector> featurizeSingleQuery(const std::string& query) const;
 
-  std::shared_ptr<FlashIndexConfig> _flash_index_config;
+  std::shared_ptr<IndexerConfig> _flash_index_config;
 
   std::unique_ptr<Flash<uint32_t>> _flash_index;
   uint32_t _dimension_for_encodings;

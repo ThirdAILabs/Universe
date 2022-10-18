@@ -5,7 +5,7 @@ namespace thirdai::automl::deployment {
 
 static std::shared_ptr<Indexer> buildIndexerFromSerializedConfig(
     const std::string& config_file_name) {
-  auto flash_index_config = FlashIndexConfig::load(config_file_name);
+  auto flash_index_config = IndexerConfig::load(config_file_name);
 
   return Indexer::make(flash_index_config);
 }
@@ -23,6 +23,7 @@ std::shared_ptr<Indexer> Indexer::buildFlashIndex(
   return shared_from_this();
 }
 
+
 template <typename LABEL_T>
 std::shared_ptr<Indexer> Indexer::buildFlashIndexPair(
     const std::string& file_name) {
@@ -34,6 +35,9 @@ std::shared_ptr<Indexer> Indexer::buildFlashIndexPair(
   return shared_from_this();
 }
 
+template std::vector<std::vector<uint32_t>> Indexer::queryIndexFromFile(const std::string& query_file);
+
+
 template <typename LABEL_T>
 std::vector<std::vector<LABEL_T>> Indexer::queryIndexFromFile(
     const std::string& query_file) {
@@ -43,6 +47,10 @@ std::vector<std::vector<LABEL_T>> Indexer::queryIndexFromFile(
       /* pad_zeros = */ true);
   return query_result;
 }
+
+
+template std::vector<std::vector<uint32_t>> Indexer::querySingle(
+    const std::string& query);
 
 template <typename LABEL_T>
 std::vector<std::vector<LABEL_T>> Indexer::querySingle(

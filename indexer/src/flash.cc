@@ -11,8 +11,6 @@
 
 namespace thirdai::automl::deployment {
 
-// template class Flash<uint32_t>::Flash() {};
-
 template <typename LABEL_T>
 Flash<LABEL_T>::Flash(hashing::HashFunction* function)
     : _hash_function(function),
@@ -32,6 +30,11 @@ Flash<LABEL_T>::Flash(hashing::HashFunction* function, uint32_t reservoir_size)
       _hashtable(new hashtable::VectorHashTable<LABEL_T, true>(
           _num_tables, reservoir_size, _range)) {}
 
+template void Flash<uint32_t>::addDataset<thirdai::BoltBatch>(
+    dataset::InMemoryDataset<thirdai::BoltBatch>&);
+
+template void Flash<uint64_t>::addDataset<thirdai::BoltBatch>(
+    dataset::InMemoryDataset<thirdai::BoltBatch>&);
 
 template <typename LABEL_T>
 template <typename BATCH_T>
@@ -57,6 +60,11 @@ void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BATCH_T>& dataset) {
   }
 }
 
+template void Flash<uint32_t>::addBatch<thirdai::BoltBatch>(
+    const thirdai::BoltBatch&);
+template void Flash<uint64_t>::addBatch<thirdai::BoltBatch>(
+    const thirdai::BoltBatch&);
+
 template <typename LABEL_T>
 template <typename BATCH_T>
 void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
@@ -66,7 +74,7 @@ void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
   } catch (std::invalid_argument& error) {
     throw error;
   }
-  
+
   _hashtable->insertSequential(batch.getBatchSize(), _batch_elements_counter,
                                hashes.data());
 

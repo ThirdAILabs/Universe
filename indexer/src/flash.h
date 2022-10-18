@@ -72,7 +72,6 @@ class Flash {
     _batch_elements_counter += num_vectors;
   }
 
-
  private:
   /**
    * Returns a vector of hashes for the input batch
@@ -106,7 +105,7 @@ class Flash {
   uint32_t _range;
 
   // Keeps a counter of the number of batch elements seen so far.
-  // SHOULD ONLY be incremented when addBatch is invoked. 
+  // SHOULD ONLY be incremented when addBatch is invoked.
   uint32_t _batch_elements_counter;
 
   std::shared_ptr<hashtable::HashTable<LABEL_T>> _hashtable;
@@ -115,7 +114,8 @@ class Flash {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_hash_function, _num_tables, _range, _batch_elements_counter, _hashtable);
+    archive(_hash_function, _num_tables, _range, _batch_elements_counter,
+            _hashtable);
   }
 };
 

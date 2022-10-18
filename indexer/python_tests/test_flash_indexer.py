@@ -1,6 +1,6 @@
 import os
 import pytest
-# from thirdai import deployment
+from thirdai import deployment
 import datasets
 import pandas as pd
 
@@ -29,17 +29,16 @@ def delete_created_files():
         os.remove(QUERIES_FILE)
 
 @pytest.mark.unit
-def flash_indexer_test():
-    assert 1 == 1
-    # query_dataframe = download_grammar_correction_dataset()
-    # write_input_dataset_to_csv(query_dataframe, QUERIES_FILE)
+def test_flash_indexer():
+    query_dataframe = download_grammar_correction_dataset()
+    write_input_dataset_to_csv(query_dataframe, QUERIES_FILE)
 
-    # indexer_config = deployment.FlashIndexConfig(
-    #     hash_function="DensifiedMinHash",
-    #     num_tables=100,
-    #     hashes_per_table=15,
-    #     input_dim=100
-    # )
+    indexer_config = deployment.FlashIndexConfig(
+        hash_function="DensifiedMinHash",
+        num_tables=100,
+        hashes_per_table=15,
+        input_dim=100
+    )
     # indexer_config.save(CONFIG_FILE)
 
     # indexer = deployment.Indexer(
@@ -50,7 +49,7 @@ def flash_indexer_test():
 
     # output = generator.generate(query="share my curnt locatio")
 
-    # delete_created_files()
+    delete_created_files()
 
     # assert 1 == 1
 
