@@ -132,6 +132,9 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
 
 void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
                                       float B2, float eps) {
+  if (!_trainable) {
+    return;
+  }
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
