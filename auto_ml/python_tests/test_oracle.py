@@ -8,7 +8,7 @@ TRAIN_FILE = "tempTrainFile.csv"
 TEST_FILE = "tempTestFile.csv"
 
 
-def serialize_make_oracle_config():
+def make_serialized_oracle_config():
     model_config = deployment.ModelConfig(
         input_names=["input"],
         nodes=[
@@ -62,7 +62,7 @@ def write_lines_to_file(file, lines):
 
 
 def make_simple_oracle_model():
-    serialize_make_oracle_config()
+    make_serialized_oracle_config()
 
     write_lines_to_file(
         TRAIN_FILE,

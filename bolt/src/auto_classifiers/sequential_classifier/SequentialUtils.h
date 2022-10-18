@@ -254,6 +254,10 @@ class DataProcessing {
       }
     }
 
+    if (config.temporal_tracking_relationships.empty()) {
+      return input_blocks;
+    }
+
     auto timestamp = getTimestamp(config);
 
     for (const auto& [tracking_key, trackables] :
