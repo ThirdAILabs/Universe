@@ -295,7 +295,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
                                  std::string,
                                  sequential_classifier::TemporalConfig>>>,
                     std::string, std::string, uint32_t>(),
-           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
+           py::arg("data_types"),
+           py::arg("temporal_tracking_relationships") = std::map<
+               std::string,
+               std::vector<std::variant<
+                   std::string, sequential_classifier::TemporalConfig>>>(),
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0,
            R"pbdoc(  

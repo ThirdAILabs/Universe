@@ -273,7 +273,7 @@ class DataProcessing {
       }
     }
 
-    if(config.temporal_tracking_relationships.empty()) {
+    if (config.temporal_tracking_relationships.empty()) {
       return input_blocks;
     }
 
