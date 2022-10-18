@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::automl::deployment {
@@ -27,13 +28,16 @@ class FeatureComposer {
       uint32_t text_pairgrams_word_limit) {
     std::vector<dataset::BlockPtr> blocks;
 
-    auto unknown_during_inference =
-        getUnknownDuringInferenceColumns(temporal_relationships);
+    auto non_temporal_columns =
+        getNonTemporalColumns(config.data_types, temporal_relationships);
 
-    // Order of column names and data types is always consistent because
-    // data_types is an ordered map.
+    /*
+      Order of column names and data types is always consistent because
+      data_types is an ordered map. Thus, the order of the input blocks
+      remains consistent and so does the order of the vector segments.
+    */
     for (const auto& [col_name, data_type] : config.data_types) {
-      if (unknown_during_inference[col_name] || col_name == config.target) {
+      if (!non_temporal_columns.count(col_name) || col_name == config.target) {
         continue;
       }
 
@@ -109,20 +113,37 @@ class FeatureComposer {
   }
 
  private:
-  static std::unordered_map<std::string, bool> getUnknownDuringInferenceColumns(
+  /**
+   * A column is encoded in a non-temporal way when it fulfils any
+   * of the following:
+   *  1. It is a temporal tracking key; columns are tracked against
+   *     this column. E.g. if we track the movies that a user has
+   *     watched, then the user column must be encoded in a non-
+   *     temporal way.
+   *  2. It is not a tracked column. E.g. if we track the movies
+   *     that a user has watched, then the movie column is a
+   *     tracked column.
+   */
+  static std::unordered_set<std::string> getNonTemporalColumns(
+      const ColumnDataTypes& data_types,
       const TemporalRelationships& temporal_relationships) {
-    std::unordered_map<std::string, bool> is_unknown_during_inference;
+    std::unordered_set<std::string> non_temporal_columns;
+    for (const auto& [col_name, _] : data_types) {
+      non_temporal_columns.insert(col_name);
+    }
     for (const auto& [_, temporal_configs] : temporal_relationships) {
       for (const auto& temporal_config : temporal_configs) {
-        auto col_name = temporal_config.columnName();
-        if (!is_unknown_during_inference.count(col_name)) {
-          is_unknown_during_inference[col_name] = true;
+        if (non_temporal_columns.count(temporal_config.columnName())) {
+          non_temporal_columns.erase(temporal_config.columnName());
         }
-        is_unknown_during_inference[col_name] &=
-            !temporal_config.includesCurrentRow();
       }
     }
-    return is_unknown_during_inference;
+    // So far, non_temporal_columns contains column that are not tracked.
+    // We now take the union with the set of tracking key columns
+    for (const auto& [tracking_key_col_name, _] : temporal_relationships) {
+      non_temporal_columns.insert(tracking_key_col_name);
+    }
+    return non_temporal_columns;
   }
 
   static bool isTrackingKey(
