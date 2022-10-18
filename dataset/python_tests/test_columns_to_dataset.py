@@ -5,11 +5,11 @@ from thirdai import dataset
 pytestmark = [pytest.mark.unit]
 
 
-def featurized_dense_vectors_to_numpy(vectors):
+def dense_vectors_to_numpy(vectors):
     return np.array([v.numpy() for v in vectors])
 
 
-def featurized_sparse_vectors_to_numpy(vectors):
+def sparse_vectors_to_numpy(vectors):
     indices_list = []
     values_list = []
     for vec in vectors:
@@ -33,12 +33,8 @@ def test_simple_dense_columns():
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
-    featurizer = dataset.FeaturizationPipeline(
-        transformations=[], output_columns=["column1", "column2"]
-    )
-
-    featurized_vectors = featurized_dense_vectors_to_numpy(
-        featurizer.featurize(columns)
+    featurized_vectors = dense_vectors_to_numpy(
+        columns.convert_to_dataset(["column1", "column2"])
     )
 
     concatenated_columns = np.concatenate([column1_np, column2_np], axis=1, dtype=np.float32)
@@ -62,11 +58,7 @@ def test_simple_sparse_columns():
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
-    featurizer = dataset.FeaturizationPipeline(
-        transformations=[], output_columns=["column1", "column2"]
-    )
-
-    indices, values = featurized_sparse_vectors_to_numpy(featurizer.featurize(columns))
+    indices, values = sparse_vectors_to_numpy(columns.convert_to_dataset(["column1", "column2"]))
 
     concatenated_indices = np.concatenate(
         [column1_np, column2_np + column1_dim], axis=1
@@ -92,11 +84,7 @@ def test_simple_dense_sparse_columns():
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
-    featurizer = dataset.FeaturizationPipeline(
-        transformations=[], output_columns=["column1", "column2"]
-    )
-
-    indices, values = featurized_sparse_vectors_to_numpy(featurizer.featurize(columns))
+    indices, values = sparse_vectors_to_numpy(columns.convert_to_dataset(["column1", "column2"]))
 
     concatenated_indices = np.concatenate(
         [np.zeros(shape=(n_rows, column1_dim)), column2_np + column1_dim], axis=1
@@ -139,11 +127,7 @@ def test_multiple_sparse_dense_columns():
         {"column1": column1, "column2": column2, "column3": column3, "column4": column4}
     )
 
-    featurizer = dataset.FeaturizationPipeline(
-        transformations=[], output_columns=["column1", "column3", "column2", "column4"]
-    )
-
-    indices, values = featurized_sparse_vectors_to_numpy(featurizer.featurize(columns))
+    indices, values = sparse_vectors_to_numpy(columns.convert_to_dataset(["column1", "column3", "column2", "column4"]))
 
     concatenated_indices = np.concatenate(
         [

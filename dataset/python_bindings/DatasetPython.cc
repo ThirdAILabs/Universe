@@ -471,11 +471,14 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
-           py::arg("columns"));
+           py::arg("columns"))
+      .def("convert_to_dataset", &ColumnMap::convertToDataset,
+           py::arg("columns"))
+      .def("__getitem__", &ColumnMap::getColumn);
 
   py::class_<FeaturizationPipeline>(dataset_submodule, "FeaturizationPipeline")
-      .def(py::init<std::vector<TransformationPtr>, std::vector<std::string>>(),
-           py::arg("transformations"), py::arg("output_columns"))
+      .def(py::init<std::vector<TransformationPtr>>(),
+           py::arg("transformations"))
       .def("featurize", &FeaturizationPipeline::featurize, py::arg("columns"));
 }
 

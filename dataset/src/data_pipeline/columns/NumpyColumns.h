@@ -17,9 +17,13 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 template <typename T>
 class NumpyValueColumn final : public ValueColumn<T> {
   static_assert(std::is_same<T, uint32_t>::value ||
-                std::is_same<T, float>::value);
+                    std::is_same<T, float>::value,
+                "Only numpy arrays of type uint32 or float32 can be used to "
+                "construct columns.");
 
  public:
+  // This uses SFINAE to disable the folowing constructor if T is not a certain
+  // type. https://en.cppreference.com/w/cpp/types/enable_if
   template <typename U = T,
             std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
   explicit NumpyValueColumn(const NumpyArray<uint32_t>& array, uint32_t dim)
@@ -38,6 +42,8 @@ class NumpyValueColumn final : public ValueColumn<T> {
     }
   }
 
+  // This uses SFINAE to disable the folowing constructor if T is not a certain
+  // type. https://en.cppreference.com/w/cpp/types/enable_if
   template <typename U = T,
             std::enable_if_t<std::is_same<U, float>::value, bool> = true>
   explicit NumpyValueColumn(const NumpyArray<float>& array) : _dim(1) {
@@ -69,9 +75,13 @@ class NumpyValueColumn final : public ValueColumn<T> {
 template <typename T>
 class NumpyArrayColumn final : public ArrayColumn<T> {
   static_assert(std::is_same<T, uint32_t>::value ||
-                std::is_same<T, float>::value);
+                    std::is_same<T, float>::value,
+                "Only numpy arrays of type uint32 or float32 can be used to "
+                "construct columns.");
 
  public:
+  // This uses SFINAE to disable the folowing constructor if T is not a certain
+  // type. https://en.cppreference.com/w/cpp/types/enable_if
   template <typename U = T,
             std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
   explicit NumpyArrayColumn(const NumpyArray<uint32_t>& array, uint32_t dim)
@@ -81,6 +91,8 @@ class NumpyArrayColumn final : public ArrayColumn<T> {
     _buffer_info = array.request();
   }
 
+  // This uses SFINAE to disable the folowing constructor if T is not a certain
+  // type. https://en.cppreference.com/w/cpp/types/enable_if
   template <typename U = T,
             std::enable_if_t<std::is_same<U, float>::value, bool> = true>
   explicit NumpyArrayColumn(const NumpyArray<float>& array) {
@@ -104,6 +116,13 @@ class NumpyArrayColumn final : public ArrayColumn<T> {
 
   uint32_t dim() const final { return _dim; }
 
+  /**
+   * The extra typename keyword here so that during parsing it is clear that
+   * ArrayColumn<T>::RowReference refers to a type and not a static member (or
+   * something else) within the class.
+   * https://stackoverflow.com/questions/60277129/why-is-typename-necessary-in-return-type-c
+   * https://en.cppreference.com/w/cpp/language/qualified_lookup
+   */
   typename ArrayColumn<T>::RowReference operator[](uint64_t n) const final {
     uint64_t len = _buffer_info.shape[1];
     const T* ptr = static_cast<const T*>(_buffer_info.ptr) + len * n;
