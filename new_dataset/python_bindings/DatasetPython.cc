@@ -1,22 +1,21 @@
-#include <dataset/src/NumpyDataset.h>
+#include "DatasetPython.h"
 #include <new_dataset/src/Dataset.h>
+#include <new_dataset/src/NumpyDataset.h>
 #include <pybind11/operators.h>
-#include <pybind11/pybind11.h>
 
 namespace thirdai::dataset::python {
 
 namespace py = pybind11;
 
-void createDatasetSubmodule(py::module_& module) {
+void createNewDatasetSubmodule(py::module_& module) {
   // Everything in this submodule is exposed to users.
   auto dataset_submodule = module.def_submodule("new_dataset");
 
-  dataset_submodule.def("from_np", &numpy::numpyToBoltVectorDataset,
+  // TODO(Josh): Add other numpy methods
+  dataset_submodule.def("from_np", &numpy::denseNumpyToDataset,
                         py::arg("data"));
 
-  py::class_<Dataset>(dataset_submodule, "Dataset")
-      .def(py::init<size_t>())
-      .def(py::init<const std::vector<float>&>())
+  py::class_<Dataset, DatasetPtr>(dataset_submodule, "Dataset")
       /// Bare bones interface
       .def("__getitem__",
            [](const Dataset& d, size_t i) {
@@ -47,7 +46,7 @@ void createDatasetSubmodule(py::module_& module) {
              if (!slice.compute(d.len(), &start, &stop, &step, &slicelength)) {
                throw py::error_already_set();
              }
-             if (slicelength != 1) {
+             if (step != 1) {
                throw std::invalid_argument(
                    "Dataset only supports slices with step size 1");
              }
@@ -70,8 +69,11 @@ void createDatasetSubmodule(py::module_& module) {
              }
            });
 
-    // TODO(Josh): We can always add various other helper methods later:
-    //  contains, reverse, append, concatenate, etc.
+  py::class_<numpy::NumpyDataset, Dataset, numpy::NumpyDatasetPtr>(
+      dataset_submodule, "NumpyDataset");  // NOLINT
+
+  // TODO(Josh): We can always add various other helper methods later:
+  //  contains, reverse, append, concatenate, etc.
 }
 
 }  // namespace thirdai::dataset::python
