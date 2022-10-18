@@ -30,6 +30,11 @@ class DotProductNode final
     return shared_from_this();
   }
 
+  bool trainable(bool flag) final {
+    (void)flag;
+    return false;
+  }
+
  protected:
   void compileImpl() final { _compiled = true; }
 
