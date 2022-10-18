@@ -7,8 +7,17 @@ namespace thirdai::dataset {
 
 class BinningTransformation final : public Transformation {
  public:
+  BinningTransformation(std::string input_column_name,
+                        std::string output_column_name, float min_value,
+                        float max_value, uint32_t num_bins)
+      : _input_column_name(std::move(input_column_name)),
+        _output_column_name(std::move(output_column_name)),
+        _min_value(min_value),
+        _binsize((max_value - min_value) / num_bins),
+        _num_bins(num_bins) {}
+
   void apply(ColumnMap& columns) final {
-    auto column = columns.getFloatValueColumn(_input_column);
+    auto column = columns.getFloatValueColumn(_input_column_name);
 
     std::vector<uint32_t> binned_values(column->numRows());
 
@@ -20,14 +29,14 @@ class BinningTransformation final : public Transformation {
     auto output_column = std::make_shared<VectorValueColumn<uint32_t>>(
         std::move(binned_values), _num_bins);
 
-    columns.addColumn(_output_column, output_column);
+    columns.addColumn(_output_column_name, output_column);
   }
 
  private:
   uint32_t getBin(float value) const { return (value - _min_value) / _binsize; }
 
-  std::string _input_column;
-  std::string _output_column;
+  std::string _input_column_name;
+  std::string _output_column_name;
 
   float _min_value;
   float _binsize;

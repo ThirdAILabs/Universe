@@ -1,25 +1,9 @@
 import numpy as np
 import pytest
+from dataset_utils import dense_vectors_to_numpy, sparse_vectors_to_numpy
 from thirdai import dataset
 
 pytestmark = [pytest.mark.unit]
-
-
-def dense_vectors_to_numpy(vectors):
-    return np.array([v.numpy() for v in vectors])
-
-
-def sparse_vectors_to_numpy(vectors):
-    indices_list = []
-    values_list = []
-    for vec in vectors:
-        (i, v) = vec.numpy()
-        indices_list.append(i)
-        values_list.append(v)
-
-    indices = np.array(indices_list)
-    values = np.array(values_list)
-    return (indices, values)
 
 
 def test_simple_dense_columns():
@@ -37,7 +21,9 @@ def test_simple_dense_columns():
         columns.convert_to_dataset(["column1", "column2"])
     )
 
-    concatenated_columns = np.concatenate([column1_np, column2_np], axis=1, dtype=np.float32)
+    concatenated_columns = np.concatenate(
+        [column1_np, column2_np], axis=1, dtype=np.float32
+    )
 
     assert np.array_equal(featurized_vectors, concatenated_columns)
 
@@ -58,7 +44,9 @@ def test_simple_sparse_columns():
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
-    indices, values = sparse_vectors_to_numpy(columns.convert_to_dataset(["column1", "column2"]))
+    indices, values = sparse_vectors_to_numpy(
+        columns.convert_to_dataset(["column1", "column2"])
+    )
 
     concatenated_indices = np.concatenate(
         [column1_np, column2_np + column1_dim], axis=1
@@ -84,7 +72,9 @@ def test_simple_dense_sparse_columns():
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
-    indices, values = sparse_vectors_to_numpy(columns.convert_to_dataset(["column1", "column2"]))
+    indices, values = sparse_vectors_to_numpy(
+        columns.convert_to_dataset(["column1", "column2"])
+    )
 
     concatenated_indices = np.concatenate(
         [np.zeros(shape=(n_rows, column1_dim)), column2_np + column1_dim], axis=1
@@ -127,7 +117,9 @@ def test_multiple_sparse_dense_columns():
         {"column1": column1, "column2": column2, "column3": column3, "column4": column4}
     )
 
-    indices, values = sparse_vectors_to_numpy(columns.convert_to_dataset(["column1", "column3", "column2", "column4"]))
+    indices, values = sparse_vectors_to_numpy(
+        columns.convert_to_dataset(["column1", "column3", "column2", "column4"])
+    )
 
     concatenated_indices = np.concatenate(
         [

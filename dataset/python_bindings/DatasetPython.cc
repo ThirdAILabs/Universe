@@ -17,7 +17,9 @@
 #include <dataset/src/blocks/TabularPairGram.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/data_pipeline/FeaturizationPipeline.h>
+#include <dataset/src/data_pipeline/Transformation.h>
 #include <dataset/src/data_pipeline/columns/NumpyColumns.h>
+#include <dataset/src/data_pipeline/transformations/Binning.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -468,6 +470,19 @@ void createDatasetSubmodule(py::module_& module) {
              std::shared_ptr<NumpyArrayColumn<float>>>(columns_submodule,
                                                        "NumpyFloatArrayColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
+
+  auto transformations_submodule =
+      dataset_submodule.def_submodule("transformations");
+
+  py::class_<Transformation, std::shared_ptr<Transformation>>(  // NOLINT
+      transformations_submodule, "Transformation");
+
+  py::class_<BinningTransformation, Transformation,
+             std::shared_ptr<BinningTransformation>>(transformations_submodule,
+                                                     "Binning")
+      .def(py::init<std::string, std::string, float, float, uint32_t>(),
+           py::arg("input_column"), py::arg("output_column"), py::arg("min"),
+           py::arg("max"), py::arg("num_bins"));
 
   py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
