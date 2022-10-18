@@ -112,6 +112,10 @@ class ColumnMap {
     return _columns.at(name);
   }
 
+  void addColumn(const std::string& name, ColumnPtr column) {
+    _columns[name] = std::move(column);
+  }
+
  private:
   std::vector<ColumnPtr> selectColumns(
       const std::vector<std::string>& column_names) {
