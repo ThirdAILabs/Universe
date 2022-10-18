@@ -73,29 +73,6 @@ static inline void autotuneTemporalFeatures(
   config.temporal_tracking_relationships = temporal_configs;
 }
 
-static inline dataset::QuantityTrackingGranularity stringToGranularity(
-    std::string&& granularity_string) {
-  auto lower_granularity_string = utils::lower(granularity_string);
-  if (lower_granularity_string == "daily" || lower_granularity_string == "d") {
-    return dataset::QuantityTrackingGranularity::Daily;
-  }
-  if (lower_granularity_string == "weekly" || lower_granularity_string == "w") {
-    return dataset::QuantityTrackingGranularity::Weekly;
-  }
-  if (lower_granularity_string == "biweekly" ||
-      lower_granularity_string == "b") {
-    return dataset::QuantityTrackingGranularity::Biweekly;
-  }
-  if (lower_granularity_string == "monthly" ||
-      lower_granularity_string == "m") {
-    return dataset::QuantityTrackingGranularity::Monthly;
-  }
-  throw std::invalid_argument(
-      granularity_string +
-      " is not a valid granularity option. The options are 'daily' / 'd', "
-      "'weekly' / 'w', 'biweekly' / 'b', and 'monthly' / 'm',");
-}
-
 /**
  * Stores persistent states for data preprocessing.
  */
@@ -158,6 +135,10 @@ class ColumnNumberMap {
       throw std::runtime_error(error_ss.str());
     }
     return _name_to_num.at(col_name);
+  }
+
+  bool equals(const ColumnNumberMap& other) {
+    return other._name_to_num == _name_to_num;
   }
 
   size_t size() const { return _name_to_num.size(); }
