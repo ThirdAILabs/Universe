@@ -28,48 +28,53 @@ def test_freeze_layers():
     )(hidden_layer)
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-
     model.compile(loss)
 
     # Generate dataset.
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
-    # Train and predict before freezing hash tables.
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=2)
-    model.train(data, labels, train_config)
+    def train_predict(model, data, labels):
+        # Train and predict before freezing hash tables.
+        train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=2)
+        model.train(data, labels, train_config)
 
-    predict_config = (
-        bolt.graph.PredictConfig.make()
-        .enable_sparse_inference()
-        .with_metrics(["categorical_accuracy"])
-    )
+        predict_config = (
+            bolt.graph.PredictConfig.make()
+            .enable_sparse_inference()
+            .with_metrics(["categorical_accuracy"])
+        )
 
-    test_metrics1 = model.predict(data, labels, predict_config)[0]
-    assert test_metrics1["categorical_accuracy"] >= 0.8
+        test_metrics1 = model.predict(data, labels, predict_config)[0]
+        assert test_metrics1["categorical_accuracy"] >= 0.8
+
+    train_predict(model, data, labels)
 
     before = {
         "weights": hidden_layer.weights.copy().flatten(),
         "biases": hidden_layer.biases.copy().flatten(),
     }
 
+    # Freeze and train
     hidden_layer.trainable(False)
-    # weights = hidden_layer.get_weights()
+    train_predict(model, data, labels)
 
-    output_layer_new = bolt.graph.FullyConnected(
-        dim=output_dim, activation=output_activation
-    )(hidden_layer)
-
-    model_new = bolt.graph.Model(inputs=[input_layer], output=output_layer_new)
-    model_new.compile(loss)
-    model_new.train(data, labels, train_config)
     after = {
         "weights": hidden_layer.weights.copy().flatten(),
         "biases": hidden_layer.biases.copy().flatten(),
     }
 
     for key in ["weights", "biases"]:
+        # The weights must remain the same
         assert np.all(np.equal(before[key], after[key]))
-        print(np.all(np.equal(before[key], after[key])))
 
-    test_metrics2 = model_new.predict(data, labels, predict_config)[0]
-    assert test_metrics2["categorical_accuracy"] >= 0.8
+    # Undo freeze and train
+    hidden_layer.trainable(True)
+    train_predict(model, data, labels)
+    after = {
+        "weights": hidden_layer.weights.copy().flatten(),
+        "biases": hidden_layer.biases.copy().flatten(),
+    }
+
+    for key in ["weights", "biases"]:
+        # The weights mustn't remain the same
+        assert not np.all(np.equal(before[key], after[key]))
