@@ -671,6 +671,33 @@ Examples:
 
 )pbdoc";
 
+const char* const MODEL_PIPELINE_EXPLAIN = R"pbdoc(
+Identifies the columns that are most responsible for a predicted outcome 
+and provides a brief description of the column's value.
+
+If a target is provided, the model will identify the columns that need 
+to change for the model to predict the target class.
+
+Args:
+    input_sample (Dict[str, str]): The input sample as a dictionary 
+        where the keys are column names as specified in data_types and the "
+        values are the respective column values. 
+    target (str): Optional. The desired target class. If provided, the
+    model will identify the columns that need to change for the model to 
+    predict the target class.
+
+Returns:
+    List[Explanation]:
+    A sorted list of `Explanation` objects that each contain the following fields:
+    `column_number`, `column_name`, `keyword`, and `percentage_significance`.
+    `column_number` and `column_name` identify the responsible column, 
+    `keyword` is a brief description of the value in this column, and
+    `percentage_significance` represents this column's contribution to the
+    predicted outcome. The list is sorted in descending order by the 
+    absolute value of the `percentage_significance` field of each element.
+    
+)pbdoc";
+
 const char* const MODEL_PIPELINE_PREDICT_TOKENS = R"pbdoc(
 Performs inference on a single sample represented as bert tokens
 
