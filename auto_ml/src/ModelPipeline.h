@@ -151,7 +151,9 @@ class ModelPipeline {
       const std::string& sample,
       std::optional<uint32_t> target_label = std::nullopt) {
     auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
-        {_dataset_factory->featurizeInput(sample)}, true, target_label);
+        /* input_data= */ {_dataset_factory->featurizeInput(sample)},
+        /* explain_prediction_using_highest_activation= */ true,
+        /* neuron_to_explain= */ target_label);
     return _dataset_factory->explain(gradients_indices, gradients_ratio,
                                      sample);
   }
