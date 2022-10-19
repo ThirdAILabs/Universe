@@ -30,8 +30,7 @@ class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
-  FullyConnectedLayer()
-      : _weight_optimizer(std::nullopt), _bias_optimizer(std::nullopt) {}
+  FullyConnectedLayer() {}
 
   FullyConnectedLayer(const FullyConnectedLayer&) = delete;
   FullyConnectedLayer(FullyConnectedLayer&&) = delete;
@@ -148,8 +147,8 @@ class FullyConnectedLayer final {
   std::vector<float> _biases;
   std::vector<float> _bias_gradients;
 
-  std::optional<OptimizerPtr> _weight_optimizer;
-  std::optional<OptimizerPtr> _bias_optimizer;
+  std::shared_ptr<Optimizer> _weight_optimizer;
+  std::shared_ptr<Optimizer> _bias_optimizer;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
