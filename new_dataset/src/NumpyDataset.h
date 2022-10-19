@@ -32,32 +32,28 @@ class NumpyDataset final : public Dataset {
 
 using NumpyDatasetPtr = std::shared_ptr<NumpyDataset>;
 
-inline DatasetPtr denseNumpyToDataset(const NumpyArray<float>& examples) {
-  // Get information from examples
-  const py::buffer_info examples_buf = examples.request();
-  if (examples_buf.shape.size() > 2) {
+inline DatasetPtr denseNumpyToDataset(NumpyArray<float>& dense_array) {
+  if (dense_array.ndim() > 2) {
     throw std::invalid_argument(
         "For now, Numpy dense data must be 2D (each row is a dense data "
         "vector) or 1D (each element is treated as a row).");
   }
 
-  uint64_t num_examples = static_cast<uint64_t>(examples_buf.shape.at(0));
+  uint64_t num_examples = static_cast<uint64_t>(dense_array.shape(0));
 
   // If it is a 1D array then we know the dimension is 1.
-  uint64_t dimension = examples_buf.shape.size() == 2
-                           ? static_cast<uint64_t>(examples_buf.shape.at(1))
-                           : 1;
-  float* examples_raw_data = static_cast<float*>(examples_buf.ptr);
+  uint64_t vec_dimension =
+      dense_array.ndim() == 2 ? static_cast<uint64_t>(dense_array.shape(1)) : 1;
 
   std::vector<BoltVector> vectors;
 
   for (uint64_t vec_idx = 0; vec_idx < num_examples; vec_idx++) {
     vectors.emplace_back(
-        /* an = */ nullptr, /* a = */ examples_raw_data + dimension * vec_idx,
-        /* g = */ nullptr, /* l = */ dimension);
+        /* an = */ nullptr, /* a = */ dense_array.mutable_data(vec_idx, 0),
+        /* g = */ nullptr, /* l = */ vec_dimension);
   }
 
-  std::vector<py::object> objects_to_keep_alive = {examples};
+  std::vector<py::object> objects_to_keep_alive = {dense_array};
 
   return std::make_shared<NumpyDataset>(std::move(vectors),
                                         std::move(objects_to_keep_alive));

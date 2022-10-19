@@ -8,7 +8,6 @@ namespace thirdai::dataset::python {
 namespace py = pybind11;
 
 void createNewDatasetSubmodule(py::module_& module) {
-  // Everything in this submodule is exposed to users.
   auto dataset_submodule = module.def_submodule("new_dataset");
 
   // TODO(Josh): Add other numpy methods
@@ -33,12 +32,17 @@ void createNewDatasetSubmodule(py::module_& module) {
              d.set(i, std::move(v));
            })
       .def("__len__", &Dataset::len)
-      /// Optional sequence protocol operations
       .def(
           "__iter__",
           [](const Dataset& d) {
             return py::make_iterator(d.begin(), d.end());
           },
+          /*
+           * This keep alive call ensures that the object with index 1 in the
+           * function (the this pointer) is kept alive at least as long as the
+           * object with index 0 (the returned iterator) is alive. See
+           * https://pybind11.readthedocs.io/en/stable/advanced/functions.html#keep-alive
+           */
           py::keep_alive<
               0, 1>() /* Essential: keep object alive while iterator exists */)
       .def("__getitem__",
@@ -57,6 +61,13 @@ void createNewDatasetSubmodule(py::module_& module) {
            [](Dataset& d, const py::slice& slice, const Dataset& value) {
              size_t start = 0, stop = 0, step = 0, slicelength = 0;
              if (!slice.compute(d.len(), &start, &stop, &step, &slicelength)) {
+               /*
+                * Computing the true slice indices is done in python, which
+                * might throw an error. Pybind automatically saves that python
+                * error and returns false from slice.compute in that case, so
+                * here we can just call py::error_already_set to rethrow that
+                * original python slice error.
+                */
                throw py::error_already_set();
              }
              if (slicelength != value.len()) {

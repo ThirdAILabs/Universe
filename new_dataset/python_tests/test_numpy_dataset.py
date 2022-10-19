@@ -28,17 +28,38 @@ def test_simple_slice():
 
 
 @pytest.mark.unit
-def test_slice_does_not_copy():
-    np_data = np.random.rand(10000, 1000)
+def test_shuffle_works():
+
+    np.random.seed(42)
+    np_data = np.random.rand(10, 10).astype("float32")
+    np.random.shuffle(np_data)
+    bolt_data_shuffled_in_numpy = new_dataset.from_np(np_data)
+
+    np.random.seed(42)
+    np_data = np.random.rand(10, 10).astype("float32")
+    bolt_data_shuffled_in_dataset = new_dataset.from_np(np_data)
+    np.random.shuffle(bolt_data_shuffled_in_dataset)
+
+    for r1, r2 in zip(bolt_data_shuffled_in_numpy, bolt_data_shuffled_in_dataset):
+        assert str(r1) == str(r2)
+
+
+@pytest.mark.unit
+def test_slice_is_a_view():
+    np_data = np.random.rand(40, 10)
+
     bolt_data = new_dataset.from_np(np_data)
+    first_half = bolt_data[0:20]
 
-    # This will go out of memory on any reasonable CI machine if we are doing
-    # copies for each slice causing the test to fail (since
-    # 4B bytes/entry * (10K * 1K) entries / slice * 100K slices ~= 4TB
+    # This sets the first half of bolt_data and first_half equal to the second
+    # half of bolt_data if views work correctly, which we then check in the next
+    # two loops.
+    first_half[0:10] = bolt_data[20:30]
+    bolt_data[10:20] = bolt_data[30:40]
 
-    slices = []
-    for _ in range(100000):
-        slices.append(bolt_data[1:-1])
+    for r1, r2 in zip(first_half, bolt_data[0:20]):
+        assert str(r1) == str(r2)
 
-    for slice in slices:
-        assert len(slice) == 10000 - 2
+    second_half = bolt_data[20:40]
+    for r1, r2 in zip(first_half, second_half):
+        assert str(r1) == str(r2)

@@ -14,6 +14,8 @@ using DatasetPtr = std::shared_ptr<Dataset>;
 using UnderlyingDataset = std::vector<BoltVector>;
 using UnderlyingDatasetPtr = std::shared_ptr<UnderlyingDataset>;
 
+// TODO(Josh/Nick): This class is pretty similar to BoltBatch, so we should
+// try to refactor them into the same class in the future.
 /**
  * The Dataset class is at its heart a shared pointer to a vector of
  * BoltVectors, a starting index, and a length. This design allows there to be
@@ -30,7 +32,7 @@ using UnderlyingDatasetPtr = std::shared_ptr<UnderlyingDataset>;
 class Dataset {
  public:
   explicit Dataset(UnderlyingDataset&& vectors)
-      : _vectors(std::make_shared<UnderlyingDataset>(vectors)),
+      : _vectors(std::make_shared<UnderlyingDataset>(std::move(vectors))),
         _start_index(0),
         _length(_vectors->size()) {}
 
@@ -55,7 +57,7 @@ class Dataset {
 
   void set(uint64_t i, BoltVector&& vector) {
     checkBounds(i);
-    _vectors->at(_start_index + i) = vector;
+    (*_vectors)[_start_index + i] = vector;
   }
 
   DatasetPtr slice(uint64_t slice_start_index, uint64_t slice_end_index) const {
@@ -82,12 +84,6 @@ class Dataset {
   UnderlyingDataset::iterator end() const {
     return _vectors->begin() + _start_index + _length;
   }
-
-  // TODO(Josh): This class is actually pretty similar to BoltBatch, but after
-  // thinking about it I still think it is better to create a new class so we
-  // can keep development seperate and after merging just delete anything that
-  // has the word BoltBatch in it. This is why I have copied the below method
-  // from BoltBatch.
 
   /*
    * Throws an exception if the vector is not of the passed in
@@ -143,10 +139,10 @@ class Dataset {
 
   inline void checkBounds(uint64_t i) const {
     if (i >= _length) {
-      throw std::invalid_argument("Requesting vector with index " +
-                                  std::to_string(i) + ", but there are only " +
-                                  std::to_string(_length) +
-                                  " vectors in this Dataset.");
+      throw std::out_of_range("Requesting vector with index " +
+                              std::to_string(i) + ", but there are only " +
+                              std::to_string(_length) +
+                              " vectors in this Dataset.");
     }
   }
 
