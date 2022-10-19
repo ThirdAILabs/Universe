@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/Aliases.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/Conversions.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
@@ -81,8 +82,7 @@ class TemporalContext {
     }
   }
 
-  void updateTemporalTrackers(
-      const std::unordered_map<std::string, std::string>& update) {
+  void updateTemporalTrackers(const MapInput& update) {
     if (!_processor) {
       throw std::invalid_argument(
           "Attempted to manually update temporal context before training.");
@@ -107,14 +107,12 @@ class TemporalContext {
     _processor->createBatch(updates);
   }
 
-  void batchUpdateTemporalTrackers(
-      const std::vector<std::unordered_map<std::string, std::string>>&
-          updates) {
+  void batchUpdateTemporalTrackers(const MapInputBatch& updates) {
     if (!_processor) {
       throw std::invalid_argument(
           "Attempted to manually update temporal context before training.");
     }
-    auto string_batch = ConversionUtils::mapVectorInputsToVectorOfStrings(
+    auto string_batch = ConversionUtils::mapInputBatchToStringBatch(
         updates, _delimiter, *_column_number_map);
     // The following line updates the temporal context as a side effect,
     _processor->createBatch(string_batch);

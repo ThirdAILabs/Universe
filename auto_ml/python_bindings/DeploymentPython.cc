@@ -406,10 +406,8 @@ py::object predictTokensWrapper(ModelPipeline& model,
   return predictWrapperStringInput(model, sentence.str(), use_sparse_inference);
 }
 
-py::object predictWrapperMapInput(
-    ModelPipeline& model,
-    const std::unordered_map<std::string, std::string>& sample,
-    bool use_sparse_inference) {
+py::object predictWrapperMapInput(ModelPipeline& model, const MapInput& sample,
+                                  bool use_sparse_inference) {
   BoltVector output = model.predict(sample, use_sparse_inference);
   return convertBoltVectorToNumpy(output);
 }
@@ -422,10 +420,9 @@ py::object predictBatchWrapperStringInput(
   return convertBoltBatchToNumpy(outputs);
 }
 
-py::object predictBatchWrapperMapInput(
-    ModelPipeline& model,
-    const std::vector<std::unordered_map<std::string, std::string>>& samples,
-    bool use_sparse_inference) {
+py::object predictBatchWrapperMapInput(ModelPipeline& model,
+                                       const MapInputBatch& samples,
+                                       bool use_sparse_inference) {
   BoltBatch outputs = model.predictBatch(samples, use_sparse_inference);
 
   return convertBoltBatchToNumpy(outputs);

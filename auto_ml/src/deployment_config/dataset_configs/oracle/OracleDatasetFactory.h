@@ -94,8 +94,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return featurizeInputImpl(row);
   }
 
-  std::vector<BoltVector> featurizeInput(
-      const std::unordered_map<std::string, std::string>& input) final {
+  std::vector<BoltVector> featurizeInput(const MapInput& input) final {
     verifyColumnNumberMapIsInitialized();
     auto row = ConversionUtils::mapInputToVectorOfStringViews(
         input, *_column_number_map);
@@ -115,11 +114,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::unordered_map<std::string, std::string>>& inputs)
-      final {
+      const MapInputBatch& inputs) final {
     verifyColumnNumberMapIsInitialized();
 
-    auto string_batch = ConversionUtils::mapVectorInputsToVectorOfStrings(
+    auto string_batch = ConversionUtils::mapInputBatchToStringBatch(
         inputs, _config->delimiter, *_column_number_map);
 
     return featurizeInputBatch(string_batch);
@@ -136,28 +134,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio,
-      const std::unordered_map<std::string, std::string>& sample) final {
+      const std::vector<float>& gradients_ratio, const MapInput& sample) final {
     auto input_row = ConversionUtils::mapInputToVectorOfStringViews(
         sample, *_column_number_map);
     return explainImpl(gradients_indices, gradients_ratio, input_row);
-  }
-
-  std::vector<dataset::Explanation> explainImpl(
-      const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio,
-      const std::vector<std::string_view>& input_row) {
-    verifyInferenceProcessorIsInitialized();
-
-    auto result = bolt::getSignificanceSortedExplanations(
-        gradients_indices, gradients_ratio, input_row,
-        _inference_batch_processor);
-
-    for (auto& response : result) {
-      response.column_name = _column_number_to_name[response.column_number];
-    }
-
-    return result;
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {
@@ -201,6 +181,23 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       std::rethrow_exception(exception);
     }
     return {std::move(vector)};
+  }
+
+  std::vector<dataset::Explanation> explainImpl(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio,
+      const std::vector<std::string_view>& input_row) {
+    verifyInferenceProcessorIsInitialized();
+
+    auto result = bolt::getSignificanceSortedExplanations(
+        gradients_indices, gradients_ratio, input_row,
+        _inference_batch_processor);
+
+    for (auto& response : result) {
+      response.column_name = _column_number_to_name[response.column_number];
+    }
+
+    return result;
   }
 
   dataset::GenericBatchProcessorPtr makeLabeledProcessor(

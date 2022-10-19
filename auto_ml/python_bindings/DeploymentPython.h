@@ -2,6 +2,7 @@
 
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
@@ -43,10 +44,8 @@ py::object predictWrapperStringInput(ModelPipeline& model,
                                      const std::string& sample,
                                      bool use_sparse_inference);
 
-py::object predictWrapperMapInput(
-    ModelPipeline& model,
-    const std::unordered_map<std::string, std::string>& sample,
-    bool use_sparse_inference);
+py::object predictWrapperMapInput(ModelPipeline& model, const MapInput& sample,
+                                  bool use_sparse_inference);
 
 py::object predictTokensWrapper(ModelPipeline& model,
                                 const std::vector<uint32_t>& tokens,
@@ -56,10 +55,9 @@ py::object predictBatchWrapperStringInput(
     ModelPipeline& model, const std::vector<std::string>& samples,
     bool use_sparse_inference);
 
-py::object predictBatchWrapperMapInput(
-    ModelPipeline& model,
-    const std::vector<std::unordered_map<std::string, std::string>>& samples,
-    bool use_sparse_inference);
+py::object predictBatchWrapperMapInput(ModelPipeline& model,
+                                       const MapInputBatch& samples,
+                                       bool use_sparse_inference);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 
