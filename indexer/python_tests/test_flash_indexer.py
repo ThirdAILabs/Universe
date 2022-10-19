@@ -28,6 +28,7 @@ def delete_created_files():
     if os.path.exists(QUERIES_FILE):
         os.remove(QUERIES_FILE)
 
+@pytest.mark.filterwarnings("ignore")
 @pytest.mark.unit
 def test_flash_indexer():
     query_dataframe = download_grammar_correction_dataset()
@@ -45,13 +46,13 @@ def test_flash_indexer():
         config_file_name=CONFIG_FILE
     )
     
-    # generator = indexer.build_index(file_name=QUERIES_FILE)
+    generator = indexer.build_index(file_name=QUERIES_FILE)
 
-    # output = generator.generate(query="share my curnt locatio")
+    output = generator.generate(query="share my curnt locatio")
+
+    print("OUTPUT = {}".format(output))
 
     delete_created_files()
-
-
 
 
 
