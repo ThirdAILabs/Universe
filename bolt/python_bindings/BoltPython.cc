@@ -95,6 +95,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
+  py::class_<MarginBCE, std::shared_ptr<MarginBCE>, LossFunction>(
+      bolt_submodule, "MarginBCE")
+      .def(py::init<float, float, bool>(), py::arg("positive_margin"),
+           py::arg("negative_margin"), py::arg("bound"));
+
   auto oracle_types_submodule = bolt_submodule.def_submodule("types");
 
   py::class_<sequential_classifier::DataType>(  // NOLINT
@@ -290,7 +295,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
                                  std::string,
                                  sequential_classifier::TemporalConfig>>>,
                     std::string, std::string, uint32_t>(),
-           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
+           py::arg("data_types"),
+           py::arg("temporal_tracking_relationships") = std::map<
+               std::string,
+               std::vector<std::variant<
+                   std::string, sequential_classifier::TemporalConfig>>>(),
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0,
            R"pbdoc(  
@@ -311,8 +320,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
             If `temporal_tracking_relationships` is non-empty, there must one 
             bolt.types.date() column. This column contains date strings in YYYY-MM-DD format.
             There can only be one bolt.types.date() column.
-        temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): A mapping 
-            from column name to a list of either other column names or bolt.temporal objects.
+        temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): Optional. 
+            A mapping from column name to a list of either other column names or bolt.temporal objects.
             This mapping tells Oracle what columns can be tracked over time for each key.
             For example, we may want to tell Oracle that we want to track a user's watch 
             history by passing in a map like `{"user_id": ["movie_id"]}`

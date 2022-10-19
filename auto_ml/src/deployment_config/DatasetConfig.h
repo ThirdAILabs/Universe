@@ -4,13 +4,17 @@
 #include "BlockConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/deployment_config/Artifact.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingDataset.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <cstdint>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <unordered_set>
 
 namespace thirdai::automl::deployment {
 
@@ -98,7 +102,25 @@ class DatasetLoaderFactory {
 
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 
+  virtual uint32_t getLabelDim() = 0;
+
   virtual ~DatasetLoaderFactory() = default;
+
+  Artifact getArtifact(const std::string& name) const {
+    if (auto artifact = getArtifactImpl(name)) {
+      return *artifact;
+    }
+    throw std::invalid_argument("Artifact '" + name + "' not found.");
+  }
+
+  virtual std::vector<std::string> listArtifactNames() const { return {}; }
+
+ protected:
+  virtual std::optional<Artifact> getArtifactImpl(
+      const std::string& name) const {
+    (void)name;
+    return std::nullopt;
+  }
 
  private:
   friend class cereal::access;

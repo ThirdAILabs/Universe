@@ -44,10 +44,13 @@ class SequentialClassifier {
       uint32_t lookahead = 0) {
     _config.data_types = std::move(data_types),
     _config.target = std::move(target);
-    _config.time_granularity = stringToGranularity(std::move(time_granularity));
+    _config.time_granularity =
+        dataset::stringToGranularity(std::move(time_granularity));
     _config.lookahead = lookahead;
-    autotuneTemporalFeatures(_config,
-                             std::move(temporal_tracking_relationships));
+    if (!temporal_tracking_relationships.empty()) {
+      autotuneTemporalFeatures(_config,
+                               std::move(temporal_tracking_relationships));
+    }
     _single_inference_col_nums = ColumnNumberMap(_config.data_types);
   }
 
