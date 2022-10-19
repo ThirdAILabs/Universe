@@ -54,18 +54,15 @@ class TemporalContext {
                                 char delimiter) {
     if (!_processor) {
       _processor = std::move(processor);
-    } else if (_processor != processor) {
-      throw std::invalid_argument(
-          "Temporal context already initialized with a different processor.");
-    }
-    if (!_column_number_map) {
       _column_number_map = std::move(column_number_map);
-    } else if (_column_number_map != column_number_map) {
+      _delimiter = delimiter;
+    } else if (_processor != processor ||
+               _column_number_map != column_number_map ||
+               _delimiter != delimiter) {
       throw std::invalid_argument(
-          "Temporal context already initialized with a different column number "
-          "map.");
+          "Temporal context already initialized with different data "
+          "structures.");
     }
-    _delimiter = delimiter;
   }
 
   void updateTemporalTrackers(const std::string& update) {
