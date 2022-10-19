@@ -98,6 +98,8 @@ class Worker:
                 )
             )
 
+
+    
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
     # Hence, we will need to expose this function here in worker

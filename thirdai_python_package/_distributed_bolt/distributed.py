@@ -13,6 +13,7 @@ from thirdai._thirdai import bolt, logging
 from .utils import get_num_cpus, init_logging
 
 import pyarrow
+from ray.data import Dataset
 
 class RayTrainingClusterConfig:
     """
@@ -99,15 +100,14 @@ class RayTrainingClusterConfig:
             for _ in range(self.num_workers - 1)
         ]
 
-class RayDatasetConfig:
+
+
+class DataParallelIngestSpec:
     def __init__(self, 
-        num_workers: int, 
-        paths: Union[str, List[str]], 
         dataset_type: str,
         equal: bool=False,
         save_location: str='/tmp/thirdai/',
         save_prefix: str='training_data',
-        remote_file_system: Optional[pyarrow.fs.FileSystem] = None,
     ): 
         """
         This class writes a wrapper on Ray Data for copying and splitting training 
@@ -116,11 +116,6 @@ class RayDatasetConfig:
         exclusive and exhaustive.
 
 
-        :param num_workers: total number of workers in the cluster
-        :type num_workers: int
-        :param paths: A single file/directory path or a list of file/directory paths.
-            A list of paths can contain both files and directories.
-        :type paths: Union[str, List[str]]
         :param dataset_type: different dataset format. Currently Supported: csv, text, numpy.
         :type dataset_type: str
         :param equal: Whether to guarantee each split has an equal
@@ -133,25 +128,38 @@ class RayDatasetConfig:
         :param save_prefix: The name of the file, to which dataset file is written
                 to, defaults to 'training_data'
         :type save_prefix: str, optional
+        """
+        self.dataset_type = dataset_type
+        self.equal = equal
+        self.save_location = save_location
+        self.save_prefix = save_prefix
+    
+
+    def get_ray_dataset(
+            self, 
+            paths: Union[str, List[str]],
+            remote_file_system: Optional[pyarrow.fs.FileSystem] = None,
+        ):
+        """
+        Get the shards to pass to train workers
+
+        :param paths: A single file/directory path or a list of file/directory paths.
+            A list of paths can contain both files and directories.
+        :type paths: Union[str, List[str]]
         :param remote_file_system: The filesystem implementation to read from,
                 defaults to None
         :type remote_file_system: Optional[pyarrow.fs.FileSystem], optional
         :raises ValueError: If dataset format specified not supported.
-        :return: Info about the filenames written
-        :rtype: RayDatasetConfig
+        :return: Dataset
+        :rtype: ray.data.Dataset
         """        
 
-        if not os.path.exists(save_location):
-            os.mkdir(save_location)
-
-
-
         ray_dataset = None
-        if dataset_type == "csv":
+        if self.dataset_type == "csv":
             ray_dataset = ray.data.read_csv(paths=paths, filesystem=remote_file_system)
-        elif dataset_type == "text":
+        elif self.dataset_type == "text":
             ray_dataset = ray.data.read_text(paths=paths, filesystem=remote_file_system)
-        elif dataset_type == "numpy":
+        elif self.dataset_type == "numpy":
             ray_dataset = ray.data.read_numpy(paths=paths, filesystem=remote_file_system)
         
 
@@ -159,44 +167,9 @@ class RayDatasetConfig:
             raise ValueError(f"Dataset Type: {dataset_type} is not 
                                 supported. Supported types are csv, 
                                 text or numpy")
-        
-
-        @ray.remote(num_cpus=get_num_cpus())
-        class DataTransferActor:
-            def __init__(self, dataset_type, save_location, save_prefix):
-                self.dataset_type = dataset_type
-                self.save_location = save_location
-                self.save_prefix = save_prefix
 
 
-            def consume(self, shard):
-                file_path = None
-                if self.dataset_type == "csv":
-                    file_path = self.save_location+self.save_prefix+'.csv'
-                    shard.write_csv(path=file_path)
-                elif self.dataset_type == "text":
-                    file_path = self.save_location+self.save_prefix+'.txt'
-                    shard.write_text(path=file_path)
-                elif self.dataset_type == "numpy":
-                    file_path = self.save_location+self.save_prefix+'.npy'
-                    shard.write_numpy(path=file_path)
-                
-                return file_path
-
-
-
-        
-        workers = [DataTransferActor.remote(dataset_type, save_location, save_prefix) for i in range(num_workers)]
-        ray_data_shards = ray_dataset.split(n=num_workers, equal=equal, locality=workers)
-
-        
-        self.train_file_names = ray.get([worker.consume.remote(shard) for shard, worker in zip(ray_data_shards, workers)])
-
-
-        
-
-
-
+        return ray_dataset
 
 
 class DistributedDataParallel:
@@ -212,7 +185,7 @@ class DistributedDataParallel:
         train_config: bolt.graph.TrainConfig,
         train_file_names: List[str],
         batch_size: int,
-        ray_dataset_config: RayDatasetConfig = None
+        ray_dataset: RayDatasetConfig = None
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
