@@ -11,6 +11,7 @@
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <exception>
+#include <optional>
 #include <stdexcept>
 #include <string_view>
 #include <unordered_map>
@@ -87,6 +88,10 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final {
     return _labeled_batch_processor->getLabelDim();
+  }
+
+  std::optional<std::vector<std::string>> getIdToLabelMap() const final {
+    return std::nullopt;
   }
 
  private:

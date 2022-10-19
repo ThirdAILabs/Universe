@@ -14,7 +14,6 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
@@ -167,6 +166,19 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final { return _label_dim; }
 
+  std::optional<std::vector<std::string>> getIdToLabelMap() const final {
+    if (!_vocabs.count(_config->target)) {
+      throw std::invalid_argument(
+          "Attempted to get id to label map before training.");
+    }
+    if (_config->data_types.at(_config->target)
+            .asCategorical()
+            .contiguous_numerical_ids) {
+      return std::nullopt;
+    }
+    return {_vocabs.at(_config->target)->getUidToStringMap()};
+  }
+
   std::vector<std::string> listArtifactNames() const final {
     return {"temporal_context"};
   }
@@ -199,10 +211,25 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
           "Target column must be a categorical column.");
     }
 
-    auto label_block = dataset::NumericalCategoricalBlock::make(
-        /* col= */ column_number_map.at(_config->target),
-        /* n_classes= */ target_type.asCategorical().n_unique_classes,
-        /* delimiter= */ target_type.asCategorical().delimiter);
+    dataset::BlockPtr label_block;
+
+    auto col_num = column_number_map.at(_config->target);
+    auto n_unique_classes = target_type.asCategorical().n_unique_classes;
+    auto delimiter = target_type.asCategorical().delimiter;
+
+    if (target_type.asCategorical().contiguous_numerical_ids) {
+      label_block = dataset::NumericalCategoricalBlock::make(
+          col_num, n_unique_classes, delimiter);
+
+    } else {
+      if (!_vocabs.count(_config->target)) {
+        _vocabs[_config->target] =
+            dataset::ThreadSafeVocabulary::make(n_unique_classes);
+      }
+
+      label_block = dataset::StringLookupCategoricalBlock::make(
+          col_num, _vocabs.at(_config->target), delimiter);
+    }
 
     auto input_blocks =
         buildInputBlocks(/* column_numbers= */ column_number_map,

@@ -103,6 +103,10 @@ class ThreadSafeVocabulary {
     return _uid_to_string.at(uid);
   }
 
+  const std::vector<std::string>& getUidToStringMap() const {
+    return _uid_to_string;
+  }
+
   uint32_t vocabSize() const { return _vocab_size; }
 
   void fixVocab() { _fixed = true; };

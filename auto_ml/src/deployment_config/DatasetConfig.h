@@ -4,6 +4,7 @@
 #include "BlockConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/deployment_config/Artifact.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingDataset.h>
@@ -137,6 +138,8 @@ class DatasetLoaderFactory {
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 
   virtual uint32_t getLabelDim() = 0;
+
+  virtual std::optional<std::vector<std::string>> getIdToLabelMap() const = 0;
 
   virtual ~DatasetLoaderFactory() = default;
 

@@ -165,6 +165,8 @@ class ModelPipeline {
                                      sample);
   }
 
+  auto getIdToLabelMap() const { _dataset_factory->getIdToLabelMap(); }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
