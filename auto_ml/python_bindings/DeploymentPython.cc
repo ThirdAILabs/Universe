@@ -228,11 +228,13 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("predict", &predictWrapperStringInput, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT)
-      .def("explain",
-           py::overload_cast<const std::string&, std::optional<uint32_t>>(
-               &ModelPipeline::explain),
-           py::arg("input_sample"), py::arg("target_class") = std::nullopt,
-           docs::MODEL_PIPELINE_EXPLAIN)
+      .def(
+          "explain",
+          py::overload_cast<const std::string&,
+                            std::optional<std::variant<uint32_t, std::string>>>(
+              &ModelPipeline::explain),
+          py::arg("input_sample"), py::arg("target_class") = std::nullopt,
+          docs::MODEL_PIPELINE_EXPLAIN)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_TOKENS)

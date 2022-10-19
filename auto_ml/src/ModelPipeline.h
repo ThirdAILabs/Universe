@@ -5,6 +5,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
@@ -147,20 +148,31 @@ class ModelPipeline {
 
   std::vector<dataset::Explanation> explain(
       const std::string& sample,
-      std::optional<uint32_t> target_label = std::nullopt) {
+      std::optional<std::variant<uint32_t, std::string>> target_label =
+          std::nullopt) {
+    std::optional<uint32_t> target_neuron;
+    if (target_label) {
+      target_neuron = _dataset_factory->labelToNeuronId(*target_label);
+    }
+
     auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
         /* input_data= */ {_dataset_factory->featurizeInput(sample)},
         /* explain_prediction_using_highest_activation= */ true,
-        /* neuron_to_explain= */ target_label);
+        /* neuron_to_explain= */ target_neuron);
     return _dataset_factory->explain(gradients_indices, gradients_ratio,
                                      sample);
   }
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,
-      std::optional<uint32_t> target_label = std::nullopt) {
+      std::optional<std::variant<uint32_t, std::string>> target_label =
+          std::nullopt) {
+    std::optional<uint32_t> target_neuron;
+    if (target_label) {
+      target_neuron = _dataset_factory->labelToNeuronId(*target_label);
+    }
     auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
-        {_dataset_factory->featurizeInput(sample)}, true, target_label);
+        {_dataset_factory->featurizeInput(sample)}, true, target_neuron);
     return _dataset_factory->explain(gradients_indices, gradients_ratio,
                                      sample);
   }

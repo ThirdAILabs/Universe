@@ -14,6 +14,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
@@ -21,6 +22,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <utils/StringManipulation.h>
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
@@ -32,6 +34,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 namespace thirdai::automl::deployment {
@@ -121,6 +124,26 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         inputs, _config->delimiter, *_column_number_map);
 
     return featurizeInputBatch(string_batch);
+  }
+
+  uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
+    if (std::holds_alternative<uint32_t>(label)) {
+      return std::get<uint32_t>(label);
+    }
+
+    const std::string& label_str = std::get<std::string>(label);
+
+    if (_config->data_types.at(_config->target)
+            .asCategorical()
+            .contiguous_numerical_ids) {
+      return utils::toInteger(label_str.c_str());
+    }
+
+    if (!_vocabs.count(_config->target)) {
+      throw std::invalid_argument(
+          "Attempted to get label to neuron id map before training.");
+    }
+    return _vocabs.at(_config->target)->getUid(label_str);
   }
 
   std::vector<dataset::Explanation> explain(

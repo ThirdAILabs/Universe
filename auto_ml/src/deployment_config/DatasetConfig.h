@@ -4,6 +4,7 @@
 #include "BlockConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/deployment_config/Artifact.h>
 #include <dataset/src/Datasets.h>
@@ -11,6 +12,7 @@
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <__tuple>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -18,6 +20,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 
 namespace thirdai::automl::deployment {
 
@@ -117,6 +120,9 @@ class DatasetLoaderFactory {
         "This model pipeline configuration does not support map input. Pass in "
         "a list of strings instead.");
   };
+
+  virtual uint32_t labelToNeuronId(
+      std::variant<uint32_t, std::string> label) = 0;
 
   virtual std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,

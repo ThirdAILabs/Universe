@@ -10,6 +10,7 @@
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <utils/StringManipulation.h>
 #include <exception>
 #include <optional>
 #include <stdexcept>
@@ -64,6 +65,14 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
     std::vector<BoltBatch> batch_list;
     batch_list.emplace_back(std::move(batch));
     return batch_list;
+  }
+
+  uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
+    if (std::holds_alternative<uint32_t>(label)) {
+      return std::get<uint32_t>(label);
+    }
+
+    return utils::toInteger(std::get<std::string>(label).c_str());
   }
 
   std::vector<dataset::Explanation> explain(
