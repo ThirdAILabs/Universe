@@ -272,6 +272,9 @@ add_library(
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
+if(${LICENSE_BUILD_FLAG_FOUND})
+    target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
@@ -291,6 +294,3 @@ pybind11_add_module(
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 
-if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(_thirdai PRIVATE cryptopp::cryptopp)
-endif()
