@@ -323,7 +323,9 @@ Args:
     save_best_per_metric (str, optional): 
         Whether to save best model based on validation. Needs
         with_save_parameters(...) configured.  Defaults to empty
-        string, which implies no saving best model.
+        string, which implies no saving best model. Note that this requires the
+        tracked metric to be configured via `with_metrics(...)`.
+
 )pbdoc")
       .def_property_readonly(
           "num_epochs", [](TrainConfig& config) { return config.epochs(); },
