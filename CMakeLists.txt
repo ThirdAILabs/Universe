@@ -149,7 +149,12 @@ set(THIRDAI_COMPILE_OPTIONS
     $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
     $<$<CONFIG:RelWithAsan>:-g>
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
-    
+
+    $<$<CONFIG:CompileTrace>:-DNDEBUG>
+    $<$<CONFIG:CompileTrace>:-Ofast>
+    $<$<CONFIG:CompileTrace>:-fno-finite-math-only>
+    $<$<CONFIG:CompileTrace>:-funroll-loops>
+    $<$<CONFIG:CompileTrace>:-ftree-vectorize>
     $<$<CONFIG:CompileTrace>:-ftime-trace>
     )
 
