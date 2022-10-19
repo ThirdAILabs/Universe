@@ -118,13 +118,21 @@ void BoltGraph::log_validate_and_save(uint32_t batch_size,
         predict(validation->data(), validation->labels(), validation->config());
 
     if (save_context && _tracked_metric != nullptr) {
-      double candidate = validation_metrics[_tracked_metric->name()];
-      if (_tracked_metric->betterThan(candidate, _best_validation_metric)) {
-        _best_validation_metric = candidate;
-        const std::string checkpoint_path =
-            save_context->prefix() + ".best.bolt";
-        logging::info("Saving best model to {}", checkpoint_path);
-        save(checkpoint_path);
+      auto query = validation_metrics.find(_tracked_metric->name());
+      if (query != validation_metrics.end()) {
+        double candidate = query->second;
+        if (_tracked_metric->betterThan(candidate, _best_validation_metric)) {
+          _best_validation_metric = candidate;
+          const std::string checkpoint_path =
+              save_context->prefix() + ".best.bolt";
+          logging::info("Saving best model to {}", checkpoint_path);
+          save(checkpoint_path);
+        }
+      } else {
+        logging::error(
+            "Metric {} to be used for save-per-best not found in tracked "
+            "metrics. ",
+            _tracked_metric->name());
       }
     }
 
