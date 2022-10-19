@@ -38,21 +38,34 @@ class ColumnMap {
     std::vector<BoltVector> output_vectors;
     output_vectors.reserve(numRows());
 
-    bool is_dense = std::all_of(output_columns.begin(), output_columns.end(),
-                                [](auto& column) { return column->isDense(); });
+    bool all_cols_dense = true;
+    std::vector<uint32_t> column_dims;
+    for (const auto& col : output_columns) {
+      if (auto output_dimension = col->dimension()) {
+        all_cols_dense = all_cols_dense && output_dimension->is_dense;
+        column_dims.push_back(output_dimension->dim);
+      } else {
+        throw std::invalid_argument(
+            "Cannot convert column without dimension to dataset");
+      }
+    }
 
     for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
-      if (is_dense) {
+      if (all_cols_dense) {
+        // TODO(Nicholas/Geordie): Refactor this into a unified row builder
+        // class.
         SegmentedDenseFeatureVector vector;
-        for (const auto& column : output_columns) {
-          vector.addFeatureSegment(column->dim());
+        for (uint32_t i = 0; i < output_columns.size(); i++) {
+          auto column = output_columns[i];
+          vector.addFeatureSegment(column_dims[i]);
           column->appendRowToVector(vector, row_index);
         }
         output_vectors.push_back(vector.toBoltVector());
       } else {
         SegmentedSparseFeatureVector vector;
-        for (const auto& column : output_columns) {
-          vector.addFeatureSegment(column->dim());
+        for (uint32_t i = 0; i < output_columns.size(); i++) {
+          auto column = output_columns[i];
+          vector.addFeatureSegment(column_dims[i]);
           column->appendRowToVector(vector, row_index);
         }
         output_vectors.push_back(vector.toBoltVector());
@@ -77,8 +90,8 @@ class ColumnMap {
       const std::string& name) {
     auto column = std::dynamic_pointer_cast<FloatValueColumn>(getColumn(name));
     if (!column) {
-      throw std::invalid_argument(
-          "Column '" + name + "' cannot be converted to IntegerValueColumn.");
+      throw std::invalid_argument("Column '" + name +
+                                  "' cannot be converted to FloatValueColumn.");
     }
     return column;
   }
@@ -89,7 +102,7 @@ class ColumnMap {
         std::dynamic_pointer_cast<IntegerArrayColumn>(getColumn(name));
     if (!column) {
       throw std::invalid_argument(
-          "Column '" + name + "' cannot be converted to IntegerValueColumn.");
+          "Column '" + name + "' cannot be converted to IntegerArrayColumn.");
     }
     return column;
   }
@@ -98,8 +111,8 @@ class ColumnMap {
       const std::string& name) {
     auto column = std::dynamic_pointer_cast<FloatArrayColumn>(getColumn(name));
     if (!column) {
-      throw std::invalid_argument(
-          "Column '" + name + "' cannot be converted to IntegerValueColumn.");
+      throw std::invalid_argument("Column '" + name +
+                                  "' cannot be converted to FloatArrayColumn.");
     }
     return column;
   }

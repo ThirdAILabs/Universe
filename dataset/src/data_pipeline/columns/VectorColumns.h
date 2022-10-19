@@ -8,7 +8,7 @@ namespace thirdai::dataset {
 template <typename T>
 class VectorValueColumn final : public ValueColumn<T> {
  public:
-  // This uses SFINAE to disable the folowing constructor if T is not a certain
+  // This uses SFINAE to disable the folowing constructor if T is not a uint32_t
   // type. https://en.cppreference.com/w/cpp/types/enable_if
   template <typename U = T,
             std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
@@ -23,7 +23,7 @@ class VectorValueColumn final : public ValueColumn<T> {
     }
   }
 
-  // This uses SFINAE to disable the folowing constructor if T is not a certain
+  // This uses SFINAE to disable the folowing constructor if T is not a float
   // type. https://en.cppreference.com/w/cpp/types/enable_if
   template <typename U = T,
             std::enable_if_t<std::is_same<U, float>::value, bool> = true>
@@ -32,7 +32,13 @@ class VectorValueColumn final : public ValueColumn<T> {
 
   uint64_t numRows() const final { return _data.size(); }
 
-  uint32_t dim() const final { return _dim; }
+  std::optional<DimensionInfo> dimension() const final {
+    if constexpr (std::is_same<T, uint32_t>::value ||
+                  std::is_same<T, float>::value) {
+      return {{_dim, std::is_same<T, float>::value}};
+    }
+    return std::nullopt;
+  }
 
   const T& operator[](uint64_t n) const final { return _data.at(n); }
 

@@ -4,6 +4,7 @@
 #include <pybind11/buffer_info.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
 
@@ -11,6 +12,8 @@ namespace py = pybind11;
 
 namespace thirdai::dataset {
 
+// py::array::forcecast is safe because we want everything in terms of
+// uint32_t/float.
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
@@ -54,7 +57,13 @@ class NumpyValueColumn final : public ValueColumn<T> {
 
   uint64_t numRows() const final { return _buffer_info.shape[0]; }
 
-  uint32_t dim() const final { return _dim; }
+  std::optional<DimensionInfo> dimension() const final {
+    if constexpr (std::is_same<T, uint32_t>::value ||
+                  std::is_same<T, float>::value) {
+      return {{_dim, std::is_same<T, float>::value}};
+    }
+    return std::nullopt;
+  }
 
   const T& operator[](uint64_t n) const final {
     return static_cast<const T*>(_buffer_info.ptr)[n];
@@ -112,9 +121,15 @@ class NumpyArrayColumn final : public ArrayColumn<T> {
     }
   }
 
-  uint64_t numRows() const final { return _buffer_info.shape[0]; }
+  std::optional<DimensionInfo> dimension() const final {
+    if constexpr (std::is_same<T, uint32_t>::value ||
+                  std::is_same<T, float>::value) {
+      return {{_dim, std::is_same<T, float>::value}};
+    }
+    return std::nullopt;
+  }
 
-  uint32_t dim() const final { return _dim; }
+  uint64_t numRows() const final { return _buffer_info.shape[0]; }
 
   /**
    * The extra typename keyword here so that during parsing it is clear that

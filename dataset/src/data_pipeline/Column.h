@@ -8,38 +8,42 @@
 
 namespace thirdai::dataset {
 
+struct DimensionInfo {
+  uint32_t dim;
+  bool is_dense;
+};
+
 class Column {
  public:
   virtual uint64_t numRows() const = 0;
 
-  virtual bool isDense() const = 0;
-
-  virtual uint32_t dim() const = 0;
+  virtual std::optional<DimensionInfo> dimension() const = 0;
 
   virtual void appendRowToVector(SegmentedFeatureVector& vector,
-                                 uint64_t row) const = 0;
+                                 uint64_t row_idx) const = 0;
 
   virtual ~Column() = default;
 };
 
 using ColumnPtr = std::shared_ptr<Column>;
 
+// We use templates to create columns with different types because there are
+// very few types which we will need to support and almost all of the code for
+// the columns of different types is the same.
 template <typename T>
 class ValueColumn : public Column {
  public:
   virtual const T& operator[](uint64_t n) const = 0;
 
-  bool isDense() const final { return std::is_same<T, float>::value; }
-
   void appendRowToVector(SegmentedFeatureVector& vector,
-                         uint64_t row) const final {
+                         uint64_t row_idx) const final {
     if constexpr (std::is_same<T, uint32_t>::value) {
-      vector.addSparseFeatureToSegment(this->operator[](row), 1.0);
+      vector.addSparseFeatureToSegment(this->operator[](row_idx), 1.0);
       return;
     }
 
     if constexpr (std::is_same<T, float>::value) {
-      vector.addDenseFeatureToSegment(this->operator[](row));
+      vector.addDenseFeatureToSegment(this->operator[](row_idx));
       return;
     }
 
@@ -54,6 +58,9 @@ class ValueColumn : public Column {
 using IntegerValueColumn = ValueColumn<uint32_t>;
 using FloatValueColumn = ValueColumn<float>;
 
+// We use templates to create columns with different types because there are
+// very few types which we will need to support and almost all of the code for
+// the columns of different types is the same.
 template <typename T>
 class ArrayColumn : public Column {
  public:
@@ -83,10 +90,8 @@ class ArrayColumn : public Column {
 
   virtual RowReference operator[](uint64_t n) const = 0;
 
-  bool isDense() const final { return std::is_same<T, float>::value; }
-
   void appendRowToVector(SegmentedFeatureVector& vector,
-                         uint64_t row) const final {
+                         uint64_t row_idx) const final {
     static_assert(std::is_same<T, uint32_t>::value ||
                       std::is_same<T, float>::value ||
                       std::is_same<T, std::pair<uint32_t, float>>::value,
@@ -94,19 +99,19 @@ class ArrayColumn : public Column {
                   "(uint32, float32) to BoltVector.");
 
     if constexpr (std::is_same<T, uint32_t>::value) {
-      for (uint32_t index : this->operator[](row)) {
+      for (uint32_t index : this->operator[](row_idx)) {
         vector.addSparseFeatureToSegment(index, 1.0);
       }
     }
 
     if constexpr (std::is_same<T, float>::value) {
-      for (float value : this->operator[](row)) {
+      for (float value : this->operator[](row_idx)) {
         vector.addDenseFeatureToSegment(value);
       }
     }
 
     if constexpr (std::is_same<T, std::pair<uint32_t, float>>::value) {
-      for (const auto& [index, value] : this->operator[](row)) {
+      for (const auto& [index, value] : this->operator[](row_idx)) {
         vector.addSparseFeatureToSegment(index, value);
       }
     }
