@@ -46,12 +46,15 @@ class TemporalContext {
     }
   }
 
-  void initializeProcessor(dataset::GenericBatchProcessorPtr processor) {
+  void initializeDataStructures(dataset::GenericBatchProcessorPtr processor,
+                                char delimiter) {
     if (!_processor) {
       _processor = std::move(processor);
-    } else if (_processor != processor) {
+      _delimiter = delimiter;
+    } else if (_processor != processor || _delimiter != delimiter) {
       throw std::invalid_argument(
-          "Temporal context already initialized with a different processor.");
+          "Temporal context already initialized with a different processor and "
+          "delimiter.");
     }
   }
 
@@ -61,7 +64,7 @@ class TemporalContext {
           "Attempted to manually update temporal context before training.");
     }
     BoltVector vector;
-    auto sample = dataset::ProcessorUtils::parseCsvRow(update, ',');
+    auto sample = dataset::ProcessorUtils::parseCsvRow(update, _delimiter);
     // The following line updates the temporal context as a side effect,
     if (auto exception = _processor->makeInputVector(sample, vector)) {
       std::rethrow_exception(exception);
@@ -84,12 +87,14 @@ class TemporalContext {
       _categorical_histories;
 
   dataset::GenericBatchProcessorPtr _processor;
+  char _delimiter;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_numerical_histories, _categorical_histories, _processor);
+    archive(_numerical_histories, _categorical_histories, _processor,
+            _delimiter);
   }
 };
 

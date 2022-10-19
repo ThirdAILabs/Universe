@@ -75,7 +75,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     if (!_inference_batch_processor) {
       _inference_batch_processor = makeInferenceProcessor(*_column_number_map);
     }
-    _context->initializeProcessor(_labeled_batch_processor);
+    _context->initializeDataStructures(_labeled_batch_processor,
+                                       _config->delimiter);
 
     return std::make_unique<GenericDatasetLoader>(data_loader,
                                                   _labeled_batch_processor,

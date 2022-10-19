@@ -205,22 +205,15 @@ class UserSpecifiedParameter : public HyperParameter<T> {
                 "std::string, or OracleConfig");
 
  public:
-  explicit UserSpecifiedParameter(std::string param_name,
-                                  std::optional<T> default_value = std::nullopt)
-      : _param_name(std::move(param_name)),
-        _default_value(std::move(default_value)) {}
+  explicit UserSpecifiedParameter(std::string param_name)
+      : _param_name(std::move(param_name)) {}
 
-  static HyperParameterPtr<T> make(
-      std::string param_name, std::optional<T> default_value = std::nullopt) {
-    return std::make_shared<UserSpecifiedParameter<T>>(
-        std::move(param_name), std::move(default_value));
+  static HyperParameterPtr<T> make(std::string param_name) {
+    return std::make_shared<UserSpecifiedParameter<T>>(std::move(param_name));
   }
 
   T resolve(const UserInputMap& user_specified_parameters) const final {
     if (!user_specified_parameters.count(_param_name)) {
-      if (_default_value) {
-        return *_default_value;
-      }
       throw std::invalid_argument("UserSpecifiedParameter '" + _param_name +
                                   "' not specified by user but is required to "
                                   "construct ModelPipeline.");
@@ -250,7 +243,6 @@ class UserSpecifiedParameter : public HyperParameter<T> {
 
  private:
   std::string _param_name;
-  std::optional<T> _default_value;
 
   // Private constructor for cereal.
   UserSpecifiedParameter() {}
@@ -258,8 +250,7 @@ class UserSpecifiedParameter : public HyperParameter<T> {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<HyperParameter<T>>(this), _param_name,
-            _default_value);
+    archive(cereal::base_class<HyperParameter<T>>(this), _param_name);
   }
 };
 
