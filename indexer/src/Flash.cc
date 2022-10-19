@@ -23,7 +23,8 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function)
 }
 
 template <typename LABEL_T>
-Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function, uint32_t reservoir_size)
+Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function,
+                      uint32_t reservoir_size)
     : _hash_function(std::move(function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),

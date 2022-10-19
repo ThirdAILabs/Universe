@@ -694,159 +694,157 @@ py::module_ createBoltSubmodule(py::module_& module) {
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("input_dim"),
            R"pbdoc(
-            Initializes an IndexerConfig object.
+    Initializes an IndexerConfig object.
 
-            Args:
-                hash_function (str): A specific hash function 
-                                to use. Supported hash functions include FastSRP,
-                                DensifiedMinHash and DWTA.
-                num_tables (int): Number of hash tables to construct.
-                hashes_per_table (int): Number of hashes per table.
-                input_dim (int): Input dimension 
+     Args:
+        hash_function (str): A specific hash function 
+                        to use. Supported hash functions include FastSRP,
+                        DensifiedMinHash and DWTA.
+        num_tables (int): Number of hash tables to construct.
+        hashes_per_table (int): Number of hashes per table.
+        input_dim (int): Input dimension 
+    Returns: 
+        IndexerConfig
 
-            Returns: 
-                IndexerConfig
-
-            Example:
-                >>> indexer_config = bolt.IndexerConfig(
-                        hash_function="DensifiedMinHash",
-                        num_tables=100,
-                        hashes_per_table=15,
-                    )
+    Example:
+        >>> indexer_config = bolt.IndexerConfig(
+                hash_function="DensifiedMinHash",
+                num_tables=100,
+                hashes_per_table=15,
+            )
             )pbdoc")
       .def("save", &bolt::IndexerConfig::save, py::arg("file_name"),
            R"pbdoc(
-            Saves an indexer configuration object at the specified file path. 
-            This can be used to provide a flash indexer architecture to customers.
+    Saves an indexer configuration object at the specified file path. 
+    This can be used to provide a flash indexer architecture to customers.
 
-            Args:
-                file_name (str): File path specification for where to save the 
-                        indexer configuration object. 
+    Args:
+        file_name (str): File path specification for where to save the 
+                indexer configuration object. 
 
-            Returns:
-                None
+    Returns:
+        None
 
             )pbdoc")
       .def_static("load", &bolt::IndexerConfig::load,
                   py::arg("config_file_name"),
-            R"pbdoc(
-            Loads an indexer config object from a specific file location. 
+                  R"pbdoc(
+    Loads an indexer config object from a specific file location. 
 
-            Args:
-                config_file_name (str): Path to the file containing a saved config.
+    Args:
+        config_file_name (str): Path to the file containing a saved config.
 
-            Returns:
-                IndexerConfig:
+        Returns:
+            IndexerConfig:
 
             )pbdoc");
 
   py::class_<bolt::Indexer, std::shared_ptr<bolt::Indexer>>(bolt_submodule,
                                                             "Indexer")
       .def(py::init(&bolt::Indexer::buildIndexerFromSerializedConfig),
-           py::arg("config_file_name"), 
+           py::arg("config_file_name"),
            R"pbdoc(
-            Initializes an Indexer object.
+    Initializes an Indexer object.
             
-            The config file should at least contain the following elements:
-                - num_hash_tables: Number of hash tables to construct.
-                - hashes_per_table: Hashes for each hash table.
-            Args:
-                config_file_name (str): The path to the config file
-            Returns:
-                Indexer
+    The config file should at least contain the following elements:
+        - num_hash_tables: Number of hash tables to construct.
+        - hashes_per_table: Hashes for each hash table.
+    Args:
+        config_file_name (str): The path to the config file
+    Returns:
+        Indexer
 
-            Example:
-                >>> CONFIG_FILE = "/path/to/config/file"
-                >>> indexer = bolt.Indexer(
-                        config_file_name=CONFIG_FILE
-                    )
+    Example:
+        >>> CONFIG_FILE = "/path/to/config/file"
+        >>> indexer = bolt.Indexer(
+                config_file_name=CONFIG_FILE
+            )
 
            )pbdoc")
       .def("build_index", &bolt::Indexer::buildFlashIndex, py::arg("file_name"),
-            R"pbdoc(
-            Constructs an index by reading from a CSV file. 
-            The input CSV file is expected to have a single column where
-            each row represents a query. 
+           R"pbdoc(
+    Constructs an index by reading from a CSV file. 
+    The input CSV file is expected to have a single column where
+    each row represents a query. 
             
-            Args:
-                config_file_name (str): The path to the file containing the queries
-            Returns:
-                Indexer
+    Args:
+        config_file_name (str): The path to the file containing the queries
+    Returns:
+        Indexer
 
-            Example:
-                >>> indexer = bolt.Indexer(...)
-                >>> query_file_name = "/path/to/query/file/name"
-                >>> indexer.build_index(file_name=query_file_name)
+    Example:
+        >>> indexer = bolt.Indexer(...)
+        >>> query_file_name = "/path/to/query/file/name"
+        >>> indexer.build_index(file_name=query_file_name)
 
            )pbdoc")
       .def("build_index_with_query_pair", &bolt::Indexer::buildFlashIndexPair,
-           py::arg("file_name"), 
-            R"pbdoc(
-            Constructs an index by reading from a CSV file. 
-            The input CSV file is expected to have exactly two columns.
-            The first column contains incorrect queries while the second column
-            contains the correct form of these queries. 
+           py::arg("file_name"),
+           R"pbdoc(
+    Constructs an index by reading from a CSV file. 
+    The input CSV file is expected to have exactly two columns.
+    The first column contains incorrect queries while the second column
+    contains the correct form of these queries. 
 
             
-            Args:
-                config_file_name (str): The path to the file containing the queries
-            Returns:
-                Indexer
+    Args:
+        config_file_name (str): The path to the file containing the queries
+    Returns:
+        Indexer
 
-            Example:
-                >>> indexer = bolt.Indexer(...)
-                >>> query_pairs_file = "/path/to/query/file/name"
-                >>> indexer.build_index_with_query_pair(file_name=query_pairs_file)
+    Example:
+        >>> indexer = bolt.Indexer(...)
+        >>> query_pairs_file = "/path/to/query/file/name"
+        >>> indexer.build_index_with_query_pair(file_name=query_pairs_file)
 
            )pbdoc")
       .def("generate", &bolt::Indexer::queryIndexFromFile,
            py::arg("query_file_name"),
-                       R"pbdoc(
-            Reads from a CSV file containing potentially incorrect queries,
-            and generates a list of correct candidate queries. 
-            By default, 10 queries are chosen as output. If less than 10 queries are 
-            found, then the output list is padded with empty strings. 
+           R"pbdoc(
+    Reads from a CSV file containing potentially incorrect queries,
+    and generates a list of correct candidate queries. 
+    By default, 10 queries are chosen as output. If less than 10 queries are 
+    found, then the output list is padded with empty strings. 
 
-            Notice that the input CSV file is expected to have a single column where 
-            each row represents a single query. 
+    Notice that the input CSV file is expected to have a single column where 
+    each row represents a single query. 
             
-            Args:
-                query_file_name (str): The path to the file containing the queries
+    Args:
+        query_file_name (str): The path to the file containing the queries
 
-            Returns:
-                (For now the returned output consits of just IDs)
-                TODO: return the corresponding strings from IDs
+    Returns:
+        (For now the returned output consits of just IDs)
+        TODO: return the corresponding strings from IDs
 
-            Example:
-                >>> indexer = bolt.Indexer(...)
-                >>> queries_to_index = "/path/to/queries"
-                >>> query_file_name = "/path/to/query/file/name"
-                >>> indexer.build_index(file_name=queries_to_index)
-                >>> candidates = indexer.generate(query_file_name=query_file_name)
+    Example:
+        >>> indexer = bolt.Indexer(...)
+        >>> queries_to_index = "/path/to/queries"
+        >>> query_file_name = "/path/to/query/file/name"
+        >>> indexer.build_index(file_name=queries_to_index)
+        >>> candidates = indexer.generate(query_file_name=query_file_name)
 
            )pbdoc")
-      .def("generate", &bolt::Indexer::querySingle, py::arg("query"), 
-            R"pbdoc(
-            Generates a list of correct candidate queries for the given 
-            query. 
-            By default, 10 queries are chosen as output. If less than 10 queries are 
-            found, then the output list is padded with empty strings. 
+      .def("generate", &bolt::Indexer::querySingle, py::arg("query"),
+           R"pbdoc(
+    Generates a list of correct candidate queries for the given 
+    query. 
+    By default, 10 queries are chosen as output. If less than 10 queries are 
+    found, then the output list is padded with empty strings. 
 
-            Args:
-                query (str): Input query
+    Args:
+        query (str): Input query
 
-            Returns:
-                (For now the returned output consits of just IDs)
-                TODO: return the corresponding strings from IDs
+    Returns:
+        (For now the returned output consits of just IDs)
+        TODO: return the corresponding strings from IDs
 
-            Example:
-                >>> indexer = bolt.Indexer(...)
-                >>> query_file_name = "/path/to/query/file/name"
-                >>> indexer.build_index(file_name=query_file_name)
-                >>> candidates = indexer.generate(query="some incorrect query")
+    Example:
+        >>> indexer = bolt.Indexer(...)
+        >>> query_file_name = "/path/to/query/file/name"
+        >>> indexer.build_index(file_name=query_file_name)
+        >>> candidates = indexer.generate(query="some incorrect query")
 
-           )pbdoc"
-      );
+           )pbdoc");
 
   createBoltGraphSubmodule(bolt_submodule);
 
@@ -854,4 +852,3 @@ py::module_ createBoltSubmodule(py::module_& module) {
 }
 
 }  // namespace thirdai::bolt::python
-

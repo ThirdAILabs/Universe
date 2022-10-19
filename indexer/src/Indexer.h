@@ -156,7 +156,8 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
    */
   std::shared_ptr<Indexer> buildFlashIndex(const std::string& file_name) {
     auto* data = loadDataInMemory(/* file_name = */ file_name,
-                                 /* correct_query_column_index = */ 0).get();
+                                  /* correct_query_column_index = */ 0)
+                     .get();
     _flash_index = std::make_unique<Flash<uint32_t>>(
         _flash_index_config->getHashFunction());
     _flash_index->addDataset(*data);
@@ -222,9 +223,10 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
             /* col = */ correct_query_column_index, /* k = */ 3,
             /* dim = */ _dimension_for_encodings);
 
-    dataset::TextBlockPtr char_four_gram_block = dataset::CharKGramTextBlock::make(
-        /* col = */ correct_query_column_index, /* k = */ 4,
-        /* dim = */ _dimension_for_encodings);
+    dataset::TextBlockPtr char_four_gram_block =
+        dataset::CharKGramTextBlock::make(
+            /* col = */ correct_query_column_index, /* k = */ 4,
+            /* dim = */ _dimension_for_encodings);
 
     std::vector<std::shared_ptr<dataset::Block>> input_blocks{
         char_trigram_block, char_four_gram_block};
@@ -243,8 +245,9 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
     dataset::TextBlockPtr char_trigram_block =
         dataset::CharKGramTextBlock::make(
             /* col = */ 0, /* k = */ 3, /* dim = */ _dimension_for_encodings);
-    dataset::TextBlockPtr char_four_gram_block = dataset::CharKGramTextBlock::make(
-        /* col = */ 0, /* k = */ 4, /* dim = */ _dimension_for_encodings);
+    dataset::TextBlockPtr char_four_gram_block =
+        dataset::CharKGramTextBlock::make(
+            /* col = */ 0, /* k = */ 4, /* dim = */ _dimension_for_encodings);
 
     std::vector<std::shared_ptr<dataset::Block>> input_blocks{
         char_trigram_block, char_four_gram_block};

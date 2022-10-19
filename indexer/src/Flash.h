@@ -32,7 +32,8 @@ class Flash {
    * This is the same as the single argument constructor, except the supporting
    * hash table has a max reservoir size.
    **/
-  Flash(std::shared_ptr<hashing::HashFunction> function, uint32_t reservoir_size);
+  Flash(std::shared_ptr<hashing::HashFunction> function,
+        uint32_t reservoir_size);
 
   /* Constructor called when creating temporary Flash objects to serialize
    * into */
