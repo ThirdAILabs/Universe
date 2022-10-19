@@ -155,7 +155,8 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
    * function since they are pretty much indentical
    */
   std::shared_ptr<Indexer> buildFlashIndex(const std::string& file_name) {
-    auto data = loadDataInMemory(file_name, 0);
+    auto* data = loadDataInMemory(/* file_name = */ file_name,
+                                 /* correct_query_column_index = */ 0).get();
     _flash_index = std::make_unique<Flash<uint32_t>>(
         _flash_index_config->getHashFunction());
     _flash_index->addDataset(*data);
@@ -174,7 +175,8 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
    * @return std::shared_ptr<Indexer>
    */
   std::shared_ptr<Indexer> buildFlashIndexPair(const std::string& file_name) {
-    auto data = loadDataInMemory(file_name, 1);
+    auto data = loadDataInMemory(/* file_name = */ file_name,
+                                 /* correct_query_column_index = */ 1);
     _flash_index = std::make_unique<Flash<uint32_t>>(
         _flash_index_config->getHashFunction());
     _flash_index->addDataset(*data);
@@ -184,7 +186,8 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
 
   std::vector<std::vector<std::vector<uint32_t>>> queryIndexFromFile(
       const std::string& query_file) {
-    auto query_data = loadDataInMemory(query_file, 0);
+    auto query_data = loadDataInMemory(/* file_name = */ query_file,
+                                       /* correct_query_column_index = */ 0);
 
     std::vector<std::vector<std::vector<uint32_t>>> results;
 
@@ -206,7 +209,7 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
 
     std::vector<std::vector<uint32_t>> query_result = _flash_index->queryBatch(
         /* batch = */ BoltBatch(std::move(featurized_query_vector)),
-        /* top_k = */ Indexer::TOP_K, /* pad_zeros = */ false);
+        /* top_k = */ Indexer::TOP_K, /* pad_zeros = */ true);
 
     return query_result;
   }
@@ -219,12 +222,12 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
             /* col = */ correct_query_column_index, /* k = */ 3,
             /* dim = */ _dimension_for_encodings);
 
-    dataset::TextBlockPtr char_four_gram = dataset::CharKGramTextBlock::make(
+    dataset::TextBlockPtr char_four_gram_block = dataset::CharKGramTextBlock::make(
         /* col = */ correct_query_column_index, /* k = */ 4,
         /* dim = */ _dimension_for_encodings);
 
     std::vector<std::shared_ptr<dataset::Block>> input_blocks{
-        char_trigram_block, char_four_gram};
+        char_trigram_block, char_four_gram_block};
 
     auto data_loader = dataset::StreamingGenericDatasetLoader(
         /* filename = */ file_name, /* input_blocks = */ input_blocks,
@@ -240,11 +243,11 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
     dataset::TextBlockPtr char_trigram_block =
         dataset::CharKGramTextBlock::make(
             /* col = */ 0, /* k = */ 3, /* dim = */ _dimension_for_encodings);
-    dataset::TextBlockPtr char_four_gram = dataset::CharKGramTextBlock::make(
+    dataset::TextBlockPtr char_four_gram_block = dataset::CharKGramTextBlock::make(
         /* col = */ 0, /* k = */ 4, /* dim = */ _dimension_for_encodings);
 
     std::vector<std::shared_ptr<dataset::Block>> input_blocks{
-        char_trigram_block, char_four_gram};
+        char_trigram_block, char_four_gram_block};
 
     auto batch_processor = dataset::GenericBatchProcessor(input_blocks, {});
 
