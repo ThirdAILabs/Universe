@@ -19,6 +19,11 @@ namespace py = pybind11;
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
+/*
+ * We need this additional Dataset class so that we can keep arbitrary python
+ * objects alive for the life of the Dataset (the python objects own the
+ * memory in the BoltVectors the Dataset contains).
+ */
 class NumpyDataset final : public Dataset {
  public:
   NumpyDataset(std::vector<BoltVector>&& vectors,
@@ -39,7 +44,7 @@ inline DatasetPtr denseNumpyToDataset(NumpyArray<float>& dense_array) {
         "vector) or 1D (each element is treated as a row).");
   }
 
-  uint64_t num_examples = static_cast<uint64_t>(dense_array.shape(0));
+  uint64_t num_vectors = static_cast<uint64_t>(dense_array.shape(0));
 
   // If it is a 1D array then we know the dimension is 1.
   uint64_t vec_dimension =
@@ -47,7 +52,7 @@ inline DatasetPtr denseNumpyToDataset(NumpyArray<float>& dense_array) {
 
   std::vector<BoltVector> vectors;
 
-  for (uint64_t vec_idx = 0; vec_idx < num_examples; vec_idx++) {
+  for (uint64_t vec_idx = 0; vec_idx < num_vectors; vec_idx++) {
     vectors.emplace_back(
         /* an = */ nullptr, /* a = */ dense_array.mutable_data(vec_idx, 0),
         /* g = */ nullptr, /* l = */ vec_dimension);

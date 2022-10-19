@@ -25,7 +25,7 @@ using UnderlyingDatasetPtr = std::shared_ptr<UnderlyingDataset>;
  * this design is that while any dataset slice pointing to the original entire
  * dataset exists, the entire dataset will stay in memory. Numpy does this too:
  * https://stackoverflow.com/questions/50195197/reduce-memory-usage-when-slicing-numpy-arrays.
- * For the use cases we envision this tradeoff seems acceptable. For instace,
+ * For the use cases we envision this tradeoff seems acceptable. For instance,
  * during batch processing in training, each batch has a shorter
  * lifetime than the entire dataset.
  */
@@ -39,7 +39,16 @@ class Dataset {
   Dataset(UnderlyingDatasetPtr vectors, uint64_t start_index, uint64_t length)
       : _vectors(std::move(vectors)),
         _start_index(start_index),
-        _length(length) {}
+        _length(length) {
+    if (_length == 0) {
+      throw std::invalid_argument(
+          "Length of a new Dataset must be greater than 0.");
+    }
+    if (_start_index + _length >= vectors->size()) {
+      throw std::invalid_argument(
+          "End of a Dataset slice must be within the underlying slice.");
+    }
+  }
 
   /**
    * We chose not to implement std::vector at() style operations that check the
@@ -56,8 +65,8 @@ class Dataset {
   BoltVector& operator[](uint64_t i) { return getWithBoundsCheck(i); }
 
   void set(uint64_t i, BoltVector&& vector) {
-    checkBounds(i);
-    (*_vectors)[_start_index + i] = vector;
+    checkIndexWithinBounds(i);
+    (*_vectors)[_start_index + i] = std::move(vector);
   }
 
   DatasetPtr slice(uint64_t slice_start_index, uint64_t slice_end_index) const {
@@ -67,7 +76,7 @@ class Dataset {
           std::to_string(slice_start_index) + " and end index " +
           std::to_string(slice_end_index));
     }
-    checkBounds(_start_index + slice_end_index - 1);
+    checkIndexWithinBounds(slice_end_index - 1);
 
     return std::make_shared<Dataset>(
         _vectors,
@@ -75,7 +84,16 @@ class Dataset {
         /* length = */ slice_end_index - slice_start_index);
   }
 
-  uint64_t len() const { return _length; }
+  uint64_t size() const { return _length; }
+
+  DatasetPtr copy() const {
+    std::vector<BoltVector> new_vectors;
+    new_vectors.reserve(_length);
+    for (auto& vec : *this) {
+      new_vectors.emplace_back(vec.copy());
+    }
+    return std::make_shared<Dataset>(std::move(new_vectors));
+  }
 
   UnderlyingDataset::iterator begin() const {
     return _vectors->begin() + _start_index;
@@ -87,11 +105,11 @@ class Dataset {
 
  private:
   inline BoltVector& getWithBoundsCheck(uint64_t i) const {
-    checkBounds(i);
+    checkIndexWithinBounds(i);
     return (*_vectors)[_start_index + i];
   }
 
-  inline void checkBounds(uint64_t i) const {
+  inline void checkIndexWithinBounds(uint64_t i) const {
     if (i >= _length) {
       throw std::out_of_range("Requesting vector with index " +
                               std::to_string(i) + ", but there are only " +

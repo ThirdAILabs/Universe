@@ -46,14 +46,19 @@ def test_shuffle_works():
 
 @pytest.mark.unit
 def test_slice_is_a_view():
+    """
+    Tests that a slice of a dataset is a view to the same shared underlying
+    memory as the original dataset by ensuring that modifications to the slice
+    are reflected in the original dataset and vice versa.
+    """
     np_data = np.random.rand(40, 10)
 
     bolt_data = new_dataset.from_np(np_data)
     first_half = bolt_data[0:20]
 
-    # This sets the first half of bolt_data and first_half equal to the second
-    # half of bolt_data if views work correctly, which we then check in the next
-    # two loops.
+    # This sets both the first half of bolt_data and first_half equal to the
+    # second half of bolt_data if views work correctly, which we then check in
+    # the next two loops.
     first_half[0:10] = bolt_data[20:30]
     bolt_data[10:20] = bolt_data[30:40]
 

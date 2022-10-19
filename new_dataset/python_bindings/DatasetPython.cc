@@ -19,19 +19,19 @@ void createNewDatasetSubmodule(py::module_& module) {
   py::class_<Dataset, DatasetPtr>(dataset_submodule, "Dataset")
       .def("__getitem__",
            [](const Dataset& d, size_t i) {
-             if (i >= d.len()) {
+             if (i >= d.size()) {
                throw py::index_error();
              }
              return d[i];
            })
       .def("__setitem__",
            [](Dataset& d, size_t i, BoltVector v) {
-             if (i >= d.len()) {
+             if (i >= d.size()) {
                throw py::index_error();
              }
              d.set(i, std::move(v));
            })
-      .def("__len__", &Dataset::len)
+      .def("__len__", &Dataset::size)
       .def(
           "__iter__",
           [](const Dataset& d) {
@@ -48,7 +48,7 @@ void createNewDatasetSubmodule(py::module_& module) {
       .def("__getitem__",
            [](const Dataset& d, const py::slice& slice) -> DatasetPtr {
              size_t start = 0, stop = 0, step = 0, slicelength = 0;
-             if (!slice.compute(d.len(), &start, &stop, &step, &slicelength)) {
+             if (!slice.compute(d.size(), &start, &stop, &step, &slicelength)) {
                throw py::error_already_set();
              }
              if (step != 1) {
@@ -60,7 +60,7 @@ void createNewDatasetSubmodule(py::module_& module) {
       .def("__setitem__",
            [](Dataset& d, const py::slice& slice, const Dataset& value) {
              size_t start = 0, stop = 0, step = 0, slicelength = 0;
-             if (!slice.compute(d.len(), &start, &stop, &step, &slicelength)) {
+             if (!slice.compute(d.size(), &start, &stop, &step, &slicelength)) {
                /*
                 * Computing the true slice indices is done in python, which
                 * might throw an error. Pybind automatically saves that python
@@ -70,7 +70,7 @@ void createNewDatasetSubmodule(py::module_& module) {
                 */
                throw py::error_already_set();
              }
-             if (slicelength != value.len()) {
+             if (slicelength != value.size()) {
                throw std::runtime_error(
                    "Left and right hand size of slice assignment have "
                    "different sizes!");
@@ -79,7 +79,8 @@ void createNewDatasetSubmodule(py::module_& module) {
                d[start] = value[i];
                start += step;
              }
-           });
+           })
+      .def("copy", &Dataset::copy);
 
   py::class_<numpy::NumpyDataset, Dataset, numpy::NumpyDatasetPtr>(
       dataset_submodule, "NumpyDataset");  // NOLINT
