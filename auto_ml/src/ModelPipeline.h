@@ -11,6 +11,7 @@
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <dataset/src/DataLoader.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
@@ -147,6 +148,15 @@ class ModelPipeline {
     }
 
     return outputs;
+  }
+
+  std::vector<dataset::Explanation> explain(
+      const std::string& sample,
+      std::optional<uint32_t> target_label = std::nullopt) {
+    auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
+        {_dataset_factory->featurizeInput(sample)}, true, target_label);
+    return _dataset_factory->explain(gradients_indices, gradients_ratio,
+                                     sample);
   }
 
   void save(const std::string& filename) {

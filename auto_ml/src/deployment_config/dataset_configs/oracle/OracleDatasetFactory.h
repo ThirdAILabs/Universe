@@ -11,6 +11,7 @@
 #include "TemporalContext.h"
 #include "TemporalRelationshipsAutotuner.h"
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -31,6 +32,8 @@
 namespace thirdai::automl::deployment {
 
 class OracleDatasetFactory final : public DatasetLoaderFactory {
+  static constexpr const char DELIMITER = ',';
+
  public:
   explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel,
                                 uint32_t text_pairgram_word_limit)
@@ -57,9 +60,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     }
 
     auto current_column_number_map =
-        std::make_shared<ColumnNumberMap>(*header, /* delimiter= */ ',');
+        std::make_shared<ColumnNumberMap>(*header, DELIMITER);
     if (!_column_number_map) {
       _column_number_map = std::move(current_column_number_map);
+      _column_number_to_name = _column_number_map->getColumnNumToColNameMap();
     } else if (!_column_number_map->equals(*current_column_number_map)) {
       throw std::invalid_argument("Column positions should not change.");
     }
@@ -83,7 +87,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   std::vector<BoltVector> featurizeInput(const std::string& input) final {
     verifyInferenceProcessorIsInitialized();
     BoltVector vector;
-    auto sample = dataset::ProcessorUtils::parseCsvRow(input, ',');
+    auto sample = dataset::ProcessorUtils::parseCsvRow(input, DELIMITER);
     if (auto exception =
             _inference_batch_processor->makeInputVector(sample, vector)) {
       std::rethrow_exception(exception);
@@ -101,6 +105,24 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     std::vector<BoltBatch> batch_list;
     batch_list.emplace_back(std::move(input_batch));
     return batch_list;
+  }
+
+  std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio,
+      const std::string& sample) final {
+    verifyInferenceProcessorIsInitialized();
+
+    auto input_row = dataset::ProcessorUtils::parseCsvRow(sample, DELIMITER);
+    auto result = bolt::getSignificanceSortedExplanations(
+        gradients_indices, gradients_ratio, input_row,
+        _inference_batch_processor);
+
+    for (auto& response : result) {
+      response.column_name = _column_number_to_name[response.column_number];
+    }
+
+    return result;
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {
@@ -178,11 +200,16 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   OracleConfigPtr _config;
   TemporalRelationships _temporal_relationships;
+
   TemporalContextPtr _context;
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
+
   ColumnNumberMapPtr _column_number_map;
+  std::unordered_map<uint32_t, std::string> _column_number_to_name;
+
   dataset::GenericBatchProcessorPtr _labeled_batch_processor;
   dataset::GenericBatchProcessorPtr _inference_batch_processor;
+
   uint32_t _input_dim;
   uint32_t _label_dim;
   bool _parallel;
@@ -196,8 +223,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
             _temporal_relationships, _context, _vocabs, _column_number_map,
-            _labeled_batch_processor, _inference_batch_processor, _input_dim,
-            _label_dim, _parallel, _text_pairgram_word_limit);
+            _column_number_to_name, _labeled_batch_processor,
+            _inference_batch_processor, _input_dim, _label_dim, _parallel,
+            _text_pairgram_word_limit);
   }
 };
 

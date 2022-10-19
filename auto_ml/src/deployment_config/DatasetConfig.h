@@ -100,6 +100,10 @@ class DatasetLoaderFactory {
   virtual std::vector<BoltBatch> featurizeInputBatch(
       const std::vector<std::string>& inputs) = 0;
 
+  virtual std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio, const std::string& sample) = 0;
+
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 
   virtual uint32_t getLabelDim() = 0;

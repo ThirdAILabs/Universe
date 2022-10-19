@@ -128,6 +128,20 @@ def test_multiple_predict_returns_same():
         prev_result = result
 
 
+def test_explanations_total_percentage():
+    model = make_simple_oracle_model()
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
+
+    sample = "0,,2022-08-31"
+    explanations = model.explain(sample)
+    total_percentage = 0
+    for explanation in explanations:
+        total_percentage += abs(explanation.percentage_significance)
+
+    assert total_percentage > 99.99
+
+
 def test_index_changes_predict():
     model = make_simple_oracle_model()
     context = model.get_artifact("temporal_context")
