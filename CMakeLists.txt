@@ -273,7 +273,7 @@ add_library(
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
 if(${LICENSE_BUILD_FLAG_FOUND})
-    target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
 endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
@@ -293,4 +293,3 @@ pybind11_add_module(
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
-
