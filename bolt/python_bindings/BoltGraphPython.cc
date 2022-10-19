@@ -305,7 +305,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("predict_config"), py::arg("validation_frequency") = 0,
            py::arg("save_best_per_metric") = "",
            R"pbdoc(
-Add validation options to execute validation during training.
+Add validation options to execute validation during training. Can be used to
+configure input data and labels, frequency to validate and optionally saving
+best model per a specified metric.
 
 Args:
     validation_data (dataset.BoltDataset): 
