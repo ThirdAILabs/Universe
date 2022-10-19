@@ -118,7 +118,7 @@ else()
 
 endif()
 
-set(COMPILE_OPTIONS
+set(THIRDAI_COMPILE_OPTIONS
     -Wall
     -Wextra
     -Werror
@@ -278,8 +278,8 @@ pybind11_add_module(
 target_link_libraries(_thirdai PUBLIC thirdai)
 
 if(NOT MSVC)
-  target_compile_options(thirdai PRIVATE ${COMPILE_OPTIONS})
-  target_compile_options(_thirdai PRIVATE ${COMPILE_OPTIONS})
+  target_compile_options(thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
+  target_compile_options(_thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
 endif()
 
 # Add feature flags passed in from python
