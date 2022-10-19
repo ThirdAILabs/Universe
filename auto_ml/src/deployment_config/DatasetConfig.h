@@ -14,6 +14,8 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace thirdai::automl::deployment {
@@ -97,12 +99,40 @@ class DatasetLoaderFactory {
 
   virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
 
+  virtual std::vector<BoltVector> featurizeInput(
+      const std::unordered_map<std::string, std::string>& input) {
+    (void)input;
+    throw std::invalid_argument(
+        "This model pipeline configuration does not support map input. Pass in "
+        "a string instead.");
+  };
+
   virtual std::vector<BoltBatch> featurizeInputBatch(
       const std::vector<std::string>& inputs) = 0;
+
+  virtual std::vector<BoltBatch> featurizeInputBatch(
+      const std::vector<std::unordered_map<std::string, std::string>>& inputs) {
+    (void)inputs;
+    throw std::invalid_argument(
+        "This model pipeline configuration does not support map input. Pass in "
+        "a list of strings instead.");
+  };
 
   virtual std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const std::string& sample) = 0;
+
+  virtual std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio,
+      const std::unordered_map<std::string, std::string>& sample) {
+    (void)gradients_indices;
+    (void)gradients_ratio;
+    (void)sample;
+    throw std::invalid_argument(
+        "This model pipeline configuration does not support map input. Pass in "
+        "a list of strings instead.");
+  }
 
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 

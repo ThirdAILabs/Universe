@@ -16,6 +16,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::automl::deployment {
@@ -117,17 +118,14 @@ class ModelPipeline {
   BoltVector predict(const std::string& sample, bool use_sparse_inference) {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
-    BoltVector output =
-        _model->predictSingle(std::move(inputs), use_sparse_inference);
+    return predictOnVectors(inputs, use_sparse_inference);
+  }
 
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
-      uint32_t prediction_index = argmax(output.activations, output.len);
-      if (output.activations[prediction_index] < threshold.value()) {
-        output.activations[prediction_index] = threshold.value() + 0.0001;
-      }
-    }
+  BoltVector predict(const std::unordered_map<std::string, std::string>& sample,
+                     bool use_sparse_inference) {
+    std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
-    return output;
+    return predictOnVectors(inputs, use_sparse_inference);
   }
 
   BoltBatch predictBatch(const std::vector<std::string>& samples,
@@ -135,23 +133,31 @@ class ModelPipeline {
     std::vector<BoltBatch> input_batches =
         _dataset_factory->featurizeInputBatch(samples);
 
-    BoltBatch outputs = _model->predictSingleBatch(std::move(input_batches),
-                                                   use_sparse_inference);
+    return predictOnBatchOfVectors(std::move(input_batches),
+                                   use_sparse_inference);
+  }
 
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
-      for (auto& output : outputs) {
-        uint32_t prediction_index = argmax(output.activations, output.len);
-        if (output.activations[prediction_index] < threshold.value()) {
-          output.activations[prediction_index] = threshold.value() + 0.0001;
-        }
-      }
-    }
+  BoltBatch predictBatch(
+      const std::vector<std::unordered_map<std::string, std::string>>& samples,
+      bool use_sparse_inference) {
+    std::vector<BoltBatch> input_batches =
+        _dataset_factory->featurizeInputBatch(samples);
 
-    return outputs;
+    return predictOnBatchOfVectors(std::move(input_batches),
+                                   use_sparse_inference);
   }
 
   std::vector<dataset::Explanation> explain(
       const std::string& sample,
+      std::optional<uint32_t> target_label = std::nullopt) {
+    auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
+        {_dataset_factory->featurizeInput(sample)}, true, target_label);
+    return _dataset_factory->explain(gradients_indices, gradients_ratio,
+                                     sample);
+  }
+
+  std::vector<dataset::Explanation> explain(
+      const std::unordered_map<std::string, std::string>& sample,
       std::optional<uint32_t> target_label = std::nullopt) {
     auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
         {_dataset_factory->featurizeInput(sample)}, true, target_label);
@@ -197,6 +203,38 @@ class ModelPipeline {
   }
 
  private:
+  BoltVector predictOnVectors(std::vector<BoltVector> inputs,
+                              bool use_sparse_inference) {
+    BoltVector output =
+        _model->predictSingle(std::move(inputs), use_sparse_inference);
+
+    if (auto threshold = _train_eval_config.predictionThreshold()) {
+      uint32_t prediction_index = argmax(output.activations, output.len);
+      if (output.activations[prediction_index] < threshold.value()) {
+        output.activations[prediction_index] = threshold.value() + 0.0001;
+      }
+    }
+
+    return output;
+  }
+
+  BoltBatch predictOnBatchOfVectors(std::vector<BoltBatch> input_batches,
+                                    bool use_sparse_inference) {
+    BoltBatch outputs = _model->predictSingleBatch(std::move(input_batches),
+                                                   use_sparse_inference);
+
+    if (auto threshold = _train_eval_config.predictionThreshold()) {
+      for (auto& output : outputs) {
+        uint32_t prediction_index = argmax(output.activations, output.len);
+        if (output.activations[prediction_index] < threshold.value()) {
+          output.activations[prediction_index] = threshold.value() + 0.0001;
+        }
+      }
+    }
+
+    return outputs;
+  }
+
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
   void trainInMemory(DatasetLoaderPtr& dataset,

@@ -36,12 +36,29 @@ class OracleModelPipeline : public ModelPipeline {
             std::move(target), std::move(time_granularity), lookahead,
             delimiter, options)) {}
 
+  void resetTemporalTrackers() {
+    std::get<TemporalContextPtr>(getArtifact("context"))->reset();
+  }
+
   void updateTemporalTrackers(const std::string& update) {
     std::get<TemporalContextPtr>(getArtifact("context"))
         ->updateTemporalTrackers(update);
   }
 
+  void updateTemporalTrackers(
+      const std::unordered_map<std::string, std::string>& update) {
+    std::get<TemporalContextPtr>(getArtifact("context"))
+        ->updateTemporalTrackers(update);
+  }
+
   void batchUpdateTemporalTrackers(const std::vector<std::string>& updates) {
+    std::get<TemporalContextPtr>(getArtifact("context"))
+        ->batchUpdateTemporalTrackers(updates);
+  }
+
+  void batchUpdateTemporalTrackers(
+      const std::vector<std::unordered_map<std::string, std::string>>&
+          updates) {
     std::get<TemporalContextPtr>(getArtifact("context"))
         ->batchUpdateTemporalTrackers(updates);
   }

@@ -2,6 +2,8 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/Aliases.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/Conversions.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/UserItemHistory.h>
@@ -10,6 +12,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 namespace thirdai::automl::deployment {
@@ -46,13 +49,23 @@ class TemporalContext {
     }
   }
 
-  void initializeProcessor(dataset::GenericBatchProcessorPtr processor) {
+  void initializeDataStructures(dataset::GenericBatchProcessorPtr processor,
+                                ColumnNumberMapPtr column_number_map,
+                                char delimiter) {
     if (!_processor) {
       _processor = std::move(processor);
     } else if (_processor != processor) {
       throw std::invalid_argument(
           "Temporal context already initialized with a different processor.");
     }
+    if (!_column_number_map) {
+      _column_number_map = std::move(column_number_map);
+    } else if (_column_number_map != column_number_map) {
+      throw std::invalid_argument(
+          "Temporal context already initialized with a different column number "
+          "map.");
+    }
+    _delimiter = delimiter;
   }
 
   void updateTemporalTrackers(const std::string& update) {
@@ -60,8 +73,28 @@ class TemporalContext {
       throw std::invalid_argument(
           "Attempted to manually update temporal context before training.");
     }
+
+    auto sample =
+        ConversionUtils::stringInputToVectorOfStringViews(update, _delimiter);
+
     BoltVector vector;
-    auto sample = dataset::ProcessorUtils::parseCsvRow(update, ',');
+    // The following line updates the temporal context as a side effect,
+    if (auto exception = _processor->makeInputVector(sample, vector)) {
+      std::rethrow_exception(exception);
+    }
+  }
+
+  void updateTemporalTrackers(
+      const std::unordered_map<std::string, std::string>& update) {
+    if (!_processor) {
+      throw std::invalid_argument(
+          "Attempted to manually update temporal context before training.");
+    }
+
+    auto sample = ConversionUtils::mapInputToVectorOfStringViews(
+        update, *_column_number_map);
+
+    BoltVector vector;
     // The following line updates the temporal context as a side effect,
     if (auto exception = _processor->makeInputVector(sample, vector)) {
       std::rethrow_exception(exception);
@@ -77,19 +110,37 @@ class TemporalContext {
     _processor->createBatch(updates);
   }
 
+  void batchUpdateTemporalTrackers(
+      const std::vector<std::unordered_map<std::string, std::string>>&
+          updates) {
+    if (!_processor) {
+      throw std::invalid_argument(
+          "Attempted to manually update temporal context before training.");
+    }
+    auto string_batch = ConversionUtils::mapVectorInputsToVectorOfStrings(
+        updates, _delimiter, *_column_number_map);
+    // The following line updates the temporal context as a side effect,
+    _processor->createBatch(string_batch);
+  }
+
  private:
+  static inline std::string EMPTY;
+
   std::unordered_map<uint32_t, dataset::QuantityHistoryTrackerPtr>
       _numerical_histories;
   std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
       _categorical_histories;
 
   dataset::GenericBatchProcessorPtr _processor;
+  ColumnNumberMapPtr _column_number_map;
+  char _delimiter;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_numerical_histories, _categorical_histories, _processor);
+    archive(_numerical_histories, _categorical_histories, _processor,
+            _column_number_map, _delimiter);
   }
 };
 
