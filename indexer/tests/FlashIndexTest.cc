@@ -7,12 +7,14 @@
 #include <indexer/src/Indexer.h>
 #include <indexer/tests/FlashIndexTestUtils.h>
 #include <algorithm>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <random>
 #include <vector>
 
-using thirdai::automl::deployment::Flash;
+using thirdai::bolt::Flash;
+using thirdai::bolt::IndexerConfig;
 using thirdai::hashing::DensifiedMinHash;
 
 namespace thirdai::tests {
@@ -44,7 +46,8 @@ TEST(FlashIndexTest, SerializeAndDeserializeFlashIndexTest) {
   // Create a Flash Index
   auto* hash_function =
       new DensifiedMinHash(HASHES_PER_TABLE, NUM_TABLES, RANGE);
-  auto flash_index = Flash<uint32_t>(hash_function);
+  auto flash_index =
+      Flash<uint32_t>(std::make_shared<DensifiedMinHash>(*hash_function));
   Flash<uint32_t> deserialized_index;
 
   for (BoltBatch& batch : batches) {
@@ -83,6 +86,26 @@ TEST(FlashIndexTest, SerializeAndDeserializeFlashIndexTest) {
                   second_query_outputs[batch_index][vec_index]);
     }
   }
+}
+
+TEST(FlashIndexerConfigTest, TestFlashIndexerLoadAndSave) {
+  const char* SAVE_PATH = "./flash_indexer_config";
+
+  IndexerConfig config =
+      IndexerConfig(/* hash_function = */ "DensifiedMinHash",
+                    /* num_tables = */ NUM_TABLES,
+                    /* hashes_per_table = */ HASHES_PER_TABLE,
+                    /* input_dim = */ NUM_VECTORS);
+
+  config.save(/*config_file_name = */ SAVE_PATH);
+
+  auto deserialized_config =
+      IndexerConfig::load(/* config_file_name = */ SAVE_PATH);
+
+  ASSERT_EQ(config, deserialized_config.get());
+
+  // Checks that config file was successfully removed
+  EXPECT_EQ(std::remove(SAVE_PATH), 0);
 }
 
 }  // namespace thirdai::tests

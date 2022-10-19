@@ -15,7 +15,6 @@
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
-#include <indexer/src/Indexer.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
@@ -204,30 +203,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
                   docs::MODEL_PIPELINE_LOAD);
-
-  py::class_<deployment::IndexerConfig, deployment::IndexerConfigPtr>(
-      submodule, "FlashIndexConfig")
-      .def(py::init<std::string, uint32_t, uint32_t, uint32_t>(),
-           py::arg("hash_function"), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("input_dim"),
-           docs::INDEXER_CONFIG_INIT_FROM_PARAMETERS)
-      .def("save", &deployment::IndexerConfig::save, py::arg("file_name"),
-          docs::INDEXER_CONFIG_SAVE)
-      .def_static("load", &deployment::IndexerConfig::load,
-                  py::arg("config_file_name"));
-
-  py::class_<deployment::Indexer, deployment::IndexerPtr>(submodule, "Indexer")
-      .def(py::init(&deployment::Indexer::buildIndexerFromSerializedConfig),
-           py::arg("config_file_name"), docs::INDEXER_INIT_FROM_CONFIG)
-      .def("build_index", &deployment::Indexer::buildFlashIndex<uint32_t>,
-           py::arg("file_name"))
-      .def("build_index_with_query_pair",
-           &deployment::Indexer::buildFlashIndexPair<uint32_t>,
-           py::arg("file_name"))
-      .def("generate", &deployment::Indexer::queryIndexFromFile<uint32_t>,
-           py::arg("query_file_name"));
-      .def("generate", &deployment::Indexer::querySingle<uint32_t>,
-           py::arg("query"));
 }
 
 template <typename T>

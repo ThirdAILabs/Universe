@@ -12,6 +12,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
+#include <indexer/src/Indexer.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -684,9 +685,92 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
            )pbdoc");
 
+  /**
+   * Flash Index
+   */
+  py::class_<bolt::IndexerConfig, bolt::IndexerConfigPtr>(bolt_submodule,
+                                                          "IndexerConfig")
+      .def(py::init<std::string, uint32_t, uint32_t, uint32_t>(),
+           py::arg("hash_function"), py::arg("num_tables"),
+           py::arg("hashes_per_table"), py::arg("input_dim"),
+           R"pbdoc(
+            Initializes an IndexerConfig object.
+
+            Args:
+                hash_function (str): A specific hash function 
+                                to use. Supported hash functions include FastSRP,
+                                DensifiedMinHash and DWTA.
+                num_tables (int): Number of hash tables to construct.
+                hashes_per_table (int): Number of hashes per table.
+                input_dim (int): Input dimension 
+
+            Returns: 
+                IndexerConfig
+
+
+            Example:
+                >>> indexer_config = deployment.IndexerConfig(
+                        hash_function="DensifiedMinHash",
+                        num_tables=100,
+                        hashes_per_table=15,
+                    )
+            )pbdoc")
+      .def("save", &bolt::IndexerConfig::save, py::arg("file_name"),
+           R"pbdoc(
+            Saves an indexer configuration object at the specified file path. 
+            This can be used to provide a flash indexer architecture to customers.
+
+            Args:
+                file_name (str): File path specification for where to save the 
+                        indexer configuration object. 
+
+            Returns:
+                None
+
+            )pbdoc")
+      .def_static("load", &bolt::IndexerConfig::load,
+                  py::arg("config_file_name"),
+                  R"pbdoc(
+            Loads an indexer config object from a specific file location. 
+
+            Args:
+                config_file_name (str): Path to the file containing a saved config.
+
+            Returns:
+                IndexerConfig:
+
+            )pbdoc");
+
+  py::class_<bolt::Indexer, std::shared_ptr<bolt::Indexer>>(bolt_submodule,
+                                                            "Indexer")
+      .def(py::init(&bolt::Indexer::buildIndexerFromSerializedConfig),
+           py::arg("config_file_name"))
+      .def("build_index", &bolt::Indexer::buildFlashIndex, py::arg("file_name"))
+      .def("build_index_with_query_pair", &bolt::Indexer::buildFlashIndexPair,
+           py::arg("file_name"))
+      .def("generate", &bolt::Indexer::queryIndexFromFile,
+           py::arg("query_file_name"))
+    .def("generate", &bolt::Indexer::querySingle,
+         py::arg("query"));
+
   createBoltGraphSubmodule(bolt_submodule);
 
   return bolt_submodule;
 }
 
 }  // namespace thirdai::bolt::python
+
+// const char* const INDEXER_INIT_FROM_CONFIG = R"pbdoc(
+// Initializes an Indexer object.
+// The config file should at least contain the following elements:
+
+//     - num_hash_tables: Number of hash tables to construct.
+//     - hashes_per_table: Hashes for each hash table.
+
+// Args:
+//     config_file_name (str): The path to the config file
+
+// Returns:
+//     Indexer
+
+// )pbdoc";

@@ -8,7 +8,7 @@
 #include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/Datasets.h>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::bolt {
 
 /**
  * See https://arxiv.org/pdf/2106.11565.pdf for the original Flash paper.
@@ -26,13 +26,13 @@ class Flash {
    * may have to mod it and change the range, or do that in the hashfunction
    * implementation).
    **/
-  explicit Flash(hashing::HashFunction* function);
+  explicit Flash(std::shared_ptr<hashing::HashFunction> function);
 
   /**
    * This is the same as the single argument constructor, except the supporting
    * hash table has a max reservoir size.
    **/
-  Flash(hashing::HashFunction* function, uint32_t reservoir_size);
+  Flash(std::shared_ptr<hashing::HashFunction> function, uint32_t reservoir_size);
 
   /* Constructor called when creating temporary Flash objects to serialize
    * into */
@@ -47,15 +47,12 @@ class Flash {
    * loadNextBatches on the dataset should not have been called yet, and this
    * will run through the entire dataset.
    */
-  template <typename BATCH_T>
-  void addDataset(dataset::InMemoryDataset<BATCH_T>& dataset);
+  void addDataset(const dataset::InMemoryDataset<BoltBatch>& dataset);
 
-  template <typename BATCH_T>
-  void addDataset(dataset::StreamingDataset<BATCH_T>& dataset);
+  void addDataset(dataset::StreamingDataset<BoltBatch>& dataset);
 
   /** Insert this batch into the Flash data structure. */
-  template <typename BATCH_T>
-  void addBatch(const BATCH_T& batch);
+  void addBatch(const BoltBatch& batch);
 
   /**
    * Perform a batch query on the Flash structure, for now on a Batch object.
@@ -63,8 +60,7 @@ class Flash {
    * padded with 0s to obtain a vector of length k. Otherwise less than k
    * results will be returned.
    */
-  template <typename BATCH_T>
-  std::vector<std::vector<LABEL_T>> queryBatch(const BATCH_T& batch,
+  std::vector<std::vector<LABEL_T>> queryBatch(const BoltBatch& batch,
                                                uint32_t top_k,
                                                bool pad_zeros = false) const;
 
@@ -76,8 +72,7 @@ class Flash {
   /**
    * Returns a vector of hashes for the input batch
    */
-  template <typename BATCH_T>
-  std::vector<uint32_t> hash_batch(const BATCH_T& batch) const;
+  std::vector<uint32_t> hashBatch(const BoltBatch& batch) const;
 
   /**
    * Get the top_k labels that occur most often in the input vector using a
@@ -89,8 +84,7 @@ class Flash {
       std::vector<LABEL_T>& query_result, uint32_t top_k) const;
 
   /** Makes sure the ids are within range for a batch with sequential ids */
-  template <typename BATCH_T>
-  void verifyBatchSequentialIds(const BATCH_T& batch) const;
+  void verifyBatchSequentialIds(const BoltBatch& batch) const;
 
   /**
    * Verifies that the passed in id is within the range of this FLASH instance
@@ -99,7 +93,7 @@ class Flash {
    */
   LABEL_T verify_and_convert_id(uint64_t id) const;
 
-  std::unique_ptr<hashing::HashFunction> _hash_function;
+  std::shared_ptr<hashing::HashFunction> _hash_function;
 
   uint32_t _num_tables;
   uint32_t _range;
@@ -119,4 +113,4 @@ class Flash {
   }
 };
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::bolt

@@ -244,7 +244,7 @@ set(BOLT_SOURCES
 
 set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 
-set(FLASH_INDEXER_SOURCES indexer/src/Indexer.cc indexer/src/Flash.cc)
+set(FLASH_INDEXER_SOURCES indexer/src/Flash.cc)
 
 set(HASHING_SOURCES
     hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
@@ -291,7 +291,6 @@ pybind11_add_module(
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_classifiers/python_bindings/AutoClassifiersPython.cc
-  auto_ml/python_bindings/DeploymentPython.cc
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)

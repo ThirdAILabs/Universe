@@ -9,11 +9,11 @@
 #include <queue>
 #include <vector>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::bolt {
 
 template <typename LABEL_T>
-Flash<LABEL_T>::Flash(hashing::HashFunction* function)
-    : _hash_function(function),
+Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function)
+    : _hash_function(std::move(function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
       _batch_elements_counter(0),
@@ -23,36 +23,23 @@ Flash<LABEL_T>::Flash(hashing::HashFunction* function)
 }
 
 template <typename LABEL_T>
-Flash<LABEL_T>::Flash(hashing::HashFunction* function, uint32_t reservoir_size)
-    : _hash_function(function),
+Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function, uint32_t reservoir_size)
+    : _hash_function(std::move(function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
       _hashtable(new hashtable::VectorHashTable<LABEL_T, true>(
           _num_tables, reservoir_size, _range)) {}
 
-template void Flash<uint32_t>::addDataset<thirdai::BoltBatch>(
-    dataset::InMemoryDataset<thirdai::BoltBatch>&);
-
-template void Flash<uint64_t>::addDataset<thirdai::BoltBatch>(
-    dataset::InMemoryDataset<thirdai::BoltBatch>&);
-
 template <typename LABEL_T>
-template <typename BATCH_T>
-void Flash<LABEL_T>::addDataset(dataset::InMemoryDataset<BATCH_T>& dataset) {
+void Flash<LABEL_T>::addDataset(
+    const dataset::InMemoryDataset<BoltBatch>& dataset) {
   for (uint64_t batch_id = 0; batch_id < dataset.numBatches(); batch_id++) {
     addBatch(dataset[batch_id]);
   }
 }
 
-template void Flash<uint32_t>::addDataset<thirdai::BoltBatch>(
-    dataset::StreamingDataset<thirdai::BoltBatch>&);
-
-template void Flash<uint64_t>::addDataset<thirdai::BoltBatch>(
-    dataset::StreamingDataset<thirdai::BoltBatch>&);
-
 template <typename LABEL_T>
-template <typename BATCH_T>
-void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BATCH_T>& dataset) {
+void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BoltBatch>& dataset) {
   while (auto batch_tuple = dataset.nextBatchTuple()) {
     const auto& batch = batch_tuple.value();
     // ignore the labels
@@ -60,15 +47,9 @@ void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BATCH_T>& dataset) {
   }
 }
 
-template void Flash<uint32_t>::addBatch<thirdai::BoltBatch>(
-    const thirdai::BoltBatch&);
-template void Flash<uint64_t>::addBatch<thirdai::BoltBatch>(
-    const thirdai::BoltBatch&);
-
 template <typename LABEL_T>
-template <typename BATCH_T>
-void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
-  std::vector<uint32_t> hashes = hash_batch(batch);
+void Flash<LABEL_T>::addBatch(const BoltBatch& batch) {
+  std::vector<uint32_t> hashes = hashBatch(batch);
   try {
     verifyBatchSequentialIds(batch);
   } catch (std::invalid_argument& error) {
@@ -82,15 +63,13 @@ void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
 }
 
 template <typename LABEL_T>
-template <typename BATCH_T>
-std::vector<uint32_t> Flash<LABEL_T>::hash_batch(const BATCH_T& batch) const {
+std::vector<uint32_t> Flash<LABEL_T>::hashBatch(const BoltBatch& batch) const {
   auto hashes = _hash_function->hashBatchParallel(batch);
   return hashes;
 }
 
 template <typename LABEL_T>
-template <typename BATCH_T>
-void Flash<LABEL_T>::verifyBatchSequentialIds(const BATCH_T& batch) const {
+void Flash<LABEL_T>::verifyBatchSequentialIds(const BoltBatch& batch) const {
   uint64_t largest_batch_id = _batch_elements_counter + batch.getBatchSize();
   verify_and_convert_id(largest_batch_id);
 }
@@ -112,19 +91,11 @@ LABEL_T Flash<LABEL_T>::verify_and_convert_id(uint64_t id) const {
   return cast_id;
 }
 
-template std::vector<std::vector<uint32_t>>
-Flash<uint32_t>::queryBatch<thirdai::BoltBatch>(const thirdai::BoltBatch&,
-                                                uint32_t, bool) const;
-template std::vector<std::vector<uint64_t>>
-Flash<uint64_t>::queryBatch<thirdai::BoltBatch>(const thirdai::BoltBatch&,
-                                                uint32_t, bool) const;
-
 template <typename LABEL_T>
-template <typename BATCH_T>
 std::vector<std::vector<LABEL_T>> Flash<LABEL_T>::queryBatch(
-    const BATCH_T& batch, uint32_t top_k, bool pad_zeros) const {
+    const BoltBatch& batch, uint32_t top_k, bool pad_zeros) const {
   std::vector<std::vector<LABEL_T>> results(batch.getBatchSize());
-  auto hashes = hash_batch(batch);
+  auto hashes = hashBatch(batch);
 
 #pragma omp parallel for default(none) \
     shared(batch, top_k, results, hashes, pad_zeros)
@@ -186,4 +157,4 @@ std::vector<LABEL_T> Flash<LABEL_T>::getTopKUsingPriorityQueue(
 template class Flash<uint32_t>;
 template class Flash<uint64_t>;
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::bolt
