@@ -4,6 +4,7 @@
 #include "BlockConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/deployment_config/Artifact.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingDataset.h>
@@ -41,9 +42,6 @@ namespace thirdai::automl::deployment {
 
 using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
 using LabelDataset = dataset::BoltDatasetPtr;
-
-using MapInput = std::unordered_map<std::string, std::string>;
-using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
 
 class DatasetLoader {
  public:
@@ -126,8 +124,7 @@ class DatasetLoaderFactory {
 
   virtual std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio,
-      const std::unordered_map<std::string, std::string>& sample) {
+      const std::vector<float>& gradients_ratio, const MapInput& sample) {
     (void)gradients_indices;
     (void)gradients_ratio;
     (void)sample;

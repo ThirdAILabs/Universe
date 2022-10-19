@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Aliases.h"
+#include <auto_ml/src/Aliases.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <string>
 #include <string_view>
@@ -16,8 +17,7 @@ struct ConversionUtils {
   }
 
   static std::vector<std::string_view> mapInputToVectorOfStringViews(
-      const std::unordered_map<std::string, std::string>& input_map,
-      const ColumnNumberMap& column_number_map) {
+      const MapInput& input_map, const ColumnNumberMap& column_number_map) {
     std::vector<std::string_view> string_view_input(
         column_number_map.numCols());
     for (const auto& [col_name, val] : input_map) {
@@ -27,10 +27,9 @@ struct ConversionUtils {
     return string_view_input;
   }
 
-  static std::vector<std::string> mapVectorInputsToVectorOfStrings(
-      const std::vector<std::unordered_map<std::string, std::string>>&
-          input_maps,
-      char delimiter, const ColumnNumberMap& column_number_map) {
+  static std::vector<std::string> mapInputBatchToStringBatch(
+      const MapInputBatch& input_maps, char delimiter,
+      const ColumnNumberMap& column_number_map) {
     std::vector<std::string> string_batch(input_maps.size());
     for (uint32_t i = 0; i < input_maps.size(); i++) {
       auto vals =

@@ -121,8 +121,7 @@ class ModelPipeline {
     return predictOnVectors(inputs, use_sparse_inference);
   }
 
-  BoltVector predict(const std::unordered_map<std::string, std::string>& sample,
-                     bool use_sparse_inference) {
+  BoltVector predict(const MapInput& sample, bool use_sparse_inference) {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
     return predictOnVectors(inputs, use_sparse_inference);
@@ -137,9 +136,8 @@ class ModelPipeline {
                                    use_sparse_inference);
   }
 
-  BoltBatch predictBatch(
-      const std::vector<std::unordered_map<std::string, std::string>>& samples,
-      bool use_sparse_inference) {
+  BoltBatch predictBatch(const MapInputBatch& samples,
+                         bool use_sparse_inference) {
     std::vector<BoltBatch> input_batches =
         _dataset_factory->featurizeInputBatch(samples);
 
@@ -159,7 +157,7 @@ class ModelPipeline {
   }
 
   std::vector<dataset::Explanation> explain(
-      const std::unordered_map<std::string, std::string>& sample,
+      const MapInput& sample,
       std::optional<uint32_t> target_label = std::nullopt) {
     auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
         {_dataset_factory->featurizeInput(sample)}, true, target_label);
