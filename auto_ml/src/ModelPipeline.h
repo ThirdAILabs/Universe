@@ -5,6 +5,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -13,6 +14,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace thirdai::automl::deployment {
@@ -40,7 +42,6 @@ class ModelPipeline {
                        user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
-
     return ModelPipeline(std::move(dataset_factory), std::move(model),
                          config->train_eval_parameters());
   }
@@ -175,6 +176,14 @@ class ModelPipeline {
                                                   /* training= */ false);
     return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
         .value();
+  }
+
+  Artifact getArtifact(const std::string& name) const {
+    return _dataset_factory->getArtifact(name);
+  }
+
+  std::vector<std::string> listArtifactNames() const {
+    return _dataset_factory->listArtifactNames();
   }
 
  private:

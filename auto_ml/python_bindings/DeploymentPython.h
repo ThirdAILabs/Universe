@@ -6,6 +6,7 @@
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
+#include <optional>
 #include <unordered_map>
 
 namespace py = pybind11;
