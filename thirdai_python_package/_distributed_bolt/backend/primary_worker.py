@@ -22,24 +22,18 @@ class PrimaryWorker(Worker):
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.graph.Model,
-        train_file_name: str,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
         log_dir: str,
-        batch_size: int,
     ):
 
         super().__init__(
             num_workers=num_workers,
-            model_to_wrap=model_to_wrap,
-            train_file_name=train_file_name,
             id=0,
             primary_worker=self,
             train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
-            batch_size=batch_size,
         )
 
     def run_circular_cluster_communication(self, workers):

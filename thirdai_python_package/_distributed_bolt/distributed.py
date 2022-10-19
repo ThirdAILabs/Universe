@@ -1,7 +1,7 @@
 import os
 import tempfile
 import textwrap
-from typing import List, Union
+from typing import List, Union, Optional
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
@@ -138,7 +138,7 @@ class DataParallelIngestSpec:
     def get_ray_dataset(
             self, 
             paths: Union[str, List[str]],
-            remote_file_system: Optional[pyarrow.fs.FileSystem] = None,
+            remote_file_system = None,
         ):
         """
         Get the shards to pass to train workers
@@ -164,9 +164,9 @@ class DataParallelIngestSpec:
         
 
         if ray_dataset == None:
-            raise ValueError(f"Dataset Type: {dataset_type} is not 
-                                supported. Supported types are csv, 
-                                text or numpy")
+            raise ValueError(f"Dataset Type: {dataset_type} is not" 
+                                "supported. Supported types are csv," 
+                                "text or numpy")
 
 
         return ray_dataset
@@ -185,7 +185,8 @@ class DistributedDataParallel:
         train_config: bolt.graph.TrainConfig,
         train_file_names: List[str],
         batch_size: int,
-        ray_dataset: RayDatasetConfig = None
+        data_parallel_ingest_spec: DataParallelIngestSpec = None,
+        ray_dataset: ray.data.dataset = None,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -225,12 +226,9 @@ class DistributedDataParallel:
 
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
-            model_to_wrap=ray_model_ref,
-            train_file_name=train_file_names[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
-            batch_size=batch_size,
         )
 
         self.replica_workers = []
@@ -240,22 +238,29 @@ class DistributedDataParallel:
             self.replica_workers.append(
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
-                    model_to_wrap=ray_model_ref,
-                    train_file_name=train_file_names[worker_id + 1],
                     train_config=train_config,
                     id=worker_id + 1,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
                     log_dir=cluster_config.log_dir,
-                    batch_size=batch_size,
                 )
             )
+        
 
         self.workers = [self.primary_worker] + self.replica_workers
-
+        if ray_dataset == None:
+            ray.get([self.workers[worker_id].load_dataset_on_each_worker.remote(train_file_names[worker_id], batch_size) for worker_id in range(len(self.workers))])
+        else:
+            ray_data_shards = ray_dataset.split(n=len(self.workers), equal=data_parallel_ingest_spec.equal, locality=self.workers)
+            ray.get([worker.save_and_load_training_data.remote(data_shard, data_parallel_ingest_spec, batch_size) for data_shard, worker in zip(ray_data_shards, self.workers)])
+        
+        
+        ray.get([worker.initialize_model_and_communication.remote(ray_model_ref) for worker in self.workers])
+        
         self.num_of_batches = min(
             ray.get([worker.num_of_batches.remote() for worker in self.workers])
         )
+
 
         self.logging.info(
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."

@@ -35,14 +35,11 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.graph,
-        train_file_name: str,
         id: int,
         primary_worker,
         train_config: bolt.graph.TrainConfig,
         communication_type: str,
         log_dir: str,
-        batch_size: int,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
@@ -53,30 +50,57 @@ class Worker:
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
-        start = time()
-        self.train_data, self.train_labels = parse_svm_dataset(
-            train_file_name, batch_size
-        )
-        end = time()
-
-        logging.info(f"func data_loading | time {(end - start)*1000} ms")
-
-        start = time()
-        self.model = bolt.DistributedTrainingWrapper(
-            model=model_to_wrap,
-            train_data=[self.train_data],
-            train_labels=self.train_labels,
-            train_config=train_config,
-        )
-        end = time()
-
-        logging.info(f"func initializing_model | time {(end - start)*1000} ms")
-
         # Set up variables
         self.num_workers = num_workers
         self.id = id
         self.primary_worker = primary_worker
         self.communication_type = communication_type
+        self.train_config = train_config
+
+    @timed
+    def load_dataset_on_each_worker(
+        self,
+        train_file_name: str,
+        batch_size: int,
+    ):
+        self.train_data, self.train_labels = parse_svm_dataset(
+            train_file_name, batch_size
+        )
+
+    @timed
+    def save_and_load_training_data(
+        self,
+        data_shard,
+        data_parallel_ingest_spec,
+        batch_size
+    ):
+        file_path = None
+        file_path_prefix = data_parallel_ingest_spec.save_location+data_parallel_ingest_spec.save_prefix
+        dataset_type = data_parallel_ingest_spec.dataset_type
+        if dataset_type == "csv":
+            file_path = file_path_prefix + '.csv'
+            shard.write_csv(path=file_path)
+        elif dataset_type == "text":
+            file_path = file_path_prefix + '.txt'
+            shard.write_text(path=file_path)
+        elif dataset_type == "numpy":
+            file_path = file_path_prefix + '.npy'
+            shard.write_numpy(path=file_path)
+        
+        self.load_dataset_on_each_worker(file_path, batch_size)
+
+
+    @timed
+    def initialize_model_and_communication(
+            self, 
+            model_to_wrap
+        ):
+        self.model = bolt.DistributedTrainingWrapper(
+            model=model_to_wrap,
+            train_data=[self.train_data],
+            train_labels=self.train_labels,
+            train_config=self.train_config,
+        )
 
         if self.communication_type == "circular":
             self.comm = comm.Circular(
@@ -97,7 +121,6 @@ class Worker:
                     """
                 )
             )
-
 
     
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
