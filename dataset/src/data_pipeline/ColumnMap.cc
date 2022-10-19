@@ -19,12 +19,12 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
   _num_rows = num_rows.value();
 }
 
-std::vector<BoltVector> ColumnMap::convertToDataset(
-    const std::vector<std::string>& column_names) {
+BoltDatasetPtr ColumnMap::convertToDataset(
+    const std::vector<std::string>& column_names, uint32_t batch_size) {
   auto output_columns = selectColumns(column_names);
 
-  std::vector<BoltVector> output_vectors;
-  output_vectors.reserve(numRows());
+  std::vector<BoltBatch> output_batches;
+  uint64_t num_batches = (numRows() + batch_size - 1) / batch_size;
 
   bool all_cols_dense = true;
   std::vector<uint32_t> column_dims;
@@ -38,29 +38,44 @@ std::vector<BoltVector> ColumnMap::convertToDataset(
     }
   }
 
-  for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
-    if (all_cols_dense) {
-      // TODO(Nicholas/Geordie): Refactor this into a unified row builder
-      // class.
-      SegmentedDenseFeatureVector vector;
-      for (uint32_t i = 0; i < output_columns.size(); i++) {
-        auto column = output_columns[i];
-        vector.addFeatureSegment(column_dims[i]);
-        column->appendRowToVector(vector, row_index);
+  // TODO(Nicholas/Josh): Refactor to use new dataset without batches.
+  for (uint64_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
+    uint64_t curr_batch_size =
+        std::min<uint64_t>(batch_size, numRows() - batch_idx * batch_size);
+
+    std::vector<BoltVector> batch(curr_batch_size);
+
+#pragma omp parallel for default(none)                             \
+    shared(batch, curr_batch_size, all_cols_dense, output_columns, \
+           column_dims, batch_idx, batch_size)
+    for (uint64_t vec_idx = 0; vec_idx < curr_batch_size; vec_idx++) {
+      uint64_t row_idx = batch_idx * batch_size + vec_idx;
+
+      if (all_cols_dense) {
+        // TODO(Nicholas/Geordie): Refactor this into a unified row builder
+        // class.
+        SegmentedDenseFeatureVector vector;
+        for (uint32_t i = 0; i < output_columns.size(); i++) {
+          auto column = output_columns[i];
+          vector.addFeatureSegment(column_dims[i]);
+          column->appendRowToVector(vector, row_idx);
+        }
+        batch[vec_idx] = vector.toBoltVector();
+      } else {
+        SegmentedSparseFeatureVector vector;
+        for (uint32_t i = 0; i < output_columns.size(); i++) {
+          auto column = output_columns[i];
+          vector.addFeatureSegment(column_dims[i]);
+          column->appendRowToVector(vector, row_idx);
+        }
+        batch[vec_idx] = vector.toBoltVector();
       }
-      output_vectors.push_back(vector.toBoltVector());
-    } else {
-      SegmentedSparseFeatureVector vector;
-      for (uint32_t i = 0; i < output_columns.size(); i++) {
-        auto column = output_columns[i];
-        vector.addFeatureSegment(column_dims[i]);
-        column->appendRowToVector(vector, row_index);
-      }
-      output_vectors.push_back(vector.toBoltVector());
     }
+
+    output_batches.emplace_back(std::move(batch));
   }
 
-  return output_vectors;
+  return std::make_shared<BoltDataset>(std::move(output_batches));
 }
 
 std::vector<ColumnPtr> ColumnMap::selectColumns(

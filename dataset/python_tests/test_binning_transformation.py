@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from dataset_utils import sparse_vectors_to_numpy
+from dataset_utils import sparse_bolt_dataset_to_numpy
 from thirdai import dataset
 
 pytestmark = [pytest.mark.unit]
@@ -41,8 +41,8 @@ def test_binning_transformation():
 
     columns = featurizer.featurize(columns)
 
-    indices, values = sparse_vectors_to_numpy(
-        columns.convert_to_dataset(["column1_binned", "column2"])
+    indices, values = sparse_bolt_dataset_to_numpy(
+        columns.convert_to_dataset(["column1_binned", "column2"], batch_size=29)
     )
 
     # We need to reshape the arrays so we can concatenate them on the correct axis.

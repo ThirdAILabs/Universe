@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/data_pipeline/Column.h>
 #include <memory>
 #include <optional>
@@ -16,8 +17,8 @@ class ColumnMap {
 
   uint64_t numRows() const { return _num_rows; }
 
-  std::vector<BoltVector> convertToDataset(
-      const std::vector<std::string>& column_names);
+  BoltDatasetPtr convertToDataset(const std::vector<std::string>& column_names,
+                                  uint32_t batch_size);
 
   std::shared_ptr<IntegerValueColumn> getIntegerValueColumn(
       const std::string& name);

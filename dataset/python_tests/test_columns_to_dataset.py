@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
-from dataset_utils import dense_vectors_to_numpy, sparse_vectors_to_numpy
+from dataset_utils import dense_bolt_dataset_to_numpy, sparse_bolt_dataset_to_numpy
 from thirdai import dataset
 
 pytestmark = [pytest.mark.unit]
+
 
 def get_integer_value_column(n_rows, dim):
     column_np = np.random.randint(low=0, high=dim, size=(n_rows, 1))
@@ -37,8 +38,8 @@ def test_dense_columns_to_dataset():
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
-    featurized_vectors = dense_vectors_to_numpy(
-        columns.convert_to_dataset(["column1", "column2"])
+    featurized_vectors = dense_bolt_dataset_to_numpy(
+        columns.convert_to_dataset(["column1", "column2"], batch_size=21)
     )
 
     concatenated_columns = np.concatenate(
@@ -56,12 +57,14 @@ def test_sparse_columns_to_dataset():
 
     column2_dim = 20
     column2_nonzeros = 7
-    column2, column2_np = get_integer_array_column(n_rows, dim=column2_dim, num_nonzeros=column2_nonzeros)
+    column2, column2_np = get_integer_array_column(
+        n_rows, dim=column2_dim, num_nonzeros=column2_nonzeros
+    )
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
-    indices, values = sparse_vectors_to_numpy(
-        columns.convert_to_dataset(["column1", "column2"])
+    indices, values = sparse_bolt_dataset_to_numpy(
+        columns.convert_to_dataset(["column1", "column2"], batch_size=7)
     )
 
     concatenated_indices = np.concatenate(
@@ -70,7 +73,7 @@ def test_sparse_columns_to_dataset():
 
     assert np.array_equal(indices, concatenated_indices)
 
-    # Plus 1 is for column 1. 
+    # Plus 1 is for column 1.
     assert np.array_equal(values, np.ones(shape=(n_rows, 1 + column2_nonzeros)))
 
 
@@ -81,17 +84,20 @@ def test_dense_sparse_columns_to_dataset():
 
     column2_dim = 20
     column2_nonzeros = 7
-    column2, column2_np = get_integer_array_column(n_rows, dim=column2_dim, num_nonzeros=column2_nonzeros)
+    column2, column2_np = get_integer_array_column(
+        n_rows, dim=column2_dim, num_nonzeros=column2_nonzeros
+    )
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
-    indices, values = sparse_vectors_to_numpy(
-        columns.convert_to_dataset(["column1", "column2"])
+    indices, values = sparse_bolt_dataset_to_numpy(
+        columns.convert_to_dataset(["column1", "column2"], batch_size=24)
     )
 
     concatenated_indices = np.concatenate(
         # Column 1 will have the indices with value 0, and we must offset the indices of column 2
-        [np.zeros(shape=(n_rows, 1)), column2_np + 1], axis=1
+        [np.zeros(shape=(n_rows, 1)), column2_np + 1],
+        axis=1,
     )
     assert np.array_equal(indices, concatenated_indices)
 
@@ -118,14 +124,18 @@ def test_multiple_sparse_dense_columns_to_dataset():
 
     column4_dim = 40
     column4_nonzeros = 8
-    column4, column4_np = get_integer_array_column(n_rows, dim=column4_dim, num_nonzeros=column4_nonzeros)
+    column4, column4_np = get_integer_array_column(
+        n_rows, dim=column4_dim, num_nonzeros=column4_nonzeros
+    )
 
     columns = dataset.ColumnMap(
         {"column1": column1, "column2": column2, "column3": column3, "column4": column4}
     )
 
-    indices, values = sparse_vectors_to_numpy(
-        columns.convert_to_dataset(["column1", "column3", "column2", "column4"])
+    indices, values = sparse_bolt_dataset_to_numpy(
+        columns.convert_to_dataset(
+            ["column1", "column3", "column2", "column4"], batch_size=13
+        )
     )
 
     concatenated_indices = np.concatenate(
@@ -133,7 +143,7 @@ def test_multiple_sparse_dense_columns_to_dataset():
             get_dense_indices(n_rows, column1_dim),
             column3_np + column1_dim,
             get_dense_indices(n_rows, 1) + column1_dim + column3_dim,
-            column4_np + column1_dim + 1 + column3_dim, # The +1 is the column 2 dim
+            column4_np + column1_dim + 1 + column3_dim,  # The +1 is the column 2 dim
         ],
         axis=1,
     )

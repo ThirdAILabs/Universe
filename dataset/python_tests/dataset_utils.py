@@ -16,3 +16,19 @@ def sparse_vectors_to_numpy(vectors):
     indices = np.array(indices_list)
     values = np.array(values_list)
     return (indices, values)
+
+
+def get_bolt_vectors_from_dataset(dataset):
+    vectors = []
+    for batch in range(len(dataset)):
+        for vec in range(len(dataset[batch])):
+            vectors.append(dataset[batch][vec])
+    return vectors
+
+
+def dense_bolt_dataset_to_numpy(dataset):
+    return dense_vectors_to_numpy(get_bolt_vectors_from_dataset(dataset))
+
+
+def sparse_bolt_dataset_to_numpy(dataset):
+    return sparse_vectors_to_numpy(get_bolt_vectors_from_dataset(dataset))

@@ -488,7 +488,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
            py::arg("columns"))
       .def("convert_to_dataset", &ColumnMap::convertToDataset,
-           py::arg("columns"))
+           py::arg("columns"), py::arg("batch_size"))
       .def("__getitem__", &ColumnMap::getColumn);
 
   py::class_<FeaturizationPipeline>(dataset_submodule, "FeaturizationPipeline")
