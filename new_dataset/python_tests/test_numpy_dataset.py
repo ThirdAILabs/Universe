@@ -3,6 +3,13 @@ import pytest
 from thirdai import new_dataset
 
 
+def rows_equal(bolt_dataset_1, bolt_dataset_2):
+    for r1, r2 in zip(bolt_dataset_1, bolt_dataset_2):
+        if str(r1) != str(r2):
+            return False
+    return True
+
+
 @pytest.mark.unit
 def test_basic_dense_numpy():
     num_rows = 10
@@ -40,8 +47,7 @@ def test_shuffle_works():
     bolt_data_shuffled_in_dataset = new_dataset.from_np(np_data)
     np.random.shuffle(bolt_data_shuffled_in_dataset)
 
-    for r1, r2 in zip(bolt_data_shuffled_in_numpy, bolt_data_shuffled_in_dataset):
-        assert str(r1) == str(r2)
+    assert rows_equal(bolt_data_shuffled_in_numpy, bolt_data_shuffled_in_dataset)
 
 
 @pytest.mark.unit
@@ -62,12 +68,10 @@ def test_slice_is_a_view():
     first_half[0:10] = bolt_data[20:30]
     bolt_data[10:20] = bolt_data[30:40]
 
-    for r1, r2 in zip(first_half, bolt_data[0:20]):
-        assert str(r1) == str(r2)
+    assert rows_equal(first_half, bolt_data[0:20])
 
     second_half = bolt_data[20:40]
-    for r1, r2 in zip(first_half, second_half):
-        assert str(r1) == str(r2)
+    assert rows_equal(first_half, second_half)
 
 
 @pytest.mark.unit
@@ -102,3 +106,14 @@ def test_bad_slices():
 
     with pytest.raises(ValueError, match="Dataset slices must have step size 1"):
         bolt_data[20:10:2]
+
+
+@pytest.mark.unit
+def test_dataset_copy():
+    np_data = np.random.rand(40, 10)
+    bolt_data = new_dataset.from_np(np_data)
+    bolt_data_copy = bolt_data.copy()
+
+    bolt_data[0] = bolt_data[1]
+
+    assert not rows_equal(bolt_data, bolt_data_copy)
