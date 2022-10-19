@@ -19,13 +19,13 @@
 #include <unordered_map>
 namespace thirdai::automl::deployment {
 
-class OracleModelPipeline : public ModelPipeline {
+class UniversalDeepTransformer : public ModelPipeline {
   static inline const std::string NUM_TABLES = "num_tables";
   static inline const std::string HASHES_PER_TABLE = "hashes_per_table";
   static inline const std::string RESERVOIR_SIZE = "reservoir_size";
 
  public:
-  OracleModelPipeline(
+  UniversalDeepTransformer(
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target, std::string time_granularity = "d",
