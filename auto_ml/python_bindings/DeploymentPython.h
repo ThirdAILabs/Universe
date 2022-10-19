@@ -39,16 +39,27 @@ py::object evaluateOnFileWrapper(
     ModelPipeline& model, const std::string& filename,
     std::optional<bolt::PredictConfig>& predict_config);
 
-py::object predictWrapper(ModelPipeline& model, const std::string& sample,
-                          bool use_sparse_inference);
+py::object predictWrapperStringInput(ModelPipeline& model,
+                                     const std::string& sample,
+                                     bool use_sparse_inference);
+
+py::object predictWrapperMapInput(
+    ModelPipeline& model,
+    const std::unordered_map<std::string, std::string>& sample,
+    bool use_sparse_inference);
 
 py::object predictTokensWrapper(ModelPipeline& model,
                                 const std::vector<uint32_t>& tokens,
                                 bool use_sparse_inference);
 
-py::object predictBatchWrapper(ModelPipeline& model,
-                               const std::vector<std::string>& samples,
-                               bool use_sparse_inference);
+py::object predictBatchWrapperStringInput(
+    ModelPipeline& model, const std::vector<std::string>& samples,
+    bool use_sparse_inference);
+
+py::object predictBatchWrapperMapInput(
+    ModelPipeline& model,
+    const std::vector<std::unordered_map<std::string, std::string>>& samples,
+    bool use_sparse_inference);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 

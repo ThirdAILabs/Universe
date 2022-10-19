@@ -7,6 +7,7 @@
 #include <cereal/types/vector.hpp>
 #include "ConstructorUtilityTypes.h"
 #include "SequentialClassifierConfig.h"
+#include <_types/_uint32_t.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
@@ -108,12 +109,13 @@ struct DataState {
 
 class ColumnNumberMap {
  public:
-  ColumnNumberMap(const std::string& header, char delimiter) {
+  ColumnNumberMap(const std::string& header, char delimiter) : _n_cols(0) {
     auto header_columns =
         dataset::ProcessorUtils::parseCsvRow(header, delimiter);
     for (uint32_t col_num = 0; col_num < header_columns.size(); col_num++) {
       std::string col_name(header_columns[col_num]);
       _name_to_num[col_name] = col_num;
+      _n_cols = std::max(col_num + 1, _n_cols);
     }
   }
 
@@ -125,6 +127,7 @@ class ColumnNumberMap {
       _name_to_num[col_name] = col_num;
       col_num++;
     }
+    _n_cols = col_num;
   }
 
   uint32_t at(const std::string& col_name) const {
@@ -143,6 +146,8 @@ class ColumnNumberMap {
 
   size_t size() const { return _name_to_num.size(); }
 
+  size_t numCols() const { return _n_cols; }
+
   std::unordered_map<uint32_t, std::string> getColumnNumToColNameMap() {
     std::unordered_map<uint32_t, std::string> col_num_to_col_name;
     for (const auto& map : _name_to_num) {
@@ -153,12 +158,13 @@ class ColumnNumberMap {
 
  private:
   std::unordered_map<std::string, uint32_t> _name_to_num;
+  uint32_t _n_cols;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_name_to_num);
+    archive(_name_to_num, _n_cols);
   }
 };
 
