@@ -6,7 +6,6 @@
 #include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
@@ -122,8 +121,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   uint32_t getInputDim() const { return sumBlockDims(_input_blocks); }
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
-
-  uint32_t getExpectedNumCols() const { return _expected_num_cols; }
 
   void setParallelism(bool parallel) { _parallel = parallel; }
 
