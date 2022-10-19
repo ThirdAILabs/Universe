@@ -308,7 +308,7 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
   assert((output.len <= _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
-  assert(_weight_optimizer.has_value() && _bias_optimizer.has_value());
+  assert(_weight_optimizer && _bias_optimizer);
 
   uint32_t len_out = nonzerosInOutput<DENSE>();
 
@@ -350,7 +350,7 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
 template <bool FIRST_LAYER>
 void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
                                                        BoltVector& output) {
-  assert(_weight_optimizer.has_value() && _bias_optimizer.has_value());
+  assert(_weight_optimizer && _bias_optimizer);
 
   for (uint32_t n = 0; n < output.len; n++) {
     output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
@@ -728,7 +728,7 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
 
 void FullyConnectedLayer::setWeightGradients(
     const float* update_weight_gradient) {
-  assert(_weight_optimizer.has_value());
+  assert(_weight_optimizer);
 
   std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
             _weight_gradients.begin());
@@ -736,19 +736,18 @@ void FullyConnectedLayer::setWeightGradients(
 
 void FullyConnectedLayer::setBiasesGradients(
     const float* update_bias_gradient) {
-  assert(_bias_optimizer.has_value());
+  assert(_bias_optimizer);
   std::copy(update_bias_gradient, update_bias_gradient + _dim,
             _bias_gradients.begin());
 }
 
 float* FullyConnectedLayer::getBiasesGradient() {
-  assert(_bias_optimizer.has_value());
+  assert(_bias_optimizer);
   return _bias_gradients.data();
 }
 
 float* FullyConnectedLayer::getWeightsGradient() {
-  assert(_weight_optimizer.has_value());
-
+  assert(_weight_optimizer);
   return _weight_gradients.data();
 }
 
