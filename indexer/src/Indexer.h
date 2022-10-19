@@ -16,12 +16,14 @@
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exceptions/src/Exceptions.h>
 #include <indexer/src/Flash.h>
+#include <fstream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace thirdai::bolt {
 
@@ -81,23 +83,24 @@ class IndexerConfig {
 
   std::shared_ptr<hashing::HashFunction> getHashFunction() const {
     if (_hash_function == "DensifiedMinHash") {
-      return std::make_shared<hashing::DensifiedMinHash>(
+      auto* hash_function = new hashing::DensifiedMinHash(
           /* hashes_per_table = */ _hashes_per_table,
           /* num_tables = */ _num_tables, /* range = */ _range);
+      return std::make_shared<hashing::DensifiedMinHash>(*hash_function);
     }
     if (_hash_function == "DWTA") {
-      return nullptr;
-      //   return std::make_shared<hashing::DWTAHashFunction>(
-      //       /* input_dim = */ _input_dim,
-      //       /* hashes_per_table = */ _hashes_per_table,
-      //       /* num_tables = */ _num_tables, /* range_pow = */ _range);
+      auto* hash_function = new hashing::DWTAHashFunction(
+          /* input_dim = */ _input_dim,
+          /* hashes_per_table = */ _hashes_per_table,
+          /* num_tables = */ _num_tables, /* range_pow = */ _range);
+      return std::make_shared<hashing::DWTAHashFunction>(*hash_function);
     }
     if (_hash_function == "FastSRP") {
-      return nullptr;
-      //   return std::make_shared<hashing::FastSRP>(
-      //       /* input_dim = */ _input_dim,
-      //       /* hashes_per_table = */ _hashes_per_table,
-      //       /* num_tables = */ _num_tables);
+      auto* hash_function = new hashing::FastSRP(
+          /* input_dim = */ _input_dim,
+          /* hashes_per_table = */ _hashes_per_table,
+          /* num_tables = */ _num_tables);
+      return std::make_shared<hashing::FastSRP>(*hash_function);
     }
     throw exceptions::NotImplemented("Unsupported Hash Function");
   }
@@ -109,7 +112,7 @@ class IndexerConfig {
   uint32_t _num_tables;
   uint32_t _hashes_per_table;
 
-  std::optional<uint32_t> _input_dim;
+  uint32_t _input_dim;
   uint32_t _batch_size;
   uint32_t _range;
 
@@ -132,9 +135,11 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
  public:
   explicit Indexer(IndexerConfigPtr flash_index_config)
       : _flash_index_config(std::move(flash_index_config)),
-        _ids_to_queries_map(std::nullopt),
         _dimension_for_encodings(
             dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {}
+
+  // private constructor for cereal
+  Indexer() {}
 
   static Indexer make(IndexerConfigPtr flash_index_config) {
     return Indexer(std::move(flash_index_config));
@@ -157,6 +162,8 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
    * function since they are pretty much indentical
    */
   std::shared_ptr<Indexer> buildFlashIndex(const std::string& file_name) {
+    buildIDsQueryMapping(file_name);
+
     auto* data = loadDataInMemory(/* file_name = */ file_name,
                                   /* correct_query_column_index = */ 0)
                      .get();
@@ -207,17 +214,27 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
     return results;
   }
 
-  std::vector<std::vector<uint32_t>> querySingle(const std::string& query) {
+  std::vector<std::string> querySingle(const std::string& query) {
     auto featurized_query_vector = featurizeSingleQuery(query);
 
-    std::vector<std::vector<uint32_t>> query_result = _flash_index->queryBatch(
-        /* batch = */ BoltBatch(std::move(featurized_query_vector)),
-        /* top_k = */ Indexer::TOP_K, /* pad_zeros = */ true);
+    std::vector<std::vector<uint32_t>> suggested_query_ids =
+        _flash_index->queryBatch(
+            /* batch = */ BoltBatch(std::move(featurized_query_vector)),
+            /* top_k = */ Indexer::TOP_K, /* pad_zeros = */ true);
 
-    return query_result;
+    std::vector<std::string> output_queries;
+    for (auto suggested_query_id : suggested_query_ids[0]) {
+      if (suggested_query_id == 0) {
+        output_queries.push_back("");
+        continue;
+      }
+      auto suggested_query = _ids_to_queries_map.at(suggested_query_id);
+      output_queries.push_back(suggested_query);
+    }
+
+    return output_queries;
   }
 
- private:
   /**
    * @brief Constructs a mapping from IDs to correct queries. This allows
    * us to convert the output of queryBatch() into strings representing
@@ -226,30 +243,29 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
    * @param file_name: File containing queries (Expected to be a CSV file).
    */
   void buildIDsQueryMapping(const std::string& file_name) {
-    if (_ids_to_queries_map.has_value()) {
-      throw exceptions::FlashIndexException(
-          "Cannot build the mapping from IDs to correct queries twice.");
-    }
-
-    std::ifstream input_file_stream;
-
     try {
-      input_file_stream.open(file_name);
+      std::ifstream input_file_stream(file_name, std::ios::in);
 
-      uint32_t ids_counter = 0;
+      // The ID 0 is reserved for empty string.
+      uint32_t ids_counter = 1;
       std::string row;
 
-      while (std::getline(input_file_stream, row)) {
-        _ids_to_queries_map->insert({ids_counter, row});
+      while (std::getline(input_file_stream, row, '\n')) {
+        _ids_to_queries_map[ids_counter] = row;
         ids_counter += 1;
       }
       input_file_stream.close();
 
-    } catch (const std::ifstream::failure& e) {
+    } catch (const std::ifstream::failure& exception) {
       throw std::invalid_argument("Invalid input file name.");
     }
   }
 
+  std::unordered_map<uint32_t, std::string> getIDsToQueryMapping() const {
+    return _ids_to_queries_map;
+  }
+
+ private:
   dataset::BoltDatasetPtr loadDataInMemory(
       const std::string& file_name, uint32_t correct_query_column_index) const {
     dataset::TextBlockPtr char_trigram_block =
@@ -306,17 +322,15 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
   // CSV file is assigned a unique ID in an ascending order.
   // This field is optional until the query CSV file has been loaded
   // in memory.
-  std::optional<std::unordered_map<uint32_t, std::string>> _ids_to_queries_map;
+  std::unordered_map<uint32_t, std::string> _ids_to_queries_map;
 
   uint32_t _dimension_for_encodings;
-
-  // private constructor for cereal
-  Indexer() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_flash_index_config, _flash_index, _dimension_for_encodings);
+    archive(_flash_index_config, _flash_index, _ids_to_queries_map,
+            _dimension_for_encodings);
   }
 };
 

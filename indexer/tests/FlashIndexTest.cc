@@ -14,6 +14,7 @@
 #include <vector>
 
 using thirdai::bolt::Flash;
+using thirdai::bolt::Indexer;
 using thirdai::bolt::IndexerConfig;
 using thirdai::hashing::DensifiedMinHash;
 
@@ -90,7 +91,7 @@ TEST(FlashIndexTest, SerializeAndDeserializeFlashIndexTest) {
   delete hash_function;
 }
 
-TEST(FlashIndexerConfigTest, TestFlashIndexerLoadAndSave) {
+TEST(FlashIndexerConfigTest, FlashIndexerLoadAndSaveTest) {
   const char* SAVE_PATH = "./flash_indexer_config";
 
   IndexerConfig config =
@@ -108,6 +109,21 @@ TEST(FlashIndexerConfigTest, TestFlashIndexerLoadAndSave) {
 
   // Checks that config file was successfully removed
   EXPECT_EQ(std::remove(SAVE_PATH), 0);
+}
+
+TEST(FlashIndexerTest, IDsToQueriesMappingTest) {
+  const char* QUERY_FILE_PATH =
+      "/Users/blaisethirdai/Desktop/Universe/queries.csv";
+
+  Indexer indexer;
+  indexer.buildIDsQueryMapping(QUERY_FILE_PATH);
+
+  auto id_queries_map = indexer.getIDsToQueryMapping();
+
+  for (const auto& it : id_queries_map) {
+    std::cout << "(key, Val) = (" << it.first << "," << it.second << ")"
+              << std::endl;
+  }
 }
 
 }  // namespace thirdai::tests

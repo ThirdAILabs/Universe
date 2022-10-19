@@ -1,9 +1,9 @@
 import os
-import pytest
-from thirdai import bolt
+
 import datasets
 import pandas as pd
-
+import pytest
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit]
 
@@ -28,6 +28,8 @@ def write_input_dataset_to_csv(dataframe, file_path):
 def delete_created_files():
     if os.path.exists(QUERIES_FILE):
         os.remove(QUERIES_FILE)
+    if os.path.exists(CONFIG_FILE):
+        os.remove(CONFIG_FILE)
 
 
 @pytest.mark.filterwarnings("ignore")
@@ -37,7 +39,7 @@ def test_flash_indexer():
     write_input_dataset_to_csv(query_dataframe, QUERIES_FILE)
 
     indexer_config = bolt.IndexerConfig(
-        hash_function="DensifiedMinHash",
+        hash_function="FastSRP",
         num_tables=100,
         hashes_per_table=15,
         input_dim=100,
@@ -48,6 +50,6 @@ def test_flash_indexer():
 
     generator = indexer.build_index(file_name=QUERIES_FILE)
 
-    generator.generate(query="share my curnt locatio")
+    candidate_queries = generator.generate(query="share my curnt locatio")
 
     delete_created_files()
