@@ -43,6 +43,9 @@ namespace thirdai::automl::deployment {
 using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
 using LabelDataset = dataset::BoltDatasetPtr;
 
+using MapInput = std::unordered_map<std::string, std::string>;
+using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
+
 class DatasetLoader {
  public:
   virtual std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
@@ -100,8 +103,7 @@ class DatasetLoaderFactory {
 
   virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
 
-  virtual std::vector<BoltVector> featurizeInput(
-      const std::unordered_map<std::string, std::string>& input) {
+  virtual std::vector<BoltVector> featurizeInput(const MapInput& input) {
     (void)input;
     throw std::invalid_argument(
         "This model pipeline configuration does not support map input. Pass in "
@@ -112,7 +114,7 @@ class DatasetLoaderFactory {
       const std::vector<std::string>& inputs) = 0;
 
   virtual std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::unordered_map<std::string, std::string>>& inputs) {
+      const MapInputBatch& inputs) {
     (void)inputs;
     throw std::invalid_argument(
         "This model pipeline configuration does not support map input. Pass in "

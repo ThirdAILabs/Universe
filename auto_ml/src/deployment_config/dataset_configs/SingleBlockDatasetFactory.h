@@ -71,15 +71,9 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
       const std::vector<float>& gradients_ratio,
       const std::string& sample) final {
     auto input_row = dataset::ProcessorUtils::parseCsvRow(sample, _delimiter);
-    auto result = bolt::getSignificanceSortedExplanations(
-        gradients_indices, gradients_ratio, input_row,
-        _unlabeled_batch_processor);
-
-    for (auto& response : result) {
-      response.column_name = "input column";
-    }
-
-    return result;
+    return bolt::getSignificanceSortedExplanations(gradients_indices,
+                                                   gradients_ratio, input_row,
+                                                   _unlabeled_batch_processor);
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {

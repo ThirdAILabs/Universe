@@ -22,8 +22,7 @@ template <typename T>
 void defOptionMappedParameter(py::module_& submodule, bool add_docs);
 
 py::object makeUserSpecifiedParameter(const std::string& name,
-                                      const py::object& type,
-                                      const py::object& default_value);
+                                      const py::object& type);
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
                              const py::dict& parameters);
