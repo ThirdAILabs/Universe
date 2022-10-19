@@ -229,27 +229,15 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("predict", &predictWrapperStringInput, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT)
-      .def("predict", &predictWrapperMapInput, py::arg("input_sample"),
-           py::arg("use_sparse_inference") = false,
-           docs::MODEL_PIPELINE_PREDICT)
       .def("explain",
            py::overload_cast<const std::string&, std::optional<uint32_t>>(
                &ModelPipeline::explain),
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
            docs::MODEL_PIPELINE_EXPLAIN)
-      .def(
-          "explain",
-          py::overload_cast<const std::unordered_map<std::string, std::string>&,
-                            std::optional<uint32_t>>(&ModelPipeline::explain),
-          py::arg("input_sample"), py::arg("target_class") = std::nullopt,
-          docs::MODEL_PIPELINE_EXPLAIN)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_TOKENS)
       .def("predict_batch", &predictBatchWrapperStringInput,
-           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           docs::MODEL_PIPELINE_PREDICT_BATCH)
-      .def("predict_batch", &predictBatchWrapperMapInput,
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
@@ -279,21 +267,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::overload_cast<const std::string&>(
                &TemporalContext::updateTemporalTrackers),
            py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
-      .def("update_temporal_trackers",
-           py::overload_cast<
-               const std::unordered_map<std::string, std::string>&>(
-               &TemporalContext::updateTemporalTrackers),
-           py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
       .def("batch_update_temporal_trackers",
            py::overload_cast<const std::vector<std::string>&>(
                &TemporalContext::batchUpdateTemporalTrackers),
-           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH)
-      .def(
-          "batch_update_temporal_trackers",
-          py::overload_cast<
-              const std::vector<std::unordered_map<std::string, std::string>>&>(
-              &TemporalContext::batchUpdateTemporalTrackers),
-          py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
+           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
 }
 
 template <typename T>
