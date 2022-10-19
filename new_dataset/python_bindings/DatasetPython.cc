@@ -53,7 +53,7 @@ void createNewDatasetSubmodule(py::module_& module) {
              }
              if (step != 1) {
                throw std::invalid_argument(
-                   "Dataset only supports slices with step size 1");
+                   "Dataset slices must have step size 1");
              }
              return d.slice(start, stop);
            })

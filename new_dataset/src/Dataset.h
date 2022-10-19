@@ -44,9 +44,10 @@ class Dataset {
       throw std::invalid_argument(
           "Length of a new Dataset must be greater than 0.");
     }
-    if (_start_index + _length >= vectors->size()) {
+    if (_start_index + _length > _vectors->size()) {
       throw std::invalid_argument(
-          "End of a Dataset slice must be within the underlying slice.");
+          "End of a Dataset slice must be <= the length of the underlying "
+          "vectors.");
     }
   }
 

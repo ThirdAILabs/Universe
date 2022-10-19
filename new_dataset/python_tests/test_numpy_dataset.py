@@ -68,3 +68,37 @@ def test_slice_is_a_view():
     second_half = bolt_data[20:40]
     for r1, r2 in zip(first_half, second_half):
         assert str(r1) == str(r2)
+
+
+@pytest.mark.unit
+def test_bad_slices():
+    np_data = np.random.rand(40, 10)
+
+    bolt_data = new_dataset.from_np(np_data)
+
+    with pytest.raises(
+        ValueError,
+        match="Slices must have positive size, but found start index 30 and end index 30",
+    ):
+        bolt_data[30:30]
+
+    with pytest.raises(
+        ValueError,
+        match="Slices must have positive size, but found start index 20 and end index 10",
+    ):
+        bolt_data[20:10]
+
+    with pytest.raises(
+        ValueError,
+        match="Slices must have positive size, but found start index 30 and end index 25",
+    ):
+        bolt_data[-10:-15]
+
+    with pytest.raises(
+        ValueError,
+        match="Slices must have positive size, but found start index 40 and end index 40",
+    ):
+        bolt_data[500:510]
+
+    with pytest.raises(ValueError, match="Dataset slices must have step size 1"):
+        bolt_data[20:10:2]
