@@ -9,6 +9,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
+#include <exception>
 #include <optional>
 #include <random>
 
@@ -29,7 +30,8 @@ class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
-  FullyConnectedLayer() {}
+  FullyConnectedLayer()
+      : _weight_optimizer(std::nullopt), _bias_optimizer(std::nullopt) {}
 
   FullyConnectedLayer(const FullyConnectedLayer&) = delete;
   FullyConnectedLayer(FullyConnectedLayer&&) = delete;
@@ -146,8 +148,8 @@ class FullyConnectedLayer final {
   std::vector<float> _biases;
   std::vector<float> _bias_gradients;
 
-  OptimizerPtr _weight_optimizer = nullptr;
-  OptimizerPtr _bias_optimizer = nullptr;
+  std::optional<OptimizerPtr> _weight_optimizer;
+  std::optional<OptimizerPtr> _bias_optimizer;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;

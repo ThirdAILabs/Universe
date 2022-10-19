@@ -27,13 +27,16 @@ def test_multi_label_text_classifier_load_save():
     # We expect the model to predict class 1; class 1 should have max activation.
     assert activations_before_save[1] == np.max(activations_before_save)
     assert activations_before_save[1] >= threshold
-
+    print("ABOUT TO SAVE", flush=True)
     model_save_file = "saved_model"
     model.save(model_save_file)
+    print("SAVED", flush=True)
 
     reloaded_model = bolt.MultiLabelTextClassifier.load(model_save_file)
-    activations_after_load = reloaded_model.predict(inference_sample)
+    print("RELOADED", flush=True)
 
+    activations_after_load = reloaded_model.predict(inference_sample)
+    print("RELOAD PREDICT")
     assert (activations_before_save == activations_after_load).all()
 
     os.remove(temp_train_file)
@@ -73,3 +76,6 @@ def test_multi_label_text_classifier_custom_predict_single_threshold():
     assert activations_before_save[1] >= threshold
 
     os.remove(temp_train_file)
+
+
+test_multi_label_text_classifier_load_save()

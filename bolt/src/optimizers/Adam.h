@@ -2,6 +2,7 @@
 
 #include <bolt/src/optimizers/Optimizer.h>
 #include <cmath>
+#include <iostream>
 
 namespace thirdai::bolt {
 
@@ -9,12 +10,14 @@ class AdamOptimizer final : public Optimizer {
  public:
   AdamOptimizer(std::vector<float>& parameters, std::vector<float>& gradients,
                 float beta1 = 0.9, float beta2 = 0.999)
-      : Optimizer(parameters, gradients), _beta1(beta1), _beta2(beta2) {
+      : Optimizer(parameters, gradients),
+        _momentum(parameters.size(), 0.0),
+        _velocity(parameters.size(), 0.0),
+        _beta1(beta1),
+        _beta2(beta2),
+        _iter(0) {
     // This will initialize the bias corrected version of beta1 and beta2.
     completeTrainStep();
-
-    _momentum.assign(_parameter_length, 0.0);
-    _velocity.assign(_parameter_length, 0.0);
   }
 
   void updateRange(uint64_t start, uint64_t length, float learning_rate,

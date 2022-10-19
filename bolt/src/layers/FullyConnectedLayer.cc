@@ -538,10 +538,10 @@ void FullyConnectedLayer::updateParameters(float learning_rate) {
     updateDenseDenseWeightParameters(learning_rate);
   }
 
-  _bias_optimizer->updateRange(0, _dim, learning_rate, /* parallel= */ true);
+  (*_bias_optimizer)->updateRange(0, _dim, learning_rate, /* parallel= */ true);
 
-  _weight_optimizer->completeTrainStep();
-  _bias_optimizer->completeTrainStep();
+  (*_weight_optimizer)->completeTrainStep();
+  (*_bias_optimizer)->completeTrainStep();
 
   cleanupWithinBatchVars();
 }
@@ -563,7 +563,7 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParametersOptimized(
         if (_active_pairs_array[active_pair_index]) {
           // We clean _active_pairs_array here for performance
           _active_pairs_array[active_pair_index] = false;
-          _weight_optimizer->updateAtIndex(active_pair_index, learning_rate);
+          (*_weight_optimizer)->updateAtIndex(active_pair_index, learning_rate);
         }
       }
     }
@@ -583,7 +583,7 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParametersNormal(
       if (_active_pairs_array[active_pair_index]) {
         // We clean _active_pairs_array here for performance
         _active_pairs_array[active_pair_index] = false;
-        _weight_optimizer->updateAtIndex(active_pair_index, learning_rate);
+        (*_weight_optimizer)->updateAtIndex(active_pair_index, learning_rate);
       }
     }
   }
@@ -595,8 +595,9 @@ inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
     for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
       if (_prev_is_active[prev_neuron]) {
-        _weight_optimizer->updateAtIndex(cur_neuron * _prev_dim + prev_neuron,
-                                         learning_rate);
+        (*_weight_optimizer)
+            ->updateAtIndex(cur_neuron * _prev_dim + prev_neuron,
+                            learning_rate);
       }
     }
   }
@@ -610,15 +611,17 @@ inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
       continue;
     }
 
-    _weight_optimizer->updateRange(cur_neuron * _prev_dim, _prev_dim,
-                                   learning_rate, /* parallel= */ false);
+    (*_weight_optimizer)
+        ->updateRange(cur_neuron * _prev_dim, _prev_dim, learning_rate,
+                      /* parallel= */ false);
   }
 }
 
 inline void FullyConnectedLayer::updateDenseDenseWeightParameters(
     float learning_rate) {
-  _weight_optimizer->updateRange(0, _dim * _prev_dim, learning_rate,
-                                 /* parallel= */ true);
+  (*_weight_optimizer)
+      ->updateRange(0, _dim * _prev_dim, learning_rate,
+                    /* parallel= */ true);
 }
 
 inline void FullyConnectedLayer::cleanupWithinBatchVars() {
