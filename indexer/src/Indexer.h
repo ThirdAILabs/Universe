@@ -20,6 +20,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::bolt {
@@ -131,6 +132,7 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
  public:
   explicit Indexer(IndexerConfigPtr flash_index_config)
       : _flash_index_config(std::move(flash_index_config)),
+        _ids_to_queries_map(std::nullopt),
         _dimension_for_encodings(
             dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {}
 
@@ -216,6 +218,38 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
   }
 
  private:
+  /**
+   * @brief Constructs a mapping from IDs to correct queries. This allows
+   * us to convert the output of queryBatch() into strings representing
+   * correct queries.
+   *
+   * @param file_name: File containing queries (Expected to be a CSV file).
+   */
+  void buildIDsQueryMapping(const std::string& file_name) {
+    if (_ids_to_queries_map.has_value()) {
+      throw exceptions::FlashIndexException(
+          "Cannot build the mapping from IDs to correct queries twice.");
+    }
+
+    std::ifstream input_file_stream;
+
+    try {
+      input_file_stream.open(file_name);
+
+      uint32_t ids_counter = 0;
+      std::string row;
+
+      while (std::getline(input_file_stream, row)) {
+        _ids_to_queries_map->insert({ids_counter, row});
+        ids_counter += 1;
+      }
+      input_file_stream.close();
+
+    } catch (const std::ifstream::failure& e) {
+      throw std::invalid_argument("Invalid input file name.");
+    }
+  }
+
   dataset::BoltDatasetPtr loadDataInMemory(
       const std::string& file_name, uint32_t correct_query_column_index) const {
     dataset::TextBlockPtr char_trigram_block =
@@ -265,8 +299,15 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
   }
 
   std::shared_ptr<IndexerConfig> _flash_index_config;
-
   std::unique_ptr<Flash<uint32_t>> _flash_index;
+
+  // Maintains a mapping from the assigned IDs to the original
+  // queries loaded from a CSV file. Each unique query in the input
+  // CSV file is assigned a unique ID in an ascending order.
+  // This field is optional until the query CSV file has been loaded
+  // in memory.
+  std::optional<std::unordered_map<uint32_t, std::string>> _ids_to_queries_map;
+
   uint32_t _dimension_for_encodings;
 
   // private constructor for cereal

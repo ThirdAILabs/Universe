@@ -19,15 +19,15 @@ using thirdai::hashing::DensifiedMinHash;
 
 namespace thirdai::tests {
 
-const uint32_t HASHES_PER_TABLE = 15;
-const uint32_t NUM_TABLES = 100;
-const uint32_t RANGE = 1000000;
-const uint32_t NUM_VECTORS = 10000;
+const uint32_t HASHES_PER_TABLE = 10;
+const uint32_t NUM_TABLES = 20;
+const uint32_t RANGE = 3000;
+const uint32_t NUM_VECTORS = 100;
 
 TEST(FlashIndexTest, SerializeAndDeserializeFlashIndexTest) {
   uint32_t input_vector_dimension = 100;
 
-  uint32_t batch_size = 100;
+  uint32_t batch_size = 10;
   uint32_t num_queries = 100;
   uint32_t words_per_query = 10;
   uint32_t top_k = 5;
@@ -86,6 +86,8 @@ TEST(FlashIndexTest, SerializeAndDeserializeFlashIndexTest) {
                   second_query_outputs[batch_index][vec_index]);
     }
   }
+
+  delete hash_function;
 }
 
 TEST(FlashIndexerConfigTest, TestFlashIndexerLoadAndSave) {
