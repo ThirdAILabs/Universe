@@ -142,6 +142,39 @@ class Featurizer {
     return _column_number_to_name[col_num];
   }
 
+  uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) {
+    if (std::holds_alternative<uint32_t>(label)) {
+      return std::get<uint32_t>(label);
+    }
+
+    const std::string& label_str = std::get<std::string>(label);
+
+    if (_config->data_types.at(_config->target)
+            .asCategorical()
+            .contiguous_numerical_ids) {
+      return utils::toInteger(label_str.c_str());
+    }
+
+    if (!_vocabs.count(_config->target)) {
+      throw std::invalid_argument(
+          "Attempted to get label to neuron id map before training.");
+    }
+    return _vocabs.at(_config->target)->getUid(label_str);
+  }
+
+  std::optional<std::vector<std::string>> getIdToLabelMap() const {
+    if (!_vocabs.count(_config->target)) {
+      throw std::invalid_argument(
+          "Attempted to get id to label map before training.");
+    }
+    if (_config->data_types.at(_config->target)
+            .asCategorical()
+            .contiguous_numerical_ids) {
+      return std::nullopt;
+    }
+    return {_vocabs.at(_config->target)->getUidToStringMap()};
+  }
+
  private:
   std::vector<BoltVector> featurizeInputImpl(
       std::vector<std::string_view>& input_row, bool should_update_history) {
@@ -163,10 +196,25 @@ class Featurizer {
           "Target column must be a categorical column.");
     }
 
-    auto label_block = dataset::NumericalCategoricalBlock::make(
-        /* col= */ column_number_map.at(_config->target),
-        /* n_classes= */ target_type.asCategorical().n_unique_classes,
-        /* delimiter= */ target_type.asCategorical().delimiter);
+    dataset::BlockPtr label_block;
+
+    auto col_num = column_number_map.at(_config->target);
+    auto n_unique_classes = target_type.asCategorical().n_unique_classes;
+    auto delimiter = target_type.asCategorical().delimiter;
+
+    if (target_type.asCategorical().contiguous_numerical_ids) {
+      label_block = dataset::NumericalCategoricalBlock::make(
+          col_num, n_unique_classes, delimiter);
+
+    } else {
+      if (!_vocabs.count(_config->target)) {
+        _vocabs[_config->target] =
+            dataset::ThreadSafeVocabulary::make(n_unique_classes);
+      }
+
+      label_block = dataset::StringLookupCategoricalBlock::make(
+          col_num, _vocabs.at(_config->target), delimiter);
+    }
 
     auto input_blocks = buildInputBlocks(column_number_map, context,
                                          /* should_update_history= */ true);
