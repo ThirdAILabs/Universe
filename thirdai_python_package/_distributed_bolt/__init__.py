@@ -1,1 +1,5 @@
-from .distributed import DistributedDataParallel, RayTrainingClusterConfig, RayTrainingClusterConfig
+from .distributed import (
+    DataParallelIngestSpec,
+    DistributedDataParallel,
+    RayTrainingClusterConfig,
+)

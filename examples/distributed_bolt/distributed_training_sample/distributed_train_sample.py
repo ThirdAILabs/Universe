@@ -29,8 +29,8 @@ if __name__ == "__main__":
     cluster_config = db.RayTrainingClusterConfig(
         num_workers=2, requested_cpus_per_node=48, communication_type="linear"
     )
-    data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='text', equal=False)
-    ray_dataset = data_parallel_ingest.get_ray_dataset(paths='/share/pratik/data/mnist')
+    data_parallel_ingest = db.DataParallelIngestSpec(dataset_type="text", equal=False)
+    ray_dataset = data_parallel_ingest.get_ray_dataset(paths="/share/pratik/data/mnist")
 
     wrapped_model = db.DistributedDataParallel(
         cluster_config=cluster_config,
@@ -39,7 +39,7 @@ if __name__ == "__main__":
         train_file_names=None,
         batch_size=256,
         data_parallel_ingest_spec=data_parallel_ingest,
-        ray_dataset=ray_dataset
+        ray_dataset=ray_dataset,
     )
     wrapped_model.train()
 
