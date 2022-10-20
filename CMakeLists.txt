@@ -252,8 +252,7 @@ set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
 
 set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
-set(DATASET_SOURCES
-    dataset/src/Vocabulary.cc)
+set(DATASET_SOURCES dataset/src/Vocabulary.cc)
 
 set(NEW_DATASET_SOURCES
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
