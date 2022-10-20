@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
@@ -187,6 +188,15 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
 
  private:
   ThreadSafeVocabularyPtr _vocab;
+
+  // Private constructor for cereal.
+  StringLookupCategoricalBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<CategoricalBlock>(this), _vocab);
+  }
 };
 
 using StringLookupCategoricalBlockPtr =
@@ -196,3 +206,4 @@ using StringLookupCategoricalBlockPtr =
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::CategoricalBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::NumericalCategoricalBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::StringLookupCategoricalBlock)

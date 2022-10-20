@@ -135,7 +135,7 @@ logging backend.
 
 See :obj:`thirdai.logging <thirdai.logging>` API documentation for more
 details. Logging granularity during training can be controlled by the following
-modifications to ``TrainConfig``.
+modifications to :obj:`TrainConfig <thirdai.bolt.graph.TrainConfig>`.
 
 .. code-block:: python
 
@@ -161,9 +161,9 @@ for information. For this, use the ``.silence()`` option.
 Validation
 ----------
 
-The following code demonstrates adding a validation-set to the ``TrainConfig``
-from the MNIST example, to achieve validation at specified intervals of updates
-during training.
+The following code demonstrates adding a validation-set to the
+:obj:`TrainConfig <thirdai.bolt.graph.TrainConfig>` from the MNIST example, to achieve
+validation at specified intervals of updates during training. 
 
 .. code-block:: python
 
@@ -177,6 +177,7 @@ during training.
            mnist_dataset["test_labels"],
            predict_config,
            validation_frequency=32,
+           save_best_per_metric="mean_squared_error",
        )
    )
 
@@ -186,7 +187,8 @@ Saving models
 -------------
 
 Inorder to save-models at defined intervals of updates, use the following
-additions, making use of the ``.with_save_parameters(...)`` option:
+additions, making use of the :meth:`.with_save_parameters(...)
+<thirdai.bolt.graph.TrainConfig.with_save_parameters>` option:
 
 .. code-block:: python
 

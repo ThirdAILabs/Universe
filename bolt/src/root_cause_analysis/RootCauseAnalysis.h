@@ -46,7 +46,12 @@ inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
  * for each gradient value with index pair, get corresponding column number and
  * key word from the batch processor given.
  *
- * @param model The model to use for RCA.
+ * @param gradient_indices indices of the input vector that will be explained.
+ * Note that this is an optional that only has a value if the vector is sparse.
+ *
+ * @param gradients_ratio Gradients normalized by input values. e.g. if input
+ * values = [1.0, 2.0, 3.0, 4.0] and gradients = [0.2, 0.2, 0.6, 0.1], then
+ * gradients_ratio = [0.2, 0.1, 0.2, 0.025]
  *
  * @param input_row The string view of input which can be used for getting the
  * exact key words responsible from blocks when user calls explain method,
@@ -60,14 +65,11 @@ inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
  * order of their significance percentages.
  */
 inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
-    const BoltGraphPtr& model, const BoltVector& input_vector,
+    const std::optional<std::vector<uint32_t>>& gradients_indices,
+    const std::vector<float>& gradients_ratio,
     const std::vector<std::string_view>& input_row,
     const std::shared_ptr<dataset::GenericBatchProcessor>&
-        generic_batch_processor,
-    std::optional<uint32_t> neuron_to_explain = std::nullopt) {
-  auto [gradients_indices, gradients_ratio] =
-      model->getInputGradientSingle({input_vector}, true, neuron_to_explain);
-
+        generic_batch_processor) {
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
       sortGradientsBySignificance(gradients_ratio, gradients_indices);
 

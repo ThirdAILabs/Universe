@@ -4,6 +4,7 @@
 #include <auto_classifiers/python_bindings/AutoClassifiersPython.h>
 #include <auto_ml/python_bindings/DeploymentPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
+#include <new_dataset/python_bindings/DatasetPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <utils/Logging.h>
 #include <utils/Version.h>
@@ -114,7 +115,11 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:
   // https://pybind11.readthedocs.io/en/stable/faq.html#how-can-i-reduce-the-build-time
+  // TODO(Josh/Nick): Deprecate this call and change NewDataset/new_dataset to
+  // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
+
+  thirdai::dataset::python::createNewDatasetSubmodule(m);
 
   thirdai::hashing::python::createHashingSubmodule(m);
 
