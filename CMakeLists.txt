@@ -115,7 +115,10 @@ else()
   endif(NOT OpenMP_FOUND)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  add_compile_options(
+
+endif()
+
+set(THIRDAI_COMPILE_OPTIONS
     -Wall
     -Wextra
     -Werror
@@ -147,25 +150,8 @@ else()
     $<$<CONFIG:RelWithAsan>:-g>
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
 
-endif()
-
-# Add feature flags passed in from python
-add_compile_definitions(${FEATURE_FLAGS})
-
-# In debug mode we are using ASan (address sanitizer) to provide better
-# information on errors. We only run with this in debug mode because it carries
-# a performace penalty. See
-# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
-# information.
-
-# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang.
-if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
-  add_compile_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                      $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-
-  add_link_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                   $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-endif()
+set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
+                         $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
 # Custom command line options
 
@@ -257,6 +243,10 @@ set(DATASET_SOURCES
     dataset/src/data_pipeline/transformations/Binning.cc
     dataset/src/data_pipeline/ColumnMap.cc)
 
+set(NEW_DATASET_SOURCES
+    new_dataset/src/featurization_pipeline/transformations/Binning.cc
+    new_dataset/src/featurization_pipeline/ColumnMap.cc)
+
 set(COMPRESSION_SOURCES compression/src/CountSketch.cc
                         compression/src/DragonVector.cc)
 
@@ -270,11 +260,15 @@ add_library(
   ${HASHTABLE_SOURCES}
   ${LICENSE_SOURCES}
   ${DATASET_SOURCES}
+  ${NEW_DATASET_SOURCES}
   ${COMPRESSION_SOURCES}
   ${UTILS_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
+if(${LICENSE_BUILD_FLAG_FOUND})
+  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
@@ -287,6 +281,8 @@ pybind11_add_module(
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltGraphPython.cc
   dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_classifiers/python_bindings/AutoClassifiersPython.cc
@@ -294,6 +290,25 @@ pybind11_add_module(
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 
-if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(_thirdai PRIVATE cryptopp::cryptopp)
+if(NOT MSVC)
+  target_compile_options(thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
+  target_compile_options(_thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
 endif()
+
+# Add feature flags passed in from python
+target_compile_definitions(thirdai PRIVATE ${FEATURE_FLAGS})
+target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
+
+# In debug mode we are using ASan (address sanitizer) to provide better
+# information on errors. We only run with this in debug mode because it carries
+# a performace penalty. See
+# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
+# information.
+
+target_compile_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
+
+target_link_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
+
+target_compile_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+
+target_link_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})

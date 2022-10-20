@@ -39,6 +39,9 @@
 
 namespace thirdai::dataset::python {
 
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
 void createDatasetSubmodule(py::module_& module) {
   // Separate submodule for bindings that we don't want to expose to users.
   auto internal_dataset_submodule = module.def_submodule("dataset_internal");
