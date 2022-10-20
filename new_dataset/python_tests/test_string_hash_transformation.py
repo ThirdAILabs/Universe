@@ -51,8 +51,8 @@ def test_string_hash_consistency():
 
 
 # Tests that each hash has about the number of values we expect (is within a
-# factor of 2 of the expected count). This won't be flaky because we seed the
-# hash.
+# factor of 2 of the expected count). This won't be flaky because the hash is
+# seeded and thus entirely deterministic.
 def test_string_hash_distribution():
     col_length = 10000
     output_range = 100
