@@ -1,4 +1,6 @@
 #include "ColumnMap.h"
+#include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <exception>
 
 namespace thirdai::dataset {
 
@@ -45,31 +47,42 @@ BoltDatasetPtr ColumnMap::convertToDataset(
 
     std::vector<BoltVector> batch(curr_batch_size);
 
+    std::exception_ptr exception = nullptr;
+
 #pragma omp parallel for default(none)                             \
     shared(batch, curr_batch_size, all_cols_dense, output_columns, \
-           column_dims, batch_idx, batch_size)
+           column_dims, batch_idx, batch_size, exception)
     for (uint64_t vec_idx = 0; vec_idx < curr_batch_size; vec_idx++) {
       uint64_t row_idx = batch_idx * batch_size + vec_idx;
 
-      if (all_cols_dense) {
-        // TODO(Nicholas/Geordie): Refactor this into a unified row builder
-        // class.
-        SegmentedDenseFeatureVector vector;
-        for (uint32_t i = 0; i < output_columns.size(); i++) {
-          auto column = output_columns[i];
-          vector.addFeatureSegment(column_dims[i]);
-          column->appendRowToVector(vector, row_idx);
+      try {
+        if (all_cols_dense) {
+          // TODO(Nicholas/Geordie): Refactor this into a unified row builder
+          // class.
+          SegmentedDenseFeatureVector vector;
+          for (uint32_t i = 0; i < output_columns.size(); i++) {
+            auto column = output_columns[i];
+            vector.addFeatureSegment(column_dims[i]);
+            column->appendRowToVector(vector, row_idx);
+          }
+          batch[vec_idx] = vector.toBoltVector();
+        } else {
+          SegmentedSparseFeatureVector vector;
+          for (uint32_t i = 0; i < output_columns.size(); i++) {
+            auto column = output_columns[i];
+            vector.addFeatureSegment(column_dims[i]);
+            column->appendRowToVector(vector, row_idx);
+          }
+          batch[vec_idx] = vector.toBoltVector();
         }
-        batch[vec_idx] = vector.toBoltVector();
-      } else {
-        SegmentedSparseFeatureVector vector;
-        for (uint32_t i = 0; i < output_columns.size(); i++) {
-          auto column = output_columns[i];
-          vector.addFeatureSegment(column_dims[i]);
-          column->appendRowToVector(vector, row_idx);
-        }
-        batch[vec_idx] = vector.toBoltVector();
+      } catch (std::exception& e) {
+#pragma omp critical
+        exception = std::current_exception();
       }
+    }
+
+    if (exception) {
+      std::rethrow_exception(exception);
     }
 
     output_batches.emplace_back(std::move(batch));
