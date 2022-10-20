@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -73,6 +75,25 @@ class UniversalDeepTransformer : public ModelPipeline {
           updates) {
     std::get<TemporalContextPtr>(getArtifact("context"))
         ->batchUpdateTemporalTrackers(updates);
+  }
+
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<UniversalDeepTransformer> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<UniversalDeepTransformer> deserialize_into(
+        new UniversalDeepTransformer());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
   }
 
  private:
@@ -191,6 +212,15 @@ class UniversalDeepTransformer : public ModelPipeline {
 
     return std::make_shared<FullyConnectedNodeConfig>(name, dimension, sparsity,
                                                       predecessor_name);
+  }
+
+  // Private constructor for cereal.
+  UniversalDeepTransformer() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<ModelPipeline>(this));
   }
 };
 
