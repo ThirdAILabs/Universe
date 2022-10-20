@@ -44,7 +44,6 @@ message("====================================")
 # will be a linker error.
 list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
-
 if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
   set(CRYPTOPP_BUILD_TESTING OFF)
@@ -58,19 +57,20 @@ if(MSVC)
       FATAL_ERROR "For now, we only support building in release mode using MSVC"
     )
   endif()
-
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
 
   # We create an interface to plant compile flags and be cohesive with the rest
   # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile flags
   # narrowing it to just the required targets.
+
   add_library(_thirdai_windows_llvm_openmp INTERFACE)
   target_compile_options(_thirdai_windows_llvm_openmp INTERFACE "/openmp:llvm")
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 else()
-  find_package(OpenMP)
 
+  find_package(OpenMP)
   if(NOT OpenMP_FOUND)
+
     # In this case, we were not able to find OpenMP. We are choosing to build
     # openmp from scratch here, using the LLVM standalone OpenMP source.
     #
@@ -84,6 +84,7 @@ else()
 
     # This block needs to happen before all the compile-options are added to
     # escape -Wall and -Werror being enforced on OpenMP library.
+
     set(LLVM_OPENMP_VERSION "13.0.1")
     set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/openmp")
 
@@ -110,9 +111,11 @@ else()
     set(OPENMP_STANDALONE_BUILD ON)
     add_subdirectory(${LLVM_OPENMP_SOURCE_DIR} EXCLUDE_FROM_ALL)
     add_library(OpenMP::OpenMP_CXX ALIAS omp)
+
   endif(NOT OpenMP_FOUND)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 endif()
 
 set(THIRDAI_COMPILE_OPTIONS
@@ -159,6 +162,7 @@ set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
 #
 # For Windows workflow, we may configure this to a higher value now through
 # CMake command-line supply.
+
 set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
     5
     CACHE STRING
@@ -260,7 +264,6 @@ add_library(
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
-
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
 endif()
@@ -269,6 +272,7 @@ endif()
 # builds, but not our ASan builds. This means that for now we can't run ASan
 # from python, but honestly this is more trouble than it's worth so for now this
 # is actually a feature rather than a bug.
+
 pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
@@ -298,6 +302,7 @@ target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
 # a performace penalty. See
 # https://github.com/google/sanitizers/wiki/AddressSanitizer for more
 # information.
+
 target_compile_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
 
 target_link_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
