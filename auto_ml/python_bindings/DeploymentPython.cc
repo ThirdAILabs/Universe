@@ -15,6 +15,7 @@
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
+#include <auto_ml/src/deployment_config/dataset_configs/DoubleBlockDatasetFactory.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/Aliases.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
@@ -177,6 +178,15 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<SingleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
       submodule, "SingleBlockDatasetFactory")
+      .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
+                    HyperParameterPtr<std::string>>(),
+           py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
+           py::arg("delimiter"),
+           docs::SINGLE_BLOCK_DATASET_FACTORY_CONFIG_INIT);
+
+  py::class_<DoubleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
+             std::shared_ptr<DoubleBlockDatasetFactoryConfig>>(
+      submodule, "DoubleBlockDatasetFactory")
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
                     HyperParameterPtr<std::string>>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
