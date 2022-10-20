@@ -48,16 +48,8 @@ class Featurizer {
     _label_dim = mock_processor->getLabelDim();
   }
 
-  bool isInitialized() {
-    return _labeled_batch_processor && _inference_batch_processor;
-  }
-
   void initializeProcessors(std::shared_ptr<dataset::DataLoader>& data_loader,
                             TemporalContext& context) {
-    if (_labeled_batch_processor || _inference_batch_processor) {
-      throw std::invalid_argument("Processors had already been initialized.");
-    }
-
     auto header = data_loader->nextLine();
     if (!header) {
       throw std::invalid_argument(
@@ -73,10 +65,12 @@ class Featurizer {
       throw std::invalid_argument("Column positions should not change.");
     }
 
-    _labeled_batch_processor =
-        makeLabeledContextUpdatingProcessor(*_column_number_map, context);
-    _inference_batch_processor =
-        makeUnlabeledNonUpdatingProcessor(*_column_number_map, context);
+    if (!_labeled_batch_processor || !_inference_batch_processor) {
+      _labeled_batch_processor =
+          makeLabeledContextUpdatingProcessor(*_column_number_map, context);
+      _inference_batch_processor =
+          makeUnlabeledNonUpdatingProcessor(*_column_number_map, context);
+    }
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input,

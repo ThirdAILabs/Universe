@@ -1,5 +1,3 @@
-#pragma once
-
 #include "TemporalContext.h"
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
 
