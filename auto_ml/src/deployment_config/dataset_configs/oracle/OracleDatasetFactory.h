@@ -22,9 +22,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
-    if (!_featurizer->isInitialized()) {
-      _featurizer->initializeProcessors(data_loader, *_context);
-    }
+    _featurizer->initializeProcessors(data_loader, *_context);
     return std::make_unique<GenericDatasetLoader>(
         data_loader, _featurizer->getLabeledContextUpdatingProcessor(),
         /* shuffle= */ training);
