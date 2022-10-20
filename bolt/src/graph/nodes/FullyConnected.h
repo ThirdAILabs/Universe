@@ -5,8 +5,8 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/layers/ActivationFunctions.h>
 #include <bolt/src/layers/LayerConfig.h>
-#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <exceptions/src/Exceptions.h>

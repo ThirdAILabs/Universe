@@ -5,7 +5,6 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/LayerUtils.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>

@@ -133,8 +133,8 @@ class EmbeddingNode final : public Node,
   }
 
   void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-    _embedding_layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2,
-                                       EPS);
+    (void)batch_cnt;
+    _embedding_layer->updateParameters(learning_rate);
   }
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {

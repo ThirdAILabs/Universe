@@ -1,19 +1,13 @@
 #pragma once
 
-#include <cereal/types/vector.hpp>
-#include <hashing/src/DWTA.h>
-#include <hashing/src/FastSRP.h>
-#include <hashing/src/SRP.h>
 #include <utils/StringManipulation.h>
-#include <cctype>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
 namespace thirdai::bolt {
 
-constexpr float BETA1 = 0.9;
-constexpr float BETA2 = 0.999;
+// This is used for numerical stability in some activation functions.
 constexpr float EPS = 0.0000001;
 
 enum class ActivationFunction { ReLU, Softmax, Linear, Tanh, Sigmoid };

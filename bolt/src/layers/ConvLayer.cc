@@ -4,7 +4,7 @@
 #include <numeric>
 #include <random>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::conv {
 
 ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
                      uint32_t prev_num_filters,
@@ -472,4 +472,4 @@ void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {
     }
   }
 }
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::conv

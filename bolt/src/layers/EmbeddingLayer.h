@@ -4,7 +4,8 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
-#include <bolt/src/layers/Optimizer.h>
+#include <bolt/src/optimizers/Adam.h>
+#include <bolt/src/optimizers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/UniversalHash.h>
 #include <cmath>
@@ -30,7 +31,7 @@ class EmbeddingLayer {
 
   void backpropagate(uint32_t vec_index, const BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  void updateParameters(float learning_rate);
 
   uint32_t getOutputDim() const { return _total_embedding_dim; }
 
@@ -44,14 +45,17 @@ class EmbeddingLayer {
 
   void initOptimizer() {
     if (!_optimizer) {
-      _optimizer = AdamOptimizer(_embedding_block_size);
+      _embedding_block_gradients.assign(_embedding_block.size(), 0.0);
+
+      _optimizer = std::make_shared<optimizers::AdamOptimizer>(
+          _embedding_block, _embedding_block_gradients);
     }
   }
 
   std::vector<float>& getRawEmbeddingBlock() { return _embedding_block; }
 
   std::vector<float>& getRawEmbeddingBlockGradient() {
-    return _optimizer->gradients;
+    return _embedding_block_gradients;
   }
 
   EmbeddingLayer(const EmbeddingLayer&) = delete;
@@ -132,8 +136,9 @@ class EmbeddingLayer {
   hashing::UniversalHash _hash_fn;
 
   std::vector<float> _embedding_block;
+  std::vector<float> _embedding_block_gradients;
 
-  std::optional<AdamOptimizer> _optimizer = std::nullopt;
+  optimizers::OptimizerPtr _optimizer;
 
   // This structure stores the embedding block offset for each token in each
   // input. This is used for backpropagation and for update paramters to know

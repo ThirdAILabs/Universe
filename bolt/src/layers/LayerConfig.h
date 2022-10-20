@@ -2,7 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
-#include "LayerUtils.h"
+#include "ActivationFunctions.h"
 #include "SamplingConfig.h"
 #include <utils/StringManipulation.h>
 #include <cmath>

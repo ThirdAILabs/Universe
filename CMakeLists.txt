@@ -239,7 +239,7 @@ endif()
 set(BOLT_SOURCES
     bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
     bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
-    bolt/src/layers/ConvLayer.cc)
+    bolt/src/layers/ConvLayer.cc bolt/src/optimizers/Adam.cc)
 
 set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 

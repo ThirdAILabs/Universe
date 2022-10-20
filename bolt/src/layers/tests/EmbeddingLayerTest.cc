@@ -54,7 +54,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   }
 
   static float* getEmbeddingGradients(std::unique_ptr<EmbeddingLayer>& layer) {
-    return layer->_optimizer->gradients.data();
+    return layer->getRawEmbeddingBlockGradient().data();
   }
 
   static BoltBatch getEmbeddings(

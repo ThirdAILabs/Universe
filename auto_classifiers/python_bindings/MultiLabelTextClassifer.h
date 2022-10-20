@@ -8,7 +8,6 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_classifiers/python_bindings/AutoClassifierBase.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>

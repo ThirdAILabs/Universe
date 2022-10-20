@@ -1,16 +1,28 @@
 #pragma once
 
 #include <cereal/types/vector.hpp>
+#include "ActivationFunctions.h"
 #include "LayerConfig.h"
-#include "LayerUtils.h"
-#include <bolt/src/layers/Optimizer.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <exceptions/src/Exceptions.h>
 #include <optional>
 #include <stdexcept>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::conv {
+
+constexpr float BETA1 = 0.9;
+constexpr float BETA2 = 0.999;
+
+struct AdamOptimizer {
+  explicit AdamOptimizer(uint64_t len)
+      : gradients(len, 0.0), momentum(len, 0.0), velocity(len, 0.0) {}
+
+  std::vector<float> gradients;
+  std::vector<float> momentum;
+  std::vector<float> velocity;
+};
+
 class ConvLayer final {
  public:
   ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
@@ -146,4 +158,4 @@ class ConvLayer final {
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   ConvLayer() {}
 };
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::conv

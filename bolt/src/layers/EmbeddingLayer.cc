@@ -114,7 +114,8 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
 
       assert(embedding_block_offset < _embedding_block_size - _lookup_size);
 
-      float* update_loc = _optimizer->gradients.data() + embedding_block_offset;
+      float* update_loc =
+          _embedding_block_gradients.data() + embedding_block_offset;
 
       for (uint32_t i = 0; i < _lookup_size; i++) {
         update_loc[i] += output_gradients[i];
@@ -129,38 +130,19 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
   }
 }
 
-void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
-                                      float B2, float eps) {
-  float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
-  float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
-
+void EmbeddingLayer::updateParameters(float learning_rate) {
   std::vector<std::pair<uint64_t, uint64_t>> disjoint_ranges =
       getDisjointUpdateRanges();
 
-#pragma omp parallel for default(none) shared( \
-    disjoint_ranges, B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
+#pragma omp parallel for default(none) shared(disjoint_ranges, learning_rate)
   for (uint32_t pair_id = 0; pair_id < disjoint_ranges.size();  // NOLINT
        pair_id++) {
     // MSVC doesn't like if we iterate over objects, only integers
     // (but clang-tidy wants the range based for loop, so we need NOLINT above)
     const auto& pair = disjoint_ranges[pair_id];
-    for (uint64_t n = pair.first; n < pair.second; n++) {
-      float grad = _optimizer->gradients[n];
-      assert(!std::isnan(grad));
 
-      _optimizer->momentum[n] = B1 * _optimizer->momentum[n] + (1 - B1) * grad;
-      _optimizer->velocity[n] =
-          B2 * _optimizer->velocity[n] + (1 - B2) * grad * grad;
-      assert(!std::isnan(_optimizer->momentum[n]));
-      assert(!std::isnan(_optimizer->velocity[n]));
-
-      _embedding_block[n] +=
-          lr * (_optimizer->momentum[n] / B1_bias_corrected) /
-          (std::sqrt(_optimizer->velocity[n] / B2_bias_corrected) + eps);
-      assert(!std::isnan(_embedding_block[n]));
-
-      _optimizer->gradients[n] = 0;
-    }
+    _optimizer->updateRange(pair.first, pair.second - pair.first, learning_rate,
+                            /* parallel= */ false);
   }
 }
 

@@ -1,9 +1,10 @@
 #pragma once
 
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
-namespace thirdai::bolt {
+namespace thirdai::bolt::optimizers {
 
 class Optimizer {
  public:
@@ -33,7 +34,7 @@ class Optimizer {
   float* _gradients;
 };
 
-using OptimizerPtr = std::unique_ptr<Optimizer>;
+using OptimizerPtr = std::shared_ptr<Optimizer>;
 
 class OptimizerFactory {
  public:
@@ -43,4 +44,4 @@ class OptimizerFactory {
   virtual ~OptimizerFactory() = default;
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::bolt::optimizers

@@ -1,6 +1,5 @@
 #include "FullyConnectedLayer.h"
 #include <wrappers/src/EigenDenseWrapper.h>
-#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/optimizers/Adam.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
@@ -772,9 +771,10 @@ void FullyConnectedLayer::initOptimizer() {
     _weight_gradients.assign(_dim * _prev_dim, 0.0);
     _bias_gradients.assign(_dim, 0.0);
 
-    _weight_optimizer =
-        std::make_shared<AdamOptimizer>(_weights, _weight_gradients);
-    _bias_optimizer = std::make_shared<AdamOptimizer>(_biases, _bias_gradients);
+    _weight_optimizer = std::make_shared<optimizers::AdamOptimizer>(
+        _weights, _weight_gradients);
+    _bias_optimizer =
+        std::make_shared<optimizers::AdamOptimizer>(_biases, _bias_gradients);
   }
 }
 

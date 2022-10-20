@@ -2,8 +2,8 @@
 
 #include <cereal/types/memory.hpp>
 #include <cereal/types/vector.hpp>
+#include "ActivationFunctions.h"
 #include "LayerConfig.h"
-#include "LayerUtils.h"
 #include <bolt/src/optimizers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
@@ -147,8 +147,8 @@ class FullyConnectedLayer final {
   std::vector<float> _biases;
   std::vector<float> _bias_gradients;
 
-  std::shared_ptr<Optimizer> _weight_optimizer;
-  std::shared_ptr<Optimizer> _bias_optimizer;
+  optimizers::OptimizerPtr _weight_optimizer;
+  optimizers::OptimizerPtr _bias_optimizer;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
