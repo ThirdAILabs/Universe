@@ -92,7 +92,7 @@ else()
         "Downloading openmp-${LLVM_OPENMP_VERSION} into ${LLVM_OPENMP_SOURCE_DIR}"
       )
       set(LLVM_OPENMP_DOWNLOAD_URL
-        "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/openmp-${LLVM_OPENMP_VERSION}.src.tar.xz"
+          "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/openmp-${LLVM_OPENMP_VERSION}.src.tar.xz"
       )
       file(
         DOWNLOAD
@@ -100,11 +100,11 @@ else()
         "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2" # FILE
       )
       file(ARCHIVE_EXTRACT INPUT
-        "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2"
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2"
+           DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
       file(RENAME
-        "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src"
-        "${LLVM_OPENMP_SOURCE_DIR}")
+           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src"
+           "${LLVM_OPENMP_SOURCE_DIR}")
     endif()
 
     set(OPENMP_STANDALONE_BUILD ON)
@@ -116,39 +116,39 @@ else()
 endif()
 
 set(THIRDAI_COMPILE_OPTIONS
-  -Wall
-  -Wextra
-  -Werror
-  -Wno-unused-function
-  -pedantic
-  $<$<CONFIG:Debug>:-Og>
-  $<$<CONFIG:Debug>:-g>
-  $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
-  $<$<CONFIG:DebugWithAsan>:-Og>
-  $<$<CONFIG:DebugWithAsan>:-g>
-  $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
-  $<$<CONFIG:Release>:-DNDEBUG>
-  $<$<CONFIG:Release>:-Ofast>
-  $<$<CONFIG:Release>:-fno-finite-math-only>
-  $<$<CONFIG:Release>:-funroll-loops>
-  $<$<CONFIG:Release>:-ftree-vectorize>
-  $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
-  $<$<CONFIG:RelWithDebInfo>:-Ofast>
-  $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
-  $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
-  $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
-  $<$<CONFIG:RelWithDebInfo>:-g>
-  $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
-  $<$<CONFIG:RelWithAsan>:-DNDEBUG>
-  $<$<CONFIG:RelWithAsan>:-Ofast>
-  $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
-  $<$<CONFIG:RelWithAsan>:-funroll-loops>
-  $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
-  $<$<CONFIG:RelWithAsan>:-g>
-  $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
+    -Wall
+    -Wextra
+    -Werror
+    -Wno-unused-function
+    -pedantic
+    $<$<CONFIG:Debug>:-Og>
+    $<$<CONFIG:Debug>:-g>
+    $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+    $<$<CONFIG:DebugWithAsan>:-Og>
+    $<$<CONFIG:DebugWithAsan>:-g>
+    $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
+    $<$<CONFIG:Release>:-DNDEBUG>
+    $<$<CONFIG:Release>:-Ofast>
+    $<$<CONFIG:Release>:-fno-finite-math-only>
+    $<$<CONFIG:Release>:-funroll-loops>
+    $<$<CONFIG:Release>:-ftree-vectorize>
+    $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
+    $<$<CONFIG:RelWithDebInfo>:-Ofast>
+    $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
+    $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
+    $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
+    $<$<CONFIG:RelWithDebInfo>:-g>
+    $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
+    $<$<CONFIG:RelWithAsan>:-DNDEBUG>
+    $<$<CONFIG:RelWithAsan>:-Ofast>
+    $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
+    $<$<CONFIG:RelWithAsan>:-funroll-loops>
+    $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
+    $<$<CONFIG:RelWithAsan>:-g>
+    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
 
 set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
-  $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
+                         $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
 # Custom command line options
 
@@ -160,9 +160,9 @@ set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
 # For Windows workflow, we may configure this to a higher value now through
 # CMake command-line supply.
 set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
-  5
-  CACHE STRING
-  "Timeout for GoogleTest discovery, configurable from command-line.")
+    5
+    CACHE STRING
+          "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
 include_directories(deps/tomlplusplus/include/toml++)
@@ -191,8 +191,8 @@ find_package(Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt
-  ON
-  CACHE BOOL "" FORCE)
+    ON
+    CACHE BOOL "" FORCE)
 
 # Enable testing
 include(CTest)
@@ -219,30 +219,30 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 endif()
 
 set(BOLT_SOURCES
-  bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
-  bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
-  bolt/src/layers/ConvLayer.cc)
+    bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
+    bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
+    bolt/src/layers/ConvLayer.cc)
 
 set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 
 set(HASHING_SOURCES
-  hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
-  hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
+    hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
+    hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
 
 set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
-  hashtable/src/VectorHashTable.cc)
+                      hashtable/src/VectorHashTable.cc)
 
 set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
 set(DATASET_SOURCES dataset/src/Vocabulary.cc)
 
 set(NEW_DATASET_SOURCES
-  new_dataset/src/featurization_pipeline/transformations/Binning.cc
-  new_dataset/src/featurization_pipeline/transformations/StringHash.cc
-  new_dataset/src/featurization_pipeline/ColumnMap.cc)
+    new_dataset/src/featurization_pipeline/transformations/Binning.cc
+    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+    new_dataset/src/featurization_pipeline/ColumnMap.cc)
 
 set(COMPRESSION_SOURCES compression/src/CountSketch.cc
-  compression/src/DragonVector.cc)
+                        compression/src/DragonVector.cc)
 
 set(UTILS_SOURCES utils/Logging.cc)
 
@@ -259,7 +259,7 @@ add_library(
   ${UTILS_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-  cereal::cereal)
+                                     cereal::cereal)
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
