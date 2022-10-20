@@ -14,7 +14,12 @@ namespace py = pybind11;
 void createFeaturizationSubmodule(py::module_& dataset_submodule) {
   auto columns_submodule = dataset_submodule.def_submodule("columns");
 
-  py::class_<Column, ColumnPtr>(columns_submodule, "Column");  // NOLINT
+  py::class_<Column, ColumnPtr>(columns_submodule, "Column")
+      .def("dimension_info", &Column::dimension);
+
+  py::class_<DimensionInfo>(columns_submodule, "DimensionInfo")
+      .def_readonly("dim", &DimensionInfo::dim)
+      .def_readonly("is_dense", &DimensionInfo::is_dense);
 
   py::class_<NumpyValueColumn<uint32_t>, Column,
              std::shared_ptr<NumpyValueColumn<uint32_t>>>(

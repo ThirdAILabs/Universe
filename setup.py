@@ -167,7 +167,7 @@ setup(
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    install_requires=["numpy", "typing_extensions"],
+    install_requires=["numpy", "typing_extensions", "pandas"],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
         # The tokenizers requirement ensures that all of the [test] depedencies are
@@ -183,6 +183,7 @@ setup(
             "toml",
             "psutil",
             "transformers",
+            "pandas",
             "cryptography<=36.0.2",
             "tokenizers==0.11.6",
         ],

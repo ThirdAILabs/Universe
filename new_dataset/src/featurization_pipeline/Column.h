@@ -13,6 +13,8 @@ struct DimensionInfo {
   bool is_dense;
 };
 
+using DimensionInfoPtr = std::shared_ptr<DimensionInfo>;
+
 class Column {
  public:
   virtual uint64_t numRows() const = 0;
