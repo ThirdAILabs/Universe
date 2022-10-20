@@ -147,3 +147,14 @@ def test_multiple_sparse_dense_columns_to_dataset():
         dtype=np.float32,
     )
     assert np.array_equal(values, concatenated_values)
+
+
+def test_string_col_to_dataset_throws():
+    columns = dataset.ColumnMap(
+        {"column1": dataset.columns.StringColumn(["test1", "test2"])}
+    )
+
+    with pytest.raises(
+        ValueError, match="Cannot convert column without dimension to dataset"
+    ):
+        columns.convert_to_dataset(["column1"], batch_size=13)
