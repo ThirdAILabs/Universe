@@ -844,7 +844,7 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-          _epoch, _updates);
+          _optimizer_factory, _epoch, _updates);
 }
 
 void BoltGraph::save(const std::string& filename) const {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -42,6 +43,12 @@ class OptimizerFactory {
                                     std::vector<float>& gradients) = 0;
 
   virtual ~OptimizerFactory() = default;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using OptimizerFactoryPtr = std::shared_ptr<OptimizerFactory>;
