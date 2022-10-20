@@ -68,4 +68,3 @@ def test_text_classification_data_pipeline_with_pairgrams():
 def test_text_classification_data_pipeline_with_chartrigrams():
     helper_for_text_classification_data_pipeline(blocks.TextCharKGram(col=1, k=3), ",")
     helper_for_text_classification_data_pipeline(blocks.TextCharKGram(col=1, k=3), "\t")
-    
