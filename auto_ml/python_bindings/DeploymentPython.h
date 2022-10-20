@@ -48,9 +48,9 @@ py::object predictTokensWrapper(ModelPipeline& model,
                                 const std::vector<uint32_t>& tokens,
                                 bool use_sparse_inference);
 
-template <typename BatchInputType>
+template <typename InputBatchType>
 py::object predictBatchWrapper(ModelPipeline& model,
-                               const BatchInputType& samples,
+                               const InputBatchType& samples,
                                bool use_sparse_inference);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);

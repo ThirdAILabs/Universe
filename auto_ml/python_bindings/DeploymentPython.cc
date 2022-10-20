@@ -229,9 +229,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("predict", &predictWrapper<LineInput>, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT)
-      .def("explain",
-           py::overload_cast<const std::string&, std::optional<uint32_t>>(
-               &ModelPipeline::explain),
+      .def("explain", &ModelPipeline::explain<LineInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
            docs::MODEL_PIPELINE_EXPLAIN)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
@@ -407,9 +405,9 @@ py::object predictTokensWrapper(ModelPipeline& model,
   return predictWrapper(model, sentence.str(), use_sparse_inference);
 }
 
-template <typename BatchInputType>
+template <typename InputBatchType>
 py::object predictBatchWrapperStringInput(ModelPipeline& model,
-                                          const BatchInputType& samples,
+                                          const InputBatchType& samples,
                                           bool use_sparse_inference) {
   BoltBatch outputs = model.predictBatch(samples, use_sparse_inference);
 
