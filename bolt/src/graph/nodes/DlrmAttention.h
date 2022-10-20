@@ -189,12 +189,12 @@ class DlrmAttentionNode final
     }
   }
 
-  void initOptimizer() final {}
-
-  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-    (void)learning_rate;
-    (void)batch_cnt;
+  void initOptimizer(
+      const optimizers::OptimizerFactoryPtr& optimizer_factory) final {
+    (void)optimizer_factory;
   }
+
+  void updateParametersImpl(float learning_rate) final { (void)learning_rate; }
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
     return (*_outputs)[vec_index];

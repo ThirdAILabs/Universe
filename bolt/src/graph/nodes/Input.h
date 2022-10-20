@@ -63,7 +63,10 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void initOptimizer() final {
+  void initOptimizer(
+      const optimizers::OptimizerFactoryPtr& optimizer_factory) final {
+    (void)optimizer_factory;
+
     throw std::logic_error("Should not call initOptimizer() on Input node");
   }
 
@@ -107,10 +110,7 @@ class Input final : public Node {
 
   void backpropagateImpl(uint32_t vec_index) final { (void)vec_index; }
 
-  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-    (void)learning_rate;
-    (void)batch_cnt;
-  }
+  void updateParametersImpl(float learning_rate) final { (void)learning_rate; }
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
     return (*_input_batch)[vec_index];

@@ -124,7 +124,7 @@ class FullyConnectedLayer final {
 
   void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 
-  void initOptimizer();
+  void initOptimizer(const optimizers::OptimizerFactoryPtr& optimizer_factory);
 
   void enableSparseSparseOptimization() {
     _use_sparse_sparse_optimization = true;

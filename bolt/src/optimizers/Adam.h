@@ -41,4 +41,12 @@ class AdamOptimizer final : public Optimizer {
   uint32_t _iter;
 };
 
+class AdamOptimizerFactory final : public OptimizerFactory {
+ public:
+  OptimizerPtr getOptimizer(std::vector<float>& parameters,
+                            std::vector<float>& gradients) final {
+    return std::make_shared<AdamOptimizer>(parameters, gradients);
+  }
+};
+
 }  // namespace thirdai::bolt::optimizers

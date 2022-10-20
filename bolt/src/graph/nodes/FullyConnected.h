@@ -96,7 +96,10 @@ class FullyConnectedNode final
 
   bool isInputNode() const final { return false; }
 
-  void initOptimizer() final { _layer->initOptimizer(); }
+  void initOptimizer(
+      const optimizers::OptimizerFactoryPtr& optimizer_factory) final {
+    _layer->initOptimizer(optimizer_factory);
+  }
 
   ActivationFunction getActivationFunction() const {
     NodeState node_state = getState();
@@ -268,9 +271,7 @@ class FullyConnectedNode final
     }
   }
 
-  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-    // TODO(Nicholas): Abstract away these constants
-    (void)batch_cnt;
+  void updateParametersImpl(float learning_rate) final {
     _layer->updateParameters(learning_rate);
   }
 

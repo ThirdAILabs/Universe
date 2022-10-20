@@ -29,6 +29,10 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
     layer->initializeLayer(/* new_batch_size= */ 4);
 
+    auto optimizer_factory =
+        std::make_shared<optimizers::AdamOptimizerFactory>();
+    layer->initOptimizer(optimizer_factory);
+
     return layer;
   }
 

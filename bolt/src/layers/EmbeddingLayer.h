@@ -43,12 +43,12 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::stringstream& summary) const;
 
-  void initOptimizer() {
+  void initOptimizer(const optimizers::OptimizerFactoryPtr& optimizer_factory) {
     if (!_optimizer) {
       _embedding_block_gradients.assign(_embedding_block.size(), 0.0);
 
-      _optimizer = std::make_shared<optimizers::AdamOptimizer>(
-          _embedding_block, _embedding_block_gradients);
+      _optimizer = optimizer_factory->getOptimizer(_embedding_block,
+                                                   _embedding_block_gradients);
     }
   }
 

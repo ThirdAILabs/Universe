@@ -10,6 +10,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt/src/optimizers/Adam.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
@@ -47,6 +48,8 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
   }
 
   _loss = std::move(loss);
+
+  _optimizer_factory = std::make_shared<optimizers::AdamOptimizerFactory>();
 
   verifyGraphProperties();
 
@@ -289,7 +292,7 @@ void BoltGraph::updateParametersAndSampling(
     float learning_rate, uint32_t rebuild_hash_tables_batch,
     uint32_t reconstruct_hash_functions_batch) {
   ++_updates;
-  updateParameters(learning_rate, _updates);
+  updateParameters(learning_rate);
   updateSampling(
       /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
       /* reconstruct_hash_functions_batch= */
@@ -637,9 +640,9 @@ void BoltGraph::cleanupAfterBatchProcessing() {
   }
 }
 
-void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {
+void BoltGraph::updateParameters(float learning_rate) {
   for (auto& node : _nodes) {
-    node->updateParameters(learning_rate, batch_cnt);
+    node->updateParameters(learning_rate);
   }
 }
 
@@ -746,7 +749,7 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
   }
 
   for (auto& node : _nodes) {
-    node->initOptimizer();
+    node->initOptimizer(_optimizer_factory);
   }
 
   verifyInputForGraph(train_context);
@@ -767,7 +770,7 @@ void BoltGraph::verifyCanGetInputGradientSingle(
   }
 
   for (auto& node : _nodes) {
-    node->initOptimizer();
+    node->initOptimizer(_optimizer_factory);
   }
 
   verifyInputForGraph(single_input_gradients_context);

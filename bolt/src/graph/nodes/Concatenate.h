@@ -68,7 +68,10 @@ class ConcatenateNode final
 
   bool isInputNode() const final { return false; }
 
-  void initOptimizer() final {}
+  void initOptimizer(
+      const optimizers::OptimizerFactoryPtr& optimizer_factory) final {
+    (void)optimizer_factory;
+  }
 
   void enableDistributedTraining() final {
     // NOOP since the Concatenate node doesn't have any paramters
@@ -174,9 +177,8 @@ class ConcatenateNode final
     }
   }
 
-  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+  void updateParametersImpl(float learning_rate) final {
     (void)learning_rate;
-    (void)batch_cnt;
     // NOOP because a concatenation layer has no parameters
   }
 

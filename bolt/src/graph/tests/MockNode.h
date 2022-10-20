@@ -34,8 +34,7 @@ class MockNode : public Node {
 
   MOCK_METHOD(void, backpropagateImpl, (uint32_t vec_index), (override));
 
-  MOCK_METHOD(void, updateParametersImpl,
-              (float learning_rate, uint32_t batch_cnt), (override));
+  MOCK_METHOD(void, updateParametersImpl, (float learning_rate), (override));
 
   MOCK_METHOD(BoltVector&, getOutputVectorImpl, (uint32_t vec_index),
               (override));
@@ -53,7 +52,8 @@ class MockNode : public Node {
 
   MOCK_METHOD(NodeState, getState, (), (const override));
 
-  MOCK_METHOD(void, initOptimizer, (), (override));
+  MOCK_METHOD(void, initOptimizer, (const optimizers::OptimizerFactoryPtr&),
+              (override));
 };
 
 class MockNodeWithOutput : public MockNode {

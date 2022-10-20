@@ -1,6 +1,7 @@
 #include "BoltLayerTestUtils.h"
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/optimizers/Adam.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <cstddef>
@@ -42,7 +43,9 @@ class FullyConnectedLayerTestFixture : public testing::Test {
                                              /* hashes_per_table= */ 1,
                                              /* reservoir_size= */ 10)},
                INPUT_DIM) {
-    _layer.initOptimizer();
+    auto optimizer_factory =
+        std::make_shared<optimizers::AdamOptimizerFactory>();
+    _layer.initOptimizer(optimizer_factory);
   }
 
   void SetUp() override {

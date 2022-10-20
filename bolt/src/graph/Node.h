@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/optimizers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <queue>
@@ -100,9 +101,9 @@ class Node {
   }
 
   // Updates any trainable parameters
-  inline void updateParameters(float learning_rate, uint32_t batch_cnt) {
+  inline void updateParameters(float learning_rate) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
-    updateParametersImpl(learning_rate, batch_cnt);
+    updateParametersImpl(learning_rate);
   }
 
   // Returns the ith output of the node.
@@ -207,7 +208,8 @@ class Node {
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
 
-  virtual void initOptimizer() = 0;
+  virtual void initOptimizer(
+      const optimizers::OptimizerFactoryPtr& optimizer_factory) = 0;
 
   // Prints out a single line summary in the format
   // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...
@@ -256,8 +258,7 @@ class Node {
 
   virtual void backpropagateImpl(uint32_t vec_index) = 0;
 
-  virtual void updateParametersImpl(float learning_rate,
-                                    uint32_t batch_cnt) = 0;
+  virtual void updateParametersImpl(float learning_rate) = 0;
 
   virtual BoltVector& getOutputVectorImpl(uint32_t vec_index) = 0;
 

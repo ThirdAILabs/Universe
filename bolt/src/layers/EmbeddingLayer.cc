@@ -33,8 +33,6 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   _embedding_block_size = (1 << _log_embedding_block_size) + _lookup_size;
   _embedding_block = std::vector<float>(_embedding_block_size, 0);
 
-  initOptimizer();
-
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
 

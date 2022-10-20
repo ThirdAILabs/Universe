@@ -64,7 +64,10 @@ class EmbeddingNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  void initOptimizer() final { _embedding_layer->initOptimizer(); }
+  void initOptimizer(
+      const optimizers::OptimizerFactoryPtr& optimizer_factory) final {
+    _embedding_layer->initOptimizer(optimizer_factory);
+  }
 
   std::string type() const final { return "embedding"; }
 
@@ -132,8 +135,7 @@ class EmbeddingNode final : public Node,
         /* output= */ (*_outputs)[vec_index]);
   }
 
-  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-    (void)batch_cnt;
+  void updateParametersImpl(float learning_rate) final {
     _embedding_layer->updateParameters(learning_rate);
   }
 

@@ -21,7 +21,10 @@ class DotProductNode final
 
   bool isInputNode() const final { return false; }
 
-  void initOptimizer() final {}
+  void initOptimizer(
+      const optimizers::OptimizerFactoryPtr& optimizer_factory) final {
+    (void)optimizer_factory;
+  }
 
   std::shared_ptr<DotProductNode> setPredecessors(NodePtr lhs, NodePtr rhs) {
     _lhs = std::move(lhs);
@@ -92,10 +95,7 @@ class DotProductNode final
     }
   }
 
-  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-    (void)learning_rate;
-    (void)batch_cnt;
-  }
+  void updateParametersImpl(float learning_rate) final { (void)learning_rate; }
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
     return (*_outputs)[vec_index];

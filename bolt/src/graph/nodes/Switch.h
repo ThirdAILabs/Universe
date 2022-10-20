@@ -77,9 +77,10 @@ class SwitchNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  void initOptimizer() final {
+  void initOptimizer(
+      const optimizers::OptimizerFactoryPtr& optimizer_factory) final {
     for (auto& layer : _layers) {
-      layer->initOptimizer();
+      layer->initOptimizer(optimizer_factory);
     }
   }
 
@@ -162,10 +163,10 @@ class SwitchNode final : public Node,
     _layers.at(active_layer)->backpropagate(vec_index);
   }
 
-  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+  void updateParametersImpl(float learning_rate) final {
     for (uint32_t i = 0; i < _layers.size(); i++) {
       if (_layers_used[i]) {
-        _layers[i]->updateParameters(learning_rate, batch_cnt);
+        _layers[i]->updateParameters(learning_rate);
         _layers_used[i] = false;
       }
     }

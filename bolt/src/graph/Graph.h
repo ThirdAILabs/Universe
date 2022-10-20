@@ -14,6 +14,7 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt/src/optimizers/Optimizer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
 #include <optional>
@@ -136,7 +137,7 @@ class BoltGraph {
 
   void cleanupAfterBatchProcessing();
 
-  void updateParameters(float learning_rate, uint32_t batch_cnt);
+  void updateParameters(float learning_rate);
 
   void resetOutputGradients(uint32_t vec_index);
 
@@ -205,6 +206,8 @@ class BoltGraph {
       _internal_fully_connected_layers;
 
   std::shared_ptr<LossFunction> _loss;
+
+  optimizers::OptimizerFactoryPtr _optimizer_factory;
 
   // TODO(blaise/david): Factor out _epoch and _updates and put
   // them in TrainState

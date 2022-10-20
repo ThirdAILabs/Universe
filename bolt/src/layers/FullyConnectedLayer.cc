@@ -766,15 +766,15 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
   }
 }
 
-void FullyConnectedLayer::initOptimizer() {
+void FullyConnectedLayer::initOptimizer(
+    const optimizers::OptimizerFactoryPtr& optimizer_factory) {
   if (!_weight_optimizer || !_bias_optimizer) {
     _weight_gradients.assign(_dim * _prev_dim, 0.0);
     _bias_gradients.assign(_dim, 0.0);
 
-    _weight_optimizer = std::make_shared<optimizers::AdamOptimizer>(
-        _weights, _weight_gradients);
-    _bias_optimizer =
-        std::make_shared<optimizers::AdamOptimizer>(_biases, _bias_gradients);
+    _weight_optimizer =
+        optimizer_factory->getOptimizer(_weights, _weight_gradients);
+    _bias_optimizer = optimizer_factory->getOptimizer(_biases, _bias_gradients);
   }
 }
 

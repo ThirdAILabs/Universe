@@ -76,7 +76,10 @@ class LayerNormNode final : public Node,
     return false;
   }
 
-  void initOptimizer() final {}
+  void initOptimizer(
+      const optimizers::OptimizerFactoryPtr& optimizer_factory) final {
+    (void)optimizer_factory;
+  }
 
   void enableDistributedTraining() final {
     // NOOP since the LayerNorm node doesn't have any paramters
@@ -206,12 +209,11 @@ class LayerNormNode final : public Node,
     }
   }
 
-  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+  void updateParametersImpl(float learning_rate) final {
     // TODO(blaise): Since _gamma_regularizer and _beta_regularizer are
     // trainable parameters, we should add an implementation for updating these
     // parameters
     (void)learning_rate;
-    (void)batch_cnt;
   }
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
