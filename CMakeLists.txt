@@ -252,7 +252,10 @@ set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
 
 set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
-set(DATASET_SOURCES dataset/src/Vocabulary.cc dataset/src/data_pipeline/transformations/Binning.cc dataset/src/data_pipeline/ColumnMap.cc)
+set(DATASET_SOURCES
+    dataset/src/Vocabulary.cc
+    dataset/src/data_pipeline/transformations/Binning.cc
+    dataset/src/data_pipeline/ColumnMap.cc)
 
 set(COMPRESSION_SOURCES compression/src/CountSketch.cc
                         compression/src/DragonVector.cc)
