@@ -103,9 +103,9 @@ std::vector<ColumnPtr> ColumnMap::selectColumns(
   return output_columns;
 }
 
-std::shared_ptr<IntegerValueColumn> ColumnMap::getIntegerValueColumn(
+std::shared_ptr<SparseValueColumn> ColumnMap::getSparseValueColumn(
     const std::string& name) {
-  auto column = std::dynamic_pointer_cast<IntegerValueColumn>(getColumn(name));
+  auto column = std::dynamic_pointer_cast<SparseValueColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to IntegerValueColumn.");
@@ -113,9 +113,9 @@ std::shared_ptr<IntegerValueColumn> ColumnMap::getIntegerValueColumn(
   return column;
 }
 
-std::shared_ptr<FloatValueColumn> ColumnMap::getFloatValueColumn(
+std::shared_ptr<DenseValueColumn> ColumnMap::getDenseValueColumn(
     const std::string& name) {
-  auto column = std::dynamic_pointer_cast<FloatValueColumn>(getColumn(name));
+  auto column = std::dynamic_pointer_cast<DenseValueColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to FloatValueColumn.");
@@ -123,9 +123,9 @@ std::shared_ptr<FloatValueColumn> ColumnMap::getFloatValueColumn(
   return column;
 }
 
-std::shared_ptr<IntegerArrayColumn> ColumnMap::getIntegerArrayColumn(
+std::shared_ptr<SparseArrayColumn> ColumnMap::getSparseArrayColumn(
     const std::string& name) {
-  auto column = std::dynamic_pointer_cast<IntegerArrayColumn>(getColumn(name));
+  auto column = std::dynamic_pointer_cast<SparseArrayColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to IntegerArrayColumn.");
@@ -133,9 +133,9 @@ std::shared_ptr<IntegerArrayColumn> ColumnMap::getIntegerArrayColumn(
   return column;
 }
 
-std::shared_ptr<FloatArrayColumn> ColumnMap::getFloatArrayColumn(
+std::shared_ptr<DenseArrayColumn> ColumnMap::getDenseArrayColumn(
     const std::string& name) {
-  auto column = std::dynamic_pointer_cast<FloatArrayColumn>(getColumn(name));
+  auto column = std::dynamic_pointer_cast<DenseArrayColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to FloatArrayColumn.");

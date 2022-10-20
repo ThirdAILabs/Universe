@@ -20,16 +20,16 @@ class ColumnMap {
   BoltDatasetPtr convertToDataset(const std::vector<std::string>& column_names,
                                   uint32_t batch_size);
 
-  std::shared_ptr<IntegerValueColumn> getIntegerValueColumn(
+  std::shared_ptr<SparseValueColumn> getSparseValueColumn(
       const std::string& name);
 
-  std::shared_ptr<FloatValueColumn> getFloatValueColumn(
+  std::shared_ptr<DenseValueColumn> getDenseValueColumn(
       const std::string& name);
 
-  std::shared_ptr<IntegerArrayColumn> getIntegerArrayColumn(
+  std::shared_ptr<SparseArrayColumn> getSparseArrayColumn(
       const std::string& name);
 
-  std::shared_ptr<FloatArrayColumn> getFloatArrayColumn(
+  std::shared_ptr<DenseArrayColumn> getDenseArrayColumn(
       const std::string& name);
 
   ColumnPtr getColumn(const std::string& name);

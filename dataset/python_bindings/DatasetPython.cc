@@ -451,24 +451,24 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<NumpyValueColumn<uint32_t>, Column,
              std::shared_ptr<NumpyValueColumn<uint32_t>>>(
-      columns_submodule, "NumpyIntegerValueColumn")
+      columns_submodule, "NumpySparseValueColumn")
       .def(py::init<const NumpyArray<uint32_t>&, uint32_t>(), py::arg("array"),
            py::arg("dim"));
 
   py::class_<NumpyValueColumn<float>, Column,
              std::shared_ptr<NumpyValueColumn<float>>>(columns_submodule,
-                                                       "NumpyFloatValueColumn")
+                                                       "NumpyDenseValueColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
 
   py::class_<NumpyArrayColumn<uint32_t>, Column,
              std::shared_ptr<NumpyArrayColumn<uint32_t>>>(
-      columns_submodule, "NumpyIntegerArrayColumn")
+      columns_submodule, "NumpySparseArrayColumn")
       .def(py::init<const NumpyArray<uint32_t>&, uint32_t>(), py::arg("array"),
            py::arg("dim"));
 
   py::class_<NumpyArrayColumn<float>, Column,
              std::shared_ptr<NumpyArrayColumn<float>>>(columns_submodule,
-                                                       "NumpyFloatArrayColumn")
+                                                       "NumpyDenseArrayColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
 
   auto transformations_submodule =

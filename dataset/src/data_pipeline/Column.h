@@ -17,6 +17,12 @@ class Column {
  public:
   virtual uint64_t numRows() const = 0;
 
+  /**
+   * This method returns information about the dimension of the column. This is
+   * used to concatenate columns into a bolt vector. Returning nullopt means
+   * that the column cannot be concatenated, this would be used things like
+   * string columns.
+   */
   virtual std::optional<DimensionInfo> dimension() const = 0;
 
   virtual void appendRowToVector(SegmentedFeatureVector& vector,
@@ -55,8 +61,8 @@ class ValueColumn : public Column {
   virtual ~ValueColumn() = default;
 };
 
-using IntegerValueColumn = ValueColumn<uint32_t>;
-using FloatValueColumn = ValueColumn<float>;
+using SparseValueColumn = ValueColumn<uint32_t>;
+using DenseValueColumn = ValueColumn<float>;
 
 // We use templates to create columns with different types because there are
 // very few types which we will need to support and almost all of the code for
@@ -120,7 +126,7 @@ class ArrayColumn : public Column {
   virtual ~ArrayColumn() = default;
 };
 
-using IntegerArrayColumn = ArrayColumn<uint32_t>;
-using FloatArrayColumn = ArrayColumn<float>;
+using SparseArrayColumn = ArrayColumn<uint32_t>;
+using DenseArrayColumn = ArrayColumn<float>;
 
 }  // namespace thirdai::dataset
