@@ -49,7 +49,6 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
-  set(CRYPTOPP_LIB cryptopp::cryptopp)
 endif()
 
 if(MSVC)
@@ -116,7 +115,10 @@ else()
   endif(NOT OpenMP_FOUND)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  add_compile_options(
+
+endif()
+
+set(THIRDAI_COMPILE_OPTIONS
     -Wall
     -Wextra
     -Werror
@@ -148,25 +150,8 @@ else()
     $<$<CONFIG:RelWithAsan>:-g>
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
 
-endif()
-
-# Add feature flags passed in from python
-add_compile_definitions(${FEATURE_FLAGS})
-
-# In debug mode we are using ASan (address sanitizer) to provide better
-# information on errors. We only run with this in debug mode because it carries
-# a performace penalty. See
-# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
-# information.
-
-# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang.
-if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
-  add_compile_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                      $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-
-  add_link_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                   $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-endif()
+set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
+                         $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
 # Custom command line options
 
@@ -184,18 +169,22 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
-include_directories(deps/pybind11/include)
-include_directories(deps/cereal/include)
 include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
-include_directories(deps/googletest/googletest/include)
-include_directories(deps/googletest/googlemock/include)
-include_directories(deps/spdlog/include)
 
 # Source dependencies
-add_subdirectory(deps/pybind11)
-add_subdirectory(deps/googletest)
-add_subdirectory(deps/spdlog)
+add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
+add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
+
+add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
+
+# PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
+# requires the boost and we dont want to add the boost dependencies, hence
+# skipping the performance comparison. Earlier we use to include only header(so
+# not using any CMakeLists) but now we have used target based hence including
+# CMakelists thats why we need this.
+set(SKIP_PERFORMANCE_COMPARISON ON)
+add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
@@ -233,30 +222,50 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
-file(
-  GLOB
-  BOLT_SOURCES
-  bolt/src/auto_classifiers/*.cc
-  bolt/src/graph/*.cc
-  bolt/src/layers/*.cc
-  bolt/src/networks/*.cc
-  bolt/src/utils/*.cc)
+set(BOLT_SOURCES
+    bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
+    bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
+    bolt/src/layers/ConvLayer.cc)
 
-file(GLOB_RECURSE SEARCH_SOURCES search/src/*.cc)
+set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 
-file(GLOB_RECURSE HASHING_SOURCES hashing/src/*.cc)
+set(HASHING_SOURCES
+    hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
+    hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
 
-file(GLOB_RECURSE HASHTABLE_SOURCES hashtable/src/*.cc)
+set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
+                      hashtable/src/VectorHashTable.cc)
 
-file(GLOB_RECURSE WRAPPER_SOURCES wrappers/src/*.cc)
+set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
-file(GLOB_RECURSE DATASET_SOURCES dataset/src/*.cc)
+set(DATASET_SOURCES dataset/src/Vocabulary.cc)
 
-file(GLOB_RECURSE COMPRESSION_SOURCES compression/src/*.cc)
+set(NEW_DATASET_SOURCES
+    new_dataset/src/featurization_pipeline/transformations/Binning.cc
+    new_dataset/src/featurization_pipeline/ColumnMap.cc)
 
-file(GLOB_RECURSE UTILS_SOURCES utils/*.cc)
+set(COMPRESSION_SOURCES compression/src/CountSketch.cc
+                        compression/src/DragonVector.cc)
 
-file(GLOB RECURSE AUTOML_SOURCES auto_ml/src/*.cc)
+set(UTILS_SOURCES utils/Logging.cc)
+
+add_library(
+  thirdai STATIC
+  ${BOLT_SOURCES}
+  ${SEARCH_SOURCES}
+  ${HASHING_SOURCES}
+  ${HASHTABLE_SOURCES}
+  ${LICENSE_SOURCES}
+  ${DATASET_SOURCES}
+  ${NEW_DATASET_SOURCES}
+  ${COMPRESSION_SOURCES}
+  ${UTILS_SOURCES})
+
+target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
+                                     cereal::cereal)
+if(${LICENSE_BUILD_FLAG_FOUND})
+  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
@@ -269,23 +278,34 @@ pybind11_add_module(
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltGraphPython.cc
   dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_classifiers/python_bindings/AutoClassifiersPython.cc
-  auto_ml/python_bindings/DeploymentPython.cc
-  ${BOLT_SOURCES}
-  ${SEARCH_SOURCES}
-  ${HASHING_SOURCES}
-  ${HASHTABLE_SOURCES}
-  ${DATASET_SOURCES}
-  ${WRAPPER_SOURCES}
-  ${DATASET_SOURCES}
-  ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES}
-  ${AUTOML_SOURCES})
+  auto_ml/python_bindings/DeploymentPython.cc)
 
-target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(_thirdai PUBLIC thirdai)
 
-if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
+if(NOT MSVC)
+  target_compile_options(thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
+  target_compile_options(_thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
 endif()
+
+# Add feature flags passed in from python
+target_compile_definitions(thirdai PRIVATE ${FEATURE_FLAGS})
+target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
+
+# In debug mode we are using ASan (address sanitizer) to provide better
+# information on errors. We only run with this in debug mode because it carries
+# a performace penalty. See
+# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
+# information.
+
+target_compile_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
+
+target_link_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
+
+target_compile_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+
+target_link_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})

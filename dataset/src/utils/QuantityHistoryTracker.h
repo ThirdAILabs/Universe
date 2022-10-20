@@ -5,7 +5,8 @@
 #include <cereal/types/vector.hpp>
 #include "CountMinSketch.h"
 #include <dataset/src/utils/TimeUtils.h>
-#include <assert.h>
+#include <utils/StringManipulation.h>
+#include <cassert>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -16,6 +17,29 @@
 namespace thirdai::dataset {
 
 enum class QuantityTrackingGranularity { Daily, Weekly, Biweekly, Monthly };
+
+static inline QuantityTrackingGranularity stringToGranularity(
+    std::string&& granularity_string) {
+  auto lower_granularity_string = utils::lower(granularity_string);
+  if (lower_granularity_string == "daily" || lower_granularity_string == "d") {
+    return dataset::QuantityTrackingGranularity::Daily;
+  }
+  if (lower_granularity_string == "weekly" || lower_granularity_string == "w") {
+    return dataset::QuantityTrackingGranularity::Weekly;
+  }
+  if (lower_granularity_string == "biweekly" ||
+      lower_granularity_string == "b") {
+    return dataset::QuantityTrackingGranularity::Biweekly;
+  }
+  if (lower_granularity_string == "monthly" ||
+      lower_granularity_string == "m") {
+    return dataset::QuantityTrackingGranularity::Monthly;
+  }
+  throw std::invalid_argument(
+      granularity_string +
+      " is not a valid granularity option. The options are 'daily' / 'd', "
+      "'weekly' / 'w', 'biweekly' / 'b', and 'monthly' / 'm',");
+}
 
 /**
  * @brief Tracks recent history of quantities associated with different
@@ -126,8 +150,16 @@ class QuantityHistoryTracker {
   }
 
   /**
-   * Returns the history lag that QuantityHistoryTracker was configured with;
-   * lag is in terms of TrackingGranularities.
+   * Clears all tracked quantities.
+   */
+  void reset() {
+    _old.clear();
+    _recent.clear();
+  }
+
+  /**
+   * Returns the history lag that QuantityHistoryTracker was configured
+   * with; lag is in terms of TrackingGranularities.
    */
   uint32_t historyLag() const { return _history_lag; }
 

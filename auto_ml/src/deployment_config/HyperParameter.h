@@ -4,10 +4,15 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <cereal/types/variant.hpp>
 #include <bolt/src/layers/LayerConfig.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
+#include <cstdint>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <variant>
@@ -24,6 +29,9 @@ class UserParameterInput {
 
   explicit UserParameterInput(std::string str_val)
       : _value(std::move(str_val)) {}
+
+  explicit UserParameterInput(OracleConfigPtr oracle_config)
+      : _value(std::move(oracle_config)) {}
 
   bool resolveBooleanParam(const std::string& param_name) const {
     try {
@@ -61,8 +69,31 @@ class UserParameterInput {
     }
   }
 
+  OracleConfigPtr resolveOracleConfigPtr(const std::string& param_name) const {
+    try {
+      return std::get<OracleConfigPtr>(_value);
+    } catch (const std::bad_variant_access& e) {
+      throw std::invalid_argument("Expected parameter '" + param_name +
+                                  "'to be of type OracleConfig.");
+    }
+  }
+
+  const auto& getValue() const { return _value; }
+
  private:
-  std::variant<bool, uint32_t, float, std::string> _value;
+  // Private constructor for Cereal.
+  UserParameterInput() {}
+
+  std::variant<bool, uint32_t, float, std::string, OracleConfigPtr> _value;
+
+  // Private constructor for cereal.
+  // UserParameterInput() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_value);
+  }
 };
 
 using UserInputMap = std::unordered_map<std::string, UserParameterInput>;
@@ -165,11 +196,13 @@ class OptionMappedParameter final : public HyperParameter<T> {
 };
 
 template <typename T>
-class UserSpecifiedParameter final : public HyperParameter<T> {
+class UserSpecifiedParameter : public HyperParameter<T> {
   static_assert(std::is_same_v<T, bool> || std::is_same_v<T, uint32_t> ||
-                    std::is_same_v<T, float> || std::is_same_v<T, std::string>,
-                "User specified parameter must be bool, uint32_t, float, or "
-                "std::string.");
+                    std::is_same_v<T, float> ||
+                    std::is_same_v<T, std::string> ||
+                    std::is_same_v<T, OracleConfigPtr>,
+                "User specified parameter must be bool, uint32_t, float, "
+                "std::string, or OracleConfig");
 
  public:
   explicit UserSpecifiedParameter(std::string param_name)
@@ -201,6 +234,10 @@ class UserSpecifiedParameter final : public HyperParameter<T> {
     if constexpr (std::is_same<T, std::string>::value) {
       return user_specified_parameters.at(_param_name)
           .resolveStringParam(_param_name);
+    }
+    if constexpr (std::is_same<T, OracleConfigPtr>::value) {
+      return user_specified_parameters.at(_param_name)
+          .resolveOracleConfigPtr(_param_name);
     }
   }
 
@@ -279,6 +316,29 @@ class AutotunedSparsityParameter final : public HyperParameter<float> {
   }
 };
 
+class DatasetLabelDimensionParameter final : public HyperParameter<uint32_t> {
+ public:
+  DatasetLabelDimensionParameter() {}
+
+  uint32_t resolve(const UserInputMap& user_specified_parameters) const final {
+    if (!user_specified_parameters.count(PARAM_NAME)) {
+      throw std::invalid_argument("Could not get dataset label dimension.");
+    }
+
+    return user_specified_parameters.at(PARAM_NAME)
+        .resolveIntegerParam(PARAM_NAME);
+  }
+
+  static constexpr const char* PARAM_NAME = "<__dataset_label_dim__>";
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HyperParameter<uint32_t>>(this));
+  }
+};
+
 }  // namespace thirdai::automl::deployment
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<bool>)
@@ -288,6 +348,8 @@ CEREAL_REGISTER_TYPE(
     thirdai::automl::deployment::ConstantParameter<std::string>)
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<
                      thirdai::bolt::SamplingConfigPtr>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<
+                     thirdai::automl::deployment::OracleConfigPtr>)
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<bool>)
 CEREAL_REGISTER_TYPE(
@@ -297,6 +359,8 @@ CEREAL_REGISTER_TYPE(
     thirdai::automl::deployment::OptionMappedParameter<std::string>)
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<
                      thirdai::bolt::SamplingConfigPtr>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<
+                     thirdai::automl::deployment::OracleConfigPtr>)
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<bool>)
 CEREAL_REGISTER_TYPE(
@@ -304,5 +368,10 @@ CEREAL_REGISTER_TYPE(
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<float>)
 CEREAL_REGISTER_TYPE(
     thirdai::automl::deployment::UserSpecifiedParameter<std::string>)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<
+                     thirdai::automl::deployment::OracleConfigPtr>)
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::AutotunedSparsityParameter)
+
+CEREAL_REGISTER_TYPE(
+    thirdai::automl::deployment::DatasetLabelDimensionParameter)
