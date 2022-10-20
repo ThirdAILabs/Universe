@@ -32,7 +32,7 @@ class AutoClassifierBase {
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate,
              std::optional<uint32_t> batch_size = std::nullopt,
-             std::optional<uint64_t> max_in_memory_batches = std::nullopt) {
+             std::optional<uint32_t> max_in_memory_batches = std::nullopt) {
     auto data_source = std::make_shared<dataset::SimpleFileDataLoader>(
         filename, batch_size.value_or(defaultBatchSize()));
 
@@ -41,7 +41,7 @@ class AutoClassifierBase {
 
   void train(const std::shared_ptr<dataset::DataLoader>& data_source,
              uint32_t epochs, float learning_rate,
-             std::optional<uint64_t> max_in_memory_batches = std::nullopt) {
+             std::optional<uint32_t> max_in_memory_batches = std::nullopt) {
     auto dataset = getTrainingDataset(data_source, max_in_memory_batches);
 
     if (max_in_memory_batches) {
@@ -238,7 +238,7 @@ class AutoClassifierBase {
 
   void trainOnStream(
       std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>& dataset,
-      float learning_rate, uint32_t epochs, uint64_t max_in_memory_batches) {
+      float learning_rate, uint32_t epochs, uint32_t max_in_memory_batches) {
     if (freezeHashTablesAfterFirstEpoch() && epochs > 1) {
       trainSingleEpochOnStream(dataset, learning_rate, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
@@ -253,7 +253,7 @@ class AutoClassifierBase {
 
   void trainSingleEpochOnStream(
       std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>& dataset,
-      float learning_rate, uint64_t max_in_memory_batches) {
+      float learning_rate, uint32_t max_in_memory_batches) {
     TrainConfig train_config = getTrainConfig(learning_rate, /* epochs= */ 1);
 
     while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {

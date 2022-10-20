@@ -49,7 +49,7 @@ class ModelPipeline {
 
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
                    std::optional<uint32_t> batch_size_opt,
-                   std::optional<uint64_t> max_in_memory_batches) {
+                   std::optional<uint32_t> max_in_memory_batches) {
     uint32_t batch_size =
         batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
     trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
@@ -59,22 +59,17 @@ class ModelPipeline {
   void trainOnDataLoader(
       const std::shared_ptr<dataset::DataLoader>& data_source,
       bolt::TrainConfig& train_config,
-      std::optional<uint64_t> max_in_memory_batches_opt) {
-    _dataset_factory->preprocessDataset(data_source, max_in_memory_batches_opt);
+      std::optional<uint32_t> max_in_memory_batches) {
+    _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
     data_source->restart();
 
-    uint64_t max_in_memory_batches = max_in_memory_batches_opt.has_value()
-                                         ? *max_in_memory_batches_opt
-                                         : std::numeric_limits<uint32_t>::max();
-
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
-        data_source, /* training= */ true,
-        /* max_in_memory_batches = */ max_in_memory_batches);
+        data_source, /* training= */ true);
 
     updateRehashRebuildInTrainConfig(train_config);
 
-    if (max_in_memory_batches_opt) {
-      trainOnStream(dataset, train_config);
+    if (max_in_memory_batches) {
+      trainOnStream(dataset, train_config, max_in_memory_batches.value());
     } else {
       trainInMemory(dataset, train_config);
     }
@@ -92,10 +87,10 @@ class ModelPipeline {
       const std::shared_ptr<dataset::DataLoader>& data_source,
       std::optional<bolt::PredictConfig>& predict_config_opt) {
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
-        data_source, /* training= */ false,
-        /* max_in_memory_batches = */ std::numeric_limits<uint32_t>::max());
+        data_source, /* training= */ false);
 
-    auto [data, labels] = dataset->next().value();
+    auto [data, labels] =
+        dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
     bolt::PredictConfig predict_config =
         predict_config_opt.value_or(bolt::PredictConfig::makeConfig());
@@ -186,19 +181,13 @@ class ModelPipeline {
     auto file_loader = dataset::SimpleFileDataLoader::make(
         filename, DEFAULT_EVALUATE_BATCH_SIZE);
 
-    auto dataset_loader = _dataset_factory->getLabeledDatasetLoader(
-        std::move(file_loader),
-        /* training= */ false,
-        /* max_in_memory_batches = */ std::numeric_limits<uint32_t>::max());
-    return dataset_loader->next().value();
+    auto dataset_loader =
+        _dataset_factory->getLabeledDatasetLoader(std::move(file_loader),
+                                                  /* training= */ false);
+    return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
+        .value();
   }
 
-  bolt::BoltGraphPtr get_model() { return _model; }
-
-  void set_model(bolt::BoltGraphPtr model) { _model = std::move(model); }
-
-  DatasetLoaderFactoryPtr datasetLoaderFactory() { return _dataset_factory; }
-  
   Artifact getArtifact(const std::string& name) const {
     return _dataset_factory->getArtifact(name);
   }
@@ -212,7 +201,8 @@ class ModelPipeline {
   // epochs.
   void trainInMemory(DatasetLoaderPtr& dataset,
                      bolt::TrainConfig train_config) {
-    auto [train_data, train_labels] = dataset->next().value();
+    auto [train_data, train_labels] =
+        dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
     uint32_t epochs = train_config.epochs();
 
@@ -231,28 +221,29 @@ class ModelPipeline {
 
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
-  void trainOnStream(DatasetLoaderPtr& dataset,
-                     bolt::TrainConfig train_config) {
+  void trainOnStream(DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+                     uint32_t max_in_memory_batches) {
     uint32_t epochs = train_config.epochs();
     // We want a single epoch in the train config in order to train for a single
     // epoch for each pass over the dataset.
     train_config.setEpochs(/* new_epochs= */ 1);
 
     if (_train_eval_config.freezeHashTables() && epochs > 1) {
-      trainSingleEpochOnStream(dataset, train_config);
+      trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
       _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
       --epochs;
     }
 
     for (uint32_t e = 0; e < epochs; e++) {
-      trainSingleEpochOnStream(dataset, train_config);
+      trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
     }
   }
 
   void trainSingleEpochOnStream(DatasetLoaderPtr& dataset,
-                                const bolt::TrainConfig& train_config) {
-    while (auto datasets = dataset->next()) {
+                                const bolt::TrainConfig& train_config,
+                                uint32_t max_in_memory_batches) {
+    while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
       auto& [data, labels] = datasets.value();
 
       _model->train({data}, labels, train_config);

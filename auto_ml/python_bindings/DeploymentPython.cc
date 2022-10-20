@@ -166,9 +166,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<DatasetLoaderFactoryConfig,  // NOLINT
              DatasetLoaderFactoryConfigPtr>(
       submodule, "DatasetConfig", docs::DATASET_LOADER_FACTORY_CONFIG);
+
   py::class_<SingleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
-      submodule, "SingleBlockDatasetFactoryConfig")
+      submodule, "SingleBlockDatasetFactory")
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
                     HyperParameterPtr<std::string>>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
@@ -191,30 +192,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("default_batch_size"), py::arg("freeze_hash_tables"),
            py::arg("prediction_threshold") = std::nullopt,
            docs::TRAIN_EVAL_PARAMETERS_CONFIG_INIT);
-
-#ifdef THIRDAI_EXPOSE_ALL
-  // TODO(Josh): Make this a proper inheritable python class
-  py::class_<DatasetLoader, DatasetLoaderPtr>(submodule, "DatasetLoader")
-      .def("next", &DatasetLoader::next)
-      .def("restart", &DatasetLoader::restart);
-
-  py::class_<GenericDatasetLoader, DatasetLoader, GenericDatasetLoaderPtr>(
-      submodule, "GenericDatasetLoader")
-      .def("next", &DatasetLoader::next)
-      .def("restart", &DatasetLoader::restart);
-
-  py::class_<DatasetLoaderFactory, DatasetLoaderFactoryPtr>(
-      submodule, "DatasetLoaderFactory")
-      .def("get_labeled_dataset_loader",
-           &DatasetLoaderFactory::getLabeledDatasetLoader,
-           py::arg("data_loader"), py::arg("training"),
-           py::arg("max_in_memory_batches"));
-
-  py::class_<SingleBlockDatasetFactory, DatasetLoaderFactory,
-             std::shared_ptr<SingleBlockDatasetFactory>>(
-      submodule, "SingleBlockDatasetFactory")
-      .def(bolt::python::getPickleFunction<SingleBlockDatasetFactory>());
-#endif
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
@@ -261,12 +238,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
            py::arg("filename"))
-#ifdef THIRDAI_EXPOSE_ALL
-      .def_property("model", &ModelPipeline::get_model,
-                    &ModelPipeline::set_model)
-      .def_property_readonly("dataset_loader_factory",
-                             &ModelPipeline::datasetLoaderFactory)
-#endif
       .def("save", &ModelPipeline::save, py::arg("filename"),
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),

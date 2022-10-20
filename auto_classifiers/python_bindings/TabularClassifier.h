@@ -181,7 +181,7 @@ class TabularClassifier final
 
   void processTabularMetadata(
       const std::shared_ptr<dataset::DataLoader>& data_loader,
-      std::optional<uint64_t> max_in_memory_batches) {
+      std::optional<uint32_t> max_in_memory_batches) {
     std::shared_ptr<dataset::TabularMetadataProcessor>
         metadata_batch_processor =
             std::make_shared<dataset::TabularMetadataProcessor>(

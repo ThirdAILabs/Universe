@@ -42,7 +42,8 @@ using LabelDataset = dataset::BoltDatasetPtr;
 
 class DatasetLoader {
  public:
-  virtual std::optional<std::pair<InputDatasets, LabelDataset>> next() = 0;
+  virtual std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
+      uint32_t max_in_memory_batches) = 0;
 
   virtual void restart() = 0;
 
@@ -53,12 +54,12 @@ class GenericDatasetLoader final : public DatasetLoader {
  public:
   GenericDatasetLoader(std::shared_ptr<dataset::DataLoader> data_loader,
                        dataset::GenericBatchProcessorPtr batch_processor,
-                       bool shuffle, uint64_t max_in_memory_batches)
-      : _dataset(std::move(data_loader), std::move(batch_processor), shuffle),
-        _max_in_memory_batches(max_in_memory_batches) {}
+                       bool shuffle)
+      : _dataset(std::move(data_loader), std::move(batch_processor), shuffle) {}
 
-  std::optional<std::pair<InputDatasets, LabelDataset>> next() final {
-    auto datasets = _dataset.loadInMemoryWithMaxBatches(_max_in_memory_batches);
+  std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
+      uint32_t max_in_memory_batches) final {
+    auto datasets = _dataset.loadInMemoryWithMaxBatches(max_in_memory_batches);
     if (!datasets) {
       return std::nullopt;
     }
@@ -73,11 +74,9 @@ class GenericDatasetLoader final : public DatasetLoader {
 
  private:
   dataset::StreamingGenericDatasetLoader _dataset;
-  uint64_t _max_in_memory_batches;
 };
 
-using DatasetLoaderPtr = std::shared_ptr<DatasetLoader>;
-using GenericDatasetLoaderPtr = std::shared_ptr<GenericDatasetLoader>;
+using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
 
 class DatasetLoaderFactory {
  public:
@@ -94,8 +93,7 @@ class DatasetLoaderFactory {
   }
 
   virtual DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training,
-      uint64_t max_in_memory_batches) = 0;
+      std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
 
@@ -137,7 +135,7 @@ class DatasetLoaderFactory {
   }
 };
 
-using DatasetLoaderFactoryPtr = std::shared_ptr<DatasetLoaderFactory>;
+using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
 
 class DatasetLoaderFactoryConfig {
  public:

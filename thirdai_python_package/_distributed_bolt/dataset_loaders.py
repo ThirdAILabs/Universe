@@ -75,7 +75,7 @@ class GenericStreamingDatasetLoader:
     def __init__(
         self,
         backing_stream: Callable[
-            [int], Optional[Tuple[dataset.BoltDataset, dataset.BoltDataset]]
+            int, Optional[Tuple[dataset.BoltDataset, dataset.BoltDataset]]
         ],
     ):
         """

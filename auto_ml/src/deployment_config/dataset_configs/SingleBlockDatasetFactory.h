@@ -37,13 +37,9 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
         _delimiter(delimiter) {}
 
   DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training,
-      uint64_t max_in_memory_batches) final {
+      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
     return std::make_unique<GenericDatasetLoader>(
-        /* data_loader = */ data_loader,
-        /* batch_processor = */ _labeled_batch_processor,
-        /* shuffle = */ _shuffle && training,
-        /* max_in_memory_batches = */ max_in_memory_batches);
+        data_loader, _labeled_batch_processor, _shuffle && training);
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final {
@@ -83,33 +79,6 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<bolt::InputPtr> getInputNodes() final {
     return {bolt::Input::make(_unlabeled_batch_processor->getInputDim())};
-  }
-
-  void save(const std::string& filename) const {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    save_stream(filestream);
-  }
-
-  void save_stream(std::ostream& output_stream) const {
-    cereal::BinaryOutputArchive oarchive(output_stream);
-    oarchive(*this);
-  }
-
-  static std::shared_ptr<SingleBlockDatasetFactory> load(
-      const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    return load_stream(filestream);
-  }
-
-  static std::shared_ptr<SingleBlockDatasetFactory> load_stream(
-      std::istream& input_stream) {
-    cereal::BinaryInputArchive iarchive(input_stream);
-    std::shared_ptr<SingleBlockDatasetFactory> deserialize_into(
-        new SingleBlockDatasetFactory());
-    iarchive(*deserialize_into);
-    return deserialize_into;
   }
 
   uint32_t getLabelDim() final {
@@ -167,7 +136,7 @@ class SingleBlockDatasetFactoryConfig final
           delimiter + "'.");
     }
 
-    return std::make_shared<SingleBlockDatasetFactory>(
+    return std::make_unique<SingleBlockDatasetFactory>(
         /* data_block= */ data_block,
         /* unlabeled_data_block= */ unlabeled_data_block,
         /* label_block=*/label_block, /* shuffle= */ shuffle,
