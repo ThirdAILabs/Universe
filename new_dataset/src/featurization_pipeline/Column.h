@@ -59,6 +59,10 @@ class ValueColumn : public Column {
       return;
     }
 
+    // Need this void here because if none of the above constexprs match, then
+    // row_idx will be unused
+    (void)row_idx;
+
     throw std::runtime_error(
         "Cannot convert ValueColumn to BoltVector if its type is not int or "
         "float.");
