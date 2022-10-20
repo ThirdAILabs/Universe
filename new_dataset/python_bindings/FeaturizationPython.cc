@@ -3,6 +3,7 @@
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/NumpyColumns.h>
 #include <new_dataset/src/featurization_pipeline/transformations/Binning.h>
+#include <new_dataset/src/featurization_pipeline/transformations/StringHash.h>
 #include <pybind11/stl.h>
 #include <string>
 
@@ -55,6 +56,13 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"),
            py::arg("inclusive_min"), py::arg("exclusive_max"),
            py::arg("num_bins"));
+
+  py::class_<StringHash, Transformation,
+             std::shared_ptr<StringHash>>(transformations_submodule,
+                                                     "StringHash")
+      .def(py::init<std::string, std::string, uint32_t, uint32_t>(),
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("output_range"), py::arg("seed") = time(nullptr));
 
   py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
