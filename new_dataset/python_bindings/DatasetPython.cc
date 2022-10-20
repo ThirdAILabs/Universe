@@ -29,7 +29,7 @@ void createNewDatasetSubmodule(py::module_& module) {
              if (i >= d.size()) {
                throw py::index_error();
              }
-             d.set(i, std::move(v));
+             d[i] = std::move(v);
            })
       .def("__len__", &Dataset::size)
       .def(

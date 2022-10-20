@@ -170,6 +170,10 @@ struct BoltVector {
   BoltVector copy() const {
     BoltVector vec;
     vec.len = this->len;
+
+    // Since we are copying the data underlying the original vector to create,
+    // this vector, this vector will always own its own data, even if the vector
+    // it is copying from does not.
     vec._owns_data = true;
 
     vec.activations = new float[len];

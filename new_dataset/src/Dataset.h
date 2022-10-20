@@ -56,7 +56,7 @@ class Dataset {
    * bounds and [] style operations that don't, instead having a single []
    * opeations to always check the bounds. We made this decision because the
    * type within the vector is always BoltVector, and doing anything
-   * interesting with a BoltVector will ikely take longer than an if statement
+   * interesting with a BoltVector will likely take longer than an if statement
    * If this is ever a bottelenck we can add std::vector semantics.
    */
   const BoltVector& operator[](uint64_t i) const {
@@ -64,11 +64,6 @@ class Dataset {
   }
 
   BoltVector& operator[](uint64_t i) { return getWithBoundsCheck(i); }
-
-  void set(uint64_t i, BoltVector&& vector) {
-    checkIndexWithinBounds(i);
-    (*_vectors)[_start_index + i] = std::move(vector);
-  }
 
   DatasetPtr slice(uint64_t slice_start_index, uint64_t slice_end_index) const {
     if (slice_end_index <= slice_start_index) {
