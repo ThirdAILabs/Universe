@@ -44,6 +44,7 @@ message("====================================")
 # will be a linker error.
 list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
+
 if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
   set(CRYPTOPP_BUILD_TESTING OFF)
@@ -57,20 +58,19 @@ if(MSVC)
       FATAL_ERROR "For now, we only support building in release mode using MSVC"
     )
   endif()
+
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
 
   # We create an interface to plant compile flags and be cohesive with the rest
   # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile flags
   # narrowing it to just the required targets.
-
   add_library(_thirdai_windows_llvm_openmp INTERFACE)
   target_compile_options(_thirdai_windows_llvm_openmp INTERFACE "/openmp:llvm")
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 else()
-
   find_package(OpenMP)
-  if(NOT OpenMP_FOUND)
 
+  if(NOT OpenMP_FOUND)
     # In this case, we were not able to find OpenMP. We are choosing to build
     # openmp from scratch here, using the LLVM standalone OpenMP source.
     #
@@ -84,7 +84,6 @@ else()
 
     # This block needs to happen before all the compile-options are added to
     # escape -Wall and -Werror being enforced on OpenMP library.
-
     set(LLVM_OPENMP_VERSION "13.0.1")
     set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/openmp")
 
@@ -93,7 +92,7 @@ else()
         "Downloading openmp-${LLVM_OPENMP_VERSION} into ${LLVM_OPENMP_SOURCE_DIR}"
       )
       set(LLVM_OPENMP_DOWNLOAD_URL
-          "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/openmp-${LLVM_OPENMP_VERSION}.src.tar.xz"
+        "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_OPENMP_VERSION}/openmp-${LLVM_OPENMP_VERSION}.src.tar.xz"
       )
       file(
         DOWNLOAD
@@ -101,57 +100,55 @@ else()
         "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2" # FILE
       )
       file(ARCHIVE_EXTRACT INPUT
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2"
-           DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+        "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.tar.bz2"
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
       file(RENAME
-           "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src"
-           "${LLVM_OPENMP_SOURCE_DIR}")
+        "${CMAKE_CURRENT_BINARY_DIR}/openmp-${LLVM_OPENMP_VERSION}.src"
+        "${LLVM_OPENMP_SOURCE_DIR}")
     endif()
 
     set(OPENMP_STANDALONE_BUILD ON)
     add_subdirectory(${LLVM_OPENMP_SOURCE_DIR} EXCLUDE_FROM_ALL)
     add_library(OpenMP::OpenMP_CXX ALIAS omp)
-
   endif(NOT OpenMP_FOUND)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 endif()
 
 set(THIRDAI_COMPILE_OPTIONS
-    -Wall
-    -Wextra
-    -Werror
-    -Wno-unused-function
-    -pedantic
-    $<$<CONFIG:Debug>:-Og>
-    $<$<CONFIG:Debug>:-g>
-    $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
-    $<$<CONFIG:DebugWithAsan>:-Og>
-    $<$<CONFIG:DebugWithAsan>:-g>
-    $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
-    $<$<CONFIG:Release>:-DNDEBUG>
-    $<$<CONFIG:Release>:-Ofast>
-    $<$<CONFIG:Release>:-fno-finite-math-only>
-    $<$<CONFIG:Release>:-funroll-loops>
-    $<$<CONFIG:Release>:-ftree-vectorize>
-    $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
-    $<$<CONFIG:RelWithDebInfo>:-Ofast>
-    $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
-    $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
-    $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
-    $<$<CONFIG:RelWithDebInfo>:-g>
-    $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
-    $<$<CONFIG:RelWithAsan>:-DNDEBUG>
-    $<$<CONFIG:RelWithAsan>:-Ofast>
-    $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
-    $<$<CONFIG:RelWithAsan>:-funroll-loops>
-    $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
-    $<$<CONFIG:RelWithAsan>:-g>
-    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
+  -Wall
+  -Wextra
+  -Werror
+  -Wno-unused-function
+  -pedantic
+  $<$<CONFIG:Debug>:-Og>
+  $<$<CONFIG:Debug>:-g>
+  $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+  $<$<CONFIG:DebugWithAsan>:-Og>
+  $<$<CONFIG:DebugWithAsan>:-g>
+  $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
+  $<$<CONFIG:Release>:-DNDEBUG>
+  $<$<CONFIG:Release>:-Ofast>
+  $<$<CONFIG:Release>:-fno-finite-math-only>
+  $<$<CONFIG:Release>:-funroll-loops>
+  $<$<CONFIG:Release>:-ftree-vectorize>
+  $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
+  $<$<CONFIG:RelWithDebInfo>:-Ofast>
+  $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
+  $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
+  $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
+  $<$<CONFIG:RelWithDebInfo>:-g>
+  $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
+  $<$<CONFIG:RelWithAsan>:-DNDEBUG>
+  $<$<CONFIG:RelWithAsan>:-Ofast>
+  $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
+  $<$<CONFIG:RelWithAsan>:-funroll-loops>
+  $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
+  $<$<CONFIG:RelWithAsan>:-g>
+  $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
 
 set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                         $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
+  $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
 # Custom command line options
 
@@ -162,11 +159,10 @@ set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
 #
 # For Windows workflow, we may configure this to a higher value now through
 # CMake command-line supply.
-
 set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
-    5
-    CACHE STRING
-          "Timeout for GoogleTest discovery, configurable from command-line.")
+  5
+  CACHE STRING
+  "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
 include_directories(deps/tomlplusplus/include/toml++)
@@ -195,8 +191,8 @@ find_package(Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt
-    ON
-    CACHE BOOL "" FORCE)
+  ON
+  CACHE BOOL "" FORCE)
 
 # Enable testing
 include(CTest)
@@ -223,33 +219,30 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 endif()
 
 set(BOLT_SOURCES
-    bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
-    bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
-    bolt/src/layers/ConvLayer.cc)
+  bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
+  bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
+  bolt/src/layers/ConvLayer.cc)
 
 set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 
 set(HASHING_SOURCES
-    hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
-    hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
+  hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
+  hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
 
 set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
-                      hashtable/src/VectorHashTable.cc)
+  hashtable/src/VectorHashTable.cc)
 
 set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
-set(DATASET_SOURCES
-    dataset/src/Vocabulary.cc
-    dataset/src/data_pipeline/transformations/Binning.cc
-    dataset/src/data_pipeline/ColumnMap.cc)
+set(DATASET_SOURCES dataset/src/Vocabulary.cc)
 
 set(NEW_DATASET_SOURCES
-    new_dataset/src/featurization_pipeline/transformations/Binning.cc
-    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
-    new_dataset/src/featurization_pipeline/ColumnMap.cc)
+  new_dataset/src/featurization_pipeline/transformations/Binning.cc
+  new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+  new_dataset/src/featurization_pipeline/ColumnMap.cc)
 
 set(COMPRESSION_SOURCES compression/src/CountSketch.cc
-                        compression/src/DragonVector.cc)
+  compression/src/DragonVector.cc)
 
 set(UTILS_SOURCES utils/Logging.cc)
 
@@ -266,7 +259,8 @@ add_library(
   ${UTILS_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-                                     cereal::cereal)
+  cereal::cereal)
+
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
 endif()
@@ -275,7 +269,6 @@ endif()
 # builds, but not our ASan builds. This means that for now we can't run ASan
 # from python, but honestly this is more trouble than it's worth so for now this
 # is actually a feature rather than a bug.
-
 pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
@@ -305,7 +298,6 @@ target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
 # a performace penalty. See
 # https://github.com/google/sanitizers/wiki/AddressSanitizer for more
 # information.
-
 target_compile_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
 
 target_link_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
