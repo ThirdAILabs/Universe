@@ -16,9 +16,11 @@
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 
 namespace thirdai::automl::deployment {
 
@@ -216,11 +218,12 @@ class ModelPipeline {
     return _dataset_factory->listArtifactNames();
   }
 
- private:
-  BoltVector predictOnVectors(std::vector<BoltVector> inputs,
-                              bool use_sparse_inference) {
-    BoltVector output =
-        _model->predictSingle(std::move(inputs), use_sparse_inference);
+ protected:
+  BoltVector predictOnVectors(
+      std::vector<BoltVector> inputs, bool use_sparse_inference,
+      std::optional<std::string> output_node_name = std::nullopt) {
+    BoltVector output = _model->predictSingle(
+        std::move(inputs), use_sparse_inference, std::move(output_node_name));
 
     if (auto threshold = _train_eval_config.predictionThreshold()) {
       uint32_t prediction_index = argmax(output.activations, output.len);

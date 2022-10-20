@@ -1,7 +1,11 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
@@ -23,6 +27,9 @@ class UniversalDeepTransformer : public ModelPipeline {
   static inline const std::string NUM_TABLES = "num_tables";
   static inline const std::string HASHES_PER_TABLE = "hashes_per_table";
   static inline const std::string RESERVOIR_SIZE = "reservoir_size";
+  static inline const std::string INPUT_NAME = "input";
+  static inline const std::string EMBEDDING_NAME = "embedding";
+  static inline const std::string OUTPUT_NAME = "output";
 
  public:
   UniversalDeepTransformer(
@@ -35,6 +42,13 @@ class UniversalDeepTransformer : public ModelPipeline {
             std::move(data_types), std::move(temporal_tracking_relationships),
             std::move(target), std::move(time_granularity), lookahead,
             delimiter, options)) {}
+
+  BoltVector embeddingRepresentation(const MapInput& input) {
+    auto input_vectors = _dataset_factory->featurizeInput(input);
+    return predictOnVectors(std::move(input_vectors),
+                            /* use_sparse_inference= */ false,
+                            /* output_node_name= */ EMBEDDING_NAME);
+  }
 
   void resetTemporalTrackers() {
     std::get<TemporalContextPtr>(getArtifact("context"))->reset();
@@ -63,6 +77,25 @@ class UniversalDeepTransformer : public ModelPipeline {
         ->batchUpdateTemporalTrackers(updates);
   }
 
+  void save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<UniversalDeepTransformer> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<UniversalDeepTransformer> deserialize_into(
+        new UniversalDeepTransformer());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
+
  private:
   static ModelPipeline buildModelPipeline(
       ColumnDataTypes data_types,
@@ -81,13 +114,14 @@ class UniversalDeepTransformer : public ModelPipeline {
         /* text_pairgram_word_limit= */
         std::make_shared<ConstantParameter<uint32_t>>(15));
 
-    std::vector<std::string> input_names = {"input"};
+    std::vector<std::string> input_names = {INPUT_NAME};
 
     std::vector<NodeConfigPtr> nodes = {
         getHiddenNode(
-            /* name= */ "embedding", /* predecessor_name= */ "input", options),
-        getOutputNode(/* name= */ "output",
-                      /* predecessor_name= */ "embedding", options),
+            /* name= */ EMBEDDING_NAME, /* predecessor_name= */ INPUT_NAME,
+            options),
+        getOutputNode(/* name= */ OUTPUT_NAME,
+                      /* predecessor_name= */ EMBEDDING_NAME, options),
     };
 
     std::shared_ptr<bolt::LossFunction> loss =
@@ -178,6 +212,15 @@ class UniversalDeepTransformer : public ModelPipeline {
 
     return std::make_shared<FullyConnectedNodeConfig>(name, dimension, sparsity,
                                                       predecessor_name);
+  }
+
+  // Private constructor for cereal.
+  UniversalDeepTransformer() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<ModelPipeline>(this));
   }
 };
 

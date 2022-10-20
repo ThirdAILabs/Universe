@@ -7,7 +7,6 @@
 #include <cereal/types/vector.hpp>
 #include "ConstructorUtilityTypes.h"
 #include "SequentialClassifierConfig.h"
-#include <_types/_uint32_t.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>

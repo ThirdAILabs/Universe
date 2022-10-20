@@ -4,38 +4,13 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include "Aliases.h"
-#include "Conversions.h"
-#include "FeatureComposer.h"
-#include "OracleConfig.h"
-#include "TemporalContext.h"
-#include "TemporalRelationshipsAutotuner.h"
+#include "Featurizer.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
-#include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/batch_processors/ProcessorUtils.h>
-#include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <utils/StringManipulation.h>
-#include <algorithm>
-#include <cstdint>
-#include <iterator>
-#include <memory>
-#include <optional>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <unordered_set>
 #include <variant>
-#include <vector>
 
 namespace thirdai::automl::deployment {
 
@@ -43,143 +18,69 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
  public:
   explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel,
                                 uint32_t text_pairgram_word_limit)
-      : _config(std::move(config)),
-        _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
-            _config->data_types, _config->provided_relationships,
-            _config->lookahead)),
-        _context(std::make_shared<TemporalContext>()),
-        _parallel(parallel),
-        _text_pairgram_word_limit(text_pairgram_word_limit) {
-    ColumnNumberMap mock_column_number_map(_config->data_types);
-    auto mock_processor = makeLabeledProcessor(mock_column_number_map);
-
-    _input_dim = mock_processor->getInputDim();
-    _label_dim = mock_processor->getLabelDim();
-  }
+      : _featurizer(std::make_shared<Featurizer>(std::move(config), parallel,
+                                                 text_pairgram_word_limit)),
+        _context(std::make_shared<TemporalContext>(_featurizer)) {}
 
   DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
-    auto header = data_loader->nextLine();
-    if (!header) {
-      throw std::invalid_argument(
-          "The dataset must have a header that contains column names.");
+    if (!_featurizer->isInitialized()) {
+      _featurizer->initializeProcessors(data_loader, *_context);
     }
-
-    auto current_column_number_map =
-        std::make_shared<ColumnNumberMap>(*header, _config->delimiter);
-    if (!_column_number_map) {
-      _column_number_map = std::move(current_column_number_map);
-      _column_number_to_name = _column_number_map->getColumnNumToColNameMap();
-    } else if (!_column_number_map->equals(*current_column_number_map)) {
-      throw std::invalid_argument("Column positions should not change.");
-    }
-
-    if (!_labeled_batch_processor) {
-      _labeled_batch_processor = makeLabeledProcessor(*_column_number_map);
-    }
-
-    // We initialize the inference batch processor here because we need the
-    // column number map.
-    if (!_inference_batch_processor) {
-      _inference_batch_processor = makeInferenceProcessor(*_column_number_map);
-    }
-    _context->initializeDataStructures(_labeled_batch_processor,
-                                       _column_number_map, _config->delimiter);
-
-    return std::make_unique<GenericDatasetLoader>(data_loader,
-                                                  _labeled_batch_processor,
-                                                  /* shuffle= */ training);
+    return std::make_unique<GenericDatasetLoader>(
+        data_loader, _featurizer->getLabeledContextUpdatingProcessor(),
+        /* shuffle= */ training);
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final {
-    auto row = ConversionUtils::stringInputToVectorOfStringViews(
-        input, _config->delimiter);
-    return featurizeInputImpl(row);
+    return _featurizer->featurizeInput(input,
+                                       /* should_update_history= */ false);
   }
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) final {
-    verifyColumnNumberMapIsInitialized();
-    auto row = ConversionUtils::mapInputToVectorOfStringViews(
-        input, *_column_number_map);
-    return featurizeInputImpl(row);
+    return _featurizer->featurizeInput(input,
+                                       /* should_update_history= */ false);
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
       const std::vector<std::string>& inputs) final {
-    verifyInferenceProcessorIsInitialized();
-    auto [input_batch, _] = _inference_batch_processor->createBatch(inputs);
-
-    // We cannot use the initializer list because the copy constructor is
-    // deleted for BoltBatch.
-    std::vector<BoltBatch> batch_list;
-    batch_list.emplace_back(std::move(input_batch));
-    return batch_list;
+    return _featurizer->featurizeInputBatch(inputs,
+                                            /* should_update_history= */ false);
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
       const MapInputBatch& inputs) final {
-    verifyColumnNumberMapIsInitialized();
-
-    auto string_batch = ConversionUtils::mapInputBatchToStringBatch(
-        inputs, _config->delimiter, *_column_number_map);
-
-    return featurizeInputBatch(string_batch);
+    return _featurizer->featurizeInputBatch(inputs,
+                                            /* should_update_history= */ false);
   }
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
-    if (std::holds_alternative<uint32_t>(label)) {
-      return std::get<uint32_t>(label);
-    }
-
-    const std::string& label_str = std::get<std::string>(label);
-
-    if (_config->data_types.at(_config->target)
-            .asCategorical()
-            .contiguous_numerical_ids) {
-      return utils::toInteger(label_str.c_str());
-    }
-
-    if (!_vocabs.count(_config->target)) {
-      throw std::invalid_argument(
-          "Attempted to get label to neuron id map before training.");
-    }
-    return _vocabs.at(_config->target)->getUid(label_str);
+    return _featurizer->labelToNeuronId(label);
   }
 
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const std::string& sample) final {
-    auto input_row = ConversionUtils::stringInputToVectorOfStringViews(
-        sample, _config->delimiter);
+    auto input_row = _featurizer->toInputRow(sample);
     return explainImpl(gradients_indices, gradients_ratio, input_row);
   }
 
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const MapInput& sample) final {
-    auto input_row = ConversionUtils::mapInputToVectorOfStringViews(
-        sample, *_column_number_map);
+    auto input_row = _featurizer->toInputRow(sample);
     return explainImpl(gradients_indices, gradients_ratio, input_row);
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {
-    return {bolt::Input::make(_input_dim)};
+    return {bolt::Input::make(_featurizer->getInputDim())};
   }
 
-  uint32_t getLabelDim() final { return _label_dim; }
+  uint32_t getLabelDim() final { return _featurizer->getLabelDim(); }
 
   std::optional<std::vector<std::string>> getIdToLabelMap() const final {
-    if (!_vocabs.count(_config->target)) {
-      throw std::invalid_argument(
-          "Attempted to get id to label map before training.");
-    }
-    if (_config->data_types.at(_config->target)
-            .asCategorical()
-            .contiguous_numerical_ids) {
-      return std::nullopt;
-    }
-    return {_vocabs.at(_config->target)->getUidToStringMap()};
+    return _featurizer->getIdToLabelMap();
   }
 
   std::vector<std::string> listArtifactNames() const final {
@@ -195,126 +96,24 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
  private:
-  std::vector<BoltVector> featurizeInputImpl(
-      std::vector<std::string_view>& input_row) {
-    verifyInferenceProcessorIsInitialized();
-    BoltVector vector;
-    if (auto exception =
-            _inference_batch_processor->makeInputVector(input_row, vector)) {
-      std::rethrow_exception(exception);
-    }
-    return {std::move(vector)};
-  }
-
   std::vector<dataset::Explanation> explainImpl(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const std::vector<std::string_view>& input_row) {
-    verifyInferenceProcessorIsInitialized();
-
     auto result = bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, input_row,
-        _inference_batch_processor);
+        _featurizer->getUnlabeledNonUpdatingProcessor());
 
     for (auto& response : result) {
-      response.column_name = _column_number_to_name[response.column_number];
+      response.column_name =
+          _featurizer->colNumToColName(response.column_number);
     }
 
     return result;
   }
 
-  dataset::GenericBatchProcessorPtr makeLabeledProcessor(
-      const ColumnNumberMap& column_number_map) {
-    auto target_type = _config->data_types.at(_config->target);
-    if (!target_type.isCategorical()) {
-      throw std::invalid_argument(
-          "Target column must be a categorical column.");
-    }
-
-    dataset::BlockPtr label_block;
-
-    auto col_num = column_number_map.at(_config->target);
-    auto n_unique_classes = target_type.asCategorical().n_unique_classes;
-    auto delimiter = target_type.asCategorical().delimiter;
-
-    if (target_type.asCategorical().contiguous_numerical_ids) {
-      label_block = dataset::NumericalCategoricalBlock::make(
-          col_num, n_unique_classes, delimiter);
-
-    } else {
-      if (!_vocabs.count(_config->target)) {
-        _vocabs[_config->target] =
-            dataset::ThreadSafeVocabulary::make(n_unique_classes);
-      }
-
-      label_block = dataset::StringLookupCategoricalBlock::make(
-          col_num, _vocabs.at(_config->target), delimiter);
-    }
-
-    auto input_blocks =
-        buildInputBlocks(/* column_numbers= */ column_number_map,
-                         /* should_update_history= */ true);
-
-    auto processor = dataset::GenericBatchProcessor::make(
-        std::move(input_blocks), {label_block});
-    processor->setParallelism(_parallel);
-    return processor;
-  }
-
-  dataset::GenericBatchProcessorPtr makeInferenceProcessor(
-      const ColumnNumberMap& column_number_map) {
-    auto processor = dataset::GenericBatchProcessor::make(
-        buildInputBlocks(/* column_numbers= */ column_number_map,
-                         /* should_update_history= */ false),
-        /* label_blocks= */ {});
-    processor->setParallelism(_parallel);
-    return processor;
-  }
-
-  void verifyInferenceProcessorIsInitialized() {
-    if (!_inference_batch_processor) {
-      throw std::invalid_argument("Attempted inference before training.");
-    }
-  }
-
-  void verifyColumnNumberMapIsInitialized() {
-    if (!_column_number_map) {
-      throw std::invalid_argument("Attempted inference before training.");
-    }
-  }
-
-  std::vector<dataset::BlockPtr> buildInputBlocks(
-      const ColumnNumberMap& column_numbers, bool should_update_history) {
-    std::vector<dataset::BlockPtr> blocks =
-        FeatureComposer::makeNonTemporalFeatureBlocks(
-            *_config, _temporal_relationships, column_numbers, _vocabs,
-            _text_pairgram_word_limit);
-
-    auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
-        *_config, _temporal_relationships, column_numbers, _vocabs, *_context,
-        should_update_history);
-
-    blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
-                  temporal_feature_blocks.end());
-    return blocks;
-  }
-
-  OracleConfigPtr _config;
-  TemporalRelationships _temporal_relationships;
-
+  FeaturizerPtr _featurizer;
   TemporalContextPtr _context;
-  std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
-
-  ColumnNumberMapPtr _column_number_map;
-  std::unordered_map<uint32_t, std::string> _column_number_to_name;
-
-  dataset::GenericBatchProcessorPtr _labeled_batch_processor;
-  dataset::GenericBatchProcessorPtr _inference_batch_processor;
-
-  uint32_t _input_dim;
-  uint32_t _label_dim;
-  bool _parallel;
-  uint32_t _text_pairgram_word_limit;
 
   // Private constructor for cereal.
   OracleDatasetFactory() {}
@@ -322,11 +121,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
-            _temporal_relationships, _context, _vocabs, _column_number_map,
-            _column_number_to_name, _labeled_batch_processor,
-            _inference_batch_processor, _input_dim, _label_dim, _parallel,
-            _text_pairgram_word_limit);
+    archive(cereal::base_class<DatasetLoaderFactory>(this), _featurizer,
+            _context);
   }
 };
 
