@@ -79,13 +79,13 @@ class Worker:
         dataset_type = data_parallel_ingest_spec.dataset_type
         if dataset_type == "csv":
             file_path = file_path_prefix + ".csv"
-            shard.write_csv(path=file_path)
+            data_shard.write_csv(path=file_path)
         elif dataset_type == "text":
             file_path = file_path_prefix + ".txt"
-            shard.write_text(path=file_path)
+            data_shard.write_text(path=file_path)
         elif dataset_type == "numpy":
             file_path = file_path_prefix + ".npy"
-            shard.write_numpy(path=file_path)
+            data_shard.write_numpy(path=file_path)
 
         self.load_dataset_on_each_worker(file_path, batch_size)
 
