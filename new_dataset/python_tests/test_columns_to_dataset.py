@@ -36,7 +36,7 @@ def test_dense_columns_to_dataset():
     column1, column1_np = get_dense_value_column(n_rows)
     column2, column2_np = get_dense_array_column(n_rows, dim=7)
 
-    columns = newdataset.ColumnMap({"column1": column1, "column2": column2})
+    columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
     featurized_vectors = dense_bolt_dataset_to_numpy(
         columns.convert_to_dataset(["column1", "column2"], batch_size=21)
