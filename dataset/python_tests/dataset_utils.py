@@ -2,14 +2,14 @@ import numpy as np
 
 
 def dense_vectors_to_numpy(vectors):
-    return np.array([v.numpy() for v in vectors])
+    return np.array([v.to_numpy() for v in vectors])
 
 
 def sparse_vectors_to_numpy(vectors):
     indices_list = []
     values_list = []
     for vec in vectors:
-        (i, v) = vec.numpy()
+        (i, v) = vec.to_numpy()
         indices_list.append(i)
         values_list.append(v)
 

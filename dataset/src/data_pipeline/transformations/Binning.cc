@@ -3,7 +3,7 @@
 namespace thirdai::dataset {
 
 void BinningTransformation::apply(ColumnMap& columns) {
-  auto column = columns.getFloatValueColumn(_input_column_name);
+  auto column = columns.getDenseValueColumn(_input_column_name);
 
   std::vector<uint32_t> binned_values(column->numRows());
 
@@ -12,7 +12,7 @@ void BinningTransformation::apply(ColumnMap& columns) {
     shared(column, binned_values, invalid_value)
   for (uint64_t i = 0; i < column->numRows(); i++) {
     if (auto bin = getBin((*column)[i])) {
-      binned_values[i] = bin.value();
+      binned_values[i] = *bin;
     } else {
 #pragma omp critical
       invalid_value = (*column)[i];
@@ -29,7 +29,7 @@ void BinningTransformation::apply(ColumnMap& columns) {
   auto output_column = std::make_shared<VectorValueColumn<uint32_t>>(
       std::move(binned_values), _num_bins);
 
-  columns.addColumn(_output_column_name, output_column);
+  columns.setColumn(_output_column_name, output_column);
 }
 
 std::optional<uint32_t> BinningTransformation::getBin(float value) const {

@@ -31,7 +31,7 @@ class NumpyValueColumn final : public ValueColumn<T> {
             std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
   explicit NumpyValueColumn(const NumpyArray<uint32_t>& array, uint32_t dim)
       : _dim(dim) {
-    checkArrayDim(array);
+    checkArrayis1D(array);
 
     _buffer_info = array.request();
 
@@ -50,7 +50,7 @@ class NumpyValueColumn final : public ValueColumn<T> {
   template <typename U = T,
             std::enable_if_t<std::is_same<U, float>::value, bool> = true>
   explicit NumpyValueColumn(const NumpyArray<float>& array) : _dim(1) {
-    checkArrayDim(array);
+    checkArrayis1D(array);
 
     _buffer_info = array.request();
   }
@@ -70,7 +70,7 @@ class NumpyValueColumn final : public ValueColumn<T> {
   }
 
  private:
-  static void checkArrayDim(const NumpyArray<uint32_t>& array) {
+  static void checkArrayis1D(const NumpyArray<uint32_t>& array) {
     if (array.ndim() != 1 && (array.ndim() != 2 || array.shape(1) != 1)) {
       throw std::invalid_argument(
           "Can only construct NumpyValueColumn from 1D numpy array.");
@@ -95,21 +95,9 @@ class NumpyArrayColumn final : public ArrayColumn<T> {
             std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
   explicit NumpyArrayColumn(const NumpyArray<uint32_t>& array, uint32_t dim)
       : _dim(dim) {
-    checkArrayDim(array);
+    checkArrayIs2D(array);
 
     _buffer_info = array.request();
-  }
-
-  // This uses SFINAE to disable the folowing constructor if T is not a certain
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, float>::value, bool> = true>
-  explicit NumpyArrayColumn(const NumpyArray<float>& array) {
-    checkArrayDim(array);
-
-    _buffer_info = array.request();
-    _dim = _buffer_info.shape[1];
-
     for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
       for (uint32_t index : operator[](row_index)) {
         if (index >= _dim) {
@@ -119,6 +107,17 @@ class NumpyArrayColumn final : public ArrayColumn<T> {
         }
       }
     }
+  }
+
+  // This uses SFINAE to disable the folowing constructor if T is not a certain
+  // type. https://en.cppreference.com/w/cpp/types/enable_if
+  template <typename U = T,
+            std::enable_if_t<std::is_same<U, float>::value, bool> = true>
+  explicit NumpyArrayColumn(const NumpyArray<float>& array) {
+    checkArrayIs2D(array);
+
+    _buffer_info = array.request();
+    _dim = _buffer_info.shape[1];
   }
 
   std::optional<DimensionInfo> dimension() const final {
@@ -146,7 +145,7 @@ class NumpyArrayColumn final : public ArrayColumn<T> {
   }
 
  private:
-  static void checkArrayDim(const NumpyArray<uint32_t>& array) {
+  static void checkArrayIs2D(const NumpyArray<uint32_t>& array) {
     if (array.ndim() != 2) {
       throw std::invalid_argument(
           "Can only construct NumpyArrayColumn from 2D numpy array.");

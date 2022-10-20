@@ -51,7 +51,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString)
-      .def("numpy", [](const BoltVector& vector) -> py::object {
+      .def("to_numpy", [](const BoltVector& vector) -> py::object {
         NumpyArray<float> activations_array(vector.len);
         std::copy(vector.activations, vector.activations + vector.len,
                   activations_array.mutable_data());
@@ -451,24 +451,24 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<NumpyValueColumn<uint32_t>, Column,
              std::shared_ptr<NumpyValueColumn<uint32_t>>>(
-      columns_submodule, "NumpyIntegerValueColumn")
+      columns_submodule, "NumpySparseValueColumn")
       .def(py::init<const NumpyArray<uint32_t>&, uint32_t>(), py::arg("array"),
            py::arg("dim"));
 
   py::class_<NumpyValueColumn<float>, Column,
              std::shared_ptr<NumpyValueColumn<float>>>(columns_submodule,
-                                                       "NumpyFloatValueColumn")
+                                                       "NumpyDenseValueColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
 
   py::class_<NumpyArrayColumn<uint32_t>, Column,
              std::shared_ptr<NumpyArrayColumn<uint32_t>>>(
-      columns_submodule, "NumpyIntegerArrayColumn")
+      columns_submodule, "NumpySparseArrayColumn")
       .def(py::init<const NumpyArray<uint32_t>&, uint32_t>(), py::arg("array"),
            py::arg("dim"));
 
   py::class_<NumpyArrayColumn<float>, Column,
              std::shared_ptr<NumpyArrayColumn<float>>>(columns_submodule,
-                                                       "NumpyFloatArrayColumn")
+                                                       "NumpyDenseArrayColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
 
   auto transformations_submodule =
@@ -481,8 +481,9 @@ void createDatasetSubmodule(py::module_& module) {
              std::shared_ptr<BinningTransformation>>(transformations_submodule,
                                                      "Binning")
       .def(py::init<std::string, std::string, float, float, uint32_t>(),
-           py::arg("input_column"), py::arg("output_column"), py::arg("min"),
-           py::arg("max"), py::arg("num_bins"));
+           py::arg("input_column"), py::arg("output_column"),
+           py::arg("inclusive_min"), py::arg("exclusive_max"),
+           py::arg("num_bins"));
 
   py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),

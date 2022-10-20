@@ -15,8 +15,8 @@ def test_binning_transformation():
     column2_np = np.arange(start=10, stop=n_rows + 10, dtype=np.float32)
     np.random.shuffle(column2_np)
 
-    column1 = dataset.columns.NumpyFloatValueColumn(column1_np)
-    column2 = dataset.columns.NumpyFloatValueColumn(column2_np)
+    column1 = dataset.columns.NumpyDenseValueColumn(column1_np)
+    column2 = dataset.columns.NumpyDenseValueColumn(column2_np)
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
@@ -25,15 +25,15 @@ def test_binning_transformation():
             dataset.transformations.Binning(
                 input_column="column1",
                 output_column="column1_binned",
-                min=0,
-                max=100,
+                inclusive_min=0,
+                exclusive_max=100,
                 num_bins=5,
             ),
             dataset.transformations.Binning(
                 input_column="column2",
                 output_column="column2",
-                min=10,
-                max=110,
+                inclusive_min=10,
+                exclusive_max=110,
                 num_bins=20,
             ),
         ]

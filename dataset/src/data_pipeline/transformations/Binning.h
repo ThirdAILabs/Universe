@@ -9,6 +9,9 @@
 
 namespace thirdai::dataset {
 
+// Bins a dense float column into categorical sparse values. If the input column
+// is the same as the output column then that column will be replaced in the
+// column map.
 class BinningTransformation final : public Transformation {
  public:
   BinningTransformation(std::string input_column_name,

@@ -6,35 +6,35 @@ from thirdai import dataset
 pytestmark = [pytest.mark.unit]
 
 
-def get_integer_value_column(n_rows, dim):
+def get_sparse_value_column(n_rows, dim):
     column_np = np.random.randint(low=0, high=dim, size=(n_rows, 1))
-    column = dataset.columns.NumpyIntegerValueColumn(array=column_np, dim=dim)
+    column = dataset.columns.NumpySparseValueColumn(array=column_np, dim=dim)
     return column, column_np
 
 
-def get_float_value_column(n_rows):
+def get_dense_value_column(n_rows):
     column_np = np.random.rand(n_rows, 1)
-    column = dataset.columns.NumpyFloatValueColumn(array=column_np)
+    column = dataset.columns.NumpyDenseValueColumn(array=column_np)
     return column, column_np
 
 
-def get_integer_array_column(n_rows, dim, num_nonzeros):
+def get_sparse_array_column(n_rows, dim, num_nonzeros):
     column_np = np.random.randint(low=0, high=dim, size=(n_rows, num_nonzeros))
-    column = dataset.columns.NumpyIntegerArrayColumn(array=column_np, dim=dim)
+    column = dataset.columns.NumpySparseArrayColumn(array=column_np, dim=dim)
     return column, column_np
 
 
-def get_float_array_column(n_rows, dim):
+def get_dense_array_column(n_rows, dim):
     column_np = np.random.rand(n_rows, dim)
-    column = dataset.columns.NumpyFloatArrayColumn(array=column_np)
+    column = dataset.columns.NumpyDenseArrayColumn(array=column_np)
     return column, column_np
 
 
 def test_dense_columns_to_dataset():
     n_rows = 100
 
-    column1, column1_np = get_float_value_column(n_rows)
-    column2, column2_np = get_float_array_column(n_rows, dim=7)
+    column1, column1_np = get_dense_value_column(n_rows)
+    column2, column2_np = get_dense_array_column(n_rows, dim=7)
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
@@ -53,11 +53,11 @@ def test_sparse_columns_to_dataset():
     n_rows = 100
 
     column1_dim = 10
-    column1, column1_np = get_integer_value_column(n_rows, dim=column1_dim)
+    column1, column1_np = get_sparse_value_column(n_rows, dim=column1_dim)
 
     column2_dim = 20
     column2_nonzeros = 7
-    column2, column2_np = get_integer_array_column(
+    column2, column2_np = get_sparse_array_column(
         n_rows, dim=column2_dim, num_nonzeros=column2_nonzeros
     )
 
@@ -80,13 +80,9 @@ def test_sparse_columns_to_dataset():
 def test_dense_sparse_columns_to_dataset():
     n_rows = 100
 
-    column1, column1_np = get_float_value_column(n_rows)
+    column1, column1_np = get_dense_value_column(n_rows)
 
-    column2_dim = 20
-    column2_nonzeros = 7
-    column2, column2_np = get_integer_array_column(
-        n_rows, dim=column2_dim, num_nonzeros=column2_nonzeros
-    )
+    column2, column2_np = get_sparse_array_column(n_rows, dim=20, num_nonzeros=7)
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
@@ -115,18 +111,14 @@ def test_multiple_sparse_dense_columns_to_dataset():
     n_rows = 100
 
     column1_dim = 13
-    column1, column1_np = get_float_array_column(n_rows, dim=column1_dim)
+    column1, column1_np = get_dense_array_column(n_rows, dim=column1_dim)
 
-    column2, column2_np = get_float_value_column(n_rows)
+    column2, column2_np = get_dense_value_column(n_rows)
 
     column3_dim = 10
-    column3, column3_np = get_integer_value_column(n_rows, dim=column3_dim)
+    column3, column3_np = get_sparse_value_column(n_rows, dim=column3_dim)
 
-    column4_dim = 40
-    column4_nonzeros = 8
-    column4, column4_np = get_integer_array_column(
-        n_rows, dim=column4_dim, num_nonzeros=column4_nonzeros
-    )
+    column4, column4_np = get_sparse_array_column(n_rows, dim=40, num_nonzeros=8)
 
     columns = dataset.ColumnMap(
         {"column1": column1, "column2": column2, "column3": column3, "column4": column4}
