@@ -237,6 +237,10 @@ class DlrmAttentionNode final
         "DLRMFeatureInteractionNode is in an invalid internal state");
   }
 
+  void enableDistributedTraining() final {
+    // NOOP since the DlrmAttention node doesn't have any paramters
+  }
+
  private:
   template <bool FC_OUTPUT_DENSE>
   static float fcOutputEmbeddingDotProduct(const BoltVector& fc_output,

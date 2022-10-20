@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/utils/TimeUtils.h>
 #include <exception>
@@ -40,7 +43,7 @@ class DateBlock : public Block {
 
   Explanation explainIndex(
       uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) const final {
+      const std::vector<std::string_view>& input_row) final {
     (void)input_row;
     std::string reason;
     if (index_within_block >= featureDim()) {
@@ -58,6 +61,8 @@ class DateBlock : public Block {
     }
     return {_col, reason};
   }
+
+  static auto make(uint32_t col) { return std::make_shared<DateBlock>(col); }
 
  protected:
   static constexpr uint32_t day_of_week_dim = 7;
@@ -98,6 +103,17 @@ class DateBlock : public Block {
 
  private:
   uint32_t _col;
+
+  // Constructor for Cereal
+  DateBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _col);
+  }
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::DateBlock)

@@ -113,6 +113,12 @@ class SwitchNode final : public Node,
     return shared_from_this();
   }
 
+  void enableDistributedTraining() final {
+    for (const auto& fc_node : _layers) {
+      fc_node->enableDistributedTraining();
+    }
+  }
+
  private:
   void compileImpl() final {
     for (auto& layer : _layers) {

@@ -65,9 +65,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::vector<BoltVector> batch_labels(rows.size());
 
     auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
-    for (auto& block : _input_blocks) {
-      block->prepareForBatch(first_row);
-    }
+    prepareInputBlocksForBatch(first_row);
     for (auto& block : _label_blocks) {
       block->prepareForBatch(first_row);
     }
@@ -123,6 +121,14 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   uint32_t getInputDim() const { return sumBlockDims(_input_blocks); }
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
+
+  void setParallelism(bool parallel) { _parallel = parallel; }
+
+  void prepareInputBlocksForBatch(std::vector<std::string_view>& sample) {
+    for (auto& block : _input_blocks) {
+      block->prepareForBatch(sample);
+    }
+  }
 
   std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
                                      BoltVector& vector) {
@@ -207,8 +213,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<BatchProcessor>(this), _input_blocks_dense,
-            _label_blocks_dense, _input_blocks, _label_blocks);
+    archive(cereal::base_class<BatchProcessor>(this), _expects_header,
+            _delimiter, _parallel, _expected_num_cols, _input_blocks_dense,
+            _label_blocks_dense, _input_blocks, _label_blocks,
+            _block_feature_offsets);
   }
 
   // Private constructor for cereal.

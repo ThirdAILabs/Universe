@@ -23,10 +23,10 @@
 
 namespace thirdai::bolt {
 
-class DistributedTrainingContext;
+class DistributedTrainingWrapper;
 
 class BoltGraph {
-  friend class DistributedTrainingContext;
+  friend class DistributedTrainingWrapper;
 
  public:
   /*
@@ -38,8 +38,9 @@ class BoltGraph {
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
-        _epoch_count(0),
-        _batch_cnt(0) {
+        _epoch(0),
+        _updates(0),
+        _tracked_metric(nullptr) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
@@ -93,9 +94,13 @@ class BoltGraph {
   // This only saves the graph in the compiled state, that is any parameters and
   // graph structure are preserved, but any state related to train or predict is
   // discarded.
-  void save(const std::string& filename);
+  void save(const std::string& filename) const;
 
-  static std::unique_ptr<BoltGraph> load(const std::string& filename);
+  void save_stream(std::ostream& output_stream) const;
+
+  static BoltGraphPtr load(const std::string& filename);
+
+  static BoltGraphPtr load_stream(std::istream& input_stream);
 
   std::string summarize(bool print, bool detailed) const;
 
@@ -109,6 +114,10 @@ class BoltGraph {
 
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
+
+  void log_validate_and_save(uint32_t batch_size,
+                             const TrainConfig& train_config,
+                             MetricAggregator& train_metrics);
 
   void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
@@ -158,12 +167,16 @@ class BoltGraph {
   void updateSampling(uint32_t rebuild_hash_tables_batch,
                       uint32_t reconstruct_hash_functions_batch);
 
-  // This function make sure that the parameter updates are dense
-  // in distributed setting even when the training is sparse
+  // This function makes sure all layers in the graph are prepard for
+  // distributed training. This chiefly is relevant during paramemeter updates,
+  // when a layer needs to know that it cannot rely on its own tracking of which
+  // neurons were activated (since the gradient will also be aggregated from
+  // other machines), and so it should do a dense parameter update no matter
+  // what.
   void enableDistributedTraining();
 
   constexpr bool checkBatchInterval(uint32_t num_batches) const {
-    return (_batch_cnt % num_batches) == (num_batches - 1);
+    return (_updates % num_batches) == (num_batches - 1);
   }
 
   void rebuildHashTables();
@@ -194,10 +207,14 @@ class BoltGraph {
 
   std::shared_ptr<LossFunction> _loss;
 
-  // TODO(blaise/david): Factor out _epoch_count and _batch_cnt and put
+  // TODO(blaise/david): Factor out _epoch and _updates and put
   // them in TrainState
-  uint32_t _epoch_count;
-  uint32_t _batch_cnt;
+  uint32_t _epoch;
+  uint32_t _updates;
+
+  // We need this value saved across training. Reset should be done by force.
+  double _best_validation_metric;
+  std::shared_ptr<Metric> _tracked_metric;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

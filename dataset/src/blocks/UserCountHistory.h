@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
@@ -12,11 +16,15 @@ class UserCountHistoryBlock final : public Block {
  public:
   UserCountHistoryBlock(uint32_t user_col, uint32_t count_col,
                         uint32_t timestamp_col,
-                        QuantityHistoryTrackerPtr history)
+                        QuantityHistoryTrackerPtr history,
+                        bool should_update_history = true,
+                        bool include_current_row = false)
       : _user_col(user_col),
         _count_col(count_col),
         _timestamp_col(timestamp_col),
-        _history(std::move(history)) {}
+        _history(std::move(history)),
+        _should_update_history(should_update_history),
+        _include_current_row(include_current_row) {}
 
   uint32_t featureDim() const final { return _history->historyLength(); }
   bool isDense() const final { return true; }
@@ -32,10 +40,12 @@ class UserCountHistoryBlock final : public Block {
 
   Explanation explainIndex(
       uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) const final {
-    auto [user, time_seconds, _] = getUserTimeVal(input_row);
+      const std::vector<std::string_view>& input_row) final {
+    auto [user, time_seconds, val] = getUserTimeVal(input_row);
 
-    auto counts = getNormalizedRecentCountHistory(user, time_seconds);
+    auto counts = indexAndGetCountsFromHistory(
+        user, time_seconds, val,
+        /* restore_after_getting_history_counts= */ true);
 
     std::string movement;
     if (counts.at(index_within_block) < 0) {
@@ -60,9 +70,12 @@ class UserCountHistoryBlock final : public Block {
   }
 
   static auto make(size_t user_col, size_t count_col, size_t timestamp_col,
-                   QuantityHistoryTrackerPtr history) {
-    return std::make_shared<UserCountHistoryBlock>(user_col, count_col,
-                                                   timestamp_col, history);
+                   QuantityHistoryTrackerPtr history,
+                   bool should_update_history = true,
+                   bool include_current_row = false) {
+    return std::make_shared<UserCountHistoryBlock>(
+        user_col, count_col, timestamp_col, history, should_update_history,
+        include_current_row);
   }
 
  protected:
@@ -71,9 +84,9 @@ class UserCountHistoryBlock final : public Block {
       SegmentedFeatureVector& vec) final {
     auto [user, time_seconds, val] = getUserTimeVal(input_row);
 
-    _history->index(user, time_seconds, val);
-
-    auto counts = getNormalizedRecentCountHistory(user, time_seconds);
+    auto counts = indexAndGetCountsFromHistory(
+        user, time_seconds, val,
+        /* restore_after_getting_history_counts= */ !_should_update_history);
 
     for (auto count : counts) {
       vec.addDenseFeatureToSegment(count);
@@ -89,13 +102,38 @@ class UserCountHistoryBlock final : public Block {
     auto time = TimeObject(input_row.at(_timestamp_col));
     int64_t time_seconds = time.secondsSinceEpoch();
 
-    char* end;
-    float val = std::strtof(input_row.at(_count_col).data(), &end);
-    if (std::isnan(val) || std::isinf(val)) {
-      val = 0.0;
+    float val;
+    if (_include_current_row || _should_update_history) {
+      char* end;
+      val = std::strtof(input_row.at(_count_col).data(), &end);
+      if (std::isnan(val) || std::isinf(val)) {
+        val = 0.0;
+      }
+    } else {
+      val = 0;
     }
 
     return {std::move(user), time_seconds, val};
+  }
+
+  std::vector<float> indexAndGetCountsFromHistory(
+      const std::string& user, int64_t timestamp_seconds, float val,
+      bool restore_after_getting_history_counts) {
+    if (_include_current_row) {
+      _history->index(user, timestamp_seconds, val);
+    }
+
+    auto counts = getNormalizedRecentCountHistory(user, timestamp_seconds);
+
+    if (_include_current_row && restore_after_getting_history_counts) {
+      _history->index(user, timestamp_seconds, -val);  // Subtract to un-index
+    }
+
+    if (!_include_current_row && !restore_after_getting_history_counts) {
+      _history->index(user, timestamp_seconds, val);
+    }
+
+    return counts;
   }
 
   std::vector<float> getNormalizedRecentCountHistory(
@@ -138,8 +176,24 @@ class UserCountHistoryBlock final : public Block {
   uint32_t _count_col;
   uint32_t _timestamp_col;
   QuantityHistoryTrackerPtr _history;
+
+  bool _should_update_history;
+  bool _include_current_row;
+
+  // Constructor for Cereal
+  UserCountHistoryBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _user_col, _count_col,
+            _timestamp_col, _history, _should_update_history,
+            _include_current_row);
+  }
 };
 
 using UserCountHistoryBlockPtr = std::shared_ptr<UserCountHistoryBlock>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::UserCountHistoryBlock)

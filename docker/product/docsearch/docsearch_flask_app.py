@@ -1,15 +1,12 @@
-import numpy as np
+import sys
 import time
 
+import numpy as np
 import thirdai
-from thirdai.search import DocRetrieval
-
-from thirdai.embeddings import DocSearchModel
-
 import torch
-
-from flask import Flask, request, abort, jsonify
-import sys
+from flask import Flask, abort, jsonify, request
+from thirdai.embeddings import DocSearchModel
+from thirdai.search import DocRetrieval
 
 app = Flask(__name__)
 

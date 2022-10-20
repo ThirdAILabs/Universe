@@ -2,8 +2,8 @@ name: Run Python Tests
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
-concurrency: 
-  group: pytest-${{ github.head_ref }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
   
 # Controls when the workflow will run
@@ -37,3 +37,22 @@ jobs:
 
       - name: Run python integration tests
         run: bin/python-test.sh -m integration
+
+  distributed-python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+      # the rest of the steps
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+        
+      - name: Build python package and install test dependencies
+        run: bin/build.py --extras test
+
+      - name: Call build again to also install distributed dependencies
+        run: bin/build.py --extras distributed
+
+      - name: Run python distributed tests
+        run: bin/python-test.sh -m distributed

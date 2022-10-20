@@ -1,5 +1,6 @@
-from ..cookie_monster import *
 import argparse
+
+from ..cookie_monster import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument(

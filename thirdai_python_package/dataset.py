@@ -1,6 +1,7 @@
+import time
+
 import thirdai._thirdai.dataset
 from thirdai._thirdai.dataset import *
-import time
 
 __all__ = []
 __all__.extend(dir(thirdai._thirdai.dataset))
@@ -119,5 +120,5 @@ class S3DataLoader(DataLoader):
         return f"s3://{self._bucket_name}/{self._prefix_filter}"
 
 
-__all__.append(tokenize_to_svm)
-__all__.append(S3DataLoader)
+__all__.append("tokenize_to_svm")
+__all__.append("S3DataLoader")

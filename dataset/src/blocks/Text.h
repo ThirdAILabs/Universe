@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <utils/StringManipulation.h>
@@ -23,7 +26,7 @@ class TextBlock : public Block {
 
   Explanation explainIndex(
       uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) const final {
+      const std::vector<std::string_view>& input_row) final {
     return {_col, getResponsibleWord(index_within_block, input_row.at(_col))};
   }
 
@@ -42,8 +45,17 @@ class TextBlock : public Block {
 
   uint32_t _dim;
 
+  // Constructor for cereal.
+  TextBlock() {}
+
  private:
   uint32_t _col;
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _dim, _col);
+  }
 };
 
 using TextBlockPtr = std::shared_ptr<TextBlock>;
@@ -85,6 +97,16 @@ class PairGramTextBlock final : public TextBlock {
 
     return nullptr;
   }
+
+ private:
+  // Private constructor for cereal.
+  PairGramTextBlock() {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextBlock>(this));
+  }
 };
 
 using PairGramTextBlockPtr = std::shared_ptr<PairGramTextBlock>;
@@ -123,6 +145,16 @@ class UniGramTextBlock final : public TextBlock {
         });
 
     return nullptr;
+  }
+
+ private:
+  // Private constructor for cereal.
+  UniGramTextBlock() {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextBlock>(this));
   }
 };
 
@@ -189,3 +221,7 @@ class CharKGramTextBlock final : public TextBlock {
 using CharKGramTextBlockPtr = std::shared_ptr<CharKGramTextBlock>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::TextBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::PairGramTextBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::UniGramTextBlock)

@@ -1,14 +1,18 @@
 # Add unit and release test markers for all tests in this file
-import pytest
 import platform
+
+import pytest
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
-import thirdai
-from doc_retrieval_helpers import get_build_and_run_functions_random
-from doc_retrieval_helpers import get_build_and_run_functions_restful
-import numpy as np
 import time
+
+import numpy as np
+import thirdai
+from doc_retrieval_helpers import (
+    get_build_and_run_functions_random,
+    get_build_and_run_functions_restful,
+)
 
 
 @pytest.mark.unit
@@ -86,6 +90,7 @@ def test_error_inputs():
     assert end - start < 0.1
 
 
+@pytest.mark.xfail
 @pytest.mark.unit
 def test_add_doc_find_centroids_is_fast():
     """

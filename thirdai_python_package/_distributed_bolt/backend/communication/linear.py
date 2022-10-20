@@ -1,5 +1,7 @@
 import ray
 
+from ...utils import set_gradients
+
 
 class Linear:
     def __init__(self, model, id, primary_worker):
@@ -7,11 +9,11 @@ class Linear:
         self.id = id
         self.primary_worker = primary_worker
 
-    def calculate_gradients(self, batch_no):
+    def compute_and_store_batch_gradients(self, batch_no):
         """
-        This functions calls the API 'calculateGradientSingleNode',
+        This functions calls the API 'compute_and_store_batch_gradients',
         which calculates the gradients for the network managed by
-        this particular worker. The calculateGradientSingleNode trains
+        this particular worker. The compute_and_store_batch_gradients trains
         the network and calculates the gradient for the particular
         training batch with batch no. batch_no and with loss function
         specified in the config.
@@ -21,10 +23,9 @@ class Linear:
         :return: shows completion
         :rtype: bool
         """
-        self.model.calculate_gradients(batch_no)
-        return True
+        self.model.compute_and_store_batch_gradients(batch_no)
 
-    def receive_gradients(self):
+    def receive_gradients(self, averaged_gradients):
         """
         This function is called by the primary_worker to first, get the updated gradients
         from the primary_worker and then set those updated gradients to the network.
@@ -32,11 +33,5 @@ class Linear:
         :return: returns True, after functions complete
         :rtype: bool
         """
-        if self.id is 0:
-            self.w_gradients, self.b_gradients = self.primary_worker.gradients_avg()
-        else:
-            self.w_gradients, self.b_gradients = ray.get(
-                self.primary_worker.gradients_avg.remote()
-            )
-        self.model.set_gradients(self.w_gradients, self.b_gradients)
-        return True
+
+        set_gradients(self.model, averaged_gradients)
