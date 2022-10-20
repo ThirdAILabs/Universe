@@ -18,14 +18,13 @@ class CrossColumnPairgram : public Transformation {
         _output_range(output_range) {}
 
   void apply(ColumnMap& column_map) final {
-    std::vector<std::shared_ptr<IntegerValueColumn>> columns(
+    std::vector<std::shared_ptr<SparseValueColumn>> columns(
         _input_column_names.size());
     for (const auto& col_name : _input_column_names) {
-      columns.push_back(column_map.getIntegerValueColumn(col_name));
+      columns.push_back(column_map.getSparseValueColumn(col_name));
     }
 
-    
-
+  
 #pragma omp parallel for default(none) \
     shared(column_map, columns, _output_range)
     for (uint32_t row_idx = 0; row_idx < column_map.numRows(); row_idx++) {
