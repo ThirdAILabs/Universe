@@ -115,6 +115,13 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig",  // NOLINT
                                         docs::NODE_CONFIG);
 
+  py::class_<DotProductNodeConfig, NodeConfig,
+             std::shared_ptr<DotProductNodeConfig>>(submodule,
+                                                    "DotProductNodeConfig")
+      .def(py::init<std::string, std::string, std::string>(), py::arg("name"),
+           py::arg("left_predecessor_name"), py::arg("right_predecessor_name"),
+           docs::DOT_PRODUCT_NODE_CONFIG_INIT);
+
   py::class_<FullyConnectedNodeConfig, NodeConfig,
              std::shared_ptr<FullyConnectedNodeConfig>>(
       submodule, "FullyConnectedNodeConfig")

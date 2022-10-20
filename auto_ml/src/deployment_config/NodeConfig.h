@@ -7,6 +7,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "HyperParameter.h"
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/nodes/DotProduct.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <optional>
@@ -90,7 +91,6 @@ class FullyConnectedNodeConfig final : public NodeConfig {
 
   bolt::NodePtr createNode(
       const PredecessorsMap& possible_predecessors,
-
       const UserInputMap& user_specified_parameters) const final {
     uint32_t dim = _dim->resolve(user_specified_parameters);
     float sparsity = _sparsity->resolve(user_specified_parameters);
@@ -130,6 +130,43 @@ class FullyConnectedNodeConfig final : public NodeConfig {
   }
 };
 
+class DotProductNodeConfig final : public NodeConfig {
+ public:
+  DotProductNodeConfig(std::string node_name, std::string left_predecessor_name,
+                       std::string right_predecessor_name)
+      : NodeConfig(std::move(node_name)),
+        _left_predecessor_name(std::move(left_predecessor_name)),
+        _right_predecessor_name(std::move(right_predecessor_name)) {}
+
+  bolt::NodePtr createNode(
+      const PredecessorsMap& possible_predecessors,
+      const UserInputMap& user_specified_parameters) const final {
+    // No expected user parameter inputs
+    (void)user_specified_parameters;
+
+    bolt::DotProductNodePtr node = bolt::DotProductNode::make();
+    node->setPredecessors(possible_predecessors.get(_left_predecessor_name),
+                          possible_predecessors.get(_right_predecessor_name));
+
+    return node;
+  }
+
+ private:
+  std::string _left_predecessor_name;
+  std::string _right_predecessor_name;
+
+  // Private constructor for cereal
+  DotProductNodeConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<NodeConfig>(this), _left_predecessor_name,
+            _right_predecessor_name);
+  }
+};
+
 }  // namespace thirdai::automl::deployment
 
 CEREAL_REGISTER_TYPE(thirdai::automl::deployment::FullyConnectedNodeConfig)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::DotProductNodeConfig)

@@ -263,6 +263,30 @@ Examples:
 
 )pbdoc";
 
+const char* const DOT_PRODUCT_NODE_CONFIG_INIT = R"pbdoc(
+Constructs a DotProductNodeConfig representing a node that computes the
+dot product of the difference of two predecessor nodes in the final bolt dag model.
+
+Args:
+    name (str): The name of the node. This is used by subsequent nodes to reference
+        this node as a predecessor.
+    left_predecessor_name(str): The name of the first node required
+        to compute the dot product. 
+    right_predecessor_name(str): The name of the second node required
+        to compute the dot product. 
+
+Returns: 
+    DotProductNodeConfig: 
+
+Examples:
+    >>> layer_config = deployment.DotProductNodeConfig(
+            name="dot-product",
+            left_predecessor_name="hidden_1",
+            right_predecessor_name="hidden_2
+        )
+
+)pbdoc";
+
 const char* const MODEL_CONFIG_INIT = R"pbdoc(
 Constructs a ModelConfig which represents the complete bolt dag model for a ModelPipeline.
 
