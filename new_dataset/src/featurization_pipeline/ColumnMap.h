@@ -2,7 +2,7 @@
 
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/data_pipeline/Column.h>
+#include <new_dataset/src/featurization_pipeline/Column.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>

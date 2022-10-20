@@ -1,7 +1,7 @@
 #pragma once
 
-#include <dataset/src/data_pipeline/Transformation.h>
-#include <dataset/src/data_pipeline/columns/VectorColumns.h>
+#include <new_dataset/src/featurization_pipeline/Transformation.h>
+#include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <exception>
 #include <optional>
 #include <stdexcept>

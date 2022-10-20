@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dataset/src/data_pipeline/Column.h>
+#include <new_dataset/src/featurization_pipeline/Column.h>
 #include <stdexcept>
 
 namespace thirdai::dataset {

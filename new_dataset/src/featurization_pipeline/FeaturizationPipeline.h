@@ -2,8 +2,8 @@
 
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/data_pipeline/ColumnMap.h>
-#include <dataset/src/data_pipeline/Transformation.h>
+#include <new_dataset/src/featurization_pipeline/ColumnMap.h>
+#include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <algorithm>
 
 namespace thirdai::dataset {

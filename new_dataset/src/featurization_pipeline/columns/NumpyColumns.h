@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dataset/src/data_pipeline/Column.h>
+#include <new_dataset/src/featurization_pipeline/Column.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from dataset_utils import sparse_bolt_dataset_to_numpy
-from thirdai import dataset
+from thirdai import new_dataset as dataset
 
 pytestmark = [pytest.mark.unit]
 

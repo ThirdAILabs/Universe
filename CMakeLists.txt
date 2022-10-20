@@ -253,9 +253,11 @@ set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
 set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
 set(DATASET_SOURCES
-    dataset/src/Vocabulary.cc
-    dataset/src/data_pipeline/transformations/Binning.cc
-    dataset/src/data_pipeline/ColumnMap.cc)
+    dataset/src/Vocabulary.cc)
+
+set(NEW_DATASET_SOURCES
+    new_dataset/src/featurization_pipeline/transformations/Binning.cc
+    new_dataset/src/featurization_pipeline/ColumnMap.cc)
 
 set(COMPRESSION_SOURCES compression/src/CountSketch.cc
                         compression/src/DragonVector.cc)
@@ -270,6 +272,7 @@ add_library(
   ${HASHTABLE_SOURCES}
   ${LICENSE_SOURCES}
   ${DATASET_SOURCES}
+  ${NEW_DATASET_SOURCES}
   ${COMPRESSION_SOURCES}
   ${UTILS_SOURCES})
 
@@ -288,6 +291,7 @@ pybind11_add_module(
   bolt/python_bindings/BoltGraphPython.cc
   dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_classifiers/python_bindings/AutoClassifiersPython.cc
