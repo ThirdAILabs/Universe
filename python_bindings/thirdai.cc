@@ -5,6 +5,7 @@
 #include <auto_ml/python_bindings/DeploymentPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/DatasetPython.h>
+#include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <utils/Logging.h>
 #include <utils/Version.h>
@@ -119,7 +120,11 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
 
-  thirdai::dataset::python::createNewDatasetSubmodule(m);
+  auto dataset_submodule = m.def_submodule("new_dataset");
+
+  thirdai::dataset::python::createNewDatasetSubmodule(dataset_submodule);
+
+  thirdai::dataset::python::createFeaturizationSubmodule(dataset_submodule);
 
   thirdai::hashing::python::createHashingSubmodule(m);
 
