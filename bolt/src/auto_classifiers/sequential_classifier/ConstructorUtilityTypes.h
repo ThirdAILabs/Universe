@@ -145,6 +145,8 @@ class TemporalConfig {
 
   const std::string& columnName() const { return _column_name; }
 
+  bool includesCurrentRow() const { return _include_current_row; }
+
   bool isCategorical() const { return _type == TemporalType::categorical; }
   bool isNumerical() const { return _type == TemporalType::numerical; }
 

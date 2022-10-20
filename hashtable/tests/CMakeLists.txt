@@ -1,23 +1,12 @@
 enable_testing()
 
-add_executable(vector_hash_table_test VectorHashTableTest.cc)
-
-target_link_libraries(vector_hash_table_test PRIVATE hash_table_lib gtest_main)
-
-add_executable(sampled_hash_table_test SampledHashTableTest.cc)
-
-target_link_libraries(sampled_hash_table_test PRIVATE hash_table_lib gtest_main)
-
-add_executable(tiny_table_test TinyTableTest.cc)
-
-target_link_libraries(tiny_table_test PRIVATE hash_table_lib gtest_main)
-
 include(GoogleTest)
 
-set(HASH_TABLE_TESTS vector_hash_table_test sampled_hash_table_test
-                     tiny_table_test)
+set(HASH_TABLE_TESTS VectorHashTableTest SampledHashTableTest TinyTableTest)
 
 foreach(HASH_TABLE_TEST IN LISTS HASH_TABLE_TESTS)
+  add_executable(${HASH_TABLE_TEST} ${HASH_TABLE_TEST}.cc)
+  target_link_libraries(${HASH_TABLE_TEST} PRIVATE thirdai gtest_main)
   gtest_discover_tests(${HASH_TABLE_TEST} DISCOVERY_TIMEOUT
                        ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
 endforeach()

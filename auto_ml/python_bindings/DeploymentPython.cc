@@ -7,6 +7,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -14,12 +15,19 @@
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/Aliases.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <cstdint>
+#include <exception>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -52,6 +60,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
       submodule, "SamplingConfigHyperParameter", docs::STR_HYPERPARAMETER);
 
+  py::class_<HyperParameter<OracleConfigPtr>,  // NOLINT
+             HyperParameterPtr<OracleConfigPtr>>(submodule,
+                                                 "OracleConfigHyperParameter");
+
   /**
    * Do not change the order of these overloads. Because bool is a sublclass of
    * int in python, it must be declared first or calling this function with a
@@ -65,6 +77,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defConstantParameter<std::string>(submodule, /* add_docs= */ false);
   defConstantParameter<bolt::SamplingConfigPtr>(submodule,
                                                 /* add_docs= */ false);
+  defConstantParameter<OracleConfigPtr>(submodule,
+                                        /* add_docs= */ false);
 
   defOptionMappedParameter<bool>(submodule, /* add_docs= */ true);
   defOptionMappedParameter<uint32_t>(submodule, /* add_docs= */ false);
@@ -72,6 +86,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defOptionMappedParameter<std::string>(submodule, /* add_docs= */ false);
   defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule,
                                                     /* add_docs= */ false);
+  defOptionMappedParameter<OracleConfigPtr>(submodule,
+                                            /* add_docs= */ false);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"),
@@ -82,6 +98,19 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       submodule, "AutotunedSparsityParameter")
       .def(py::init<std::string>(), py::arg("dimension_param_name"),
            docs::AUTOTUNED_SPARSITY_PARAMETER_INIT);
+
+  py::class_<DatasetLabelDimensionParameter, HyperParameter<uint32_t>,
+             std::shared_ptr<DatasetLabelDimensionParameter>>(
+      submodule, "DatasetLabelDimensionParameter",
+      docs::DATASET_LABEL_DIM_PARAM)
+      .def(py::init<>())
+      // This is why we pass in a py::object:
+      // https://stackoverflow.com/questions/70504125/pybind11-pyclass-def-property-readonly-static-incompatible-function-arguments
+      .def_property_readonly_static(
+          "dimension_param_name", [](py::object& param) {
+            (void)param;
+            return DatasetLabelDimensionParameter::PARAM_NAME;
+          });
 
   py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig",  // NOLINT
                                         docs::NODE_CONFIG);
@@ -147,6 +176,14 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("delimiter"),
            docs::SINGLE_BLOCK_DATASET_FACTORY_CONFIG_INIT);
 
+  py::class_<OracleDatasetFactoryConfig, DatasetLoaderFactoryConfig,
+             std::shared_ptr<OracleDatasetFactoryConfig>>(
+      submodule, "OracleDatasetFactory")
+      .def(py::init<HyperParameterPtr<OracleConfigPtr>, HyperParameterPtr<bool>,
+                    HyperParameterPtr<uint32_t>>(),
+           py::arg("config"), py::arg("parallel"),
+           py::arg("text_pairgram_word_limit"));
+
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
                     bool, std::optional<float>>(),
@@ -191,6 +228,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("predict", &predictWrapper, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT)
+      .def("explain", &ModelPipeline::explain, py::arg("input_sample"),
+           py::arg("target_class") = std::nullopt, docs::MODEL_PIPELINE_EXPLAIN)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_TOKENS)
@@ -202,7 +241,28 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("save", &ModelPipeline::save, py::arg("filename"),
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
-                  docs::MODEL_PIPELINE_LOAD);
+                  docs::MODEL_PIPELINE_LOAD)
+      // getArtifact returns a variant which then gets resolved to one of its
+      // contained types.
+      .def("get_artifact", &ModelPipeline::getArtifact, py::arg("name"),
+           docs::MODEL_PIPELINE_GET_ARTIFACT)
+      .def("list_artifact_names", &ModelPipeline::listArtifactNames,
+           docs::MODEL_PIPELINE_LIST_ARTIFACTS);
+
+  py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
+      .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
+                    std::string, std::string, uint32_t>(),
+           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
+           py::arg("target"), py::arg("time_granularity") = "daily",
+           py::arg("lookahead") = 0, docs::ORACLE_CONFIG_INIT);
+
+  py::class_<TemporalContext, TemporalContextPtr>(submodule, "TemporalContext")
+      .def("reset", &TemporalContext::reset, docs::TEMPORAL_CONTEXT_RESET)
+      .def("update_temporal_trackers", &TemporalContext::updateTemporalTrackers,
+           py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
+      .def("batch_update_temporal_trackers",
+           &TemporalContext::batchUpdateTemporalTrackers, py::arg("updates"),
+           docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
 }
 
 template <typename T>
@@ -248,10 +308,15 @@ py::object makeUserSpecifiedParameter(const std::string& name,
     return py::cast(UserSpecifiedParameter<std::string>::make(name));
   }
 
+  if (py::str(type).cast<std::string>() ==
+      "<class 'thirdai._thirdai.deployment.OracleConfig'>") {
+    return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(name));
+  }
+
   throw std::invalid_argument("Invalid type '" +
                               py::str(type).cast<std::string>() +
                               "' passed to UserSpecifiedParameter. Must be one "
-                              "of bool, int, float, or str.");
+                              "of bool, int, float, str, or OracleConfig.");
 }
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
@@ -275,11 +340,14 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
       cpp_parameters.emplace(name, UserParameterInput(value));
+    } else if (py::isinstance<OracleConfig>(v)) {
+      OracleConfigPtr value = v.cast<OracleConfigPtr>();
+      cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
-      throw std::invalid_argument("Invalid type '" +
-                                  py::str(v.get_type()).cast<std::string>() +
-                                  "'. Values of parameters dictionary must be "
-                                  "bool, int, float, or str.");
+      throw std::invalid_argument(
+          "Invalid type '" + py::str(v.get_type()).cast<std::string>() +
+          "'. Values of parameters dictionary must be "
+          "bool, int, float, str, OracleConfig, or TemporalContext.");
     }
   }
 

@@ -5,14 +5,17 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <dataset/src/DataLoader.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace thirdai::automl::deployment {
@@ -40,7 +43,6 @@ class ModelPipeline {
                        user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
-
     return ModelPipeline(std::move(dataset_factory), std::move(model),
                          config->train_eval_parameters());
   }
@@ -148,6 +150,15 @@ class ModelPipeline {
     return outputs;
   }
 
+  std::vector<dataset::Explanation> explain(
+      const std::string& sample,
+      std::optional<uint32_t> target_label = std::nullopt) {
+    auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
+        {_dataset_factory->featurizeInput(sample)}, true, target_label);
+    return _dataset_factory->explain(gradients_indices, gradients_ratio,
+                                     sample);
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -175,6 +186,14 @@ class ModelPipeline {
                                                   /* training= */ false);
     return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
         .value();
+  }
+
+  Artifact getArtifact(const std::string& name) const {
+    return _dataset_factory->getArtifact(name);
+  }
+
+  std::vector<std::string> listArtifactNames() const {
+    return _dataset_factory->listArtifactNames();
   }
 
  private:
