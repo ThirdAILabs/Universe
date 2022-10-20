@@ -309,7 +309,31 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("validation_frequency") = 0)
+           py::arg("predict_config"), py::arg("validation_frequency") = 0,
+           py::arg("save_best_per_metric") = "",
+           R"pbdoc(
+Add validation options to execute validation during training. Can be used to
+configure input data and labels, frequency to validate and optionally saving
+best model per a specified metric.
+
+Args:
+    validation_data (dataset.BoltDataset): 
+        Input dataset for validation
+    validation_label (dataset.BoltDataset): 
+        Ground truth labels to use during validation
+    predict_config (bolt.graph.PredictConfig): 
+        See PredictConfig.
+    validation_frequency (int, optional): 
+        Interval of updates (batches) to run validation and report
+        metrics. Defaults to 0, which is no validation amidst
+        training.
+    save_best_per_metric (str, optional): 
+        Whether to save best model based on validation. Needs
+        with_save_parameters(...) configured.  Defaults to empty
+        string, which implies no saving best model. Note that this requires the
+        tracked metric to be configured via `with_metrics(...)`.
+
+)pbdoc")
       .def_property_readonly(
           "num_epochs", [](TrainConfig& config) { return config.epochs(); },
           "Returns the number of epochs a model with this TrainConfig will "
