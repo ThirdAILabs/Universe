@@ -1,11 +1,10 @@
 #pragma once
 
 #include <hashing/src/MurmurHash.h>
-#include <_types/_uint32_t.h>
-#include <dataset/src/data_pipeline/Column.h>
-#include <dataset/src/data_pipeline/ColumnMap.h>
-#include <dataset/src/data_pipeline/Transformation.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <new_dataset/src/featurization_pipeline/Column.h>
+#include <new_dataset/src/featurization_pipeline/ColumnMap.h>
+#include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <string>
 #include <vector>
 
@@ -21,6 +20,7 @@ class CrossColumnPairgram : public Transformation {
   void apply(ColumnMap& column_map) final {
     std::vector<std::shared_ptr<SparseValueColumn>> columns(
         _input_column_names.size());
+    // we hash the name of each column 
     std::vector<uint32_t> column_hashes(_input_column_names.size());
     for (const auto& col_name : _input_column_names) {
       columns.push_back(column_map.getSparseValueColumn(col_name));
@@ -39,24 +39,18 @@ class CrossColumnPairgram : public Transformation {
         // origin
         const char* val_to_hash =
             reinterpret_cast<const char*>(&(*column)[row_idx]);
-        uint32_t hashes_col_val =
+        uint32_t hashed_col_val =
             TextEncodingUtils::computeUnigram(val_to_hash, /* len = */ 4);
         unigram_hashes.push_back(hashing::HashUtils::combineHashes(
-            hashes_col_val, column_hashes[col_num]));
+            hashed_col_val, column_hashes[col_num]));
         col_num++;
       }
 
-      std::vector<uint32_t> pairgram_hashes =
+      // we don't deduplicate pairgrams since we ensure unique hash values
+      // above, thus reducing the change of duplicates
+      std::vector<uint32_t> pairgrams =
           TextEncodingUtils::computeRawPairgramsFromUnigrams(unigram_hashes,
                                                              _output_range);
-
-      std::vector<uint32_t> pairgrams(pairgram_hashes.size());
-      TextEncodingUtils::sumRepeatedIndices(
-          pairgram_hashes, /* base_value = */ 1.0,
-          [&](uint32_t pairgram, float value) {
-            (void)value;
-            pairgrams.push_back(pairgram);
-          });
     }
   }
 
