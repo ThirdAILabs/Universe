@@ -22,7 +22,7 @@ void StringHash::apply(ColumnMap& columns) {
 }
 
 uint32_t StringHash::hash(const std::string& str) const {
-    return hashing::MurmurHash(str.data(), str.length(), _seed);
+    return hashing::MurmurHash(str.data(), str.length(), _seed) % _output_range;
 }
 
 }  // namespace thirdai::dataset
