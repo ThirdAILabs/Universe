@@ -1,6 +1,5 @@
 #pragma once
 
-#include <_types/_uint32_t.h>
 #include <dataset/src/data_pipeline/Column.h>
 #include <dataset/src/data_pipeline/ColumnMap.h>
 #include <dataset/src/data_pipeline/Transformation.h>
@@ -24,13 +23,16 @@ class CrossColumnPairgram : public Transformation {
       columns.push_back(column_map.getSparseValueColumn(col_name));
     }
 
-  
 #pragma omp parallel for default(none) \
     shared(column_map, columns, _output_range)
     for (uint32_t row_idx = 0; row_idx < column_map.numRows(); row_idx++) {
       std::vector<uint32_t> unigram_hashes(columns.size());
       uint32_t col_num = 0;
       for (const auto& column : columns) {
+        // to avoid two identical values in different columns from having the
+        // same hash value we add the column number as "salt" to make it unique
+        // we use a 64 bit int, the first 32 bits being the value and the next
+        // 32 bits being the column number
         uint64_t salted_value = static_cast<uint64_t>((*column)[row_idx])
                                     << 32 |
                                 static_cast<uint64_t>(col_num);
