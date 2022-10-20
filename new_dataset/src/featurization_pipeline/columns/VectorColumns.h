@@ -30,6 +30,13 @@ class VectorValueColumn final : public ValueColumn<T> {
   explicit VectorValueColumn(std::vector<float> data)
       : _data(std::move(data)), _dim(1) {}
 
+  // This uses SFINAE to disable the folowing constructor if T is not a string
+  // type. https://en.cppreference.com/w/cpp/types/enable_if
+  template <typename U = T,
+            std::enable_if_t<std::is_same<U, std::string>::value, bool> = true>
+  explicit VectorValueColumn(std::vector<std::string> data)
+      : _data(std::move(data)), _dim(1) {}
+
   uint64_t numRows() const final { return _data.size(); }
 
   std::optional<DimensionInfo> dimension() const final {

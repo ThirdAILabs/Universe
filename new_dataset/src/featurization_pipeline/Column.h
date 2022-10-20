@@ -70,6 +70,7 @@ class ValueColumn : public Column {
 using SparseValueColumn = ValueColumn<uint32_t>;
 using DenseValueColumn = ValueColumn<float>;
 using IndexValueColumn = ValueColumn<std::pair<uint32_t, float>>;
+using StringColumn = ValueColumn<std::string>;
 
 // We use templates to create columns with different types because there are
 // very few types which we will need to support and almost all of the code for
