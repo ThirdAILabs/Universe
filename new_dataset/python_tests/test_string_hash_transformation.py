@@ -9,7 +9,7 @@ def get_str_col(col_length):
     return dataset.columns.StringColumn([f"value{i}" for i in range(col_length)])
 
 
-def get_two_col_hashed_string_dataset(col_length, output_range, seed=42):
+def get_two_col_hashed_string_dataset(col_length, output_range):
 
     column1, column2 = get_str_col(col_length), get_str_col(col_length)
 
@@ -21,7 +21,6 @@ def get_two_col_hashed_string_dataset(col_length, output_range, seed=42):
                 input_column=column_name,
                 output_column=f"{column_name}_hashes",
                 output_range=output_range,
-                seed=seed,
             )
             for column_name in ["column1", "column2"]
         ]
@@ -41,7 +40,6 @@ def get_two_col_hashed_string_dataset(col_length, output_range, seed=42):
 # ensures that the hash function is consistent).
 def test_string_hash_consistency():
     col_length = 100
-    seed = 42
     output_range = 100
 
     indices, _ = sparse_bolt_dataset_to_numpy(
@@ -53,11 +51,10 @@ def test_string_hash_consistency():
 
 
 # Tests that each hash has about the number of values we expect (is within a
-# factor of 2 of the expected count). This won't be flaky because we seed the
-# hash.
+# factor of 2 of the expected count). This won't be flaky because the hash is
+# seeded and thus entirely deterministic.
 def test_string_hash_distribution():
     col_length = 10000
-    seed = 42
     output_range = 100
 
     indices, _ = sparse_bolt_dataset_to_numpy(

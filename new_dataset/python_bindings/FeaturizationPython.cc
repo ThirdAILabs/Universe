@@ -66,7 +66,7 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "StringHash")
       .def(py::init<std::string, std::string, uint32_t, uint32_t>(),
            py::arg("input_column"), py::arg("output_column"),
-           py::arg("output_range"), py::arg("seed") = time(nullptr));
+           py::arg("output_range"), py::arg("seed") = 42);
 
   py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
