@@ -259,6 +259,9 @@ set(COMPRESSION_SOURCES compression/src/CountSketch.cc
 
 set(UTILS_SOURCES utils/Logging.cc)
 
+set(ORACLE_SOURCES 
+    auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.cc)
+
 add_library(
   thirdai STATIC
   ${BOLT_SOURCES}
@@ -268,7 +271,8 @@ add_library(
   ${LICENSE_SOURCES}
   ${DATASET_SOURCES}
   ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES})
+  ${UTILS_SOURCES}
+  ${ORACLE_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
