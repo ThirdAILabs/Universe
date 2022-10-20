@@ -83,7 +83,7 @@ class Featurizer {
   std::vector<BoltVector> featurizeInput(const MapInput& input,
                                          bool should_update_history) {
     verifyColumnNumberMapIsInitialized();
-    auto row = mapInputToVectorOfStringViews(input, *_column_number_map);
+    auto row = vectorOfStringViewsFromMapInput(input, *_column_number_map);
     return featurizeInputImpl(row, should_update_history);
   }
 
@@ -118,7 +118,7 @@ class Featurizer {
   }
 
   auto toInputRow(const MapInput& sample) {
-    return mapInputToVectorOfStringViews(sample, *_column_number_map);
+    return vectorOfStringViewsFromMapInput(sample, *_column_number_map);
   }
 
   uint32_t getInputDim() const { return _input_dim; }
@@ -215,7 +215,7 @@ class Featurizer {
     return dataset::ProcessorUtils::parseCsvRow(input_string, delimiter);
   }
 
-  static std::vector<std::string_view> mapInputToVectorOfStringViews(
+  static std::vector<std::string_view> vectorOfStringViewsFromMapInput(
       const MapInput& input_map, const ColumnNumberMap& column_number_map) {
     std::vector<std::string_view> string_view_input(
         column_number_map.numCols());
@@ -232,13 +232,18 @@ class Featurizer {
     std::vector<std::string> string_batch(input_maps.size());
     for (uint32_t i = 0; i < input_maps.size(); i++) {
       auto vals =
-          mapInputToVectorOfStringViews(input_maps[i], column_number_map);
-      std::stringstream s;
-      std::copy(vals.begin(), vals.end(),
-                std::ostream_iterator<std::string_view>(s, &delimiter));
-      string_batch[i] = s.str();
+          vectorOfStringViewsFromMapInput(input_maps[i], column_number_map);
+      string_batch[i] = concatenateWithDelimiter(vals, delimiter);
     }
     return string_batch;
+  }
+
+  static std::string concatenateWithDelimiter(
+      const std::vector<std::string_view>& substrings, char delimiter) {
+    std::stringstream s;
+    std::copy(substrings.begin(), substrings.end(),
+              std::ostream_iterator<std::string_view>(s, &delimiter));
+    return s.str();
   }
 
   OracleConfigPtr _config;
