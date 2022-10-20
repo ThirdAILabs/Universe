@@ -82,9 +82,7 @@ def test_dense_sparse_columns_to_dataset():
 
     column1, column1_np = get_dense_value_column(n_rows)
 
-    column2, column2_np = get_sparse_array_column(
-        n_rows, dim=20, num_nonzeros=7
-    )
+    column2, column2_np = get_sparse_array_column(n_rows, dim=20, num_nonzeros=7)
 
     columns = dataset.ColumnMap({"column1": column1, "column2": column2})
 
@@ -120,9 +118,7 @@ def test_multiple_sparse_dense_columns_to_dataset():
     column3_dim = 10
     column3, column3_np = get_sparse_value_column(n_rows, dim=column3_dim)
 
-    column4, column4_np = get_sparse_array_column(
-        n_rows, dim=40, num_nonzeros=8
-    )
+    column4, column4_np = get_sparse_array_column(n_rows, dim=40, num_nonzeros=8)
 
     columns = dataset.ColumnMap(
         {"column1": column1, "column2": column2, "column3": column3, "column4": column4}

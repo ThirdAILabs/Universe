@@ -53,6 +53,12 @@ class ValueColumn : public Column {
       return;
     }
 
+    if constexpr (std::is_same<T, std::pair<uint32_t, float>>::value) {
+      std::pair<uint32_t, float> index_value = this->operator[](row_idx);
+      vector.addSparseFeatureToSegment(index_value.first, index_value.second);
+      return;
+    }
+
     throw std::runtime_error(
         "Cannot convert ValueColumn to BoltVector if its type is not int or "
         "float.");
@@ -63,6 +69,7 @@ class ValueColumn : public Column {
 
 using SparseValueColumn = ValueColumn<uint32_t>;
 using DenseValueColumn = ValueColumn<float>;
+using IndexValueColumn = ValueColumn<std::pair<uint32_t, float>>;
 
 // We use templates to create columns with different types because there are
 // very few types which we will need to support and almost all of the code for
@@ -128,5 +135,6 @@ class ArrayColumn : public Column {
 
 using SparseArrayColumn = ArrayColumn<uint32_t>;
 using DenseArrayColumn = ArrayColumn<float>;
+using IndexValueArrayColumn = ArrayColumn<std::pair<uint32_t, float>>;
 
 }  // namespace thirdai::dataset

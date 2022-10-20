@@ -29,7 +29,7 @@ void BinningTransformation::apply(ColumnMap& columns) {
   auto output_column = std::make_shared<VectorValueColumn<uint32_t>>(
       std::move(binned_values), _num_bins);
 
-  columns.addColumn(_output_column_name, output_column);
+  columns.setColumn(_output_column_name, output_column);
 }
 
 std::optional<uint32_t> BinningTransformation::getBin(float value) const {

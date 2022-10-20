@@ -25,15 +25,15 @@ def test_binning_transformation():
             dataset.transformations.Binning(
                 input_column="column1",
                 output_column="column1_binned",
-                min=0,
-                max=100,
+                inclusive_min=0,
+                exclusive_max=100,
                 num_bins=5,
             ),
             dataset.transformations.Binning(
                 input_column="column2",
                 output_column="column2",
-                min=10,
-                max=110,
+                inclusive_min=10,
+                exclusive_max=110,
                 num_bins=20,
             ),
         ]
