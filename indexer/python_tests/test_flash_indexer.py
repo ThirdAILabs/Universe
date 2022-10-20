@@ -50,6 +50,8 @@ def test_flash_indexer():
 
     generator = indexer.build_index(file_name=QUERIES_FILE)
 
-    candidate_queries = generator.generate(query="share my curnt locatio")
+    candidate_queries = generator.generate(
+        query="Share my location with my Uber driver"
+    )
 
     delete_created_files()

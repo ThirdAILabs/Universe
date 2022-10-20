@@ -51,6 +51,10 @@ void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BoltBatch>& dataset) {
 template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch) {
   std::vector<uint32_t> hashes = hashBatch(batch);
+  std::cout << "BATCH SIZE = " << batch.getBatchSize() << std::endl;
+  for (uint32_t hash : hashes) {
+    std::cout << "HASH = " << hash << std::endl;
+  }
   try {
     verifyBatchSequentialIds(batch);
   } catch (std::invalid_argument& error) {
@@ -104,6 +108,7 @@ std::vector<std::vector<LABEL_T>> Flash<LABEL_T>::queryBatch(
     std::vector<LABEL_T> query_result;
     _hashtable->queryByVector(hashes.data() + vec_id * _num_tables,
                               query_result);
+
     results.at(vec_id) = getTopKUsingPriorityQueue(query_result, top_k);
     if (pad_zeros) {
       while (results.at(vec_id).size() < top_k) {

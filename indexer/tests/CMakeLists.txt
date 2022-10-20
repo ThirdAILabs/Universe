@@ -11,4 +11,3 @@ foreach(FLASH_INDEX_TEST IN LISTS FLASH_INDEX_TESTS)
   gtest_discover_tests(${FLASH_INDEX_TEST} DISCOVERY_TIMEOUT
                        ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
 endforeach()
-

@@ -138,9 +138,6 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
         _dimension_for_encodings(
             dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {}
 
-  // private constructor for cereal
-  Indexer() {}
-
   static Indexer make(IndexerConfigPtr flash_index_config) {
     return Indexer(std::move(flash_index_config));
   }
@@ -235,6 +232,11 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
     return output_queries;
   }
 
+  std::unordered_map<uint32_t, std::string> getIDsToQueryMapping() const {
+    return _ids_to_queries_map;
+  }
+
+ private:
   /**
    * @brief Constructs a mapping from IDs to correct queries. This allows
    * us to convert the output of queryBatch() into strings representing
@@ -261,11 +263,6 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
     }
   }
 
-  std::unordered_map<uint32_t, std::string> getIDsToQueryMapping() const {
-    return _ids_to_queries_map;
-  }
-
- private:
   dataset::BoltDatasetPtr loadDataInMemory(
       const std::string& file_name, uint32_t correct_query_column_index) const {
     dataset::TextBlockPtr char_trigram_block =
@@ -325,6 +322,9 @@ class Indexer : public std::enable_shared_from_this<Indexer> {
   std::unordered_map<uint32_t, std::string> _ids_to_queries_map;
 
   uint32_t _dimension_for_encodings;
+
+  // private constructor for cereal
+  Indexer() {}
 
   friend class cereal::access;
   template <class Archive>
