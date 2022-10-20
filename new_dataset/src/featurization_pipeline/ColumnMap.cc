@@ -109,7 +109,7 @@ std::shared_ptr<SparseValueColumn> ColumnMap::getSparseValueColumn(
   auto column = std::dynamic_pointer_cast<SparseValueColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to IntegerValueColumn.");
+                                "' cannot be converted to SparseValueColumn.");
   }
   return column;
 }
@@ -119,7 +119,7 @@ std::shared_ptr<DenseValueColumn> ColumnMap::getDenseValueColumn(
   auto column = std::dynamic_pointer_cast<DenseValueColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to FloatValueColumn.");
+                                "' cannot be converted to DenseValueColumn.");
   }
   return column;
 }
@@ -129,7 +129,7 @@ std::shared_ptr<IndexValueColumn> ColumnMap::getIndexValueColumn(
   auto column = std::dynamic_pointer_cast<IndexValueColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to IntegerValueColumn.");
+                                "' cannot be converted to IndexValueColumn.");
   }
   return column;
 }
@@ -139,7 +139,7 @@ std::shared_ptr<SparseArrayColumn> ColumnMap::getSparseArrayColumn(
   auto column = std::dynamic_pointer_cast<SparseArrayColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to IntegerArrayColumn.");
+                                "' cannot be converted to SparseArrayColumn.");
   }
   return column;
 }
@@ -149,7 +149,7 @@ std::shared_ptr<DenseArrayColumn> ColumnMap::getDenseArrayColumn(
   auto column = std::dynamic_pointer_cast<DenseArrayColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to FloatArrayColumn.");
+                                "' cannot be converted to DenseArrayColumn.");
   }
   return column;
 }
@@ -159,8 +159,8 @@ std::shared_ptr<IndexValueArrayColumn> ColumnMap::getIndexValueArrayColumn(
   auto column =
       std::dynamic_pointer_cast<IndexValueArrayColumn>(getColumn(name));
   if (!column) {
-    throw std::invalid_argument("Column '" + name +
-                                "' cannot be converted to IntegerArrayColumn.");
+    throw std::invalid_argument(
+        "Column '" + name + "' cannot be converted to IndexValueArrayColumn.");
   }
   return column;
 }
