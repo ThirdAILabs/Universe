@@ -1,7 +1,6 @@
 #include "StringHash.h"
 #include <hashing/src/MurmurHash.h>
 
-
 namespace thirdai::dataset {
 
 void StringHash::apply(ColumnMap& columns) {
@@ -9,8 +8,7 @@ void StringHash::apply(ColumnMap& columns) {
 
   std::vector<uint32_t> hashed_values(column->numRows());
 
-#pragma omp parallel for default(none) \
-    shared(column, hashed_values, column)
+#pragma omp parallel for default(none) shared(column, hashed_values)
   for (uint64_t i = 0; i < column->numRows(); i++) {
     hashed_values[i] = hash((*column)[i]);
   }
@@ -22,7 +20,7 @@ void StringHash::apply(ColumnMap& columns) {
 }
 
 uint32_t StringHash::hash(const std::string& str) const {
-    return hashing::MurmurHash(str.data(), str.length(), _seed) % _output_range;
+  return hashing::MurmurHash(str.data(), str.length(), _seed) % _output_range;
 }
 
 }  // namespace thirdai::dataset

@@ -8,10 +8,8 @@ namespace thirdai::dataset {
 // Hashes a string columnm into a given output range using MurmurHash.
 class StringHash final : public Transformation {
  public:
-  StringHash(std::string input_column_name,
-                        std::string output_column_name,
-                        uint32_t output_range,
-                        uint32_t seed = time(nullptr))
+  StringHash(std::string input_column_name, std::string output_column_name,
+             uint32_t output_range, uint32_t seed = time(nullptr))
       : _input_column_name(std::move(input_column_name)),
         _output_column_name(std::move(output_column_name)),
         _output_range(output_range),

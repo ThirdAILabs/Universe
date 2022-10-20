@@ -37,7 +37,7 @@ def get_two_col_hashed_string_dataset(col_length, output_range, seed=42):
 
 
 # Tests that if we hash two columns and then turn them into a dataset, the sparse
-# indices module the output range of the first column will be the same (this 
+# indices module the output range of the first column will be the same (this
 # ensures that the hash function is consistent).
 def test_string_hash_consistency():
     col_length = 100
@@ -52,8 +52,8 @@ def test_string_hash_consistency():
         assert i1 + output_range == i2
 
 
-# Tests that each hash has about the number of values we expect (is within a 
-# factor of 2 of the expected count). This won't be flaky because we seed the 
+# Tests that each hash has about the number of values we expect (is within a
+# factor of 2 of the expected count). This won't be flaky because we seed the
 # hash.
 def test_string_hash_distribution():
     col_length = 10000
