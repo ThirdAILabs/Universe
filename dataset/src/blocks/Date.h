@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/utils/TimeUtils.h>
 #include <exception>
@@ -100,6 +103,17 @@ class DateBlock : public Block {
 
  private:
   uint32_t _col;
+
+  // Constructor for Cereal
+  DateBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _col);
+  }
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::DateBlock)
