@@ -1,9 +1,11 @@
 import os
 import tempfile
 import textwrap
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
+import pyarrow
 import ray
+from ray.data import Dataset
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
@@ -12,8 +14,6 @@ from thirdai._thirdai import bolt, logging
 
 from .utils import get_num_cpus, init_logging
 
-import pyarrow
-from ray.data import Dataset
 
 class RayTrainingClusterConfig:
     """
@@ -101,18 +101,18 @@ class RayTrainingClusterConfig:
         ]
 
 
-
 class DataParallelIngestSpec:
-    def __init__(self, 
+    def __init__(
+        self,
         dataset_type: str,
-        equal: bool=False,
-        save_location: str='/tmp/thirdai/',
-        save_prefix: str='training_data',
-    ): 
+        equal: bool = False,
+        save_location: str = "/tmp/thirdai/",
+        save_prefix: str = "training_data",
+    ):
         """
-        This class writes a wrapper on Ray Data for copying and splitting training 
-        data from single source or multiple sources to files stored locally or remote, 
-        to n(num_workers) different file(one on each node of the cluster), being fully 
+        This class writes a wrapper on Ray Data for copying and splitting training
+        data from single source or multiple sources to files stored locally or remote,
+        to n(num_workers) different file(one on each node of the cluster), being fully
         exclusive and exhaustive.
 
 
@@ -133,13 +133,12 @@ class DataParallelIngestSpec:
         self.equal = equal
         self.save_location = save_location
         self.save_prefix = save_prefix
-    
 
     def get_ray_dataset(
-            self, 
-            paths: Union[str, List[str]],
-            remote_file_system = None,
-        ):
+        self,
+        paths: Union[str, List[str]],
+        remote_file_system=None,
+    ):
         """
         Get the shards to pass to train workers
 
@@ -152,7 +151,7 @@ class DataParallelIngestSpec:
         :raises ValueError: If dataset format specified not supported.
         :return: Dataset
         :rtype: ray.data.Dataset
-        """        
+        """
 
         ray_dataset = None
         if self.dataset_type == "csv":
@@ -160,14 +159,16 @@ class DataParallelIngestSpec:
         elif self.dataset_type == "text":
             ray_dataset = ray.data.read_text(paths=paths, filesystem=remote_file_system)
         elif self.dataset_type == "numpy":
-            ray_dataset = ray.data.read_numpy(paths=paths, filesystem=remote_file_system)
-        
+            ray_dataset = ray.data.read_numpy(
+                paths=paths, filesystem=remote_file_system
+            )
 
         if ray_dataset == None:
-            raise ValueError(f"Dataset Type: {dataset_type} is not" 
-                                "supported. Supported types are csv," 
-                                "text or numpy")
-
+            raise ValueError(
+                f"Dataset Type: {dataset_type} is not"
+                "supported. Supported types are csv,"
+                "text or numpy"
+            )
 
         return ray_dataset
 
@@ -210,12 +211,7 @@ class DistributedDataParallel:
                 " datasets, one for each node.",
             )
 
-        
-
-
         self.logging.info("Training has started!")
-
-
 
         # This speeds up passing the complete model to each worker by having
         # Ray serialize it once and save it in the object store instead of
@@ -245,22 +241,42 @@ class DistributedDataParallel:
                     log_dir=cluster_config.log_dir,
                 )
             )
-        
 
         self.workers = [self.primary_worker] + self.replica_workers
         if ray_dataset == None:
-            ray.get([self.workers[worker_id].load_dataset_on_each_worker.remote(train_file_names[worker_id], batch_size) for worker_id in range(len(self.workers))])
+            ray.get(
+                [
+                    self.workers[worker_id].load_dataset_on_each_worker.remote(
+                        train_file_names[worker_id], batch_size
+                    )
+                    for worker_id in range(len(self.workers))
+                ]
+            )
         else:
-            ray_data_shards = ray_dataset.split(n=len(self.workers), equal=data_parallel_ingest_spec.equal, locality=self.workers)
-            ray.get([worker.save_and_load_training_data.remote(data_shard, data_parallel_ingest_spec, batch_size) for data_shard, worker in zip(ray_data_shards, self.workers)])
-        
-        
-        ray.get([worker.initialize_model_and_communication.remote(ray_model_ref) for worker in self.workers])
-        
+            ray_data_shards = ray_dataset.split(
+                n=len(self.workers),
+                equal=data_parallel_ingest_spec.equal,
+                locality=self.workers,
+            )
+            ray.get(
+                [
+                    worker.save_and_load_training_data.remote(
+                        data_shard, data_parallel_ingest_spec, batch_size
+                    )
+                    for data_shard, worker in zip(ray_data_shards, self.workers)
+                ]
+            )
+
+        ray.get(
+            [
+                worker.initialize_model_and_communication.remote(ray_model_ref)
+                for worker in self.workers
+            ]
+        )
+
         self.num_of_batches = min(
             ray.get([worker.num_of_batches.remote() for worker in self.workers])
         )
-
 
         self.logging.info(
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."

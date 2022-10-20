@@ -69,32 +69,28 @@ class Worker:
 
     @timed
     def save_and_load_training_data(
-        self,
-        data_shard,
-        data_parallel_ingest_spec,
-        batch_size
+        self, data_shard, data_parallel_ingest_spec, batch_size
     ):
         file_path = None
-        file_path_prefix = data_parallel_ingest_spec.save_location+data_parallel_ingest_spec.save_prefix
+        file_path_prefix = (
+            data_parallel_ingest_spec.save_location
+            + data_parallel_ingest_spec.save_prefix
+        )
         dataset_type = data_parallel_ingest_spec.dataset_type
         if dataset_type == "csv":
-            file_path = file_path_prefix + '.csv'
+            file_path = file_path_prefix + ".csv"
             shard.write_csv(path=file_path)
         elif dataset_type == "text":
-            file_path = file_path_prefix + '.txt'
+            file_path = file_path_prefix + ".txt"
             shard.write_text(path=file_path)
         elif dataset_type == "numpy":
-            file_path = file_path_prefix + '.npy'
+            file_path = file_path_prefix + ".npy"
             shard.write_numpy(path=file_path)
-        
+
         self.load_dataset_on_each_worker(file_path, batch_size)
 
-
     @timed
-    def initialize_model_and_communication(
-            self, 
-            model_to_wrap
-        ):
+    def initialize_model_and_communication(self, model_to_wrap):
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
             train_data=[self.train_data],
@@ -122,7 +118,6 @@ class Worker:
                 )
             )
 
-    
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
     # Hence, we will need to expose this function here in worker
