@@ -388,7 +388,7 @@ py::object evaluateOnFileWrapper(
 template <typename InputType>
 py::object predictWrapper(ModelPipeline& model, const InputType& sample,
                           bool use_sparse_inference) {
-  BoltVector output = model.predict(sample, use_sparse_inference);
+  BoltVector output = model.predict<InputType>(sample, use_sparse_inference);
   return convertBoltVectorToNumpy(output);
 }
 
@@ -406,10 +406,11 @@ py::object predictTokensWrapper(ModelPipeline& model,
 }
 
 template <typename InputBatchType>
-py::object predictBatchWrapperStringInput(ModelPipeline& model,
-                                          const InputBatchType& samples,
-                                          bool use_sparse_inference) {
-  BoltBatch outputs = model.predictBatch(samples, use_sparse_inference);
+py::object predictBatchWrapper(ModelPipeline& model,
+                               const InputBatchType& samples,
+                               bool use_sparse_inference) {
+  BoltBatch outputs =
+      model.predictBatch<InputBatchType>(samples, use_sparse_inference);
 
   return convertBoltBatchToNumpy(outputs);
 }
