@@ -245,6 +245,7 @@ set(DATASET_SOURCES
 
 set(NEW_DATASET_SOURCES
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
+    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc)
 
 set(COMPRESSION_SOURCES compression/src/CountSketch.cc

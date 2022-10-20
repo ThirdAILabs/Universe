@@ -134,6 +134,16 @@ std::shared_ptr<IndexValueColumn> ColumnMap::getIndexValueColumn(
   return column;
 }
 
+std::shared_ptr<StringColumn> ColumnMap::getStringColumn(
+    const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<StringColumn>(getColumn(name));
+  if (!column) {
+    throw std::invalid_argument("Column '" + name +
+                                "' cannot be converted to StringColumn.");
+  }
+  return column;
+}
+
 std::shared_ptr<SparseArrayColumn> ColumnMap::getSparseArrayColumn(
     const std::string& name) const {
   auto column = std::dynamic_pointer_cast<SparseArrayColumn>(getColumn(name));
