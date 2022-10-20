@@ -9,6 +9,9 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/optimizers/Adam.h>
+#include <bolt/src/optimizers/Optimizer.h>
+#include <bolt/src/optimizers/Sgd.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <pybind11/cast.h>
@@ -98,6 +101,22 @@ py::module_ createBoltSubmodule(py::module_& module) {
       bolt_submodule, "MarginBCE")
       .def(py::init<float, float, bool>(), py::arg("positive_margin"),
            py::arg("negative_margin"), py::arg("bound"));
+
+  auto optimizer_submodule = bolt_submodule.def_submodule("optimizers");
+
+  py::class_<optimizers::OptimizerFactory,  // NOLINT
+             optimizers::OptimizerFactoryPtr>(optimizer_submodule, "Optimizer");
+
+  py::class_<optimizers::AdamOptimizerFactory, optimizers::OptimizerFactory,
+             std::shared_ptr<optimizers::AdamOptimizerFactory>>(
+      optimizer_submodule, "Adam")
+      .def(py::init<>());
+
+  py::class_<optimizers::SgdOptimizerFactory,  // NOLINT
+             optimizers::OptimizerFactory,
+             std::shared_ptr<optimizers::SgdOptimizerFactory>>(
+      optimizer_submodule, "Sgd")
+      .def(py::init<>());
 
   auto oracle_types_submodule = bolt_submodule.def_submodule("types");
 

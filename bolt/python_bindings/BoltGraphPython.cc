@@ -354,6 +354,11 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
+      .def("compile", &BoltGraph::compileWithOptimizer, py::arg("loss"),
+           py::arg("optimizer"), py::arg("print_when_done") = true,
+           "Compiles the graph for the given loss function. In this step the "
+           "order in which to compute the layers is determined and various "
+           "checks are preformed to ensure the model architecture is correct.")
       // Helper method that covers the common case of training based off of a
       // single BoltBatch dataset
       .def(

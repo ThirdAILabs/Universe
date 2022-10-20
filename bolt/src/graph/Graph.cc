@@ -40,8 +40,9 @@ std::optional<ProgressBar> makeOptionalProgressBar(bool make, Args... args) {
 }
 }  // namespace
 
-void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
-                        bool print_when_done) {
+void BoltGraph::compileWithOptimizer(std::shared_ptr<LossFunction> loss,
+                                     optimizers::OptimizerFactoryPtr optimizer,
+                                     bool print_when_done) {
   if (_output == nullptr) {
     throw exceptions::GraphCompilationFailure(
         "Output NodePtr cannot be a nullptr.");
@@ -49,7 +50,7 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
   _loss = std::move(loss);
 
-  _optimizer_factory = std::make_shared<optimizers::AdamOptimizerFactory>();
+  _optimizer_factory = std::move(optimizer);
 
   verifyGraphProperties();
 
@@ -75,6 +76,13 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #else
   (void)print_when_done;
 #endif
+}
+
+void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
+                        bool print_when_done) {
+  compileWithOptimizer(std::move(loss),
+                       std::make_shared<optimizers::AdamOptimizerFactory>(),
+                       print_when_done);
 }
 
 /*
