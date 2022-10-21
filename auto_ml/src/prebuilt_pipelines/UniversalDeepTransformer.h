@@ -2,37 +2,35 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/callbacks/Callback.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
-#include <auto_ml/src/deployment_config/DatasetConfig.h>
-#include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <auto_ml/src/deployment_config/ModelConfig.h>
-#include <auto_ml/src/deployment_config/NodeConfig.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/Aliases.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
+
 namespace thirdai::automl::deployment {
+
+using OptionsMap = std::unordered_map<std::string, std::string>;
 
 class UniversalDeepTransformer : public ModelPipeline {
   static inline const std::string NUM_TABLES = "num_tables";
   static inline const std::string HASHES_PER_TABLE = "hashes_per_table";
   static inline const std::string RESERVOIR_SIZE = "reservoir_size";
-  static inline const std::string INPUT_NAME = "input";
-  static inline const std::string EMBEDDING_NAME = "embedding";
-  static inline const std::string OUTPUT_NAME = "output";
   static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
   static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
+  static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
 
  public:
   UniversalDeepTransformer(
@@ -41,42 +39,27 @@ class UniversalDeepTransformer : public ModelPipeline {
       std::string target, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::unordered_map<std::string, std::string>& options = {})
-      : ModelPipeline(buildOracleModelPipeline(
-            std::move(data_types), std::move(temporal_tracking_relationships),
-            std::move(target), std::move(time_granularity), lookahead,
-            delimiter, options)) {}
+      : UniversalDeepTransformer(
+            buildOracleDatasetFactory(
+                std::move(data_types),
+                std::move(temporal_tracking_relationships), std::move(target),
+                std::move(time_granularity), lookahead, delimiter),
+            options) {}
 
   BoltVector embeddingRepresentation(const MapInput& input) {
     return predict(/* sample= */ input,
                    /* use_sparse_inference= */ false,
-                   /* output_node_name= */ EMBEDDING_NAME);
+                   /* output_node_name= */ "fc_1");
   }
 
-  void resetTemporalTrackers() {
-    std::get<TemporalContextPtr>(getArtifact("context"))->reset();
+  void resetTemporalTrackers() { _dataset_factory->resetTemporalTrackers(); }
+
+  void updateTemporalTrackers(const MapInput& update) {
+    _dataset_factory->updateTemporalTrackers(update);
   }
 
-  void updateTemporalTrackers(const std::string& update) {
-    std::get<TemporalContextPtr>(getArtifact("context"))
-        ->updateTemporalTrackers(update);
-  }
-
-  void updateTemporalTrackers(
-      const std::unordered_map<std::string, std::string>& update) {
-    std::get<TemporalContextPtr>(getArtifact("context"))
-        ->updateTemporalTrackers(update);
-  }
-
-  void batchUpdateTemporalTrackers(const std::vector<std::string>& updates) {
-    std::get<TemporalContextPtr>(getArtifact("context"))
-        ->batchUpdateTemporalTrackers(updates);
-  }
-
-  void batchUpdateTemporalTrackers(
-      const std::vector<std::unordered_map<std::string, std::string>>&
-          updates) {
-    std::get<TemporalContextPtr>(getArtifact("context"))
-        ->batchUpdateTemporalTrackers(updates);
+  void batchUpdateTemporalTrackers(const MapInputBatch& updates) {
+    _dataset_factory->batchUpdateTemporalTrackers(updates);
   }
 
   void save(const std::string& filename) {
@@ -99,40 +82,32 @@ class UniversalDeepTransformer : public ModelPipeline {
   }
 
  private:
-  static ModelPipeline buildOracleModelPipeline(
+  UniversalDeepTransformer(OracleDatasetFactoryPtr dataset_factory,
+                           const OptionsMap& options)
+      : ModelPipeline(buildOracleModelPipeline(dataset_factory, options)),
+        _dataset_factory(std::move(dataset_factory)) {}
+
+  static OracleDatasetFactoryPtr buildOracleDatasetFactory(
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target, std::string time_granularity = "d",
-      uint32_t lookahead = 0, char delimiter = ',',
-      const std::unordered_map<std::string, std::string>& options = {}) {
-    auto factory_meta = std::make_shared<OracleConfig>(
+      uint32_t lookahead = 0, char delimiter = ',') {
+    auto oracle_config = std::make_shared<OracleConfig>(
         std::move(data_types), std::move(temporal_tracking_relationships),
         std::move(target), std::move(time_granularity), lookahead, delimiter);
 
-    auto factory_config = std::make_shared<OracleDatasetFactoryConfig>(
-        /* config= */ std::make_shared<ConstantParameter<OracleConfigPtr>>(
-            factory_meta),
-        /* parallel= */ std::make_shared<ConstantParameter<bool>>(false),
-        /* text_pairgram_word_limit= */
-        std::make_shared<ConstantParameter<uint32_t>>(
-            TEXT_PAIRGRAM_WORD_LIMIT));
+    return OracleDatasetFactory::make(
+        /* config= */ std::move(oracle_config),
+        /* parallel= */ false,
+        /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT);
+  }
 
-    std::vector<std::string> input_names = {INPUT_NAME};
-
-    std::vector<NodeConfigPtr> nodes = {
-        getHiddenNode(
-            /* name= */ EMBEDDING_NAME, /* predecessor_name= */ INPUT_NAME,
-            options),
-        getOutputNode(/* name= */ OUTPUT_NAME,
-                      /* predecessor_name= */ EMBEDDING_NAME, options),
-    };
-
-    std::shared_ptr<bolt::LossFunction> loss =
-        bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
-
-    auto model_config = std::make_shared<ModelConfig>(
-        /* input_names= */ input_names, /* nodes= */ nodes,
-        /* loss= */ loss);
+  static ModelPipeline buildOracleModelPipeline(
+      OracleDatasetFactoryPtr dataset_factory, const OptionsMap& options) {
+    auto model = buildOracleBoltGraph(
+        /* input_nodes= */ dataset_factory->getInputNodes(),
+        /* output_dim= */ dataset_factory->getLabelDim(),
+        /* options= */ options);
 
     bool freeze_hash_tables = true;
     if (options.count("freeze_hash_tables")) {
@@ -148,74 +123,66 @@ class UniversalDeepTransformer : public ModelPipeline {
         /* freeze_hash_tables= */ freeze_hash_tables,
         /* prediction_threshold= */ std::nullopt);
 
-    auto deployment_config = std::make_shared<DeploymentConfig>(
-        factory_config, model_config, train_eval_parameters);
-
-    auto [dataset_factory, model] =
-        deployment_config->createDataLoaderAndModel({});
     return {std::move(dataset_factory), std::move(model),
-            deployment_config->train_eval_parameters()};
+            train_eval_parameters};
   }
 
-  static NodeConfigPtr getHiddenNode(
-      const std::string& name, const std::string& predecessor_name,
-      const std::unordered_map<std::string, std::string>& options) {
-    uint32_t dimension_int = 512;
+  static bolt::BoltGraphPtr buildOracleBoltGraph(
+      std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
+      const OptionsMap& options) {
+    auto hidden = bolt::FullyConnectedNode::makeDense(hiddenLayerDim(options),
+                                                      /* activation= */ "relu");
+    hidden->addPredecessor(input_nodes[0]);
+
+    auto sparsity = AutotunedSparsityParameter::autotuneSparsity(output_dim);
+    auto sampling_config = samplingConfig(options);
+    const auto* activation = "softmax";
+    auto output = sampling_config
+                      ? bolt::FullyConnectedNode::make(
+                            output_dim, sparsity, activation, *sampling_config)
+                      : bolt::FullyConnectedNode::makeAutotuned(
+                            output_dim, sparsity, activation);
+    output->addPredecessor(hidden);
+
+    auto graph = std::make_shared<bolt::BoltGraph>(
+        /* inputs= */ input_nodes, output);
+    graph->compile(
+        bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
+    return graph;
+  }
+
+  static uint32_t hiddenLayerDim(const OptionsMap& options) {
     if (options.count("embedding_dimension")) {
-      dimension_int =
-          utils::toInteger(options.at("embedding_dimension").data());
+      return utils::toInteger(options.at("embedding_dimension").data());
     }
-    auto dimension =
-        std::make_shared<ConstantParameter<uint32_t>>(dimension_int);
-    auto activation = std::make_shared<ConstantParameter<std::string>>("relu");
-
-    return std::make_shared<FullyConnectedNodeConfig>(
-        name, dimension, activation, predecessor_name);
+    return DEFAULT_HIDDEN_DIM;
   }
 
-  static NodeConfigPtr getOutputNode(
-      const std::string& name, const std::string& predecessor_name,
-      const std::unordered_map<std::string, std::string>& options) {
-    uint32_t sampling_config_vars_found = 0;
-    if (options.count(NUM_TABLES)) {
-      sampling_config_vars_found++;
-    }
-    if (options.count(HASHES_PER_TABLE)) {
-      sampling_config_vars_found++;
-    }
-    if (options.count(RESERVOIR_SIZE)) {
-      sampling_config_vars_found++;
-    }
-    if (sampling_config_vars_found != 0 && sampling_config_vars_found != 3) {
-      throw std::invalid_argument(
-          "The options map must include either all or none of the "
-          "SamplingConfig variables ('" +
-          NUM_TABLES + "', '" + HASHES_PER_TABLE + "', and '" + RESERVOIR_SIZE +
-          "').");
-    }
-
-    auto dimension = std::make_shared<DatasetLabelDimensionParameter>();
-    auto sparsity = std::make_shared<AutotunedSparsityParameter>(
-        DatasetLabelDimensionParameter::PARAM_NAME);
-    auto activation =
-        std::make_shared<ConstantParameter<std::string>>("softmax");
-
-    if (sampling_config_vars_found == 3) {
-      auto sampling_config = std::make_shared<bolt::DWTASamplingConfig>(
+  static std::optional<bolt::SamplingConfigPtr> samplingConfig(
+      const OptionsMap& options) {
+    if (options.count(NUM_TABLES) && options.count(HASHES_PER_TABLE) &&
+        options.count(RESERVOIR_SIZE)) {
+      return std::make_shared<bolt::DWTASamplingConfig>(
           /* num_tables= */ utils::toInteger(options.at(NUM_TABLES).data()),
           /* hashes_per_table= */
           utils::toInteger(options.at(HASHES_PER_TABLE).data()),
           /* reservoir_size= */
           utils::toInteger(options.at(RESERVOIR_SIZE).data()));
-
-      return std::make_shared<FullyConnectedNodeConfig>(
-          name, dimension, sparsity, activation, predecessor_name,
-          sampling_config);
     }
 
-    return std::make_shared<FullyConnectedNodeConfig>(name, dimension, sparsity,
-                                                      predecessor_name);
+    if (!options.count(NUM_TABLES) && !options.count(HASHES_PER_TABLE) &&
+        !options.count(RESERVOIR_SIZE)) {
+      return std::nullopt;
+    }
+
+    throw std::invalid_argument(
+        "The options map must include either all or none of the "
+        "SamplingConfig variables ('" +
+        NUM_TABLES + "', '" + HASHES_PER_TABLE + "', and '" + RESERVOIR_SIZE +
+        "').");
   }
+
+  OracleDatasetFactoryPtr _dataset_factory;
 
   // Private constructor for cereal.
   UniversalDeepTransformer() {}
@@ -223,7 +190,7 @@ class UniversalDeepTransformer : public ModelPipeline {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<ModelPipeline>(this));
+    archive(cereal::base_class<ModelPipeline>(this), _dataset_factory);
   }
 };
 

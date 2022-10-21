@@ -6,6 +6,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/variant.hpp>
 #include <bolt/src/layers/LayerConfig.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <cstdint>
 #include <optional>
@@ -283,6 +284,10 @@ class AutotunedSparsityParameter final : public HyperParameter<float> {
     uint32_t dim = user_specified_parameters.at(_dimension_param_name)
                        .resolveIntegerParam(_dimension_param_name);
 
+    return autotuneSparsity(dim);
+  }
+
+  static float autotuneSparsity(uint32_t dim) {
     /**
      * For smaller output layers (dim < 2000), we return a sparsity that puts
      * the sparse dimension between 80 and 200. For larger layers (2000 <=
