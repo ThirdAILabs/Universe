@@ -1,6 +1,6 @@
 #pragma once
 
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
+#include <memory>
 #include <variant>
 
 namespace thirdai::automl::deployment {
@@ -14,6 +14,8 @@ namespace thirdai::automl::deployment {
 
   Every type in this variant must have a python binding.
 */
-using Artifact = std::variant<TemporalContextPtr>;
+class OracleDatasetFactory;
+using OracleDatasetFactoryPtr = std::shared_ptr<OracleDatasetFactory>;
+using Artifact = std::variant<OracleDatasetFactoryPtr>;
 
 }  // namespace thirdai::automl::deployment

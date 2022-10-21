@@ -101,7 +101,7 @@ class DatasetLoaderFactory {
   virtual DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
 
-  virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
+  virtual std::vector<BoltVector> featurizeInput(const LineInput& input) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const MapInput& input) {
     (void)input;
@@ -111,7 +111,7 @@ class DatasetLoaderFactory {
   };
 
   virtual std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::string>& inputs) = 0;
+      const LineInputBatch& inputs) = 0;
 
   virtual std::vector<BoltBatch> featurizeInputBatch(
       const MapInputBatch& inputs) {
@@ -147,7 +147,7 @@ class DatasetLoaderFactory {
 
   virtual ~DatasetLoaderFactory() = default;
 
-  Artifact getArtifact(const std::string& name) const {
+  Artifact getArtifact(const std::string& name) {
     if (auto artifact = getArtifactImpl(name)) {
       return *artifact;
     }
@@ -157,8 +157,7 @@ class DatasetLoaderFactory {
   virtual std::vector<std::string> listArtifactNames() const { return {}; }
 
  protected:
-  virtual std::optional<Artifact> getArtifactImpl(
-      const std::string& name) const {
+  virtual std::optional<Artifact> getArtifactImpl(const std::string& name) {
     (void)name;
     return std::nullopt;
   }
@@ -172,7 +171,7 @@ class DatasetLoaderFactory {
   }
 };
 
-using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
+using DatasetLoaderFactoryPtr = std::shared_ptr<DatasetLoaderFactory>;
 
 class DatasetLoaderFactoryConfig {
  public:

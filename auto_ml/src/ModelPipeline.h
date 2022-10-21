@@ -16,11 +16,9 @@
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
-#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <variant>
 
 namespace thirdai::automl::deployment {
 
@@ -118,38 +116,47 @@ class ModelPipeline {
     return output;
   }
 
-  BoltVector predict(const std::string& sample, bool use_sparse_inference) {
+  template <typename InputType>
+  BoltVector predict(const InputType& sample, bool use_sparse_inference) {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
-    return predictOnVectors(inputs, use_sparse_inference);
+    BoltVector output =
+        _model->predictSingle(std::move(inputs), use_sparse_inference);
+
+    if (auto threshold = _train_eval_config.predictionThreshold()) {
+      uint32_t prediction_index = argmax(output.activations, output.len);
+      if (output.activations[prediction_index] < threshold.value()) {
+        output.activations[prediction_index] = threshold.value() + 0.0001;
+      }
+    }
+
+    return output;
   }
 
-  BoltVector predict(const MapInput& sample, bool use_sparse_inference) {
-    std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
-
-    return predictOnVectors(inputs, use_sparse_inference);
-  }
-
-  BoltBatch predictBatch(const std::vector<std::string>& samples,
+  template <typename InputBatchType>
+  BoltBatch predictBatch(const InputBatchType& samples,
                          bool use_sparse_inference) {
     std::vector<BoltBatch> input_batches =
         _dataset_factory->featurizeInputBatch(samples);
 
-    return predictOnBatchOfVectors(std::move(input_batches),
-                                   use_sparse_inference);
+    BoltBatch outputs = _model->predictSingleBatch(std::move(input_batches),
+                                                   use_sparse_inference);
+
+    if (auto threshold = _train_eval_config.predictionThreshold()) {
+      for (auto& output : outputs) {
+        uint32_t prediction_index = argmax(output.activations, output.len);
+        if (output.activations[prediction_index] < threshold.value()) {
+          output.activations[prediction_index] = threshold.value() + 0.0001;
+        }
+      }
+    }
+
+    return outputs;
   }
 
-  BoltBatch predictBatch(const MapInputBatch& samples,
-                         bool use_sparse_inference) {
-    std::vector<BoltBatch> input_batches =
-        _dataset_factory->featurizeInputBatch(samples);
-
-    return predictOnBatchOfVectors(std::move(input_batches),
-                                   use_sparse_inference);
-  }
-
+  template <typename InputType>
   std::vector<dataset::Explanation> explain(
-      const std::string& sample,
+      const InputType& sample,
       std::optional<std::variant<uint32_t, std::string>> target_label =
           std::nullopt) {
     std::optional<uint32_t> target_neuron;
@@ -164,22 +171,6 @@ class ModelPipeline {
     return _dataset_factory->explain(gradients_indices, gradients_ratio,
                                      sample);
   }
-
-  std::vector<dataset::Explanation> explain(
-      const MapInput& sample,
-      std::optional<std::variant<uint32_t, std::string>> target_label =
-          std::nullopt) {
-    std::optional<uint32_t> target_neuron;
-    if (target_label) {
-      target_neuron = _dataset_factory->labelToNeuronId(*target_label);
-    }
-    auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
-        {_dataset_factory->featurizeInput(sample)}, true, target_neuron);
-    return _dataset_factory->explain(gradients_indices, gradients_ratio,
-                                     sample);
-  }
-
-  auto getIdToLabelMap() const { _dataset_factory->getIdToLabelMap(); }
 
   void save(const std::string& filename) {
     std::ofstream filestream =
@@ -219,39 +210,10 @@ class ModelPipeline {
   }
 
  protected:
-  BoltVector predictOnVectors(
-      std::vector<BoltVector> inputs, bool use_sparse_inference,
-      std::optional<std::string> output_node_name = std::nullopt) {
-    BoltVector output = _model->predictSingle(
-        std::move(inputs), use_sparse_inference, std::move(output_node_name));
+  // Private constructor for cereal.
+  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
 
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
-      uint32_t prediction_index = argmax(output.activations, output.len);
-      if (output.activations[prediction_index] < threshold.value()) {
-        output.activations[prediction_index] = threshold.value() + 0.0001;
-      }
-    }
-
-    return output;
-  }
-
-  BoltBatch predictOnBatchOfVectors(std::vector<BoltBatch> input_batches,
-                                    bool use_sparse_inference) {
-    BoltBatch outputs = _model->predictSingleBatch(std::move(input_batches),
-                                                   use_sparse_inference);
-
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
-      for (auto& output : outputs) {
-        uint32_t prediction_index = argmax(output.activations, output.len);
-        if (output.activations[prediction_index] < threshold.value()) {
-          output.activations[prediction_index] = threshold.value() + 0.0001;
-        }
-      }
-    }
-
-    return outputs;
-  }
-
+ private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
   void trainInMemory(DatasetLoaderPtr& dataset,
@@ -333,15 +295,13 @@ class ModelPipeline {
     return max_index;
   }
 
-  // Private constructor for cereal.
-  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_dataset_factory, _model, _train_eval_config);
   }
 
+ protected:
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   TrainEvalParameters _train_eval_config;
