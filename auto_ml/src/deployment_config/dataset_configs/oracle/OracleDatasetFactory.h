@@ -31,8 +31,10 @@
 
 namespace thirdai::automl::deployment {
 
-class OracleDatasetFactory final : public DatasetLoaderFactory {
- public:
+class OracleDatasetFactory final
+    : public DatasetLoaderFactory,
+      public std::enable_shared_from_this<OracleDatasetFactory> {
+ private:
   explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel,
                                 uint32_t text_pairgram_word_limit)
       : _config(std::move(config)),
@@ -47,6 +49,14 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
     _input_dim = mock_processor->getInputDim();
     _label_dim = mock_processor->getLabelDim();
+  }
+
+ public:
+  static std::shared_ptr<OracleDatasetFactory> make(
+      OracleConfigPtr config, bool parallel,
+      uint32_t text_pairgram_word_limit) {
+    return std::shared_ptr<OracleDatasetFactory>(new OracleDatasetFactory(
+        std::move(config), parallel, text_pairgram_word_limit));
   }
 
   DatasetLoaderPtr getLabeledDatasetLoader(
@@ -75,30 +85,39 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     if (!_inference_batch_processor) {
       _inference_batch_processor = makeInferenceProcessor(*_column_number_map);
     }
-    _context->initializeDataStructures(_labeled_batch_processor,
-                                       _config->delimiter);
 
     return std::make_unique<GenericDatasetLoader>(data_loader,
                                                   _labeled_batch_processor,
                                                   /* shuffle= */ training);
   }
 
-  std::vector<BoltVector> featurizeInput(const std::string& input) final {
-    verifyInferenceProcessorIsInitialized();
+  std::vector<BoltVector> featurizeInputImpl(const std::string& input,
+                                             bool should_update_history) {
+    verifyProcessorsAreInitialized();
+
     BoltVector vector;
     auto sample =
         dataset::ProcessorUtils::parseCsvRow(input, _config->delimiter);
-    if (auto exception =
-            _inference_batch_processor->makeInputVector(sample, vector)) {
+    if (auto exception = getProcessor(should_update_history)
+                             .makeInputVector(sample, vector)) {
       std::rethrow_exception(exception);
     }
     return {std::move(vector)};
   }
 
-  std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::string>& inputs) final {
-    verifyInferenceProcessorIsInitialized();
-    auto [input_batch, _] = _inference_batch_processor->createBatch(inputs);
+  std::vector<BoltVector> featurizeInput(const std::string& input) final {
+    return featurizeInputImpl(input, /* should_update_history= */ false);
+  }
+
+  std::vector<BoltVector> updateTemporalTrackers(const std::string& input) {
+    return featurizeInputImpl(input, /* should_update_history= */ true);
+  }
+
+  std::vector<BoltBatch> featurizeInputBatchImpl(
+      const std::vector<std::string>& inputs, bool should_update_history) {
+    verifyProcessorsAreInitialized();
+    auto [input_batch, _] =
+        getProcessor(should_update_history).createBatch(inputs);
 
     // We cannot use the initializer list because the copy constructor is
     // deleted for BoltBatch.
@@ -107,11 +126,23 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return batch_list;
   }
 
+  std::vector<BoltBatch> featurizeInputBatch(
+      const std::vector<std::string>& inputs) final {
+    return featurizeInputBatchImpl(inputs, /* should_update_history= */ false);
+  }
+
+  std::vector<BoltBatch> batchUpdateTemporalTrackers(
+      const std::vector<std::string>& inputs) {
+    return featurizeInputBatchImpl(inputs, /* should_update_history= */ true);
+  }
+
+  void resetTemporalTrackers() { _context->reset(); }
+
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const std::string& sample) final {
-    verifyInferenceProcessorIsInitialized();
+    verifyProcessorsAreInitialized();
 
     auto input_row =
         dataset::ProcessorUtils::parseCsvRow(sample, _config->delimiter);
@@ -137,11 +168,11 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
  protected:
-  std::optional<Artifact> getArtifactImpl(const std::string& name) const final {
+  std::optional<Artifact> getArtifactImpl(const std::string& name) final {
     if (name == "temporal_context") {
-      return {_context};
+      return shared_from_this();
     }
-    return nullptr;
+    return std::nullopt;
   }
 
  private:
@@ -178,8 +209,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return processor;
   }
 
-  void verifyInferenceProcessorIsInitialized() {
-    if (!_inference_batch_processor) {
+  void verifyProcessorsAreInitialized() {
+    if (!_inference_batch_processor || !_labeled_batch_processor) {
       throw std::invalid_argument("Attempted inference before training.");
     }
   }
@@ -198,6 +229,11 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                   temporal_feature_blocks.end());
     return blocks;
+  }
+
+  dataset::GenericBatchProcessor& getProcessor(bool should_update_history) {
+    return should_update_history ? *_labeled_batch_processor
+                                 : *_inference_batch_processor;
   }
 
   OracleConfigPtr _config;
@@ -248,8 +284,8 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
     auto text_pairgram_word_limit =
         _text_pairgram_word_limit->resolve(user_specified_parameters);
 
-    return std::make_unique<OracleDatasetFactory>(config, parallel,
-                                                  text_pairgram_word_limit);
+    return OracleDatasetFactory::make(config, parallel,
+                                      text_pairgram_word_limit);
   }
 
  private:
