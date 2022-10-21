@@ -110,7 +110,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
   py::class_<optimizers::AdamOptimizerFactory, optimizers::OptimizerFactory,
              std::shared_ptr<optimizers::AdamOptimizerFactory>>(
       optimizer_submodule, "Adam")
-      .def(py::init<>());
+      .def(py::init<float, float>(),
+           py::arg("beta1") = optimizers::AdamOptimizer::DEFAULT_BETA1,
+           py::arg("beta2") = optimizers::AdamOptimizer::DEFAULT_BETA2);
 
   py::class_<optimizers::SgdOptimizerFactory,  // NOLINT
              optimizers::OptimizerFactory,

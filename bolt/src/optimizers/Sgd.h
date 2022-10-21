@@ -33,3 +33,5 @@ class SgdOptimizerFactory final : public OptimizerFactory {
 };
 
 }  // namespace thirdai::bolt::optimizers
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::optimizers::SgdOptimizerFactory)

@@ -11,7 +11,7 @@ namespace thirdai::bolt::optimizers {
 class AdamOptimizer final : public Optimizer {
  public:
   AdamOptimizer(std::vector<float>& parameters, std::vector<float>& gradients,
-                float beta1 = 0.9, float beta2 = 0.999)
+                float beta1, float beta2)
       : Optimizer(parameters, gradients),
         _momentum(parameters.size(), 0.0),
         _velocity(parameters.size(), 0.0),
@@ -29,6 +29,9 @@ class AdamOptimizer final : public Optimizer {
 
   void completeTrainStep() final;
 
+  static constexpr float DEFAULT_BETA1 = 0.9;
+  static constexpr float DEFAULT_BETA2 = 0.999;
+
  private:
   static constexpr float eps = 0.0000001;
 
@@ -45,15 +48,24 @@ class AdamOptimizer final : public Optimizer {
 
 class AdamOptimizerFactory final : public OptimizerFactory {
  public:
+  explicit AdamOptimizerFactory(float beta1 = AdamOptimizer::DEFAULT_BETA1,
+                                float beta2 = AdamOptimizer::DEFAULT_BETA2)
+      : _beta1(beta1), _beta2(beta2) {}
+
   OptimizerPtr getOptimizer(std::vector<float>& parameters,
                             std::vector<float>& gradients) final {
-    return std::make_shared<AdamOptimizer>(parameters, gradients);
+    return std::make_shared<AdamOptimizer>(parameters, gradients, _beta1,
+                                           _beta2);
   }
+
+ private:
+  float _beta1;
+  float _beta2;
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<OptimizerFactory>(this));
+    archive(cereal::base_class<OptimizerFactory>(this), _beta1, _beta2);
   }
 };
 
