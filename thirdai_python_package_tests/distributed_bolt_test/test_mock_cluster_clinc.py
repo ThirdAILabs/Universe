@@ -26,6 +26,7 @@ from cluster_utils import (
 # structure.
 from text_classifier_utils import *
 from thirdai import bolt, dataset, deployment
+from thirdai.distributed_bolt import PandasLoader
 
 pytestmark = [pytest.mark.distributed]
 
@@ -43,13 +44,8 @@ def distributed_trained_text_classifier(
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
 
-    path = "clinc_data"
-    if not os.path.exists(path):
-        os.makedirs(path)
-    split_into_2(
-        file_to_split=TRAIN_FILE,
-        destination_file_1=f"clinc_data/part1",
-        destination_file_2=f"clinc_data/part2",
+    loader_node_1 = PandasLoader(
+        path=TRAIN_FILE, num_nodes=2, node_index=0, lines_per_load=500
     )
 
     # Because we explicitly specified the Ray working folder as this test

@@ -1,10 +1,9 @@
-import thirdai._thirdai.new_dataset
-from thirdai._thirdai.new_dataset import *
-
-
-import numpy as np
 from abc import ABC, abstractmethod
 from typing import Optional
+
+import numpy as np
+import thirdai._thirdai.new_dataset
+from thirdai._thirdai.new_dataset import *
 
 
 class ColumnMapGenerator(ABC):
@@ -19,6 +18,7 @@ class ColumnMapGenerator(ABC):
 
 def _is_string_column(column):
     return all([isinstance(s, str) for s in column])
+
 
 def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
     """

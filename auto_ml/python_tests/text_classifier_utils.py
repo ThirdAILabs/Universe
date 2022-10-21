@@ -83,7 +83,7 @@ def saved_config(clinc_dataset):
         loss=bolt.CategoricalCrossEntropyLoss(),
     )
 
-    dataset_config = deployment.SingleBlockDatasetFactoryConfig(
+    dataset_config = deployment.SingleBlockDatasetFactory(
         data_block=deployment.TextBlockConfig(use_pairgrams=True),
         label_block=deployment.NumericalCategoricalBlockConfig(
             n_classes=deployment.UserSpecifiedParameter("output_dim", type=int),

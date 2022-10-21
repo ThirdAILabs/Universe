@@ -10,8 +10,8 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._thirdai import bolt
 from thirdai._distributed_bolt.dataset_loaders import DatasetLoader
+from thirdai._thirdai import bolt
 
 from .utils import get_num_cpus, init_logging
 
@@ -239,4 +239,3 @@ class DistributedDataParallel:
 
     def get_model(self, worker_id=0):
         return ray.get(self.workers[worker_id].model.remote())
-
