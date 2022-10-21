@@ -74,9 +74,9 @@ class Featurizer {
     }
   }
 
-  std::vector<BoltVector> featurizeInput(const std::string& input,
+  std::vector<BoltVector> featurizeInput(const LineInput& input,
                                          bool should_update_history) {
-    auto row = stringInputToVectorOfStringViews(input, _config->delimiter);
+    auto row = vectorOfStringViewsFromLineInput(input, _config->delimiter);
     return featurizeInputImpl(row, should_update_history);
   }
 
@@ -87,8 +87,8 @@ class Featurizer {
     return featurizeInputImpl(row, should_update_history);
   }
 
-  std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::string>& inputs, bool should_update_history) {
+  std::vector<BoltBatch> featurizeInputBatch(const LineInputBatch& inputs,
+                                             bool should_update_history) {
     verifyProcessorsAreInitialized();
 
     auto& processor = should_update_history ? _labeled_batch_processor
@@ -106,15 +106,14 @@ class Featurizer {
   std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& inputs,
                                              bool should_update_history) {
     verifyColumnNumberMapIsInitialized();
-
-    auto string_batch = mapInputBatchToStringBatch(inputs, _config->delimiter,
-                                                   *_column_number_map);
-
+    // Convert input type so we can reuse the other featurizeInputBatch method.
+    auto string_batch = lineInputBatchFromMapInputBatch(
+        inputs, _config->delimiter, *_column_number_map);
     return featurizeInputBatch(string_batch, should_update_history);
   }
 
   auto toInputRow(const std::string& sample) {
-    return stringInputToVectorOfStringViews(sample, _config->delimiter);
+    return vectorOfStringViewsFromLineInput(sample, _config->delimiter);
   }
 
   auto toInputRow(const MapInput& sample) {
@@ -210,7 +209,7 @@ class Featurizer {
     return blocks;
   }
 
-  static std::vector<std::string_view> stringInputToVectorOfStringViews(
+  static std::vector<std::string_view> vectorOfStringViewsFromLineInput(
       const std::string& input_string, char delimiter) {
     return dataset::ProcessorUtils::parseCsvRow(input_string, delimiter);
   }
@@ -226,7 +225,7 @@ class Featurizer {
     return string_view_input;
   }
 
-  static std::vector<std::string> mapInputBatchToStringBatch(
+  static std::vector<std::string> lineInputBatchFromMapInputBatch(
       const MapInputBatch& input_maps, char delimiter,
       const ColumnNumberMap& column_number_map) {
     std::vector<std::string> string_batch(input_maps.size());
