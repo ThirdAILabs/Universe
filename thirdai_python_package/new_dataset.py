@@ -18,7 +18,7 @@ def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
     """
     column_map = {}
     for column_name in df:
-        column_np = df[column_name].values
+        column_np = df[column_name].to_numpy()
         if np.issubdtype(column_np.dtype, np.floating) or column_name in dense_int_cols:
             column_map[column_name] = columns.NumpyDenseValueColumn(array=column_np)
         elif np.issubdtype(column_np.dtype, np.integer):
