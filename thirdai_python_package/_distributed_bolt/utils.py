@@ -61,3 +61,6 @@ def set_gradients(wrapped_model, gradients):
             gradient_position += 1
 
     return gradients
+
+
+def get_column_map_generator(pandas_path, num_nodes, node_num, lines_per_load, ):
