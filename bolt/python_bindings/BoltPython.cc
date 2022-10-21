@@ -758,42 +758,28 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
 
            )pbdoc")
-      .def("train_", &bolt::Generator::buildFlashGenerator,
-           py::arg("file_name"),
+      .def("train", &bolt::Generator::buildFlashGenerator, py::arg("file_name"),
+           py::arg("has_incorrect_queries"),
            R"pbdoc(
-    Constructs an index by reading from a CSV file. 
-    The input CSV file is expected to have a single column where
-    each row represents a query. 
+    Constructs a flash object by reading from a CSV file. 
+    If `has_incorrect_queries` is set, the input CSV file is expected
+    to have two columns: the first containing incorrect queries, and 
+    the second containing the corresponding correct queries. 
+
+    Otherwise, the input CSV file is expected to have just one column
+    with only correct queries. 
             
     Args:
         config_file_name (str): The path to the file containing the queries
+        has_incorrect_queries(bool): Flag to identify if flash is initialized
+            with single queries or tuples of incorrect and correct queries. 
     Returns:
         Generator
 
     Example:
-        >>> Generator = bolt.Generator(...)
+        >>> generator = bolt.Generator(...)
         >>> query_file_name = "/path/to/query/file/name"
-        >>> Generator.build_index(file_name=query_file_name)
-
-           )pbdoc")
-      .def("train", &bolt::Generator::buildFlashGeneratorFromQueryPairs,
-           py::arg("file_name"),
-           R"pbdoc(
-    Constructs an index by reading from a CSV file. 
-    The input CSV file is expected to have exactly two columns.
-    The first column contains incorrect queries while the second column
-    contains the correct form of these queries. 
-
-            
-    Args:
-        config_file_name (str): The path to the file containing the queries
-    Returns:
-        Generator
-
-    Example:
-        >>> Generator = bolt.Generator(...)
-        >>> query_pairs_file = "/path/to/query/file/name"
-        >>> Generator.train(file_name=query_pairs_file)
+        >>> generator.train(file_name=query_file_name, has_incorrect_queries=False)
 
            )pbdoc")
       .def("generate", &bolt::Generator::queryFromFile,
@@ -801,8 +787,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
            R"pbdoc(
     Reads from a CSV file containing potentially incorrect queries,
     and generates a list of correct candidate queries. 
-    By default, 10 queries are chosen as output. If less than 10 queries are 
-    found, then the output list is padded with empty strings. 
+    By default, 5 queries are chosen as output. If less than 5 queries are 
+    found, the output list is padded with empty strings. 
 
     Notice that the input CSV file is expected to have a single column where 
     each row represents a single query. 
@@ -811,15 +797,14 @@ py::module_ createBoltSubmodule(py::module_& module) {
         query_file_name (str): The path to the file containing the queries
 
     Returns:
-        (For now the returned output consits of just IDs)
-        TODO: return the corresponding strings from IDs
+        List[List[str]]: The generated list of queries by flash.
 
     Example:
-        >>> Generator = bolt.Generator(...)
+        >>> generator = bolt.Generator(...)
         >>> queries_to_index = "/path/to/queries"
         >>> query_file_name = "/path/to/query/file/name"
-        >>> Generator.build_index(file_name=queries_to_index)
-        >>> candidates = Generator.generate(query_file_name=query_file_name)
+        >>> generator.build_index(file_name=queries_to_index)
+        >>> candidates = generator.generate(query_file_name=query_file_name)
 
            )pbdoc")
       .def("generate", &bolt::Generator::queryFromList, py::arg("queries"),
@@ -833,7 +818,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         queries (List[str]): Input queries
 
     Returns:
-        The generated list of correct queries by flash. 
+        List[List[str]]: The generated list of queries by flash. 
 
     Example:
         >>> generator = bolt.Generator(...)

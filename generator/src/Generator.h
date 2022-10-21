@@ -51,17 +51,11 @@ class GeneratorConfig {
   }
 
   void save(const std::string& config_file_name) const {
-    std::stringstream output;
-    cereal::BinaryOutputArchive output_archive(output);
-
-    output_archive(*this);
-
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(config_file_name, std::ios::binary);
 
-    std::string string_representation = output.str();
-    filestream.write(string_representation.data(),
-                     string_representation.size());
+    cereal::BinaryOutputArchive output_archive(filestream);
+    output_archive(*this);
   }
 
   static std::shared_ptr<GeneratorConfig> load(
@@ -69,10 +63,7 @@ class GeneratorConfig {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(config_file_name, std::ios::binary);
 
-    std::stringstream buffer;
-    buffer << filestream.rdbuf();
-
-    cereal::BinaryInputArchive input_archive(buffer);
+    cereal::BinaryInputArchive input_archive(filestream);
     std::shared_ptr<GeneratorConfig> deserialized_config(new GeneratorConfig());
     input_archive(*deserialized_config);
 
@@ -143,20 +134,31 @@ class Generator : public std::enable_shared_from_this<Generator> {
   }
 
   /**
-   * @brief Builds a Flash index
+   * @brief Builds a Flash object by reading from a CSV file
+   * containing queries.
+   * If the `has_incorrect_queries` flag is set, the input
+   * CSV file is expected to contain both incorrect (first column) 
+   * and correct queries (second column). Otherwise, the file is 
+   * expected to have only correct queries in one column.
    *
    * @param file_name
+   * @param has_incorrect_queries
    * @return std::shared_ptr<Generator>
-   *
-   * TODO(blaise): Combine buildFlashGenerator and buildFlashGeneratorPair into
-   * one function since they are pretty much indentical
    */
-  std::shared_ptr<Generator> buildFlashGenerator(const std::string& file_name) {
+  std::shared_ptr<Generator> buildFlashGenerator(const std::string& file_name,
+                                                 bool has_incorrect_queries) {
     buildIDsQueryMapping(file_name);
 
-    auto* data = loadDataInMemory(/* file_name = */ file_name,
-                                  /* correct_query_column_index = */ 0)
-                     .get();
+    uint8_t correct_query_column_index = 0;
+    if (has_incorrect_queries) {
+      correct_query_column_index = 1;
+    }
+
+    auto data_loader = getUnlabeledDatasetLoader(
+        file_name,
+        /* correct_query_column_index = */ correct_query_column_index);
+    auto [data, _] = data_loader->loadInMemory();
+
     _flash_generator = std::make_unique<Flash<uint32_t>>(
         _flash_generator_config->getHashFunction());
     _flash_generator->addDataset(*data);
@@ -164,42 +166,36 @@ class Generator : public std::enable_shared_from_this<Generator> {
     return shared_from_this();
   }
 
-  /**
-   * @brief Builds a flash index by reading from a CSV file containing pairs of
-   * incorrect and correct queries.
-   * The first column is expected to contain incorrect queries and the second
-   * one to contain the corresponding correct queries. The function tokenizes
-   * the incorrect query and builds the index using the correct queries instead.
-   *
-   * @param file_name
-   * @return std::shared_ptr<Generator>
-   */
-  std::shared_ptr<Generator> buildFlashGeneratorFromQueryPairs(
-      const std::string& file_name) {
-    auto data = loadDataInMemory(/* file_name = */ file_name,
-                                 /* correct_query_column_index = */ 1);
-    _flash_generator = std::make_unique<Flash<uint32_t>>(
-        _flash_generator_config->getHashFunction());
-    _flash_generator->addDataset(*data);
-
-    return shared_from_this();
-  }
-
-  std::vector<std::vector<std::vector<uint32_t>>> queryFromFile(
+  std::vector<std::vector<std::vector<std::string>>> queryFromFile(
       const std::string& query_file) {
-    auto query_data = loadDataInMemory(/* file_name = */ query_file,
-                                       /* correct_query_column_index = */ 0);
+    auto data_loader = getUnlabeledDatasetLoader(
+        query_file, /* correct_query_column_index = */ 0);
 
-    std::vector<std::vector<std::vector<uint32_t>>> results;
+    auto query_data = std::get<0>(data_loader->loadInMemory());
 
-    for (uint32_t batch_index = 0; batch_index < query_data->len();
-         batch_index++) {
-      auto query_result = _flash_generator->queryBatch(
-          /* batch = */ query_data->at(batch_index),
-          /* top_k = */ _flash_generator_config->topk(),
-          /* pad_zeros = */ true);
+    std::vector<std::vector<std::vector<std::string>>> results;
 
-      results.push_back(query_result);
+#pragma omp parallel for default(none) shared(query_data, results)
+    {
+      for (uint32_t batch_index = 0; batch_index < query_data->len();
+           batch_index++) {
+        auto batch_suggested_ids = _flash_generator->queryBatch(
+            /* batch = */ query_data->at(batch_index),
+            /* top_k = */ _flash_generator_config->topk(),
+            /* pad_zeros = */ true);
+
+        std::vector<std::vector<std::string>> batch_suggestions;
+        std::vector<std::string> topk_queries;
+        for (auto& vector_suggested_ids : batch_suggested_ids) {
+          for (auto suggested_query_id : vector_suggested_ids) {
+            auto suggested_query = _ids_to_queries_map.at(suggested_query_id);
+            topk_queries.emplace_back(suggested_query);
+          }
+          batch_suggestions.emplace_back(topk_queries);
+        }
+
+        results.emplace_back(batch_suggestions);
+      }
     }
 
     return results;
@@ -213,6 +209,9 @@ class Generator : public std::enable_shared_from_this<Generator> {
    *
    * @param queries
    * @return A vector of suggested queries
+   * 
+   * TODO(blaise): Refactor queryFromList and queryFromFile using a 
+   *                helper method. 
    */
   std::vector<std::vector<std::string>> queryFromList(
       const std::vector<std::string>& queries) {
@@ -231,10 +230,6 @@ class Generator : public std::enable_shared_from_this<Generator> {
 
         std::vector<std::string> topk_queries;
         for (auto suggested_query_id : suggested_query_ids[0]) {
-          if (suggested_query_id == 0) {
-            topk_queries.emplace_back("");
-            continue;
-          }
           auto suggested_query = _ids_to_queries_map.at(suggested_query_id);
           topk_queries.emplace_back(suggested_query);
         }
@@ -261,8 +256,7 @@ class Generator : public std::enable_shared_from_this<Generator> {
     try {
       std::ifstream input_file_stream(file_name, std::ios::in);
 
-      // The ID 0 is reserved for empty string.
-      uint32_t ids_counter = 1;
+      uint32_t ids_counter = 0;
       std::string row;
 
       while (std::getline(input_file_stream, row, '\n')) {
@@ -274,31 +268,6 @@ class Generator : public std::enable_shared_from_this<Generator> {
     } catch (const std::ifstream::failure& exception) {
       throw std::invalid_argument("Invalid input file name.");
     }
-  }
-
-  dataset::BoltDatasetPtr loadDataInMemory(
-      const std::string& file_name, uint32_t correct_query_column_index) const {
-    dataset::TextBlockPtr char_trigram_block =
-        dataset::CharKGramTextBlock::make(
-            /* col = */ correct_query_column_index, /* k = */ 3,
-            /* dim = */ _dimension_for_encodings);
-
-    dataset::TextBlockPtr char_four_gram_block =
-        dataset::CharKGramTextBlock::make(
-            /* col = */ correct_query_column_index, /* k = */ 4,
-            /* dim = */ _dimension_for_encodings);
-
-    std::vector<std::shared_ptr<dataset::Block>> input_blocks{
-        char_trigram_block, char_four_gram_block};
-
-    auto data_loader = dataset::StreamingGenericDatasetLoader(
-        /* filename = */ file_name, /* input_blocks = */ input_blocks,
-        /* label_blocks = */ {},
-        /* batch_size = */ _flash_generator_config->batch_size());
-
-    auto [data, _] = data_loader.loadInMemory();
-
-    return data;
   }
 
   std::vector<BoltVector> featurizeSingleQuery(const std::string& query) const {
@@ -324,14 +293,41 @@ class Generator : public std::enable_shared_from_this<Generator> {
     return {std::move(output_vector)};
   }
 
+  std::unique_ptr<dataset::StreamingGenericDatasetLoader>
+  getUnlabeledDatasetLoader(const std::string& file_name,
+                            uint8_t correct_query_column_index) {
+    auto file_data_loader = dataset::SimpleFileDataLoader::make(
+        file_name, _flash_generator_config->batch_size());
+
+    dataset::TextBlockPtr char_trigram_block =
+        dataset::CharKGramTextBlock::make(
+            /* col = */ correct_query_column_index, /* k = */ 3,
+            /* dim = */ _dimension_for_encodings);
+    dataset::TextBlockPtr char_four_gram_block =
+        dataset::CharKGramTextBlock::make(
+            /* col = */ correct_query_column_index, /* k = */ 4,
+            /* dim = */ _dimension_for_encodings);
+
+    std::vector<dataset::BlockPtr> input_blocks = {char_trigram_block,
+                                                   char_four_gram_block};
+
+    std::vector<dataset::BlockPtr> label_block = {};
+
+    _batch_processor = std::make_shared<dataset::GenericBatchProcessor>(
+        input_blocks, label_block);
+
+    return std::make_unique<dataset::StreamingGenericDatasetLoader>(
+        file_data_loader, _batch_processor);
+  }
+
   std::shared_ptr<GeneratorConfig> _flash_generator_config;
   std::unique_ptr<Flash<uint32_t>> _flash_generator;
+
+  std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
 
   // Maintains a mapping from the assigned IDs to the original
   // queries loaded from a CSV file. Each unique query in the input
   // CSV file is assigned a unique ID in an ascending order.
-  // This field is optional until the query CSV file has been loaded
-  // in memory.
   std::unordered_map<uint32_t, std::string> _ids_to_queries_map;
 
   uint32_t _dimension_for_encodings;
@@ -342,8 +338,8 @@ class Generator : public std::enable_shared_from_this<Generator> {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_flash_generator_config, _flash_generator, _ids_to_queries_map,
-            _dimension_for_encodings);
+    archive(_flash_generator_config, _flash_generator, _batch_processor,
+            _ids_to_queries_map, _dimension_for_encodings);
   }
 };  // namespace thirdai::bolt
 

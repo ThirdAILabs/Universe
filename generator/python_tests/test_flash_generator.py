@@ -12,6 +12,10 @@ CONFIG_FILE = "./flash_index_config"
 
 
 def download_grammar_correction_dataset():
+    """
+    The grammar correction dataset is retrieved from HuggingFace:
+    https://huggingface.co/datasets/snips_built_in_intents
+    """
     dataset = datasets.load_dataset("snips_built_in_intents", "small")
     dataframe = pd.DataFrame(dataset)
     extracted_text = []
@@ -32,28 +36,57 @@ def delete_created_files():
         os.remove(CONFIG_FILE)
 
 
+def get_queries_for_testing():
+    queries_with_candidate_recommendations = {
+        "Send my location": {
+            "Send my location",
+            "Send my location to my husband",
+            "Send my location to Anna",
+            "Send my current location",
+        },
+        "Shre my eta wth mry": {
+            "Share my ETA with Mary Jane",
+            "Share my ETA with Jo",
+            "Share my arrival time with Juan Carlos",
+        },
+    }
+    return queries_with_candidate_recommendations
+
+
 @pytest.mark.filterwarnings("ignore")
 @pytest.mark.unit
 def test_flash_generator():
-    query_dataframe = download_grammar_correction_dataset()
-    write_input_dataset_to_csv(query_dataframe, QUERIES_FILE)
+    """
+    Tests that the generated candidate queries are reasonable given
+    the input dataset.
+    By default, the generator recommends top 5 closes queries from
+    flash. This unit test checks that at least two of the expected
+    queries are present in the 5 generated queries by the generator.
+    """
+    if not os.path.exists(QUERIES_FILE):
+        query_dataframe = download_grammar_correction_dataset()
+        write_input_dataset_to_csv(query_dataframe, QUERIES_FILE)
 
     generator_config = bolt.GeneratorConfig(
-        hash_function="FastSRP",
-        num_tables=100,
-        hashes_per_table=15,
+        hash_function="DensifiedMinHash",
+        num_tables=300,
+        hashes_per_table=32,
         input_dim=100,
     )
     generator_config.save(CONFIG_FILE)
 
     generator = bolt.Generator(config_file_name=CONFIG_FILE)
 
-    generator.train_(file_name=QUERIES_FILE)
+    generator.train(file_name=QUERIES_FILE, has_incorrect_queries=False)
 
-    candidate_queries = generator.generate(
-        queries=["Share my location with my Uber driver"]
-    )
+    queries_with_expected_outputs = get_queries_for_testing()
 
-    print(f"CANDIDATE QUERIES = {candidate_queries}")
+    for query in queries_with_expected_outputs:
+        generated_candidate_queries = generator.generate(queries=[query])
+        expected_outputs = queries_with_expected_outputs[query]
+
+        assert (
+            len(set(generated_candidate_queries[0]).intersection(expected_outputs)) >= 2
+        )
 
     delete_created_files()

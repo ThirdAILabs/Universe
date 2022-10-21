@@ -53,11 +53,6 @@ void Flash<LABEL_T>::addBatch(const BoltBatch& batch) {
   std::vector<uint32_t> hashes = hashBatch(batch);
 
   assert(hashes.size() == batch.getBatchSize() * _num_tables);
-  std::cout << "HASHES SIZE = " << batch.getBatchSize() * _num_tables
-            << std::endl;
-  for (uint32_t hash : hashes) {
-    std::cout << "HASH = " << hash << std::endl;
-  }
   try {
     verifyBatchSequentialIds(batch);
   } catch (std::invalid_argument& error) {

@@ -83,7 +83,6 @@ TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
   for (uint32_t batch_index = 0; batch_index < num_queries; batch_index++) {
     for (uint32_t vec_index = 0; vec_index < query_outputs[batch_index].size();
          vec_index++) {
-
       ASSERT_TRUE(query_outputs[batch_index][vec_index] ==
                   second_query_outputs[batch_index][vec_index]);
     }
