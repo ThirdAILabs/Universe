@@ -222,44 +222,44 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
-set(THIRDAI_BOLT_SOURCES
+set(BOLT_SOURCES
     bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
     bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc)
 
-set(THIRDAI_SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
+set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 
-set(THIRDAI_HASHING_SOURCES
+set(HASHING_SOURCES
     hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
     hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
 
-set(THIRDAI_HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
-                              hashtable/src/VectorHashTable.cc)
+set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
+                      hashtable/src/VectorHashTable.cc)
 
-set(THIRDAI_LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
+set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
-set(THIRDAI_DATASET_SOURCES dataset/src/Vocabulary.cc)
+set(DATASET_SOURCES dataset/src/Vocabulary.cc)
 
-set(THIRDAI_NEW_DATASET_SOURCES
+set(NEW_DATASET_SOURCES
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc)
 
-set(THIRDAI_COMPRESSION_SOURCES compression/src/CountSketch.cc
-                                compression/src/DragonVector.cc)
+set(COMPRESSION_SOURCES compression/src/CountSketch.cc
+                        compression/src/DragonVector.cc)
 
-set(THIRDAI_UTILS_SOURCES utils/Logging.cc)
+set(UTILS_SOURCES utils/Logging.cc)
 
 add_library(
   thirdai STATIC
-  ${THIRDAI_BOLT_SOURCES}
-  ${THIRDAI_SEARCH_SOURCES}
-  ${THIRDAI_HASHING_SOURCES}
-  ${THIRDAI_HASHTABLE_SOURCES}
-  ${THIRDAI_LICENSE_SOURCES}
-  ${THIRDAI_DATASET_SOURCES}
-  ${THIRDAI_NEW_DATASET_SOURCES}
-  ${THIRDAI_COMPRESSION_SOURCES}
-  ${THIRDAI_UTILS_SOURCES})
+  ${BOLT_SOURCES}
+  ${SEARCH_SOURCES}
+  ${HASHING_SOURCES}
+  ${HASHTABLE_SOURCES}
+  ${LICENSE_SOURCES}
+  ${DATASET_SOURCES}
+  ${NEW_DATASET_SOURCES}
+  ${COMPRESSION_SOURCES}
+  ${UTILS_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
