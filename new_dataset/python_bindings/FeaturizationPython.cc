@@ -74,7 +74,8 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       .def("convert_to_dataset", &ColumnMap::convertToDataset,
            py::arg("columns"), py::arg("batch_size"))
       .def("num_rows", &ColumnMap::numRows)
-      .def("__getitem__", &ColumnMap::getColumn);
+      .def("__getitem__", &ColumnMap::getColumn)
+      .def("columns", &ColumnMap::columns);
 
   py::class_<FeaturizationPipeline>(dataset_submodule, "FeaturizationPipeline")
       .def(py::init<std::vector<TransformationPtr>>(),

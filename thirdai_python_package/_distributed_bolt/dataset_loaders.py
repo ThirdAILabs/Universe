@@ -79,13 +79,17 @@ class TabularWrapperDatasetLoader(DatasetLoader):
     def __init__(
         self,
         column_map_generator: new_dataset.ColumnMapGenerator,
-        featurizer: new_dataset.FeaturizationPipeline,
-        columns_in_dataset: List[str],
+        x_featurizer: new_dataset.FeaturizationPipeline,
+        y_featurizer: new_dataset.FeaturizationPipeline,
+        x_cols: List[str],
+        y_col: str,
         batch_size: int,
     ):
         self.column_map_generator = column_map_generator
-        self.featurizer = featurizer
-        self.columns_in_dataset = columns_in_dataset
+        self.x_featurizer = x_featurizer
+        self.y_featurizer = y_featurizer
+        self.x_cols = x_cols
+        self.y_col = y_col
         self.batch_size = batch_size
 
     def next(self):
@@ -93,11 +97,12 @@ class TabularWrapperDatasetLoader(DatasetLoader):
         if load == None:
             return None
 
-        columns = self.featurizer.featurize(load)
+        featurized_x = self.x_featurizer.featurize(load)
+        featurized_y = self.y_featurizer.featurize(load)
 
-        return columns.convert_to_dataset(
-            self.columns_in_dataset, batch_size=self.batch_size
-        )
+        return featurized_x.convert_to_dataset(
+            self.x_cols, batch_size=self.batch_size
+        ), featurized_y.convert_to_dataset(self.y_cols, batch_size=self.batch_size)
 
     def restart(self):
         self.column_map_generator.restart()

@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 
 pytestmark = [pytest.mark.distributed]
 from thirdai.distributed_bolt import PandasLoader
@@ -15,14 +16,17 @@ def test_pandas_loader():
             f.write(f"{row},{row}\n")
 
     num_nodes = 6
-    loaders = [PandasLoader(
-        path=test_file, num_nodes=num_nodes, node_index=i, lines_per_load=500
-    ) for i in range(num_nodes)]
+    loaders = [
+        PandasLoader(
+            path=test_file, num_nodes=num_nodes, node_index=i, lines_per_load=500
+        )
+        for i in range(num_nodes)
+    ]
 
     total_num_rows = 0
     for loader in loaders:
         while not ((next_load := loader.next()) is None):
             total_num_rows += next_load.num_rows()
-    assert(total_num_rows == num_rows)
+    assert total_num_rows == num_rows
 
     os.remove(test_file)
