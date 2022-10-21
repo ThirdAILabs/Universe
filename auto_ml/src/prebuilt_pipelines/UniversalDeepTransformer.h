@@ -44,10 +44,9 @@ class UniversalDeepTransformer : public ModelPipeline {
             delimiter, options)) {}
 
   BoltVector embeddingRepresentation(const MapInput& input) {
-    auto input_vectors = _dataset_factory->featurizeInput(input);
-    return predictOnVectors(std::move(input_vectors),
-                            /* use_sparse_inference= */ false,
-                            /* output_node_name= */ EMBEDDING_NAME);
+    return predict(/* sample= */ input,
+                   /* use_sparse_inference= */ false,
+                   /* output_node_name= */ EMBEDDING_NAME);
   }
 
   void resetTemporalTrackers() {

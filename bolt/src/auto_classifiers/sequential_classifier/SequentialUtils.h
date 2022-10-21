@@ -111,22 +111,22 @@ class ColumnNumberMap {
   ColumnNumberMap(const std::string& header, char delimiter) : _n_cols(0) {
     auto header_columns =
         dataset::ProcessorUtils::parseCsvRow(header, delimiter);
+    _n_cols = header_columns.size();
     for (uint32_t col_num = 0; col_num < header_columns.size(); col_num++) {
       std::string col_name(header_columns[col_num]);
       _name_to_num[col_name] = col_num;
-      _n_cols = std::max(col_num + 1, _n_cols);
     }
   }
 
   ColumnNumberMap() {}
 
-  explicit ColumnNumberMap(const std::map<std::string, DataType>& data_types) {
+  explicit ColumnNumberMap(const std::map<std::string, DataType>& data_types)
+      : _n_cols(data_types.size()) {
     uint32_t col_num = 0;
     for (const auto& [col_name, _] : data_types) {
       _name_to_num[col_name] = col_num;
       col_num++;
     }
-    _n_cols = col_num;
   }
 
   uint32_t at(const std::string& col_name) const {

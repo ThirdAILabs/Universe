@@ -98,7 +98,7 @@ class DatasetLoaderFactory {
   virtual DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
 
-  virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
+  virtual std::vector<BoltVector> featurizeInput(const LineInput& input) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const MapInput& input) {
     (void)input;
@@ -108,7 +108,7 @@ class DatasetLoaderFactory {
   };
 
   virtual std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::string>& inputs) = 0;
+      const LineInputBatch& inputs) = 0;
 
   virtual std::vector<BoltBatch> featurizeInputBatch(
       const MapInputBatch& inputs) {
