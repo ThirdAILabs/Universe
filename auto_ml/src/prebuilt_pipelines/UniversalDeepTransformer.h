@@ -5,6 +5,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -30,6 +31,8 @@ class UniversalDeepTransformer : public ModelPipeline {
   static inline const std::string INPUT_NAME = "input";
   static inline const std::string EMBEDDING_NAME = "embedding";
   static inline const std::string OUTPUT_NAME = "output";
+  static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
+  static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
 
  public:
   UniversalDeepTransformer(
@@ -38,7 +41,7 @@ class UniversalDeepTransformer : public ModelPipeline {
       std::string target, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::unordered_map<std::string, std::string>& options = {})
-      : ModelPipeline(buildModelPipeline(
+      : ModelPipeline(buildOracleModelPipeline(
             std::move(data_types), std::move(temporal_tracking_relationships),
             std::move(target), std::move(time_granularity), lookahead,
             delimiter, options)) {}
@@ -96,7 +99,7 @@ class UniversalDeepTransformer : public ModelPipeline {
   }
 
  private:
-  static ModelPipeline buildModelPipeline(
+  static ModelPipeline buildOracleModelPipeline(
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target, std::string time_granularity = "d",
@@ -111,7 +114,8 @@ class UniversalDeepTransformer : public ModelPipeline {
             factory_meta),
         /* parallel= */ std::make_shared<ConstantParameter<bool>>(false),
         /* text_pairgram_word_limit= */
-        std::make_shared<ConstantParameter<uint32_t>>(15));
+        std::make_shared<ConstantParameter<uint32_t>>(
+            TEXT_PAIRGRAM_WORD_LIMIT));
 
     std::vector<std::string> input_names = {INPUT_NAME};
 
@@ -140,7 +144,7 @@ class UniversalDeepTransformer : public ModelPipeline {
     TrainEvalParameters train_eval_parameters(
         /* rebuild_hash_tables_interval= */ std::nullopt,
         /* reconstruct_hash_functions_interval= */ std::nullopt,
-        /* default_batch_size= */ 2048,
+        /* default_batch_size= */ DEFAULT_INFERENCE_BATCH_SIZE,
         /* freeze_hash_tables= */ freeze_hash_tables,
         /* prediction_threshold= */ std::nullopt);
 
