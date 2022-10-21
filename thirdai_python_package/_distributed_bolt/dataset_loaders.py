@@ -75,7 +75,7 @@ class SvmDatasetLoader(GenericInMemoryDatasetLoader):
         )
 
 
-class TabularWrapperDatasetLoader(DatasetLoader):
+class TabularDatasetLoader(DatasetLoader):
     def __init__(
         self,
         column_map_generator: new_dataset.ColumnMapGenerator,

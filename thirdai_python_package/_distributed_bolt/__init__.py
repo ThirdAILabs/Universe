@@ -1,3 +1,3 @@
-from .dataset_loaders import SvmDatasetLoader
+from .dataset_loaders import SvmDatasetLoader, TabularDatasetLoader
 from .distributed import DistributedDataParallel, RayTrainingClusterConfig
-from .utils import PandasLoader
+from .utils import PandasColumnMapGenerator

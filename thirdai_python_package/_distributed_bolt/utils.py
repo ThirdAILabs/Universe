@@ -74,7 +74,7 @@ def _pandas_iterator(path, chunksize, node_index, num_nodes):
         yield None
 
 
-class PandasLoader:
+class PandasColumnMapGenerator(new_dataset.ColumnMapGenerator):
     def __init__(
         self,
         path,

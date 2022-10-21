@@ -3,7 +3,7 @@ import os
 import pytest
 
 pytestmark = [pytest.mark.distributed]
-from thirdai.distributed_bolt import PandasLoader
+from thirdai.distributed_bolt import PandasColumnMapGenerator
 
 
 # TODO(Josh): Make test a bit more rigorous
@@ -17,7 +17,7 @@ def test_pandas_loader():
 
     num_nodes = 6
     loaders = [
-        PandasLoader(
+        PandasColumnMapGenerator(
             path=test_file, num_nodes=num_nodes, node_index=i, lines_per_load=500
         )
         for i in range(num_nodes)
