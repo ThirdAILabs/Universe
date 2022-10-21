@@ -11,6 +11,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
@@ -39,27 +40,29 @@ class UniversalDeepTransformer : public ModelPipeline {
       std::string target, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::unordered_map<std::string, std::string>& options = {})
-      : UniversalDeepTransformer(
-            buildOracleDatasetFactory(
+      : ModelPipeline(buildOracleModelPipeline(
+            std::make_shared<OracleConfig>(
                 std::move(data_types),
                 std::move(temporal_tracking_relationships), std::move(target),
                 std::move(time_granularity), lookahead, delimiter),
-            options) {}
+            options)) {}
 
   BoltVector embeddingRepresentation(const MapInput& input) {
-    return predict(/* sample= */ input,
-                   /* use_sparse_inference= */ false,
-                   /* output_node_name= */ "fc_1");
+    auto input_vector = _dataset_factory->featurizeInput(input);
+    return _model->predictSingle(std::move(input_vector),
+                                 /* use_sparse_inference= */ false);
   }
 
-  void resetTemporalTrackers() { _dataset_factory->resetTemporalTrackers(); }
+  void resetTemporalTrackers() {
+    oracleDatasetFactory().resetTemporalTrackers();
+  }
 
   void updateTemporalTrackers(const MapInput& update) {
-    _dataset_factory->updateTemporalTrackers(update);
+    oracleDatasetFactory().updateTemporalTrackers(update);
   }
 
   void batchUpdateTemporalTrackers(const MapInputBatch& updates) {
-    _dataset_factory->batchUpdateTemporalTrackers(updates);
+    oracleDatasetFactory().batchUpdateTemporalTrackers(updates);
   }
 
   void save(const std::string& filename) {
@@ -82,28 +85,13 @@ class UniversalDeepTransformer : public ModelPipeline {
   }
 
  private:
-  UniversalDeepTransformer(OracleDatasetFactoryPtr dataset_factory,
-                           const OptionsMap& options)
-      : ModelPipeline(buildOracleModelPipeline(dataset_factory, options)),
-        _dataset_factory(std::move(dataset_factory)) {}
-
-  static OracleDatasetFactoryPtr buildOracleDatasetFactory(
-      ColumnDataTypes data_types,
-      UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target, std::string time_granularity = "d",
-      uint32_t lookahead = 0, char delimiter = ',') {
-    auto oracle_config = std::make_shared<OracleConfig>(
-        std::move(data_types), std::move(temporal_tracking_relationships),
-        std::move(target), std::move(time_granularity), lookahead, delimiter);
-
-    return OracleDatasetFactory::make(
+  static ModelPipeline buildOracleModelPipeline(OracleConfigPtr oracle_config,
+                                                const OptionsMap& options) {
+    auto dataset_factory = OracleDatasetFactory::make(
         /* config= */ std::move(oracle_config),
         /* parallel= */ false,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT);
-  }
 
-  static ModelPipeline buildOracleModelPipeline(
-      OracleDatasetFactoryPtr dataset_factory, const OptionsMap& options) {
     auto model = buildOracleBoltGraph(
         /* input_nodes= */ dataset_factory->getInputNodes(),
         /* output_dim= */ dataset_factory->getLabelDim(),
@@ -182,7 +170,9 @@ class UniversalDeepTransformer : public ModelPipeline {
         "').");
   }
 
-  OracleDatasetFactoryPtr _dataset_factory;
+  OracleDatasetFactory& oracleDatasetFactory() {
+    return *std::dynamic_pointer_cast<OracleDatasetFactory>(_dataset_factory);
+  }
 
   // Private constructor for cereal.
   UniversalDeepTransformer() {}
@@ -190,7 +180,7 @@ class UniversalDeepTransformer : public ModelPipeline {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<ModelPipeline>(this), _dataset_factory);
+    archive(cereal::base_class<ModelPipeline>(this));
   }
 };
 

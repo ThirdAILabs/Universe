@@ -118,13 +118,11 @@ class ModelPipeline {
   }
 
   template <typename InputType>
-  BoltVector predict(
-      const InputType& sample, bool use_sparse_inference,
-      std::optional<std::string> output_node_name = std::nullopt) {
+  BoltVector predict(const InputType& sample, bool use_sparse_inference) {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
-    BoltVector output = _model->predictSingle(
-        std::move(inputs), use_sparse_inference, std::move(output_node_name));
+    BoltVector output =
+        _model->predictSingle(std::move(inputs), use_sparse_inference);
 
     if (auto threshold = _train_eval_config.predictionThreshold()) {
       uint32_t prediction_index = argmax(output.activations, output.len);
@@ -298,6 +296,7 @@ class ModelPipeline {
     archive(_dataset_factory, _model, _train_eval_config);
   }
 
+ protected:
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   TrainEvalParameters _train_eval_config;
