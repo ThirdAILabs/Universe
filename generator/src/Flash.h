@@ -65,11 +65,11 @@ class Flash {
                                                uint32_t top_k,
                                                bool pad_zeros = false) const;
 
+ private:
   constexpr void incrementBatchElementsCounter(uint32_t num_vectors) {
     _batch_elements_counter += num_vectors;
   }
 
- private:
   /**
    * Returns a vector of hashes for the input batch
    */

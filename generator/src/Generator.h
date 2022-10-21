@@ -137,8 +137,8 @@ class Generator : public std::enable_shared_from_this<Generator> {
    * @brief Builds a Flash object by reading from a CSV file
    * containing queries.
    * If the `has_incorrect_queries` flag is set, the input
-   * CSV file is expected to contain both incorrect (first column) 
-   * and correct queries (second column). Otherwise, the file is 
+   * CSV file is expected to contain both incorrect (first column)
+   * and correct queries (second column). Otherwise, the file is
    * expected to have only correct queries in one column.
    *
    * @param file_name
@@ -147,7 +147,7 @@ class Generator : public std::enable_shared_from_this<Generator> {
    */
   std::shared_ptr<Generator> buildFlashGenerator(const std::string& file_name,
                                                  bool has_incorrect_queries) {
-    buildIDsQueryMapping(file_name);
+    buildIDsQueryMapping(file_name, has_incorrect_queries);
 
     uint8_t correct_query_column_index = 0;
     if (has_incorrect_queries) {
@@ -176,26 +176,24 @@ class Generator : public std::enable_shared_from_this<Generator> {
     std::vector<std::vector<std::vector<std::string>>> results;
 
 #pragma omp parallel for default(none) shared(query_data, results)
-    {
-      for (uint32_t batch_index = 0; batch_index < query_data->len();
-           batch_index++) {
-        auto batch_suggested_ids = _flash_generator->queryBatch(
-            /* batch = */ query_data->at(batch_index),
-            /* top_k = */ _flash_generator_config->topk(),
-            /* pad_zeros = */ true);
+    for (uint32_t batch_index = 0; batch_index < query_data->len();
+         batch_index++) {
+      auto batch_suggested_ids = _flash_generator->queryBatch(
+          /* batch = */ query_data->at(batch_index),
+          /* top_k = */ _flash_generator_config->topk(),
+          /* pad_zeros = */ true);
 
-        std::vector<std::vector<std::string>> batch_suggestions;
-        std::vector<std::string> topk_queries;
-        for (auto& vector_suggested_ids : batch_suggested_ids) {
-          for (auto suggested_query_id : vector_suggested_ids) {
-            auto suggested_query = _ids_to_queries_map.at(suggested_query_id);
-            topk_queries.emplace_back(suggested_query);
-          }
-          batch_suggestions.emplace_back(topk_queries);
+      std::vector<std::vector<std::string>> batch_suggestions;
+      std::vector<std::string> topk_queries;
+      for (auto& vector_suggested_ids : batch_suggested_ids) {
+        for (auto suggested_query_id : vector_suggested_ids) {
+          auto suggested_query = _ids_to_queries_map.at(suggested_query_id);
+          topk_queries.emplace_back(suggested_query);
         }
-
-        results.emplace_back(batch_suggestions);
+        batch_suggestions.emplace_back(topk_queries);
       }
+
+      results.emplace_back(batch_suggestions);
     }
 
     return results;
@@ -209,32 +207,30 @@ class Generator : public std::enable_shared_from_this<Generator> {
    *
    * @param queries
    * @return A vector of suggested queries
-   * 
-   * TODO(blaise): Refactor queryFromList and queryFromFile using a 
-   *                helper method. 
+   *
+   * TODO(blaise): Refactor queryFromList and queryFromFile using a
+   *                helper method.
    */
   std::vector<std::vector<std::string>> queryFromList(
       const std::vector<std::string>& queries) {
     std::vector<std::vector<std::string>> outputs;
 
 #pragma omp parallel for default(none) shared(queries, outputs)
-    {
-      for (const auto& query : queries) {
-        auto featurized_query_vector = featurizeSingleQuery(query);
+    for (const auto& query : queries) {
+      auto featurized_query_vector = featurizeSingleQuery(query);
 
-        std::vector<std::vector<uint32_t>> suggested_query_ids =
-            _flash_generator->queryBatch(
-                /* batch = */ BoltBatch(std::move(featurized_query_vector)),
-                /* top_k = */ _flash_generator_config->topk(),
-                /* pad_zeros = */ true);
+      std::vector<std::vector<uint32_t>> suggested_query_ids =
+          _flash_generator->queryBatch(
+              /* batch = */ BoltBatch(std::move(featurized_query_vector)),
+              /* top_k = */ _flash_generator_config->topk(),
+              /* pad_zeros = */ true);
 
-        std::vector<std::string> topk_queries;
-        for (auto suggested_query_id : suggested_query_ids[0]) {
-          auto suggested_query = _ids_to_queries_map.at(suggested_query_id);
-          topk_queries.emplace_back(suggested_query);
-        }
-        outputs.emplace_back(topk_queries);
+      std::vector<std::string> topk_queries;
+      for (auto suggested_query_id : suggested_query_ids[0]) {
+        auto suggested_query = _ids_to_queries_map.at(suggested_query_id);
+        topk_queries.emplace_back(suggested_query);
       }
+      outputs.emplace_back(topk_queries);
     }
 
     return outputs;
@@ -252,7 +248,8 @@ class Generator : public std::enable_shared_from_this<Generator> {
    *
    * @param file_name: File containing queries (Expected to be a CSV file).
    */
-  void buildIDsQueryMapping(const std::string& file_name) {
+  void buildIDsQueryMapping(const std::string& file_name,
+                            bool has_incorrect_queries) {
     try {
       std::ifstream input_file_stream(file_name, std::ios::in);
 
@@ -260,7 +257,12 @@ class Generator : public std::enable_shared_from_this<Generator> {
       std::string row;
 
       while (std::getline(input_file_stream, row, '\n')) {
-        _ids_to_queries_map[ids_counter] = row;
+        if (has_incorrect_queries) {
+          auto parsed_row = dataset::ProcessorUtils::parseCsvRow(row, ',');
+          _ids_to_queries_map[ids_counter] = std::string(parsed_row[1]);
+        } else {
+          _ids_to_queries_map[ids_counter] = row;
+        }
         ids_counter += 1;
       }
       input_file_stream.close();
