@@ -22,6 +22,10 @@ def test_basic_pandas_to_columnmap():
     assert isinstance(column_map["col2"], new_dataset.columns.NumpyDenseValueColumn)
     assert isinstance(column_map["col3"], new_dataset.columns.NumpySparseValueColumn)
 
+    assert column_map["col1"].dimension_info() == None
+    assert column_map["col2"].dimension_info().dim == 1
+    assert column_map["col3"].dimension_info() == None
+
 
 def test_pandas_to_columnmap_int_cols():
     TESTDATA = StringIO(
@@ -33,13 +37,13 @@ def test_pandas_to_columnmap_int_cols():
     df = pd.read_csv(TESTDATA, sep=";")
 
     column_map = new_dataset.pandas_to_columnmap(
-        df, dense_int_cols={"col2"}, int_col_ranges={"col3": 20}
+        df, dense_int_cols={"col2"}, int_col_dims={"col3": 20}
     )
 
     assert isinstance(column_map["col1"], new_dataset.columns.NumpySparseValueColumn)
     assert isinstance(column_map["col2"], new_dataset.columns.NumpyDenseValueColumn)
     assert isinstance(column_map["col3"], new_dataset.columns.NumpySparseValueColumn)
 
-    assert column_map["col1"].dimension_info().dim == 11
+    assert column_map["col1"].dimension_info() == None
     assert column_map["col2"].dimension_info().dim == 1
     assert column_map["col3"].dimension_info().dim == 20

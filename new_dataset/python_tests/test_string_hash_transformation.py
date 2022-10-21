@@ -32,8 +32,6 @@ def get_two_col_hashed_string_dataset(col_length, output_range):
         ["column1_hashes", "column2_hashes"], batch_size=col_length
     )
 
-    return indices
-
 
 # Tests that if we hash two columns and then turn them into a dataset, the sparse
 # indices module the output range of the first column will be the same (this

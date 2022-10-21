@@ -24,8 +24,8 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
   py::class_<NumpyValueColumn<uint32_t>, Column,
              std::shared_ptr<NumpyValueColumn<uint32_t>>>(
       columns_submodule, "NumpySparseValueColumn")
-      .def(py::init<const NumpyArray<uint32_t>&, uint32_t>(), py::arg("array"),
-           py::arg("dim"));
+      .def(py::init<const NumpyArray<uint32_t>&, std::optional<uint32_t>>(),
+           py::arg("array"), py::arg("dim"));
 
   py::class_<NumpyValueColumn<float>, Column,
              std::shared_ptr<NumpyValueColumn<float>>>(columns_submodule,

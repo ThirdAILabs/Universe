@@ -27,9 +27,13 @@ class NumpyValueColumn final : public ValueColumn<T> {
  public:
   // This uses SFINAE to disable the folowing constructor if T is not a certain
   // type. https://en.cppreference.com/w/cpp/types/enable_if
+  // Note that if dim is nullopt this column will not be immediately able to be
+  // concatenated into a dataset (use dim=nullopt for when this column
+  // represents unmodded hashes or other unbounded/non-contiguous data).
   template <typename U = T,
             std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
-  explicit NumpyValueColumn(const NumpyArray<uint32_t>& array, uint32_t dim)
+  explicit NumpyValueColumn(const NumpyArray<uint32_t>& array,
+                            std::optional<uint32_t> dim)
       : _dim(dim) {
     checkArrayis1D(array);
 
@@ -37,10 +41,10 @@ class NumpyValueColumn final : public ValueColumn<T> {
 
     for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
       uint32_t index = operator[](row_index);
-      if (index >= _dim) {
+      if (_dim.has_value() && index >= *_dim) {
         throw std::out_of_range("Cannot have index " + std::to_string(index) +
                                 " in NumpyIntegerValueColumn of dimension " +
-                                std::to_string(_dim) + ".");
+                                std::to_string(*_dim) + ".");
       }
     }
   }
@@ -60,7 +64,10 @@ class NumpyValueColumn final : public ValueColumn<T> {
   std::optional<DimensionInfo> dimension() const final {
     if constexpr (std::is_same<T, uint32_t>::value ||
                   std::is_same<T, float>::value) {
-      return {{_dim, std::is_same<T, float>::value}};
+      if (!_dim) {
+        return std::nullopt;
+      }
+      return {{*_dim, std::is_same<T, float>::value}};
     }
     return std::nullopt;
   }
@@ -78,7 +85,7 @@ class NumpyValueColumn final : public ValueColumn<T> {
   }
 
   py::buffer_info _buffer_info;
-  uint32_t _dim;
+  std::optional<uint32_t> _dim;
 };
 
 template <typename T>
