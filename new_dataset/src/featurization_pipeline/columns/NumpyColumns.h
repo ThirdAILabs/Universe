@@ -109,6 +109,13 @@ class NumpySparseArrayColumn final : public ArrayColumn<uint32_t> {
 
   uint64_t numRows() const final { return _buffer_info.shape[0]; }
 
+  /**
+   * The extra typename keyword here so that during parsing it is clear that
+   * ArrayColumn<T>::RowReference refers to a type and not a static member (or
+   * something else) within the class.
+   * https://stackoverflow.com/questions/60277129/why-is-typename-necessary-in-return-type-c
+   * https://en.cppreference.com/w/cpp/language/qualified_lookup
+   */
   typename ArrayColumn<uint32_t>::RowReference operator[](
       uint64_t n) const final {
     return getRowHelper<uint32_t>(_buffer_info, n);
@@ -134,6 +141,13 @@ class NumpyDenseArrayColumn final : public ArrayColumn<float> {
 
   uint64_t numRows() const final { return _buffer_info.shape[0]; }
 
+  /**
+   * The extra typename keyword here so that during parsing it is clear that
+   * ArrayColumn<T>::RowReference refers to a type and not a static member (or
+   * something else) within the class.
+   * https://stackoverflow.com/questions/60277129/why-is-typename-necessary-in-return-type-c
+   * https://en.cppreference.com/w/cpp/language/qualified_lookup
+   */
   typename ArrayColumn<float>::RowReference operator[](uint64_t n) const final {
     return getRowHelper<float>(_buffer_info, n);
   }
