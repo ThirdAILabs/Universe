@@ -5,6 +5,10 @@ import thirdai._thirdai.new_dataset
 from thirdai._thirdai.new_dataset import *
 
 
+def _is_string_column(column):
+    return all([isinstance(s, str) for s in column])
+
+
 def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
     """
     Converts a pandas dataframe to a ColumnMap object. This method assumes that
@@ -26,9 +30,12 @@ def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
             column_map[column_name] = columns.NumpySparseValueColumn(
                 array=column_np, dim=dim
             )
-        # If it is not an integer or float column, we assume it is a string
-        else:
+        elif _is_string_column(column_np):
             column_map[column_name] = columns.StringColumn(array=column_np)
+        else:
+            raise ValueError(
+                f"All columns must be either an integer, float, or string type, but column {column_name} was none of these types."
+            )
 
     return ColumnMap(column_map)
 

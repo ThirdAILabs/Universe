@@ -47,3 +47,12 @@ def test_pandas_to_columnmap_int_cols():
     assert column_map["col1"].dimension_info() == None
     assert column_map["col2"].dimension_info().dim == 1
     assert column_map["col3"].dimension_info().dim == 20
+
+
+def test_pandas_bad_col():
+    df = pd.DataFrame({"col1": [1, 2], "col2": [(1, 2), (3, 4)]})
+    with pytest.raises(
+        ValueError,
+        match="All columns must be either an integer, float, or string type, but column col2 was none of these types.",
+    ):
+        new_dataset.pandas_to_columnmap(df)
