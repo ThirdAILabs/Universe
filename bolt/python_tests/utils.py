@@ -92,6 +92,7 @@ def get_simple_dag_model(
     output_dim,
     output_activation="softmax",
     loss=bolt.CategoricalCrossEntropyLoss(),
+    optimizer=bolt.optimizers.Adam(),
 ):
     input_layer = bolt.graph.Input(dim=input_dim)
 
@@ -105,7 +106,7 @@ def get_simple_dag_model(
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
 
-    model.compile(loss)
+    model.compile(loss=loss, optimizer=optimizer)
 
     return model
 
