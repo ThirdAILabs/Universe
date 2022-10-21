@@ -150,8 +150,8 @@ set(THIRDAI_COMPILE_OPTIONS
     $<$<CONFIG:RelWithAsan>:-g>
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
 
-set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                         $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
+set(THIRDAI_ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
+                                 $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
 # Custom command line options
 
@@ -222,44 +222,44 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
-set(BOLT_SOURCES
+set(THIRDAI_BOLT_SOURCES
     bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
     bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc)
 
-set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
+set(THIRDAI_SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 
-set(HASHING_SOURCES
+set(THIRDAI_HASHING_SOURCES
     hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
     hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
 
-set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
-                      hashtable/src/VectorHashTable.cc)
+set(THIRDAI_HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
+                              hashtable/src/VectorHashTable.cc)
 
-set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
+set(THIRDAI_LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
 
-set(DATASET_SOURCES dataset/src/Vocabulary.cc)
+set(THIRDAI_DATASET_SOURCES dataset/src/Vocabulary.cc)
 
-set(NEW_DATASET_SOURCES
+set(THIRDAI_NEW_DATASET_SOURCES
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc)
 
-set(COMPRESSION_SOURCES compression/src/CountSketch.cc
-                        compression/src/DragonVector.cc)
+set(THIRDAI_COMPRESSION_SOURCES compression/src/CountSketch.cc
+                                compression/src/DragonVector.cc)
 
-set(UTILS_SOURCES utils/Logging.cc)
+set(THIRDAI_UTILS_SOURCES utils/Logging.cc)
 
 add_library(
   thirdai STATIC
-  ${BOLT_SOURCES}
-  ${SEARCH_SOURCES}
-  ${HASHING_SOURCES}
-  ${HASHTABLE_SOURCES}
-  ${LICENSE_SOURCES}
-  ${DATASET_SOURCES}
-  ${NEW_DATASET_SOURCES}
-  ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES})
+  ${THIRDAI_BOLT_SOURCES}
+  ${THIRDAI_SEARCH_SOURCES}
+  ${THIRDAI_HASHING_SOURCES}
+  ${THIRDAI_HASHTABLE_SOURCES}
+  ${THIRDAI_LICENSE_SOURCES}
+  ${THIRDAI_DATASET_SOURCES}
+  ${THIRDAI_NEW_DATASET_SOURCES}
+  ${THIRDAI_COMPRESSION_SOURCES}
+  ${THIRDAI_UTILS_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
@@ -302,10 +302,10 @@ target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
 # https://github.com/google/sanitizers/wiki/AddressSanitizer for more
 # information.
 
-target_compile_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
+target_compile_options(thirdai PUBLIC ${THIRDAI_ASAN_COMPILE_OPTIONS})
 
-target_link_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
+target_link_options(thirdai PUBLIC ${THIRDAI_ASAN_COMPILE_OPTIONS})
 
-target_compile_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+target_compile_options(_thirdai PRIVATE ${THIRDAI_ASAN_COMPILE_OPTIONS})
 
-target_link_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+target_link_options(_thirdai PRIVATE ${THIRDAI_ASAN_COMPILE_OPTIONS})
