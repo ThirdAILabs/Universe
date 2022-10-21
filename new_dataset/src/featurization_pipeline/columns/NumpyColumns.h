@@ -18,43 +18,30 @@ template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 template <typename T>
-class NumpyValueColumn final : public ValueColumn<T> {
-  static_assert(std::is_same<T, uint32_t>::value ||
-                    std::is_same<T, float>::value,
-                "Only numpy arrays of type uint32 or float32 can be used to "
-                "construct columns.");
+static void checkArrayis1D(const NumpyArray<T>& array);
 
+template <typename T>
+static void checkArrayIs2D(const NumpyArray<T>& array);
+
+static void verifySparseArrayIndices(const NumpyArray<uint32_t>& array,
+                                     uint32_t dim);
+template <typename T>
+static const T& getItemHelper(const py::buffer_info& buffer, uint64_t n);
+
+template <typename T>
+static typename ArrayColumn<T>::RowReference getRowHelper(
+    const py::buffer_info& buffer, uint64_t n);
+
+class NumpySparseValueColumn final : public ValueColumn<uint32_t> {
  public:
-  // This uses SFINAE to disable the folowing constructor if T is not a certain
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  // Note that if dim is nullopt this column will not be immediately able to be
-  // concatenated into a dataset (use dim=nullopt for when this column
-  // represents unmodded hashes or other unbounded/non-contiguous data).
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
-  explicit NumpyValueColumn(const NumpyArray<uint32_t>& array,
-                            std::optional<uint32_t> dim)
+  NumpySparseValueColumn(const NumpyArray<uint32_t>& array,
+                         std::optional<uint32_t> dim)
       : _dim(dim) {
     checkArrayis1D(array);
 
-    _buffer_info = array.request();
-
-    for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
-      uint32_t index = operator[](row_index);
-      if (_dim.has_value() && index >= *_dim) {
-        throw std::out_of_range("Cannot have index " + std::to_string(index) +
-                                " in NumpyIntegerValueColumn of dimension " +
-                                std::to_string(*_dim) + ".");
-      }
+    if (dim) {
+      verifySparseArrayIndices(array, *dim);
     }
-  }
-
-  // This uses SFINAE to disable the folowing constructor if T is not a certain
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, float>::value, bool> = true>
-  explicit NumpyValueColumn(const NumpyArray<float>& array) : _dim(1) {
-    checkArrayis1D(array);
 
     _buffer_info = array.request();
   }
@@ -62,105 +49,138 @@ class NumpyValueColumn final : public ValueColumn<T> {
   uint64_t numRows() const final { return _buffer_info.shape[0]; }
 
   std::optional<DimensionInfo> dimension() const final {
-    if constexpr (std::is_same<T, uint32_t>::value ||
-                  std::is_same<T, float>::value) {
-      if (!_dim) {
-        return std::nullopt;
-      }
-      return {{*_dim, std::is_same<T, float>::value}};
+    if (!_dim) {
+      return std::nullopt;
     }
-    return std::nullopt;
+    return {{*_dim, /* is_dense= */ false}};
   }
 
-  const T& operator[](uint64_t n) const final {
-    return static_cast<const T*>(_buffer_info.ptr)[n];
+  const uint32_t& operator[](uint64_t n) const final {
+    return getItemHelper<uint32_t>(_buffer_info, n);
   }
 
  private:
-  static void checkArrayis1D(const NumpyArray<uint32_t>& array) {
-    if (array.ndim() != 1 && (array.ndim() != 2 || array.shape(1) != 1)) {
-      throw std::invalid_argument(
-          "Can only construct NumpyValueColumn from 1D numpy array.");
-    }
-  }
-
   py::buffer_info _buffer_info;
   std::optional<uint32_t> _dim;
 };
 
-template <typename T>
-class NumpyArrayColumn final : public ArrayColumn<T> {
-  static_assert(std::is_same<T, uint32_t>::value ||
-                    std::is_same<T, float>::value,
-                "Only numpy arrays of type uint32 or float32 can be used to "
-                "construct columns.");
-
+class NumpyDenseValueColumn final : public ValueColumn<float> {
  public:
-  // This uses SFINAE to disable the folowing constructor if T is not a certain
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
-  explicit NumpyArrayColumn(const NumpyArray<uint32_t>& array, uint32_t dim)
-      : _dim(dim) {
-    checkArrayIs2D(array);
+  explicit NumpyDenseValueColumn(const NumpyArray<float>& array) {
+    checkArrayis1D(array);
 
     _buffer_info = array.request();
-    for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
-      for (uint32_t index : operator[](row_index)) {
-        if (index >= _dim) {
-          throw std::out_of_range("Cannot have index " + std::to_string(index) +
-                                  " in NumpyIntegerArrayColumn of dimension " +
-                                  std::to_string(_dim) + ".");
-        }
-      }
-    }
-  }
-
-  // This uses SFINAE to disable the folowing constructor if T is not a certain
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, float>::value, bool> = true>
-  explicit NumpyArrayColumn(const NumpyArray<float>& array) {
-    checkArrayIs2D(array);
-
-    _buffer_info = array.request();
-    _dim = _buffer_info.shape[1];
-  }
-
-  std::optional<DimensionInfo> dimension() const final {
-    if constexpr (std::is_same<T, uint32_t>::value ||
-                  std::is_same<T, float>::value) {
-      return {{_dim, std::is_same<T, float>::value}};
-    }
-    return std::nullopt;
   }
 
   uint64_t numRows() const final { return _buffer_info.shape[0]; }
 
-  /**
-   * The extra typename keyword here so that during parsing it is clear that
-   * ArrayColumn<T>::RowReference refers to a type and not a static member (or
-   * something else) within the class.
-   * https://stackoverflow.com/questions/60277129/why-is-typename-necessary-in-return-type-c
-   * https://en.cppreference.com/w/cpp/language/qualified_lookup
-   */
-  typename ArrayColumn<T>::RowReference operator[](uint64_t n) const final {
-    uint64_t len = _buffer_info.shape[1];
-    const T* ptr = static_cast<const T*>(_buffer_info.ptr) + len * n;
+  std::optional<DimensionInfo> dimension() const final {
+    return {{/* dim= */ 1, /* is_dense= */ true}};
+  }
 
-    return {ptr, len};
+  const float& operator[](uint64_t n) const final {
+    return getItemHelper<float>(_buffer_info, n);
   }
 
  private:
-  static void checkArrayIs2D(const NumpyArray<uint32_t>& array) {
-    if (array.ndim() != 2) {
-      throw std::invalid_argument(
-          "Can only construct NumpyArrayColumn from 2D numpy array.");
+  py::buffer_info _buffer_info;
+};
+
+class NumpySparseArrayColumn final : public ArrayColumn<uint32_t> {
+ public:
+  NumpySparseArrayColumn(const NumpyArray<uint32_t>& array,
+                         std::optional<uint32_t> dim)
+      : _dim(dim) {
+    checkArrayIs2D(array);
+
+    if (dim) {
+      verifySparseArrayIndices(array, *dim);
     }
+
+    _buffer_info = array.request();
   }
 
+  std::optional<DimensionInfo> dimension() const final {
+    if (!_dim) {
+      return std::nullopt;
+    }
+    return {{*_dim, /* is_dense= */ false}};
+  }
+
+  uint64_t numRows() const final { return _buffer_info.shape[0]; }
+
+  typename ArrayColumn<uint32_t>::RowReference operator[](
+      uint64_t n) const final {
+    return getRowHelper<uint32_t>(_buffer_info, n);
+  }
+
+ private:
   py::buffer_info _buffer_info;
-  uint32_t _dim;
+  std::optional<uint32_t> _dim;
 };
+
+class NumpyDenseArrayColumn final : public ArrayColumn<float> {
+ public:
+  explicit NumpyDenseArrayColumn(const NumpyArray<float>& array) {
+    checkArrayIs2D(array);
+
+    _buffer_info = array.request();
+  }
+
+  std::optional<DimensionInfo> dimension() const final {
+    uint32_t dim = _buffer_info.shape[1];
+    return {{dim, /* is_dense= */ true}};
+  }
+
+  uint64_t numRows() const final { return _buffer_info.shape[0]; }
+
+  typename ArrayColumn<float>::RowReference operator[](uint64_t n) const final {
+    return getRowHelper<float>(_buffer_info, n);
+  }
+
+ private:
+  py::buffer_info _buffer_info;
+};
+
+template <typename T>
+static void checkArrayis1D(const NumpyArray<T>& array) {
+  if (array.ndim() != 1 && (array.ndim() != 2 || array.shape(1) != 1)) {
+    throw std::invalid_argument(
+        "Can only construct NumpyValueColumn from 1D numpy array.");
+  }
+}
+
+template <typename T>
+static void checkArrayIs2D(const NumpyArray<T>& array) {
+  if (array.ndim() != 2) {
+    throw std::invalid_argument(
+        "Can only construct NumpyArrayColumn from 2D numpy array.");
+  }
+}
+
+static void verifySparseArrayIndices(const NumpyArray<uint32_t>& array,
+                                     uint32_t dim) {
+  const uint32_t* data = array.data();
+  for (uint32_t i = 0; i < array.size(); i++) {
+    if (data[i] >= dim) {
+      throw std::out_of_range("Cannot have index " + std::to_string(data[i]) +
+                              " in Sparse Numpy Column of dimension " +
+                              std::to_string(dim) + ".");
+    }
+  }
+}
+
+template <typename T>
+static const T& getItemHelper(const py::buffer_info& buffer, uint64_t n) {
+  return static_cast<const T*>(buffer.ptr)[n];
+}
+
+template <typename T>
+static typename ArrayColumn<T>::RowReference getRowHelper(
+    const py::buffer_info& buffer, uint64_t n) {
+  uint64_t len = buffer.shape[1];
+  const T* ptr = static_cast<const T*>(buffer.ptr) + len * n;
+  return {ptr, len};
+}
 
 }  // namespace thirdai::dataset

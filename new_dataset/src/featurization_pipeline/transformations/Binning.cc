@@ -26,7 +26,7 @@ void BinningTransformation::apply(ColumnMap& columns) {
         ", " + std::to_string(_exclusive_max_value) + ").");
   }
 
-  auto output_column = std::make_shared<VectorValueColumn<uint32_t>>(
+  auto output_column = std::make_shared<VectorSparseValueColumn>(
       std::move(binned_values), _num_bins);
 
   columns.setColumn(_output_column_name, output_column);
