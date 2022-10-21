@@ -139,7 +139,7 @@ class DatasetLoaderFactory {
 
   virtual ~DatasetLoaderFactory() = default;
 
-  Artifact getArtifact(const std::string& name) const {
+  Artifact getArtifact(const std::string& name) {
     if (auto artifact = getArtifactImpl(name)) {
       return *artifact;
     }
@@ -149,8 +149,7 @@ class DatasetLoaderFactory {
   virtual std::vector<std::string> listArtifactNames() const { return {}; }
 
  protected:
-  virtual std::optional<Artifact> getArtifactImpl(
-      const std::string& name) const {
+  virtual std::optional<Artifact> getArtifactImpl(const std::string& name) {
     (void)name;
     return std::nullopt;
   }
@@ -164,7 +163,7 @@ class DatasetLoaderFactory {
   }
 };
 
-using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
+using DatasetLoaderFactoryPtr = std::shared_ptr<DatasetLoaderFactory>;
 
 class DatasetLoaderFactoryConfig {
  public:

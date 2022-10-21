@@ -8,51 +8,53 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <string_view>
 #include <unordered_map>
 
 namespace thirdai::automl::deployment {
 
-class Featurizer;
-using FeaturizerPtr = std::shared_ptr<Featurizer>;
-
 class TemporalContext {
  public:
-  explicit TemporalContext(FeaturizerPtr featurizer)
-      : _featurizer(std::move(featurizer)) {}
+  TemporalContext() {}
 
   dataset::QuantityHistoryTrackerPtr numericalHistoryForId(
       uint32_t id, uint32_t lookahead, uint32_t history_length,
-      dataset::QuantityTrackingGranularity time_granularity);
+      dataset::QuantityTrackingGranularity time_granularity) {
+    if (!_numerical_histories.count(id)) {
+      _numerical_histories[id] = dataset::QuantityHistoryTracker::make(
+          lookahead, history_length, time_granularity);
+    }
+    return _numerical_histories[id];
+  }
 
   dataset::ItemHistoryCollectionPtr categoricalHistoryForId(uint32_t id,
-                                                            uint32_t n_users);
+                                                            uint32_t n_users) {
+    if (!_categorical_histories.count(id)) {
+      _categorical_histories[id] =
+          dataset::ItemHistoryCollection::make(n_users);
+    }
+    return _categorical_histories[id];
+  }
 
-  void reset();
-
-  void updateTemporalTrackers(const std::string& update);
-
-  void updateTemporalTrackers(const MapInput& update);
-
-  void batchUpdateTemporalTrackers(const std::vector<std::string>& updates);
-
-  void batchUpdateTemporalTrackers(const MapInputBatch& updates);
+  void reset() {
+    for (auto& [_, history] : _numerical_histories) {
+      history->reset();
+    }
+    for (auto& [_, history] : _categorical_histories) {
+      history->reset();
+    }
+  }
 
  private:
-  TemporalContext() {}
-
   std::unordered_map<uint32_t, dataset::QuantityHistoryTrackerPtr>
       _numerical_histories;
   std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
       _categorical_histories;
 
-  FeaturizerPtr _featurizer;
-
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_numerical_histories, _categorical_histories, _featurizer);
+    archive(_numerical_histories, _categorical_histories);
   }
 };
 

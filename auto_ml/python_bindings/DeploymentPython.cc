@@ -259,15 +259,17 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            docs::ORACLE_CONFIG_INIT);
 
-  py::class_<TemporalContext, TemporalContextPtr>(submodule, "TemporalContext")
-      .def("reset", &TemporalContext::reset, docs::TEMPORAL_CONTEXT_RESET)
+  py::class_<OracleDatasetFactory, OracleDatasetFactoryPtr>(submodule,
+                                                            "TemporalContext")
+      .def("reset", &OracleDatasetFactory::resetTemporalTrackers,
+           docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
-           py::overload_cast<const std::string&>(
-               &TemporalContext::updateTemporalTrackers),
+           py::overload_cast<const LineInput&>(
+               &OracleDatasetFactory::updateTemporalTrackers),
            py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
       .def("batch_update_temporal_trackers",
-           py::overload_cast<const std::vector<std::string>&>(
-               &TemporalContext::batchUpdateTemporalTrackers),
+           py::overload_cast<const LineInputBatch&>(
+               &OracleDatasetFactory::batchUpdateTemporalTrackers),
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
 }
 
