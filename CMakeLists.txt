@@ -224,7 +224,7 @@ add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
 add_subdirectory(exceptions)
-add_subdirectory(indexer)
+add_subdirectory(generator)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
@@ -244,7 +244,7 @@ set(BOLT_SOURCES
 
 set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 
-set(FLASH_INDEXER_SOURCES indexer/src/Flash.cc)
+set(FLASH_GENERATOR_SOURCES generator/src/Flash.cc)
 
 set(HASHING_SOURCES
     hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
@@ -266,7 +266,7 @@ add_library(
   thirdai STATIC
   ${BOLT_SOURCES}
   ${SEARCH_SOURCES}
-  ${FLASH_INDEXER_SOURCES}
+  ${FLASH_GENERATOR_SOURCES}
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
   ${LICENSE_SOURCES}

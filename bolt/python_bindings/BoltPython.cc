@@ -12,7 +12,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
-#include <indexer/src/Indexer.h>
+#include <generator/src/Generator.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -685,16 +685,13 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
            )pbdoc");
 
-  /**
-   * Flash Index
-   */
-  py::class_<bolt::IndexerConfig, bolt::IndexerConfigPtr>(bolt_submodule,
-                                                          "IndexerConfig")
+  py::class_<bolt::GeneratorConfig, bolt::GeneratorConfigPtr>(bolt_submodule,
+                                                              "GeneratorConfig")
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("input_dim"),
            R"pbdoc(
-    Initializes an IndexerConfig object.
+    Initializes an GeneratorConfig object.
 
      Args:
         hash_function (str): A specific hash function 
@@ -704,47 +701,47 @@ py::module_ createBoltSubmodule(py::module_& module) {
         hashes_per_table (int): Number of hashes per table.
         input_dim (int): Input dimension 
     Returns: 
-        IndexerConfig
+        GeneratorConfig
 
     Example:
-        >>> indexer_config = bolt.IndexerConfig(
+        >>> generator_config = bolt.GeneratorConfig(
                 hash_function="DensifiedMinHash",
                 num_tables=100,
                 hashes_per_table=15,
             )
             )pbdoc")
-      .def("save", &bolt::IndexerConfig::save, py::arg("file_name"),
+      .def("save", &bolt::GeneratorConfig::save, py::arg("file_name"),
            R"pbdoc(
-    Saves an indexer configuration object at the specified file path. 
-    This can be used to provide a flash indexer architecture to customers.
+    Saves an generator configuration object at the specified file path. 
+    This can be used to provide a flash generator architecture to customers.
 
     Args:
         file_name (str): File path specification for where to save the 
-                indexer configuration object. 
+                generator configuration object. 
 
     Returns:
         None
 
             )pbdoc")
-      .def_static("load", &bolt::IndexerConfig::load,
+      .def_static("load", &bolt::GeneratorConfig::load,
                   py::arg("config_file_name"),
                   R"pbdoc(
-    Loads an indexer config object from a specific file location. 
+    Loads an generator config object from a specific file location. 
 
     Args:
         config_file_name (str): Path to the file containing a saved config.
 
         Returns:
-            IndexerConfig:
+            GeneratorConfig:
 
             )pbdoc");
 
-  py::class_<bolt::Indexer, std::shared_ptr<bolt::Indexer>>(bolt_submodule,
-                                                            "Indexer")
-      .def(py::init(&bolt::Indexer::buildIndexerFromSerializedConfig),
+  py::class_<bolt::Generator, std::shared_ptr<bolt::Generator>>(bolt_submodule,
+                                                                "Generator")
+      .def(py::init(&bolt::Generator::buildGeneratorFromSerializedConfig),
            py::arg("config_file_name"),
            R"pbdoc(
-    Initializes an Indexer object.
+    Initializes an Generator object.
             
     The config file should at least contain the following elements:
         - num_hash_tables: Number of hash tables to construct.
@@ -752,16 +749,17 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Args:
         config_file_name (str): The path to the config file
     Returns:
-        Indexer
+        Generator
 
     Example:
         >>> CONFIG_FILE = "/path/to/config/file"
-        >>> indexer = bolt.Indexer(
+        >>> generator = bolt.Generator(
                 config_file_name=CONFIG_FILE
             )
 
            )pbdoc")
-      .def("build_index", &bolt::Indexer::buildFlashIndex, py::arg("file_name"),
+      .def("train_", &bolt::Generator::buildFlashGenerator,
+           py::arg("file_name"),
            R"pbdoc(
     Constructs an index by reading from a CSV file. 
     The input CSV file is expected to have a single column where
@@ -770,15 +768,15 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Args:
         config_file_name (str): The path to the file containing the queries
     Returns:
-        Indexer
+        Generator
 
     Example:
-        >>> indexer = bolt.Indexer(...)
+        >>> Generator = bolt.Generator(...)
         >>> query_file_name = "/path/to/query/file/name"
-        >>> indexer.build_index(file_name=query_file_name)
+        >>> Generator.build_index(file_name=query_file_name)
 
            )pbdoc")
-      .def("build_index_with_query_pair", &bolt::Indexer::buildFlashIndexPair,
+      .def("train", &bolt::Generator::buildFlashGeneratorFromQueryPairs,
            py::arg("file_name"),
            R"pbdoc(
     Constructs an index by reading from a CSV file. 
@@ -790,15 +788,15 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Args:
         config_file_name (str): The path to the file containing the queries
     Returns:
-        Indexer
+        Generator
 
     Example:
-        >>> indexer = bolt.Indexer(...)
+        >>> Generator = bolt.Generator(...)
         >>> query_pairs_file = "/path/to/query/file/name"
-        >>> indexer.build_index_with_query_pair(file_name=query_pairs_file)
+        >>> Generator.train(file_name=query_pairs_file)
 
            )pbdoc")
-      .def("generate", &bolt::Indexer::queryIndexFromFile,
+      .def("generate", &bolt::Generator::queryFromFile,
            py::arg("query_file_name"),
            R"pbdoc(
     Reads from a CSV file containing potentially incorrect queries,
@@ -817,32 +815,31 @@ py::module_ createBoltSubmodule(py::module_& module) {
         TODO: return the corresponding strings from IDs
 
     Example:
-        >>> indexer = bolt.Indexer(...)
+        >>> Generator = bolt.Generator(...)
         >>> queries_to_index = "/path/to/queries"
         >>> query_file_name = "/path/to/query/file/name"
-        >>> indexer.build_index(file_name=queries_to_index)
-        >>> candidates = indexer.generate(query_file_name=query_file_name)
+        >>> Generator.build_index(file_name=queries_to_index)
+        >>> candidates = Generator.generate(query_file_name=query_file_name)
 
            )pbdoc")
-      .def("generate", &bolt::Indexer::querySingle, py::arg("query"),
+      .def("generate", &bolt::Generator::queryFromList, py::arg("queries"),
            R"pbdoc(
-    Generates a list of correct candidate queries for the given 
-    query. 
+    Generates a list of correct candidate queries for each of the the given 
+    queries in the list. 
     By default, 10 queries are chosen as output. If less than 10 queries are 
     found, then the output list is padded with empty strings. 
 
     Args:
-        query (str): Input query
+        queries (List[str]): Input queries
 
     Returns:
-        (For now the returned output consits of just IDs)
-        TODO: return the corresponding strings from IDs
+        The generated list of correct queries by flash. 
 
     Example:
-        >>> indexer = bolt.Indexer(...)
+        >>> generator = bolt.Generator(...)
         >>> query_file_name = "/path/to/query/file/name"
-        >>> indexer.build_index(file_name=query_file_name)
-        >>> candidates = indexer.generate(query="some incorrect query")
+        >>> generator.build_index(file_name=query_file_name)
+        >>> candidates = generator.generate(query=["some incorrect query"])
 
            )pbdoc");
 
