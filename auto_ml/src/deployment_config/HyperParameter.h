@@ -6,7 +6,6 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/variant.hpp>
 #include <bolt/src/layers/LayerConfig.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <cstdint>
 #include <optional>
