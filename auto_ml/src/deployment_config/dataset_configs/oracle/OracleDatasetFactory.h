@@ -150,6 +150,15 @@ class OracleDatasetFactory final
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
     if (std::holds_alternative<uint32_t>(label)) {
+      if (!_config->data_types.at(_config->target)
+               .asCategorical()
+               .contiguous_numerical_ids) {
+        throw std::invalid_argument(
+            "Received an integer label but the target column does not contain "
+            "contiguous numerical IDs (the contiguous_numerical_id option of "
+            "the categorical data type is set to false). Label must be passed "
+            "in as a string.");
+      }
       return std::get<uint32_t>(label);
     }
 
@@ -158,7 +167,11 @@ class OracleDatasetFactory final
     if (_config->data_types.at(_config->target)
             .asCategorical()
             .contiguous_numerical_ids) {
-      return utils::toInteger(label_str.c_str());
+      throw std::invalid_argument(
+          "Received a string label but the target column contains contiguous "
+          "numerical IDs (the contiguous_numerical_id option of the "
+          "categorical data type is set to true). Label must be passed in as "
+          "an integer.");
     }
 
     if (!_vocabs.count(_config->target)) {
@@ -168,7 +181,7 @@ class OracleDatasetFactory final
     return _vocabs.at(_config->target)->getUid(label_str);
   }
 
-  std::optional<std::vector<std::string>> getIdToLabelMap() const final {
+  std::vector<std::string> getIdToLabelMap() const final {
     if (!_vocabs.count(_config->target)) {
       throw std::invalid_argument(
           "Attempted to get id to label map before training.");
@@ -176,7 +189,10 @@ class OracleDatasetFactory final
     if (_config->data_types.at(_config->target)
             .asCategorical()
             .contiguous_numerical_ids) {
-      return std::nullopt;
+      throw std::invalid_argument(
+          "This model does not provide a mapping from ids to labels since the "
+          "target column has contiguous numerical ids; the ids and labels are "
+          "equivalent.");
     }
     return {_vocabs.at(_config->target)->getUidToStringMap()};
   }

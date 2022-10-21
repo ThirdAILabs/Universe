@@ -72,7 +72,9 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
       return std::get<uint32_t>(label);
     }
 
-    return utils::toInteger(std::get<std::string>(label).c_str());
+    throw std::invalid_argument(
+        "This model does not support string labels; label must be a "
+        "non-negative integer.");
   }
 
   std::vector<dataset::Explanation> explain(
@@ -91,10 +93,6 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final {
     return _labeled_batch_processor->getLabelDim();
-  }
-
-  std::optional<std::vector<std::string>> getIdToLabelMap() const final {
-    return std::nullopt;
   }
 
  private:

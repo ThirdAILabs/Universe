@@ -141,7 +141,11 @@ class DatasetLoaderFactory {
 
   virtual uint32_t getLabelDim() = 0;
 
-  virtual std::optional<std::vector<std::string>> getIdToLabelMap() const = 0;
+  virtual std::vector<std::string> getIdToLabelMap() const {
+    throw std::runtime_error(
+        "This model does not provide a mapping from ids to labels since it "
+        "only accepts integer labels; the ids and labels are equivalent.");
+  }
 
   virtual ~DatasetLoaderFactory() = default;
 
