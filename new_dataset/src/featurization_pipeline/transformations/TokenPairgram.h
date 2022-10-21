@@ -21,7 +21,10 @@ class TokenPairgram : public Transformation {
     auto column = column_map.getSparseArrayColumn(_input_column_name);
     uint32_t num_rows = column_map.numRows();
 
-#pragma omp parallel for default(none) shared(num_rows, column, _output_range)
+    std::vector<std::vector<std::pair<uint32_t, float>>> column_values(
+        num_rows);
+#pragma omp parallel for default(none) \
+    shared(num_rows, column_values, column, _output_range)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       auto input_tokens_buffer = (*column)[row_idx];
       std::vector<uint32_t> input_tokens_vector(input_tokens_buffer.begin(),
@@ -30,13 +33,22 @@ class TokenPairgram : public Transformation {
           TextEncodingUtils::computeRawPairgramsFromUnigrams(
               input_tokens_vector, _output_range);
 
+      std::vector<std::pair<uint32_t, float>> deduplicated_pairgrams(
+          pairgrams.size());
       TextEncodingUtils::sumRepeatedIndices(
-          pairgrams, /* base_value= */ 1.0, [&](uint32_t pairgram, float value) {
-            vec.addSparseFeatureToSegment(pairgram, value);
+          pairgrams, /* base_value= */ 1.0,
+          [&](uint32_t pairgram, float value) {
+            deduplicated_pairgrams.push_back(std::make_pair(pairgram, value));
           });
+      column_values[row_idx] = deduplicated_pairgrams;
     }
+
+    auto output_column =
+        std::make_shared<IndexValueArrayColumn>(std::move(column_values));
+    column_map.setColumn(_output_column_name, output_column);
   }
 
+ private:
   std::string _input_column_name;
   std::string _output_column_name;
   uint32_t _output_range;

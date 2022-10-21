@@ -39,7 +39,7 @@ class NumpyValueColumn final : public ValueColumn<T> {
       uint32_t index = operator[](row_index);
       if (index >= _dim) {
         throw std::out_of_range("Cannot have index " + std::to_string(index) +
-                                " in NumpyIntegerValueColumn of dimension " +
+                                " in NumpySparseValueColumn of dimension " +
                                 std::to_string(_dim) + ".");
       }
     }
@@ -102,7 +102,7 @@ class NumpyArrayColumn final : public ArrayColumn<T> {
       for (uint32_t index : operator[](row_index)) {
         if (index >= _dim) {
           throw std::out_of_range("Cannot have index " + std::to_string(index) +
-                                  " in NumpyIntegerArrayColumn of dimension " +
+                                  " in NumpySparseArrayColumn of dimension " +
                                   std::to_string(_dim) + ".");
         }
       }
