@@ -1,16 +1,25 @@
+from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai._thirdai import dataset
-
-# These classes implement the DatasetGenerator interact, but when I tried making
-# them extend it explicitly using Pybind I ran into problems pickling these
-# classes, since they didn't know how to pickle the parent class. Since we
-# currently don't need to pass DatasetGenerators into C++, we can leave the
-# inheritance as python style "duck" inheritance for now (if it quacks like a
-# DatasetGenerator then its a DatasetGenerator).
+from thirdai import dataset, deployment, new_dataset
 
 
-class GenericInMemoryDatasetLoader:
+class DatasetLoader(ABC):
+    @abstractmethod
+    def next() -> Optional[
+        Tuple[
+            Union[dataset.BoltDataset, List[dataset.BoltDataset]],
+            dataset.BoltDataset,
+        ]
+    ]:
+        pass
+
+    @abstractmethod
+    def restart() -> None:
+        pass
+
+
+class GenericInMemoryDatasetLoader(DatasetLoader):
     """
     Wraps a generator function that returns a single pair of training and label
     datasets into an in memory data generator ready to pass into the distributed
@@ -66,93 +75,29 @@ class SvmDatasetLoader(GenericInMemoryDatasetLoader):
         )
 
 
-class GenericStreamingDatasetLoader:
-    """
-    Wraps a simple dataset generator function into a multi-epoch generator
-    ready to pass into the distributed API.
-    """
-
+class TabularWrapperDatasetLoader(DatasetLoader):
     def __init__(
         self,
-        backing_stream: Callable[
-            int, Optional[Tuple[dataset.BoltDataset, dataset.BoltDataset]]
-        ],
+        column_map_generator: new_dataset.ColumnMapGenerator,
+        featurizer: new_dataset.FeaturizationPipeline,
+        columns_in_dataset: List[str],
+        batch_size: int,
     ):
-        """
-        Creates a new GenericStreamingDataGenerator backed by the passed in
-        dataset generator function.
-
-        Args:
-            backing_stream: A callable function that maps integers representing
-            the "id" of the dataset within the stream (e.g. 0 is the first
-            dataset) to optional tuples of
-            (dataset.BoltDataset, dataset.BoltDataset). This class will manage
-            this underlying stream to generate datasets for the model. Inputs
-            0 to the max valid dataset should not be None, and everything
-             outside that range should be None. The user should expect the
-            function to be called over valid inputs (inputs that don't return
-            None) multiple times, as each dataset will need to be generated
-            once per epoch.
-        """
-        self.backing_stream = backing_stream
-        self.current_dataset_id_within_epoch = 0
+        self.column_map_generator = column_map_generator
+        self.featurizer = featurizer
+        self.columns_in_dataset = columns_in_dataset
+        self.batch_size = batch_size
 
     def next(self):
-        load = self.backing_stream(self.current_dataset_id_within_epoch)
+        load = self.column_map_generator.next()
         if load == None:
             return None
 
-        current_dataset, current_labels = load
-        if not (isinstance(current_dataset, list)):
-            current_dataset = [current_dataset]
+        columns = self.featurizer.featurize(load)
 
-        self.current_dataset_id_within_epoch += 1
-
-        return current_dataset, current_labels
+        return columns.convert_to_dataset(
+            self.columns_in_dataset, batch_size=self.batch_size
+        )
 
     def restart(self):
-        self.current_dataset_id_within_epoch = 0
-
-
-# This gets around having to write serialization code for all of our
-# batch processors
-# TODO(Josh): We should probably write all of the serialization code
-class DatasetLoaderFactoryWrapper:
-    def __init__(
-        self,
-        data_loader: Union[Tuple[str, int], dataset.DataLoader],
-        model_pipeline,
-        max_in_memory_batches,
-    ):
-        self.data_loader = data_loader
-        self.dataset_loader_factory = model_pipeline.dataset_loader_factory
-        self.max_in_memory_batches = max_in_memory_batches
-        self.initialized = False
-
-    def next(self):
-        if not self.initialized:
-            if isinstance(self.data_loader, tuple):
-                self.dataset_loader = (
-                    self.dataset_loader_factory.get_labeled_dataset_loader(
-                        max_in_memory_batches=self.max_in_memory_batches,
-                        training=True,
-                        data_loader=dataset.SimpleFileDataLoader(
-                            filename=self.data_loader[0],
-                            target_batch_size=self.data_loader[1],
-                        ),
-                    )
-                )
-            else:
-                self.dataset_loader = (
-                    self.dataset_loader_factory.get_labeled_dataset_loader(
-                        max_in_memory_batches=self.max_in_memory_batches,
-                        training=True,
-                        data_loader=self.data_loader,
-                    )
-                )
-
-        self.initialized = True
-        return self.dataset_loader.next()
-
-    def restart(self):
-        self.dataset_loader.restart()
+        self.column_map_generator.restart()
