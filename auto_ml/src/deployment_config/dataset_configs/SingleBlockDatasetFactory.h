@@ -134,7 +134,7 @@ class SingleBlockDatasetFactoryConfig final
           delimiter + "'.");
     }
 
-    return std::make_unique<SingleBlockDatasetFactory>(
+    return std::make_shared<SingleBlockDatasetFactory>(
         /* data_block= */ data_block,
         /* unlabeled_data_block= */ unlabeled_data_block,
         /* label_block=*/label_block, /* shuffle= */ shuffle,
