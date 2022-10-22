@@ -159,9 +159,8 @@ class Generator : public std::enable_shared_from_this<Generator> {
    *
    * @param file_name
    * @param has_incorrect_queries
-   * @return std::shared_ptr<Generator>
    */
-  std::shared_ptr<Generator> buildFlashGenerator(const std::string& file_name) {
+  void buildFlashGenerator(const std::string& file_name) {
     buildIDQueryMapping(file_name,
                         _flash_generator_config->has_incorrect_queries());
 
@@ -171,8 +170,6 @@ class Generator : public std::enable_shared_from_this<Generator> {
     _flash_generator = std::make_unique<Flash<uint32_t>>(
         _flash_generator_config->getHashFunction());
     _flash_generator->addDataset(*data);
-
-    return shared_from_this();
   }
 
   /**

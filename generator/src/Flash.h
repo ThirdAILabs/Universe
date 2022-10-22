@@ -92,7 +92,7 @@ class Flash {
    * by throwing an error if the id is too large for the initialized size
    * (>2^16 for uin16_t, >2^32 for uint32_t, etc.).
    */
-  LABEL_T verify_and_convert_id(uint64_t id) const;
+  LABEL_T verifyAndConvertID(uint64_t id) const;
 
   std::shared_ptr<hashing::HashFunction> _hash_function;
 

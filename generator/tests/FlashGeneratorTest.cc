@@ -28,7 +28,7 @@ TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
   uint32_t input_vector_dimension = 50;
 
   uint32_t batch_size = 20;
-  uint32_t num_queries = 15;
+  uint32_t num_queries = 1;
   uint32_t words_per_query = 10;
   uint32_t top_k = 5;
 
@@ -56,7 +56,7 @@ TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
 
   std::vector<std::vector<std::vector<uint32_t>>> query_outputs;
   for (BoltBatch& query : queries) {
-    auto output_vectors = flash.queryBatch(query, top_k, true);
+    auto output_vectors = flash.queryBatch(query, top_k, false);
     query_outputs.push_back(output_vectors);
   }
 
@@ -76,7 +76,7 @@ TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
   std::vector<std::vector<std::vector<uint32_t>>> second_query_outputs;
   for (BoltBatch& query : queries) {
     auto output_vectors =
-        deserialized_flash_instance.queryBatch(query, top_k, true);
+        deserialized_flash_instance.queryBatch(query, top_k, false);
     second_query_outputs.push_back(output_vectors);
   }
 
@@ -87,8 +87,6 @@ TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
                   second_query_outputs[batch_index][vec_index]);
     }
   }
-
-  delete hash_function;
 }
 
 TEST(FlashGeneratorConfigTest, FlashGeneratorLoadAndSaveTest) {

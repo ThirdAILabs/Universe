@@ -17,8 +17,8 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function)
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
       _batch_elements_counter(0),
-      _hashtable(
-          new hashtable::VectorHashTable<LABEL_T, false>(_num_tables, _range)) {
+      _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, false>>(
+          _num_tables, _range)) {
   thirdai::licensing::LicenseWrapper::checkLicense();
 }
 
@@ -43,7 +43,6 @@ template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BoltBatch>& dataset) {
   while (auto batch_tuple = dataset.nextBatchTuple()) {
     const auto& batch = batch_tuple.value();
-    // ignore the labels
     addBatch(std::get<0>(batch));
   }
 }
@@ -53,12 +52,7 @@ void Flash<LABEL_T>::addBatch(const BoltBatch& batch) {
   std::vector<uint32_t> hashes = hashBatch(batch);
 
   assert(hashes.size() == batch.getBatchSize() * _num_tables);
-  try {
-    verifyBatchSequentialIds(batch);
-  } catch (std::invalid_argument& error) {
-    throw error;
-  }
-
+  verifyBatchSequentialIds(batch);
   _hashtable->insertSequential(batch.getBatchSize(), _batch_elements_counter,
                                hashes.data());
 
@@ -74,11 +68,11 @@ std::vector<uint32_t> Flash<LABEL_T>::hashBatch(const BoltBatch& batch) const {
 template <typename LABEL_T>
 void Flash<LABEL_T>::verifyBatchSequentialIds(const BoltBatch& batch) const {
   uint64_t largest_batch_id = _batch_elements_counter + batch.getBatchSize();
-  verify_and_convert_id(largest_batch_id);
+  verifyAndConvertID(largest_batch_id);
 }
 
 template <typename LABEL_T>
-LABEL_T Flash<LABEL_T>::verify_and_convert_id(uint64_t id) const {
+LABEL_T Flash<LABEL_T>::verifyAndConvertID(uint64_t id) const {
   // Casting to a smaller integer is well specified behavior because we are
   // dealing with only unsigned integers. If the largest_batch_id is out
   // of range of LABEL_T, its first bits will get truncated and the equality
