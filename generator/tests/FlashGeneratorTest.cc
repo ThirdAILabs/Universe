@@ -20,15 +20,15 @@ using thirdai::hashing::DensifiedMinHash;
 namespace thirdai::tests {
 
 const uint32_t HASHES_PER_TABLE = 3;
-const uint32_t NUM_TABLES = 5;
+const uint32_t NUM_TABLES = 32;
 const uint32_t RANGE = 3000;
-const uint32_t NUM_VECTORS = 2;
+const uint32_t NUM_VECTORS = 100;
 
 TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
-  uint32_t input_vector_dimension = 100;
+  uint32_t input_vector_dimension = 50;
 
-  uint32_t batch_size = 10;
-  uint32_t num_queries = 1;
+  uint32_t batch_size = 20;
+  uint32_t num_queries = 15;
   uint32_t words_per_query = 10;
   uint32_t top_k = 5;
 
@@ -92,13 +92,14 @@ TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
 }
 
 TEST(FlashGeneratorConfigTest, FlashGeneratorLoadAndSaveTest) {
-  const char* SAVE_PATH = "./flasher_config";
+  const char* SAVE_PATH = "./flash_config";
 
   GeneratorConfig config =
       GeneratorConfig(/* hash_function = */ "DensifiedMinHash",
                       /* num_tables = */ NUM_TABLES,
                       /* hashes_per_table = */ HASHES_PER_TABLE,
-                      /* input_dim = */ NUM_VECTORS);
+                      /* input_dim = */ NUM_VECTORS,
+                      /* top_k = */ 5);
 
   config.save(/*config_file_name = */ SAVE_PATH);
 

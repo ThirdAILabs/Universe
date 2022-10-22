@@ -687,9 +687,14 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
   py::class_<bolt::GeneratorConfig, bolt::GeneratorConfigPtr>(bolt_submodule,
                                                               "GeneratorConfig")
-      .def(py::init<std::string, uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<std::string, uint32_t, uint32_t, uint32_t, uint32_t, bool,
+                    bool, bool, uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("input_dim"),
+           py::arg("top_k") = 5, py::arg("use_char_trigram") = true,
+           py::arg("use_char_four_gram") = true,
+           py::arg("has_incorrect_queries") = false,
+           py::arg("batch_size") = 100,
            R"pbdoc(
     Initializes an GeneratorConfig object.
 
@@ -700,6 +705,14 @@ py::module_ createBoltSubmodule(py::module_& module) {
         num_tables (int): Number of hash tables to construct.
         hashes_per_table (int): Number of hashes per table.
         input_dim (int): Input dimension 
+        top_k (int): The number of closest queries to return
+        use_char_trigram (bool): Determines if input blocks include character
+            tri-grams
+        use_char_four_gram (bool): Determines if input blocks include
+            character four-grams
+        has_incorrect_queries(bool): Flag to identify if flash is initialized
+            with single queries or tuples of incorrect and correct queries.
+        batch_size (int): batch size. It is defaulted to 100. 
     Returns: 
         GeneratorConfig
 
@@ -708,6 +721,12 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 hash_function="DensifiedMinHash",
                 num_tables=100,
                 hashes_per_table=15,
+                input_dim=100,
+                top_k=5,
+                use_char_trigram=True,
+                use_char_four_gram=True,
+                has_incorrect_queries=True,
+                batch_size=100,
             )
             )pbdoc")
       .def("save", &bolt::GeneratorConfig::save, py::arg("file_name"),
@@ -759,59 +778,32 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
            )pbdoc")
       .def("train", &bolt::Generator::buildFlashGenerator, py::arg("file_name"),
-           py::arg("has_incorrect_queries"),
            R"pbdoc(
     Constructs a flash object by reading from a CSV file. 
-    If `has_incorrect_queries` is set, the input CSV file is expected
-    to have two columns: the first containing incorrect queries, and 
-    the second containing the corresponding correct queries. 
+    If `has_incorrect_queries` is set in GeneratorConfig, the input CSV file is 
+    expected to have two columns: the first containing correct queries, and 
+    the second containing the incorrect queries. 
 
     Otherwise, the input CSV file is expected to have just one column
     with only correct queries. 
             
     Args:
         config_file_name (str): The path to the file containing the queries
-        has_incorrect_queries(bool): Flag to identify if flash is initialized
-            with single queries or tuples of incorrect and correct queries. 
+ 
     Returns:
         Generator
 
     Example:
         >>> generator = bolt.Generator(...)
         >>> query_file_name = "/path/to/query/file/name"
-        >>> generator.train(file_name=query_file_name, has_incorrect_queries=False)
-
-           )pbdoc")
-      .def("generate", &bolt::Generator::queryFromFile,
-           py::arg("query_file_name"),
-           R"pbdoc(
-    Reads from a CSV file containing potentially incorrect queries,
-    and generates a list of correct candidate queries. 
-    By default, 5 queries are chosen as output. If less than 5 queries are 
-    found, the output list is padded with empty strings. 
-
-    Notice that the input CSV file is expected to have a single column where 
-    each row represents a single query. 
-            
-    Args:
-        query_file_name (str): The path to the file containing the queries
-
-    Returns:
-        List[List[str]]: The generated list of queries by flash.
-
-    Example:
-        >>> generator = bolt.Generator(...)
-        >>> queries_to_index = "/path/to/queries"
-        >>> query_file_name = "/path/to/query/file/name"
-        >>> generator.build_index(file_name=queries_to_index)
-        >>> candidates = generator.generate(query_file_name=query_file_name)
+        >>> generator.train(file_name=query_file_name)
 
            )pbdoc")
       .def("generate", &bolt::Generator::queryFromList, py::arg("queries"),
            R"pbdoc(
     Generates a list of correct candidate queries for each of the the given 
     queries in the list. 
-    By default, 10 queries are chosen as output. If less than 10 queries are 
+    By default, 5 queries are chosen as output. If less than 5 queries are 
     found, then the output list is padded with empty strings. 
 
     Args:

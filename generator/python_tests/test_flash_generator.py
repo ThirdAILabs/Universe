@@ -14,6 +14,7 @@ QUERIES_FILE = "./queries.csv"
 TRANSFORMED_QUERIES = "./transformed_queries.csv"
 CONFIG_FILE = "./flash_index_config"
 
+# The downloaded dataset from HuggingFace consists of 328 samples
 DATASET_SIZE = 328
 
 
@@ -86,7 +87,7 @@ def transform_queries(dataframe):
 
             index += 1
 
-        transformed_dataframe.append([" ".join(incorrect_query_pair), correct_query])
+        transformed_dataframe.append([correct_query, " ".join(incorrect_query_pair)])
 
     return pd.DataFrame(transformed_dataframe)
 
@@ -121,19 +122,20 @@ def test_flash_generator():
         num_tables=300,
         hashes_per_table=32,
         input_dim=100,
+        has_incorrect_queries=True,
     )
     generator_config.save(CONFIG_FILE)
 
     generator = bolt.Generator(config_file_name=CONFIG_FILE)
 
-    generator.train(file_name=TRANSFORMED_QUERIES, has_incorrect_queries=True)
+    generator.train(file_name=TRANSFORMED_QUERIES)
 
     query_pairs = read_csv_file(file_name=TRANSFORMED_QUERIES)
 
     count_correct_results = 0
     for query_pair in query_pairs:
-        generated_candidates = generator.generate(queries=[query_pair[0]])
-        count_correct_results += 1 if query_pair[1] in generated_candidates[0] else 0
+        generated_candidates = generator.generate(queries=[query_pair[1]])
+        count_correct_results += 1 if query_pair[0] in generated_candidates[0] else 0
 
     assert count_correct_results / DATASET_SIZE > 0.98
 

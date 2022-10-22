@@ -30,24 +30,32 @@ namespace thirdai::bolt {
 class GeneratorConfig {
  public:
   GeneratorConfig(std::string hash_function, uint32_t num_tables,
-                  uint32_t hashes_per_table, uint32_t input_dim,
-                  uint32_t topk = 5, uint32_t batch_size = 100,
+                  uint32_t hashes_per_table, uint32_t input_dim, uint32_t top_k,
+                  bool use_char_trigram = true, bool use_char_four_gram = true,
+                  bool has_incorrect_queries = false, uint32_t batch_size = 100,
                   uint32_t range = 1000000)
       : _hash_function(std::move(hash_function)),
         _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
         _input_dim(input_dim),
-        _topk(topk),
+        _top_k(top_k),
         _batch_size(batch_size),
-        _range(range) {}
+        _range(range),
+        _use_char_trigram(use_char_trigram),
+        _use_char_four_gram(use_char_four_gram),
+        _has_incorrect_queries(has_incorrect_queries) {}
 
   // overloaded operator mainly for testing
   auto operator==(GeneratorConfig* rhs) const {
     return this->_hash_function == rhs->_hash_function &&
            this->_num_tables == rhs->_num_tables &&
            this->_hashes_per_table == rhs->_hashes_per_table &&
-           this->_input_dim == rhs->_input_dim && this->_topk == rhs->_topk &&
-           this->_batch_size == rhs->_batch_size && this->_range == rhs->_range;
+           this->_input_dim == rhs->_input_dim && this->_top_k == rhs->_top_k &&
+           this->_batch_size == rhs->_batch_size &&
+           this->_range == rhs->_range &&
+           this->_use_char_trigram == rhs->_use_char_trigram &&
+           this->_use_char_four_gram == rhs->_use_char_four_gram &&
+           this->_has_incorrect_queries == rhs->_has_incorrect_queries;
   }
 
   void save(const std::string& config_file_name) const {
@@ -90,7 +98,13 @@ class GeneratorConfig {
   }
 
   constexpr uint32_t batch_size() const { return _batch_size; }
-  constexpr uint32_t topk() const { return _topk; }
+  constexpr uint32_t top_k() const { return _top_k; }
+  constexpr bool use_char_trigram() const { return _use_char_trigram; }
+  constexpr bool use_char_fourgram() const { return _use_char_four_gram; }
+
+  constexpr bool has_incorrect_queries() const {
+    return _has_incorrect_queries;
+  }
 
  private:
   std::string _hash_function;
@@ -98,9 +112,15 @@ class GeneratorConfig {
   uint32_t _hashes_per_table;
 
   uint32_t _input_dim;
-  uint32_t _topk;
+  uint32_t _top_k;
   uint32_t _batch_size;
   uint32_t _range;
+
+  bool _use_char_trigram;
+  bool _use_char_four_gram;
+
+  // Identifies if the dataset contains pairs of correct and incorrect queries
+  bool _has_incorrect_queries;
 
   // Private constructor for cereal
   GeneratorConfig() {}
@@ -108,8 +128,9 @@ class GeneratorConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_hash_function, _input_dim, _batch_size, _num_tables, _range, _topk,
-            _hashes_per_table);
+    archive(_hash_function, _num_tables, _hashes_per_table, _input_dim, _top_k,
+            _batch_size, _range, _use_char_trigram, _use_char_four_gram,
+            _has_incorrect_queries);
   }
 };
 
@@ -117,11 +138,6 @@ using GeneratorConfigPtr = std::shared_ptr<GeneratorConfig>;
 
 class Generator : public std::enable_shared_from_this<Generator> {
  public:
-  explicit Generator(GeneratorConfigPtr flash_generator_config)
-      : _flash_generator_config(std::move(flash_generator_config)),
-        _dimension_for_encodings(
-            dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {}
-
   static Generator make(GeneratorConfigPtr flash_generator_config) {
     return Generator(std::move(flash_generator_config));
   }
@@ -136,27 +152,20 @@ class Generator : public std::enable_shared_from_this<Generator> {
   /**
    * @brief Builds a Flash object by reading from a CSV file
    * containing queries.
-   * If the `has_incorrect_queries` flag is set, the input
-   * CSV file is expected to contain both incorrect (first column)
-   * and correct queries (second column). Otherwise, the file is
-   * expected to have only correct queries in one column.
+   * If the `has_incorrect_queries` flag is set in the GeneratorConfig, the
+   * input CSV file is expected to contain both correct (first column) and
+   * incorrect queries (second column). Otherwise, the file is expected to have
+   * only correct queries in one column.
    *
    * @param file_name
    * @param has_incorrect_queries
    * @return std::shared_ptr<Generator>
    */
-  std::shared_ptr<Generator> buildFlashGenerator(const std::string& file_name,
-                                                 bool has_incorrect_queries) {
-    buildIDsQueryMapping(file_name, has_incorrect_queries);
+  std::shared_ptr<Generator> buildFlashGenerator(const std::string& file_name) {
+    buildIDQueryMapping(file_name,
+                        _flash_generator_config->has_incorrect_queries());
 
-    uint8_t correct_query_column_index = 0;
-    if (has_incorrect_queries) {
-      correct_query_column_index = 1;
-    }
-
-    auto data_loader = getUnlabeledDatasetLoader(
-        file_name,
-        /* correct_query_column_index = */ correct_query_column_index);
+    auto data_loader = getUnlabeledDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
 
     _flash_generator = std::make_unique<Flash<uint32_t>>(
@@ -164,39 +173,6 @@ class Generator : public std::enable_shared_from_this<Generator> {
     _flash_generator->addDataset(*data);
 
     return shared_from_this();
-  }
-
-  std::vector<std::vector<std::vector<std::string>>> queryFromFile(
-      const std::string& query_file) {
-    auto data_loader = getUnlabeledDatasetLoader(
-        query_file, /* correct_query_column_index = */ 0);
-
-    auto query_data = std::get<0>(data_loader->loadInMemory());
-
-    std::vector<std::vector<std::vector<std::string>>> results;
-
-#pragma omp parallel for default(none) shared(query_data, results)
-    for (uint32_t batch_index = 0; batch_index < query_data->len();
-         batch_index++) {
-      auto batch_suggested_ids = _flash_generator->queryBatch(
-          /* batch = */ query_data->at(batch_index),
-          /* top_k = */ _flash_generator_config->topk(),
-          /* pad_zeros = */ true);
-
-      std::vector<std::vector<std::string>> batch_suggestions;
-      std::vector<std::string> topk_queries;
-      for (auto& vector_suggested_ids : batch_suggested_ids) {
-        for (auto suggested_query_id : vector_suggested_ids) {
-          auto suggested_query = _ids_to_queries_map.at(suggested_query_id);
-          topk_queries.emplace_back(suggested_query);
-        }
-        batch_suggestions.emplace_back(topk_queries);
-      }
-
-      results.emplace_back(batch_suggestions);
-    }
-
-    return results;
   }
 
   /**
@@ -207,9 +183,7 @@ class Generator : public std::enable_shared_from_this<Generator> {
    *
    * @param queries
    * @return A vector of suggested queries
-   *
-   * TODO(blaise): Refactor queryFromList and queryFromFile using a
-   *                helper method.
+
    */
   std::vector<std::vector<std::string>> queryFromList(
       const std::vector<std::string>& queries) {
@@ -222,7 +196,7 @@ class Generator : public std::enable_shared_from_this<Generator> {
       std::vector<std::vector<uint32_t>> suggested_query_ids =
           _flash_generator->queryBatch(
               /* batch = */ BoltBatch(std::move(featurized_query_vector)),
-              /* top_k = */ _flash_generator_config->topk(),
+              /* top_k = */ _flash_generator_config->top_k(),
               /* pad_zeros = */ true);
 
       std::vector<std::string> topk_queries;
@@ -236,11 +210,40 @@ class Generator : public std::enable_shared_from_this<Generator> {
     return outputs;
   }
 
+ private:
+  explicit Generator(GeneratorConfigPtr flash_generator_config)
+      : _flash_generator_config(std::move(flash_generator_config)),
+        _dimension_for_encodings(
+            dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM),
+        _input_blocks(
+            constructInputBlocks(_flash_generator_config->use_char_trigram(),
+                                 _flash_generator_config->use_char_fourgram())),
+        _batch_processor(std::make_shared<dataset::GenericBatchProcessor>(
+            _input_blocks, std::vector<dataset::BlockPtr>{})) {}
+
+  std::vector<dataset::BlockPtr> constructInputBlocks(
+      bool use_char_trigram, bool use_char_four_gram) const {
+    uint8_t correct_query_column_index = 0;
+
+    std::vector<dataset::BlockPtr> input_blocks;
+
+    if (use_char_trigram) {
+      input_blocks.push_back(dataset::CharKGramTextBlock::make(
+          /* col = */ correct_query_column_index, /* k = */ 3,
+          /* dim = */ _dimension_for_encodings));
+    }
+    if (use_char_four_gram) {
+      input_blocks.push_back(dataset::CharKGramTextBlock::make(
+          /* col = */ correct_query_column_index, /* k = */ 4,
+          /* dim = */ _dimension_for_encodings));
+    }
+
+    return input_blocks;
+  }
+
   std::unordered_map<uint32_t, std::string> getIDsToQueryMapping() const {
     return _ids_to_queries_map;
   }
-
- private:
   /**
    * @brief Constructs a mapping from IDs to correct queries. This allows
    * us to convert the output of queryBatch() into strings representing
@@ -248,8 +251,8 @@ class Generator : public std::enable_shared_from_this<Generator> {
    *
    * @param file_name: File containing queries (Expected to be a CSV file).
    */
-  void buildIDsQueryMapping(const std::string& file_name,
-                            bool has_incorrect_queries) {
+  void buildIDQueryMapping(const std::string& file_name,
+                           bool has_incorrect_queries) {
     try {
       std::ifstream input_file_stream(file_name, std::ios::in);
 
@@ -259,7 +262,7 @@ class Generator : public std::enable_shared_from_this<Generator> {
       while (std::getline(input_file_stream, row, '\n')) {
         if (has_incorrect_queries) {
           auto parsed_row = dataset::ProcessorUtils::parseCsvRow(row, ',');
-          _ids_to_queries_map[ids_counter] = std::string(parsed_row[1]);
+          _ids_to_queries_map[ids_counter] = std::string(parsed_row[0]);
         } else {
           _ids_to_queries_map[ids_counter] = row;
         }
@@ -273,58 +276,33 @@ class Generator : public std::enable_shared_from_this<Generator> {
   }
 
   std::vector<BoltVector> featurizeSingleQuery(const std::string& query) const {
-    dataset::TextBlockPtr char_trigram_block =
-        dataset::CharKGramTextBlock::make(
-            /* col = */ 0, /* k = */ 3, /* dim = */ _dimension_for_encodings);
-    dataset::TextBlockPtr char_four_gram_block =
-        dataset::CharKGramTextBlock::make(
-            /* col = */ 0, /* k = */ 4, /* dim = */ _dimension_for_encodings);
-
-    std::vector<std::shared_ptr<dataset::Block>> input_blocks{
-        char_trigram_block, char_four_gram_block};
-
-    auto batch_processor = dataset::GenericBatchProcessor(input_blocks, {});
+    std::vector<dataset::BlockPtr> blocks = _input_blocks;
 
     BoltVector output_vector;
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
     if (auto exception =
-            batch_processor.makeInputVector(input_vector, output_vector)) {
+            _batch_processor->makeInputVector(input_vector, output_vector)) {
       std::rethrow_exception(exception);
     }
     return {std::move(output_vector)};
   }
 
   std::unique_ptr<dataset::StreamingGenericDatasetLoader>
-  getUnlabeledDatasetLoader(const std::string& file_name,
-                            uint8_t correct_query_column_index) {
+  getUnlabeledDatasetLoader(const std::string& file_name) {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
         file_name, _flash_generator_config->batch_size());
-
-    dataset::TextBlockPtr char_trigram_block =
-        dataset::CharKGramTextBlock::make(
-            /* col = */ correct_query_column_index, /* k = */ 3,
-            /* dim = */ _dimension_for_encodings);
-    dataset::TextBlockPtr char_four_gram_block =
-        dataset::CharKGramTextBlock::make(
-            /* col = */ correct_query_column_index, /* k = */ 4,
-            /* dim = */ _dimension_for_encodings);
-
-    std::vector<dataset::BlockPtr> input_blocks = {char_trigram_block,
-                                                   char_four_gram_block};
-
-    std::vector<dataset::BlockPtr> label_block = {};
-
-    _batch_processor = std::make_shared<dataset::GenericBatchProcessor>(
-        input_blocks, label_block);
 
     return std::make_unique<dataset::StreamingGenericDatasetLoader>(
         file_data_loader, _batch_processor);
   }
 
   std::shared_ptr<GeneratorConfig> _flash_generator_config;
+  uint32_t _dimension_for_encodings;
+
   std::unique_ptr<Flash<uint32_t>> _flash_generator;
 
+  std::vector<dataset::BlockPtr> _input_blocks;
   std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
 
   // Maintains a mapping from the assigned IDs to the original
@@ -332,16 +310,14 @@ class Generator : public std::enable_shared_from_this<Generator> {
   // CSV file is assigned a unique ID in an ascending order.
   std::unordered_map<uint32_t, std::string> _ids_to_queries_map;
 
-  uint32_t _dimension_for_encodings;
-
   // private constructor for cereal
   Generator() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_flash_generator_config, _flash_generator, _batch_processor,
-            _ids_to_queries_map, _dimension_for_encodings);
+    archive(_flash_generator_config, _dimension_for_encodings, _flash_generator,
+            _input_blocks, _batch_processor, _ids_to_queries_map);
   }
 };  // namespace thirdai::bolt
 
