@@ -90,9 +90,14 @@ class PandasColumnMapGenerator(new_dataset.ColumnMapGenerator):
         self.lines_per_load = lines_per_load
         self.dense_int_cols = dense_int_cols
         self.int_col_dims = int_col_dims
-        self.restart()
+        self.current_iterator = None
 
     def next(self):
+        # We do this here instead of the constructor so we don't need to 
+        # pickle the generator
+        if self.current_iterator == None:
+            self.restart()
+
         load = next(self.current_iterator)
         if load is None:
             return None
