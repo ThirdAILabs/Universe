@@ -25,6 +25,12 @@ namespace thirdai::automl::deployment {
 
 using OptionsMap = std::unordered_map<std::string, std::string>;
 
+/**
+ * UniversalDeepTransformer is a wrapper around the model pipeline that uses the
+ * OracleDatasetFactory and a two-layer bolt model. This was built as a
+ * convenience class that potential clients can tinker with without having to
+ * download a serialized deployment config.
+ */
 class UniversalDeepTransformer : public ModelPipeline {
   static inline const std::string NUM_TABLES = "num_tables";
   static inline const std::string HASHES_PER_TABLE = "hashes_per_table";
@@ -34,6 +40,16 @@ class UniversalDeepTransformer : public ModelPipeline {
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
 
  public:
+  /**
+   * Constructor. The arguments are the same as OracleConfig, with the addition
+   * of an "options" map which can have the following fields:
+   *  - freeze_hash_tables: Accepts "true" or "false",
+   *  - embedding_dimension: hidden layer size. Accepts non-negative integer as
+   *    a string, e.g. "512".
+   *  - num_tables, hashes_per_table, reservoir_size: output neuron sampling
+   *    configuration. Accepts non-negative integer as a string, e.g. "512". If
+   *    provided, all three variables must be provided.
+   */
   UniversalDeepTransformer(
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
@@ -50,7 +66,8 @@ class UniversalDeepTransformer : public ModelPipeline {
   BoltVector embeddingRepresentation(const MapInput& input) {
     auto input_vector = _dataset_factory->featurizeInput(input);
     return _model->predictSingle(std::move(input_vector),
-                                 /* use_sparse_inference= */ false);
+                                 /* use_sparse_inference= */ false,
+                                 /* output_node_name= */ "fc_1");
   }
 
   void resetTemporalTrackers() {
