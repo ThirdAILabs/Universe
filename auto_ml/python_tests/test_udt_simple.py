@@ -1,5 +1,6 @@
 from random import sample
 import pytest
+from sqlalchemy import true
 from thirdai import bolt, deployment
 
 pytestmark = [pytest.mark.unit]
@@ -14,7 +15,7 @@ def write_lines_to_file(file, lines):
             f.writelines(line + "\n")
 
 
-def make_simple_trained_model(embedding_dim=None):
+def make_simple_trained_model(embedding_dim=None, integer_label=False):
     write_lines_to_file(
         TRAIN_FILE,
         [
@@ -38,7 +39,9 @@ def make_simple_trained_model(embedding_dim=None):
     model = deployment.UniversalDeepTransformer(
         data_types={
             "userId": bolt.types.categorical(n_unique_classes=3),
-            "movieId": bolt.types.categorical(n_unique_classes=3),
+            "movieId": bolt.types.categorical(
+                n_unique_classes=3, contiguous_numerical_ids=integer_label
+            ),
             "timestamp": bolt.types.date(),
         },
         temporal_tracking_relationships={"userId": ["movieId"]},
@@ -68,13 +71,19 @@ def batch_update():
     return [single_update(), single_update(), single_update()]
 
 
-def assert_explanations_equal(explanations_1, explanations_2):
-    assert len(explanations_1) == len(explanations_2)
+def assert_explanations_equal(explanations_1, explanations_2, assert_equal=True):
+    all_equal = len(explanations_1) == len(explanations_2)
     for exp_1, exp_2 in zip(explanations_1, explanations_2):
-        assert exp_1.column_number == exp_2.column_number
-        assert exp_1.column_name == exp_2.column_name
-        assert exp_1.percentage_significance == exp_2.percentage_significance
-        assert exp_1.keyword == exp_2.keyword
+        all_equal = all_equal and (
+            (exp_1.column_number == exp_2.column_number)
+            and (exp_1.column_name == exp_2.column_name)
+            and (exp_1.percentage_significance == exp_2.percentage_significance)
+            and (exp_1.keyword == exp_2.keyword)
+        )
+
+    # If we want to assert equality, we want everything to be equal
+    # Otherwise, we want something to be inequal.
+    assert (assert_equal) == all_equal
 
 
 def test_save_load():
@@ -128,7 +137,7 @@ def test_index_changes_predict_result():
 
 def test_embedding_representation_returns_correct_dimension():
     for embedding_dim in [256, 512, 1024]:
-        model = make_simple_trained_model(embedding_dim)
+        model = make_simple_trained_model(embedding_dim=embedding_dim)
         embedding = model.embedding_representation(single_sample())
         assert embedding.shape == (embedding_dim,)
         assert (embedding != 0).any()
@@ -142,6 +151,21 @@ def test_explanations_total_percentage():
         total_percentage += abs(explanation.percentage_significance)
 
     assert total_percentage > 99.99
+
+
+def test_explanations_target_label_format():
+    model = make_simple_trained_model()
+
+    explain_target_1 = model.explain(single_sample(), target_class="1")
+    explain_target_2 = model.explain(single_sample(), target_class="2")
+    assert_explanations_equal(explain_target_1, explain_target_2, assert_equal=False)
+
+    with pytest.raises(ValueError, match=r"Received an integer label*"):
+        model.explain(single_sample(), target_class=1)
+
+    model = make_simple_trained_model(integer_label=True)
+    with pytest.raises(ValueError, match=r"Received a string label*"):
+        model.explain(single_sample(), target_class="1")
 
 
 def test_reset_clears_history():
