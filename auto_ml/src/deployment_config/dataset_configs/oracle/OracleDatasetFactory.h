@@ -269,10 +269,23 @@ class OracleDatasetFactory final
           "Target column must be a categorical column.");
     }
 
-    auto label_block = dataset::NumericalCategoricalBlock::make(
-        /* col= */ column_number_map.at(_config->target),
-        /* n_classes= */ target_type.asCategorical().n_unique_classes,
-        /* delimiter= */ target_type.asCategorical().delimiter);
+    auto col_num = column_number_map.at(_config->target);
+    auto target_config = target_type.asCategorical();
+
+    dataset::BlockPtr label_block;
+    if (target_config.contiguous_numerical_ids) {
+      label_block = dataset::NumericalCategoricalBlock::make(
+          /* col= */ col_num, /* n_classes= */ target_config.n_unique_classes,
+          /* delimiter= */ target_config.delimiter);
+    } else {
+      if (!_vocabs.count(_config->target)) {
+        _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
+            /* vocab_size= */ target_config.n_unique_classes);
+      }
+      label_block = dataset::StringLookupCategoricalBlock::make(
+          /* col= */ col_num, /* vocab= */ _vocabs.at(_config->target),
+          /* delimiter= */ target_config.delimiter);
+    }
 
     auto input_blocks =
         buildInputBlocks(/* column_numbers= */ column_number_map,

@@ -23,7 +23,9 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
             "0,0,2022-08-29",
             "1,0,2022-08-30",
             "1,1,2022-08-31",
-            "1,2,2022-09-01",
+            # if integer_label = false, movieId 4 > n_unique_classes but
+            # that is fine because it's treated as an arbitrary string
+            ("1,2,2022-09-01" if integer_label else "1,4,2022-09-01"),
         ],
     )
 
@@ -32,7 +34,9 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         [
             "userId,movieId,timestamp",
             "0,1,2022-08-31",
-            "2,0,2022-08-30",
+            # if integer_label = false, userId 4 > n_unique_classes but
+            # that is fine because it's treated as an arbitrary string
+            ("1,0,2022-09-01" if integer_label else "4,0,2022-09-01"),
         ],
     )
 
@@ -157,7 +161,7 @@ def test_explanations_target_label_format():
     model = make_simple_trained_model()
 
     explain_target_1 = model.explain(single_sample(), target_class="1")
-    explain_target_2 = model.explain(single_sample(), target_class="2")
+    explain_target_2 = model.explain(single_sample(), target_class="4")
     assert_explanations_equal(explain_target_1, explain_target_2, assert_equal=False)
 
     with pytest.raises(ValueError, match=r"Received an integer label*"):
