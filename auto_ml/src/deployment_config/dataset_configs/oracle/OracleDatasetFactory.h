@@ -21,7 +21,6 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
-#include <utils/StringManipulation.h>
 #include <algorithm>
 #include <cstdint>
 #include <memory>
