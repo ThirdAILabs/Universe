@@ -20,6 +20,7 @@
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
+#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
@@ -220,14 +221,14 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("train_config"),
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_LOADER)
-      .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"),
-           py::arg("predict_config") = std::nullopt,
+      .def("evaluate", &evaluateOnFileWrapper<ModelPipeline>,
+           py::arg("filename"), py::arg("predict_config") = std::nullopt,
            docs::MODEL_PIPELINE_EVALUATE_FILE)
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
            py::arg("predict_config") = std::nullopt,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER)
-      .def("predict", &predictWrapper<LineInput>, py::arg("input_sample"),
-           py::arg("use_sparse_inference") = false,
+      .def("predict", &predictWrapper<ModelPipeline, LineInput>,
+           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT)
       .def("explain", &ModelPipeline::explain<LineInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
@@ -235,7 +236,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_TOKENS)
-      .def("predict_batch", &predictBatchWrapper<LineInputBatch>,
+      .def("predict_batch", &predictBatchWrapper<ModelPipeline, LineInputBatch>,
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
@@ -271,6 +272,42 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::overload_cast<const LineInputBatch&>(
                &OracleDatasetFactory::batchUpdateTemporalTrackers),
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
+
+  py::class_<UniversalDeepTransformer>(submodule, "UniversalDeepTransformer")
+      .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
+                    std::string, std::string, uint32_t, char, OptionsMap>(),
+           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
+           py::arg("target"), py::arg("time_granularity") = "daily",
+           py::arg("lookahead") = 0, py::arg("delimiter") = ',',
+           py::arg("options") = OptionsMap())
+      .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
+           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
+           py::arg("max_in_memory_batches") = std::nullopt)
+      .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
+           py::arg("filename"), py::arg("predict_config") = std::nullopt)
+      .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
+           py::arg("input_sample"), py::arg("use_sparse_inference") = false)
+      .def("predict_batch",
+           &predictBatchWrapper<UniversalDeepTransformer, MapInputBatch>,
+           py::arg("input_samples"), py::arg("use_sparse_inference") = false)
+      .def(
+          "embedding_representation",
+          [](UniversalDeepTransformer& model, const MapInput& input) {
+            return convertBoltVectorToNumpy(
+                model.embeddingRepresentation(input));
+          },
+          py::arg("input_sample"))
+      .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
+           py::arg("input_sample"))
+      .def("index_batch",
+           &UniversalDeepTransformer::batchUpdateTemporalTrackers,
+           py::arg("input_samples"))
+      .def("reset_temporal_trackers",
+           &UniversalDeepTransformer::resetTemporalTrackers)
+      .def("explain", &UniversalDeepTransformer::explain<MapInput>,
+           py::arg("input_sample"), py::arg("target_class") = std::nullopt)
+      .def("save", &UniversalDeepTransformer::save, py::arg("filename"))
+      .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"));
 }
 
 template <typename T>
@@ -378,8 +415,9 @@ py::object evaluateOnDataLoaderWrapper(
   return convertInferenceTrackerToNumpy(output);
 }
 
+template <typename Model>
 py::object evaluateOnFileWrapper(
-    ModelPipeline& model, const std::string& filename,
+    Model& model, const std::string& filename,
     std::optional<bolt::PredictConfig>& predict_config) {
   return evaluateOnDataLoaderWrapper(model,
                                      dataset::SimpleFileDataLoader::make(
@@ -387,10 +425,11 @@ py::object evaluateOnFileWrapper(
                                      predict_config);
 }
 
-template <typename InputType>
-py::object predictWrapper(ModelPipeline& model, const InputType& sample,
+template <typename Model, typename InputType>
+py::object predictWrapper(Model& model, const InputType& sample,
                           bool use_sparse_inference) {
-  BoltVector output = model.predict<InputType>(sample, use_sparse_inference);
+  BoltVector output =
+      model.template predict<InputType>(sample, use_sparse_inference);
   return convertBoltVectorToNumpy(output);
 }
 
@@ -407,12 +446,11 @@ py::object predictTokensWrapper(ModelPipeline& model,
   return predictWrapper(model, sentence.str(), use_sparse_inference);
 }
 
-template <typename InputBatchType>
-py::object predictBatchWrapper(ModelPipeline& model,
-                               const InputBatchType& samples,
+template <typename Model, typename InputBatchType>
+py::object predictBatchWrapper(Model& model, const InputBatchType& samples,
                                bool use_sparse_inference) {
-  BoltBatch outputs =
-      model.predictBatch<InputBatchType>(samples, use_sparse_inference);
+  BoltBatch outputs = model.template predictBatch<InputBatchType>(
+      samples, use_sparse_inference);
 
   return convertBoltBatchToNumpy(outputs);
 }
