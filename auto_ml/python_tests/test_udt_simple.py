@@ -68,6 +68,15 @@ def batch_update():
     return [single_update(), single_update(), single_update()]
 
 
+def assert_explanations_equal(explanations_1, explanations_2):
+    assert len(explanations_1) == len(explanations_2)
+    for exp_1, exp_2 in zip(explanations_1, explanations_2):
+        assert exp_1.column_number == exp_2.column_number
+        assert exp_1.column_name == exp_2.column_name
+        assert exp_1.percentage_significance == exp_2.percentage_significance
+        assert exp_1.keyword == exp_2.keyword
+
+
 def test_save_load():
     save_file = "savefile.bolt"
     model = make_simple_trained_model()
@@ -75,12 +84,8 @@ def test_save_load():
     saved_model = deployment.UniversalDeepTransformer.load(save_file)
 
     eval_res = model.evaluate(TEST_FILE)
-    saved_eval_res = model.evaluate(TEST_FILE)
+    saved_eval_res = saved_model.evaluate(TEST_FILE)
     assert (eval_res == saved_eval_res).all()
-
-    explain_res = model.explain(single_sample())
-    saved_explain_res = saved_model.explain(single_sample())
-    assert (explain_res == saved_explain_res).all()
 
     model.index(single_update())
     saved_model.index(single_update())
@@ -92,6 +97,10 @@ def test_save_load():
     predict_batch_res = model.predict_batch(batch_sample())
     saved_predict_batch_res = saved_model.predict_batch(batch_sample())
     assert (predict_batch_res == saved_predict_batch_res).all()
+
+    explain_res = model.explain(single_sample())
+    saved_explain_res = saved_model.explain(single_sample())
+    assert_explanations_equal(explain_res, saved_explain_res)
 
 
 def test_multiple_predict_returns_same_results():
@@ -122,6 +131,7 @@ def test_embedding_representation_returns_correct_dimension():
         model = make_simple_trained_model(embedding_dim)
         embedding = model.embedding_representation(single_sample())
         assert embedding.shape == (embedding_dim,)
+        assert (embedding != 0).any()
 
 
 def test_explanations_total_percentage():
