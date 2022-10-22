@@ -212,14 +212,13 @@ class OracleDatasetFactory final
 
   void resetTemporalTrackers() { _context->reset(); }
 
-  std::vector<dataset::Explanation> explain(
+  template <typename InputType>
+  std::vector<dataset::Explanation> explainImpl(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio,
-      const std::string& sample) final {
+      const std::vector<float>& gradients_ratio, const InputType& sample) {
     verifyProcessorsAreInitialized();
 
-    auto input_row =
-        dataset::ProcessorUtils::parseCsvRow(sample, _config->delimiter);
+    auto input_row = toVectorOfStringViews(sample);
     auto result = bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, input_row,
         _inference_batch_processor);
@@ -229,6 +228,19 @@ class OracleDatasetFactory final
     }
 
     return result;
+  }
+
+  std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio,
+      const LineInput& sample) final {
+    return explainImpl(gradients_indices, gradients_ratio, sample);
+  }
+
+  std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio, const MapInput& sample) final {
+    return explainImpl(gradients_indices, gradients_ratio, sample);
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {
