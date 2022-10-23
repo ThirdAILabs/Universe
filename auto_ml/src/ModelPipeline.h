@@ -156,11 +156,11 @@ class ModelPipeline {
   template <typename InputType>
   std::vector<dataset::Explanation> explain(
       const InputType& sample,
-      std::optional<std::variant<uint32_t, std::string>> target_label =
+      std::optional<std::variant<uint32_t, std::string>> target_class =
           std::nullopt) {
     std::optional<uint32_t> target_neuron;
-    if (target_label) {
-      target_neuron = _dataset_factory->labelToNeuronId(*target_label);
+    if (target_class) {
+      target_neuron = _dataset_factory->labelToNeuronId(*target_class);
     }
 
     auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
