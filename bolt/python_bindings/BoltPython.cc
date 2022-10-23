@@ -105,10 +105,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
   py::class_<sequential_classifier::DataType>(  // NOLINT
       oracle_types_submodule, "ColumnType", "Base class for bolt types.");
 
-  oracle_types_submodule.def("categorical",
-                             sequential_classifier::DataType::categorical,
-                             py::arg("n_unique_classes"),
-                             R"pbdoc(
+  oracle_types_submodule.def(
+      "categorical", sequential_classifier::DataType::categorical,
+      py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
+      R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
     movie titles, or age groups.
@@ -117,6 +117,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
         n_unique_classes (int): Number of unique categories in the column.
             Oracle throws an error if the column contains more than the 
             specified number of unique values.
+        delimiter (str): Optional. Defaults to None. A single character 
+            (length-1 string) that separates multiple values in the same 
+            column. If not provided, Oracle assumes that there is only
+            one value in the column.
     
     Example:
         >>> bolt.Oracle(
@@ -143,6 +147,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
                              )pbdoc");
   oracle_types_submodule.def("text", sequential_classifier::DataType::text,
                              py::arg("average_n_words") = std::nullopt,
+                             py::arg("embedding_size") = "m",
+                             py::arg("use_attention") = false,
                              R"pbdoc(
     Text column type. Use this object if a column contains text data 
     (the meaning of the text matters). Examples include descriptions, 
@@ -152,6 +158,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
         average_n_words (int): Optional. Average number of words in the 
             text column in each row. If provided, Oracle may make 
             optimizations as appropriate.
+        embedding_size (str): Optional. One of "small"/"s", "medium"/"m",
+            or "large"/"l". Defaults to "m".
+        use_attention (bool): Optional. If true, oracle is guaranteed to
+            use attention when processing this text column. Otherwise, 
+            oracle will only use attention when appropriate.
     
     Example:
         >>> bolt.Oracle(

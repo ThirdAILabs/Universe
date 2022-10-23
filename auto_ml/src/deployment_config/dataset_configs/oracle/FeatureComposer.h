@@ -55,11 +55,13 @@ class FeatureComposer {
 
       if (data_type.isText()) {
         auto text_meta = data_type.asText();
-        if (text_meta.average_n_words &&
-            text_meta.average_n_words <= text_pairgrams_word_limit) {
+        if (text_meta.force_pairgram ||
+            (text_meta.average_n_words &&
+             text_meta.average_n_words <= text_pairgrams_word_limit)) {
           blocks.push_back(dataset::PairGramTextBlock::make(col_num));
         } else {
-          blocks.push_back(dataset::UniGramTextBlock::make(col_num));
+          blocks.push_back(
+              dataset::UniGramTextBlock::make(col_num, text_meta.dim));
         }
       }
 
@@ -89,6 +91,14 @@ class FeatureComposer {
          temporal_relationships) {
       if (!config.data_types.at(tracking_key_col_name).isCategorical()) {
         throw std::invalid_argument("Tracking keys must be categorical.");
+      }
+
+      if (config.data_types.at(tracking_key_col_name)
+              .asCategorical()
+              .delimiter) {
+        throw std::invalid_argument(
+            "Tracking keys cannot have a delimiter; columns containing "
+            "tracking keys must only have one value per row.");
       }
 
       for (const auto& temporal_config : temporal_configs) {
@@ -187,8 +197,7 @@ class FeatureComposer {
 
     auto key_vocab_size =
         config.data_types.at(key_column).asCategorical().n_unique_classes;
-    auto tracked_vocab_size =
-        config.data_types.at(tracked_column).asCategorical().n_unique_classes;
+    auto tracked_meta = config.data_types.at(tracked_column).asCategorical();
     auto temporal_meta = temporal_config.asCategorical();
 
     int64_t time_lag = config.lookahead;
@@ -201,14 +210,14 @@ class FeatureComposer {
         /* timestamp_col= */ column_numbers.at(timestamp_column),
         /* user_id_map= */ vocabForColumn(vocabs, key_column, key_vocab_size),
         /* item_id_map= */
-        vocabForColumn(vocabs, tracked_column, tracked_vocab_size),
+        vocabForColumn(vocabs, tracked_column, tracked_meta.n_unique_classes),
         /* records= */
         context.categoricalHistoryForId(temporal_relationship_id,
                                         /* n_users= */ key_vocab_size),
         /* track_last_n= */ temporal_meta.track_last_n,
         /* should_update_history= */ should_update_history,
         /* include_current_row= */ temporal_meta.include_current_row,
-        /* item_col_delimiter= */ std::nullopt,
+        /* item_col_delimiter= */ tracked_meta.delimiter,
         /* time_lag= */ time_lag);
   }
 
