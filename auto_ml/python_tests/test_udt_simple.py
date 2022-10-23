@@ -172,6 +172,24 @@ def test_explanations_target_label_format():
         model.explain(single_sample(), target_class="1")
 
 
+def test_get_neuron_id_to_label_map():
+    model = make_simple_trained_model()
+    prediction = model.predict(single_sample())
+    neuron_id_to_label_map = model.get_neuron_id_to_label_map()
+    assert len(neuron_id_to_label_map) == len(prediction)
+
+    # "0", "1", and "2" are the three possible labels in the
+    # mock train / eval dataset.
+    labels_seen = {"0": False, "1": False, "4": False}
+
+    for i in range(len(neuron_id_to_label_map)):
+        label = neuron_id_to_label_map[i]
+        labels_seen[label] = True
+
+    for seen in labels_seen.values():
+        assert seen
+
+
 def test_reset_clears_history():
     model = make_simple_trained_model()
     model.reset_temporal_trackers()

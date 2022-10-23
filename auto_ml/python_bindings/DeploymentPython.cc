@@ -283,6 +283,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt)
+      .def("get_neuron_id_to_label_map", &UniversalDeepTransformer::getNeuronIdToLabelMap)
       .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
            py::arg("filename"), py::arg("predict_config") = std::nullopt)
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,

@@ -82,6 +82,10 @@ class UniversalDeepTransformer : public ModelPipeline {
     oracleDatasetFactory().batchUpdateTemporalTrackers(updates);
   }
 
+  auto getNeuronIdToLabelMap() const {
+    return oracleDatasetFactory().getIdToLabelMap();
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -187,7 +191,7 @@ class UniversalDeepTransformer : public ModelPipeline {
         "').");
   }
 
-  OracleDatasetFactory& oracleDatasetFactory() {
+  OracleDatasetFactory& oracleDatasetFactory() const {
     return *std::dynamic_pointer_cast<OracleDatasetFactory>(_dataset_factory);
   }
 
