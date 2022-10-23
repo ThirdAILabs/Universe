@@ -18,20 +18,20 @@ def make_simple_trained_model(embedding_dim=None):
     write_lines_to_file(
         TRAIN_FILE,
         [
-            "userId,movieId,timestamp",
-            "0,0,2022-08-29",
-            "1,0,2022-08-30",
-            "1,1,2022-08-31",
-            "1,2,2022-09-01",
+            "userId,movieId,timestamp,hoursWatched",
+            "0,0,2022-08-29,2",
+            "1,0,2022-08-30,3",
+            "1,1,2022-08-31,1",
+            "1,2,2022-09-01,3",
         ],
     )
 
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,timestamp",
-            "0,1,2022-08-31",
-            "2,0,2022-08-30",
+            "userId,movieId,timestamp,hoursWatched",
+            "0,1,2022-08-31,5",
+            "2,0,2022-08-30,0.5",
         ],
     )
 
@@ -40,8 +40,9 @@ def make_simple_trained_model(embedding_dim=None):
             "userId": bolt.types.categorical(n_unique_classes=3),
             "movieId": bolt.types.categorical(n_unique_classes=3),
             "timestamp": bolt.types.date(),
+            "hoursWatched": bolt.types.numerical(),
         },
-        temporal_tracking_relationships={"userId": ["movieId"]},
+        temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
         options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
     )
@@ -61,7 +62,12 @@ def batch_sample():
 
 
 def single_update():
-    return {"userId": "0", "movieId": "1", "timestamp": "2022-08-31"}
+    return {
+        "userId": "0",
+        "movieId": "1",
+        "timestamp": "2022-08-31",
+        "hoursWatched": "1",
+    }
 
 
 def batch_update():
