@@ -6,6 +6,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/python_bindings/UniversalDeepTransformerDocs.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/Artifact.h>
@@ -273,41 +274,49 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
                &OracleDatasetFactory::batchUpdateTemporalTrackers),
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
 
-  py::class_<UniversalDeepTransformer>(submodule, "UniversalDeepTransformer")
+  py::class_<UniversalDeepTransformer>(submodule, "UniversalDeepTransformer",
+                                       docs::UDT_CLASS)
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
                     std::string, std::string, uint32_t, char, OptionsMap>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
-           py::arg("options") = OptionsMap())
+           py::arg("options") = OptionsMap(), docs::UDT_INIT)
       .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt)
+           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN)
       .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
-           py::arg("filename"), py::arg("predict_config") = std::nullopt)
+           py::arg("filename"), py::arg("predict_config") = std::nullopt,
+           docs::UDT_EVALUATE)
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
-           py::arg("input_sample"), py::arg("use_sparse_inference") = false)
+           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
+           docs::UDT_PREDICT)
       .def("predict_batch",
            &predictBatchWrapper<UniversalDeepTransformer, MapInputBatch>,
-           py::arg("input_samples"), py::arg("use_sparse_inference") = false)
+           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
+           docs::UDT_PREDICT_BATCH)
       .def(
           "embedding_representation",
           [](UniversalDeepTransformer& model, const MapInput& input) {
             return convertBoltVectorToNumpy(
                 model.embeddingRepresentation(input));
           },
-          py::arg("input_sample"))
+          py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
       .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
-           py::arg("input_sample"))
+           py::arg("input_sample"), docs::UDT_INDEX)
       .def("index_batch",
            &UniversalDeepTransformer::batchUpdateTemporalTrackers,
-           py::arg("input_samples"))
+           py::arg("input_samples"), docs::UDT_INDEX_BATCH)
       .def("reset_temporal_trackers",
-           &UniversalDeepTransformer::resetTemporalTrackers)
+           &UniversalDeepTransformer::resetTemporalTrackers,
+           docs::UDT_RESET_TEMPORAL_TRACKERS)
       .def("explain", &UniversalDeepTransformer::explain<MapInput>,
-           py::arg("input_sample"), py::arg("target_class") = std::nullopt)
-      .def("save", &UniversalDeepTransformer::save, py::arg("filename"))
-      .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"));
+           py::arg("input_sample"), py::arg("target_class") = std::nullopt,
+           docs::UDT_EXPLAIN)
+      .def("save", &UniversalDeepTransformer::save, py::arg("filename"),
+           docs::UDT_SAVE)
+      .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"),
+                  docs::UDT_LOAD);
 }
 
 template <typename T>
