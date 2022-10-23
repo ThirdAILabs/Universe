@@ -44,7 +44,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         data_types={
             "userId": bolt.types.categorical(n_unique_classes=3),
             "movieId": bolt.types.categorical(
-                n_unique_classes=3, contiguous_numerical_ids=integer_label
+                n_unique_classes=3, consecutive_integer_ids=integer_label
             ),
             "timestamp": bolt.types.date(),
         },

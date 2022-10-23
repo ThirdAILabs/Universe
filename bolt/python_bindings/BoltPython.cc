@@ -108,7 +108,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
   oracle_types_submodule.def(
       "categorical", sequential_classifier::DataType::categorical,
       py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
-      py::arg("contiguous_numerical_ids") = false,
+      py::arg("consecutive_integer_ids") = false,
       R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
@@ -122,9 +122,14 @@ py::module_ createBoltSubmodule(py::module_& module) {
             (length-1 string) that separates multiple values in the same 
             column. If not provided, Oracle assumes that there is only
             one value in the column.
+        consecutive_integer_ids (bool): Optional. Defaults to None. When set to
+            True, the values of this column are assumed to be integers ranging 
+            from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
+            be arbitrary strings (including strings of integral ids that are 
+            not within [0, n_unique_classes - 1]).
     
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(n_unique_classes=5000)
                 }
@@ -139,7 +144,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
     a movie watched, sale quantity, or population size.
 
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "hours_watched": bolt.types.numerical()
                 }
@@ -166,7 +171,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
             oracle will only use attention when appropriate.
     
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_motto": bolt.types.text(average_n_words=10),
                     "user_bio": bolt.types.text()
@@ -181,7 +186,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Date strings must be in YYYY-MM-DD format.
  
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "timestamp": bolt.types.date()
                 }
@@ -216,7 +221,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend level and sales performance over time.
         >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> model = deployment.UniversalDeepTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -260,7 +265,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend and sales performance over time.
         >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> model = deployment.UniversalDeepTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
