@@ -82,7 +82,7 @@ class UniversalDeepTransformer : public ModelPipeline {
     oracleDatasetFactory().batchUpdateTemporalTrackers(updates);
   }
 
-  auto getNeuronIdToLabelMap() const {
+  auto neuronIdToTargetClassMap() const {
     return oracleDatasetFactory().getIdToLabelMap();
   }
 

@@ -6,6 +6,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/python_bindings/UniversalDeepTransformerDocs.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/Artifact.h>
@@ -283,7 +284,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt)
-      .def("get_neuron_id_to_label_map", &UniversalDeepTransformer::getNeuronIdToLabelMap)
+      .def("neuron_id_to_target_class_map",
+           &UniversalDeepTransformer::neuronIdToTargetClassMap,
+           docs::UDT_NEURON_ID_TO_TARGET_CLASS_MAP)
       .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
            py::arg("filename"), py::arg("predict_config") = std::nullopt)
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
