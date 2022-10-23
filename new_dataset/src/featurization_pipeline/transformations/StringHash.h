@@ -2,6 +2,8 @@
 
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
+#include <cereal/access.hpp>
+#include <cereal/types/string.hpp>
 
 namespace thirdai::dataset {
 
@@ -19,6 +21,17 @@ class StringHash final : public Transformation {
   void apply(ColumnMap& columns) final;
 
  private:
+  // Private constructor for cereal.
+  StringHash(): _input_column_name(), _output_column_name(), _output_range(0), _seed(0) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Transformation>(this),
+            _input_column_name, _output_column_name, _output_range, _seed);
+  }
+
+
   uint32_t hash(const std::string& str) const;
 
   std::string _input_column_name;
@@ -27,4 +40,7 @@ class StringHash final : public Transformation {
   uint32_t _seed;
 };
 
+
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::StringHash)

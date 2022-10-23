@@ -1,4 +1,5 @@
 #include "FeaturizationPython.h"
+#include <bolt/python_bindings/ConversionUtils.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/NumpyColumns.h>
@@ -77,10 +78,11 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       .def("__getitem__", &ColumnMap::getColumn)
       .def("columns", &ColumnMap::columns);
 
-  py::class_<FeaturizationPipeline>(dataset_submodule, "FeaturizationPipeline")
+  py::class_<FeaturizationPipeline, FeaturizationPipelinePtr>(dataset_submodule, "FeaturizationPipeline")
       .def(py::init<std::vector<TransformationPtr>>(),
            py::arg("transformations"))
-      .def("featurize", &FeaturizationPipeline::featurize, py::arg("columns"));
+      .def("featurize", &FeaturizationPipeline::featurize, py::arg("columns"))
+      .def(bolt::python::getPickleFunction<FeaturizationPipeline>());
 }
 
 }  // namespace thirdai::dataset::python
