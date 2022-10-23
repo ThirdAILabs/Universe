@@ -21,11 +21,13 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -302,9 +304,14 @@ class OracleDatasetFactory final
 
   static std::string concatenateWithDelimiter(
       const std::vector<std::string_view>& substrings, char delimiter) {
+    if (substrings.empty()) {
+      return "";
+    }
     std::stringstream s;
-    std::copy(substrings.begin(), substrings.end(),
-              std::ostream_iterator<std::string_view>(s, &delimiter));
+    s << substrings[0];
+    std::for_each(
+        substrings.begin() + 1, substrings.end(),
+        [&](const std::string_view& substr) { s << delimiter << substr; });
     return s.str();
   }
 
