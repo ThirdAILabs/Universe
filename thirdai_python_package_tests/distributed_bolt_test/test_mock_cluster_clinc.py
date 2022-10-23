@@ -2,17 +2,14 @@ import os
 import random
 
 import datasets
-import numpy as np
+import pandas as pd
 import pytest
 from cluster_utils import (
     check_models_are_same_on_first_two_nodes,
     ray_two_node_cluster_config,
 )
 from thirdai import bolt, new_dataset
-from thirdai.distributed_bolt import (
-    PandasColumnMapGenerator,
-    TabularDatasetLoader,
-)
+from thirdai.distributed_bolt import PandasColumnMapGenerator, TabularDatasetLoader
 
 pytestmark = [pytest.mark.distributed]
 
@@ -32,7 +29,7 @@ def write_dataset_to_csv(dataset, filename):
     random.shuffle(data)
 
     with open(filename, "w") as file:
-        file.write("text,intent\n")
+        file.write("intent,text\n")
         lines = [f"{label_name},{sentence}\n" for sentence, label_name in data]
         file.writelines(lines)
 
@@ -79,9 +76,12 @@ def clinc_model():
 def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
     import thirdai.distributed_bolt as db
 
+    # Because we explicitly specified the Ray working folder as this test
+    # directory, but the current working directory where we downloaded mnist
+    # may be anywhere, we give explicit paths for the mnist filenames
     columnmap_generators = [
         PandasColumnMapGenerator(
-            path=TRAIN_FILE,
+            path=f"{os.getcwd()}/{TRAIN_FILE}",
             num_nodes=2,
             node_index=i,
             lines_per_load=500,
@@ -89,8 +89,6 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
         )
         for i in range(2)
     ]
-
-    y_featurizer = new_dataset.FeaturizationPipeline(transformations=[])
 
     x_featurizer = new_dataset.FeaturizationPipeline(
         transformations=[
@@ -101,6 +99,8 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
             )
         ]
     )
+
+    y_featurizer = new_dataset.FeaturizationPipeline(transformations=[])
 
     train_sources = [
         TabularDatasetLoader(
@@ -114,7 +114,6 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
         for column_map_generator in columnmap_generators
     ]
 
-
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=5)
     distributed_model = db.DistributedDataParallel(
         cluster_config=ray_two_node_cluster_config,
@@ -125,12 +124,27 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
 
     distributed_model.train()
 
-    return distributed_model.get_model()
-
-
-# def get_model_predictions(text_classifier):
+    return distributed_model.get_model(), x_featurizer, y_featurizer
 
 
 @pytest.mark.parametrize("ray_two_node_cluster_config", ["linear"], indirect=True)
-def test_distributed_classifer_accuracy(distributed_trained_clinc, clinc_labels):
-    pass
+def test_distributed_classifer_accuracy(distributed_trained_clinc):
+    model, x_featurizer, y_featurizer = distributed_trained_clinc
+    test_data = new_dataset.pandas_to_columnmap(
+        pd.read_csv(TEST_FILE),
+        int_col_dims={"intent": 151},
+    )
+    test_x = x_featurizer.featurize(test_data).convert_to_dataset(
+        columns=["text_hashed"], batch_size=256
+    )
+    test_y = y_featurizer.featurize(test_data).convert_to_dataset(
+        columns=["intent"], batch_size=256
+    )
+
+    predict_config = (
+        bolt.graph.PredictConfig.make()
+        .with_metrics(["categorical_accuracy"])
+        .enable_sparse_inference()
+    )
+
+    print(model.predict([test_x], test_y, predict_config)[0]['categorical_accuracy'])

@@ -24,8 +24,7 @@ class Transformation {
 
   virtual ~Transformation() = default;
 
-private:
-
+ private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {

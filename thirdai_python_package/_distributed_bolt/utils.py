@@ -93,7 +93,7 @@ class PandasColumnMapGenerator(new_dataset.ColumnMapGenerator):
         self.current_iterator = None
 
     def next(self):
-        # We do this here instead of the constructor so we don't need to 
+        # We do this here instead of the constructor so we don't need to
         # pickle the generator
         if self.current_iterator == None:
             self.restart()

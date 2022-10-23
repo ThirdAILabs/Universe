@@ -100,9 +100,21 @@ class TabularDatasetLoader(DatasetLoader):
         featurized_x = self.x_featurizer.featurize(load)
         featurized_y = self.y_featurizer.featurize(load)
 
-        return featurized_x.convert_to_dataset(
+        x_data = featurized_x.convert_to_dataset(
             self.x_cols, batch_size=self.batch_size
-        ), featurized_y.convert_to_dataset(self.y_cols, batch_size=self.batch_size)
+        )
+        y_data = featurized_y.convert_to_dataset(
+            [self.y_col], batch_size=self.batch_size
+        )
+
+        # If we only read one batch we return None because the "batch size" of
+        # x_data will be less than self.batch_size, which will throw an error
+        # when we try to set it in a distributed wrapper. We can remove this
+        # when we move to the new dataset class.
+        if len(x_data) == 1:
+            return None
+
+        return [x_data], y_data
 
     def restart(self):
         self.column_map_generator.restart()
