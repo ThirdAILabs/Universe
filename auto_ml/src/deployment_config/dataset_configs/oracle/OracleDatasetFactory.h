@@ -34,10 +34,8 @@
 
 namespace thirdai::automl::deployment {
 
-class OracleDatasetFactory final
-    : public DatasetLoaderFactory,
-      public std::enable_shared_from_this<OracleDatasetFactory> {
- private:
+class OracleDatasetFactory final : public DatasetLoaderFactory {
+ public:
   explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel,
                                 uint32_t text_pairgram_word_limit)
       : _config(std::move(config)),
@@ -198,18 +196,6 @@ class OracleDatasetFactory final
 
   uint32_t getLabelDim() final { return _label_dim; }
 
-  std::vector<std::string> listArtifactNames() const final {
-    return {"temporal_context"};
-  }
-
- protected:
-  std::optional<Artifact> getArtifactImpl(const std::string& name) final {
-    if (name == "temporal_context") {
-      return shared_from_this();
-    }
-    return std::nullopt;
-  }
-
  private:
   dataset::GenericBatchProcessorPtr makeLabeledProcessor(
       const ColumnNumberMap& column_number_map) {
@@ -345,6 +331,8 @@ class OracleDatasetFactory final
             _text_pairgram_word_limit);
   }
 };
+
+using OracleDatasetFactoryPtr = std::shared_ptr<OracleDatasetFactory>;
 
 class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
  public:

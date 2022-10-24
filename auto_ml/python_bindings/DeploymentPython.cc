@@ -8,7 +8,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
-#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -244,12 +243,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
                   docs::MODEL_PIPELINE_LOAD)
-      // getArtifact returns a variant which then gets resolved to one of its
-      // contained types.
-      .def("get_artifact", &ModelPipeline::getArtifact, py::arg("name"),
-           docs::MODEL_PIPELINE_GET_ARTIFACT)
-      .def("list_artifact_names", &ModelPipeline::listArtifactNames,
-           docs::MODEL_PIPELINE_LIST_ARTIFACTS);
+      .def("get_data_processor", &ModelPipeline::getDataProcessor,
+           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
 
   py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
