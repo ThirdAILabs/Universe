@@ -9,7 +9,6 @@ from cluster_utils import (
     ray_two_node_cluster_config,
 )
 from thirdai import bolt, new_dataset
-from thirdai.distributed_bolt import PandasColumnMapGenerator, TabularDatasetLoader
 
 pytestmark = [pytest.mark.distributed]
 
@@ -30,7 +29,7 @@ def write_dataset_to_csv(dataset, filename):
 
     with open(filename, "w") as file:
         file.write("intent,text\n")
-        lines = [f"{label_name},{sentence}\n" for sentence, label_name in data]
+        lines = [f'{label_name},"{sentence}"\n' for sentence, label_name in data]
         file.writelines(lines)
 
 
@@ -51,8 +50,8 @@ def setup_module():
     download_clinc_dataset()
 
 
-def teardown_module():
-    remove_files()
+# def teardown_module():
+#     remove_files()
 
 
 @pytest.fixture(scope="module")
@@ -74,13 +73,14 @@ def clinc_model():
 
 @pytest.fixture(scope="module")
 def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
+    # Import here so we don't get import errors collecting tests if ray isn't installed
     import thirdai.distributed_bolt as db
 
     # Because we explicitly specified the Ray working folder as this test
     # directory, but the current working directory where we downloaded mnist
     # may be anywhere, we give explicit paths for the mnist filenames
     columnmap_generators = [
-        PandasColumnMapGenerator(
+        db.PandasColumnMapGenerator(
             path=f"{os.getcwd()}/{TRAIN_FILE}",
             num_nodes=2,
             node_index=i,
@@ -103,7 +103,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
     y_featurizer = new_dataset.FeaturizationPipeline(transformations=[])
 
     train_sources = [
-        TabularDatasetLoader(
+        db.TabularDatasetLoader(
             column_map_generator=column_map_generator,
             x_featurizer=x_featurizer,
             y_featurizer=y_featurizer,
@@ -147,4 +147,4 @@ def test_distributed_classifer_accuracy(distributed_trained_clinc):
         .enable_sparse_inference()
     )
 
-    print(model.predict([test_x], test_y, predict_config)[0]['categorical_accuracy'])
+    print(model.predict([test_x], test_y, predict_config)[0]["categorical_accuracy"])
