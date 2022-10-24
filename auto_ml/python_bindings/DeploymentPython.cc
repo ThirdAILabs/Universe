@@ -278,12 +278,12 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
                                        docs::UDT_CLASS)
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
                     std::string, std::string, uint32_t, char, OptionsMap>(),
-           py::arg("data_types"), py::arg("target"),
+           py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
-           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
-           docs::UDT_INIT)
+           py::arg("target"), py::arg("time_granularity") = "daily",
+           py::arg("lookahead") = 0, py::arg("delimiter") = ',',
+           py::arg("options") = OptionsMap(), docs::UDT_INIT)
       .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN)
