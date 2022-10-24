@@ -31,10 +31,8 @@
 
 namespace thirdai::automl::deployment {
 
-class OracleDatasetFactory final
-    : public DatasetLoaderFactory,
-      public std::enable_shared_from_this<OracleDatasetFactory> {
- private:
+class OracleDatasetFactory final : public DatasetLoaderFactory {
+ public:
   explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel,
                                 uint32_t text_pairgram_word_limit)
       : _config(std::move(config)),
