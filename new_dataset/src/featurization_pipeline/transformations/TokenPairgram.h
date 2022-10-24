@@ -5,12 +5,19 @@
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
+#include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <string>
 #include <vector>
 
 namespace thirdai::dataset {
 
+/**
+ * @brief This transformation assumes as input a SparseArrayColumn, computes
+ * pairgrams for each row, deduplicates common indices, and returns the results
+ * as a new IndexValueArrayColumn.
+ */
 class TokenPairgram : public Transformation {
+ public:
   TokenPairgram(std::string input_column_name, std::string output_column_name,
                 uint32_t output_range)
       : _input_column_name(std::move(input_column_name)),
@@ -44,7 +51,7 @@ class TokenPairgram : public Transformation {
     }
 
     auto output_column =
-        std::make_shared<IndexValueArrayColumn>(std::move(column_values));
+        std::make_shared<VectorIndexValueArrayColumn>(std::move(column_values));
     column_map.setColumn(_output_column_name, output_column);
   }
 

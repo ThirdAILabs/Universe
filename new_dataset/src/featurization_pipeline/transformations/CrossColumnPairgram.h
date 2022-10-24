@@ -11,7 +11,14 @@
 
 namespace thirdai::dataset {
 
+/**
+ * @brief This column assumes as input N SparseValueColumns, computes pairgrams
+ * across all the indices and returns the results as a new
+ * IndexValueArrayColumn. Each input value will be salted according to its
+ * column of origin to limit duplicate values all hashing to the same location.
+ */
 class CrossColumnPairgram : public Transformation {
+ public:
   CrossColumnPairgram(std::vector<std::string> input_column_names,
                       std::string output_column_name, uint32_t output_range)
       : _input_column_names(std::move(input_column_names)),
@@ -60,7 +67,7 @@ class CrossColumnPairgram : public Transformation {
     }
 
     auto output_column =
-        std::make_shared<VectorArrayColumn<uint32_t>>(std::move(column_values));
+        std::make_shared<VectorSparseArrayColumn>(std::move(column_values));
     column_map.setColumn(_output_column_name, output_column);
   }
 

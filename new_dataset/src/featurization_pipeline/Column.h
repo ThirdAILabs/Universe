@@ -78,7 +78,8 @@ using StringColumn = ValueColumn<std::string>;
 
 using SparseValueColumnPtr = std::shared_ptr<ValueColumn<uint32_t>>;
 using DenseValueColumnPtr = std::shared_ptr<ValueColumn<float>>;
-using IndexValueColumnPtr = std::shared_ptr<ValueColumn<std::pair<uint32_t, float>>>;
+using IndexValueColumnPtr =
+    std::shared_ptr<ValueColumn<std::pair<uint32_t, float>>>;
 using StringColumnPtr = std::shared_ptr<ValueColumn<std::string>>;
 
 // We use templates to create columns with different types because there are

@@ -3,8 +3,12 @@
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/NumpyColumns.h>
 #include <new_dataset/src/featurization_pipeline/transformations/Binning.h>
+#include <new_dataset/src/featurization_pipeline/transformations/CrossColumnPairgram.h>
+#include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
 #include <new_dataset/src/featurization_pipeline/transformations/StringHash.h>
+#include <new_dataset/src/featurization_pipeline/transformations/TokenPairgram.h>
 #include <pybind11/stl.h>
+#include <optional>
 #include <string>
 
 namespace thirdai::dataset::python {
@@ -67,6 +71,26 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       .def(py::init<std::string, std::string, uint32_t, uint32_t>(),
            py::arg("input_column"), py::arg("output_column"),
            py::arg("output_range"), py::arg("seed") = 42);
+
+  py::class_<CrossColumnPairgram, Transformation,
+             std::shared_ptr<CrossColumnPairgram>>(transformations_submodule,
+                                                   "CrossColumnPairgram")
+      .def(py::init<std::vector<std::string>, std::string, uint32_t>(),
+           py::arg("input_column_names"), py::arg("output_column_name"),
+           py::arg("output_range"));
+
+  py::class_<SentenceUnigram, Transformation, std::shared_ptr<SentenceUnigram>>(
+      transformations_submodule, "SentenceUnigram")
+      .def(py::init<std::string, std::string, uint32_t, bool>(),
+           py::arg("input_column_name"), py::arg("output_column_name"),
+           py::arg("output_range") = std::nullopt,
+           py::arg("deduplicate") = false);
+
+  py::class_<TokenPairgram, Transformation, std::shared_ptr<TokenPairgram>>(
+      transformations_submodule, "TokenPairgram")
+      .def(py::init<std::string, std::string, uint32_t>(),
+           py::arg("input_column_name"), py::arg("output_column_name"),
+           py::arg("output_range"));
 
   py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
       .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
