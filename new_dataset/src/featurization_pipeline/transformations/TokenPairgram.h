@@ -25,7 +25,8 @@ class TokenPairgram : public Transformation {
         _output_range(output_range) {}
 
   void apply(ColumnMap& column_map) final {
-    auto column = column_map.getSparseArrayColumn(_input_column_name);
+    SparseArrayColumnPtr column =
+        column_map.getSparseArrayColumn(_input_column_name);
     uint32_t num_rows = column_map.numRows();
 
     std::vector<std::vector<std::pair<uint32_t, float>>> column_values(
@@ -33,7 +34,8 @@ class TokenPairgram : public Transformation {
 #pragma omp parallel for default(none) \
     shared(num_rows, column_values, column, _output_range)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
-      auto input_tokens_buffer = (*column)[row_idx];
+      ArrayColumn<uint32_t>::RowReference input_tokens_buffer =
+          (*column)[row_idx];
       std::vector<uint32_t> input_tokens_vector(input_tokens_buffer.begin(),
                                                 input_tokens_buffer.end());
       std::vector<uint32_t> pairgrams =
