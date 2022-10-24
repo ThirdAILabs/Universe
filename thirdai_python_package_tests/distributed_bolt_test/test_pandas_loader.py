@@ -4,7 +4,6 @@ import pytest
 
 pytestmark = [pytest.mark.distributed]
 
-# TODO(Josh): Make test a bit more rigorous
 def test_pandas_loader():
     from thirdai.distributed_bolt import PandasColumnMapGenerator
 
