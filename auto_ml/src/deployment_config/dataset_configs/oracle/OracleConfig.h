@@ -50,19 +50,21 @@ struct OracleConfig {
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target, std::string time_granularity = "d",
-      uint32_t lookahead = 0)
+      uint32_t lookahead = 0, char delimiter = ',')
       : data_types(std::move(data_types)),
+        provided_relationships(std::move(temporal_tracking_relationships)),
         target(std::move(target)),
         time_granularity(
             dataset::stringToGranularity(std::move(time_granularity))),
         lookahead(lookahead),
-        provided_relationships(std::move(temporal_tracking_relationships)) {}
+        delimiter(delimiter) {}
 
   ColumnDataTypes data_types;
+  UserProvidedTemporalRelationships provided_relationships;
   std::string target;
   dataset::QuantityTrackingGranularity time_granularity;
   uint32_t lookahead;
-  UserProvidedTemporalRelationships provided_relationships;
+  char delimiter;
 
  private:
   // Private constructor for Cereal.
@@ -72,8 +74,8 @@ struct OracleConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(data_types, target, time_granularity, lookahead,
-            provided_relationships);
+    archive(data_types, provided_relationships, target, time_granularity,
+            lookahead, delimiter);
   }
 };
 

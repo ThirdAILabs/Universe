@@ -2,22 +2,37 @@
 
 #include <_types/_uint32_t.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
-#include <limits>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::dataset {
 
-template <typename T>
-class VectorValueColumn final : public ValueColumn<T> {
+class VectorSparseValueColumn final : public ValueColumn<uint32_t> {
  public:
-  // This uses SFINAE to disable the folowing constructor if T is not a uint32_t
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
-  explicit VectorValueColumn(std::vector<uint32_t> data, uint32_t dim)
+  VectorSparseValueColumn(std::vector<uint32_t> data,
+                          std::optional<uint32_t> dim)
       : _data(std::move(data)), _dim(dim) {
+    checkSparseIndices();
+  }
+
+  uint64_t numRows() const final { return _data.size(); }
+
+  std::optional<DimensionInfo> dimension() const final {
+    if (!_dim) {
+      return std::nullopt;
+    }
+    return {{*_dim, /* is_dense= */ false}};
+  }
+
+  const uint32_t& operator[](uint64_t n) const final { return _data.at(n); }
+
+ private:
+  void checkSparseIndices() const {
+    if (!_dim) {
+      return;
+    }
     for (uint32_t index : _data) {
-      if (index >= _dim) {
+      if (index >= *_dim) {
         throw std::out_of_range("Cannot have index " + std::to_string(index) +
                                 " in VectorSparseValueColumn of dimension " +
                                 std::to_string(_dim) + ".");
@@ -25,108 +40,60 @@ class VectorValueColumn final : public ValueColumn<T> {
     }
   }
 
-  // This uses SFINAE to disable the folowing constructor if T is not a float
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, float>::value, bool> = true>
-  explicit VectorValueColumn(std::vector<float> data)
-      : _data(std::move(data)), _dim(1) {}
+  std::vector<uint32_t> _data;
+  std::optional<uint32_t> _dim;
+};
 
-  // This uses SFINAE to disable the folowing constructor if T is not a string
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, std::string>::value, bool> = true>
-  explicit VectorValueColumn(std::vector<std::string> data)
-      : _data(std::move(data)), _dim(1) {}
+class VectorDenseValueColumn final : public ValueColumn<float> {
+ public:
+  explicit VectorDenseValueColumn(std::vector<float> data)
+      : _data(std::move(data)) {}
 
   uint64_t numRows() const final { return _data.size(); }
 
   std::optional<DimensionInfo> dimension() const final {
-    if constexpr (std::is_same<T, uint32_t>::value ||
-                  std::is_same<T, float>::value) {
-      return {{_dim, std::is_same<T, float>::value}};
-    }
+    return {{/* dim= */ 1, /* is_dense= */ true}};
+  }
+
+  const float& operator[](uint64_t n) const final { return _data.at(n); }
+
+ private:
+  std::vector<float> _data;
+};
+
+class VectorStringValueColumn final : public ValueColumn<std::string> {
+ public:
+  explicit VectorStringValueColumn(std::vector<std::string> data)
+      : _data(std::move(data)) {}
+
+  uint64_t numRows() const final { return _data.size(); }
+
+  std::optional<DimensionInfo> dimension() const final {
+    // Strings have no dimension and cannot be concatenated.
     return std::nullopt;
   }
 
-  const T& operator[](uint64_t n) const final { return _data.at(n); }
+  const std::string& operator[](uint64_t n) const final { return _data.at(n); }
 
  private:
-  std::vector<T> _data;
-  uint32_t _dim;
+  std::vector<std::string> _data;
 };
 
-template <typename T>
-class VectorArrayColumn final : public ArrayColumn<T> {
-  static_assert(std::is_same<T, uint32_t>::value ||
-                    std::is_same<T, float>::value ||
-                    std::is_same<T, std::pair<uint32_t, float>>::value,
-                "Only vectors of type uint32, float32, or pair<uint32, "
-                "float32> can be used to construct columns.");
-
+class VectorSparseArrayColumn final : public ArrayColumn<uint32_t> {
  public:
-  // This uses SFINAE to disable the folowing constructor if T is not a uint32_t
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, uint32_t>::value, bool> = true>
-  explicit VectorArrayColumn(std::vector<std::vector<uint32_t>> data,
-                             uint32_t dim)
+  VectorSparseArrayColumn(std::vector<std::vector<uint32_t>> data,
+                          std::optional<uint32_t> dim)
       : _data(std::move(data)), _dim(dim) {
-    for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
-      for (uint32_t index : _data[row_index]) {
-        if (index >= _dim) {
-          throw std::out_of_range("Cannot have index " + std::to_string(index) +
-                                  " in VectorSparseArrayColumn of dimension " +
-                                  std::to_string(_dim) + ".");
-        }
-      }
-    }
-  }
+    check2DArrayNonEmpty<uint32_t>(_data);
 
-  // This uses SFINAE to disable the folowing constructor if T is not a float
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, float>::value, bool> = true>
-  explicit VectorArrayColumn(std::vector<std::vector<float>> data, uint32_t dim)
-      : _data(std::move(data)), _dim(dim) {
-    for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
-      if (_data[row_index].size() != _dim) {
-        throw std::out_of_range("Cannot have vector of length " +
-                                std::to_string(_data[row_index].size()) +
-                                " in VectorDenseArrayColumn of dimension " +
-                                std::to_string(_dim) + ".");
-      }
-    }
-  }
-
-  // This uses SFINAE to disable the folowing constructor if T is not a pair
-  // type. https://en.cppreference.com/w/cpp/types/enable_if
-  template <typename U = T,
-            std::enable_if_t<std::is_same<U, std::pair<uint32_t, float>>::value,
-                             bool> = true>
-  explicit VectorArrayColumn(
-      std::vector<std::vector<std::pair<uint32_t, float>>> data, uint32_t dim)
-      : _data(std::move(data)), _dim(dim) {
-    for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
-      for (auto [index, _] : _data[row_index]) {
-        if (index >= _dim) {
-          throw std::out_of_range(
-              "Cannot have index " + std::to_string(index) +
-              " in VectorIndexValueArrayColumn of dimension " +
-              std::to_string(_dim) + ".");
-        }
-      }
-    }
+    checkSparseIndices();
   }
 
   std::optional<DimensionInfo> dimension() const final {
-    if (_dim == std::numeric_limits<uint32_t>::max()) {
+    if (!_dim) {
+      return std::nullopt;
     }
-    if constexpr (std::is_same<T, uint32_t>::value ||
-                  std::is_same<T, float>::value) {
-      return {{_dim, std::is_same<T, float>::value}};
-    }
-    return std::nullopt;
+    return {{*_dim, /* is_dense= */ false}};
   }
 
   uint64_t numRows() const final { return _data.size(); }
@@ -138,24 +105,61 @@ class VectorArrayColumn final : public ArrayColumn<T> {
    * https://stackoverflow.com/questions/60277129/why-is-typename-necessary-in-return-type-c
    * https://en.cppreference.com/w/cpp/language/qualified_lookup
    */
-  typename ArrayColumn<T>::RowReference operator[](uint64_t n) const final {
-    uint64_t len = _data[n].size();
-    const T* ptr = _data[n].data();
-
-    return {ptr, len};
+  typename ArrayColumn<uint32_t>::RowReference operator[](
+      uint64_t n) const final {
+    return {_data[n].data(), _data[n].size()};
   }
 
  private:
-  static void checkArrayIsValid(
-      const std::vector<std::vector<uint32_t>>& data) {
-    if (data.empty() || data[0].empty()) {
-      throw std::invalid_argument(
-          "Can only construct VectorArrayColumn on non-empty data.");
+  void checkSparseIndices() {
+    for (uint32_t row_idx = 0; row_idx < numRows(); row_idx++) {
+      for (uint32_t index : _data[row_idx]) {
+        if (index >= *_dim) {
+          throw std::out_of_range("Cannot have index " + std::to_string(index) +
+                                  " in VectorSparseArrayColumn of dimension " +
+                                  std::to_string(_dim) + ".");
+        }
+      }
     }
   }
-
-  std::vector<std::vector<T>> _data;
+  std::vector<std::vector<uint32_t>> _data;
   std::optional<uint32_t> _dim;
 };
+
+class VectorDenseArrayColumn final : public ArrayColumn<float> {
+ public:
+  explicit VectorDenseArrayColumn(std::vector<std::vector<float>> data)
+      : _data(std::move(data)) {
+    check2DArrayNonEmpty<float>(_data);
+  }
+
+  std::optional<DimensionInfo> dimension() const final {
+    return {{_data[0].size(), /* is_dense= */ true}};
+  }
+
+  uint64_t numRows() const final { return _data.size(); }
+
+  /**
+   * The extra typename keyword here so that during parsing it is clear that
+   * ArrayColumn<T>::RowReference refers to a type and not a static member (or
+   * something else) within the class.
+   * https://stackoverflow.com/questions/60277129/why-is-typename-necessary-in-return-type-c
+   * https://en.cppreference.com/w/cpp/language/qualified_lookup
+   */
+  typename ArrayColumn<float>::RowReference operator[](uint64_t n) const final {
+    return {_data[n].data(), _data[n].size()};
+  }
+
+ private:
+  std::vector<std::vector<float>> _data;
+};
+
+template <typename T>
+static void check2DArrayNonEmpty(const std::vector<std::vector<T>>& data) {
+  if (data.empty() || data[0].empty()) {
+    throw std::invalid_argument(
+        "Can only construct VectorArrayColumn on non-empty data.");
+  }
+}
 
 }  // namespace thirdai::dataset
