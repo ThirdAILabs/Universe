@@ -11,7 +11,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
-#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
