@@ -21,31 +21,31 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       .def_readonly("dim", &DimensionInfo::dim)
       .def_readonly("is_dense", &DimensionInfo::is_dense);
 
-  py::class_<NumpyValueColumn<uint32_t>, Column,
-             std::shared_ptr<NumpyValueColumn<uint32_t>>>(
-      columns_submodule, "NumpySparseValueColumn")
+  py::class_<NumpySparseValueColumn, Column,
+             std::shared_ptr<NumpySparseValueColumn>>(columns_submodule,
+                                                      "NumpySparseValueColumn")
       .def(py::init<const NumpyArray<uint32_t>&, std::optional<uint32_t>>(),
            py::arg("array"), py::arg("dim"));
 
-  py::class_<NumpyValueColumn<float>, Column,
-             std::shared_ptr<NumpyValueColumn<float>>>(columns_submodule,
-                                                       "NumpyDenseValueColumn")
+  py::class_<NumpyDenseValueColumn, Column,
+             std::shared_ptr<NumpyDenseValueColumn>>(columns_submodule,
+                                                     "NumpyDenseValueColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
 
-  py::class_<VectorValueColumn<std::string>, Column,
-             std::shared_ptr<VectorValueColumn<std::string>>>(columns_submodule,
-                                                              "StringColumn")
+  py::class_<VectorStringValueColumn, Column,
+             std::shared_ptr<VectorStringValueColumn>>(columns_submodule,
+                                                       "StringColumn")
       .def(py::init<std::vector<std::string>>(), py::arg("array"));
 
-  py::class_<NumpyArrayColumn<uint32_t>, Column,
-             std::shared_ptr<NumpyArrayColumn<uint32_t>>>(
-      columns_submodule, "NumpySparseArrayColumn")
+  py::class_<NumpySparseArrayColumn, Column,
+             std::shared_ptr<NumpySparseArrayColumn>>(columns_submodule,
+                                                      "NumpySparseArrayColumn")
       .def(py::init<const NumpyArray<uint32_t>&, uint32_t>(), py::arg("array"),
            py::arg("dim"));
 
-  py::class_<NumpyArrayColumn<float>, Column,
-             std::shared_ptr<NumpyArrayColumn<float>>>(columns_submodule,
-                                                       "NumpyDenseArrayColumn")
+  py::class_<NumpyDenseArrayColumn, Column,
+             std::shared_ptr<NumpyDenseArrayColumn>>(columns_submodule,
+                                                     "NumpyDenseArrayColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
 
   auto transformations_submodule =
