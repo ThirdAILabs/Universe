@@ -798,17 +798,8 @@ Returns:
 
 )pbdoc";
 
-const char* const MODEL_PIPELINE_GET_ARTIFACT = R"pbdoc(
-Gets a named artifact of the current model pipeline. The artifacts can be of any 
-type and the availability of an artifact depends on the configuration of the
-model pipeline.
-
-Args:
-    name (str): The name of the artifact.
-
-Returns:
-    An object of arbitrary type, determined by the model pipeline's configuration.
-
+const char* const MODEL_PIPELINE_GET_DATA_PROCESSOR = R"pbdoc(
+Returns the data processor of the model pipeline.
 )pbdoc";
 
 const char* const MODEL_PIPELINE_LIST_ARTIFACTS = R"pbdoc(

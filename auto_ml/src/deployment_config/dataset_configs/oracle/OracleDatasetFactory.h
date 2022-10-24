@@ -163,18 +163,6 @@ class OracleDatasetFactory final
 
   uint32_t getLabelDim() final { return _label_dim; }
 
-  std::vector<std::string> listArtifactNames() const final {
-    return {"temporal_context"};
-  }
-
- protected:
-  std::optional<Artifact> getArtifactImpl(const std::string& name) final {
-    if (name == "temporal_context") {
-      return shared_from_this();
-    }
-    return std::nullopt;
-  }
-
  private:
   dataset::GenericBatchProcessorPtr makeLabeledProcessor(
       const ColumnNumberMap& column_number_map) {
@@ -266,6 +254,8 @@ class OracleDatasetFactory final
             _text_pairgram_word_limit);
   }
 };
+
+using OracleDatasetFactoryPtr = std::shared_ptr<OracleDatasetFactory>;
 
 class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
  public:
