@@ -21,42 +21,41 @@ Args:
         not need to include all columns in the dataset.
 
         Column type is one of:
-        - `bolt.types.categorical(n_unique_values: int, delimiter: str=None, consecutive_integer_ids: bool=False)`
-        - `bolt.types.numerical()`
-        - `bolt.types.text(average_n_words: int=None, embedding_size: str="m", use_attention: bool=False)`
-        - `bolt.types.date()`
+        - `bolt.types.categorical`
+        - `bolt.types.numerical`
+        - `bolt.types.text`
+        - `bolt.types.date`
         See bolt.types for details.
 
-        If `temporal_tracking_relationships` is non-empty, there must one 
+        If `temporal_tracking_relationships` is non-empty, there must one and only one
         bolt.types.date() column. This column contains date strings in YYYY-MM-DD format.
-        There can only be one bolt.types.date() column.
-    temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): Optional. 
+    temporal_tracking_relationships (Dict[str, List[Union[str, bolt.temporal.TemporalConfig]]]): Optional. 
         A mapping from column name to a list of either other column names or bolt.temporal objects.
         This mapping tells UDT what columns can be tracked over time for each key.
         For example, we may want to tell UDT that we want to track a user's watch 
         history by passing in a map like `{"user_id": ["movie_id"]}`
 
         If we provide a mapping from a string to a list of strings like the above, 
-        the temporal tracking configuration will be autotuned. We can take control by 
-        passing in bolt.temporal objects intead of strings.
+        the temporal tracking configuration will be autotuned. You can achieve finer 
+        grained control by passing in bolt.temporal objects intead of strings.
 
-        bolt.temporal object is one of:
-        - `bolt.temporal.categorical(column_name: str, track_last_n: int, column_known_during_inference: bool=False)
-        - `bolt.temporal.numerical(column_name: str, history_length: int, column_known_during_inference: bool=False)
+        A bolt.temporal object is one of:
+        - `bolt.temporal.categorical`
+        - `bolt.temporal.numerical`
         See bolt.temporal for details.
     target (str): Name of the column that contains the value to be predicted by
         UDT. The target column has to be a categorical column.
     time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
-        or `"monthly"`/`"m"`. Interval of time that we are interested in. Temporal numerical 
+        or `"monthly"`/`"m"`. Interval of time that UDT should use for temporal features. Temporal numerical 
         features are clubbed according to this time granularity. E.g. if 
         `time_granularity="w"` and the numerical values on days 1 and 2 are
         345.25 and 201.1 respectively, then UDT captures a single numerical 
         value of 546.26 for the week instead of individual values for the two days.
         Defaults to "daily".
-    lookahead (str): Optional. How far into the future the model needs to predict. This length of
+    lookahead (str): Optional. How far into the future the model should predict. This length of
         time is in terms of time_granularity. E.g. 'time_granularity="daily"` and 
-        `lookahead=5` means the model needs to learn to predict 5 days ahead. Defaults to 0
-        (predict the immediate next thing).
+        `lookahead=5` means that the model should learn to predict 5 days into the future. Defaults to 0
+        (predict the current value of the target).
     delimiter (str): Optional. Defaults to ','. A single character 
         (length-1 string) that separates the columns of the CSV training / validation dataset.
 
@@ -74,6 +73,8 @@ Examples:
             },
             temporal_tracking_relationships={
                 "product_id": [
+                    # We can use multiple bolt.temporal objects with the same column name but 
+                    # different history lengths to track different intervals of the same variable
                     # Track last 5 weeks of ad spend
                     bolt.temporal.numerical(column_name="ad_spend", history_length=5),
                     # Track last 10 weeks of ad spend
@@ -120,8 +121,7 @@ Args:
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
     batch_size (Option[int]): This is an optional parameter indicating which batch
-        size to use for training. If not specified the default batch size from the 
-        TrainEvalParameters is used.
+        size to use for training. If not specified, the batch size will be autotuned.
     max_in_memory_batches (Option[int]): The maximum number of batches to load in
         memory at a given time. If this is specified then the dataset will be processed
         in a streaming fashion.
@@ -143,8 +143,6 @@ Notes:
       keep track of the last few movies that a user has watched to better 
       recommend the next movie. `model.train()` automatically updates UDT's 
       temporal context.
-    - `model.train()` resets UDT's temporal context at the start of training to 
-      prevent unwanted information from leaking into the training routine.
 )pbdoc";
 
 const char* const UDT_EVALUATE = R"pbdoc(
@@ -153,8 +151,8 @@ numpy array of the activations.
 
 Args:
     filename (str): Path to the dataset file.
-    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional
-        and allows for specification of metrics to compute and whether to use sparse
+    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional.
+        It specifies metrics to compute and whether to use sparse
         inference.
 
 Returns:
@@ -179,8 +177,7 @@ Performs inference on a single sample.
 
 Args:
     input_sample (Dict[str, str]): The input sample as a dictionary 
-        where the keys are column names as specified in data_types and the 
-        values are the respective column values. 
+        where the keys are column names and the values are the respective column values. 
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
@@ -208,19 +205,20 @@ Examples:
             input_sample={"user_id": "A33225", "timestamp": "2022-12-25", "special_event": "christmas"}
         )
 
-Notes: 
-    - Only columns that are known at the time of inference need to be passed to
-      `model.predict()`. For example, notice that while we have a "movie_title" 
-      column in the `data_types` argument, we did not pass it to `model.predict()`. 
-      This is because we do not know the movie title at the time of inference – that 
-      is the target that we are trying to predict after all.
+Notes:
+    - The values of columns that are tracked temporally may be unknown during inference
+      (the column_known_during_inference attribute of the bolt.temporal objects are False
+      by default). These columns do not need to be passed into `model.predict()`.
+      For example, we did not pass the "movie_title" column to `model.predict()`.
+      All other columns must be passed in.
     - If temporal tracking relationships are provided, UDT can make better predictions 
       by taking temporal context into account. For example, UDT may keep track of 
       the last few movies that a user has watched to better recommend the next movie. 
       Thus, UDT is at its best when its internal temporal context gets updated with
       new true samples. `model.predict()` does not update UDT's temporal context.
-      To do this, we need to use `model.index()` or `model.index_batch()`. Read 
-      about `model.index()` and `model.index_batch()` for details.
+      To do this without retraining the model, we need to use `model.index()` or 
+      `model.index_batch()`. Read about `model.index()` and `model.index_batch()` 
+      for details.
 
 )pbdoc";
 
@@ -248,18 +246,19 @@ Examples:
 
 
 Notes: 
-    - Only columns that are known at the time of inference need to be passed to
-      `model.predict_batch()`. For example, notice that while we have a "movie_title" 
-      column in the `data_types` argument, we did not pass it to `model.predict()`. 
-      This is because we do not know the movie title at the time of inference – that 
-      is the target that we are trying to predict after all.
+    - The values of columns that are tracked temporally may be unknown during inference
+      (the column_known_during_inference attribute of the bolt.temporal objects are False
+      by default). These columns do not need to be passed into `model.predict_batch()`.
+      For example, we did not pass the "movie_title" column to `model.predict_batch()`.
+      All other columns must be passed in.
     - If temporal tracking relationships are provided, UDT can make better predictions 
       by taking temporal context into account. For example, UDT may keep track of 
       the last few movies that a user has watched to better recommend the next movie. 
       Thus, UDT is at its best when its internal temporal context gets updated with
       new true samples. `model.predict_batch()` does not update UDT's temporal context.
-      To do this, we need to use `model.index()` or `model.index_batch()`. Read 
-      about `model.index()` and `model.index_batch()` for details.
+      To do this without retraining the model, we need to use `model.index()` or 
+      `model.index_batch()`. Read about `model.index()` and `model.index_batch()` 
+      for details.
 
 )pbdoc";
 
@@ -298,18 +297,19 @@ Examples:
         )
 
 Notes: 
-    - Only columns that are known at the time of inference need to be passed to
-      `model.predict()`. For example, notice that while we have a "movie_title" 
-      column in the `data_types` argument, we did not pass it to `model.predict()`. 
-      This is because we do not know the movie title at the time of inference – that 
-      is the target that we are trying to predict after all.
+    - The values of columns that are tracked temporally may be unknown during inference
+      (the column_known_during_inference attribute of the bolt.temporal objects are False
+      by default). These columns do not need to be passed into `model.embedding_representation()`.
+      For example, we did not pass the "movie_title" column to `model.embedding_representation()`.
+      All other columns must be passed in.
     - If temporal tracking relationships are provided, UDT can make better predictions 
       by taking temporal context into account. For example, UDT may keep track of 
       the last few movies that a user has watched to better recommend the next movie. 
       Thus, UDT is at its best when its internal temporal context gets updated with
       new true samples. `model.predict()` does not update UDT's temporal context.
-      To do this, we need to use `model.index()` or `model.index_batch()`. Read 
-      about `model.index()` and `model.index_batch()` for details.
+      To do this without retraining the model, we need to use `model.index()` or 
+      `model.index_batch()`. Read about `model.index()` and `model.index_batch()` 
+      for details.
 
 
 )pbdoc";
@@ -439,10 +439,11 @@ Returns:
     A sorted list of `Explanation` objects that each contain the following fields:
     `column_number`, `column_name`, `keyword`, and `percentage_significance`.
     `column_number` and `column_name` identify the responsible column, 
-    `keyword` is a brief description of the value in this column, and
+    `keyword` is a brief description of the column value, and
     `percentage_significance` represents this column's contribution to the
     predicted outcome. The list is sorted in descending order by the 
     absolute value of the `percentage_significance` field of each element.
+    See `dataset.Explanation` for details.
 
 Example:
     >>> # Suppose we configure UDT as follows:
@@ -462,39 +463,31 @@ Example:
     >>> explanations = model.explain(
             input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, target=35
         )
-    >>> print(explanations[0].column_name)
-    "special_event"
-    >>> print(explanations[0].percentage_significance)
-    25.2
-    >>> print(explanations[0].keyword)
-    "christmas"
-    >>> print(explanations[1].column_name)
-    "movie_id"
-    >>> print(explanations[1].percentage_significance)
-    -22.3
-    >>> print(explanations[1].keyword)
-    "Previously seen 'Die Hard'"
-
+    >>> print(explanations[0])
+    column_number: 0 | column_name: "special_event" | keyword: "christmas" | percentage_significance: 25.2
+    >>> print(explanations[1])
+    column_number: 1 | column_name: "movie_title" | keyword: "Previously seen 'Die Hard'" | percentage_significance: -22.3
+    
 Notes: 
-    - The `column_name` field of the `Explanation` object is irrelevant in this case
-      since `model.explain()` uses column names.
     - `percentage_significance` can be positive or negative depending on the 
       relationship between the responsible column and the prediction. In the above
       example, the `percentage_significance` associated with the explanation
       "Previously seen 'Die Hard'" is negative because recently watching "Die Hard" is 
-      negatively correlated with the target class "Home Alone".
-    - Only columns that are known at the time of inference need to be passed to
-      `model.explain()`. For example, notice that while we have a "movie_title" 
-      column in the `data_types` argument, we did not pass it to `model.explain()`. 
-      This is because we do not know the movie title at the time of inference – that 
-      is the target that we are trying to predict after all.
+      negatively correlated with the target class "Home Alone". A large negative value
+      is just as "explanatory" as a large positive value.
+    - The values of columns that are tracked temporally may be unknown during inference
+      (the column_known_during_inference attribute of the bolt.temporal objects are False
+      by default). These columns do not need to be passed into `model.explain()`.
+      For example, we did not pass the "movie_title" column to `model.explain()`.
+      All other columns must be passed in.
     - If temporal tracking relationships are provided, UDT can make better predictions 
       by taking temporal context into account. For example, UDT may keep track of 
       the last few movies that a user has watched to better recommend the next movie. 
       Thus, UDT is at its best when its internal temporal context gets updated with
       new true samples. `model.explain()` does not update UDT's temporal context.
-      To do this, we need to use `model.index()` or `model.index_batch()`. Read 
-      about `model.index()` and `model.index_batch()` for details.
+      To do this without retraining the model, we need to use `model.index()` or 
+      `model.index_batch()`. Read about `model.index()` and `model.index_batch()` 
+      for details.
 
 )pbdoc";
 
@@ -506,7 +499,6 @@ Args:
     filename (str): The file on disk to serialize this instance of UDT into.
 
 Example:
-    >>> model = deployment.UniversalDeepTransformer(...)
     >>> model.save("udt_savefile.bolt")
 )pbdoc";
 
