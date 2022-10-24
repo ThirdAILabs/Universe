@@ -251,10 +251,11 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 
   py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
-                    std::string, std::string, uint32_t>(),
+                    std::string, std::string, uint32_t, char>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
            py::arg("target"), py::arg("time_granularity") = "daily",
-           py::arg("lookahead") = 0, docs::ORACLE_CONFIG_INIT);
+           py::arg("lookahead") = 0, py::arg("delimiter") = ',',
+           docs::ORACLE_CONFIG_INIT);
 
   py::class_<TemporalContext, TemporalContextPtr>(submodule, "TemporalContext")
       .def("reset", &TemporalContext::reset, docs::TEMPORAL_CONTEXT_RESET)

@@ -25,4 +25,13 @@ inline std::string lower(const std::string_view str) {
   }
   return lower_name;
 }
+
+/**
+ * Extracts an integer value from an integer string.
+ */
+inline uint32_t toInteger(const char* start) {
+  char* end;
+  return std::strtoul(start, &end, 10);
+}
+
 }  // namespace thirdai::utils
