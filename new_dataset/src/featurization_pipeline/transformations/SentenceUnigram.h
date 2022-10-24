@@ -53,14 +53,13 @@ class SentenceUnigram : public Transformation {
       const StringColumnPtr& input_column, uint32_t num_rows) {
     std::vector<std::vector<std::pair<uint32_t, float>>> column_values(
         num_rows);
-#pragma omp parallel for default(none) \
-    shared(num_rows, column_values, input_column, _output_range)
+    // #pragma omp parallel for default(none)
+    //     shared(num_rows, column_values, input_column, _output_range)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::string text = (*input_column)[row_idx];
       std::vector<uint32_t> unigrams = computeUnigrams(text);
 
-      std::vector<std::pair<uint32_t, float>> deduplicated_unigrams(
-          unigrams.size());
+      std::vector<std::pair<uint32_t, float>> deduplicated_unigrams;
       TextEncodingUtils::sumRepeatedIndices(
           unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
             deduplicated_unigrams.push_back(std::make_pair(unigram, value));
@@ -69,21 +68,22 @@ class SentenceUnigram : public Transformation {
     }
 
     return std::make_shared<VectorIndexValueArrayColumn>(
-        std::move(column_values));
+        std::move(column_values), _output_range);
   }
 
   SparseArrayColumnPtr unigramTokenColumn(const StringColumnPtr& input_column,
                                           uint32_t num_rows) {
     std::vector<std::vector<uint32_t>> column_values(num_rows);
 #pragma omp parallel for default(none) \
-    shared(num_rows, column_values, input_column, _output_range)
+    shared(num_rows, column_values, input_column)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::string text = (*input_column)[row_idx];
       std::vector<uint32_t> unigrams = computeUnigrams(text);
       column_values[row_idx] = unigrams;
     }
 
-    return std::make_shared<VectorSparseArrayColumn>(std::move(column_values));
+    return std::make_shared<VectorSparseArrayColumn>(std::move(column_values),
+                                                     _output_range);
   }
 
   std::vector<uint32_t> computeUnigrams(const std::string& text) {
