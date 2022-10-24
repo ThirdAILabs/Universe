@@ -2,7 +2,6 @@
 
 #include <_types/_uint32_t.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
-#include <sys/types.h>
 #include <limits>
 #include <stdexcept>
 
@@ -20,7 +19,7 @@ class VectorValueColumn final : public ValueColumn<T> {
     for (uint32_t index : _data) {
       if (index >= _dim) {
         throw std::out_of_range("Cannot have index " + std::to_string(index) +
-                                " in VectorIntegerValueColumn of dimension " +
+                                " in VectorSparseValueColumn of dimension " +
                                 std::to_string(_dim) + ".");
       }
     }
@@ -60,9 +59,10 @@ class VectorValueColumn final : public ValueColumn<T> {
 template <typename T>
 class VectorArrayColumn final : public ArrayColumn<T> {
   static_assert(std::is_same<T, uint32_t>::value ||
-                    std::is_same<T, float>::value,
-                "Only vectors of type uint32 or float32 can be used to "
-                "construct columns.");
+                    std::is_same<T, float>::value ||
+                    std::is_same<T, std::pair<uint32_t, float>>::value,
+                "Only vectors of type uint32, float32, or pair<uint32, "
+                "float32> can be used to construct columns.");
 
  public:
   // This uses SFINAE to disable the folowing constructor if T is not a uint32_t
@@ -90,7 +90,7 @@ class VectorArrayColumn final : public ArrayColumn<T> {
   explicit VectorArrayColumn(std::vector<std::vector<float>> data, uint32_t dim)
       : _data(std::move(data)), _dim(dim) {
     for (uint64_t row_index = 0; row_index < numRows(); row_index++) {
-      if (_data[row_index].size() > _dim) {
+      if (_data[row_index].size() != _dim) {
         throw std::out_of_range("Cannot have vector of length " +
                                 std::to_string(_data[row_index].size()) +
                                 " in VectorDenseArrayColumn of dimension " +
@@ -121,7 +121,6 @@ class VectorArrayColumn final : public ArrayColumn<T> {
 
   std::optional<DimensionInfo> dimension() const final {
     if (_dim == std::numeric_limits<uint32_t>::max()) {
-      
     }
     if constexpr (std::is_same<T, uint32_t>::value ||
                   std::is_same<T, float>::value) {
@@ -151,12 +150,12 @@ class VectorArrayColumn final : public ArrayColumn<T> {
       const std::vector<std::vector<uint32_t>>& data) {
     if (data.empty() || data[0].empty()) {
       throw std::invalid_argument(
-          "Can only construct VectorArrayColumn non-empty data.");
+          "Can only construct VectorArrayColumn on non-empty data.");
     }
   }
 
   std::vector<std::vector<T>> _data;
-  uint32_t _dim;
+  std::optional<uint32_t> _dim;
 };
 
 }  // namespace thirdai::dataset
