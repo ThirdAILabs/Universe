@@ -162,3 +162,38 @@ def test_reset_clears_history():
     model.reset_temporal_trackers()
     after_reset = model.predict(single_sample())
     assert (first == after_reset).all()
+
+
+def test_works_without_temporal_relationships():
+    write_lines_to_file(
+        TRAIN_FILE,
+        [
+            "userId,movieId,hoursWatched",
+            "0,0,2",
+            "1,0,3",
+        ],
+    )
+
+    write_lines_to_file(
+        TEST_FILE,
+        [
+            "userId,movieId,hoursWatched",
+            "0,1,5",
+            "2,0,0.5",
+        ],
+    )
+
+    model = deployment.UniversalDeepTransformer(
+        data_types={
+            "userId": bolt.types.categorical(n_unique_classes=3),
+            "movieId": bolt.types.categorical(n_unique_classes=3),
+            "hoursWatched": bolt.types.numerical(),
+        },
+        target="movieId",
+    )
+
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.evaluate(TEST_FILE)
+
+    # No assertion as we just want to know that there is no error.
