@@ -40,7 +40,7 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<VectorValueColumn<std::string>>>(columns_submodule,
                                                               "StringColumn")
       .def(py::init<std::vector<std::string>>(), py::arg("array"));
-      
+
   py::class_<NumpyArrayColumn<uint32_t>, Column,
              std::shared_ptr<NumpyArrayColumn<uint32_t>>>(
       columns_submodule, "NumpySparseArrayColumn")
