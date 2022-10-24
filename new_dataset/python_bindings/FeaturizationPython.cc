@@ -3,6 +3,7 @@
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/NumpyColumns.h>
+#include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <new_dataset/src/featurization_pipeline/transformations/Binning.h>
 #include <new_dataset/src/featurization_pipeline/transformations/StringHash.h>
 #include <pybind11/stl.h>
@@ -26,18 +27,20 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<NumpyValueColumn<uint32_t>>>(
       columns_submodule, "NumpySparseValueColumn")
       .def(py::init<const NumpyArray<uint32_t>&, std::optional<uint32_t>>(),
-           py::arg("array"), py::arg("dim"));
+           py::arg("array"), py::arg("dim"))
+      .def(("__getitem__"), &NumpyValueColumn<uint32_t>::operator[]);
 
   py::class_<NumpyValueColumn<float>, Column,
              std::shared_ptr<NumpyValueColumn<float>>>(columns_submodule,
                                                        "NumpyDenseValueColumn")
-      .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
+      .def(py::init<const NumpyArray<float>&>(), py::arg("array"))
+      .def(("__getitem__"), &NumpyValueColumn<float>::operator[]);
 
   py::class_<VectorValueColumn<std::string>, Column,
              std::shared_ptr<VectorValueColumn<std::string>>>(columns_submodule,
                                                               "StringColumn")
       .def(py::init<std::vector<std::string>>(), py::arg("array"));
-
+      
   py::class_<NumpyArrayColumn<uint32_t>, Column,
              std::shared_ptr<NumpyArrayColumn<uint32_t>>>(
       columns_submodule, "NumpySparseArrayColumn")
