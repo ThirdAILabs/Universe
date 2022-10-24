@@ -19,24 +19,24 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
     write_lines_to_file(
         TRAIN_FILE,
         [
-            "userId,movieId,timestamp",
-            "0,0,2022-08-29",
-            "1,0,2022-08-30",
-            "1,1,2022-08-31",
+            "userId,movieId,timestamp,hoursWatched",
+            "0,0,2022-08-29,2",
+            "1,0,2022-08-30,2",
+            "1,1,2022-08-31,1",
             # if integer_label = false, movieId 4 > n_unique_classes but
             # that is fine because it's treated as an arbitrary string
-            ("1,2,2022-09-01" if integer_label else "1,4,2022-09-01"),
+            ("1,2,2022-09-01,3" if integer_label else "1,4,2022-09-01,3"),
         ],
     )
 
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,timestamp",
-            "0,1,2022-08-31",
+            "userId,movieId,timestamp,hoursWatched",
+            "0,1,2022-08-31,5",
             # if integer_label = false, userId 4 > n_unique_classes but
             # that is fine because it's treated as an arbitrary string
-            ("1,0,2022-09-01" if integer_label else "4,0,2022-09-01"),
+            ("1,0,2022-09-01,0.5" if integer_label else "4,0,2022-09-01,0.5"),
         ],
     )
 
@@ -47,8 +47,9 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
                 n_unique_classes=3, consecutive_integer_ids=integer_label
             ),
             "timestamp": bolt.types.date(),
+            "hoursWatched": bolt.types.numerical(),
         },
-        temporal_tracking_relationships={"userId": ["movieId"]},
+        temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
         options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
     )
@@ -68,7 +69,12 @@ def batch_sample():
 
 
 def single_update():
-    return {"userId": "0", "movieId": "1", "timestamp": "2022-08-31"}
+    return {
+        "userId": "0",
+        "movieId": "1",
+        "timestamp": "2022-08-31",
+        "hoursWatched": "1",
+    }
 
 
 def batch_update():
@@ -202,3 +208,38 @@ def test_reset_clears_history():
     model.reset_temporal_trackers()
     after_reset = model.predict(single_sample())
     assert (first == after_reset).all()
+
+
+def test_works_without_temporal_relationships():
+    write_lines_to_file(
+        TRAIN_FILE,
+        [
+            "userId,movieId,hoursWatched",
+            "0,0,2",
+            "1,0,3",
+        ],
+    )
+
+    write_lines_to_file(
+        TEST_FILE,
+        [
+            "userId,movieId,hoursWatched",
+            "0,1,5",
+            "2,0,0.5",
+        ],
+    )
+
+    model = deployment.UniversalDeepTransformer(
+        data_types={
+            "userId": bolt.types.categorical(n_unique_classes=3),
+            "movieId": bolt.types.categorical(n_unique_classes=3),
+            "hoursWatched": bolt.types.numerical(),
+        },
+        target="movieId",
+    )
+
+    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.evaluate(TEST_FILE)
+
+    # No assertion as we just want to know that there is no error.

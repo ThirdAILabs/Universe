@@ -9,7 +9,6 @@
 #include <auto_ml/python_bindings/UniversalDeepTransformerDocs.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
-#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -246,12 +245,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
                   docs::MODEL_PIPELINE_LOAD)
-      // getArtifact returns a variant which then gets resolved to one of its
-      // contained types.
-      .def("get_artifact", &ModelPipeline::getArtifact, py::arg("name"),
-           docs::MODEL_PIPELINE_GET_ARTIFACT)
-      .def("list_artifact_names", &ModelPipeline::listArtifactNames,
-           docs::MODEL_PIPELINE_LIST_ARTIFACTS);
+      .def("get_data_processor", &ModelPipeline::getDataProcessor,
+           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
 
   py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
@@ -278,7 +273,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
                                        docs::UDT_CLASS)
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
                     std::string, std::string, uint32_t, char, OptionsMap>(),
-           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
+           py::arg("data_types"),
+           py::arg("temporal_tracking_relationships") =
+               UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            py::arg("options") = OptionsMap(), docs::UDT_INIT)

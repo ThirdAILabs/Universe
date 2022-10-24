@@ -5,7 +5,6 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <auto_ml/src/deployment_config/Artifact.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -200,13 +199,7 @@ class ModelPipeline {
         .value();
   }
 
-  Artifact getArtifact(const std::string& name) const {
-    return _dataset_factory->getArtifact(name);
-  }
-
-  std::vector<std::string> listArtifactNames() const {
-    return _dataset_factory->listArtifactNames();
-  }
+  DatasetLoaderFactoryPtr getDataProcessor() const { return _dataset_factory; }
 
  protected:
   // Private constructor for cereal.
