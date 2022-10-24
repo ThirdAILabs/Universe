@@ -27,13 +27,15 @@
 
 namespace thirdai::bolt {
 
-class GeneratorConfig {
+class QueryCandidateGeneratorConfig {
  public:
-  GeneratorConfig(std::string hash_function, uint32_t num_tables,
-                  uint32_t hashes_per_table, uint32_t input_dim, uint32_t top_k,
-                  bool use_char_trigram = true, bool use_char_four_gram = true,
-                  bool has_incorrect_queries = false, uint32_t batch_size = 100,
-                  uint32_t range = 1000000)
+  QueryCandidateGeneratorConfig(std::string hash_function, uint32_t num_tables,
+                                uint32_t hashes_per_table, uint32_t input_dim,
+                                uint32_t top_k, bool use_char_trigram = true,
+                                bool use_char_four_gram = true,
+                                bool has_incorrect_queries = false,
+                                uint32_t batch_size = 100,
+                                uint32_t range = 1000000)
       : _hash_function(std::move(hash_function)),
         _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
@@ -46,7 +48,7 @@ class GeneratorConfig {
         _has_incorrect_queries(has_incorrect_queries) {}
 
   // overloaded operator mainly for testing
-  auto operator==(GeneratorConfig* rhs) const {
+  auto operator==(QueryCandidateGeneratorConfig* rhs) const {
     return this->_hash_function == rhs->_hash_function &&
            this->_num_tables == rhs->_num_tables &&
            this->_hashes_per_table == rhs->_hashes_per_table &&
@@ -66,13 +68,14 @@ class GeneratorConfig {
     output_archive(*this);
   }
 
-  static std::shared_ptr<GeneratorConfig> load(
+  static std::shared_ptr<QueryCandidateGeneratorConfig> load(
       const std::string& config_file_name) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(config_file_name, std::ios::binary);
 
     cereal::BinaryInputArchive input_archive(filestream);
-    std::shared_ptr<GeneratorConfig> deserialized_config(new GeneratorConfig());
+    std::shared_ptr<QueryCandidateGeneratorConfig> deserialized_config(
+        new QueryCandidateGeneratorConfig());
     input_archive(*deserialized_config);
 
     return deserialized_config;
@@ -80,19 +83,16 @@ class GeneratorConfig {
 
   std::shared_ptr<hashing::HashFunction> getHashFunction() const {
     if (_hash_function == "DensifiedMinHash") {
-      auto* hash_function =
-          new hashing::DensifiedMinHash(_hashes_per_table, _num_tables, _range);
-      return std::make_shared<hashing::DensifiedMinHash>(*hash_function);
+      return std::make_shared<hashing::DensifiedMinHash>(_hashes_per_table,
+                                                         _num_tables, _range);
     }
     if (_hash_function == "DWTA") {
-      auto* hash_function = new hashing::DWTAHashFunction(
+      return std::make_shared<hashing::DWTAHashFunction>(
           _input_dim, _hashes_per_table, _num_tables, _range);
-      return std::make_shared<hashing::DWTAHashFunction>(*hash_function);
     }
     if (_hash_function == "FastSRP") {
-      auto* hash_function =
-          new hashing::FastSRP(_input_dim, _hashes_per_table, _num_tables);
-      return std::make_shared<hashing::FastSRP>(*hash_function);
+      return std::make_shared<hashing::FastSRP>(_input_dim, _hashes_per_table,
+                                                _num_tables);
     }
     throw exceptions::NotImplemented("Unsupported Hash Function");
   }
@@ -123,7 +123,7 @@ class GeneratorConfig {
   bool _has_incorrect_queries;
 
   // Private constructor for cereal
-  GeneratorConfig() {}
+  QueryCandidateGeneratorConfig() {}
 
   friend class cereal::access;
   template <class Archive>
@@ -134,35 +134,42 @@ class GeneratorConfig {
   }
 };
 
-using GeneratorConfigPtr = std::shared_ptr<GeneratorConfig>;
+using QueryCandidateGeneratorConfigPtr =
+    std::shared_ptr<QueryCandidateGeneratorConfig>;
 
-class Generator : public std::enable_shared_from_this<Generator> {
+class QueryCandidateGenerator
+    : public std::enable_shared_from_this<QueryCandidateGenerator> {
  public:
-  static Generator make(GeneratorConfigPtr flash_generator_config) {
-    return Generator(std::move(flash_generator_config));
+  static QueryCandidateGenerator make(
+      QueryCandidateGeneratorConfigPtr flash_QueryCandidateGenerator_config) {
+    return QueryCandidateGenerator(
+        std::move(flash_QueryCandidateGenerator_config));
   }
 
-  static Generator buildGeneratorFromSerializedConfig(
+  static QueryCandidateGenerator
+  buildQueryCandidateGeneratorFromSerializedConfig(
       const std::string& config_file_name) {
-    auto flash_generator_config = GeneratorConfig::load(config_file_name);
+    auto flash_QueryCandidateGenerator_config =
+        QueryCandidateGeneratorConfig::load(config_file_name);
 
-    return Generator::make(flash_generator_config);
+    return QueryCandidateGenerator::make(flash_QueryCandidateGenerator_config);
   }
 
   /**
    * @brief Builds a Flash object by reading from a CSV file
    * containing queries.
-   * If the `has_incorrect_queries` flag is set in the GeneratorConfig, the
-   * input CSV file is expected to contain both correct (first column) and
-   * incorrect queries (second column). Otherwise, the file is expected to have
-   * only correct queries in one column.
+   * If the `has_incorrect_queries` flag is set in the
+   * QueryCandidateGeneratorConfig, the input CSV file is expected to contain
+   * both correct (first column) and incorrect queries (second column).
+   * Otherwise, the file is expected to have only correct queries in one column.
    *
    * @param file_name
    * @param has_incorrect_queries
    */
-  void buildFlashGenerator(const std::string& file_name) {
-    buildIDQueryMapping(file_name,
-                        _flash_generator_config->has_incorrect_queries());
+  void buildFlashQueryCandidateGenerator(const std::string& file_name) {
+    buildIDQueryMapping(
+        file_name,
+        _flash_generator_config->has_incorrect_queries());
 
     auto data_loader = getUnlabeledDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
@@ -184,11 +191,12 @@ class Generator : public std::enable_shared_from_this<Generator> {
    */
   std::vector<std::vector<std::string>> queryFromList(
       const std::vector<std::string>& queries) {
-    std::vector<std::vector<std::string>> outputs;
+    std::vector<std::vector<std::string>> outputs(queries.size());
 
 #pragma omp parallel for default(none) shared(queries, outputs)
-    for (const auto& query : queries) {
-      auto featurized_query_vector = featurizeSingleQuery(query);
+    for (uint32_t query_index = 0; query_index < queries.size();
+         query_index++) {
+      auto featurized_query_vector = featurizeSingleQuery(queries[query_index]);
 
       std::vector<std::vector<uint32_t>> suggested_query_ids =
           _flash_generator->queryBatch(
@@ -196,25 +204,31 @@ class Generator : public std::enable_shared_from_this<Generator> {
               /* top_k = */ _flash_generator_config->top_k(),
               /* pad_zeros = */ true);
 
-      std::vector<std::string> topk_queries;
-      for (auto suggested_query_id : suggested_query_ids[0]) {
-        auto suggested_query = _ids_to_queries_map.at(suggested_query_id);
-        topk_queries.emplace_back(suggested_query);
+      std::vector<std::string> topk_queries(
+          _flash_generator_config->top_k());
+      for (uint32_t query_id_index = 0;
+           query_id_index < _flash_generator_config->top_k();
+           query_id_index++) {
+        auto suggested_query =
+            _ids_to_queries_map.at(suggested_query_ids[0][query_id_index]);
+        topk_queries[query_id_index] = std::move(suggested_query);
       }
-      outputs.emplace_back(topk_queries);
+      outputs[query_index] = std::move(topk_queries);
     }
 
     return outputs;
   }
 
  private:
-  explicit Generator(GeneratorConfigPtr flash_generator_config)
-      : _flash_generator_config(std::move(flash_generator_config)),
+  explicit QueryCandidateGenerator(
+      QueryCandidateGeneratorConfigPtr flash_generator_config)
+      : _flash_generator_config(
+            std::move(flash_generator_config)),
         _dimension_for_encodings(
             dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM),
-        _input_blocks(
-            constructInputBlocks(_flash_generator_config->use_char_trigram(),
-                                 _flash_generator_config->use_char_fourgram())),
+        _input_blocks(constructInputBlocks(
+            _flash_generator_config->use_char_trigram(),
+            _flash_generator_config->use_char_fourgram())),
         _batch_processor(std::make_shared<dataset::GenericBatchProcessor>(
             _input_blocks, std::vector<dataset::BlockPtr>{})) {}
 
@@ -273,7 +287,7 @@ class Generator : public std::enable_shared_from_this<Generator> {
   }
 
   std::vector<BoltVector> featurizeSingleQuery(const std::string& query) const {
-    std::vector<dataset::BlockPtr> blocks = _input_blocks;
+    // std::vector<dataset::BlockPtr> blocks = _input_blocks;
 
     BoltVector output_vector;
     std::vector<std::string_view> input_vector{
@@ -294,7 +308,8 @@ class Generator : public std::enable_shared_from_this<Generator> {
         file_data_loader, _batch_processor);
   }
 
-  std::shared_ptr<GeneratorConfig> _flash_generator_config;
+  std::shared_ptr<QueryCandidateGeneratorConfig>
+      _flash_generator_config;
   uint32_t _dimension_for_encodings;
 
   std::unique_ptr<Flash<uint32_t>> _flash_generator;
@@ -308,16 +323,17 @@ class Generator : public std::enable_shared_from_this<Generator> {
   std::unordered_map<uint32_t, std::string> _ids_to_queries_map;
 
   // private constructor for cereal
-  Generator() {}
+  QueryCandidateGenerator() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_flash_generator_config, _dimension_for_encodings, _flash_generator,
-            _input_blocks, _batch_processor, _ids_to_queries_map);
+    archive(_flash_generator_config, _dimension_for_encodings,
+            _flash_generator, _input_blocks, _batch_processor,
+            _ids_to_queries_map);
   }
 };  // namespace thirdai::bolt
 
-using GeneratorPtr = std::shared_ptr<Generator>;
+using QueryCandidateGeneratorPtr = std::shared_ptr<QueryCandidateGenerator>;
 
 }  // namespace thirdai::bolt

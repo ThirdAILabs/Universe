@@ -44,9 +44,6 @@ TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
   auto queries = createBatches(random_vectors_for_queries, words_per_query);
 
   // Create a Flash object
-  // auto* hash_function =
-  //     new DensifiedMinHash(HASHES_PER_TABLE, NUM_TABLES, RANGE);
-
   auto flash = Flash<uint32_t>(
       std::make_shared<DensifiedMinHash>(HASHES_PER_TABLE, NUM_TABLES, RANGE));
   Flash<uint32_t> deserialized_flash_instance;
