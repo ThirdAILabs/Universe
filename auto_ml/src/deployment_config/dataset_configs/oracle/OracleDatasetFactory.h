@@ -263,6 +263,10 @@ class OracleDatasetFactory final
             *_config, _temporal_relationships, column_numbers, _vocabs,
             _text_pairgram_word_limit);
 
+    if (_temporal_relationships.empty()) {
+      return blocks;
+    }
+
     auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
         *_config, _temporal_relationships, column_numbers, _vocabs, *_context,
         should_update_history);
