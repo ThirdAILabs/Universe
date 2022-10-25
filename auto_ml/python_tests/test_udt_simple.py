@@ -1,4 +1,5 @@
 from random import sample
+
 import pytest
 from thirdai import bolt, deployment
 
