@@ -7,7 +7,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.release]
 
 TRAIN_FILE = "./data_labse_bal.csv"
 TEST_FILE = "./test_labse.csv"
-CONFIG_FILE = ""
+CONFIG_FILE = "./config"
 INPUT_DIM = 100000
 
 
