@@ -271,9 +271,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 
   py::class_<UniversalDeepTransformer>(submodule, "UniversalDeepTransformer",
                                        docs::UDT_CLASS)
-      .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
-                    std::string, std::string, uint32_t, char, OptionsMap>(),
-           py::arg("data_types"),
+      .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("time_granularity") = "daily",
