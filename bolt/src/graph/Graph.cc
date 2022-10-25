@@ -549,8 +549,9 @@ InferenceResult BoltGraph::predict(
 
 // Predicts on a single sample input for performance. Always returns
 // activations and doesn't calculate metrics.
-BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
-                                    bool use_sparse_inference) {
+BoltVector BoltGraph::predictSingle(
+    std::vector<BoltVector>&& test_data, bool use_sparse_inference,
+    std::optional<std::string> output_node_name) {
   SingleBatchDatasetContext single_predict_context(std::move(test_data));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
@@ -565,8 +566,14 @@ BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
   try {
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
     forward(/* vec_index = */ 0, nullptr);
-    BoltVector output_copy = _output->getOutputVector(
-        /* vec_index = */ 0);
+    BoltVector output_copy;
+    if (output_node_name) {
+      output_copy = getNodeByName(*output_node_name)
+                        ->getOutputVector(/* vec_index = */ 0);
+    } else {
+      output_copy = _output->getOutputVector(
+          /* vec_index = */ 0);
+    }
     cleanupAfterBatchProcessing();
     return output_copy;
   } catch (const std::exception& e) {
