@@ -12,7 +12,7 @@ def get_sentence_str_column(col_length):
 
 
 # tests that deduplication in the sentence unigram block doesn't actually change
-# resulting the boltvector
+# the resulting boltvector
 def test_sentence_unigram_deduplication():
     col_length = 10000
     column = get_sentence_str_column(col_length)

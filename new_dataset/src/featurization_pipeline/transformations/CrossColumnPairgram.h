@@ -61,7 +61,7 @@ class CrossColumnPairgram : public Transformation {
       }
 
       // we don't deduplicate pairgrams since we ensure unique hash values
-      // above, thus reducing the change of duplicates
+      // above, thus reducing the chance of duplicates. TODO(any): change this?
       std::vector<uint32_t> row_pairgrams =
           TextEncodingUtils::computeRawPairgramsFromUnigrams(salted_unigrams,
                                                              _output_range);
