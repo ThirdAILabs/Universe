@@ -202,7 +202,7 @@ def test_neuron_id_to_target_class_map():
         label = model.class_name(neuron_id)
         labels_seen[label] = True
 
-    assert labels_seen.values().all()
+    assert all([seen for seen in labels_seen.values()])
 
 
 def test_reset_clears_history():
