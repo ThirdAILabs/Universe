@@ -4,6 +4,7 @@
 #include "BlockConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingDataset.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -13,6 +14,8 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace thirdai::automl::deployment {
@@ -94,14 +97,40 @@ class DatasetLoaderFactory {
   virtual DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
 
-  virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
+  virtual std::vector<BoltVector> featurizeInput(const LineInput& input) = 0;
+
+  virtual std::vector<BoltVector> featurizeInput(const MapInput& input) {
+    (void)input;
+    throw std::invalid_argument(
+        "This model pipeline configuration does not support map input. Pass in "
+        "a string instead.");
+  };
 
   virtual std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::string>& inputs) = 0;
+      const LineInputBatch& inputs) = 0;
+
+  virtual std::vector<BoltBatch> featurizeInputBatch(
+      const MapInputBatch& inputs) {
+    (void)inputs;
+    throw std::invalid_argument(
+        "This model pipeline configuration does not support map input. Pass in "
+        "a list of strings instead.");
+  };
 
   virtual std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const std::string& sample) = 0;
+
+  virtual std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio, const MapInput& sample) {
+    (void)gradients_indices;
+    (void)gradients_ratio;
+    (void)sample;
+    throw std::invalid_argument(
+        "This model pipeline configuration does not support map input. Pass in "
+        "a list of strings instead.");
+  }
 
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 

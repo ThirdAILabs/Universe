@@ -13,6 +13,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
@@ -20,11 +21,13 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -90,13 +93,13 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         /* shuffle= */ training);
   }
 
-  std::vector<BoltVector> featurizeInputImpl(const std::string& input,
+  template <typename InputType>
+  std::vector<BoltVector> featurizeInputImpl(const InputType& input,
                                              bool should_update_history) {
     verifyProcessorsAreInitialized();
 
     BoltVector vector;
-    auto sample =
-        dataset::ProcessorUtils::parseCsvRow(input, _config->delimiter);
+    auto sample = toVectorOfStringViews(input);
     if (auto exception = getProcessor(should_update_history)
                              .makeInputVector(sample, vector)) {
       std::rethrow_exception(exception);
@@ -104,16 +107,24 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return {std::move(vector)};
   }
 
-  std::vector<BoltVector> featurizeInput(const std::string& input) final {
+  std::vector<BoltVector> featurizeInput(const LineInput& input) final {
     return featurizeInputImpl(input, /* should_update_history= */ false);
   }
 
-  std::vector<BoltVector> updateTemporalTrackers(const std::string& input) {
+  std::vector<BoltVector> featurizeInput(const MapInput& input) final {
+    return featurizeInputImpl(input, /* should_update_history= */ false);
+  }
+
+  std::vector<BoltVector> updateTemporalTrackers(const LineInput& input) {
     return featurizeInputImpl(input, /* should_update_history= */ true);
   }
 
-  std::vector<BoltBatch> featurizeInputBatchImpl(
-      const std::vector<std::string>& inputs, bool should_update_history) {
+  std::vector<BoltVector> updateTemporalTrackers(const MapInput& input) {
+    return featurizeInputImpl(input, /* should_update_history= */ true);
+  }
+
+  std::vector<BoltBatch> featurizeInputBatchImpl(const LineInputBatch& inputs,
+                                                 bool should_update_history) {
     verifyProcessorsAreInitialized();
     auto [input_batch, _] =
         getProcessor(should_update_history).createBatch(inputs);
@@ -126,25 +137,36 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::string>& inputs) final {
+      const LineInputBatch& inputs) final {
     return featurizeInputBatchImpl(inputs, /* should_update_history= */ false);
   }
 
+  std::vector<BoltBatch> featurizeInputBatch(
+      const MapInputBatch& inputs) final {
+    return featurizeInputBatchImpl(lineInputBatchFromMapInputBatch(inputs),
+                                   /* should_update_history= */ false);
+  }
+
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
-      const std::vector<std::string>& inputs) {
+      const LineInputBatch& inputs) {
     return featurizeInputBatchImpl(inputs, /* should_update_history= */ true);
+  }
+
+  std::vector<BoltBatch> batchUpdateTemporalTrackers(
+      const MapInputBatch& inputs) {
+    return featurizeInputBatchImpl(lineInputBatchFromMapInputBatch(inputs),
+                                   /* should_update_history= */ true);
   }
 
   void resetTemporalTrackers() { _context->reset(); }
 
-  std::vector<dataset::Explanation> explain(
+  template <typename InputType>
+  std::vector<dataset::Explanation> explainImpl(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio,
-      const std::string& sample) final {
+      const std::vector<float>& gradients_ratio, const InputType& sample) {
     verifyProcessorsAreInitialized();
 
-    auto input_row =
-        dataset::ProcessorUtils::parseCsvRow(sample, _config->delimiter);
+    auto input_row = toVectorOfStringViews(sample);
     auto result = bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, input_row,
         _unlabeled_non_updating_processor);
@@ -154,6 +176,19 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     }
 
     return result;
+  }
+
+  std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio,
+      const LineInput& sample) final {
+    return explainImpl(gradients_indices, gradients_ratio, sample);
+  }
+
+  std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio, const MapInput& sample) final {
+    return explainImpl(gradients_indices, gradients_ratio, sample);
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {
@@ -216,6 +251,12 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     }
   }
 
+  void verifyColumnNumberMapIsInitialized() {
+    if (!_column_number_map) {
+      throw std::invalid_argument("Attempted inference before training.");
+    }
+  }
+
   std::vector<dataset::BlockPtr> buildInputBlocks(
       const ColumnNumberMap& column_numbers, bool should_update_history) {
     std::vector<dataset::BlockPtr> blocks =
@@ -235,6 +276,44 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   dataset::GenericBatchProcessor& getProcessor(bool should_update_history) {
     return should_update_history ? *_labeled_history_updating_processor
                                  : *_unlabeled_non_updating_processor;
+  }
+
+  std::vector<std::string_view> toVectorOfStringViews(const LineInput& input) {
+    return dataset::ProcessorUtils::parseCsvRow(input, _config->delimiter);
+  }
+
+  std::vector<std::string_view> toVectorOfStringViews(const MapInput& input) {
+    verifyColumnNumberMapIsInitialized();
+    std::vector<std::string_view> string_view_input(
+        _column_number_map->numCols());
+    for (const auto& [col_name, val] : input) {
+      string_view_input[_column_number_map->at(col_name)] =
+          std::string_view(val.data(), val.length());
+    }
+    return string_view_input;
+  }
+
+  std::vector<std::string> lineInputBatchFromMapInputBatch(
+      const MapInputBatch& input_maps) {
+    std::vector<std::string> string_batch(input_maps.size());
+    for (uint32_t i = 0; i < input_maps.size(); i++) {
+      auto vals = toVectorOfStringViews(input_maps[i]);
+      string_batch[i] = concatenateWithDelimiter(vals, _config->delimiter);
+    }
+    return string_batch;
+  }
+
+  static std::string concatenateWithDelimiter(
+      const std::vector<std::string_view>& substrings, char delimiter) {
+    if (substrings.empty()) {
+      return "";
+    }
+    std::stringstream s;
+    s << substrings[0];
+    std::for_each(
+        substrings.begin() + 1, substrings.end(),
+        [&](const std::string_view& substr) { s << delimiter << substr; });
+    return s.str();
   }
 
   OracleConfigPtr _config;

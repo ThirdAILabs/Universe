@@ -15,6 +15,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::automl::deployment {
@@ -113,7 +114,8 @@ class ModelPipeline {
     return output;
   }
 
-  BoltVector predict(const std::string& sample, bool use_sparse_inference) {
+  template <typename InputType>
+  BoltVector predict(const InputType& sample, bool use_sparse_inference) {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
     BoltVector output =
@@ -129,7 +131,8 @@ class ModelPipeline {
     return output;
   }
 
-  BoltBatch predictBatch(const std::vector<std::string>& samples,
+  template <typename InputBatchType>
+  BoltBatch predictBatch(const InputBatchType& samples,
                          bool use_sparse_inference) {
     std::vector<BoltBatch> input_batches =
         _dataset_factory->featurizeInputBatch(samples);
@@ -149,8 +152,9 @@ class ModelPipeline {
     return outputs;
   }
 
+  template <typename InputType>
   std::vector<dataset::Explanation> explain(
-      const std::string& sample,
+      const InputType& sample,
       std::optional<uint32_t> target_label = std::nullopt) {
     auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
         /* input_data= */ {_dataset_factory->featurizeInput(sample)},

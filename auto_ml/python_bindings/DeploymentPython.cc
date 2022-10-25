@@ -6,6 +6,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -224,16 +225,17 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
            py::arg("predict_config") = std::nullopt,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER)
-      .def("predict", &predictWrapper, py::arg("input_sample"),
+      .def("predict", &predictWrapper<LineInput>, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT)
-      .def("explain", &ModelPipeline::explain, py::arg("input_sample"),
-           py::arg("target_class") = std::nullopt, docs::MODEL_PIPELINE_EXPLAIN)
+      .def("explain", &ModelPipeline::explain<LineInput>,
+           py::arg("input_sample"), py::arg("target_class") = std::nullopt,
+           docs::MODEL_PIPELINE_EXPLAIN)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_TOKENS)
-      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"),
-           py::arg("use_sparse_inference") = false,
+      .def("predict_batch", &predictBatchWrapper<LineInputBatch>,
+           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
            py::arg("filename"))
@@ -257,10 +259,12 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("reset", &OracleDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
-           &OracleDatasetFactory::updateTemporalTrackers, py::arg("update"),
-           docs::TEMPORAL_CONTEXT_UPDATE)
+           py::overload_cast<const LineInput&>(
+               &OracleDatasetFactory::updateTemporalTrackers),
+           py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
       .def("batch_update_temporal_trackers",
-           &OracleDatasetFactory::batchUpdateTemporalTrackers,
+           py::overload_cast<const LineInputBatch&>(
+               &OracleDatasetFactory::batchUpdateTemporalTrackers),
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
 }
 
@@ -378,9 +382,10 @@ py::object evaluateOnFileWrapper(
                                      predict_config);
 }
 
-py::object predictWrapper(ModelPipeline& model, const std::string& sample,
+template <typename InputType>
+py::object predictWrapper(ModelPipeline& model, const InputType& sample,
                           bool use_sparse_inference) {
-  BoltVector output = model.predict(sample, use_sparse_inference);
+  BoltVector output = model.predict<InputType>(sample, use_sparse_inference);
   return convertBoltVectorToNumpy(output);
 }
 
@@ -397,10 +402,12 @@ py::object predictTokensWrapper(ModelPipeline& model,
   return predictWrapper(model, sentence.str(), use_sparse_inference);
 }
 
+template <typename InputBatchType>
 py::object predictBatchWrapper(ModelPipeline& model,
-                               const std::vector<std::string>& samples,
+                               const InputBatchType& samples,
                                bool use_sparse_inference) {
-  BoltBatch outputs = model.predictBatch(samples, use_sparse_inference);
+  BoltBatch outputs =
+      model.predictBatch<InputBatchType>(samples, use_sparse_inference);
 
   return convertBoltBatchToNumpy(outputs);
 }
