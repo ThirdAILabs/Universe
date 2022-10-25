@@ -28,14 +28,16 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function,
     : _hash_function(std::move(function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
-      _hashtable(new hashtable::VectorHashTable<LABEL_T, true>(
-          _num_tables, reservoir_size, _range)) {}
+      _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(
+          _num_tables, reservoir_size, _range)) {
+  thirdai::licensing::LicenseWrapper::checkLicense();
+}
 
 template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
     const dataset::InMemoryDataset<BoltBatch>& dataset) {
-  for (uint64_t batch_id = 0; batch_id < dataset.numBatches(); batch_id++) {
-    addBatch(dataset[batch_id]);
+  for (const auto& batch : dataset) {
+    addBatch(batch);
   }
 }
 
@@ -119,7 +121,7 @@ std::vector<LABEL_T> Flash<LABEL_T>::getTopKUsingPriorityQueue(
   std::sort(query_result.begin(), query_result.end());
 
   // To make this a max queue, we insert all element counts multiplied by -1
-  std::priority_queue<std::pair<int32_t, uint64_t>> top_k_queue;
+  std::priority_queue<std::pair<int32_t, LABEL_T>> top_k_queue;
   if (!query_result.empty()) {
     uint64_t current_element = query_result.at(0);
     uint32_t current_element_count = 0;

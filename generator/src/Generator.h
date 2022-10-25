@@ -31,10 +31,9 @@ class QueryCandidateGeneratorConfig {
  public:
   QueryCandidateGeneratorConfig(std::string hash_function, uint32_t num_tables,
                                 uint32_t hashes_per_table, uint32_t input_dim,
-                                uint32_t top_k, bool use_char_trigram = true,
-                                bool use_char_four_gram = true,
+                                uint32_t top_k, std::vector<uint32_t> n_grams,
                                 bool has_incorrect_queries = false,
-                                uint32_t batch_size = 100,
+                                uint32_t batch_size = 10000,
                                 uint32_t range = 1000000)
       : _hash_function(std::move(hash_function)),
         _num_tables(num_tables),
@@ -43,20 +42,17 @@ class QueryCandidateGeneratorConfig {
         _top_k(top_k),
         _batch_size(batch_size),
         _range(range),
-        _use_char_trigram(use_char_trigram),
-        _use_char_four_gram(use_char_four_gram),
+        _n_grams(std::move(n_grams)),
         _has_incorrect_queries(has_incorrect_queries) {}
 
   // overloaded operator mainly for testing
-  auto operator==(QueryCandidateGeneratorConfig* rhs) const {
+  bool operator==(QueryCandidateGeneratorConfig* rhs) const {
     return this->_hash_function == rhs->_hash_function &&
            this->_num_tables == rhs->_num_tables &&
            this->_hashes_per_table == rhs->_hashes_per_table &&
            this->_input_dim == rhs->_input_dim && this->_top_k == rhs->_top_k &&
            this->_batch_size == rhs->_batch_size &&
-           this->_range == rhs->_range &&
-           this->_use_char_trigram == rhs->_use_char_trigram &&
-           this->_use_char_four_gram == rhs->_use_char_four_gram &&
+           this->_range == rhs->_range && this->_n_grams == rhs->_n_grams &&
            this->_has_incorrect_queries == rhs->_has_incorrect_queries;
   }
 
@@ -97,14 +93,10 @@ class QueryCandidateGeneratorConfig {
     throw exceptions::NotImplemented("Unsupported Hash Function");
   }
 
-  constexpr uint32_t batch_size() const { return _batch_size; }
-  constexpr uint32_t top_k() const { return _top_k; }
-  constexpr bool use_char_trigram() const { return _use_char_trigram; }
-  constexpr bool use_char_fourgram() const { return _use_char_four_gram; }
-
-  constexpr bool has_incorrect_queries() const {
-    return _has_incorrect_queries;
-  }
+  constexpr uint32_t batchSize() const { return _batch_size; }
+  constexpr uint32_t topK() const { return _top_k; }
+  constexpr bool hasIncorrectQueries() const { return _has_incorrect_queries; }
+  std::vector<uint32_t> nGrams() const { return _n_grams; }
 
  private:
   std::string _hash_function;
@@ -115,9 +107,7 @@ class QueryCandidateGeneratorConfig {
   uint32_t _top_k;
   uint32_t _batch_size;
   uint32_t _range;
-
-  bool _use_char_trigram;
-  bool _use_char_four_gram;
+  std::vector<uint32_t> _n_grams;
 
   // Identifies if the dataset contains pairs of correct and incorrect queries
   bool _has_incorrect_queries;
@@ -129,16 +119,14 @@ class QueryCandidateGeneratorConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_hash_function, _num_tables, _hashes_per_table, _input_dim, _top_k,
-            _batch_size, _range, _use_char_trigram, _use_char_four_gram,
-            _has_incorrect_queries);
+            _batch_size, _range, _n_grams, _has_incorrect_queries);
   }
 };
 
 using QueryCandidateGeneratorConfigPtr =
     std::shared_ptr<QueryCandidateGeneratorConfig>;
 
-class QueryCandidateGenerator
-    : public std::enable_shared_from_this<QueryCandidateGenerator> {
+class QueryCandidateGenerator {
  public:
   static QueryCandidateGenerator make(
       QueryCandidateGeneratorConfigPtr flash_QueryCandidateGenerator_config) {
@@ -146,8 +134,7 @@ class QueryCandidateGenerator
         std::move(flash_QueryCandidateGenerator_config));
   }
 
-  static QueryCandidateGenerator
-  buildQueryCandidateGeneratorFromSerializedConfig(
+  static QueryCandidateGenerator buildGeneratorFromSerializedConfig(
       const std::string& config_file_name) {
     auto flash_QueryCandidateGenerator_config =
         QueryCandidateGeneratorConfig::load(config_file_name);
@@ -156,7 +143,7 @@ class QueryCandidateGenerator
   }
 
   /**
-   * @brief Builds a Flash object by reading from a CSV file
+   * @brief Builds a Flash index by reading from a CSV file
    * containing queries.
    * If the `has_incorrect_queries` flag is set in the
    * QueryCandidateGeneratorConfig, the input CSV file is expected to contain
@@ -164,19 +151,17 @@ class QueryCandidateGenerator
    * Otherwise, the file is expected to have only correct queries in one column.
    *
    * @param file_name
-   * @param has_incorrect_queries
    */
-  void buildFlashQueryCandidateGenerator(const std::string& file_name) {
-    buildIDQueryMapping(
-        file_name,
-        _flash_generator_config->has_incorrect_queries());
+  void buildFlashIndex(const std::string& file_name) {
+    buildIDToQueryMapping(file_name,
+                          _query_generator_config->hasIncorrectQueries());
 
     auto data_loader = getUnlabeledDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
 
-    _flash_generator = std::make_unique<Flash<uint32_t>>(
-        _flash_generator_config->getHashFunction());
-    _flash_generator->addDataset(*data);
+    _flash_index = std::make_unique<Flash<uint32_t>>(
+        _query_generator_config->getHashFunction());
+    _flash_index->addDataset(*data);
   }
 
   /**
@@ -199,16 +184,14 @@ class QueryCandidateGenerator
       auto featurized_query_vector = featurizeSingleQuery(queries[query_index]);
 
       std::vector<std::vector<uint32_t>> suggested_query_ids =
-          _flash_generator->queryBatch(
+          _flash_index->queryBatch(
               /* batch = */ BoltBatch(std::move(featurized_query_vector)),
-              /* top_k = */ _flash_generator_config->top_k(),
+              /* top_k = */ _query_generator_config->topK(),
               /* pad_zeros = */ true);
 
-      std::vector<std::string> topk_queries(
-          _flash_generator_config->top_k());
+      std::vector<std::string> topk_queries(_query_generator_config->topK());
       for (uint32_t query_id_index = 0;
-           query_id_index < _flash_generator_config->top_k();
-           query_id_index++) {
+           query_id_index < _query_generator_config->topK(); query_id_index++) {
         auto suggested_query =
             _ids_to_queries_map.at(suggested_query_ids[0][query_id_index]);
         topk_queries[query_id_index] = std::move(suggested_query);
@@ -222,37 +205,30 @@ class QueryCandidateGenerator
  private:
   explicit QueryCandidateGenerator(
       QueryCandidateGeneratorConfigPtr flash_generator_config)
-      : _flash_generator_config(
-            std::move(flash_generator_config)),
+      : _query_generator_config(std::move(flash_generator_config)),
         _dimension_for_encodings(
             dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM),
-        _input_blocks(constructInputBlocks(
-            _flash_generator_config->use_char_trigram(),
-            _flash_generator_config->use_char_fourgram())),
+        _input_blocks(constructInputBlocks(_query_generator_config->nGrams())),
         _batch_processor(std::make_shared<dataset::GenericBatchProcessor>(
             _input_blocks, std::vector<dataset::BlockPtr>{})) {}
 
   std::vector<dataset::BlockPtr> constructInputBlocks(
-      bool use_char_trigram, bool use_char_four_gram) const {
+      const std::vector<uint32_t>& n_grams) const {
     uint8_t correct_query_column_index = 0;
 
-    std::vector<dataset::BlockPtr> input_blocks;
+    std::vector<dataset::BlockPtr> input_blocks(n_grams.size());
 
-    if (use_char_trigram) {
-      input_blocks.push_back(dataset::CharKGramTextBlock::make(
-          /* col = */ correct_query_column_index, /* k = */ 3,
-          /* dim = */ _dimension_for_encodings));
-    }
-    if (use_char_four_gram) {
-      input_blocks.push_back(dataset::CharKGramTextBlock::make(
-          /* col = */ correct_query_column_index, /* k = */ 4,
+    for (auto n_gram : n_grams) {
+      input_blocks.emplace_back(dataset::CharKGramTextBlock::make(
+          /* col = */ correct_query_column_index,
+          /* k = */ n_gram,
           /* dim = */ _dimension_for_encodings));
     }
 
     return input_blocks;
   }
 
-  std::unordered_map<uint32_t, std::string> getIDsToQueryMapping() const {
+  std::unordered_map<uint32_t, std::string> getIDToQueryMapping() const {
     return _ids_to_queries_map;
   }
   /**
@@ -262,18 +238,24 @@ class QueryCandidateGenerator
    *
    * @param file_name: File containing queries (Expected to be a CSV file).
    */
-  void buildIDQueryMapping(const std::string& file_name,
-                           bool has_incorrect_queries) {
+  void buildIDToQueryMapping(const std::string& file_name,
+                             bool has_incorrect_queries) {
     try {
-      std::ifstream input_file_stream(file_name, std::ios::in);
+      std::ifstream input_file_stream =
+          dataset::SafeFileIO::ifstream(file_name, std::ios::in);
 
       uint32_t ids_counter = 0;
       std::string row;
 
-      while (std::getline(input_file_stream, row, '\n')) {
+      while (std::getline(input_file_stream, row)) {
         if (has_incorrect_queries) {
           auto parsed_row = dataset::ProcessorUtils::parseCsvRow(row, ',');
-          _ids_to_queries_map[ids_counter] = std::string(parsed_row[0]);
+          auto correct_query = std::string(parsed_row[0]);
+
+          if (!_query_to_ids_map.count(correct_query)) {
+            _ids_to_queries_map[ids_counter] = correct_query;
+            _query_to_ids_map[correct_query] = ids_counter;
+          }
         } else {
           _ids_to_queries_map[ids_counter] = row;
         }
@@ -287,8 +269,6 @@ class QueryCandidateGenerator
   }
 
   std::vector<BoltVector> featurizeSingleQuery(const std::string& query) const {
-    // std::vector<dataset::BlockPtr> blocks = _input_blocks;
-
     BoltVector output_vector;
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
@@ -302,17 +282,16 @@ class QueryCandidateGenerator
   std::unique_ptr<dataset::StreamingGenericDatasetLoader>
   getUnlabeledDatasetLoader(const std::string& file_name) {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
-        file_name, _flash_generator_config->batch_size());
+        file_name, _query_generator_config->batchSize());
 
     return std::make_unique<dataset::StreamingGenericDatasetLoader>(
         file_data_loader, _batch_processor);
   }
 
-  std::shared_ptr<QueryCandidateGeneratorConfig>
-      _flash_generator_config;
+  std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;
   uint32_t _dimension_for_encodings;
 
-  std::unique_ptr<Flash<uint32_t>> _flash_generator;
+  std::unique_ptr<Flash<uint32_t>> _flash_index;
 
   std::vector<dataset::BlockPtr> _input_blocks;
   std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
@@ -322,15 +301,16 @@ class QueryCandidateGenerator
   // CSV file is assigned a unique ID in an ascending order.
   std::unordered_map<uint32_t, std::string> _ids_to_queries_map;
 
+  std::unordered_map<std::string, uint32_t> _query_to_ids_map;
+
   // private constructor for cereal
   QueryCandidateGenerator() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_flash_generator_config, _dimension_for_encodings,
-            _flash_generator, _input_blocks, _batch_processor,
-            _ids_to_queries_map);
+    archive(_query_generator_config, _dimension_for_encodings, _flash_index,
+            _input_blocks, _batch_processor, _ids_to_queries_map);
   }
 };  // namespace thirdai::bolt
 

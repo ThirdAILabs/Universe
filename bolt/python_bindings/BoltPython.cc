@@ -685,8 +685,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
            )pbdoc");
 
-  py::class_<bolt::GeneratorConfig, bolt::GeneratorConfigPtr>(bolt_submodule,
-                                                              "GeneratorConfig")
+  py::class_<bolt::QueryCandidateGeneratorConfig,
+             bolt::QueryCandidateGeneratorConfigPtr>(bolt_submodule,
+                                                     "GeneratorConfig")
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t, uint32_t, bool,
                     bool, bool, uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
@@ -729,7 +730,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 batch_size=100,
             )
             )pbdoc")
-      .def("save", &bolt::GeneratorConfig::save, py::arg("file_name"),
+      .def("save", &bolt::QueryCandidateGeneratorConfig::save,
+           py::arg("file_name"),
            R"pbdoc(
     Saves an generator configuration object at the specified file path. 
     This can be used to provide a flash generator architecture to customers.
@@ -742,7 +744,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         None
 
             )pbdoc")
-      .def_static("load", &bolt::GeneratorConfig::load,
+      .def_static("load", &bolt::QueryCandidateGeneratorConfig::load,
                   py::arg("config_file_name"),
                   R"pbdoc(
     Loads an generator config object from a specific file location. 
@@ -755,9 +757,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
             )pbdoc");
 
-  py::class_<bolt::Generator, std::shared_ptr<bolt::Generator>>(bolt_submodule,
-                                                                "Generator")
-      .def(py::init(&bolt::Generator::buildGeneratorFromSerializedConfig),
+  py::class_<bolt::QueryCandidateGeneratorConfig,
+             QueryCandidateGeneratorConfigPtr>(bolt_submodule, "Generator")
+      .def(py::init(&bolt::QueryCandidateGenerator::
+                        buildGeneratorFromSerializedConfig),
            py::arg("config_file_name"),
            R"pbdoc(
     Initializes an Generator object.
@@ -777,7 +780,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
 
            )pbdoc")
-      .def("train", &bolt::Generator::buildFlashGenerator, py::arg("file_name"),
+      .def("train",
+           &bolt::QueryCandidateGenerator::buildFlashQueryCandidateGenerator,
+           py::arg("file_name"),
            R"pbdoc(
     Constructs a flash object by reading from a CSV file. 
     If `has_incorrect_queries` is set in GeneratorConfig, the input CSV file is 
@@ -799,7 +804,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> generator.train(file_name=query_file_name)
 
            )pbdoc")
-      .def("generate", &bolt::Generator::queryFromList, py::arg("queries"),
+      .def("generate", &bolt::QueryCandidateGenerator::queryFromList,
+           py::arg("queries"),
            R"pbdoc(
     Generates a list of correct candidate queries for each of the the given 
     queries in the list. 

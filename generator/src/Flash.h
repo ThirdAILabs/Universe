@@ -26,20 +26,24 @@ class Flash {
    * may have to mod it and change the range, or do that in the hashfunction
    * implementation).
    **/
-  explicit Flash(std::shared_ptr<hashing::HashFunction> function);
+  explicit Flash(std::shared_ptr<hashing::HashFunction> hash_function);
 
   /**
    * This is the same as the single argument constructor, except the supporting
    * hash table has a max reservoir size.
    **/
-  Flash(std::shared_ptr<hashing::HashFunction> function,
+  Flash(std::shared_ptr<hashing::HashFunction> hash_function,
         uint32_t reservoir_size);
 
-  /* Constructor called when creating temporary Flash objects to serialize
-   * into */
+  /**
+   * Constructor called when creating temporary Flash objects to serialize
+   * into
+   */
   Flash<LABEL_T>() {}
 
-  /* delete copy constructor and assignment operator */
+  /**
+   * Delete copy constructor and assignment operator
+   */
   Flash& operator=(Flash&& flash_index) = delete;
   Flash(const Flash& flash_index) = delete;
 
@@ -52,7 +56,9 @@ class Flash {
 
   void addDataset(dataset::StreamingDataset<BoltBatch>& dataset);
 
-  /** Insert this batch into the Flash data structure. */
+  /**
+   * Insert this batch into the Flash data structure.
+   */
   void addBatch(const BoltBatch& batch);
 
   /**
@@ -71,7 +77,7 @@ class Flash {
   }
 
   /**
-   * Returns a vector of hashes for the input batch
+   * Returns a vector of concatenated hashes for the input batch
    */
   std::vector<uint32_t> hashBatch(const BoltBatch& batch) const;
 
@@ -84,7 +90,9 @@ class Flash {
   std::vector<LABEL_T> getTopKUsingPriorityQueue(
       std::vector<LABEL_T>& query_result, uint32_t top_k) const;
 
-  /** Makes sure the ids are within range for a batch with sequential ids */
+  /**
+   * Makes sure the ids are within range for a batch with sequential ids
+   */
   void verifyBatchSequentialIds(const BoltBatch& batch) const;
 
   /**
@@ -105,7 +113,6 @@ class Flash {
 
   std::shared_ptr<hashtable::HashTable<LABEL_T>> _hashtable;
 
-  // Handle serialization
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
