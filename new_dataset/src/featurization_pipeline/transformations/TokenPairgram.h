@@ -52,7 +52,7 @@ class TokenPairgram : public Transformation {
     }
 
     auto output_column =
-        std::make_shared<VectorIndexValueArrayColumn>(std::move(column_values));
+        std::make_shared<VectorIndexValueArrayColumn>(std::move(column_values), _output_range);
     column_map.setColumn(_output_column_name, output_column);
   }
 
