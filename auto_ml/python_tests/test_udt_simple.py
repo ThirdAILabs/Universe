@@ -1,6 +1,5 @@
 from random import sample
 import pytest
-from sqlalchemy import true
 from thirdai import bolt, deployment
 
 pytestmark = [pytest.mark.unit]
@@ -23,8 +22,13 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
             "0,0,2022-08-29,2",
             "1,0,2022-08-30,2",
             "1,1,2022-08-31,1",
-            # if integer_label = false, movieId 4 > n_unique_classes but
-            # that is fine because it's treated as an arbitrary string
+            # if integer_label = false, we build a model that accepts
+            # arbitrary string labels; the model does not expect integer
+            # labels in the range [0, n_labels - 1]. We test this by
+            # checking that the model does not throw an error when given
+            # a label outside of this range. Since n_labels = 3, we set
+            # movieId = 4 in the last sample and expect that the model
+            # trains just fine.
             ("1,2,2022-09-01,3" if integer_label else "1,4,2022-09-01,3"),
         ],
     )
@@ -34,8 +38,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         [
             "userId,movieId,timestamp,hoursWatched",
             "0,1,2022-08-31,5",
-            # if integer_label = false, userId 4 > n_unique_classes but
-            # that is fine because it's treated as an arbitrary string
+            # See above comment about the last line of the mock train file.
             ("1,0,2022-09-01,0.5" if integer_label else "4,0,2022-09-01,0.5"),
         ],
     )
@@ -81,7 +84,7 @@ def batch_update():
     return [single_update(), single_update(), single_update()]
 
 
-def assert_explanations_equal(explanations_1, explanations_2, assert_equal=True):
+def compare_explanations(explanations_1, explanations_2, assert_mode):
     all_equal = len(explanations_1) == len(explanations_2)
     for exp_1, exp_2 in zip(explanations_1, explanations_2):
         all_equal = all_equal and (
@@ -93,12 +96,13 @@ def assert_explanations_equal(explanations_1, explanations_2, assert_equal=True)
 
     # If we want to assert equality, we want everything to be equal
     # Otherwise, we want something to be inequal.
-    assert (assert_equal) == all_equal
+    assert_equal = assert_mode == "equal"
+    assert assert_equal == all_equal
 
 
 def test_save_load():
     save_file = "savefile.bolt"
-    model = make_simple_trained_model()
+    model = make_simple_trained_model(integer_label=False)
     model.save(save_file)
     saved_model = deployment.UniversalDeepTransformer.load(save_file)
 
@@ -119,11 +123,11 @@ def test_save_load():
 
     explain_res = model.explain(single_sample())
     saved_explain_res = saved_model.explain(single_sample())
-    assert_explanations_equal(explain_res, saved_explain_res)
+    compare_explanations(explain_res, saved_explain_res, assert_mode="equal")
 
 
 def test_multiple_predict_returns_same_results():
-    model = make_simple_trained_model()
+    model = make_simple_trained_model(integer_label=False)
     first = model.predict(single_sample())
     second = model.predict(single_sample())
     assert (first == second).all()
@@ -134,7 +138,7 @@ def test_multiple_predict_returns_same_results():
 
 
 def test_index_changes_predict_result():
-    model = make_simple_trained_model()
+    model = make_simple_trained_model(integer_label=False)
     first = model.predict(single_sample())
     model.index(single_update())
     second = model.predict(single_sample())
@@ -154,7 +158,7 @@ def test_embedding_representation_returns_correct_dimension():
 
 
 def test_explanations_total_percentage():
-    model = make_simple_trained_model()
+    model = make_simple_trained_model(integer_label=False)
     explanations = model.explain(single_sample())
     total_percentage = 0
     for explanation in explanations:
@@ -163,41 +167,46 @@ def test_explanations_total_percentage():
     assert total_percentage > 99.99
 
 
-def test_explanations_target_label_format():
-    model = make_simple_trained_model()
+def test_different_explanation_target_returns_different_results():
+    model = make_simple_trained_model(integer_label=False)
 
     explain_target_1 = model.explain(single_sample(), target_class="1")
     explain_target_2 = model.explain(single_sample(), target_class="4")
-    assert_explanations_equal(explain_target_1, explain_target_2, assert_equal=False)
+    compare_explanations(explain_target_1, explain_target_2, assert_mode="not_equal")
 
+
+def test_explanations_target_label_format():
+    model = make_simple_trained_model(integer_label=False)
+    # Call this method to make sure it does not throw an error
+    model.explain(single_sample(), target_class="1")
     with pytest.raises(ValueError, match=r"Received an integer label*"):
         model.explain(single_sample(), target_class=1)
 
     model = make_simple_trained_model(integer_label=True)
+    # Call this method to make sure it does not throw an error
+    model.explain(single_sample(), target_class=1)
     with pytest.raises(ValueError, match=r"Received a string label*"):
         model.explain(single_sample(), target_class="1")
 
 
 def test_neuron_id_to_target_class_map():
-    model = make_simple_trained_model()
+    model = make_simple_trained_model(integer_label=False)
     prediction = model.predict(single_sample())
-    neuron_id_to_target_class_map = model.neuron_id_to_target_class_map()
-    assert len(neuron_id_to_target_class_map) == len(prediction)
+    n_output_neurons = len(prediction)
 
-    # "0", "1", and "2" are the three possible labels in the
-    # mock train / eval dataset.
+    # "0", "1", and "4" are the three possible labels in the
+    # mock train / eval dataset when integer_label = False
     labels_seen = {"0": False, "1": False, "4": False}
 
-    for i in range(len(neuron_id_to_target_class_map)):
-        label = neuron_id_to_target_class_map[i]
+    for neuron_id in range(n_output_neurons):
+        label = model.class_name(neuron_id)
         labels_seen[label] = True
 
-    for seen in labels_seen.values():
-        assert seen
+    assert labels_seen.values().all()
 
 
 def test_reset_clears_history():
-    model = make_simple_trained_model()
+    model = make_simple_trained_model(integer_label=False)
     model.reset_temporal_trackers()
     first = model.predict(single_sample())
 

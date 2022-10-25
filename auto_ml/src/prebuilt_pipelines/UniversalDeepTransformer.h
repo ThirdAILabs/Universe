@@ -81,8 +81,8 @@ class UniversalDeepTransformer : public ModelPipeline {
     oracleDatasetFactory().batchUpdateTemporalTrackers(updates);
   }
 
-  auto neuronIdToTargetClassMap() const {
-    return oracleDatasetFactory().getIdToLabelMap();
+  auto className(uint32_t neuron_id) const {
+    return oracleDatasetFactory().className(neuron_id);
   }
 
   void save(const std::string& filename) {

@@ -140,10 +140,11 @@ class DatasetLoaderFactory {
 
   virtual uint32_t getLabelDim() = 0;
 
-  virtual std::vector<std::string> getIdToLabelMap() const {
+  virtual std::string className(uint32_t neuron_id) const {
+    (void)neuron_id;
     throw std::runtime_error(
-        "This model does not provide a mapping from ids to labels since it "
-        "only accepts integer labels; the ids and labels are equivalent.");
+        "This model cannot map ids to string labels since it assumes integer "
+        "labels; the ids and labels are equivalent.");
   }
 
   virtual ~DatasetLoaderFactory() = default;

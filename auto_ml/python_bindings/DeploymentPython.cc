@@ -283,8 +283,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN)
       .def("neuron_id_to_target_class_map",
-           &UniversalDeepTransformer::neuronIdToTargetClassMap,
-           docs::UDT_NEURON_ID_TO_TARGET_CLASS_MAP)
+           &UniversalDeepTransformer::className, py::arg("neuron_id"),
+           docs::UDT_CLASS_NAME)
       .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
            py::arg("filename"), py::arg("predict_config") = std::nullopt,
            docs::UDT_EVALUATE)

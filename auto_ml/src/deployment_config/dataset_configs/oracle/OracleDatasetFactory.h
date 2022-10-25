@@ -180,7 +180,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return _vocabs.at(_config->target)->getUid(label_str);
   }
 
-  std::vector<std::string> getIdToLabelMap() const final {
+  std::string className(uint32_t neuron_id) const final {
     if (!_vocabs.count(_config->target)) {
       throw std::invalid_argument(
           "Attempted to get id to label map before training.");
@@ -193,7 +193,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
           "target column has contiguous numerical ids; the ids and labels are "
           "equivalent.");
     }
-    return {_vocabs.at(_config->target)->getUidToStringMap()};
+    return _vocabs.at(_config->target)->getString(neuron_id);
   }
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(

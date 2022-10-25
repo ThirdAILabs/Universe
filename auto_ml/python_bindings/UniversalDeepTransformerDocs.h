@@ -147,20 +147,24 @@ Notes:
       prevent unwanted information from leaking into the training routine.
 )pbdoc";
 
-const char* const UDT_NEURON_ID_TO_TARGET_CLASS_MAP = R"pbdoc(
-Returns a mapping from neuron ids to target class names.
+const char* const UDT_CLASS_NAME = R"pbdoc(
+Returns the target class name associated with an output neuron ID.
 
 Args:
-    None
+    neuron_id (int): The index of the neuron in UDT's output layer. This is 
+        useful for mapping the activations returned by `evaluate()` and 
+        `predict()` back to class names.
 
 Returns:
-    List[str]:
-    A list of class names that acts as a mapping from neuron ids in the range
-    0 to num_neurons - 1 to target class names.
+    str:
+    The class names that corresponds to the given neuron_id.
 
 Example:
-    >>> id_to_movie_title = model.neuron_id_to_target_class_map()
-    >>> print(id_to_class[35])
+    >>> activations = model.predict(
+            input_sample={"user_id": "A33225", "timestamp": "2022-12-25", "special_event": "christmas"}
+        )
+    >>> top_recommendation = np.argmax(activations)
+    >>> model.class_name(top_recommendation)
     "Die Hard"
 )pbdoc";
 
