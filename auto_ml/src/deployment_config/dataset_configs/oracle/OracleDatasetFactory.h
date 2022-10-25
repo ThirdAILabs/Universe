@@ -257,12 +257,22 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     }
   }
 
+  void verifyColumnNumberMapIsInitialized() {
+    if (!_column_number_map) {
+      throw std::invalid_argument("Attempted inference before training.");
+    }
+  }
+
   std::vector<dataset::BlockPtr> buildInputBlocks(
       const ColumnNumberMap& column_numbers, bool should_update_history) {
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
             *_config, _temporal_relationships, column_numbers, _vocabs,
             _text_pairgram_word_limit);
+
+    if (_temporal_relationships.empty()) {
+      return blocks;
+    }
 
     auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
         *_config, _temporal_relationships, column_numbers, _vocabs, *_context,
@@ -276,6 +286,44 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   dataset::GenericBatchProcessor& getProcessor(bool should_update_history) {
     return should_update_history ? *_labeled_history_updating_processor
                                  : *_unlabeled_non_updating_processor;
+  }
+
+  std::vector<std::string_view> toVectorOfStringViews(const LineInput& input) {
+    return dataset::ProcessorUtils::parseCsvRow(input, _config->delimiter);
+  }
+
+  std::vector<std::string_view> toVectorOfStringViews(const MapInput& input) {
+    verifyColumnNumberMapIsInitialized();
+    std::vector<std::string_view> string_view_input(
+        _column_number_map->numCols());
+    for (const auto& [col_name, val] : input) {
+      string_view_input[_column_number_map->at(col_name)] =
+          std::string_view(val.data(), val.length());
+    }
+    return string_view_input;
+  }
+
+  std::vector<std::string> lineInputBatchFromMapInputBatch(
+      const MapInputBatch& input_maps) {
+    std::vector<std::string> string_batch(input_maps.size());
+    for (uint32_t i = 0; i < input_maps.size(); i++) {
+      auto vals = toVectorOfStringViews(input_maps[i]);
+      string_batch[i] = concatenateWithDelimiter(vals, _config->delimiter);
+    }
+    return string_batch;
+  }
+
+  static std::string concatenateWithDelimiter(
+      const std::vector<std::string_view>& substrings, char delimiter) {
+    if (substrings.empty()) {
+      return "";
+    }
+    std::stringstream s;
+    s << substrings[0];
+    std::for_each(
+        substrings.begin() + 1, substrings.end(),
+        [&](const std::string_view& substr) { s << delimiter << substr; });
+    return s.str();
   }
 
   std::vector<std::string_view> toVectorOfStringViews(const LineInput& input) {

@@ -36,21 +36,21 @@ py::object evaluateOnDataLoaderWrapper(
     const std::shared_ptr<dataset::DataLoader>& data_source,
     std::optional<bolt::PredictConfig>& predict_config);
 
+template <typename Model>
 py::object evaluateOnFileWrapper(
-    ModelPipeline& model, const std::string& filename,
+    Model& model, const std::string& filename,
     std::optional<bolt::PredictConfig>& predict_config);
 
-template <typename InputType>
-py::object predictWrapper(ModelPipeline& model, const InputType& sample,
+template <typename Model, typename InputType>
+py::object predictWrapper(Model& model, const InputType& sample,
                           bool use_sparse_inference);
 
 py::object predictTokensWrapper(ModelPipeline& model,
                                 const std::vector<uint32_t>& tokens,
                                 bool use_sparse_inference);
 
-template <typename InputBatchType>
-py::object predictBatchWrapper(ModelPipeline& model,
-                               const InputBatchType& samples,
+template <typename Model, typename InputBatchType>
+py::object predictBatchWrapper(Model& model, const InputBatchType& samples,
                                bool use_sparse_inference);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);

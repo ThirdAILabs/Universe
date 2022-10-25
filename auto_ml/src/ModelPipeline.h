@@ -195,6 +195,11 @@ class ModelPipeline {
 
   DatasetLoaderFactoryPtr getDataProcessor() const { return _dataset_factory; }
 
+ protected:
+  // Protected constructor for cereal.
+  // Protected so derived classes can also use it for serialization purposes.
+  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
+
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
@@ -277,15 +282,13 @@ class ModelPipeline {
     return max_index;
   }
 
-  // Private constructor for cereal.
-  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_dataset_factory, _model, _train_eval_config);
   }
 
+ protected:
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   TrainEvalParameters _train_eval_config;
