@@ -202,7 +202,8 @@ class ModelPipeline {
   DatasetLoaderFactoryPtr getDataProcessor() const { return _dataset_factory; }
 
  protected:
-  // Private constructor for cereal.
+  // Protected constructor for cereal.
+  // Protected so derived classes can also use it for serialization purposes.
   ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
 
  private:

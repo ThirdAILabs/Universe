@@ -164,7 +164,7 @@ def test_explanations_total_percentage():
     for explanation in explanations:
         total_percentage += abs(explanation.percentage_significance)
 
-    assert total_percentage > 99.99
+    assert total_percentage > 99.99 and total_percentage < 100.01
 
 
 def test_different_explanation_target_returns_different_results():
