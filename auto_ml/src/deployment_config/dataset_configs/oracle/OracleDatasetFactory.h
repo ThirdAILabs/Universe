@@ -46,18 +46,17 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         _parallel(parallel),
         _text_pairgram_word_limit(text_pairgram_word_limit) {
     ColumnNumberMap mock_column_number_map(_config->data_types);
-    auto mock_processor = makeLabeledProcessor(mock_column_number_map);
+    auto mock_processor = makeLabeledUpdatingProcessor(mock_column_number_map);
 
     _input_dim = mock_processor->getInputDim();
     _label_dim = mock_processor->getLabelDim();
   }
 
- public:
   static std::shared_ptr<OracleDatasetFactory> make(
       OracleConfigPtr config, bool parallel,
       uint32_t text_pairgram_word_limit) {
-    return std::shared_ptr<OracleDatasetFactory>(new OracleDatasetFactory(
-        std::move(config), parallel, text_pairgram_word_limit));
+    return std::make_shared<OracleDatasetFactory>(std::move(config), parallel,
+                                                  text_pairgram_word_limit);
   }
 
   DatasetLoaderPtr getLabeledDatasetLoader(
@@ -77,19 +76,21 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       throw std::invalid_argument("Column positions should not change.");
     }
 
-    if (!_labeled_batch_processor) {
-      _labeled_batch_processor = makeLabeledProcessor(*_column_number_map);
+    if (!_labeled_history_updating_processor) {
+      _labeled_history_updating_processor =
+          makeLabeledUpdatingProcessor(*_column_number_map);
     }
 
     // We initialize the inference batch processor here because we need the
     // column number map.
-    if (!_inference_batch_processor) {
-      _inference_batch_processor = makeInferenceProcessor(*_column_number_map);
+    if (!_unlabeled_non_updating_processor) {
+      _unlabeled_non_updating_processor =
+          makeUnlabeledNonUpdatingProcessor(*_column_number_map);
     }
 
-    return std::make_unique<GenericDatasetLoader>(data_loader,
-                                                  _labeled_batch_processor,
-                                                  /* shuffle= */ training);
+    return std::make_unique<GenericDatasetLoader>(
+        data_loader, _labeled_history_updating_processor,
+        /* shuffle= */ training);
   }
 
   template <typename InputType>
@@ -168,7 +169,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     auto input_row = toVectorOfStringViews(sample);
     auto result = bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, input_row,
-        _inference_batch_processor);
+        _unlabeled_non_updating_processor);
 
     for (auto& response : result) {
       response.column_name = _column_number_to_name[response.column_number];
@@ -197,7 +198,12 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   uint32_t getLabelDim() final { return _label_dim; }
 
  private:
-  dataset::GenericBatchProcessorPtr makeLabeledProcessor(
+  /**
+   * The labeled updating processor is used for training and evaluation, which
+   * automatically updates the temporal context, as well as for manually
+   * updating the temporal context.
+   */
+  dataset::GenericBatchProcessorPtr makeLabeledUpdatingProcessor(
       const ColumnNumberMap& column_number_map) {
     auto target_type = _config->data_types.at(_config->target);
     if (!target_type.isCategorical()) {
@@ -220,7 +226,15 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return processor;
   }
 
-  dataset::GenericBatchProcessorPtr makeInferenceProcessor(
+  /**
+   * The Unlabeled non-updating processor is used for inference and
+   * explanations. These processes should not update the history because the
+   * tracked variable is often unavailable during inference. E.g. If we track
+   * the movies watched by a user to recommend the next movie to watch, the true
+   * movie that he ends up watching is not available during inference. Thus, we
+   * should not update the history.
+   */
+  dataset::GenericBatchProcessorPtr makeUnlabeledNonUpdatingProcessor(
       const ColumnNumberMap& column_number_map) {
     auto processor = dataset::GenericBatchProcessor::make(
         buildInputBlocks(/* column_numbers= */ column_number_map,
@@ -231,7 +245,14 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   void verifyProcessorsAreInitialized() {
-    if (!_inference_batch_processor || !_labeled_batch_processor) {
+    if (!_unlabeled_non_updating_processor ||
+        !_labeled_history_updating_processor) {
+      throw std::invalid_argument("Attempted inference before training.");
+    }
+  }
+
+  void verifyColumnNumberMapIsInitialized() {
+    if (!_column_number_map) {
       throw std::invalid_argument("Attempted inference before training.");
     }
   }
@@ -263,8 +284,46 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   dataset::GenericBatchProcessor& getProcessor(bool should_update_history) {
-    return should_update_history ? *_labeled_batch_processor
-                                 : *_inference_batch_processor;
+    return should_update_history ? *_labeled_history_updating_processor
+                                 : *_unlabeled_non_updating_processor;
+  }
+
+  std::vector<std::string_view> toVectorOfStringViews(const LineInput& input) {
+    return dataset::ProcessorUtils::parseCsvRow(input, _config->delimiter);
+  }
+
+  std::vector<std::string_view> toVectorOfStringViews(const MapInput& input) {
+    verifyColumnNumberMapIsInitialized();
+    std::vector<std::string_view> string_view_input(
+        _column_number_map->numCols());
+    for (const auto& [col_name, val] : input) {
+      string_view_input[_column_number_map->at(col_name)] =
+          std::string_view(val.data(), val.length());
+    }
+    return string_view_input;
+  }
+
+  std::vector<std::string> lineInputBatchFromMapInputBatch(
+      const MapInputBatch& input_maps) {
+    std::vector<std::string> string_batch(input_maps.size());
+    for (uint32_t i = 0; i < input_maps.size(); i++) {
+      auto vals = toVectorOfStringViews(input_maps[i]);
+      string_batch[i] = concatenateWithDelimiter(vals, _config->delimiter);
+    }
+    return string_batch;
+  }
+
+  static std::string concatenateWithDelimiter(
+      const std::vector<std::string_view>& substrings, char delimiter) {
+    if (substrings.empty()) {
+      return "";
+    }
+    std::stringstream s;
+    s << substrings[0];
+    std::for_each(
+        substrings.begin() + 1, substrings.end(),
+        [&](const std::string_view& substr) { s << delimiter << substr; });
+    return s.str();
   }
 
   std::vector<std::string_view> toVectorOfStringViews(const LineInput& input) {
@@ -314,8 +373,20 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   ColumnNumberMapPtr _column_number_map;
   std::unordered_map<uint32_t, std::string> _column_number_to_name;
 
-  dataset::GenericBatchProcessorPtr _labeled_batch_processor;
-  dataset::GenericBatchProcessorPtr _inference_batch_processor;
+  /*
+    The labeled history-updating processor is used for training and evaluation,
+    which automatically updates the temporal context, as well as for manually
+    updating the temporal context.
+
+    The Unlabeled non-updating processor is used for inference and explanations.
+    These processes should not update the history because the tracked variable
+    is often unavailable during inference. E.g. if we track the movies watched
+    by a user to recommend the next movie to watch, the true movie that he ends
+    up watching is not available during inference, so we should not update the
+    history.
+  */
+  dataset::GenericBatchProcessorPtr _labeled_history_updating_processor;
+  dataset::GenericBatchProcessorPtr _unlabeled_non_updating_processor;
 
   uint32_t _input_dim;
   uint32_t _label_dim;
@@ -330,9 +401,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
             _temporal_relationships, _context, _vocabs, _column_number_map,
-            _column_number_to_name, _labeled_batch_processor,
-            _inference_batch_processor, _input_dim, _label_dim, _parallel,
-            _text_pairgram_word_limit);
+            _column_number_to_name, _labeled_history_updating_processor,
+            _unlabeled_non_updating_processor, _input_dim, _label_dim,
+            _parallel, _text_pairgram_word_limit);
   }
 };
 
