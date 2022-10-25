@@ -185,8 +185,8 @@ Returns:
     each array will be (dataset_length, num_nonzeros_in_output). When the 
     `consecutive_integer_ids` argument of target column's categorical ColumnType
     object is set to False (as it is by default), UDT creates an internal 
-    mapping between target class names and neuron ids. This map is accessible 
-    by calling the get_neuron_id_to_label_map() method.
+    mapping between target class names and neuron ids. You can map neuron ids back to
+    target class names by calling the `class_names()` method.
 
 Examples:
     >>> predict_config = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
@@ -215,8 +215,8 @@ Returns:
     each array will be (num_nonzeros_in_output, ). When the 
     `consecutive_integer_ids` argument of target column's categorical ColumnType
     object is set to False (as it is by default), UDT creates an internal 
-    mapping between target class names and neuron ids. This map is accessible 
-    by calling the get_neuron_id_to_label_map() method.
+    mapping between target class names and neuron ids. You can map neuron ids back to
+    target class names by calling the `class_names()` method.
 
 Examples:
     >>> # Suppose we configure UDT as follows:
@@ -269,8 +269,8 @@ Returns:
     each array will be (batch_size, num_nonzeros_in_output). When the 
     `consecutive_integer_ids` argument of target column's categorical ColumnType
     object is set to False (as it is by default), UDT creates an internal 
-    mapping between target class names and neuron ids. This map is accessible 
-    by calling the get_neuron_id_to_label_map() method.
+    mapping between target class names and neuron ids. You can map neuron ids back to
+    target class names by calling the `class_names()` method.
 
 Examples:
     >>> activations = model.predict_batch([
