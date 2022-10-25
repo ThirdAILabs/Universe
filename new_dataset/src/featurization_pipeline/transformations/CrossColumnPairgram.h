@@ -26,9 +26,8 @@ class CrossColumnPairgram : public Transformation {
         _output_range(output_range) {}
 
   void apply(ColumnMap& column_map) final {
-    std::vector<std::shared_ptr<SparseValueColumn>> columns(
-        _input_column_names.size());
-    // we hash the name of each column here sowe can combine hashes later on
+    std::vector<SparseValueColumnPtr> columns;
+    // we hash the name of each column here so we can combine hashes later on
     // and have unique values across columns
     std::vector<uint32_t> column_name_hashes(_input_column_names.size());
     for (const auto& col_name : _input_column_names) {
@@ -45,12 +44,12 @@ class CrossColumnPairgram : public Transformation {
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::vector<uint32_t> salted_unigrams(columns.size());
       uint32_t col_num = 0;
-      for (const auto& column : columns) {
+      for (const SparseValueColumnPtr& column : columns) {
         // TODO(david): it may be unnecessary to hash again but technically the
         // original uint32_t values may not be from the correct universal hash
-        // distribution
+        // distribution. We cast the uint32_t to char* so we can use murmur hash
         const char* val_to_hash =
-            reinterpret_cast<const char*>(&(*column)[row_idx]);
+            reinterpret_cast<const char*>(&((*column)[row_idx]));
         uint32_t hashed_col_val =
             TextEncodingUtils::computeUnigram(val_to_hash, /* len = */ 4);
         // to avoid two identical values in different columns from having the
@@ -69,8 +68,8 @@ class CrossColumnPairgram : public Transformation {
       pairgrams[row_idx] = row_pairgrams;
     }
 
-    auto output_column =
-        std::make_shared<VectorSparseArrayColumn>(std::move(pairgrams));
+    auto output_column = std::make_shared<VectorSparseArrayColumn>(
+        std::move(pairgrams), _output_range);
     column_map.setColumn(_output_column_name, output_column);
   }
 
