@@ -18,11 +18,15 @@ namespace thirdai::bolt::sequential_classifier {
 
 struct CategoricalDataType {
   explicit CategoricalDataType(uint32_t n_unique_classes,
-                               std::optional<char> delimiter)
-      : n_unique_classes(n_unique_classes), delimiter(delimiter) {}
+                               std::optional<char> delimiter,
+                               bool contiguous_numerical_ids)
+      : n_unique_classes(n_unique_classes),
+        delimiter(delimiter),
+        contiguous_numerical_ids(contiguous_numerical_ids) {}
 
   uint32_t n_unique_classes;
   std::optional<char> delimiter;
+  bool contiguous_numerical_ids;
 
   CategoricalDataType() {}
 
@@ -30,7 +34,7 @@ struct CategoricalDataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(n_unique_classes, delimiter);
+    archive(n_unique_classes, delimiter, contiguous_numerical_ids);
   }
 };
 
@@ -81,8 +85,10 @@ class DataType {
   DataType() : _value(NoneDataType()) {}
 
   static auto categorical(uint32_t n_unique_classes,
-                          std::optional<char> delimiter = std::nullopt) {
-    return DataType(CategoricalDataType(n_unique_classes, delimiter));
+                          std::optional<char> delimiter = std::nullopt,
+                          bool contiguous_numerical_ids = false) {
+    return DataType(CategoricalDataType(n_unique_classes, delimiter,
+                                        contiguous_numerical_ids));
   }
 
   static auto text(std::optional<uint32_t> average_n_words = std::nullopt,

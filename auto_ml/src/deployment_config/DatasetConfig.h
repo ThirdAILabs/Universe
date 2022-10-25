@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 
 namespace thirdai::automl::deployment {
 
@@ -117,6 +118,9 @@ class DatasetLoaderFactory {
         "a list of strings instead.");
   };
 
+  virtual uint32_t labelToNeuronId(
+      std::variant<uint32_t, std::string> label) = 0;
+
   virtual std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const std::string& sample) = 0;
@@ -135,6 +139,13 @@ class DatasetLoaderFactory {
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 
   virtual uint32_t getLabelDim() = 0;
+
+  virtual std::string className(uint32_t neuron_id) const {
+    (void)neuron_id;
+    throw std::runtime_error(
+        "This model cannot map ids to string labels since it assumes integer "
+        "labels; the ids and labels are equivalent.");
+  }
 
   virtual ~DatasetLoaderFactory() = default;
 

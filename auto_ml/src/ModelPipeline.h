@@ -155,11 +155,17 @@ class ModelPipeline {
   template <typename InputType>
   std::vector<dataset::Explanation> explain(
       const InputType& sample,
-      std::optional<uint32_t> target_label = std::nullopt) {
+      std::optional<std::variant<uint32_t, std::string>> target_class =
+          std::nullopt) {
+    std::optional<uint32_t> target_neuron;
+    if (target_class) {
+      target_neuron = _dataset_factory->labelToNeuronId(*target_class);
+    }
+
     auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
         /* input_data= */ {_dataset_factory->featurizeInput(sample)},
         /* explain_prediction_using_highest_activation= */ true,
-        /* neuron_to_explain= */ target_label);
+        /* neuron_to_explain= */ target_neuron);
     return _dataset_factory->explain(gradients_indices, gradients_ratio,
                                      sample);
   }

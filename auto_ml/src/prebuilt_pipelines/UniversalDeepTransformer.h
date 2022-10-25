@@ -111,6 +111,10 @@ class UniversalDeepTransformer : public ModelPipeline {
     oracleDatasetFactory().batchUpdateTemporalTrackers(updates);
   }
 
+  auto className(uint32_t neuron_id) const {
+    return oracleDatasetFactory().className(neuron_id);
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -190,7 +194,7 @@ class UniversalDeepTransformer : public ModelPipeline {
         RESERVOIR_SIZE_STR + "').");
   }
 
-  OracleDatasetFactory& oracleDatasetFactory() {
+  OracleDatasetFactory& oracleDatasetFactory() const {
     /*
       It is safe to return an l-reference because the parent class stores a
       smart pointer. This ensures that the object is always in scope for as

@@ -145,6 +145,27 @@ Notes:
       temporal context.
 )pbdoc";
 
+const char* const UDT_CLASS_NAME = R"pbdoc(
+Returns the target class name associated with an output neuron ID.
+
+Args:
+    neuron_id (int): The index of the neuron in UDT's output layer. This is 
+        useful for mapping the activations returned by `evaluate()` and 
+        `predict()` back to class names.
+
+Returns:
+    str:
+    The class names that corresponds to the given neuron_id.
+
+Example:
+    >>> activations = model.predict(
+            input_sample={"user_id": "A33225", "timestamp": "2022-12-25", "special_event": "christmas"}
+        )
+    >>> top_recommendation = np.argmax(activations)
+    >>> model.class_name(top_recommendation)
+    "Die Hard"
+)pbdoc";
+
 const char* const UDT_EVALUATE = R"pbdoc(
 Evaluates the UniversalDeepTransformer (UDT) on the given dataset and returns a 
 numpy array of the activations.
@@ -159,7 +180,11 @@ Returns:
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (dataset_length, num_nonzeros_in_output).
+    each array will be (dataset_length, num_nonzeros_in_output). When the 
+    `consecutive_integer_ids` argument of target column's categorical ColumnType
+    object is set to False (as it is by default), UDT creates an internal 
+    mapping between target class names and neuron ids. You can map neuron ids back to
+    target class names by calling the `class_names()` method.
 
 Examples:
     >>> predict_config = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
@@ -184,7 +209,11 @@ Returns:
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (num_nonzeros_in_output, ).
+    each array will be (num_nonzeros_in_output, ). When the 
+    `consecutive_integer_ids` argument of target column's categorical ColumnType
+    object is set to False (as it is by default), UDT creates an internal 
+    mapping between target class names and neuron ids. You can map neuron ids back to
+    target class names by calling the `class_names()` method.
 
 Examples:
     >>> # Suppose we configure UDT as follows:
@@ -235,7 +264,11 @@ Returns:
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (batch_size, num_nonzeros_in_output).
+    each array will be (batch_size, num_nonzeros_in_output). When the 
+    `consecutive_integer_ids` argument of target column's categorical ColumnType
+    object is set to False (as it is by default), UDT creates an internal 
+    mapping between target class names and neuron ids. You can map neuron ids back to
+    target class names by calling the `class_names()` method.
 
 Examples:
     >>> activations = model.predict_batch([
@@ -429,7 +462,7 @@ Args:
     input_sample (Dict[str, str]): The input sample as a dictionary 
         where the keys are column names as specified in data_types and the "
         values are the respective column values. 
-    target (int): Optional. The desired target class id. If provided, the
+    target (str): Optional. The desired target class. If provided, the
         model will identify the columns that need to change for the model to 
         predict the target class.
 
