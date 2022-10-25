@@ -97,7 +97,7 @@ def verify_pairgrams(pairgram_dataset):
 
 
 def test_cross_column_pairgrams():
-    pairgram_dataset = cross_column_pairgram_dataset()
+    pairgram_dataset = sparse_bolt_dataset_to_numpy(cross_column_pairgram_dataset())
     verify_pairgrams(pairgram_dataset)
 
 
