@@ -94,20 +94,6 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         /* shuffle= */ training);
   }
 
-  template <typename InputType>
-  std::vector<BoltVector> featurizeInputImpl(const InputType& input,
-                                             bool should_update_history) {
-    verifyProcessorsAreInitialized();
-
-    BoltVector vector;
-    auto sample = toVectorOfStringViews(input);
-    if (auto exception = getProcessor(should_update_history)
-                             .makeInputVector(sample, vector)) {
-      std::rethrow_exception(exception);
-    }
-    return {std::move(vector)};
-  }
-
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
     return featurizeInputImpl(input, /* should_update_history= */ false);
   }
@@ -122,19 +108,6 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltVector> updateTemporalTrackers(const MapInput& input) {
     return featurizeInputImpl(input, /* should_update_history= */ true);
-  }
-
-  std::vector<BoltBatch> featurizeInputBatchImpl(const LineInputBatch& inputs,
-                                                 bool should_update_history) {
-    verifyProcessorsAreInitialized();
-    auto [input_batch, _] =
-        getProcessor(should_update_history).createBatch(inputs);
-
-    // We cannot use the initializer list because the copy constructor is
-    // deleted for BoltBatch.
-    std::vector<BoltBatch> batch_list;
-    batch_list.emplace_back(std::move(input_batch));
-    return batch_list;
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
@@ -210,24 +183,6 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   void resetTemporalTrackers() { _context->reset(); }
 
-  template <typename InputType>
-  std::vector<dataset::Explanation> explainImpl(
-      const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio, const InputType& sample) {
-    verifyProcessorsAreInitialized();
-
-    auto input_row = toVectorOfStringViews(sample);
-    auto result = bolt::getSignificanceSortedExplanations(
-        gradients_indices, gradients_ratio, input_row,
-        _unlabeled_non_updating_processor);
-
-    for (auto& response : result) {
-      response.column_name = _column_number_to_name[response.column_number];
-    }
-
-    return result;
-  }
-
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
@@ -248,6 +203,51 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   uint32_t getLabelDim() final { return _label_dim; }
 
  private:
+  template <typename InputType>
+  std::vector<BoltVector> featurizeInputImpl(const InputType& input,
+                                             bool should_update_history) {
+    verifyProcessorsAreInitialized();
+
+    BoltVector vector;
+    auto sample = toVectorOfStringViews(input);
+    if (auto exception = getProcessor(should_update_history)
+                             .makeInputVector(sample, vector)) {
+      std::rethrow_exception(exception);
+    }
+    return {std::move(vector)};
+  }
+
+  std::vector<BoltBatch> featurizeInputBatchImpl(const LineInputBatch& inputs,
+                                                 bool should_update_history) {
+    verifyProcessorsAreInitialized();
+    auto [input_batch, _] =
+        getProcessor(should_update_history).createBatch(inputs);
+
+    // We cannot use the initializer list because the copy constructor is
+    // deleted for BoltBatch.
+    std::vector<BoltBatch> batch_list;
+    batch_list.emplace_back(std::move(input_batch));
+    return batch_list;
+  }
+
+  template <typename InputType>
+  std::vector<dataset::Explanation> explainImpl(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio, const InputType& sample) {
+    verifyProcessorsAreInitialized();
+
+    auto input_row = toVectorOfStringViews(sample);
+    auto result = bolt::getSignificanceSortedExplanations(
+        gradients_indices, gradients_ratio, input_row,
+        _unlabeled_non_updating_processor);
+
+    for (auto& response : result) {
+      response.column_name = _column_number_to_name[response.column_number];
+    }
+
+    return result;
+  }
+
   /**
    * The labeled updating processor is used for training and evaluation, which
    * automatically updates the temporal context, as well as for manually
