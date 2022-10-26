@@ -1,6 +1,5 @@
 #include "StringHash.h"
 #include <hashing/src/MurmurHash.h>
-#include <_types/_uint32_t.h>
 
 namespace thirdai::dataset {
 
