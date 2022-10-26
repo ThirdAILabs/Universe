@@ -1,5 +1,6 @@
-import pytest
 from collections import defaultdict
+
+import pytest
 from thirdai import new_dataset as dataset
 
 pytestmark = [pytest.mark.unit]
