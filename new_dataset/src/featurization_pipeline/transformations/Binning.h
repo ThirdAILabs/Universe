@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/string.hpp>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <exception>
@@ -28,6 +32,23 @@ class BinningTransformation final : public Transformation {
   void apply(ColumnMap& columns) final;
 
  private:
+  // Private constructor for cereal.
+  BinningTransformation()
+      : _input_column_name(),
+        _output_column_name(),
+        _inclusive_min_value(0),
+        _exclusive_max_value(0),
+        _binsize(0),
+        _num_bins(0) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Transformation>(this), _input_column_name,
+            _output_column_name, _inclusive_min_value, _exclusive_max_value,
+            _binsize, _num_bins);
+  }
+
   std::optional<uint32_t> getBin(float value) const;
 
   std::string _input_column_name;
@@ -40,3 +61,5 @@ class BinningTransformation final : public Transformation {
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::BinningTransformation)

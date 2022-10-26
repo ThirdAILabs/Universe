@@ -75,13 +75,9 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #endif
 }
 
-/*
-  Provides support for logging, validation, and model saving
-  to distributed training.
-*/
-void BoltGraph::log_validate_and_save(uint32_t batch_size,
-                                      const TrainConfig& train_config,
-                                      MetricAggregator& train_metrics) {
+void BoltGraph::logValidateAndSave(uint32_t batch_size,
+                                   const TrainConfig& train_config,
+                                   MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
     logging::info("train | epoch {} | updates {} | {}", (_epoch), _updates,
@@ -233,8 +229,8 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        log_validate_and_save(dataset_context.batchSize(), train_config,
-                              train_metrics);
+        logValidateAndSave(dataset_context.batchSize(), train_config,
+                           train_metrics);
 
         callbacks.onBatchEnd(*this, train_state);
       }

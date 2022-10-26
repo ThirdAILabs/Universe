@@ -49,23 +49,23 @@ class Circular:
 
             self.partitions.append(partition_start_end_list)
 
-    def compute_and_store_batch_gradients(self, batch_no: int):
+    def compute_and_store_batch_gradients(self, batch_id: int):
         """
         This functions calls the API 'compute_and_store_batch_gradients',
         which calculates the gradients for the network managed by
         this particular worker. The compute_and_store_batch_gradients trains
         the network and calculates the gradient for the particular
-        training batch with batch no. batch_no and with loss function
+        training batch with batch no. batch_id and with loss function
         specified in the config.
 
         This function also defines the partition size which defines the
         size of block of gradients which are communicated between a worker
         and its friend.
 
-        :param batch_no: training batch to calculate gradients on
-        :type batch_no: int
+        :param batch_id: training batch to calculate gradients on
+        :type batch_id: int
         """
-        self.model.compute_and_store_batch_gradients(batch_no)
+        self.model.compute_and_store_batch_gradients(batch_id)
 
         self.partitions = []
         self.gradients = get_gradients(self.model)

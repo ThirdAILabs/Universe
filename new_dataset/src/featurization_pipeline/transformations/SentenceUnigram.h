@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/string.hpp>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
@@ -98,6 +103,20 @@ class SentenceUnigram : public Transformation {
     return unigrams;
   }
 
+  // Private constructor for cereal.
+  SentenceUnigram()
+      : _input_column_name(),
+        _output_column_name(),
+        _deduplicate(false),
+        _output_range(std::nullopt) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Transformation>(this), _input_column_name,
+            _output_column_name, _deduplicate, _output_range);
+  }
+
   std::string _input_column_name;
   std::string _output_column_name;
   bool _deduplicate;
@@ -105,3 +124,5 @@ class SentenceUnigram : public Transformation {
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::SentenceUnigram)

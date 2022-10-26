@@ -1,7 +1,9 @@
 #include "FeaturizationPython.h"
+#include <bolt/python_bindings/ConversionUtils.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/NumpyColumns.h>
+#include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <new_dataset/src/featurization_pipeline/transformations/Binning.h>
 #include <new_dataset/src/featurization_pipeline/transformations/CrossColumnPairgram.h>
 #include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
@@ -29,12 +31,14 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<NumpySparseValueColumn>>(columns_submodule,
                                                       "NumpySparseValueColumn")
       .def(py::init<const NumpyArray<uint32_t>&, std::optional<uint32_t>>(),
-           py::arg("array"), py::arg("dim"));
+           py::arg("array"), py::arg("dim"))
+      .def(("__getitem__"), &NumpySparseValueColumn::operator[]);
 
   py::class_<NumpyDenseValueColumn, Column,
              std::shared_ptr<NumpyDenseValueColumn>>(columns_submodule,
                                                      "NumpyDenseValueColumn")
-      .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
+      .def(py::init<const NumpyArray<float>&>(), py::arg("array"))
+      .def(("__getitem__"), &NumpyDenseValueColumn::operator[]);
 
   py::class_<VectorStringValueColumn, Column,
              std::shared_ptr<VectorStringValueColumn>>(columns_submodule,
@@ -98,12 +102,16 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
            py::arg("columns"))
       .def("convert_to_dataset", &ColumnMap::convertToDataset,
            py::arg("columns"), py::arg("batch_size"))
-      .def("__getitem__", &ColumnMap::getColumn);
+      .def("num_rows", &ColumnMap::numRows)
+      .def("__getitem__", &ColumnMap::getColumn)
+      .def("columns", &ColumnMap::columns);
 
-  py::class_<FeaturizationPipeline>(dataset_submodule, "FeaturizationPipeline")
+  py::class_<FeaturizationPipeline, FeaturizationPipelinePtr>(
+      dataset_submodule, "FeaturizationPipeline")
       .def(py::init<std::vector<TransformationPtr>>(),
            py::arg("transformations"))
-      .def("featurize", &FeaturizationPipeline::featurize, py::arg("columns"));
+      .def("featurize", &FeaturizationPipeline::featurize, py::arg("columns"))
+      .def(bolt::python::getPickleFunction<FeaturizationPipeline>());
 }
 
 }  // namespace thirdai::dataset::python
