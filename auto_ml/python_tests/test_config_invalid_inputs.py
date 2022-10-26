@@ -53,9 +53,8 @@ def get_config(
     train_eval_params = deployment.TrainEvalParameters(
         rebuild_hash_tables_interval=None,
         reconstruct_hash_functions_interval=None,
-        default_batch_size=256,
-        use_sparse_inference=True,
-        evaluation_metrics=[],
+        default_batch_size=100,
+        freeze_hash_tables=True,
     )
 
     config = deployment.DeploymentConfig(
@@ -121,7 +120,7 @@ def test_invalid_option_parameter_option():
 def test_invalid_parameter_type_throws():
     with pytest.raises(
         ValueError,
-        match=r"Invalid type '<class 'list'>'. Values of parameters dictionary must be bool, int, float, or str.",
+        match=r"Invalid type '<class 'list'>'. Values of parameters dictionary must be bool, int, float, str, OracleConfig, or TemporalContext.",
     ):
         deployment.ModelPipeline(
             deployment_config=get_config(),

@@ -188,6 +188,40 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
   }
 };
 
+class MarginBCE final : public LossFunction {
+ public:
+  MarginBCE(float positive_margin, float negative_margin, bool bound)
+      : _positive_margin(positive_margin),
+        _negative_margin(negative_margin),
+        _bound(bound) {}
+
+ private:
+  float elementLossGradient(float label, float activation,
+                            uint32_t batch_size) const override {
+    if (label == 0.0) {
+      activation += _negative_margin;
+    } else {
+      activation -= _positive_margin;
+    }
+    if (_bound) {
+      activation = std::min<float>(activation, 1.0);
+      activation = std::max<float>(activation, 0.0);
+    }
+    return (label - activation) / batch_size;
+  }
+
+  float _positive_margin;
+  float _negative_margin;
+  bool _bound;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<LossFunction>(this), _positive_margin,
+            _negative_margin, _bound);
+  }
+};
+
 static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   std::string lower_name = utils::lower(name);
   if (lower_name == "categoricalcrossentropyloss") {

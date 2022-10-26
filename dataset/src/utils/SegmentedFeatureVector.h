@@ -64,7 +64,6 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
     return BoltVector::makeSparseVector(_indices, _values);
   }
 
- protected:
   void addFeatureSegment(uint32_t dim) final {
     _prev_dim = _current_dim;
     _current_dim += dim;
@@ -72,6 +71,7 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
     _n_dense_added = 0;
   }
 
+ protected:
   std::unordered_map<uint32_t, float> entries() final {
     std::unordered_map<uint32_t, float> ents;
     for (uint32_t i = 0; i < _indices.size(); i++) {
@@ -120,7 +120,6 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
     return BoltVector::makeDenseVector(_values);
   };
 
- protected:
   void addFeatureSegment(uint32_t dim) final {
     if (_latest_segment_dim > _n_dense_added) {
       std::stringstream ss;
@@ -138,6 +137,7 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
     _values.reserve(_values.size() + dim);
   }
 
+ protected:
   std::unordered_map<uint32_t, float> entries() final {
     std::unordered_map<uint32_t, float> ents;
     for (uint32_t i = 0; i < _values.size(); i++) {

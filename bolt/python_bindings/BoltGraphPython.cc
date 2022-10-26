@@ -11,6 +11,7 @@
 #include <bolt/src/graph/callbacks/LearningRateScheduler.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/DlrmAttention.h>
+#include <bolt/src/graph/nodes/DotProduct.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -260,6 +261,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "Returns a ParameterReference object to the weight gradients "
           "matrix.");
 
+  py::class_<DotProductNode, DotProductNodePtr, Node>(graph_submodule,
+                                                      "DotProduct")
+      .def(py::init(&DotProductNode::make))
+      .def("__call__", &DotProductNode::setPredecessors, py::arg("lhs"),
+           py::arg("rhs"));
+
   graph_submodule.def("TokenInput", &Input::makeTokenInput, py::arg("dim"),
                       py::arg("num_tokens_range"));
 
@@ -287,15 +294,46 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
       .def("silence", &TrainConfig::silence)
+#if THIRDAI_EXPOSE_ALL
+      // We do not want to expose these methods to customers to hide complexity.
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"))
+      // We do not want to expose this method because it will not work correctly
+      // with the ModelPipeline since it won't sae the entire pipeline.
+      .def("with_save_parameters", &TrainConfig::withSaveParameters,
+           py::arg("save_prefix"), py::arg("save_frequency"))
+#endif
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("validation_frequency") = 0)
+           py::arg("predict_config"), py::arg("validation_frequency") = 0,
+           py::arg("save_best_per_metric") = "",
+           R"pbdoc(
+Add validation options to execute validation during training. Can be used to
+configure input data and labels, frequency to validate and optionally saving
+best model per a specified metric.
+
+Args:
+    validation_data (dataset.BoltDataset): 
+        Input dataset for validation
+    validation_label (dataset.BoltDataset): 
+        Ground truth labels to use during validation
+    predict_config (bolt.graph.PredictConfig): 
+        See PredictConfig.
+    validation_frequency (int, optional): 
+        Interval of updates (batches) to run validation and report
+        metrics. Defaults to 0, which is no validation amidst
+        training.
+    save_best_per_metric (str, optional): 
+        Whether to save best model based on validation. Needs
+        with_save_parameters(...) configured.  Defaults to empty
+        string, which implies no saving best model. Note that this requires the
+        tracked metric to be configured via `with_metrics(...)`.
+
+)pbdoc")
       .def_property_readonly(
           "num_epochs", [](TrainConfig& config) { return config.epochs(); },
           "Returns the number of epochs a model with this TrainConfig will "

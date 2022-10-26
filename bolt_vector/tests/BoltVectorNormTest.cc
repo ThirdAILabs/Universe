@@ -1,7 +1,6 @@
 
 #include <bolt_vector/src/BoltVectorNorm.h>
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include <algorithm>
 #include <memory>
 

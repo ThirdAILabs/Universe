@@ -25,6 +25,10 @@ using WrappedNumpyVectors = NumpyDataset<BoltBatch>;
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
+// TODO(Josh/Nick): Some of this code is currently duplicated in new_dataset,
+// but when we deprecate the current dataset API we can delete it and fix the
+// duplication.
+
 /**
  * This class is an InMemoryDataset that is backed by numpy arrays. The
  * batches that are passed into the constructor are assumed to be shallow

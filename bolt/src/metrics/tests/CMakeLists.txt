@@ -1,15 +1,12 @@
 enable_testing()
 
-add_executable(metric_test MetricTest.cc)
-target_link_libraries(metric_test PRIVATE gtest_main OpenMP::OpenMP_CXX)
-
-add_executable(mse_test MeanSquaredErrorMetricTest.cc)
-target_link_libraries(mse_test PRIVATE gtest_main)
-
-set(METRIC_TESTS metric_test mse_test)
-
 include(GoogleTest)
+
+set(METRIC_TESTS MetricTest MeanSquaredErrorMetricTest)
+
 foreach(METRIC_TEST IN LISTS METRIC_TESTS)
+  add_executable(${METRIC_TEST} ${METRIC_TEST}.cc)
+  target_link_libraries(${METRIC_TEST} PRIVATE gtest_main thirdai)
   gtest_discover_tests(${METRIC_TEST} DISCOVERY_TIMEOUT
                        ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
 endforeach()

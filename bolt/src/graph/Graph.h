@@ -39,7 +39,8 @@ class BoltGraph {
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
         _epoch(0),
-        _updates(0) {
+        _updates(0),
+        _tracked_metric(nullptr) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
@@ -72,8 +73,9 @@ class BoltGraph {
                             bool use_sparse_inference,
                             const std::string& layer_name);
 
-  BoltVector predictSingle(std::vector<BoltVector>&& test_data,
-                           bool use_sparse_inference);
+  BoltVector predictSingle(
+      std::vector<BoltVector>&& test_data, bool use_sparse_inference,
+      std::optional<std::string> output_node_name = std::nullopt);
 
   BoltBatch predictSingleBatch(std::vector<BoltBatch>&& test_data,
                                bool use_sparse_inference);
@@ -117,6 +119,10 @@ class BoltGraph {
 
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
+
+  void log_validate_and_save(uint32_t batch_size,
+                             const TrainConfig& train_config,
+                             MetricAggregator& train_metrics);
 
   void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
@@ -210,6 +216,10 @@ class BoltGraph {
   // them in TrainState
   uint32_t _epoch;
   uint32_t _updates;
+
+  // We need this value saved across training. Reset should be done by force.
+  double _best_validation_metric;
+  std::shared_ptr<Metric> _tracked_metric;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

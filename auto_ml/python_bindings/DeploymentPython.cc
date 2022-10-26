@@ -1,10 +1,13 @@
 #include "DeploymentPython.h"
+#include "DeploymentDocs.h"
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/python_bindings/UniversalDeepTransformerDocs.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -13,12 +16,20 @@
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/Aliases.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
+#include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
+#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <cstdint>
+#include <exception>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -35,20 +46,25 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::module_ submodule = thirdai_module.def_submodule("deployment");
 
   py::class_<HyperParameter<uint32_t>, HyperParameterPtr<uint32_t>>(  // NOLINT
-      submodule, "UintHyperParameter");
+      submodule, "UintHyperParameter", docs::UINT_HYPERPARAMETER);
 
   py::class_<HyperParameter<float>, HyperParameterPtr<float>>(  // NOLINT
-      submodule, "FloatHyperParameter");
+      submodule, "FloatHyperParameter", docs::FLOAT_HYPERPARAMETER);
 
   py::class_<HyperParameter<std::string>,  // NOLINT
-             HyperParameterPtr<std::string>>(submodule, "StrHyperParameter");
+             HyperParameterPtr<std::string>>(submodule, "StrHyperParameter",
+                                             docs::STR_HYPERPARAMETER);
 
   py::class_<HyperParameter<bool>, HyperParameterPtr<bool>>(  // NOLINT
-      submodule, "BoolHyperParameter");
+      submodule, "BoolHyperParameter", docs::BOOL_HYPERPARAMETER);
 
   py::class_<HyperParameter<bolt::SamplingConfigPtr>,  // NOLINT
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
-      submodule, "SamplingConfigHyperParameter");
+      submodule, "SamplingConfigHyperParameter", docs::STR_HYPERPARAMETER);
+
+  py::class_<HyperParameter<OracleConfigPtr>,  // NOLINT
+             HyperParameterPtr<OracleConfigPtr>>(submodule,
+                                                 "OracleConfigHyperParameter");
 
   /**
    * Do not change the order of these overloads. Because bool is a sublclass of
@@ -57,27 +73,49 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
    * that overloads are tried in the order they were registered so this is safe
    * to do.
    */
-  defConstantParameter<bool>(submodule);
-  defConstantParameter<uint32_t>(submodule);
-  defConstantParameter<float>(submodule);
-  defConstantParameter<std::string>(submodule);
-  defConstantParameter<bolt::SamplingConfigPtr>(submodule);
+  defConstantParameter<bool>(submodule, /* add_docs= */ true);
+  defConstantParameter<uint32_t>(submodule, /* add_docs= */ false);
+  defConstantParameter<float>(submodule, /* add_docs= */ false);
+  defConstantParameter<std::string>(submodule, /* add_docs= */ false);
+  defConstantParameter<bolt::SamplingConfigPtr>(submodule,
+                                                /* add_docs= */ false);
+  defConstantParameter<OracleConfigPtr>(submodule,
+                                        /* add_docs= */ false);
 
-  defOptionMappedParameter<bool>(submodule);
-  defOptionMappedParameter<uint32_t>(submodule);
-  defOptionMappedParameter<float>(submodule);
-  defOptionMappedParameter<std::string>(submodule);
-  defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule);
+  defOptionMappedParameter<bool>(submodule, /* add_docs= */ true);
+  defOptionMappedParameter<uint32_t>(submodule, /* add_docs= */ false);
+  defOptionMappedParameter<float>(submodule, /* add_docs= */ false);
+  defOptionMappedParameter<std::string>(submodule, /* add_docs= */ false);
+  defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule,
+                                                    /* add_docs= */ false);
+  defOptionMappedParameter<OracleConfigPtr>(submodule,
+                                            /* add_docs= */ false);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
-                py::arg("name"), py::arg("type"));
+                py::arg("name"), py::arg("type"),
+                docs::USER_SPECIFIED_PARAMETER);
 
   py::class_<AutotunedSparsityParameter, HyperParameter<float>,
              std::shared_ptr<AutotunedSparsityParameter>>(
       submodule, "AutotunedSparsityParameter")
-      .def(py::init<std::string>(), py::arg("dimension_param_name"));
+      .def(py::init<std::string>(), py::arg("dimension_param_name"),
+           docs::AUTOTUNED_SPARSITY_PARAMETER_INIT);
 
-  py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig");  // NOLINT
+  py::class_<DatasetLabelDimensionParameter, HyperParameter<uint32_t>,
+             std::shared_ptr<DatasetLabelDimensionParameter>>(
+      submodule, "DatasetLabelDimensionParameter",
+      docs::DATASET_LABEL_DIM_PARAM)
+      .def(py::init<>())
+      // This is why we pass in a py::object:
+      // https://stackoverflow.com/questions/70504125/pybind11-pyclass-def-property-readonly-static-incompatible-function-arguments
+      .def_property_readonly_static(
+          "dimension_param_name", [](py::object& param) {
+            (void)param;
+            return DatasetLabelDimensionParameter::PARAM_NAME;
+          });
+
+  py::class_<NodeConfig, NodeConfigPtr>(submodule, "NodeConfig",  // NOLINT
+                                        docs::NODE_CONFIG);
 
   py::class_<FullyConnectedNodeConfig, NodeConfig,
              std::shared_ptr<FullyConnectedNodeConfig>>(
@@ -89,39 +127,47 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
                    std::optional<HyperParameterPtr<bolt::SamplingConfigPtr>>>(),
           py::arg("name"), py::arg("dim"), py::arg("sparsity"),
           py::arg("activation"), py::arg("predecessor"),
-          py::arg("sampling_config") = std::nullopt)
+          py::arg("sampling_config") = std::nullopt,
+          docs::FULLY_CONNECTED_CONFIG_INIT_WITH_SPARSITY)
       .def(py::init<std::string, HyperParameterPtr<uint32_t>,
                     HyperParameterPtr<std::string>, std::string>(),
            py::arg("name"), py::arg("dim"), py::arg("activation"),
-           py::arg("predecessor"));
+           py::arg("predecessor"), docs::FULLY_CONNECTED_CONFIG_INIT_DENSE);
 
   py::class_<ModelConfig, ModelConfigPtr>(submodule, "ModelConfig")
       .def(py::init<std::vector<std::string>, std::vector<NodeConfigPtr>,
                     std::shared_ptr<bolt::LossFunction>>(),
-           py::arg("input_names"), py::arg("nodes"), py::arg("loss"));
+           py::arg("input_names"), py::arg("nodes"), py::arg("loss"),
+           docs::MODEL_CONFIG_INIT);
 
-  py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig");  // NOLINT
+  py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig",  // NOLINT
+                                          docs::BLOCK_CONFIG);
 
   py::class_<NumericalCategoricalBlockConfig, BlockConfig,
              std::shared_ptr<NumericalCategoricalBlockConfig>>(
       submodule, "NumericalCategoricalBlockConfig")
       .def(py::init<HyperParameterPtr<uint32_t>,
                     HyperParameterPtr<std::string>>(),
-           py::arg("n_classes"), py::arg("delimiter"));
+           py::arg("n_classes"), py::arg("delimiter"),
+           docs::NUMERICAL_CATEGORICAL_BLOCK_CONFIG_INIT);
 
   py::class_<DenseArrayBlockConfig, BlockConfig,
              std::shared_ptr<DenseArrayBlockConfig>>(submodule,
                                                      "DenseArrayBlockConfig")
-      .def(py::init<HyperParameterPtr<uint32_t>>(), py::arg("dim"));
+      .def(py::init<HyperParameterPtr<uint32_t>>(), py::arg("dim"),
+           docs::DENSE_ARRAY_BLOCK_CONFIG_INIT);
 
   py::class_<TextBlockConfig, BlockConfig, std::shared_ptr<TextBlockConfig>>(
       submodule, "TextBlockConfig")
       .def(py::init<bool, HyperParameterPtr<uint32_t>>(),
-           py::arg("use_pairgrams"), py::arg("range"))
-      .def(py::init<bool>(), py::arg("use_pairgrams"));
+           py::arg("use_pairgrams"), py::arg("range"),
+           docs::TEXT_BLOCK_CONFIG_INIT_WITH_RANGE)
+      .def(py::init<bool>(), py::arg("use_pairgrams"),
+           docs::TEXT_BLOCK_CONFIG_INIT);
 
   py::class_<DatasetLoaderFactoryConfig,  // NOLINT
-             DatasetLoaderFactoryConfigPtr>(submodule, "DatasetConfig");
+             DatasetLoaderFactoryConfigPtr>(
+      submodule, "DatasetConfig", docs::DATASET_LOADER_FACTORY_CONFIG);
 
   py::class_<SingleBlockDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
@@ -129,62 +175,170 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
                     HyperParameterPtr<std::string>>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
-           py::arg("delimiter"));
+           py::arg("delimiter"),
+           docs::SINGLE_BLOCK_DATASET_FACTORY_CONFIG_INIT);
+
+  py::class_<OracleDatasetFactoryConfig, DatasetLoaderFactoryConfig,
+             std::shared_ptr<OracleDatasetFactoryConfig>>(
+      submodule, "OracleDatasetFactory")
+      .def(py::init<HyperParameterPtr<OracleConfigPtr>, HyperParameterPtr<bool>,
+                    HyperParameterPtr<uint32_t>>(),
+           py::arg("config"), py::arg("parallel"),
+           py::arg("text_pairgram_word_limit"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
-                    bool, std::vector<std::string>, std::optional<float>>(),
+                    bool, std::optional<float>>(),
            py::arg("rebuild_hash_tables_interval"),
            py::arg("reconstruct_hash_functions_interval"),
-           py::arg("default_batch_size"), py::arg("use_sparse_inference"),
-           py::arg("evaluation_metrics"),
-           py::arg("prediction_threshold") = std::nullopt);
+           py::arg("default_batch_size"), py::arg("freeze_hash_tables"),
+           py::arg("prediction_threshold") = std::nullopt,
+           docs::TRAIN_EVAL_PARAMETERS_CONFIG_INIT);
 
   py::class_<DeploymentConfig, DeploymentConfigPtr>(submodule,
                                                     "DeploymentConfig")
       .def(py::init<DatasetLoaderFactoryConfigPtr, ModelConfigPtr,
                     TrainEvalParameters>(),
            py::arg("dataset_config"), py::arg("model_config"),
-           py::arg("train_eval_parameters"))
-      .def("save", &DeploymentConfig::save, py::arg("filename"))
-      .def_static("load", &DeploymentConfig::load, py::arg("filename"));
+           py::arg("train_eval_parameters"), docs::DEPLOYMENT_CONFIG_INIT)
+      .def("save", &DeploymentConfig::save, py::arg("filename"),
+           docs::DEPLOYMENT_CONFIG_SAVE)
+      .def_static("load", &DeploymentConfig::load, py::arg("filename"),
+                  docs::DEPLOYMENT_CONFIG_LOAD);
 
   py::class_<ModelPipeline>(submodule, "ModelPipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
-           py::arg("parameters") = py::dict())
+           py::arg("parameters") = py::dict(),
+           docs::MODEL_PIPELINE_INIT_FROM_CONFIG)
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
-           py::arg("parameters") = py::dict())
-      .def("train",
-           py::overload_cast<const std::string&, uint32_t, float,
-                             std::optional<uint32_t>, std::optional<uint32_t>>(
-               &ModelPipeline::train),
-           py::arg("filename"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt)
-      .def("train",
-           py::overload_cast<const dataset::DataLoaderPtr&, uint32_t, float,
-                             std::optional<uint32_t>>(&ModelPipeline::train),
-           py::arg("data_source"), py::arg("epochs"), py::arg("learning_rate"),
-           py::arg("max_in_memory_batches") = std::nullopt)
-      .def("evaluate", &evaluateOnFileWrapper, py::arg("filename"))
-      .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"))
-      .def("predict", &predictWrapper, py::arg("input_sample"))
-      .def("predict_token", &predictTokensWrapper, py::arg("tokens"))
-      .def("predict_batch", &predictBatchWrapper, py::arg("input_samples"))
-      .def("save", &ModelPipeline::save, py::arg("filename"))
-      .def_static("load", &ModelPipeline::load, py::arg("filename"));
+           py::arg("parameters") = py::dict(),
+           docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG)
+      .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
+           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
+           py::arg("max_in_memory_batches") = std::nullopt,
+           docs::MODEL_PIPELINE_TRAIN_FILE)
+      .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
+           py::arg("train_config"),
+           py::arg("max_in_memory_batches") = std::nullopt,
+           docs::MODEL_PIPELINE_TRAIN_DATA_LOADER)
+      .def("evaluate", &evaluateOnFileWrapper<ModelPipeline>,
+           py::arg("filename"), py::arg("predict_config") = std::nullopt,
+           docs::MODEL_PIPELINE_EVALUATE_FILE)
+      .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
+           py::arg("predict_config") = std::nullopt,
+           docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER)
+      .def("predict", &predictWrapper<ModelPipeline, LineInput>,
+           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
+           docs::MODEL_PIPELINE_PREDICT)
+      .def("explain", &ModelPipeline::explain<LineInput>,
+           py::arg("input_sample"), py::arg("target_class") = std::nullopt,
+           docs::MODEL_PIPELINE_EXPLAIN)
+      .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
+           py::arg("use_sparse_inference") = false,
+           docs::MODEL_PIPELINE_PREDICT_TOKENS)
+      .def("predict_batch", &predictBatchWrapper<ModelPipeline, LineInputBatch>,
+           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
+           docs::MODEL_PIPELINE_PREDICT_BATCH)
+      .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
+           py::arg("filename"))
+      .def("save", &ModelPipeline::save, py::arg("filename"),
+           docs::MODEL_PIPELINE_SAVE)
+      .def_static("load", &ModelPipeline::load, py::arg("filename"),
+                  docs::MODEL_PIPELINE_LOAD)
+      .def("get_data_processor", &ModelPipeline::getDataProcessor,
+           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
+
+  py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
+      .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
+                    std::string, std::string, uint32_t, char>(),
+           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
+           py::arg("target"), py::arg("time_granularity") = "daily",
+           py::arg("lookahead") = 0, py::arg("delimiter") = ',',
+           docs::ORACLE_CONFIG_INIT);
+
+  py::class_<OracleDatasetFactory, OracleDatasetFactoryPtr>(submodule,
+                                                            "TemporalContext")
+      .def("reset", &OracleDatasetFactory::resetTemporalTrackers,
+           docs::TEMPORAL_CONTEXT_RESET)
+      .def("update_temporal_trackers",
+           py::overload_cast<const LineInput&>(
+               &OracleDatasetFactory::updateTemporalTrackers),
+           py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
+      .def("batch_update_temporal_trackers",
+           py::overload_cast<const LineInputBatch&>(
+               &OracleDatasetFactory::batchUpdateTemporalTrackers),
+           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
+
+  py::class_<UniversalDeepTransformer>(submodule, "UniversalDeepTransformer",
+                                       docs::UDT_CLASS)
+      .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
+           py::arg("temporal_tracking_relationships") =
+               UserProvidedTemporalRelationships(),
+           py::arg("target"), py::arg("time_granularity") = "daily",
+           py::arg("lookahead") = 0, py::arg("delimiter") = ',',
+           py::arg("options") = OptionsMap(), docs::UDT_INIT)
+      .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
+           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
+           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN)
+      .def("class_name", &UniversalDeepTransformer::className,
+           py::arg("neuron_id"), docs::UDT_CLASS_NAME)
+      .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
+           py::arg("filename"), py::arg("predict_config") = std::nullopt,
+           docs::UDT_EVALUATE)
+      .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
+           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
+           docs::UDT_PREDICT)
+      .def("predict_batch",
+           &predictBatchWrapper<UniversalDeepTransformer, MapInputBatch>,
+           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
+           docs::UDT_PREDICT_BATCH)
+      .def(
+          "embedding_representation",
+          [](UniversalDeepTransformer& model, const MapInput& input) {
+            return convertBoltVectorToNumpy(
+                model.embeddingRepresentation(input));
+          },
+          py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
+      .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
+           py::arg("input_sample"), docs::UDT_INDEX)
+      .def("index_batch",
+           &UniversalDeepTransformer::batchUpdateTemporalTrackers,
+           py::arg("input_samples"), docs::UDT_INDEX_BATCH)
+      .def("reset_temporal_trackers",
+           &UniversalDeepTransformer::resetTemporalTrackers,
+           docs::UDT_RESET_TEMPORAL_TRACKERS)
+      .def("explain", &UniversalDeepTransformer::explain<MapInput>,
+           py::arg("input_sample"), py::arg("target_class") = std::nullopt,
+           docs::UDT_EXPLAIN)
+      .def("save", &UniversalDeepTransformer::save, py::arg("filename"),
+           docs::UDT_SAVE)
+      .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"),
+                  docs::UDT_LOAD);
 }
 
 template <typename T>
-void defConstantParameter(py::module_& submodule) {
+void defConstantParameter(py::module_& submodule, bool add_docs) {
+  // Because this is an overloaded function, the docsstring will be rendered for
+  // each overload. This option is to ensure that it can only be rendered for
+  // the first one.
+  const char* const docstring =
+      add_docs ? docs::CONSTANT_PARAMETER : "See docs above.";
+
   submodule.def("ConstantParameter", &ConstantParameter<T>::make,
-                py::arg("value").noconvert());
+                py::arg("value").noconvert(), docstring);
 }
 
 template <typename T>
-void defOptionMappedParameter(py::module_& submodule) {
+void defOptionMappedParameter(py::module_& submodule, bool add_docs) {
+  // Because this is an overloaded function, the docsstring will be rendered for
+  // each overload. This option is to ensure that it can only be rendered for
+  // the first one.
+  const char* const docstring =
+      add_docs ? docs::OPTION_MAPPED_PARAMETER : "See docs above.";
+
   submodule.def("OptionMappedParameter", &OptionMappedParameter<T>::make,
-                py::arg("option_name"), py::arg("values").noconvert());
+                py::arg("option_name"), py::arg("values").noconvert(),
+                docstring);
 }
 
 py::object makeUserSpecifiedParameter(const std::string& name,
@@ -205,10 +359,15 @@ py::object makeUserSpecifiedParameter(const std::string& name,
     return py::cast(UserSpecifiedParameter<std::string>::make(name));
   }
 
+  if (py::str(type).cast<std::string>() ==
+      "<class 'thirdai._thirdai.deployment.OracleConfig'>") {
+    return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(name));
+  }
+
   throw std::invalid_argument("Invalid type '" +
                               py::str(type).cast<std::string>() +
                               "' passed to UserSpecifiedParameter. Must be one "
-                              "of bool, int, float, or str.");
+                              "of bool, int, float, str, or OracleConfig.");
 }
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
@@ -232,11 +391,14 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
       cpp_parameters.emplace(name, UserParameterInput(value));
+    } else if (py::isinstance<OracleConfig>(v)) {
+      OracleConfigPtr value = v.cast<OracleConfigPtr>();
+      cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
-      throw std::invalid_argument("Invalid type '" +
-                                  py::str(v.get_type()).cast<std::string>() +
-                                  "'. Values of parameters dictionary must be "
-                                  "bool, int, float, or str.");
+      throw std::invalid_argument(
+          "Invalid type '" + py::str(v.get_type()).cast<std::string>() +
+          "'. Values of parameters dictionary must be "
+          "bool, int, float, str, OracleConfig, or TemporalContext.");
     }
   }
 
@@ -252,26 +414,34 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
-    const std::shared_ptr<dataset::DataLoader>& data_source) {
-  auto output = model.evaluate(data_source);
+    const std::shared_ptr<dataset::DataLoader>& data_source,
+    std::optional<bolt::PredictConfig>& predict_config) {
+  auto output = model.evaluate(data_source, predict_config);
 
   return convertInferenceTrackerToNumpy(output);
 }
 
-py::object evaluateOnFileWrapper(ModelPipeline& model,
-                                 const std::string& filename) {
-  return evaluateOnDataLoaderWrapper(
-      model, std::make_shared<dataset::SimpleFileDataLoader>(
-                 filename, model.defaultBatchSize()));
+template <typename Model>
+py::object evaluateOnFileWrapper(
+    Model& model, const std::string& filename,
+    std::optional<bolt::PredictConfig>& predict_config) {
+  return evaluateOnDataLoaderWrapper(model,
+                                     dataset::SimpleFileDataLoader::make(
+                                         filename, DEFAULT_EVALUATE_BATCH_SIZE),
+                                     predict_config);
 }
 
-py::object predictWrapper(ModelPipeline& model, const std::string& sample) {
-  BoltVector output = model.predict(sample);
+template <typename Model, typename InputType>
+py::object predictWrapper(Model& model, const InputType& sample,
+                          bool use_sparse_inference) {
+  BoltVector output =
+      model.template predict<InputType>(sample, use_sparse_inference);
   return convertBoltVectorToNumpy(output);
 }
 
 py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens) {
+                                const std::vector<uint32_t>& tokens,
+                                bool use_sparse_inference) {
   std::stringstream sentence;
   for (uint32_t i = 0; i < tokens.size(); i++) {
     if (i > 0) {
@@ -279,12 +449,14 @@ py::object predictTokensWrapper(ModelPipeline& model,
     }
     sentence << tokens[i];
   }
-  return predictWrapper(model, sentence.str());
+  return predictWrapper(model, sentence.str(), use_sparse_inference);
 }
 
-py::object predictBatchWrapper(ModelPipeline& model,
-                               const std::vector<std::string>& samples) {
-  BoltBatch outputs = model.predictBatch(samples);
+template <typename Model, typename InputBatchType>
+py::object predictBatchWrapper(Model& model, const InputBatchType& samples,
+                               bool use_sparse_inference) {
+  BoltBatch outputs = model.template predictBatch<InputBatchType>(
+      samples, use_sparse_inference);
 
   return convertBoltBatchToNumpy(outputs);
 }

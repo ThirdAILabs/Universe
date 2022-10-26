@@ -3,6 +3,7 @@
 #include "Callback.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/metrics/Metric.h>
 #include <dataset/src/Datasets.h>
 #include <functional>
 #include <limits>
@@ -30,24 +31,24 @@ class EarlyStopCheckpoint : public Callback {
  public:
   EarlyStopCheckpoint(std::string monitored_metric, std::string model_save_path,
                       uint32_t patience = 2, double min_delta = 0)
-      : _monitored_metric(std::move(monitored_metric)),
+      : _metric(makeMetric(monitored_metric)),
         _model_save_path(std::move(model_save_path)),
         _patience(patience),
-        _min_delta(std::abs(min_delta)) {
-    initValidationTrackers();
-  }
+        _epochs_since_best(0),
+        _best_validation_score(_metric->worst()),
+        _min_delta(std::abs(min_delta)) {}
 
   void onTrainBegin(BoltGraph& model, TrainState& train_state) final {
     (void)model;
     (void)train_state;
-    initValidationTrackers();
   }
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
     double metric_val =
-        train_state.getValidationMetrics(_monitored_metric).back();
+        train_state.getValidationMetrics(_metric->name()).back();
 
-    if (isImprovement(metric_val)) {
+    if (std::abs(metric_val - _best_validation_score) > _min_delta &&
+        _metric->betterThan(metric_val, _best_validation_score)) {
       _best_validation_score = metric_val;
       _epochs_since_best = 0;
       model.save(_model_save_path);
@@ -61,32 +62,13 @@ class EarlyStopCheckpoint : public Callback {
   }
 
  private:
-  bool isImprovement(double metric_val) const {
-    if (_should_minimize) {
-      return metric_val + _min_delta < _best_validation_score;
-    }
-    return metric_val - _min_delta > _best_validation_score;
-  }
-
-  void initValidationTrackers() {
-    _epochs_since_best = 0;
-    _should_minimize = makeMetric(_monitored_metric)->smallerIsBetter();
-
-    _best_validation_score = _should_minimize
-                                 ? std::numeric_limits<double>::max()
-                                 : std::numeric_limits<double>::min();
-  }
-
-  std::string _monitored_metric;
+  std::shared_ptr<Metric> _metric;
   std::string _model_save_path;
   uint32_t _patience;
-  double _min_delta;
 
-  // Below are variables used to track the best validation score over the course
-  // of a train call. These are reset in onTrainBegin(..) so they can be reused.
   uint32_t _epochs_since_best;
-  bool _should_minimize;
   double _best_validation_score;
+  double _min_delta;
 };
 
 using EarlyStopCheckpointPtr = std::shared_ptr<EarlyStopCheckpoint>;

@@ -3,7 +3,9 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>
+#include <dataset/src/Vocabulary.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <memory>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -48,16 +50,17 @@ inline std::tuple<BoltVector, BoltVector, BoltVector> processRow(
 class MaskedSentenceBatchProcessor final
     : public BatchProcessor<BoltBatch, BoltBatch, BoltBatch> {
  public:
-  explicit MaskedSentenceBatchProcessor(uint32_t output_range)
-      : _output_range(output_range),
-        _unknown_token_hash(TextEncodingUtils::computeUnigram(
-            /* key= */ "[UNK]", /* len= */ 5)),
+  explicit MaskedSentenceBatchProcessor(std::shared_ptr<Vocabulary> vocab,
+                                        uint32_t output_range)
+      : _vocab(std::move(vocab)),
+        _output_range(output_range),
         _rand(723204),
         _masked_tokens_percentage(std::nullopt) {}
 
-  MaskedSentenceBatchProcessor(uint32_t output_range,
+  MaskedSentenceBatchProcessor(std::shared_ptr<Vocabulary> vocab,
+                               uint32_t output_range,
                                const float masked_tokens_percentage)
-      : MaskedSentenceBatchProcessor(output_range) {
+      : MaskedSentenceBatchProcessor(std::move(vocab), output_range) {
     _masked_tokens_percentage = masked_tokens_percentage;
   }
 
@@ -85,18 +88,14 @@ class MaskedSentenceBatchProcessor final
 
   void processHeader(const std::string& header) final { (void)header; }
 
-  const std::unordered_map<uint32_t, uint32_t>& getWordToIDMap() const {
-    return _word_hashes_to_ids;
-  }
-
  private:
   std::tuple<BoltVector, BoltVector, BoltVector> processRow(
       const std::string& row) {
-    auto unigrams = TextEncodingUtils::computeRawUnigrams(row);
+    std::vector<uint32_t> unigrams = _vocab->encode(row);
 
     uint32_t size = unigrams.size();
     std::vector<uint32_t> masked_indices;
-    std::vector<uint32_t> masked_word_hashes;
+    std::vector<uint32_t> masked_word_ids;
 
     uint32_t masked_tokens_size =
         (_masked_tokens_percentage.has_value())
@@ -112,32 +111,12 @@ class MaskedSentenceBatchProcessor final
       }
       masked_indices.push_back(masked_index);
       already_masked_tokens.insert(masked_index);
-      masked_word_hashes.push_back(unigrams[masked_index]);
-      unigrams[masked_index] = _unknown_token_hash;
+      masked_word_ids.push_back(unigrams[masked_index]);
+      unigrams[masked_index] = _vocab->maskId();
 
       unigram_index++;
     }
 
-    // We are using the hash of the masked word to find its ID because the
-    // chance that two words have the same hash in the range [0, 2^32) are very
-    // small, and by using this hash we avoid having to store all of the words
-    // in the sentence and we can simply do a single pass over it and compute
-    // the hashes.
-    std::vector<uint32_t> masked_word_ids;
-
-#pragma omp critical
-    {
-      for (uint32_t masked_word_hash : masked_word_hashes) {
-        if (_word_hashes_to_ids.count(masked_word_hash)) {
-          masked_word_ids.push_back(_word_hashes_to_ids.at(masked_word_hash));
-        } else {
-          uint32_t map_size = _word_hashes_to_ids.size();
-          masked_word_ids.push_back(map_size);
-
-          _word_hashes_to_ids[masked_word_hash] = map_size;
-        }
-      }
-    }
     BoltVector label = BoltVector::makeSparseVector(
         masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
 
@@ -150,9 +129,9 @@ class MaskedSentenceBatchProcessor final
             std::move(label)};
   }
 
-  std::unordered_map<uint32_t, uint32_t> _word_hashes_to_ids;
+  std::shared_ptr<Vocabulary> _vocab;
+
   uint32_t _output_range;
-  uint32_t _unknown_token_hash;
   std::mt19937 _rand;
 
   // Represents the percentage of tokens masked in any input sequence.
