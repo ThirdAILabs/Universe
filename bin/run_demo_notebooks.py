@@ -1,0 +1,39 @@
+import glob
+import os
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+
+import nbformat
+from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
+
+TIMEOUT = 600
+DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
+
+def get_notebook_paths(temp_dir):
+    # Collect all of the jupyter notebooks in the Demos repo
+    subprocess.call(["git", "clone", DEMO_URL], cwd=temp_dir)
+    notebook_dir = os.path.join(temp_dir, "Demos", '*.ipynb')
+    notebook_paths = glob.glob(notebook_dir)
+    return notebook_paths
+
+
+def run_demo_notebooks(notebook_paths, temp_dir):
+    for notebook_path in notebook_paths:
+        with open(notebook_path) as notebook_file:
+            nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
+            # The resources argument is needed to execute the notebook in the temporary directory
+            ep = ExecutePreprocessor(timeout=TIMEOUT, kernel_name='python3', resources={'metadata': {'path': temp_dir}})
+            nb_out = ep.preprocess(nb_in)
+
+
+def main():
+    temp_dir = tempfile.mkdtemp()
+    demo_notebook_paths = get_notebook_paths(temp_dir)
+    run_demo_notebooks(demo_notebook_paths, temp_dir)
+    shutil.rmtree(temp_dir)  # Clean up the files used for the test
+
+
+if __name__=='__main__':
+    main()
