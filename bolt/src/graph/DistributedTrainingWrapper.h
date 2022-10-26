@@ -26,7 +26,7 @@ class DistributedTrainingWrapper {
     _bolt_graph->verifyCanTrain(_train_context);
     _bolt_graph->prepareToProcessBatches(_train_context.batchSize(),
                                          /* use_sparsity=*/true);
-    _bolt_graph->enableDistributedTraining();
+    _bolt_graph->disableSparseParameterUpdates();
   }
 
   void computeAndSaveBatchGradients(uint32_t batch_idx) {

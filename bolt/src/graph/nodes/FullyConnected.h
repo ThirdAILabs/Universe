@@ -213,9 +213,7 @@ class FullyConnectedNode final
     return _layer->getBiasGradientsPtr();
   }
 
-  void enableDistributedTraining() final { disableSparseParameterUpdates(); }
-
-  void disableSparseParameterUpdates() {
+  void disableSparseParameterUpdates() final {
     _layer->disableSparseParameterUpdates();
   }
 

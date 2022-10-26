@@ -683,9 +683,9 @@ void BoltGraph::resetOutputGradients(uint32_t vec_index) {
   }
 }
 
-void BoltGraph::enableDistributedTraining() {
+void BoltGraph::disableSparseParameterUpdates() {
   for (NodePtr& node : _nodes) {
-    node->enableDistributedTraining();
+    node->disableSparseParameterUpdates();
   }
 }
 

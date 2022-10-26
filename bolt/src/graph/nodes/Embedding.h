@@ -89,9 +89,7 @@ class EmbeddingNode final : public Node,
         "EmbeddingNode is in an invalid internal state");
   }
 
-  void enableDistributedTraining() final { disableSparseParameterUpdates(); }
-
-  void disableSparseParameterUpdates() {
+  void disableSparseParameterUpdates() final {
     _embedding_layer->disableSparseParameterUpdates();
   }
 
