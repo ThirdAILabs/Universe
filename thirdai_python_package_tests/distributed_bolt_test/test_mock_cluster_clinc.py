@@ -92,11 +92,11 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
 
     x_featurizer = new_dataset.FeaturizationPipeline(
         transformations=[
-            new_dataset.transformations.StringHash(
+            new_dataset.transformations.SentenceUnigram(
                 input_column="text",
                 output_column="text_hashed",
                 output_range=MODEL_INPUT_DIM,
-            )
+            ),
         ]
     )
 
@@ -147,4 +147,6 @@ def test_distributed_classifer_accuracy(distributed_trained_clinc):
         .enable_sparse_inference()
     )
 
-    print(model.predict([test_x], test_y, predict_config)[0]["categorical_accuracy"])
+    assert (
+        model.predict([test_x], test_y, predict_config)[0]["categorical_accuracy"] > 0.7
+    )
