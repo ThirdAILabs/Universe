@@ -24,7 +24,10 @@ def test_pandas_loader():
     ]
 
     ordered_chunks = []
-    while any(next_loads := [loader.next() for loader in loaders]):
+    while True:
+        next_loads = [loader.next() for loader in loaders]
+        if not any(next_loads):
+            break
         ordered_chunks += [
             next_load for next_load in next_loads if next_load is not None
         ]
