@@ -42,7 +42,7 @@ class CrossColumnPairgram : public Transformation {
 #pragma omp parallel for default(none) \
     shared(num_rows, columns, column_name_hashes, pairgrams, _output_range)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
-      std::vector<uint32_t> salted_unigrams(columns.size());
+      std::vector<uint32_t> salted_unigrams;
       uint32_t col_num = 0;
       for (const SparseValueColumnPtr& column : columns) {
         // TODO(david): it may be unnecessary to hash again but technically the
@@ -61,7 +61,7 @@ class CrossColumnPairgram : public Transformation {
       }
 
       // we don't deduplicate pairgrams since we ensure unique hash values
-      // above, thus reducing the chance of duplicates. TODO(any): change this?
+      // above, thus reducing the chance of duplicates.
       std::vector<uint32_t> row_pairgrams =
           TextEncodingUtils::computeRawPairgramsFromUnigrams(salted_unigrams,
                                                              _output_range);

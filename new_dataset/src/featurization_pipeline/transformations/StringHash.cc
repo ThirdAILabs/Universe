@@ -1,5 +1,6 @@
 #include "StringHash.h"
 #include <hashing/src/MurmurHash.h>
+#include <_types/_uint32_t.h>
 
 namespace thirdai::dataset {
 
@@ -20,7 +21,11 @@ void StringHash::apply(ColumnMap& columns) {
 }
 
 uint32_t StringHash::hash(const std::string& str) const {
-  return hashing::MurmurHash(str.data(), str.length(), _seed) % _output_range;
+  uint32_t hash = hashing::MurmurHash(str.data(), str.length(), _seed);
+  if (_output_range) {
+    return hash % *_output_range;
+  }
+  return hash;
 }
 
 }  // namespace thirdai::dataset

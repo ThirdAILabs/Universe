@@ -68,9 +68,10 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
 
   py::class_<StringHash, Transformation, std::shared_ptr<StringHash>>(
       transformations_submodule, "StringHash")
-      .def(py::init<std::string, std::string, uint32_t, uint32_t>(),
+      .def(py::init<std::string, std::string, std::optional<uint32_t>,
+                    uint32_t>(),
            py::arg("input_column"), py::arg("output_column"),
-           py::arg("output_range"), py::arg("seed") = 42);
+           py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
 
   py::class_<CrossColumnPairgram, Transformation,
              std::shared_ptr<CrossColumnPairgram>>(transformations_submodule,
@@ -81,10 +82,10 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
 
   py::class_<SentenceUnigram, Transformation, std::shared_ptr<SentenceUnigram>>(
       transformations_submodule, "SentenceUnigram")
-      .def(py::init<std::string, std::string, uint32_t, bool>(),
+      .def(py::init<std::string, std::string, bool, std::optional<uint32_t>>(),
            py::arg("input_column"), py::arg("output_column"),
-           py::arg("output_range") = std::nullopt,
-           py::arg("deduplicate") = false);
+           py::arg("deduplicate") = false,
+           py::arg("output_range") = std::nullopt);
 
   py::class_<TokenPairgram, Transformation, std::shared_ptr<TokenPairgram>>(
       transformations_submodule, "TokenPairgram")

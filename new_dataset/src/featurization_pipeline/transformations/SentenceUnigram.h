@@ -28,12 +28,12 @@ namespace thirdai::dataset {
 class SentenceUnigram : public Transformation {
  public:
   SentenceUnigram(std::string input_column_name, std::string output_column_name,
-                  std::optional<uint32_t> output_range = std::nullopt,
-                  bool deduplicate = false)
+                  bool deduplicate,
+                  std::optional<uint32_t> output_range = std::nullopt)
       : _input_column_name(std::move(input_column_name)),
         _output_column_name(std::move(output_column_name)),
-        _output_range(output_range),
-        _deduplicate(deduplicate) {}
+        _deduplicate(deduplicate),
+        _output_range(output_range) {}
 
   void apply(ColumnMap& column_map) final {
     auto input_column = column_map.getStringColumn(_input_column_name);
@@ -99,8 +99,8 @@ class SentenceUnigram : public Transformation {
 
   std::string _input_column_name;
   std::string _output_column_name;
-  std::optional<uint32_t> _output_range;
   bool _deduplicate;
+  std::optional<uint32_t> _output_range;
 };
 
 }  // namespace thirdai::dataset
