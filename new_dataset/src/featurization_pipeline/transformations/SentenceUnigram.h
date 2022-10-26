@@ -43,7 +43,7 @@ class SentenceUnigram : public Transformation {
     if (_deduplicate) {
       output_column = deduplicatedUnigramColumn(input_column, num_rows);
     } else {
-      output_column = unigramTokenColumn(input_column, num_rows);
+      output_column = rawUnigramColumn(input_column, num_rows);
     }
     column_map.setColumn(_output_column_name, output_column);
   }
@@ -60,6 +60,7 @@ class SentenceUnigram : public Transformation {
       std::vector<uint32_t> unigrams = computeUnigrams(text);
 
       std::vector<std::pair<uint32_t, float>> deduplicated_unigrams;
+      // TODO(any): make TextEncodingUtils more usable
       TextEncodingUtils::sumRepeatedIndices(
           unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
             deduplicated_unigrams.push_back(std::make_pair(unigram, value));
@@ -71,8 +72,8 @@ class SentenceUnigram : public Transformation {
         std::move(column_values), _output_range);
   }
 
-  SparseArrayColumnPtr unigramTokenColumn(const StringColumnPtr& input_column,
-                                          uint32_t num_rows) {
+  SparseArrayColumnPtr rawUnigramColumn(const StringColumnPtr& input_column,
+                                        uint32_t num_rows) {
     std::vector<std::vector<uint32_t>> column_values(num_rows);
 #pragma omp parallel for default(none) \
     shared(num_rows, column_values, input_column)
