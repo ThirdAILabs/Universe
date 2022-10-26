@@ -434,8 +434,10 @@ void createDatasetSubmodule(py::module_& module) {
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
 
-  dataset_submodule.def("processRow", &processRow, py::arg("sequence"),
-                        py::arg("masked_indices"), py::arg("pairgram_range"));
+  dataset_submodule.def("processRow", &processRow, py::arg("vocab"),
+                        py::arg("sequence"), py::arg("masked_indices"),
+                        py::arg("pairgram_range"));
+
   py::class_<Vocabulary, std::shared_ptr<Vocabulary>>(dataset_submodule,
                                                       "Vocabulary")
       .def("size", &Vocabulary::size)

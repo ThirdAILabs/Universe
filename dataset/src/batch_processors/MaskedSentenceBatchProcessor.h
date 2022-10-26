@@ -18,22 +18,16 @@ namespace thirdai::dataset {
 // The objective here is to get a representation that is consistent given
 // hash-seeds to extract hidden layer representations.
 inline std::tuple<BoltVector, BoltVector, BoltVector> processRow(
-    const std::string& row, const std::vector<uint32_t>& masked_indices,
-    uint32_t output_range) {
-  auto unigrams = TextEncodingUtils::computeRawUnigrams(row);
+    const std::shared_ptr<Vocabulary>& vocab, const std::string& row,
+    const std::vector<uint32_t>& masked_indices, uint32_t output_range) {
+  std::vector<uint32_t> unigrams = vocab->encode(row);
 
-  std::vector<uint32_t> masked_word_hashes;
+  std::vector<uint32_t> masked_word_ids;
 
-  uint32_t unknown_token_hash = TextEncodingUtils::computeUnigram(
-      /* key= */ "[UNK]", /* len= */ 5);
-
-  // Mask the unigrams at specified indices.
-  for (const uint32_t& masked_index : masked_indices) {
-    masked_word_hashes.push_back(unigrams[masked_index]);
-    unigrams[masked_index] = unknown_token_hash;
+  for (auto masked_index : masked_indices) {
+    masked_word_ids.push_back(unigrams[masked_index]);
+    unigrams[masked_index] = vocab->maskId();
   }
-
-  std::vector<uint32_t> masked_word_ids(masked_indices.size(), 1);
 
   BoltVector label = BoltVector::makeSparseVector(
       masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
