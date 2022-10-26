@@ -20,7 +20,7 @@ const uint32_t NUM_TABLES = 32;
 const uint32_t NUM_VECTORS = 100;
 
 TEST(QueryCandidateGeneratorConfigTest,
-     QueryCandidateGeneratorSerializationTest) {
+     QueryCandidateGeneratorConfigSerializationTest) {
   const char* CONFIG_PATH = "./flash_config";
   auto config = QueryCandidateGeneratorConfig(
       /* hash_function = */ "DensifiedMinHash",
