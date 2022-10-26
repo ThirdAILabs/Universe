@@ -71,6 +71,8 @@ void createDatasetSubmodule(py::module_& module) {
      Represents an input column that is responsible for a predicted
      outcome.
       )pbdoc")
+      .def("__str__", &Explanation::toString)
+      .def("__repr__", &Explanation::toString)
       .def_readonly("column_number", &Explanation::column_number,
                     R"pbdoc(
      Identifies the responsible input column.
