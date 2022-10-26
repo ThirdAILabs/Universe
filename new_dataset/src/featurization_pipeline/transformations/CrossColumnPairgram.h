@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
@@ -74,9 +79,22 @@ class CrossColumnPairgram : public Transformation {
   }
 
  private:
+  // Private constructor for cereal.
+  CrossColumnPairgram()
+      : _input_column_names(), _output_column_name(), _output_range(0) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Transformation>(this), _input_column_names,
+            _output_column_name, _output_range);
+  }
+
   std::vector<std::string> _input_column_names;
   std::string _output_column_name;
   uint32_t _output_range;
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::CrossColumnPairgram)

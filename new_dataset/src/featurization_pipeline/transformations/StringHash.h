@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
