@@ -10,8 +10,6 @@ NUM_ROWS = 10000
 OUTPUT_RANGE = 1000
 NUM_WORDS = 5
 
-# random.seed(10)
-
 
 def random_word(length=4):
     return "".join(random.choice(string.ascii_lowercase) for _ in range(length))
