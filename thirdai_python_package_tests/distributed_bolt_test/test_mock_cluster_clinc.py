@@ -148,7 +148,6 @@ def test_distributed_classifer_accuracy(distributed_trained_clinc):
         .enable_sparse_inference()
     )
 
-    # assert (
-    #     model.predict([test_x], test_y, predict_config)[0]["categorical_accuracy"] > 0.7
-    # )
-    print(model.predict([test_x], test_y, predict_config)[0]["categorical_accuracy"])
+    assert (
+        model.predict([test_x], test_y, predict_config)[0]["categorical_accuracy"] > 0.7
+    )
