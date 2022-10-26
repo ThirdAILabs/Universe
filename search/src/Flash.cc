@@ -3,13 +3,13 @@
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/InMemoryDataset.h>
-#include <generator/src/Flash.h>
+#include <search/src/Flash.h>
 #include <algorithm>
 #include <memory>
 #include <queue>
 #include <vector>
 
-namespace thirdai::bolt {
+namespace thirdai::search {
 
 template <typename LABEL_T>
 Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function)
@@ -157,4 +157,4 @@ std::vector<LABEL_T> Flash<LABEL_T>::getTopKUsingPriorityQueue(
 template class Flash<uint32_t>;
 template class Flash<uint64_t>;
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::search

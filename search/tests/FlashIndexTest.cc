@@ -3,9 +3,8 @@
 #include <hashing/src/DensifiedMinHash.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
-#include <generator/src/Flash.h>
-#include <generator/src/Generator.h>
-#include <generator/tests/FlashGeneratorTestUtils.h>
+#include <search/src/Flash.h>
+#include <search/tests/FlashIndexTestUtils.h>
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
@@ -13,9 +12,8 @@
 #include <random>
 #include <vector>
 
-using thirdai::bolt::Flash;
-using thirdai::bolt::GeneratorConfig;
 using thirdai::hashing::DensifiedMinHash;
+using thirdai::search::Flash;
 
 namespace thirdai::tests {
 
@@ -24,7 +22,7 @@ const uint32_t NUM_TABLES = 32;
 const uint32_t RANGE = 3000;
 const uint32_t NUM_VECTORS = 100;
 
-TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
+TEST(FlashIndexTest, FlashIndexSerializationTest) {
   uint32_t input_vector_dimension = 50;
 
   uint32_t batch_size = 20;
@@ -86,26 +84,4 @@ TEST(FlashGeneratorTest, SerializeAndDeserializeFlashGeneratorTest) {
     }
   }
 }
-
-TEST(FlashGeneratorConfigTest, FlashGeneratorLoadAndSaveTest) {
-  const char* SAVE_PATH = "./flash_config";
-
-  GeneratorConfig config =
-      GeneratorConfig(/* hash_function = */ "DensifiedMinHash",
-                      /* num_tables = */ NUM_TABLES,
-                      /* hashes_per_table = */ HASHES_PER_TABLE,
-                      /* input_dim = */ NUM_VECTORS,
-                      /* top_k = */ 5);
-
-  config.save(/*config_file_name = */ SAVE_PATH);
-
-  auto deserialized_config =
-      GeneratorConfig::load(/* config_file_name = */ SAVE_PATH);
-
-  ASSERT_EQ(config, deserialized_config.get());
-
-  // Checks that config file was successfully removed
-  EXPECT_EQ(std::remove(SAVE_PATH), 0);
-}
-
 }  // namespace thirdai::tests

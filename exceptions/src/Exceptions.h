@@ -30,10 +30,10 @@ class NodeStateMachineError : public std::logic_error {
                          message) {}
 };
 
-class FlashIndexException : public std::logic_error {
+class QueryCandidateGeneratorException : public std::logic_error {
  public:
-  explicit FlashIndexException(const std::string& message)
-      : std::logic_error("Flash Index Error: " + message) {}
+  explicit QueryCandidateGeneratorException(const std::string& message)
+      : std::logic_error("Query Candidate Generator Exception: " + message) {}
 };
 
 }  // namespace thirdai::exceptions

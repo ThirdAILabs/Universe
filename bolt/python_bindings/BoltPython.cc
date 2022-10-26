@@ -685,19 +685,28 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
            )pbdoc");
 
+  createBoltGraphSubmodule(bolt_submodule);
+
+  createModelsSubmodule(bolt_submodule);
+
+  return bolt_submodule;
+}
+
+void createModelsSubmodule(py::module_& bolt_submodule) {
+  auto models_submodule = bolt_submodule.def_submodule("models");
+
   py::class_<bolt::QueryCandidateGeneratorConfig,
-             bolt::QueryCandidateGeneratorConfigPtr>(bolt_submodule,
+             bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
-      .def(py::init<std::string, uint32_t, uint32_t, uint32_t, uint32_t, bool,
-                    bool, bool, uint32_t>(),
+      .def(py::init<std::string, uint32_t, uint32_t, uint32_t, uint32_t,
+                    std::vector<uint32_t>, bool, uint32_t, uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("input_dim"),
-           py::arg("top_k") = 5, py::arg("use_char_trigram") = true,
-           py::arg("use_char_four_gram") = true,
+           py::arg("top_k") = 5, py::arg("n_grams"),
            py::arg("has_incorrect_queries") = false,
-           py::arg("batch_size") = 100,
+           py::arg("batch_size") = 10000, py::arg("range") = 1000000,
            R"pbdoc(
-    Initializes an GeneratorConfig object.
+    Initializes a QueryCandidateGeneratorConfig object.
 
      Args:
         hash_function (str): A specific hash function 
@@ -707,34 +716,31 @@ py::module_ createBoltSubmodule(py::module_& module) {
         hashes_per_table (int): Number of hashes per table.
         input_dim (int): Input dimension 
         top_k (int): The number of closest queries to return
-        use_char_trigram (bool): Determines if input blocks include character
-            tri-grams
-        use_char_four_gram (bool): Determines if input blocks include
-            character four-grams
+        n_grams (List[int]): List of N-gram blocks to use. 
         has_incorrect_queries(bool): Flag to identify if flash is initialized
             with single queries or tuples of incorrect and correct queries.
         batch_size (int): batch size. It is defaulted to 100. 
+        range (int) : The range for the hash function used. 
     Returns: 
-        GeneratorConfig
+        QueryCandidateGeneratorConfig
 
     Example:
-        >>> generator_config = bolt.GeneratorConfig(
+        >>> generator_config = bolt.models.GeneratorConfig(
                 hash_function="DensifiedMinHash",
                 num_tables=100,
                 hashes_per_table=15,
                 input_dim=100,
                 top_k=5,
-                use_char_trigram=True,
-                use_char_four_gram=True,
+                n_grams=[3,4],
                 has_incorrect_queries=True,
-                batch_size=100,
+                batch_size=10000,
             )
             )pbdoc")
       .def("save", &bolt::QueryCandidateGeneratorConfig::save,
            py::arg("file_name"),
            R"pbdoc(
-    Saves an generator configuration object at the specified file path. 
-    This can be used to provide a flash generator architecture to customers.
+    Saves a query candidate generator config object at the specified file path. 
+    This can be used to provide a query candidate generator architecture to customers.
 
     Args:
         file_name (str): File path specification for where to save the 
@@ -744,26 +750,28 @@ py::module_ createBoltSubmodule(py::module_& module) {
         None
 
             )pbdoc")
+
       .def_static("load", &bolt::QueryCandidateGeneratorConfig::load,
                   py::arg("config_file_name"),
                   R"pbdoc(
-    Loads an generator config object from a specific file location. 
+    Loads a query candidate generator config object from a specific file location. 
 
     Args:
         config_file_name (str): Path to the file containing a saved config.
 
         Returns:
-            GeneratorConfig:
+            QueryCandidateGeneratorConfig:
 
             )pbdoc");
 
-  py::class_<bolt::QueryCandidateGeneratorConfig,
-             QueryCandidateGeneratorConfigPtr>(bolt_submodule, "Generator")
+  py::class_<bolt::QueryCandidateGenerator,
+             std::shared_ptr<bolt::QueryCandidateGenerator>>(models_submodule,
+                                                             "Generator")
       .def(py::init(&bolt::QueryCandidateGenerator::
                         buildGeneratorFromSerializedConfig),
            py::arg("config_file_name"),
            R"pbdoc(
-    Initializes an Generator object.
+    Initializes an QueryCandidateGenerator object.
             
     The config file should at least contain the following elements:
         - num_hash_tables: Number of hash tables to construct.
@@ -771,21 +779,48 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Args:
         config_file_name (str): The path to the config file
     Returns:
-        Generator
+        QueryCandidateGenerator
 
     Example:
         >>> CONFIG_FILE = "/path/to/config/file"
-        >>> generator = bolt.Generator(
+        >>> generator = bolt.models.Generator(
                 config_file_name=CONFIG_FILE
             )
 
            )pbdoc")
-      .def("train",
-           &bolt::QueryCandidateGenerator::buildFlashQueryCandidateGenerator,
+
+      .def("save", &bolt::QueryCandidateGenerator::save, py::arg("file_name"),
+           R"pbdoc(
+    Saves a query candidate generator object at the specified file path. 
+
+    Args:
+        file_name (str): File path specification for where to save the 
+                generator object. 
+
+    Returns:
+        None
+
+            )pbdoc")
+
+      .def_static("load", &bolt::QueryCandidateGenerator::load,
+                  py::arg("file_name"),
+                  R"pbdoc(
+    Loads a query candidate generator object from a specific file location.
+    Throws an exception if the file does not exist at the specified path.  
+
+    Args:
+        config_file_name (str): Path to the file containing a saved config.
+
+        Returns:
+            QueryCandidateGenerator:
+
+            )pbdoc")
+
+      .def("train", &bolt::QueryCandidateGenerator::buildFlashIndex,
            py::arg("file_name"),
            R"pbdoc(
-    Constructs a flash object by reading from a CSV file. 
-    If `has_incorrect_queries` is set in GeneratorConfig, the input CSV file is 
+    Constructs a flash index by reading from a CSV file. 
+    If `has_incorrect_queries` is set in QueryCandidateGeneratorConfig, the input CSV file is 
     expected to have two columns: the first containing correct queries, and 
     the second containing the incorrect queries. 
 
@@ -796,14 +831,15 @@ py::module_ createBoltSubmodule(py::module_& module) {
         config_file_name (str): The path to the file containing the queries
  
     Returns:
-        Generator
+        None
 
     Example:
-        >>> generator = bolt.Generator(...)
+        >>> generator = bolt.models.Generator(...)
         >>> query_file_name = "/path/to/query/file/name"
         >>> generator.train(file_name=query_file_name)
 
            )pbdoc")
+
       .def("generate", &bolt::QueryCandidateGenerator::queryFromList,
            py::arg("queries"),
            R"pbdoc(
@@ -819,16 +855,13 @@ py::module_ createBoltSubmodule(py::module_& module) {
         List[List[str]]: The generated list of queries by flash. 
 
     Example:
-        >>> generator = bolt.Generator(...)
+        >>> generator = bolt.models.Generator(...)
         >>> query_file_name = "/path/to/query/file/name"
         >>> generator.build_index(file_name=query_file_name)
-        >>> candidates = generator.generate(query=["some incorrect query"])
+        >>> candidates = generator.generate(query=["first incorrect query",
+                                                   "second incorrect query"])
 
            )pbdoc");
-
-  createBoltGraphSubmodule(bolt_submodule);
-
-  return bolt_submodule;
 }
 
 }  // namespace thirdai::bolt::python

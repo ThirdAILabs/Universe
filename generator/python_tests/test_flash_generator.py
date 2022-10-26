@@ -80,10 +80,10 @@ def transform_queries(dataframe):
 
             else:
                 # Permute the characters in the string
-                transformed_word = "".join(
-                    random.sample(word_to_transform, len(word_to_transform))
-                )
-                incorrect_query_pair[random_index] = transformed_word
+                transformed_word_char_list = list(word_to_transform)
+                random.shuffle(transformed_word_char_list)
+
+                incorrect_query_pair[random_index] = "".join(transformed_word_char_list)
 
             index += 1
 
@@ -117,26 +117,32 @@ def test_flash_generator():
     transformed_queries = transform_queries(dataframe=dataframe)
     write_input_dataset_to_csv(transformed_queries, TRANSFORMED_QUERIES)
 
-    generator_config = bolt.GeneratorConfig(
+    generator_config = bolt.models.GeneratorConfig(
         hash_function="DensifiedMinHash",
         num_tables=300,
         hashes_per_table=32,
         input_dim=100,
+        n_grams=[3, 4],
         has_incorrect_queries=True,
     )
     generator_config.save(CONFIG_FILE)
 
-    generator = bolt.Generator(config_file_name=CONFIG_FILE)
+    generator = bolt.models.Generator(config_file_name=CONFIG_FILE)
 
     generator.train(file_name=TRANSFORMED_QUERIES)
 
     query_pairs = read_csv_file(file_name=TRANSFORMED_QUERIES)
 
-    count_correct_results = 0
-    for query_pair in query_pairs:
-        generated_candidates = generator.generate(queries=[query_pair[1]])
-        count_correct_results += 1 if query_pair[0] in generated_candidates[0] else 0
+    generated_candidates = generator.generate(
+        queries=[query_pair[1] for query_pair in query_pairs]
+    )
 
-    assert count_correct_results / DATASET_SIZE > 0.98
+    count_correct_results = 0
+    for query_index in range(len(query_pairs)):
+        count_correct_results += (
+            1 if query_pairs[query_index][0] in generated_candidates[query_index] else 0
+        )
+
+    assert count_correct_results / DATASET_SIZE > 0.95
 
     delete_created_files()

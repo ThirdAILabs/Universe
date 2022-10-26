@@ -242,9 +242,8 @@ set(BOLT_SOURCES
     bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc)
 
-set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
-
-set(FLASH_GENERATOR_SOURCES generator/src/Flash.cc)
+set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc
+                   search/src/Flash.cc)
 
 set(HASHING_SOURCES
     hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
@@ -266,7 +265,6 @@ add_library(
   thirdai STATIC
   ${BOLT_SOURCES}
   ${SEARCH_SOURCES}
-  ${FLASH_GENERATOR_SOURCES}
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
   ${LICENSE_SOURCES}

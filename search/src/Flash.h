@@ -8,7 +8,7 @@
 #include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/Datasets.h>
 
-namespace thirdai::bolt {
+namespace thirdai::search {
 
 /**
  * See https://arxiv.org/pdf/2106.11565.pdf for the original Flash paper.
@@ -121,4 +121,4 @@ class Flash {
   }
 };
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::search

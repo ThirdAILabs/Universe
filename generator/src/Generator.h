@@ -2,9 +2,10 @@
 
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
@@ -15,7 +16,7 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exceptions/src/Exceptions.h>
-#include <generator/src/Flash.h>
+#include <search/src/Flash.h>
 #include <fstream>
 #include <memory>
 #include <optional>
@@ -26,6 +27,8 @@
 #include <vector>
 
 namespace thirdai::bolt {
+
+using thirdai::search::Flash;
 
 class QueryCandidateGeneratorConfig {
  public:
@@ -142,13 +145,41 @@ class QueryCandidateGenerator {
     return QueryCandidateGenerator::make(flash_QueryCandidateGenerator_config);
   }
 
+  void save(const std::string& file_name) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(file_name, std::ios::binary);
+
+    cereal::BinaryOutputArchive output_archive(filestream);
+    output_archive(*this);
+  }
+
+  static std::shared_ptr<QueryCandidateGenerator> load(
+      const std::string& file_name) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(file_name, std::ios::binary);
+
+    if (!filestream.good()) {
+      throw exceptions::QueryCandidateGeneratorException(
+          "Attempting to load Query Candidate Generator from an Invalid File "
+          "Name");
+    }
+
+    cereal::BinaryInputArchive input_archive(filestream);
+    std::shared_ptr<QueryCandidateGenerator> deserialized_generator(
+        new QueryCandidateGenerator());
+    input_archive(*deserialized_generator);
+
+    return deserialized_generator;
+  }
+
   /**
    * @brief Builds a Flash index by reading from a CSV file
    * containing queries.
    * If the `has_incorrect_queries` flag is set in the
    * QueryCandidateGeneratorConfig, the input CSV file is expected to contain
    * both correct (first column) and incorrect queries (second column).
-   * Otherwise, the file is expected to have only correct queries in one column.
+   * Otherwise, the file is expected to have only correct queries in one
+   * column.
    *
    * @param file_name
    */
@@ -176,29 +207,34 @@ class QueryCandidateGenerator {
    */
   std::vector<std::vector<std::string>> queryFromList(
       const std::vector<std::string>& queries) {
-    std::vector<std::vector<std::string>> outputs(queries.size());
-
-#pragma omp parallel for default(none) shared(queries, outputs)
-    for (uint32_t query_index = 0; query_index < queries.size();
-         query_index++) {
-      auto featurized_query_vector = featurizeSingleQuery(queries[query_index]);
-
-      std::vector<std::vector<uint32_t>> suggested_query_ids =
-          _flash_index->queryBatch(
-              /* batch = */ BoltBatch(std::move(featurized_query_vector)),
-              /* top_k = */ _query_generator_config->topK(),
-              /* pad_zeros = */ true);
-
-      std::vector<std::string> topk_queries(_query_generator_config->topK());
-      for (uint32_t query_id_index = 0;
-           query_id_index < _query_generator_config->topK(); query_id_index++) {
-        auto suggested_query =
-            _ids_to_queries_map.at(suggested_query_ids[0][query_id_index]);
-        topk_queries[query_id_index] = std::move(suggested_query);
-      }
-      outputs[query_index] = std::move(topk_queries);
+    if (_flash_index == nullptr) {
+      throw exceptions::QueryCandidateGeneratorException(
+          "Attempting to Generate Candidate Queries without Training the "
+          "Generator.");
     }
 
+    std::vector<std::vector<std::string>> outputs;
+    outputs.reserve(queries.size());
+
+    std::vector<BoltVector> featurized_queries(queries.size());
+
+    for (uint32_t query_index = 0; query_index < queries.size();
+         query_index++) {
+      featurized_queries[query_index] =
+          featurizeSingleQuery(queries[query_index]);
+    }
+    std::vector<std::vector<uint32_t>> candidate_query_ids =
+        _flash_index->queryBatch(
+            /* batch = */ BoltBatch(std::move(featurized_queries)),
+            /* top_k = */ _query_generator_config->topK(),
+            /* pad_zeros = */ true);
+
+    for (auto& candidate_query_id_vector : candidate_query_ids) {
+      auto top_k_candidates =
+          getQueryCandidatesAsStrings(candidate_query_id_vector);
+
+      outputs.emplace_back(std::move(top_k_candidates));
+    }
     return outputs;
   }
 
@@ -216,7 +252,8 @@ class QueryCandidateGenerator {
       const std::vector<uint32_t>& n_grams) const {
     uint8_t correct_query_column_index = 0;
 
-    std::vector<dataset::BlockPtr> input_blocks(n_grams.size());
+    std::vector<dataset::BlockPtr> input_blocks;
+    input_blocks.reserve(n_grams.size());
 
     for (auto n_gram : n_grams) {
       input_blocks.emplace_back(dataset::CharKGramTextBlock::make(
@@ -228,9 +265,17 @@ class QueryCandidateGenerator {
     return input_blocks;
   }
 
-  std::unordered_map<uint32_t, std::string> getIDToQueryMapping() const {
-    return _ids_to_queries_map;
+  std::vector<std::string> getQueryCandidatesAsStrings(
+      const std::vector<uint32_t>& query_ids) {
+    std::vector<std::string> output_strings;
+    output_strings.reserve(query_ids.size());
+
+    for (const auto& query_id : query_ids) {
+      output_strings.push_back(_ids_to_queries_map[query_id]);
+    }
+    return output_strings;
   }
+
   /**
    * @brief Constructs a mapping from IDs to correct queries. This allows
    * us to convert the output of queryBatch() into strings representing
@@ -248,27 +293,29 @@ class QueryCandidateGenerator {
       std::string row;
 
       while (std::getline(input_file_stream, row)) {
-        if (has_incorrect_queries) {
-          auto parsed_row = dataset::ProcessorUtils::parseCsvRow(row, ',');
-          auto correct_query = std::string(parsed_row[0]);
+        std::string correct_query;
 
-          if (!_query_to_ids_map.count(correct_query)) {
-            _ids_to_queries_map[ids_counter] = correct_query;
-            _query_to_ids_map[correct_query] = ids_counter;
-          }
+        if (has_incorrect_queries) {
+          correct_query =
+              std::string(dataset::ProcessorUtils::parseCsvRow(row, ',')[0]);
         } else {
-          _ids_to_queries_map[ids_counter] = row;
+          correct_query = row;
         }
+
+        if (!_queries_to_ids_map.count(correct_query)) {
+          _ids_to_queries_map.push_back(correct_query);
+          _queries_to_ids_map[correct_query] = ids_counter;
+        }
+
         ids_counter += 1;
       }
       input_file_stream.close();
-
     } catch (const std::ifstream::failure& exception) {
       throw std::invalid_argument("Invalid input file name.");
     }
   }
 
-  std::vector<BoltVector> featurizeSingleQuery(const std::string& query) const {
+  BoltVector featurizeSingleQuery(const std::string& query) const {
     BoltVector output_vector;
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
@@ -276,7 +323,7 @@ class QueryCandidateGenerator {
             _batch_processor->makeInputVector(input_vector, output_vector)) {
       std::rethrow_exception(exception);
     }
-    return {std::move(output_vector)};
+    return output_vector;
   }
 
   std::unique_ptr<dataset::StreamingGenericDatasetLoader>
@@ -298,10 +345,12 @@ class QueryCandidateGenerator {
 
   // Maintains a mapping from the assigned IDs to the original
   // queries loaded from a CSV file. Each unique query in the input
-  // CSV file is assigned a unique ID in an ascending order.
-  std::unordered_map<uint32_t, std::string> _ids_to_queries_map;
+  // CSV file is assigned a unique ID in an ascending order. This is
+  // a vector instead of an unordered map because queries are
+  // assigned IDs sequentially.
+  std::vector<std::string> _ids_to_queries_map;
 
-  std::unordered_map<std::string, uint32_t> _query_to_ids_map;
+  std::unordered_map<std::string, uint32_t> _queries_to_ids_map;
 
   // private constructor for cereal
   QueryCandidateGenerator() {}
@@ -310,7 +359,8 @@ class QueryCandidateGenerator {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_query_generator_config, _dimension_for_encodings, _flash_index,
-            _input_blocks, _batch_processor, _ids_to_queries_map);
+            _input_blocks, _batch_processor, _ids_to_queries_map,
+            _queries_to_ids_map);
   }
 };  // namespace thirdai::bolt
 
