@@ -6,8 +6,8 @@ from thirdai import new_dataset as dataset
 
 pytestmark = [pytest.mark.unit]
 
-NUM_ROWS = 1000
-OUTPUT_RANGE = 100
+NUM_ROWS = 10000
+OUTPUT_RANGE = 1000
 NUM_WORDS = 5
 
 # random.seed(10)
