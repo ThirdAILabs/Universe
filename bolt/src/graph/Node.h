@@ -3,10 +3,13 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <cassert>
 #include <queue>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+
+#define ASSERT_FALSE(x) assert(not(x))
 
 namespace thirdai::bolt {
 
@@ -67,6 +70,10 @@ class Node {
    * the name for its Node type. This moves the Node from state 2 to state 3.
    */
   void compile(LayerNameManager& name_manager) {
+    ASSERT_FALSE(getState() == NodeState::Constructed);
+    ASSERT_FALSE(getState() == NodeState::Compiled ||
+                 getState() == NodeState::PreparedForBatchProcessing);
+    /*
     if (getState() == NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "Cannot call compile before setting predecessor(s) of this Node.");
@@ -75,6 +82,7 @@ class Node {
         getState() == NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError("Cannot call compile twice.");
     }
+    */
     _name = name_manager.registerNodeAndGetName(/* node_type = */ type());
     compileImpl();
   }
@@ -126,11 +134,14 @@ class Node {
    * so it is the responsibility of the caller to call isInputNode() first.
    */
   uint32_t numNonzerosInOutput() const {
+    ASSERT_FALSE(getState() != NodeState::PreparedForBatchProcessing);
+    /*
     if (getState() != NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
           "Must call prepareForBatchProcessing before calling "
           "numNonzerosInOutput.");
     }
+    */
 
     return numNonzerosInOutputImpl();
   }
@@ -146,6 +157,12 @@ class Node {
     This moves the node from state 3 to state 4.
   */
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) {
+    ASSERT_FALSE(getState() == NodeState::Constructed ||
+                 getState() == NodeState::PredecessorsSet);
+
+    ASSERT_FALSE(getState() == NodeState::PreparedForBatchProcessing);
+
+    /*
     if (getState() == NodeState::Constructed ||
         getState() == NodeState::PredecessorsSet) {
       throw exceptions::NodeStateMachineError(
@@ -157,6 +174,7 @@ class Node {
           "Cannot call prepareForBatchProcessing consecutively (must call "
           "cleanupAfterBatchProcessing in between).");
     }
+    */
 
     prepareForBatchProcessingImpl(batch_size, use_sparsity);
   }
@@ -167,11 +185,14 @@ class Node {
    * state 3.
    */
   void cleanupAfterBatchProcessing() {
-    if (getState() != Node::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "Can only call cleanupAfterBatchProcessing after "
-          "prepareForBatchProcessing.");
-    }
+    ASSERT_FALSE(getState() != Node::PreparedForBatchProcessing);
+    /*
+      if (getState() != Node::PreparedForBatchProcessing) {
+        throw exceptions::NodeStateMachineError(
+            "Can only call cleanupAfterBatchProcessing after "
+            "prepareForBatchProcessing.");
+      }
+  */
 
     cleanupAfterBatchProcessingImpl();
   }
@@ -179,11 +200,14 @@ class Node {
   // Returns any predecessors of the node. This is used to traverse the graph
   // during compilation.
   std::vector<NodePtr> getPredecessors() const {
+    ASSERT_FALSE(getState() == NodeState::Constructed);
+    /*
     if (getState() == NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "Cannot get the predecessors for this layer because "
           "they have not been set yet");
     }
+    */
     return getPredecessorsImpl();
   }
 
@@ -195,12 +219,16 @@ class Node {
   */
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayers() {
+    ASSERT_FALSE(getState() == NodeState::Constructed ||
+                 getState() == NodeState::PredecessorsSet);
+    /*
     if (getState() == NodeState::Constructed ||
         getState() == NodeState::PredecessorsSet) {
       throw exceptions::NodeStateMachineError(
           "Cannot call getInternalFullyConnectedLayers before "
           "calling compile.");
     }
+    */
     return getInternalFullyConnectedLayersImpl();
   }
 
@@ -212,22 +240,30 @@ class Node {
   // Prints out a single line summary in the format
   // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...
   void summarize(std::stringstream& summary, bool detailed) const {
-    if (getState() == NodeState::Constructed ||
-        getState() == NodeState::PredecessorsSet) {
-      throw exceptions::NodeStateMachineError(
-          "Can only summarize a node after compiling");
-    }
+    ASSERT_FALSE(getState() == NodeState::Constructed ||
+                 getState() == NodeState::PredecessorsSet);
+    /*
+     if (getState() == NodeState::Constructed ||
+         getState() == NodeState::PredecessorsSet) {
+       throw exceptions::NodeStateMachineError(
+           "Can only summarize a node after compiling");
+     }
+     */
     summarizeImpl(summary, detailed);
   }
 
   // Returns the name of this node (only valid after the node has been
   // compiled).
   const std::string& name() const {
+    ASSERT_FALSE(getState() == NodeState::Constructed ||
+                 getState() == NodeState::PredecessorsSet);
+    /*
     if (getState() == NodeState::Constructed ||
         getState() == NodeState::PredecessorsSet) {
       throw exceptions::NodeStateMachineError(
           "Can only get the name of a node after compiling");
     }
+    */
     return *_name;
   }
 

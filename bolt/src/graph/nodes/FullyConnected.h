@@ -233,7 +233,7 @@ class FullyConnectedNode final
     assert(_config.has_value());
     _layer = std::make_shared<FullyConnectedLayer>(_config.value(),
                                                    _predecessor->outputDim());
-    _config = std::nullopt;
+    // _config = std::nullopt;
   }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -310,7 +310,7 @@ class FullyConnectedNode final
 
   // Private constructor for cereal. Must create dummy config since no default
   // constructor exists for layer config.
-  FullyConnectedNode() : _config(std::nullopt) {}
+  FullyConnectedNode() : {}
 
   friend class cereal::access;
   template <class Archive>
