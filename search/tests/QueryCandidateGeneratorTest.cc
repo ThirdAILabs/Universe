@@ -1,14 +1,11 @@
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
-#include <hashing/src/DensifiedMinHash.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Datasets.h>
-#include <generator/src/Generator.h>
+#include <search/src/Generator.h>
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <memory>
-#include <random>
 #include <vector>
 
 using thirdai::bolt::QueryCandidateGeneratorConfig;
@@ -35,7 +32,7 @@ TEST(QueryCandidateGeneratorConfigTest,
   auto deserialized_config =
       QueryCandidateGeneratorConfig::load(/* config_file_name = */ CONFIG_PATH);
 
-  ASSERT_EQ(config, deserialized_config.get());
+  ASSERT_EQ(config, *deserialized_config);
 
   // Checks that config file was successfully removed
   EXPECT_EQ(std::remove(CONFIG_PATH), 0);

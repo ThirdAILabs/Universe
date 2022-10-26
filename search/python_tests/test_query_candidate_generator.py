@@ -50,6 +50,12 @@ def transform_queries(dataframe):
     random permutation to the characters in order to create an incorrect
     version of the queries.
 
+    The input is expected to be a Pandas DataFrame with one column
+    containing the correct queries. The output is expected to be
+    another Pandas DataFrame with two columns. The first column remains
+    the same, but the second column consists of queries transformed
+    according to the rule detailed above.
+
     """
     transformation_type = ("remove-char", "permute-string")
     transformed_dataframe = []
@@ -59,13 +65,14 @@ def transform_queries(dataframe):
 
         incorrect_query_pair = correct_query.split(" ")
         query_length = len(incorrect_query_pair)
-        words_to_permute = math.ceil(0.1 * query_length)
+        words_to_transform = math.ceil(0.1 * query_length)
 
-        index = 0
-        permuted_indices = {}
-        while index < words_to_permute:
-            random_index = random.randint(0, words_to_permute)
-            if random_index in permuted_indices:
+        transformed_words = 0
+        visited_indices = set()
+
+        while transformed_words < words_to_transform:
+            random_index = random.randint(0, words_to_transform)
+            if random_index in visited_indices:
                 continue
             word_to_transform = incorrect_query_pair[random_index]
 
@@ -73,8 +80,8 @@ def transform_queries(dataframe):
                 # Remove a random character
                 char_index = random.randint(0, len(word_to_transform) - 1)
                 transformed_word = (
-                    word_to_transform[0:char_index:]
-                    + word_to_transform[char_index + 1 : :]
+                    word_to_transform[0:char_index]
+                    + word_to_transform[char_index + 1 :]
                 )
                 incorrect_query_pair[random_index] = transformed_word
 
@@ -85,7 +92,8 @@ def transform_queries(dataframe):
 
                 incorrect_query_pair[random_index] = "".join(transformed_word_char_list)
 
-            index += 1
+            visited_indices.add(random_index)
+            transformed_words += 1
 
         transformed_dataframe.append([correct_query, " ".join(incorrect_query_pair)])
 
@@ -95,6 +103,7 @@ def transform_queries(dataframe):
 def delete_created_files():
     if os.path.exists(QUERIES_FILE):
         os.remove(QUERIES_FILE)
+
     if os.path.exists(CONFIG_FILE):
         os.remove(CONFIG_FILE)
 

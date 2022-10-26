@@ -49,14 +49,14 @@ class QueryCandidateGeneratorConfig {
         _has_incorrect_queries(has_incorrect_queries) {}
 
   // overloaded operator mainly for testing
-  bool operator==(QueryCandidateGeneratorConfig* rhs) const {
-    return this->_hash_function == rhs->_hash_function &&
-           this->_num_tables == rhs->_num_tables &&
-           this->_hashes_per_table == rhs->_hashes_per_table &&
-           this->_input_dim == rhs->_input_dim && this->_top_k == rhs->_top_k &&
-           this->_batch_size == rhs->_batch_size &&
-           this->_range == rhs->_range && this->_n_grams == rhs->_n_grams &&
-           this->_has_incorrect_queries == rhs->_has_incorrect_queries;
+  bool operator==(const QueryCandidateGeneratorConfig& rhs) const {
+    return this->_hash_function == rhs._hash_function &&
+           this->_num_tables == rhs._num_tables &&
+           this->_hashes_per_table == rhs._hashes_per_table &&
+           this->_input_dim == rhs._input_dim && this->_top_k == rhs._top_k &&
+           this->_batch_size == rhs._batch_size && this->_range == rhs._range &&
+           this->_n_grams == rhs._n_grams &&
+           this->_has_incorrect_queries == rhs._has_incorrect_queries;
   }
 
   void save(const std::string& config_file_name) const {
@@ -158,12 +158,6 @@ class QueryCandidateGenerator {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(file_name, std::ios::binary);
 
-    if (!filestream.good()) {
-      throw exceptions::QueryCandidateGeneratorException(
-          "Attempting to load Query Candidate Generator from an Invalid File "
-          "Name");
-    }
-
     cereal::BinaryInputArchive input_archive(filestream);
     std::shared_ptr<QueryCandidateGenerator> deserialized_generator(
         new QueryCandidateGenerator());
@@ -187,7 +181,7 @@ class QueryCandidateGenerator {
     buildIDToQueryMapping(file_name,
                           _query_generator_config->hasIncorrectQueries());
 
-    auto data_loader = getUnlabeledDatasetLoader(file_name);
+    auto data_loader = getDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
 
     _flash_index = std::make_unique<Flash<uint32_t>>(
@@ -207,14 +201,11 @@ class QueryCandidateGenerator {
    */
   std::vector<std::vector<std::string>> queryFromList(
       const std::vector<std::string>& queries) {
-    if (_flash_index == nullptr) {
+    if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Generate Candidate Queries without Training the "
           "Generator.");
     }
-
-    std::vector<std::vector<std::string>> outputs;
-    outputs.reserve(queries.size());
 
     std::vector<BoltVector> featurized_queries(queries.size());
 
@@ -229,6 +220,9 @@ class QueryCandidateGenerator {
             /* top_k = */ _query_generator_config->topK(),
             /* pad_zeros = */ true);
 
+    std::vector<std::vector<std::string>> outputs;
+    outputs.reserve(queries.size());
+
     for (auto& candidate_query_id_vector : candidate_query_ids) {
       auto top_k_candidates =
           getQueryCandidatesAsStrings(candidate_query_id_vector);
@@ -240,24 +234,31 @@ class QueryCandidateGenerator {
 
  private:
   explicit QueryCandidateGenerator(
-      QueryCandidateGeneratorConfigPtr flash_generator_config)
-      : _query_generator_config(std::move(flash_generator_config)),
+      QueryCandidateGeneratorConfigPtr query_candidate_generator_config)
+      : _query_generator_config(std::move(query_candidate_generator_config)),
         _dimension_for_encodings(
             dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM),
-        _input_blocks(constructInputBlocks(_query_generator_config->nGrams())),
+        _input_blocks(constructInputBlocks(_query_generator_config->nGrams(),
+                                           /* column_index = */ 0)),
         _batch_processor(std::make_shared<dataset::GenericBatchProcessor>(
-            _input_blocks, std::vector<dataset::BlockPtr>{})) {}
+            _input_blocks, std::vector<dataset::BlockPtr>{})) {
+    if (_query_generator_config->hasIncorrectQueries()) {
+      auto blocks = constructInputBlocks(_query_generator_config->nGrams(),
+                                         /* column_index = */ 1);
+      _incorrect_queries_batch_processor =
+          std::make_shared<dataset::GenericBatchProcessor>(
+              blocks, std::vector<dataset::BlockPtr>{});
+    }
+  }
 
   std::vector<dataset::BlockPtr> constructInputBlocks(
-      const std::vector<uint32_t>& n_grams) const {
-    uint8_t correct_query_column_index = 0;
-
+      const std::vector<uint32_t>& n_grams, uint32_t column_index) const {
     std::vector<dataset::BlockPtr> input_blocks;
     input_blocks.reserve(n_grams.size());
 
     for (auto n_gram : n_grams) {
       input_blocks.emplace_back(dataset::CharKGramTextBlock::make(
-          /* col = */ correct_query_column_index,
+          /* col = */ column_index,
           /* k = */ n_gram,
           /* dim = */ _dimension_for_encodings));
     }
@@ -289,7 +290,6 @@ class QueryCandidateGenerator {
       std::ifstream input_file_stream =
           dataset::SafeFileIO::ifstream(file_name, std::ios::in);
 
-      uint32_t ids_counter = 0;
       std::string row;
 
       while (std::getline(input_file_stream, row)) {
@@ -303,11 +303,9 @@ class QueryCandidateGenerator {
         }
 
         if (!_queries_to_ids_map.count(correct_query)) {
+          _queries_to_ids_map[correct_query] = _ids_to_queries_map.size();
           _ids_to_queries_map.push_back(correct_query);
-          _queries_to_ids_map[correct_query] = ids_counter;
         }
-
-        ids_counter += 1;
       }
       input_file_stream.close();
     } catch (const std::ifstream::failure& exception) {
@@ -326,8 +324,8 @@ class QueryCandidateGenerator {
     return output_vector;
   }
 
-  std::unique_ptr<dataset::StreamingGenericDatasetLoader>
-  getUnlabeledDatasetLoader(const std::string& file_name) {
+  std::unique_ptr<dataset::StreamingGenericDatasetLoader> getDatasetLoader(
+      const std::string& file_name) {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
         file_name, _query_generator_config->batchSize());
 
@@ -342,6 +340,9 @@ class QueryCandidateGenerator {
 
   std::vector<dataset::BlockPtr> _input_blocks;
   std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
+
+  std::shared_ptr<dataset::GenericBatchProcessor>
+      _incorrect_queries_batch_processor;
 
   // Maintains a mapping from the assigned IDs to the original
   // queries loaded from a CSV file. Each unique query in the input
@@ -359,8 +360,8 @@ class QueryCandidateGenerator {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_query_generator_config, _dimension_for_encodings, _flash_index,
-            _input_blocks, _batch_processor, _ids_to_queries_map,
-            _queries_to_ids_map);
+            _input_blocks, _batch_processor, _incorrect_queries_batch_processor,
+            _ids_to_queries_map, _queries_to_ids_map);
   }
 };  // namespace thirdai::bolt
 

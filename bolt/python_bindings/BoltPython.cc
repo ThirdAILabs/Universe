@@ -12,11 +12,11 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
-#include <generator/src/Generator.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <search/src/Generator.h>
 #include <limits>
 #include <optional>
 #include <sstream>
@@ -695,6 +695,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
 void createModelsSubmodule(py::module_& bolt_submodule) {
   auto models_submodule = bolt_submodule.def_submodule("models");
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<bolt::QueryCandidateGeneratorConfig,
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
@@ -719,7 +720,7 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
         n_grams (List[int]): List of N-gram blocks to use. 
         has_incorrect_queries(bool): Flag to identify if flash is initialized
             with single queries or tuples of incorrect and correct queries.
-        batch_size (int): batch size. It is defaulted to 100. 
+        batch_size (int): batch size. It is defaulted to 10000. 
         range (int) : The range for the hash function used. 
     Returns: 
         QueryCandidateGeneratorConfig
@@ -763,6 +764,8 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
             QueryCandidateGeneratorConfig:
 
             )pbdoc");
+
+#endif
 
   py::class_<bolt::QueryCandidateGenerator,
              std::shared_ptr<bolt::QueryCandidateGenerator>>(models_submodule,
