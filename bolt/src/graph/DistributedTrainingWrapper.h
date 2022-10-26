@@ -25,7 +25,7 @@ class DistributedTrainingWrapper {
     _bolt_graph->enableDistributedTraining();
   }
 
-  void computeAndSaveBatchGradients(uint32_t batch_idx) {
+  void computeAndStoreBatchGradients(uint32_t batch_idx) {
     requireTrainContext();
     _train_context->setInputs(batch_idx, _bolt_graph->_inputs);
     const BoltBatch& batch_labels = _train_context->labels()->at(batch_idx);

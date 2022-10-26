@@ -600,7 +600,7 @@ That's all for now, folks! More docs coming soon :)
       .def(py::init<BoltGraphPtr, TrainConfig>(), py::arg("model"),
            py::arg("train_config"))
       .def("compute_and_store_batch_gradients",
-           &DistributedTrainingWrapper::computeAndSaveBatchGradients,
+           &DistributedTrainingWrapper::computeAndStoreBatchGradients,
            py::arg("batch_idx"),
            "Uses the batch_idx'th batch of the currently "
            "set dataset to accumulate a single batche's gradients in the "
@@ -612,7 +612,7 @@ That's all for now, folks! More docs coming soon :)
       .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
            py::arg("train_data"), py::arg("train_labels"),
            "Sets the current train data and labels the wrapper class uses for "
-           "computeAndSaveBatchGradients. We need this method instead of just "
+           "computeAndStoreBatchGradients. We need this method instead of just "
            "passing in a single pair of training data and training labels at "
            "construction time because we might have a streaming dataset we "
            "want to train on, which will entail switching out the current "

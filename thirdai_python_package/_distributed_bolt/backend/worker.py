@@ -142,7 +142,11 @@ class Worker:
         all nodes are ready to communicate gradients. Returns whether this
         worker has another batch.
         """
-        if self.train_data == None or self.train_labels == None:
+        if (
+            self.train_data == None
+            or self.train_labels == None
+            or self.model.num_batches() == 0
+        ):
             raise ValueError(
                 "Cannot call train when we have run out of training data (this function has previously returned False without a subsequent call to move_to_next_epoch())"
             )
@@ -234,4 +238,11 @@ class Worker:
         self.train_data, self.train_labels = load
         self.model.set_datasets(self.train_data, self.train_labels)
         self.batch_id_within_dataset = 0
+
+        # This case should not be true since we currently require datasets
+        # to be nonempty, but this is a good hedge against future data
+        # pipeline changes
+        if self.model.num_batches() == 0:
+            return False
+
         return True
