@@ -70,12 +70,10 @@ def test_token_sum():
     test_1, test_2, test_labels = generate_sum_datasets_and_labels(
         input_dim=input_dim, num_examples=num_test
     )
-    predict_config = (
-        bolt.PredictConfig().silence().with_metrics(["categorical_accuracy"])
-    )
-    metrics = model.predict(
+    eval_config = bolt.EvalConfig().silence().with_metrics(["categorical_accuracy"])
+    metrics = model.evaluate(
         test_data=[test_1, test_2],
         test_labels=test_labels,
-        predict_config=predict_config,
+        eval_config=eval_config,
     )
     assert metrics[0]["categorical_accuracy"] > 0.8

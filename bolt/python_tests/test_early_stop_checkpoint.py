@@ -29,7 +29,7 @@ def train_models(
         loss=loss,
     )
 
-    predict_config = bolt.PredictConfig().with_metrics([metric_name])
+    eval_config = bolt.EvalConfig().with_metrics([metric_name])
 
     save_loc = "./best.model"
 
@@ -39,7 +39,7 @@ def train_models(
         .with_validation(
             validation_data=[valid_data],
             validation_labels=valid_labels,
-            predict_config=predict_config,
+            eval_config=eval_config,
         )
         .with_callbacks(
             [
@@ -80,13 +80,13 @@ def run_early_stop_test(loss, output_activation, metric_name):
         metric_name,
     )
 
-    predict_config = bolt.PredictConfig().with_metrics([metric_name])
+    eval_config = bolt.EvalConfig().with_metrics([metric_name])
 
-    last_model_score = last_model.predict(valid_data, valid_labels, predict_config)[0][
+    last_model_score = last_model.evaluate(valid_data, valid_labels, eval_config)[0][
         metric_name
     ]
 
-    early_stop_score = best_model.predict(valid_data, valid_labels, predict_config)[0][
+    early_stop_score = best_model.evaluate(valid_data, valid_labels, eval_config)[0][
         metric_name
     ]
 

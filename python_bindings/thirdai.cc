@@ -135,7 +135,12 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
   thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
   thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
+  // TODO(Nicholas, Geordie): This should be depreciated in favor of
+  // ModelPipeline/UDT soon.
   thirdai::bolt::python::defineAutoClassifeirsInModule(bolt_submodule);
+  // TODO(Nicholas, Geordie): Move this to bolt
+  thirdai::automl::deployment::python::defineModelPipelineAndUDT(
+      bolt_submodule);
 
   thirdai::search::python::createSearchSubmodule(m);
 

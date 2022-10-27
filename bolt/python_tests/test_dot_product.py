@@ -70,11 +70,11 @@ def run_dot_product_test(lhs_sparsity, rhs_sparsity, predict_threshold, acc_thre
     model = create_model(n_classes, lhs_sparsity, rhs_sparsity)
 
     train_cfg = bolt.TrainConfig(learning_rate=0.01, epochs=20).silence()
-    predict_cfg = bolt.PredictConfig().return_activations().silence()
+    eval_cfg = bolt.EvalConfig().return_activations().silence()
 
     model.train([train_lhs_data, train_rhs_data], train_labels, train_cfg)
-    _, activations = model.predict(
-        [test_lhs_data, test_rhs_data], test_labels, predict_cfg
+    _, activations = model.evaluate(
+        [test_lhs_data, test_rhs_data], test_labels, eval_cfg
     )
 
     scores = activations[:, 0]

@@ -154,16 +154,14 @@ def load_all_datasets(dataset_config):
 
 def run_experiment(model, datasets, experiment_config, use_mlflow):
     num_epochs, train_config = load_train_config(experiment_config)
-    predict_config = load_predict_config(experiment_config)
+    eval_config = load_eval_config(experiment_config)
     if should_compute_roc_auc(experiment_config):
-        predict_config.return_activations()
+        eval_config.return_activations()
 
     for epoch_num in range(num_epochs):
 
         freeze_hash_table_if_needed(model, experiment_config, epoch_num)
-        switch_to_sparse_inference_if_needed(
-            predict_config, experiment_config, epoch_num
-        )
+        switch_to_sparse_inference_if_needed(eval_config, experiment_config, epoch_num)
 
         train_metrics = model.train(
             train_data=datasets["train_data"],
@@ -176,7 +174,7 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         predict_output = model.predict(
             test_data=datasets["test_data"],
             test_labels=datasets["test_labels"],
-            predict_config=predict_config,
+            eval_config=eval_config,
         )
         if use_mlflow:
             log_prediction_metrics(predict_output)
@@ -408,8 +406,8 @@ def load_train_config(experiment_config):
     return config_get_required(experiment_config, "epochs"), train_config
 
 
-def load_predict_config(experiment_config):
-    return bolt.PredictConfig().with_metrics(
+def load_eval_config(experiment_config):
+    return bolt.EvalConfig().with_metrics(
         config_get_required(experiment_config, "test_metrics")
     )
 
@@ -424,16 +422,14 @@ def freeze_hash_table_if_needed(model, experiment_config, current_epoch):
         model.freeze_hash_tables()
 
 
-def switch_to_sparse_inference_if_needed(
-    predict_config, experiment_config, current_epoch
-):
+def switch_to_sparse_inference_if_needed(eval_config, experiment_config, current_epoch):
     use_sparse_inference = (
         "sparse_inference_epoch" in experiment_config.keys()
         and current_epoch >= experiment_config["sparse_inference_epoch"]
     )
     if use_sparse_inference:
         print(f"Switching to sparse inference on epoch {current_epoch}")
-        predict_config.enable_sparse_inference()
+        eval_config.enable_sparse_inference()
 
 
 def should_compute_roc_auc(experiment_config):

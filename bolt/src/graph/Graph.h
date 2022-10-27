@@ -59,9 +59,10 @@ class BoltGraph {
                    const dataset::BoltDatasetPtr& train_labels,
                    const TrainConfig& train_config);
 
-  InferenceResult predict(const std::vector<dataset::BoltDatasetPtr>& test_data,
-                          const dataset::BoltDatasetPtr& test_labels,
-                          const PredictConfig& predict_config);
+  InferenceResult evaluate(
+      const std::vector<dataset::BoltDatasetPtr>& test_data,
+      const dataset::BoltDatasetPtr& test_labels,
+      const EvalConfig& eval_config);
 
   std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
   getInputGradientSingle(

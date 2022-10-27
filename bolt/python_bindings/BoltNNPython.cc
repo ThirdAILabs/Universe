@@ -480,18 +480,16 @@ That's all for now, folks! More docs coming soon :)
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(
-          "predict",
+          "evaluate",
           [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
              const dataset::BoltDatasetPtr& labels,
-             const PredictConfig& predict_config) {
-            return dagPredictPythonWrapper(model, {data}, labels,
-                                           predict_config);
+             const EvalConfig& eval_config) {
+            return dagEvaluatePythonWrapper(model, {data}, labels, eval_config);
           },
-          py::arg("test_data"), py::arg("test_labels"),
-          py::arg("predict_config"))
+          py::arg("test_data"), py::arg("test_labels"), py::arg("eval_config"))
       .def(
-          "predict", &dagPredictPythonWrapper, py::arg("test_data"),
-          py::arg("test_labels"), py::arg("predict_config"),
+          "evaluate", &dagEvaluatePythonWrapper, py::arg("test_data"),
+          py::arg("test_labels"), py::arg("eval_config"),
           "Predicts the output given the input vectors and evaluates the "
           "predictions based on the given metrics.\n"
           "Arguments:\n"
@@ -501,8 +499,8 @@ That's all for now, folks! More docs coming soon :)
           " * test_labels: PyObject - Test labels, in the same format as "
           "test_data. This can also additionally be passed as None, in which "
           "case no metrics can be computed.\n"
-          " * predict_config: PredictConfig - the additional prediction "
-          "parameters. See the PredictConfig documentation above.\n\n"
+          " * eval_config: EvalConfig - the additional prediction "
+          "parameters. See the EvalConfig documentation above.\n\n"
           "Returns a tuple, where the first element is a mapping from metric "
           "names to their values. The second element, the output activation "
           "matrix, is only present if dont_return_activations was not called. "
@@ -628,11 +626,11 @@ void createLossesSubmodule(py::module_& nn_submodule) {
            py::arg("negative_margin"), py::arg("bound"));
 }
 
-py::tuple dagPredictPythonWrapper(BoltGraph& model,
-                                  const dataset::BoltDatasetList& data,
-                                  const dataset::BoltDatasetPtr& labels,
-                                  const PredictConfig& predict_config) {
-  auto [metrics, output] = model.predict(data, labels, predict_config);
+py::tuple dagEvaluatePythonWrapper(BoltGraph& model,
+                                   const dataset::BoltDatasetList& data,
+                                   const dataset::BoltDatasetPtr& labels,
+                                   const EvalConfig& eval_config) {
+  auto [metrics, output] = model.evaluate(data, labels, eval_config);
 
   // We need to get these now because we are about to std::move output
   const float* activation_pointer = output.getNonowningActivationPointer();

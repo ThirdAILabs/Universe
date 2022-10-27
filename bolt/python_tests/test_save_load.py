@@ -10,8 +10,8 @@ def get_train_config(epochs, batch_size):
     return bolt.TrainConfig(learning_rate=0.001, epochs=epochs).silence()
 
 
-def get_predict_config():
-    return bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
+def get_eval_config():
+    return bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
 
 
 class ModelWithLayers:
@@ -41,8 +41,8 @@ class ModelWithLayers:
             data, labels, train_config=get_train_config(epochs, batch_size=100)
         )
 
-    def predict(self, data, labels):
-        return self.model.predict(data, labels, predict_config=get_predict_config())[0]
+    def evaluate(self, data, labels):
+        return self.model.evaluate(data, labels, eval_config=get_eval_config())[0]
 
 
 def test_save_load_dag():
@@ -54,7 +54,7 @@ def test_save_load_dag():
 
     # Train model and get accuracy.
     model.train(data, labels, epochs=1)
-    test_metrics1 = model.predict(data, labels)
+    test_metrics1 = model.evaluate(data, labels)
     assert test_metrics1["categorical_accuracy"] >= 0.9
 
     # Save and load as new model.
@@ -63,9 +63,7 @@ def test_save_load_dag():
     new_model = bolt.nn.Model.load(filename=save_loc)
 
     # Verify accuracy matches.
-    test_metrics2 = new_model.predict(
-        data, labels, predict_config=get_predict_config()
-    )[0]
+    test_metrics2 = new_model.evaluate(data, labels, eval_config=get_eval_config())[0]
     assert test_metrics2["categorical_accuracy"] >= 0.9
     assert (
         test_metrics1["categorical_accuracy"] == test_metrics2["categorical_accuracy"]
@@ -76,9 +74,7 @@ def test_save_load_dag():
     new_model.train(
         data, labels, train_config=get_train_config(epochs=2, batch_size=100)
     )
-    test_metrics3 = new_model.predict(
-        data, labels, predict_config=get_predict_config()
-    )[0]
+    test_metrics3 = new_model.evaluate(data, labels, eval_config=get_eval_config())[0]
     assert test_metrics3["categorical_accuracy"] >= 0.9
 
 
@@ -91,7 +87,7 @@ def test_save_fully_connected_layer_parameters():
 
     # Train model and get accuracy.
     model.train(data, labels, epochs=1)
-    test_metrics1 = model.predict(data, labels)
+    test_metrics1 = model.evaluate(data, labels)
     assert test_metrics1["categorical_accuracy"] >= 0.9
 
     # Save and load as new model.
@@ -109,7 +105,7 @@ def test_save_fully_connected_layer_parameters():
     new_model.output.load_parameters(output_save_loc)
 
     # Verify accuracy matches.
-    test_metrics2 = new_model.predict(data, labels)
+    test_metrics2 = new_model.evaluate(data, labels)
     assert test_metrics2["categorical_accuracy"] >= 0.9
     assert (
         test_metrics1["categorical_accuracy"] == test_metrics2["categorical_accuracy"]
@@ -118,5 +114,5 @@ def test_save_fully_connected_layer_parameters():
     # Verify we can train the new model. Ideally we could check accuracy can
     # improve, but that is a bit flaky.
     new_model.train(data, labels, epochs=2)
-    test_metrics3 = new_model.predict(data, labels)
+    test_metrics3 = new_model.evaluate(data, labels)
     assert test_metrics3["categorical_accuracy"] >= 0.9

@@ -16,6 +16,8 @@ namespace thirdai::automl::deployment::python {
 
 void createDeploymentSubmodule(py::module_& thirdai_module);
 
+void defineModelPipelineAndUDT(py::module_& bolt_submodule);
+
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs);
 
@@ -34,12 +36,11 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source,
-    std::optional<bolt::PredictConfig>& predict_config);
+    std::optional<bolt::EvalConfig>& eval_config);
 
 template <typename Model>
-py::object evaluateOnFileWrapper(
-    Model& model, const std::string& filename,
-    std::optional<bolt::PredictConfig>& predict_config);
+py::object evaluateOnFileWrapper(Model& model, const std::string& filename,
+                                 std::optional<bolt::EvalConfig>& eval_config);
 
 template <typename Model, typename InputType>
 py::object predictWrapper(Model& model, const InputType& sample,

@@ -159,13 +159,13 @@ class Mach:
     # Returns a tuple of (best_labels, label_scores). best_labels is
     # of shape (batch.size, 1) and label_scores is of shape (batch.size, num_labels)
     def query_slow(self, batch_np):
-        predict_config = bolt.PredictConfig().return_activations().silence()
+        eval_config = bolt.EvalConfig().return_activations().silence()
         results = np.array(
             [
-                classifier.predict(
+                classifier.evaluate(
                     dataset.from_numpy(batch_np, batch_size=len(batch_np)),
                     test_labels=None,
-                    predict_config=predict_config,
+                    eval_config=eval_config,
                 )[1]
                 for classifier in self.classifiers
             ]
@@ -186,13 +186,13 @@ class Mach:
     # Returns a tuple of (best_labels, label_scores). best_labels is
     # of shape (batch.size, 1) and label_scores is of shape (batch.size, num_labels)
     def query_fast(self, batch_np, num_groups_to_check_per_classifier=10):
-        predict_config = bolt.PredictConfig().return_activations()
+        eval_config = bolt.EvalConfig().return_activations()
         results = np.array(
             [
-                classifier.predict(
+                classifier.evaluate(
                     dataset.from_numpy(batch_np, batch_size=len(batch_np)),
                     test_labels=None,
-                    predict_config=predict_config,
+                    eval_config=eval_config,
                 )[1]
                 for classifier in self.classifiers
             ]

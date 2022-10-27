@@ -44,7 +44,7 @@ void createBoltSubmodule(py::module_& bolt_submodule) {
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("validation_frequency") = 0,
+           py::arg("eval_config"), py::arg("validation_frequency") = 0,
            py::arg("save_best_per_metric") = "",
            R"pbdoc(
 Add validation options to execute validation during training. Can be used to
@@ -56,8 +56,8 @@ Args:
         Input dataset for validation
     validation_label (dataset.BoltDataset): 
         Ground truth labels to use during validation
-    predict_config (bolt.graph.PredictConfig): 
-        See PredictConfig.
+    eval_config (bolt.graph.EvalConfig): 
+        See EvalConfig.
     validation_frequency (int, optional): 
         Interval of updates (batches) to run validation and report
         metrics. Defaults to 0, which is no validation amidst
@@ -82,12 +82,12 @@ Args:
       .def("with_log_loss_frequency", &TrainConfig::withLogLossFrequency,
            py::arg("log_loss_frequency"));
 
-  py::class_<PredictConfig>(bolt_submodule, "PredictConfig")
-      .def(py::init(&PredictConfig::makeConfig))
-      .def("enable_sparse_inference", &PredictConfig::enableSparseInference)
-      .def("with_metrics", &PredictConfig::withMetrics, py::arg("metrics"))
-      .def("silence", &PredictConfig::silence)
-      .def("return_activations", &PredictConfig::returnActivations);
+  py::class_<EvalConfig>(bolt_submodule, "EvalConfig")
+      .def(py::init(&EvalConfig::makeConfig))
+      .def("enable_sparse_inference", &EvalConfig::enableSparseInference)
+      .def("with_metrics", &EvalConfig::withMetrics, py::arg("metrics"))
+      .def("silence", &EvalConfig::silence)
+      .def("return_activations", &EvalConfig::returnActivations);
 
   auto oracle_types_submodule = bolt_submodule.def_submodule("types");
 

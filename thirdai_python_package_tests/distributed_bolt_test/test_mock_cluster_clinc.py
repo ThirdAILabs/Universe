@@ -142,12 +142,12 @@ def test_distributed_classifer_accuracy(distributed_trained_clinc):
         columns=["intent"], batch_size=BATCH_SIZE
     )
 
-    predict_config = (
-        bolt.PredictConfig()
+    eval_config = (
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
         .enable_sparse_inference()
     )
 
     assert (
-        model.predict([test_x], test_y, predict_config)[0]["categorical_accuracy"] > 0.7
+        model.evaluate([test_x], test_y, eval_config)[0]["categorical_accuracy"] > 0.7
     )
