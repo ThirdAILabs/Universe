@@ -5,33 +5,33 @@ from thirdai import bolt, dataset
 
 def get_sum_model(input_dim):
 
-    input_1 = bolt.graph.TokenInput(dim=input_dim, num_tokens_range=(1, 1))
+    input_1 = bolt.nn.TokenInput(dim=input_dim, num_tokens_range=(1, 1))
 
-    input_2 = bolt.graph.TokenInput(dim=input_dim, num_tokens_range=(1, 1))
+    input_2 = bolt.nn.TokenInput(dim=input_dim, num_tokens_range=(1, 1))
 
-    embedding_bottom = bolt.graph.Embedding(
+    embedding_bottom = bolt.nn.Embedding(
         num_embedding_lookups=4,
         lookup_size=8,
         log_embedding_block_size=10,
         reduction="sum",
     )(input_1)
 
-    embedding_top = bolt.graph.Embedding(
+    embedding_top = bolt.nn.Embedding(
         num_embedding_lookups=4,
         lookup_size=8,
         log_embedding_block_size=10,
         reduction="sum",
     )(input_2)
 
-    concat_layer = bolt.graph.Concatenate()([embedding_bottom, embedding_top])
+    concat_layer = bolt.nn.Concatenate()([embedding_bottom, embedding_top])
 
-    output_layer = bolt.graph.FullyConnected(dim=input_dim * 2, activation="softmax")(
+    output_layer = bolt.nn.FullyConnected(dim=input_dim * 2, activation="softmax")(
         concat_layer
     )
 
-    model = bolt.graph.Model(inputs=[input_1, input_2], output=output_layer)
+    model = bolt.nn.Model(inputs=[input_1, input_2], output=output_layer)
 
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     return model
 
@@ -60,7 +60,7 @@ def test_token_sum():
     train_1, train_2, train_labels = generate_sum_datasets_and_labels(
         input_dim=input_dim, num_examples=num_train
     )
-    train_config = bolt.graph.TrainConfig.make(
+    train_config = bolt.TrainConfig(
         learning_rate=0.01, epochs=num_epochs
     ).silence()
     model.train(
@@ -73,7 +73,7 @@ def test_token_sum():
         input_dim=input_dim, num_examples=num_test
     )
     predict_config = (
-        bolt.graph.PredictConfig.make().silence().with_metrics(["categorical_accuracy"])
+        bolt.PredictConfig().silence().with_metrics(["categorical_accuracy"])
     )
     metrics = model.predict(
         test_data=[test_1, test_2],

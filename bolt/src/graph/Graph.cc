@@ -4,9 +4,9 @@
 #include <cereal/types/vector.hpp>
 #include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>

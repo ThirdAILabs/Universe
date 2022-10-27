@@ -7,36 +7,36 @@ pytestmark = [pytest.mark.unit]
 
 
 def get_train_config(epochs, batch_size):
-    return bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs).silence()
+    return bolt.TrainConfig(learning_rate=0.001, epochs=epochs).silence()
 
 
 def get_predict_config():
     return (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+        bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
     )
 
 
 class ModelWithLayers:
     def __init__(self, n_classes):
-        self.input_layer = bolt.graph.Input(dim=n_classes)
+        self.input_layer = bolt.nn.Input(dim=n_classes)
 
-        self.hidden1 = bolt.graph.FullyConnected(
+        self.hidden1 = bolt.nn.FullyConnected(
             dim=2000, sparsity=0.15, activation="relu"
         )(self.input_layer)
 
-        self.hidden2 = bolt.graph.FullyConnected(
+        self.hidden2 = bolt.nn.FullyConnected(
             dim=2000, sparsity=0.15, activation="relu"
         )(self.input_layer)
 
-        self.concat = bolt.graph.Concatenate()([self.hidden1, self.hidden2])
+        self.concat = bolt.nn.Concatenate()([self.hidden1, self.hidden2])
 
-        self.output = bolt.graph.FullyConnected(dim=n_classes, activation="softmax")(
+        self.output = bolt.nn.FullyConnected(dim=n_classes, activation="softmax")(
             self.concat
         )
 
-        self.model = bolt.graph.Model(inputs=[self.input_layer], output=self.output)
+        self.model = bolt.nn.Model(inputs=[self.input_layer], output=self.output)
 
-        self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+        self.model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     def train(self, data, labels, epochs):
         self.model.train(
@@ -62,7 +62,7 @@ def test_save_load_dag():
     # Save and load as new model.
     save_loc = "./saved_dag_pymodel"
     model.model.save(filename=save_loc)
-    new_model = bolt.graph.Model.load(filename=save_loc)
+    new_model = bolt.nn.Model.load(filename=save_loc)
 
     # Verify accuracy matches.
     test_metrics2 = new_model.predict(

@@ -29,14 +29,14 @@ def test_dag_get_set_weights():
         output_dim=dataset_dim,
     )
 
-    train_config = bolt.graph.TrainConfig.make(
+    train_config = bolt.TrainConfig(
         learning_rate=LEARNING_RATE, epochs=5
     ).silence()
     model.train(
         train_data=train_data, train_labels=train_labels, train_config=train_config
     )
     predict_config = (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+        bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
     )
 
     metrics = model.predict(

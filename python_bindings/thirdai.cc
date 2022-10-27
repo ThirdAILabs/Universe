@@ -1,5 +1,7 @@
 // Code to create thirdai modules
+#include <bolt/python_bindings/BoltNNPython.h>
 #include <bolt/python_bindings/BoltPython.h>
+#include <bolt/python_bindings/CallbacksPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_classifiers/python_bindings/AutoClassifiersPython.h>
 #include <auto_ml/python_bindings/DeploymentPython.h>
@@ -120,16 +122,19 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
 
-  auto dataset_submodule = m.def_submodule("new_dataset");
+  // Data Submodule
+  auto data_submodule = m.def_submodule("data");
+  thirdai::dataset::python::createDataSubmodule(data_submodule);
+  thirdai::dataset::python::createFeaturizationSubmodule(data_submodule);
 
-  thirdai::dataset::python::createNewDatasetSubmodule(dataset_submodule);
-
-  thirdai::dataset::python::createFeaturizationSubmodule(dataset_submodule);
-
+  // Hashing Submodule
   thirdai::hashing::python::createHashingSubmodule(m);
 
-  auto bolt_submodule = thirdai::bolt::python::createBoltSubmodule(m);
-
+  // Bolt Submodule
+  auto bolt_submodule = m.def_submodule("bolt");
+  thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
+  thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
+  thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
   thirdai::bolt::python::defineAutoClassifeirsInModule(bolt_submodule);
 
   thirdai::search::python::createSearchSubmodule(m);

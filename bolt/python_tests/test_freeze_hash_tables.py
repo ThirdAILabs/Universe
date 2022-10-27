@@ -20,11 +20,11 @@ def test_freeze_dag_hash_tables():
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
     # Train and predict before freezing hash tables.
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=2)
+    train_config = bolt.TrainConfig(learning_rate=0.001, epochs=2)
     model.train(data, labels, train_config)
 
     predict_config = (
-        bolt.graph.PredictConfig.make()
+        bolt.PredictConfig()
         .enable_sparse_inference()
         .with_metrics(["categorical_accuracy"])
     )

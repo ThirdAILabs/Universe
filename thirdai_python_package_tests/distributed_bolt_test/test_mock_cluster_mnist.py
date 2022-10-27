@@ -48,17 +48,17 @@ def setup_module():
 
 
 def get_mnist_model():
-    input_layer = bolt.graph.Input(dim=784)
+    input_layer = bolt.nn.Input(dim=784)
 
-    hidden_layer = bolt.graph.FullyConnected(dim=256, sparsity=0.5, activation="Relu")(
+    hidden_layer = bolt.nn.FullyConnected(dim=256, sparsity=0.5, activation="Relu")(
         input_layer
     )
 
-    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(hidden_layer)
+    output_layer = bolt.nn.FullyConnected(dim=10, activation="softmax")(hidden_layer)
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
 
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     return model
 
@@ -82,7 +82,7 @@ def train_distributed_bolt_check(ray_two_node_cluster_config):
             f"{os.getcwd()}/mnist_data/part2",
         ]
     ]
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=3)
+    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
     distributed_model = db.DistributedDataParallel(
         cluster_config=ray_two_node_cluster_config,
         model=model,
@@ -94,7 +94,7 @@ def train_distributed_bolt_check(ray_two_node_cluster_config):
     check_models_are_same_on_first_two_nodes(distributed_model)
 
     predict_config = (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+        bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
     )
     test_data, test_labels = dataset.load_bolt_svm_dataset(
         "mnist_data/mnist.t", batch_size=256

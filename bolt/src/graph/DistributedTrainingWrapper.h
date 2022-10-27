@@ -4,7 +4,7 @@
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
-#include <bolt/src/graph/callbacks/Callback.h>
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>

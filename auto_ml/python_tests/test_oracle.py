@@ -28,7 +28,7 @@ def make_serialized_oracle_config():
                 predecessor="hidden",
             ),
         ],
-        loss=bolt.CategoricalCrossEntropyLoss(),
+        loss=bolt.nn.losses.CategoricalCrossEntropy(),
     )
 
     dataset_config = deployment.OracleDatasetFactory(
@@ -105,7 +105,7 @@ def make_simple_oracle_model():
 def test_oracle_save_load():
     model = make_simple_oracle_model()
 
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
     model.save("saveLoc")
     before_load_output = model.evaluate(TEST_FILE)
@@ -117,7 +117,7 @@ def test_oracle_save_load():
 
 def test_multiple_predict_returns_same():
     model = make_simple_oracle_model()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     sample = "0,,2022-08-31"
@@ -130,7 +130,7 @@ def test_multiple_predict_returns_same():
 
 def test_explanations_total_percentage():
     model = make_simple_oracle_model()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     sample = "0,,2022-08-31"
@@ -145,7 +145,7 @@ def test_explanations_total_percentage():
 def test_index_changes_predict():
     model = make_simple_oracle_model()
     context = model.get_data_processor()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     sample = "0,,2022-08-31"
@@ -162,7 +162,7 @@ def test_index_changes_predict():
 def test_context_serialization():
     model = make_simple_oracle_model()
     context = model.get_data_processor()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     model.save("saveLoc")

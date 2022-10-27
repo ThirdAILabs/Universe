@@ -122,7 +122,7 @@ class Mach:
                     f"Could not find the {i}th classifier for the mach model inside the folder {folder}"
                 )
             newMach.classifiers.append(
-                bolt.graph.Model.load(folder + f"/classifier_{i}")
+                bolt.nn.Model.load(folder + f"/classifier_{i}")
             )
 
         return newMach
@@ -148,7 +148,7 @@ class Mach:
                 mapped_train_y = self.map_labels_to_groups(train_y_np, classifier_id)
                 mapped_train_y = dataset.from_numpy(mapped_train_y, batch_size)
 
-                train_config = bolt.graph.TrainConfig.make(
+                train_config = bolt.TrainConfig(
                     learning_rate=learning_rate, epochs=1
                 ).silence()
 
@@ -161,7 +161,7 @@ class Mach:
     # Returns a tuple of (best_labels, label_scores). best_labels is
     # of shape (batch.size, 1) and label_scores is of shape (batch.size, num_labels)
     def query_slow(self, batch_np):
-        predict_config = bolt.graph.PredictConfig.make().return_activations().silence()
+        predict_config = bolt.PredictConfig().return_activations().silence()
         results = np.array(
             [
                 classifier.predict(
@@ -188,7 +188,7 @@ class Mach:
     # Returns a tuple of (best_labels, label_scores). best_labels is
     # of shape (batch.size, 1) and label_scores is of shape (batch.size, num_labels)
     def query_fast(self, batch_np, num_groups_to_check_per_classifier=10):
-        predict_config = bolt.graph.PredictConfig.make().return_activations()
+        predict_config = bolt.PredictConfig().return_activations()
         results = np.array(
             [
                 classifier.predict(
@@ -236,27 +236,27 @@ class Mach:
         hidden_layer_dim,
         hidden_layer_sparsity,
     ):
-        input_layer = bolt.graph.Input(dim=input_dim)
+        input_layer = bolt.nn.Input(dim=input_dim)
 
-        hidden_layer = bolt.graph.FullyConnected(
+        hidden_layer = bolt.nn.FullyConnected(
             dim=hidden_layer_dim,
             sparsity=hidden_layer_sparsity,
             activation="relu",
         )(input_layer)
 
-        output_layer = bolt.graph.FullyConnected(
+        output_layer = bolt.nn.FullyConnected(
             dim=last_layer_dim,
             sparsity=last_layer_sparsity,
             activation=("softmax" if use_softmax else "sigmoid"),
         )(hidden_layer)
 
         loss_func = (
-            bolt.CategoricalCrossEntropyLoss()
+            bolt.nn.losses.CategoricalCrossEntropy()
             if self.use_softmax
-            else bolt.BinaryCrossEntropyLoss()
+            else bolt.nn.losses.BinaryCrossEntropy()
         )
 
-        model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+        model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
         model.compile(loss=loss_func)
 
         return model

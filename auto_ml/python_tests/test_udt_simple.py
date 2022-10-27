@@ -58,7 +58,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
     )
 
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     return model
@@ -248,7 +248,7 @@ def test_works_without_temporal_relationships():
         target="movieId",
     )
 
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
     model.evaluate(TEST_FILE)
 

@@ -30,22 +30,22 @@ def generate_dataset(n_classes, n_samples, batch_size):
 
 
 def create_model(input_dim, lhs_sparsity, rhs_sparsity):
-    lhs_input = bolt.graph.Input(input_dim)
-    rhs_input = bolt.graph.Input(input_dim)
+    lhs_input = bolt.nn.Input(input_dim)
+    rhs_input = bolt.nn.Input(input_dim)
 
-    lhs_hidden = bolt.graph.FullyConnected(
+    lhs_hidden = bolt.nn.FullyConnected(
         dim=200, sparsity=lhs_sparsity, activation="relu"
     )(lhs_input)
 
-    rhs_hidden = bolt.graph.FullyConnected(
+    rhs_hidden = bolt.nn.FullyConnected(
         dim=200, sparsity=rhs_sparsity, activation="relu"
     )(rhs_input)
 
-    dot = bolt.graph.DotProduct()(lhs_hidden, rhs_hidden)
+    dot = bolt.nn.DotProduct()(lhs_hidden, rhs_hidden)
 
-    model = bolt.graph.Model(inputs=[lhs_input, rhs_input], output=dot)
+    model = bolt.nn.Model(inputs=[lhs_input, rhs_input], output=dot)
 
-    model.compile(bolt.BinaryCrossEntropyLoss())
+    model.compile(bolt.nn.losses.BinaryCrossEntropy())
 
     return model
 
@@ -69,8 +69,8 @@ def run_dot_product_test(lhs_sparsity, rhs_sparsity, predict_threshold, acc_thre
 
     model = create_model(n_classes, lhs_sparsity, rhs_sparsity)
 
-    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=20).silence()
-    predict_cfg = bolt.graph.PredictConfig.make().return_activations().silence()
+    train_cfg = bolt.TrainConfig(learning_rate=0.01, epochs=20).silence()
+    predict_cfg = bolt.PredictConfig().return_activations().silence()
 
     model.train([train_lhs_data, train_rhs_data], train_labels, train_cfg)
     _, activations = model.predict(

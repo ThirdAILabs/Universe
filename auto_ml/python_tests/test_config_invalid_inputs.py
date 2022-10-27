@@ -37,7 +37,7 @@ def get_config(
     model_config = deployment.ModelConfig(
         input_names=inputs,
         nodes=nodes,
-        loss=bolt.CategoricalCrossEntropyLoss(),
+        loss=bolt.nn.losses.CategoricalCrossEntropy(),
     )
 
     dataset_config = deployment.SingleBlockDatasetFactory(

@@ -10,27 +10,27 @@ EPOCHS = 5
 
 
 def get_simple_model(num_classes, sparsity=1.0):
-    input_layer = bolt.graph.Input(dim=num_classes)
-    hidden_layer = bolt.graph.FullyConnected(
+    input_layer = bolt.nn.Input(dim=num_classes)
+    hidden_layer = bolt.nn.FullyConnected(
         dim=num_classes, activation="relu", sparsity=sparsity
     )(input_layer)
 
     layer_norm_config = (
-        bolt.graph.LayerNormConfig.make()
+        bolt.nn.LayerNormConfig.make()
         .center(beta_regularizer=0.0025)
         .scale(gamma_regularizer=0.9)
     )
 
-    normalization_layer = bolt.graph.LayerNormalization(
+    normalization_layer = bolt.nn.LayerNormalization(
         layer_norm_config=layer_norm_config
     )(hidden_layer)
 
-    output_layer = bolt.graph.FullyConnected(dim=100, activation="softmax")(
+    output_layer = bolt.nn.FullyConnected(dim=100, activation="softmax")(
         normalization_layer
     )
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     return model
 
@@ -44,7 +44,7 @@ def test_normalize_layer_activations():
         n_classes=100, n_samples=10000, batch_size_for_conversion=BATCH_SIZE
     )
 
-    train_config = bolt.graph.TrainConfig.make(
+    train_config = bolt.TrainConfig(
         learning_rate=LEARNING_RATE, epochs=EPOCHS
     ).silence()
 
@@ -52,7 +52,7 @@ def test_normalize_layer_activations():
         train_data=train_data, train_labels=train_labels, train_config=train_config
     )
 
-    predict_config = bolt.graph.PredictConfig.make().with_metrics(
+    predict_config = bolt.PredictConfig().with_metrics(
         ["categorical_accuracy"]
     )
 

@@ -33,7 +33,7 @@ def test_switch_dense_to_sparse():
     )
 
     dense_predict_config = (
-        bolt.graph.PredictConfig.make()
+        bolt.PredictConfig()
         .with_metrics(["categorical_accuracy"])
         .silence()
         .return_activations()

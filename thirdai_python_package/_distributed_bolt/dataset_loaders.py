@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai import dataset, deployment, new_dataset
+from thirdai import dataset, deployment, data
 
 
 class DatasetLoader(ABC):
@@ -78,9 +78,9 @@ class SvmDatasetLoader(GenericInMemoryDatasetLoader):
 class TabularDatasetLoader(DatasetLoader):
     def __init__(
         self,
-        column_map_generator: new_dataset.ColumnMapGenerator,
-        x_featurizer: new_dataset.FeaturizationPipeline,
-        y_featurizer: new_dataset.FeaturizationPipeline,
+        column_map_generator: data.ColumnMapGenerator,
+        x_featurizer: data.FeaturizationPipeline,
+        y_featurizer: data.FeaturizationPipeline,
         x_cols: List[str],
         y_col: str,
         batch_size: int,

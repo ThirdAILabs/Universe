@@ -29,12 +29,12 @@ def train_models(
         loss=loss,
     )
 
-    predict_config = bolt.graph.PredictConfig.make().with_metrics([metric_name])
+    predict_config = bolt.PredictConfig().with_metrics([metric_name])
 
     save_loc = "./best.model"
 
     train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=20)
+        bolt.TrainConfig(learning_rate=0.01, epochs=20)
         .with_metrics([metric_name])
         .with_validation(
             validation_data=[valid_data],
@@ -43,7 +43,7 @@ def train_models(
         )
         .with_callbacks(
             [
-                bolt.graph.callbacks.EarlyStopCheckpoint(
+                bolt.callbacks.EarlyStopCheckpoint(
                     monitored_metric=metric_name,
                     model_save_path=save_loc,
                     patience=2,
@@ -54,7 +54,7 @@ def train_models(
     )
 
     model.train(train_data, train_labels, train_config)
-    best_model = bolt.graph.Model.load(save_loc)
+    best_model = bolt.nn.Model.load(save_loc)
     os.remove(save_loc)
 
     return model, best_model
@@ -80,7 +80,7 @@ def run_early_stop_test(loss, output_activation, metric_name):
         metric_name,
     )
 
-    predict_config = bolt.graph.PredictConfig.make().with_metrics([metric_name])
+    predict_config = bolt.PredictConfig().with_metrics([metric_name])
 
     last_model_score = last_model.predict(valid_data, valid_labels, predict_config)[0][
         metric_name
@@ -95,7 +95,7 @@ def run_early_stop_test(loss, output_activation, metric_name):
 
 def test_early_stop_checkpoint_with_accuracy():
     last_model_score, early_stop_score = run_early_stop_test(
-        loss=bolt.CategoricalCrossEntropyLoss(),
+        loss=bolt.nn.losses.CategoricalCrossEntropy(),
         output_activation="softmax",
         metric_name="categorical_accuracy",
     )
@@ -106,7 +106,7 @@ def test_early_stop_checkpoint_with_accuracy():
 
 def test_early_stop_checkpoint_with_loss():
     last_model_score, early_stop_score = run_early_stop_test(
-        loss=bolt.MeanSquaredError(),
+        loss=bolt.nn.losses.MeanSquaredError(),
         output_activation="linear",
         metric_name="mean_squared_error",
     )

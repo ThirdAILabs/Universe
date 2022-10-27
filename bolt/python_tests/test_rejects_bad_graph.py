@@ -23,12 +23,12 @@ def get_good_model(input_and_output_dim):
 
 
 def get_simple_train_config():
-    return bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3).silence()
+    return bolt.TrainConfig(learning_rate=0.001, epochs=3).silence()
 
 
 def get_simple_predict_config():
     return (
-        bolt.graph.PredictConfig.make().silence().with_metrics(["mean_squared_error"])
+        bolt.PredictConfig().silence().with_metrics(["mean_squared_error"])
     )
 
 

@@ -25,9 +25,9 @@ class ReplicaWorker(Worker):
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.graph.Model,
+        model_to_wrap: bolt.nn.Model,
         train_source,
-        train_config: bolt.graph.TrainConfig,
+        train_config: bolt.TrainConfig,
         id: int,
         primary_worker,
         communication_type,

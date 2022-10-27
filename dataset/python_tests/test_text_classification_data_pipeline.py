@@ -30,20 +30,20 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
     )
     [data, labels] = pipeline.load_in_memory()
 
-    input_layer = bolt.graph.Input(dim=pipeline.get_input_dim())
-    hidden_layer = bolt.graph.FullyConnected(dim=1000, sparsity=0.1, activation="relu")(
+    input_layer = bolt.nn.Input(dim=pipeline.get_input_dim())
+    hidden_layer = bolt.nn.FullyConnected(dim=1000, sparsity=0.1, activation="relu")(
         input_layer
     )
-    output_layer = bolt.graph.FullyConnected(dim=3, activation="softmax")(hidden_layer)
+    output_layer = bolt.nn.FullyConnected(dim=3, activation="softmax")(hidden_layer)
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(bolt.CategoricalCrossEntropyLoss())
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model.compile(bolt.nn.losses.CategoricalCrossEntropy())
 
-    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=1).silence()
+    train_cfg = bolt.TrainConfig(learning_rate=0.001, epochs=1).silence()
     model.train(data, labels, train_cfg)
 
     predict_cfg = (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+        bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
     )
     metrics = model.predict(data, labels, predict_cfg)
 

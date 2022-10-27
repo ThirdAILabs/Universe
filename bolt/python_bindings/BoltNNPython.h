@@ -17,9 +17,9 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::python {
 
-void createBoltGraphSubmodule(py::module_& bolt_submodule);
+void createBoltNNSubmodule(py::module_& bolt_submodule);
 
-void createCallbacksSubmodule(py::module_& graph_submodule);
+void createLossesSubmodule(py::module_& nn_submodule);
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
                                   const dataset::BoltDatasetList& data,
@@ -150,29 +150,5 @@ class ParameterReference {
   std::vector<uint32_t> _dimensions;
   uint64_t _total_dim;
 };
-
-// The following callback uses py:: and PyErr symbols, which come from Python.
-// Doing this in an alternate way would require these symbols to be visible in
-// Graph.cc, which kind-of violates the existing structuring.
-//
-// Per pybind11 docs, no Ctrl-C is a Python artifact, which means standalone
-// library Ctrl-C is functional:
-//
-//    Ctrl-C is received by the Python interpreter, and holds it until the GIL
-//    is released, so a long-running function won’t be interrupted.
-class KeyboardInterrupt : public Callback {
- public:
-  // Check whether Ctrl-C has been called on each batch begin. This is at a
-  // granularity where the users can't tell the difference, and probably does
-  // not hurt speed.
-  void onBatchBegin(BoltGraph& model, TrainState& train_state) final {
-    Callback::onBatchBegin(model, train_state);
-    if (PyErr_CheckSignals() != 0) {
-      throw py::error_already_set();
-    }
-  }
-};
-
-using KeyboardInterruptPtr = std::shared_ptr<KeyboardInterrupt>;
 
 }  // namespace thirdai::bolt::python
