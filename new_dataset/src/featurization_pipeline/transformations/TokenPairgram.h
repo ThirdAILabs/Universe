@@ -47,7 +47,7 @@ class TokenPairgram : public Transformation {
                                                 input_tokens_buffer.end());
       std::vector<uint32_t> pairgrams =
           TextEncodingUtils::computeRawPairgramsFromUnigrams(
-              input_tokens_vector, _output_range);
+              input_tokens_vector, output_range);
 
       std::vector<std::pair<uint32_t, float>> deduplicated_pairgrams;
       TextEncodingUtils::sumRepeatedIndices(

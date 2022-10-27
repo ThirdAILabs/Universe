@@ -71,7 +71,7 @@ class CrossColumnPairgram : public Transformation {
       // above, thus reducing the chance of duplicates.
       std::vector<uint32_t> row_pairgrams =
           TextEncodingUtils::computeRawPairgramsFromUnigrams(salted_unigrams,
-                                                             _output_range);
+                                                             output_range);
       pairgrams[row_idx] = row_pairgrams;
     }
 
