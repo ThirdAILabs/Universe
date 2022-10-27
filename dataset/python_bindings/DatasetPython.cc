@@ -355,15 +355,8 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("i"), py::return_value_policy::reference)
       .def("__len__", &BoltBatch::getBatchSize)
       .def(py::init([](py::iterable iterable) {
-             std::vector<BoltVector> vectors;
-
-             auto ptr = py::iter(iterable);
-             while (ptr != py::iterator::sentinel()) {
-               BoltVector* bolt_vector = ptr.cast<BoltVector*>();
-               vectors.push_back(std::move(*bolt_vector));
-               ++ptr;
-             }
-
+             using Vectors = std::vector<BoltVector>;
+             auto vectors = iterable.cast<Vectors>();
              BoltBatch batch(std::move(vectors));
              return batch;
            }),
