@@ -183,4 +183,12 @@ ColumnPtr ColumnMap::getColumn(const std::string& name) const {
   return _columns.at(name);
 }
 
+std::vector<std::string> ColumnMap::columns() const {
+  std::vector<std::string> columns;
+  for (auto const& map_entry : _columns) {
+    columns.push_back(map_entry.first);
+  }
+  return columns;
+}
+
 }  // namespace thirdai::dataset

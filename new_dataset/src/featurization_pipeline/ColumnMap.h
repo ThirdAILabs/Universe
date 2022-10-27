@@ -51,6 +51,8 @@ class ColumnMap {
     _columns[name] = std::move(column);
   }
 
+  std::vector<std::string> columns() const;
+
  private:
   std::vector<ColumnPtr> selectColumns(
       const std::vector<std::string>& column_names) const;

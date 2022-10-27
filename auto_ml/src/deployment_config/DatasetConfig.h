@@ -4,7 +4,7 @@
 #include "BlockConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <auto_ml/src/deployment_config/Artifact.h>
+#include <auto_ml/src/Aliases.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingDataset.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -14,7 +14,10 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
+#include <variant>
 
 namespace thirdai::automl::deployment {
 
@@ -95,36 +98,56 @@ class DatasetLoaderFactory {
   virtual DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
 
-  virtual std::vector<BoltVector> featurizeInput(const std::string& input) = 0;
+  virtual std::vector<BoltVector> featurizeInput(const LineInput& input) = 0;
+
+  virtual std::vector<BoltVector> featurizeInput(const MapInput& input) {
+    (void)input;
+    throw std::invalid_argument(
+        "This model pipeline configuration does not support map input. Pass in "
+        "a string instead.");
+  };
 
   virtual std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::string>& inputs) = 0;
+      const LineInputBatch& inputs) = 0;
+
+  virtual std::vector<BoltBatch> featurizeInputBatch(
+      const MapInputBatch& inputs) {
+    (void)inputs;
+    throw std::invalid_argument(
+        "This model pipeline configuration does not support map input. Pass in "
+        "a list of strings instead.");
+  };
+
+  virtual uint32_t labelToNeuronId(
+      std::variant<uint32_t, std::string> label) = 0;
 
   virtual std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const std::string& sample) = 0;
 
+  virtual std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio, const MapInput& sample) {
+    (void)gradients_indices;
+    (void)gradients_ratio;
+    (void)sample;
+    throw std::invalid_argument(
+        "This model pipeline configuration does not support map input. Pass in "
+        "a list of strings instead.");
+  }
+
   virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
 
   virtual uint32_t getLabelDim() = 0;
 
+  virtual std::string className(uint32_t neuron_id) const {
+    (void)neuron_id;
+    throw std::runtime_error(
+        "This model cannot map ids to string labels since it assumes integer "
+        "labels; the ids and labels are equivalent.");
+  }
+
   virtual ~DatasetLoaderFactory() = default;
-
-  Artifact getArtifact(const std::string& name) const {
-    if (auto artifact = getArtifactImpl(name)) {
-      return *artifact;
-    }
-    throw std::invalid_argument("Artifact '" + name + "' not found.");
-  }
-
-  virtual std::vector<std::string> listArtifactNames() const { return {}; }
-
- protected:
-  virtual std::optional<Artifact> getArtifactImpl(
-      const std::string& name) const {
-    (void)name;
-    return std::nullopt;
-  }
 
  private:
   friend class cereal::access;
@@ -135,7 +158,7 @@ class DatasetLoaderFactory {
   }
 };
 
-using DatasetLoaderFactoryPtr = std::unique_ptr<DatasetLoaderFactory>;
+using DatasetLoaderFactoryPtr = std::shared_ptr<DatasetLoaderFactory>;
 
 class DatasetLoaderFactoryConfig {
  public:

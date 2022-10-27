@@ -2,13 +2,11 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <auto_ml/src/Aliases.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <cstdint>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -46,55 +44,17 @@ class TemporalContext {
     }
   }
 
-  void initializeDataStructures(dataset::GenericBatchProcessorPtr processor,
-                                char delimiter) {
-    if (!_processor) {
-      _processor = std::move(processor);
-      _delimiter = delimiter;
-    } else if (_processor != processor || _delimiter != delimiter) {
-      throw std::invalid_argument(
-          "Temporal context already initialized with a different processor and "
-          "delimiter.");
-    }
-  }
-
-  void updateTemporalTrackers(const std::string& update) {
-    if (!_processor) {
-      throw std::invalid_argument(
-          "Attempted to manually update temporal context before training.");
-    }
-    BoltVector vector;
-    auto sample = dataset::ProcessorUtils::parseCsvRow(update, _delimiter);
-    // The following line updates the temporal context as a side effect,
-    if (auto exception = _processor->makeInputVector(sample, vector)) {
-      std::rethrow_exception(exception);
-    }
-  }
-
-  void batchUpdateTemporalTrackers(const std::vector<std::string>& updates) {
-    if (!_processor) {
-      throw std::invalid_argument(
-          "Attempted to manually update temporal context before training.");
-    }
-    // The following line updates the temporal context as a side effect,
-    _processor->createBatch(updates);
-  }
-
  private:
   std::unordered_map<uint32_t, dataset::QuantityHistoryTrackerPtr>
       _numerical_histories;
   std::unordered_map<uint32_t, dataset::ItemHistoryCollectionPtr>
       _categorical_histories;
 
-  dataset::GenericBatchProcessorPtr _processor;
-  char _delimiter;
-
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_numerical_histories, _categorical_histories, _processor,
-            _delimiter);
+    archive(_numerical_histories, _categorical_histories);
   }
 };
 

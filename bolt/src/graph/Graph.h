@@ -69,8 +69,9 @@ class BoltGraph {
       bool explain_prediction_using_highest_activation = true,
       std::optional<uint32_t> neuron_to_explain = std::nullopt);
 
-  BoltVector predictSingle(std::vector<BoltVector>&& test_data,
-                           bool use_sparse_inference);
+  BoltVector predictSingle(
+      std::vector<BoltVector>&& test_data, bool use_sparse_inference,
+      std::optional<std::string> output_node_name = std::nullopt);
 
   BoltBatch predictSingleBatch(std::vector<BoltBatch>&& test_data,
                                bool use_sparse_inference);
@@ -115,9 +116,8 @@ class BoltGraph {
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
 
-  void log_validate_and_save(uint32_t batch_size,
-                             const TrainConfig& train_config,
-                             MetricAggregator& train_metrics);
+  void logValidateAndSave(uint32_t batch_size, const TrainConfig& train_config,
+                          MetricAggregator& train_metrics);
 
   void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
