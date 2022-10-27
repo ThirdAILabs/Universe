@@ -16,10 +16,12 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <dataset/src/DataLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/metadata/MetadataLoader.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
 #include <cstdint>
@@ -51,6 +53,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
     _input_dim = mock_processor->getInputDim();
     _label_dim = mock_processor->getLabelDim();
+
+    _metadata =
+        buildColumnMetadata(_config->data_types, _text_pairgram_word_limit);
   }
 
   static std::shared_ptr<OracleDatasetFactory> make(
@@ -325,15 +330,15 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
             *_config, _temporal_relationships, column_numbers, _vocabs,
-            _text_pairgram_word_limit);
+            _metadata, _text_pairgram_word_limit);
 
     if (_temporal_relationships.empty()) {
       return blocks;
     }
 
     auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
-        *_config, _temporal_relationships, column_numbers, _vocabs, *_context,
-        should_update_history);
+        *_config, _temporal_relationships, column_numbers, _vocabs, _metadata,
+        *_context, should_update_history);
 
     blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                   temporal_feature_blocks.end());
@@ -383,26 +388,66 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return s.str();
   }
 
+  static ColumnMetadata buildColumnMetadata(const ColumnDataTypes& data_types,
+                                            uint32_t text_pairgram_word_limit) {
+    ColumnMetadata metadata;
+    for (const auto& [col_name, data_type] : data_types) {
+      if (data_type.isCategorical()) {
+        auto categorical_config = data_type.asCategorical();
+        if (categorical_config.metadata_config) {
+          auto metadata_config = *categorical_config.metadata_config;
+          auto loader = dataset::SimpleFileDataLoader::make(
+              metadata_config.metadata_file,
+              /* target_batch_size= */ 2048);
+
+          auto header = loader->nextLine();
+          if (!header) {
+            throw std::invalid_argument(
+                "The metadata file must have a header that contains column "
+                "names.");
+          }
+
+          ColumnNumberMap column_number_map(*header, metadata_config.delimiter);
+          ColumnVocabularies column_vocabularies;
+
+          OracleConfig config(data_types, {}, metadata_config.key);
+          TemporalRelationships empty_temporal_relationships;
+
+          ColumnMetadata empty_metadata;
+          auto feature_blocks = FeatureComposer::makeNonTemporalFeatureBlocks(
+              config, empty_temporal_relationships, column_number_map,
+              column_vocabularies, empty_metadata, text_pairgram_word_limit);
+
+          metadata[col_name] = dataset::MetadataLoader::loadMetadata(
+              loader, feature_blocks, column_number_map.at(metadata_config.key),
+              categorical_config.n_unique_classes);
+        }
+      }
+    }
+    return metadata;
+  }
+
   OracleConfigPtr _config;
   TemporalRelationships _temporal_relationships;
 
   TemporalContextPtr _context;
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
+  ColumnMetadata _metadata;
 
   ColumnNumberMapPtr _column_number_map;
   std::unordered_map<uint32_t, std::string> _column_number_to_name;
 
   /*
-    The labeled history-updating processor is used for training and evaluation,
-    which automatically updates the temporal context, as well as for manually
-    updating the temporal context.
+    The labeled history-updating processor is used for training and
+    evaluation, which automatically updates the temporal context, as well as
+    for manually updating the temporal context.
 
-    The Unlabeled non-updating processor is used for inference and explanations.
-    These processes should not update the history because the tracked variable
-    is often unavailable during inference. E.g. if we track the movies watched
-    by a user to recommend the next movie to watch, the true movie that he ends
-    up watching is not available during inference, so we should not update the
-    history.
+    The Unlabeled non-updating processor is used for inference and
+    explanations. These processes should not update the history because the
+    tracked variable is often unavailable during inference. E.g. if we track
+    the movies watched by a user to recommend the next movie to watch, the
+    true movie that he ends up watching is not available during inference, so
+    we should not update the history.
   */
   dataset::GenericBatchProcessorPtr _labeled_history_updating_processor;
   dataset::GenericBatchProcessorPtr _unlabeled_non_updating_processor;
@@ -419,8 +464,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
-            _temporal_relationships, _context, _vocabs, _column_number_map,
-            _column_number_to_name, _labeled_history_updating_processor,
+            _temporal_relationships, _context, _vocabs, _metadata,
+            _column_number_map, _column_number_to_name,
+            _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _input_dim, _label_dim,
             _parallel, _text_pairgram_word_limit);
   }
