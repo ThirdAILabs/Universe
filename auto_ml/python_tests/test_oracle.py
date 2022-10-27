@@ -32,9 +32,7 @@ def make_serialized_oracle_config():
     )
 
     dataset_config = deployment.OracleDatasetFactory(
-        config=deployment.UserSpecifiedParameter(
-            "config", type=bolt.OracleConfig
-        ),
+        config=deployment.UserSpecifiedParameter("config", type=bolt.OracleConfig),
         parallel=deployment.ConstantParameter(False),
         text_pairgram_word_limit=deployment.ConstantParameter(15),
     )
