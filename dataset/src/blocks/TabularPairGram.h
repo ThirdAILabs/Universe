@@ -89,7 +89,7 @@ class TabularPairGram : public Block {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_metadata, _output_range);
+    archive(cereal::base_class<Block>(this), _metadata, _output_range);
   }
 
   TabularMetadataPtr _metadata;
