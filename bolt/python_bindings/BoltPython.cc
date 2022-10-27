@@ -106,10 +106,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
   py::class_<sequential_classifier::DataType>(  // NOLINT
       oracle_types_submodule, "ColumnType", "Base class for bolt types.");
 
-  oracle_types_submodule.def("categorical",
-                             sequential_classifier::DataType::categorical,
-                             py::arg("n_unique_classes"),
-                             R"pbdoc(
+  oracle_types_submodule.def(
+      "categorical", sequential_classifier::DataType::categorical,
+      py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
+      py::arg("consecutive_integer_ids") = false,
+      R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
     movie titles, or age groups.
@@ -118,9 +119,18 @@ py::module_ createBoltSubmodule(py::module_& module) {
         n_unique_classes (int): Number of unique categories in the column.
             Oracle throws an error if the column contains more than the 
             specified number of unique values.
+        delimiter (str): Optional. Defaults to None. A single character 
+            (length-1 string) that separates multiple values in the same 
+            column. If not provided, Oracle assumes that there is only
+            one value in the column.
+        consecutive_integer_ids (bool): Optional. Defaults to None. When set to
+            True, the values of this column are assumed to be integers ranging 
+            from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
+            be arbitrary strings (including strings of integral ids that are 
+            not within [0, n_unique_classes - 1]).
     
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(n_unique_classes=5000)
                 }
@@ -135,7 +145,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
     a movie watched, sale quantity, or population size.
 
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "hours_watched": bolt.types.numerical()
                 }
@@ -144,6 +154,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
                              )pbdoc");
   oracle_types_submodule.def("text", sequential_classifier::DataType::text,
                              py::arg("average_n_words") = std::nullopt,
+                             py::arg("embedding_size") = "m",
+                             py::arg("use_attention") = false,
                              R"pbdoc(
     Text column type. Use this object if a column contains text data 
     (the meaning of the text matters). Examples include descriptions, 
@@ -153,9 +165,14 @@ py::module_ createBoltSubmodule(py::module_& module) {
         average_n_words (int): Optional. Average number of words in the 
             text column in each row. If provided, Oracle may make 
             optimizations as appropriate.
+        embedding_size (str): Optional. One of "small"/"s", "medium"/"m",
+            or "large"/"l". Defaults to "m".
+        use_attention (bool): Optional. If true, oracle is guaranteed to
+            use attention when processing this text column. Otherwise, 
+            oracle will only use attention when appropriate.
     
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_motto": bolt.types.text(average_n_words=10),
                     "user_bio": bolt.types.text()
@@ -170,7 +187,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Date strings must be in YYYY-MM-DD format.
  
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "timestamp": bolt.types.date()
                 }
@@ -205,7 +222,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend level and sales performance over time.
         >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> model = deployment.UniversalDeepTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -249,7 +266,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend and sales performance over time.
         >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> model = deployment.UniversalDeepTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -296,7 +313,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
                                  std::string,
                                  sequential_classifier::TemporalConfig>>>,
                     std::string, std::string, uint32_t>(),
-           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
+           py::arg("data_types"),
+           py::arg("temporal_tracking_relationships") = std::map<
+               std::string,
+               std::vector<std::variant<
+                   std::string, sequential_classifier::TemporalConfig>>>(),
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0,
            R"pbdoc(  
@@ -317,8 +338,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
             If `temporal_tracking_relationships` is non-empty, there must one 
             bolt.types.date() column. This column contains date strings in YYYY-MM-DD format.
             There can only be one bolt.types.date() column.
-        temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): A mapping 
-            from column name to a list of either other column names or bolt.temporal objects.
+        temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): Optional. 
+            A mapping from column name to a list of either other column names or bolt.temporal objects.
             This mapping tells Oracle what columns can be tracked over time for each key.
             For example, we may want to tell Oracle that we want to track a user's watch 
             history by passing in a map like `{"user_id": ["movie_id"]}`

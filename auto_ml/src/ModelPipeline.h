@@ -10,9 +10,12 @@
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <dataset/src/DataLoader.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <exceptions/src/Exceptions.h>
 #include <limits>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::automl::deployment {
@@ -40,7 +43,6 @@ class ModelPipeline {
                        user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
-
     return ModelPipeline(std::move(dataset_factory), std::move(model),
                          config->train_eval_parameters());
   }
@@ -112,7 +114,8 @@ class ModelPipeline {
     return output;
   }
 
-  BoltVector predict(const std::string& sample, bool use_sparse_inference) {
+  template <typename InputType>
+  BoltVector predict(const InputType& sample, bool use_sparse_inference) {
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
     BoltVector output =
@@ -128,7 +131,8 @@ class ModelPipeline {
     return output;
   }
 
-  BoltBatch predictBatch(const std::vector<std::string>& samples,
+  template <typename InputBatchType>
+  BoltBatch predictBatch(const InputBatchType& samples,
                          bool use_sparse_inference) {
     std::vector<BoltBatch> input_batches =
         _dataset_factory->featurizeInputBatch(samples);
@@ -146,6 +150,24 @@ class ModelPipeline {
     }
 
     return outputs;
+  }
+
+  template <typename InputType>
+  std::vector<dataset::Explanation> explain(
+      const InputType& sample,
+      std::optional<std::variant<uint32_t, std::string>> target_class =
+          std::nullopt) {
+    std::optional<uint32_t> target_neuron;
+    if (target_class) {
+      target_neuron = _dataset_factory->labelToNeuronId(*target_class);
+    }
+
+    auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
+        /* input_data= */ {_dataset_factory->featurizeInput(sample)},
+        /* explain_prediction_using_highest_activation= */ true,
+        /* neuron_to_explain= */ target_neuron);
+    return _dataset_factory->explain(gradients_indices, gradients_ratio,
+                                     sample);
   }
 
   void save(const std::string& filename) {
@@ -176,6 +198,13 @@ class ModelPipeline {
     return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
         .value();
   }
+
+  DatasetLoaderFactoryPtr getDataProcessor() const { return _dataset_factory; }
+
+ protected:
+  // Protected constructor for cereal.
+  // Protected so derived classes can also use it for serialization purposes.
+  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
 
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
@@ -259,15 +288,13 @@ class ModelPipeline {
     return max_index;
   }
 
-  // Private constructor for cereal.
-  ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_dataset_factory, _model, _train_eval_config);
   }
 
+ protected:
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   TrainEvalParameters _train_eval_config;

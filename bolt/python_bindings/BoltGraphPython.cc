@@ -309,7 +309,31 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("validation_frequency") = 0)
+           py::arg("predict_config"), py::arg("validation_frequency") = 0,
+           py::arg("save_best_per_metric") = "",
+           R"pbdoc(
+Add validation options to execute validation during training. Can be used to
+configure input data and labels, frequency to validate and optionally saving
+best model per a specified metric.
+
+Args:
+    validation_data (dataset.BoltDataset): 
+        Input dataset for validation
+    validation_label (dataset.BoltDataset): 
+        Ground truth labels to use during validation
+    predict_config (bolt.graph.PredictConfig): 
+        See PredictConfig.
+    validation_frequency (int, optional): 
+        Interval of updates (batches) to run validation and report
+        metrics. Defaults to 0, which is no validation amidst
+        training.
+    save_best_per_metric (str, optional): 
+        Whether to save best model based on validation. Needs
+        with_save_parameters(...) configured.  Defaults to empty
+        string, which implies no saving best model. Note that this requires the
+        tracked metric to be configured via `with_metrics(...)`.
+
+)pbdoc")
       .def_property_readonly(
           "num_epochs", [](TrainConfig& config) { return config.epochs(); },
           "Returns the number of epochs a model with this TrainConfig will "
@@ -573,15 +597,29 @@ That's all for now, folks! More docs coming soon :)
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,
                                          "DistributedTrainingWrapper")
-      .def(py::init<BoltGraphPtr, std::vector<dataset::BoltDatasetPtr>,
-                    dataset::BoltDatasetPtr, TrainConfig>(),
-           py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
+      .def(py::init<BoltGraphPtr, TrainConfig>(), py::arg("model"),
            py::arg("train_config"))
       .def("compute_and_store_batch_gradients",
-           &DistributedTrainingWrapper::computeAndSaveBatchGradients,
-           py::arg("batch_idx"))
-      .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
-      .def("finish_training", &DistributedTrainingWrapper::finishTraining)
+           &DistributedTrainingWrapper::computeAndStoreBatchGradients,
+           py::arg("batch_idx"),
+           "Uses the batch_idx'th batch of the currently "
+           "set dataset to accumulate a single batche's gradients in the "
+           "wrapped Bolt model.")
+      .def("update_parameters", &DistributedTrainingWrapper::updateParameters,
+           "Updates the parameters of the wrapped Bolt model. You should call "
+           "this manually after setting the gradients of the wrapped model.")
+      .def("num_batches", &DistributedTrainingWrapper::numBatches)
+      .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
+           py::arg("train_data"), py::arg("train_labels"),
+           "Sets the current train data and labels the wrapper class uses for "
+           "computeAndStoreBatchGradients. We need this method instead of just "
+           "passing in a single pair of training data and training labels at "
+           "construction time because we might have a streaming dataset we "
+           "want to train on, which will entail switching out the current "
+           "datasets dynamically. If this is not the first time this method has"
+           "been called, the batch sizes of the passed in datasets must be the "
+           "same as when this method was called the first time.")
+      .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
       .def_property_readonly(
           "model",
           [](DistributedTrainingWrapper& node) { return node.getModel(); },

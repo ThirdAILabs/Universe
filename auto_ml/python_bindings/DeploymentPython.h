@@ -2,10 +2,12 @@
 
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
+#include <optional>
 #include <unordered_map>
 
 namespace py = pybind11;
@@ -34,19 +36,21 @@ py::object evaluateOnDataLoaderWrapper(
     const std::shared_ptr<dataset::DataLoader>& data_source,
     std::optional<bolt::PredictConfig>& predict_config);
 
+template <typename Model>
 py::object evaluateOnFileWrapper(
-    ModelPipeline& model, const std::string& filename,
+    Model& model, const std::string& filename,
     std::optional<bolt::PredictConfig>& predict_config);
 
-py::object predictWrapper(ModelPipeline& model, const std::string& sample,
+template <typename Model, typename InputType>
+py::object predictWrapper(Model& model, const InputType& sample,
                           bool use_sparse_inference);
 
 py::object predictTokensWrapper(ModelPipeline& model,
                                 const std::vector<uint32_t>& tokens,
                                 bool use_sparse_inference);
 
-py::object predictBatchWrapper(ModelPipeline& model,
-                               const std::vector<std::string>& samples,
+template <typename Model, typename InputBatchType>
+py::object predictBatchWrapper(Model& model, const InputBatchType& samples,
                                bool use_sparse_inference);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
