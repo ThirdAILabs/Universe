@@ -157,8 +157,18 @@ class UniversalDeepTransformer : public ModelPipeline {
 
     auto graph = std::make_shared<bolt::BoltGraph>(
         /* inputs= */ input_nodes, output);
-    graph->compile(
-        bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
+
+    auto loss =
+        bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
+
+    // Disable the model summary in the release, but print it out for internal
+    // use.
+#if THIRDAI_EXPOSE_ALL
+    graph->compile(loss);
+#else
+    graph->compile(loss, /* print_when_done= */ false);
+#endif
+
     return graph;
   }
 
