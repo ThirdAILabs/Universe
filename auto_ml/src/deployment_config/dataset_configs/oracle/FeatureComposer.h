@@ -9,6 +9,7 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/metadata/Metadata.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdint>
 #include <stdexcept>
@@ -25,7 +26,7 @@ class FeatureComposer {
       const OracleConfig& config,
       const TemporalRelationships& temporal_relationships,
       const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
-      uint32_t text_pairgrams_word_limit) {
+      ColumnMetadata& metadata, uint32_t text_pairgrams_word_limit) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto non_temporal_columns =
@@ -45,8 +46,16 @@ class FeatureComposer {
 
       if (data_type.isCategorical()) {
         auto vocab_size = data_type.asCategorical().n_unique_classes;
+        auto delimiter = data_type.asCategorical().delimiter;
         blocks.push_back(dataset::StringLookupCategoricalBlock::make(
-            col_num, vocabForColumn(vocabularies, col_name, vocab_size)));
+            col_num, vocabForColumn(vocabularies, col_name, vocab_size),
+            delimiter));
+        // Add metadata encoding in addition to one hot encoding of id.
+        if (metadata.count(col_name)) {
+          blocks.push_back(dataset::MetadataCategoricalBlock::make(
+              col_num, metadata.at(col_name),
+              data_type.asCategorical().delimiter));
+        }
       }
 
       if (data_type.isNumerical()) {
@@ -76,7 +85,8 @@ class FeatureComposer {
       const OracleConfig& config,
       const TemporalRelationships& temporal_relationships,
       const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
-      TemporalContext& context, bool should_update_history) {
+      ColumnMetadata& metadata, TemporalContext& context,
+      bool should_update_history) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto timestamp_col_name = getTimestampColumnName(config);
@@ -106,7 +116,15 @@ class FeatureComposer {
           blocks.push_back(makeTemporalCategoricalBlock(
               temporal_relationship_id, config, context, column_numbers,
               vocabularies, temporal_config, tracking_key_col_name,
-              timestamp_col_name, should_update_history));
+              timestamp_col_name, should_update_history, nullptr));
+          // Add metadata encoding in addition to one hot encoding.
+          if (metadata.count(temporal_config.columnName())) {
+            blocks.push_back(makeTemporalCategoricalBlock(
+                temporal_relationship_id, config, context, column_numbers,
+                vocabularies, temporal_config, tracking_key_col_name,
+                timestamp_col_name, should_update_history,
+                metadata.at(temporal_config.columnName())));
+          }
         }
 
         if (temporal_config.isNumerical()) {
@@ -186,7 +204,7 @@ class FeatureComposer {
       TemporalContext& context, const ColumnNumberMap& column_numbers,
       ColumnVocabularies& vocabs, const TemporalConfig& temporal_config,
       const std::string& key_column, const std::string& timestamp_column,
-      bool should_update_history) {
+      bool should_update_history, dataset::MetadataPtr metadata) {
     const auto& tracked_column = temporal_config.columnName();
 
     if (!config.data_types.at(tracked_column).isCategorical()) {
@@ -203,6 +221,23 @@ class FeatureComposer {
     int64_t time_lag = config.lookahead;
     time_lag *= dataset::QuantityHistoryTracker::granularityToSeconds(
         config.time_granularity);
+
+    if (metadata) {
+      return dataset::MetadataUserItemHistoryBlock::make(
+          /* user_col= */ column_numbers.at(key_column),
+          /* item_col= */ column_numbers.at(tracked_column),
+          /* timestamp_col= */ column_numbers.at(timestamp_column),
+          /* user_id_map= */ vocabForColumn(vocabs, key_column, key_vocab_size),
+          /* item_metadata= */ std::move(metadata),
+          /* item_history_collection= */
+          context.categoricalHistoryForId(temporal_relationship_id,
+                                          /* n_users= */ key_vocab_size),
+          /* track_last_n= */ temporal_meta.track_last_n,
+          /* should_update_history= */ should_update_history,
+          /* include_current_row= */ temporal_meta.include_current_row,
+          /* item_col_delimiter= */ tracked_meta.delimiter,
+          /* time_lag= */ time_lag);
+    }
 
     return dataset::UserItemHistoryBlock::make(
         /* user_col= */ column_numbers.at(key_column),
@@ -259,6 +294,6 @@ class FeatureComposer {
     }
     return column_vocabs.at(column_name);
   }
-};
+};  // namespace thirdai::automl::deployment
 
 }  // namespace thirdai::automl::deployment

@@ -14,7 +14,8 @@ class MetadataLoader {
  public:
   static auto loadMetadata(DataLoaderPtr loader,
                            std::vector<BlockPtr> feature_blocks,
-                           uint32_t key_col, uint32_t n_unique_keys) {
+                           uint32_t key_col, uint32_t n_unique_keys,
+                           char delimiter = ',') {
     auto label_block =
         StringLookupCategoricalBlock::make(key_col, n_unique_keys);
     auto key_vocab = label_block->getVocabulary();
@@ -22,7 +23,9 @@ class MetadataLoader {
     StreamingGenericDatasetLoader metadataset(
         std::move(loader),
         /* input_blocks= */ std::move(feature_blocks),
-        /* label_blocks= */ {label_block});
+        /* label_blocks= */ {label_block}, /* shuffle= */ false,
+        DatasetShuffleConfig(), /* has_header= */ false,
+        /* delimiter= */ delimiter);
 
     auto dim = metadataset.getInputDim();
 

@@ -19,6 +19,7 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h>
+#include <dataset/src/metadata/Metadata.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <map>
 #include <unordered_map>
@@ -40,4 +41,6 @@ using ColumnNumberMapPtr = std::shared_ptr<ColumnNumberMap>;
 
 using ColumnVocabularies =
     std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr>;
+
+using ColumnMetadata = std::unordered_map<std::string, dataset::MetadataPtr>;
 }  // namespace thirdai::automl::deployment

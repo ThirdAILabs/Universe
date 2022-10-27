@@ -8,6 +8,7 @@
 #include <utils/StringManipulation.h>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -16,16 +17,23 @@
 
 namespace thirdai::bolt::sequential_classifier {
 
+struct CategoricalMetadataConfig;
+
+using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
+
 struct CategoricalDataType {
   explicit CategoricalDataType(uint32_t n_unique_classes,
                                std::optional<char> delimiter,
+                               CategoricalMetadataConfigPtr metadata,
                                bool contiguous_numerical_ids)
       : n_unique_classes(n_unique_classes),
         delimiter(delimiter),
+        metadata_config(std::move(metadata)),
         contiguous_numerical_ids(contiguous_numerical_ids) {}
 
   uint32_t n_unique_classes;
   std::optional<char> delimiter;
+  CategoricalMetadataConfigPtr metadata_config;
   bool contiguous_numerical_ids;
 
   CategoricalDataType() {}
@@ -34,7 +42,8 @@ struct CategoricalDataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(n_unique_classes, delimiter, contiguous_numerical_ids);
+    archive(n_unique_classes, delimiter, metadata_config,
+            contiguous_numerical_ids);
   }
 };
 
@@ -86,8 +95,10 @@ class DataType {
 
   static auto categorical(uint32_t n_unique_classes,
                           std::optional<char> delimiter = std::nullopt,
+                          CategoricalMetadataConfigPtr metadata = nullptr,
                           bool contiguous_numerical_ids = false) {
     return DataType(CategoricalDataType(n_unique_classes, delimiter,
+                                        std::move(metadata),
                                         contiguous_numerical_ids));
   }
 
@@ -145,7 +156,7 @@ class DataType {
                                 " datatype as a " + type_name + " datatype.");
   }
 
-  explicit DataType(AnyDataType value) : _value(value) {}
+  explicit DataType(AnyDataType value) : _value(std::move(value)) {}
 
   AnyDataType _value;
 
@@ -154,6 +165,23 @@ class DataType {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_value);
+  }
+};
+
+using ColumnDataTypes = std::map<std::string, DataType>;
+
+struct CategoricalMetadataConfig {
+  std::string metadata_file;
+  std::string key;
+  ColumnDataTypes column_data_types;
+  char delimiter = ',';
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(key, column_data_types);
   }
 };
 
