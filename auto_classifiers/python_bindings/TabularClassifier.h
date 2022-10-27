@@ -14,6 +14,7 @@
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exceptions/src/Exceptions.h>
 #include <pybind11/pybind11.h>
+#include <serialization/Utils.h>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -54,19 +55,12 @@ class TabularClassifier final
         _batch_processor(nullptr) {}
 
   void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
+    serialization::saveToFile(*this, filename);
   }
 
   static std::unique_ptr<TabularClassifier> load(const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<TabularClassifier> deserialize_into(
-        new TabularClassifier());
-    iarchive(*deserialize_into);
+    auto deserialize_into =
+        serialization::loadFromFile(new TabularClassifier(), filename);
 
     if (deserialize_into->_metadata) {
       deserialize_into->createBatchProcessor();

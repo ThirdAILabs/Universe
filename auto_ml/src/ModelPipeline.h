@@ -12,6 +12,7 @@
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <exceptions/src/Exceptions.h>
+#include <serialization/Utils.h>
 #include <limits>
 #include <memory>
 #include <string>
@@ -171,20 +172,11 @@ class ModelPipeline {
   }
 
   void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
+    serialization::saveToFile(*this, filename);
   }
 
   static std::unique_ptr<ModelPipeline> load(const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<ModelPipeline> deserialize_into(new ModelPipeline());
-    iarchive(*deserialize_into);
-
-    return deserialize_into;
+    return serialization::loadFromFile(new ModelPipeline(), filename);
   }
 
   std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(

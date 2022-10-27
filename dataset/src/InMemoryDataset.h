@@ -7,6 +7,7 @@
 #include <cereal/types/vector.hpp>
 #include "utils/SafeFileIO.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <serialization/Utils.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -110,19 +111,13 @@ class InMemoryDataset : public DatasetBase {
 
   static std::shared_ptr<InMemoryDataset<BATCH_T>> load(
       const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
-    auto deserialize_into = std::make_shared<InMemoryDataset<BATCH_T>>();
-    iarchive(*deserialize_into);
-    return deserialize_into;
+    auto deserialized =
+        serialization::loadFromFile(new InMemoryDataset<BATCH_T>(), filename);
+    return deserialized;
   }
 
   void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
+    serialization::saveToFile(*this, filename);
   }
 
   InMemoryDataset() : _len(0), _batch_size(0) {}

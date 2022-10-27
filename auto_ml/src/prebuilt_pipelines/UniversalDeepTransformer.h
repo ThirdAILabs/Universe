@@ -14,6 +14,7 @@
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
+#include <serialization/Utils.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
@@ -116,22 +117,13 @@ class UniversalDeepTransformer : public ModelPipeline {
   }
 
   void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
+    serialization::saveToFile(*this, filename);
   }
 
   static std::unique_ptr<UniversalDeepTransformer> load(
       const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<UniversalDeepTransformer> deserialize_into(
-        new UniversalDeepTransformer());
-    iarchive(*deserialize_into);
-
-    return deserialize_into;
+    return serialization::loadFromFile(new UniversalDeepTransformer(),
+                                       filename);
   }
 
  private:

@@ -12,6 +12,7 @@
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exceptions/src/Exceptions.h>
 #include <pybind11/pybind11.h>
+#include <serialization/Utils.h>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -38,20 +39,11 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
 
   void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
+    serialization::saveToFile(*this, filename);
   }
 
   static std::unique_ptr<TextClassifier> load(const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<TextClassifier> deserialize_into(new TextClassifier());
-    iarchive(*deserialize_into);
-
-    return deserialize_into;
+    return serialization::loadFromFile(new TextClassifier(), filename);
   }
 
  protected:
