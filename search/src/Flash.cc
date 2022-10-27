@@ -70,11 +70,11 @@ std::vector<uint32_t> Flash<LABEL_T>::hashBatch(const BoltBatch& batch) const {
 template <typename LABEL_T>
 void Flash<LABEL_T>::verifyBatchSequentialIds(const BoltBatch& batch) const {
   uint64_t largest_batch_id = _batch_elements_counter + batch.getBatchSize();
-  verifyAndConvertID(largest_batch_id);
+  verifyIDFitsLabelTypeRange(largest_batch_id);
 }
 
 template <typename LABEL_T>
-LABEL_T Flash<LABEL_T>::verifyAndConvertID(uint64_t id) const {
+void Flash<LABEL_T>::verifyIDFitsLabelTypeRange(uint64_t id) const {
   // Casting to a smaller integer is well specified behavior because we are
   // dealing with only unsigned integers. If the largest_batch_id is out
   // of range of LABEL_T, its first bits will get truncated and the equality
@@ -87,7 +87,6 @@ LABEL_T Flash<LABEL_T>::verifyAndConvertID(uint64_t id) const {
                                 std::to_string(id) +
                                 ", which is too large an id for this Flash.");
   }
-  return cast_id;
 }
 
 template <typename LABEL_T>

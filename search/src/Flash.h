@@ -36,8 +36,8 @@ class Flash {
         uint32_t reservoir_size);
 
   /**
-   * Constructor called when creating temporary Flash objects to serialize
-   * into
+   * This constructor SHOULD only be called when creating temporary Flash
+   * objects to serialize into.
    */
   Flash<LABEL_T>() {}
 
@@ -100,7 +100,7 @@ class Flash {
    * by throwing an error if the id is too large for the initialized size
    * (>2^16 for uin16_t, >2^32 for uint32_t, etc.).
    */
-  LABEL_T verifyAndConvertID(uint64_t id) const;
+  void verifyIDFitsLabelTypeRange(uint64_t id) const;
 
   std::shared_ptr<hashing::HashFunction> _hash_function;
 

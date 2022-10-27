@@ -1,10 +1,10 @@
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <bolt_vector/tests/BoltVectorTestUtils.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 #include <search/src/Flash.h>
-#include <search/tests/FlashIndexTestUtils.h>
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
@@ -30,11 +30,11 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
   uint32_t words_per_query = 10;
   uint32_t top_k = 5;
 
-  auto random_vectors_for_generator =
+  auto vectors_to_be_indexed =
       createRandomSparseVectors(input_vector_dimension, NUM_VECTORS,
                                 std::normal_distribution<float>(0, 1));
 
-  auto batches = createBatches(random_vectors_for_generator, batch_size);
+  auto flash_index_batches = createBatches(vectors_to_be_indexed, batch_size);
 
   auto random_vectors_for_queries =
       createRandomSparseVectors(input_vector_dimension, num_queries,
@@ -42,45 +42,46 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
   auto queries = createBatches(random_vectors_for_queries, words_per_query);
 
   // Create a Flash object
-  auto flash = Flash<uint32_t>(
+  auto flash_index = Flash<uint32_t>(
       std::make_shared<DensifiedMinHash>(HASHES_PER_TABLE, NUM_TABLES, RANGE));
-  Flash<uint32_t> deserialized_flash_instance;
 
-  for (BoltBatch& batch : batches) {
-    flash.addBatch(batch);
+  for (BoltBatch& batch : flash_index_batches) {
+    flash_index.addBatch(batch);
   }
 
   std::vector<std::vector<std::vector<uint32_t>>> query_outputs;
   for (BoltBatch& query : queries) {
-    auto output_vectors = flash.queryBatch(query, top_k, false);
+    auto output_vectors = flash_index.queryBatch(query, top_k, false);
     query_outputs.push_back(output_vectors);
   }
 
-  // Serialize
+  // Serialization-Deserialization is not handled via load-save methods
+  // because Flash is not a top level class.
   std::stringstream stream;
   {
     cereal::BinaryOutputArchive output_archive(stream);
-    output_archive(flash);
+    output_archive(flash_index);
   }
 
-  // Deserialize
+  Flash<uint32_t> deserialized_flash_index;
   {
     cereal::BinaryInputArchive input_archive(stream);
-    input_archive(deserialized_flash_instance);
+    input_archive(deserialized_flash_index);
   }
 
-  std::vector<std::vector<std::vector<uint32_t>>> second_query_outputs;
+  std::vector<std::vector<std::vector<uint32_t>>>
+      deserialized_flash_query_outputs;
   for (BoltBatch& query : queries) {
     auto output_vectors =
-        deserialized_flash_instance.queryBatch(query, top_k, false);
-    second_query_outputs.push_back(output_vectors);
+        deserialized_flash_index.queryBatch(query, top_k, false);
+    deserialized_flash_query_outputs.push_back(output_vectors);
   }
 
   for (uint32_t batch_index = 0; batch_index < num_queries; batch_index++) {
     for (uint32_t vec_index = 0; vec_index < query_outputs[batch_index].size();
          vec_index++) {
       ASSERT_TRUE(query_outputs[batch_index][vec_index] ==
-                  second_query_outputs[batch_index][vec_index]);
+                  deserialized_flash_query_outputs[batch_index][vec_index]);
     }
   }
 }

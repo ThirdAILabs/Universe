@@ -81,19 +81,26 @@ class QueryCandidateGeneratorConfig {
   }
 
   std::shared_ptr<hashing::HashFunction> getHashFunction() const {
-    if (_hash_function == "DensifiedMinHash") {
+    auto hash_function = _hash_function;
+
+    std::for_each(hash_function.begin(), hash_function.end(),
+                  [](char& character) { character = std::tolower(character); });
+
+    if (hash_function == "densifiedminhash") {
       return std::make_shared<hashing::DensifiedMinHash>(_hashes_per_table,
                                                          _num_tables, _range);
     }
-    if (_hash_function == "DWTA") {
+    if (hash_function == "dwta") {
       return std::make_shared<hashing::DWTAHashFunction>(
           _input_dim, _hashes_per_table, _num_tables, _range);
     }
-    if (_hash_function == "FastSRP") {
+    if (hash_function == "fastsrp") {
       return std::make_shared<hashing::FastSRP>(_input_dim, _hashes_per_table,
                                                 _num_tables);
     }
-    throw exceptions::NotImplemented("Unsupported Hash Function");
+    throw exceptions::NotImplemented(
+        "Unsupported Hash Function. Supported Hash Functions include: "
+        "DensifiedMinHash, DWTA, and FastSRP.");
   }
 
   constexpr uint32_t batchSize() const { return _batch_size; }
@@ -344,11 +351,13 @@ class QueryCandidateGenerator {
   std::shared_ptr<dataset::GenericBatchProcessor>
       _incorrect_queries_batch_processor;
 
-  // Maintains a mapping from the assigned IDs to the original
-  // queries loaded from a CSV file. Each unique query in the input
-  // CSV file is assigned a unique ID in an ascending order. This is
-  // a vector instead of an unordered map because queries are
-  // assigned IDs sequentially.
+  /**
+   * Maintains a mapping from the assigned IDs to the original
+   * queries loaded from a CSV file. Each unique query in the input
+   * CSV file is assigned a unique ID in an ascending order. This is
+   * a vector instead of an unordered map because queries are
+   * assigned IDs sequentially.
+   */
   std::vector<std::string> _ids_to_queries_map;
 
   std::unordered_map<std::string, uint32_t> _queries_to_ids_map;
