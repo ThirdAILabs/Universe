@@ -36,10 +36,8 @@ class TokenPairgram : public Transformation {
     std::vector<std::vector<std::pair<uint32_t, float>>> column_values(
         num_rows);
 
-    // set here because pragma doesnt like sharing private member variables
-    uint32_t output_range = _output_range;
 #pragma omp parallel for default(none) \
-    shared(num_rows, column_values, input_column, output_range)
+    shared(num_rows, column_values, input_column)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       ArrayColumn<uint32_t>::RowReference input_tokens_buffer =
           (*input_column)[row_idx];
@@ -47,7 +45,7 @@ class TokenPairgram : public Transformation {
                                                 input_tokens_buffer.end());
       std::vector<uint32_t> pairgrams =
           TextEncodingUtils::computeRawPairgramsFromUnigrams(
-              input_tokens_vector, output_range);
+              input_tokens_vector, _output_range);
 
       std::vector<std::pair<uint32_t, float>> deduplicated_pairgrams;
       TextEncodingUtils::sumRepeatedIndices(

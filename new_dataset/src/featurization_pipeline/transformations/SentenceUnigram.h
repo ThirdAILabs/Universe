@@ -58,13 +58,11 @@ class SentenceUnigram : public Transformation {
       const StringColumnPtr& input_column, uint32_t num_rows) {
     std::vector<std::vector<std::pair<uint32_t, float>>> column_values(
         num_rows);
-    // set here because pragma doesnt like sharing private member variables
-    std::optional<uint32_t> output_range = _output_range;
 #pragma omp parallel for default(none) \
-    shared(num_rows, column_values, input_column, output_range)
+    shared(num_rows, column_values, input_column)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::string text = (*input_column)[row_idx];
-      std::vector<uint32_t> unigrams = computeUnigrams(text, output_range);
+      std::vector<uint32_t> unigrams = computeUnigrams(text);
 
       std::vector<std::pair<uint32_t, float>> deduplicated_unigrams;
       // TODO(any): make TextEncodingUtils more usable
@@ -82,13 +80,11 @@ class SentenceUnigram : public Transformation {
   SparseArrayColumnPtr rawUnigramColumn(const StringColumnPtr& input_column,
                                         uint32_t num_rows) {
     std::vector<std::vector<uint32_t>> column_values(num_rows);
-    // set here because pragma doesnt like sharing private member variables
-    std::optional<uint32_t> output_range = _output_range;
 #pragma omp parallel for default(none) \
-    shared(num_rows, column_values, input_column, output_range)
+    shared(num_rows, column_values, input_column)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::string text = (*input_column)[row_idx];
-      std::vector<uint32_t> unigrams = computeUnigrams(text, output_range);
+      std::vector<uint32_t> unigrams = computeUnigrams(text);
       column_values[row_idx] = unigrams;
     }
 
@@ -96,12 +92,11 @@ class SentenceUnigram : public Transformation {
                                                      _output_range);
   }
 
-  static std::vector<uint32_t> computeUnigrams(
-      const std::string& text, std::optional<uint32_t> output_range) {
+  std::vector<uint32_t> computeUnigrams(const std::string& text) {
     std::vector<uint32_t> unigrams;
-    if (output_range) {
+    if (_output_range) {
       unigrams =
-          TextEncodingUtils::computeRawUnigramsWithRange(text, *output_range);
+          TextEncodingUtils::computeRawUnigramsWithRange(text, *_output_range);
     } else {
       unigrams = TextEncodingUtils::computeRawUnigrams(text);
     }

@@ -43,11 +43,8 @@ class CrossColumnPairgram : public Transformation {
 
     uint32_t num_rows = column_map.numRows();
     std::vector<std::vector<uint32_t>> pairgrams(num_rows);
-
-    // set here because pragma doesnt like sharing private member variables
-    uint32_t output_range = _output_range;
 #pragma omp parallel for default(none) \
-    shared(num_rows, columns, column_name_hashes, pairgrams, output_range)
+    shared(num_rows, columns, column_name_hashes, pairgrams)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::vector<uint32_t> salted_unigrams;
       uint32_t col_num = 0;
@@ -71,7 +68,7 @@ class CrossColumnPairgram : public Transformation {
       // above, thus reducing the chance of duplicates.
       std::vector<uint32_t> row_pairgrams =
           TextEncodingUtils::computeRawPairgramsFromUnigrams(salted_unigrams,
-                                                             output_range);
+                                                             _output_range);
       pairgrams[row_idx] = row_pairgrams;
     }
 
