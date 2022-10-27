@@ -26,13 +26,12 @@ class ReplicaWorker(Worker):
         self,
         num_workers: int,
         model_to_wrap: bolt.graph.Model,
-        train_file_name: str,
+        train_source,
         train_config: bolt.graph.TrainConfig,
         id: int,
         primary_worker,
         communication_type,
         log_dir: str,
-        batch_size,
     ):
         """
         Calls the constructor for Worker
@@ -53,11 +52,10 @@ class ReplicaWorker(Worker):
         super().__init__(
             num_workers=num_workers,
             model_to_wrap=model_to_wrap,
-            train_file_name=train_file_name,
+            train_source=train_source,
             id=id,
             primary_worker=primary_worker,
             train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
-            batch_size=batch_size,
         )

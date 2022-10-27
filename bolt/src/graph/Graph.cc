@@ -75,13 +75,9 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #endif
 }
 
-/*
-  Provides support for logging, validation, and model saving
-  to distributed training.
-*/
-void BoltGraph::log_validate_and_save(uint32_t batch_size,
-                                      const TrainConfig& train_config,
-                                      MetricAggregator& train_metrics) {
+void BoltGraph::logValidateAndSave(uint32_t batch_size,
+                                   const TrainConfig& train_config,
+                                   MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
     logging::info("train | epoch {} | updates {} | {}", (_epoch), _updates,
@@ -233,8 +229,8 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        log_validate_and_save(dataset_context.batchSize(), train_config,
-                              train_metrics);
+        logValidateAndSave(dataset_context.batchSize(), train_config,
+                           train_metrics);
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -549,8 +545,9 @@ InferenceResult BoltGraph::predict(
 
 // Predicts on a single sample input for performance. Always returns
 // activations and doesn't calculate metrics.
-BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
-                                    bool use_sparse_inference) {
+BoltVector BoltGraph::predictSingle(
+    std::vector<BoltVector>&& test_data, bool use_sparse_inference,
+    std::optional<std::string> output_node_name) {
   SingleBatchDatasetContext single_predict_context(std::move(test_data));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
@@ -565,8 +562,14 @@ BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
   try {
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
     forward(/* vec_index = */ 0, nullptr);
-    BoltVector output_copy = _output->getOutputVector(
-        /* vec_index = */ 0);
+    BoltVector output_copy;
+    if (output_node_name) {
+      output_copy = getNodeByName(*output_node_name)
+                        ->getOutputVector(/* vec_index = */ 0);
+    } else {
+      output_copy = _output->getOutputVector(
+          /* vec_index = */ 0);
+    }
     cleanupAfterBatchProcessing();
     return output_copy;
   } catch (const std::exception& e) {

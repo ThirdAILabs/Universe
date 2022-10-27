@@ -144,7 +144,7 @@ def test_explanations_total_percentage():
 
 def test_index_changes_predict():
     model = make_simple_oracle_model()
-    context = model.get_artifact("temporal_context")
+    context = model.get_data_processor()
     train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
@@ -161,13 +161,13 @@ def test_index_changes_predict():
 
 def test_context_serialization():
     model = make_simple_oracle_model()
-    context = model.get_artifact("temporal_context")
+    context = model.get_data_processor()
     train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     model.save("saveLoc")
     saved_model = deployment.ModelPipeline.load("saveLoc")
-    saved_context = saved_model.get_artifact("temporal_context")
+    saved_context = saved_model.get_data_processor()
 
     sample = "0,,2022-08-31"
     update = "0,1,2022-08-31"

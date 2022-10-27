@@ -10,7 +10,9 @@
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <utils/StringManipulation.h>
 #include <exception>
+#include <optional>
 #include <stdexcept>
 #include <string_view>
 #include <unordered_map>
@@ -63,6 +65,16 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
     std::vector<BoltBatch> batch_list;
     batch_list.emplace_back(std::move(batch));
     return batch_list;
+  }
+
+  uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
+    if (std::holds_alternative<uint32_t>(label)) {
+      return std::get<uint32_t>(label);
+    }
+
+    throw std::invalid_argument(
+        "This model does not support string labels; label must be a "
+        "non-negative integer.");
   }
 
   std::vector<dataset::Explanation> explain(
@@ -134,7 +146,7 @@ class SingleBlockDatasetFactoryConfig final
           delimiter + "'.");
     }
 
-    return std::make_unique<SingleBlockDatasetFactory>(
+    return std::make_shared<SingleBlockDatasetFactory>(
         /* data_block= */ data_block,
         /* unlabeled_data_block= */ unlabeled_data_block,
         /* label_block=*/label_block, /* shuffle= */ shuffle,

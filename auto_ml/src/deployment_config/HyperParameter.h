@@ -283,13 +283,18 @@ class AutotunedSparsityParameter final : public HyperParameter<float> {
     uint32_t dim = user_specified_parameters.at(_dimension_param_name)
                        .resolveIntegerParam(_dimension_param_name);
 
-    /**
-     * For smaller output layers (dim < 2000), we return a sparsity that puts
-     * the sparse dimension between 80 and 200. For larger layers (2000 <=
-     * dim), we return a sparsity that puts the sparse dimension between 100
-     * and 260. Note that the following code assums that the sparsity_values
-     * vector is sorted by increasing dimension threshold.
-     */
+    return autotuneSparsity(dim);
+  }
+
+  /**
+   * Chooses the best sparsity for a layer of a given dimension.
+   * For smaller output layers (dim < 2000), we return a sparsity that puts
+   * the sparse dimension between 80 and 200. For larger layers (2000 <=
+   * dim), we return a sparsity that puts the sparse dimension between 100
+   * and 260. Note that the following code assums that the sparsity_values
+   * vector is sorted by increasing dimension threshold.
+   */
+  static float autotuneSparsity(uint32_t dim) {
     std::vector<std::pair<uint32_t, float>> sparsity_values = {
         {450, 1.0},   {900, 0.2},    {1800, 0.1},
         {4000, 0.05}, {10000, 0.02}, {20000, 0.01}};
