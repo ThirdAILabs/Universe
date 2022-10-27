@@ -12,6 +12,7 @@ set(DATASET_TESTS
     UserItemHistoryBlockTests
     UserCountHistoryBlockTests
     GenericBatchProcessorTests
+    MetadataTest
     MlmBatchProcessorTests
     SaveLoadInMemoryDatasetTest
     StreamingGenericDatasetLoaderTests)

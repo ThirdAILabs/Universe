@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/blocks/BlockInterface.h>
+#include <algorithm>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
@@ -12,12 +13,7 @@ namespace thirdai::dataset {
 class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
  public:
   void addSparseFeatureToSegment(uint32_t index, float value) final {
-    if (_n_dense_added > 0) {
-      throw std::invalid_argument(
-          "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] A block "
-          "cannot "
-          "add both dense and sparse features.");
-    }
+    assertCanAddSparseFeatures();
 
     uint32_t concat_index = _prev_dim + index;
     if (concat_index >= _current_dim) {
@@ -39,12 +35,7 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
   }
 
   void addDenseFeatureToSegment(float value) final {
-    if (_added_sparse) {
-      throw std::invalid_argument(
-          "[SegmentedSparseFeatureVector::addDenseFeatureToSegment] A block "
-          "cannot "
-          "add both dense and sparse features.");
-    }
+    assertCanAddDenseFeatures();
 
     if (_n_dense_added >= (_current_dim - _prev_dim)) {
       std::stringstream ss;
@@ -58,6 +49,35 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
     _indices.push_back(_prev_dim + _n_dense_added);
     _values.push_back(value);
     _n_dense_added++;
+  }
+
+  void extendWithBoltVector(const BoltVector& vector) final {
+    if (vector.isDense()) {
+      assertCanAddDenseFeatures();
+    } else {
+      assertCanAddSparseFeatures();
+    }
+
+    for (uint32_t pos = 0; pos < vector.len; pos++) {
+      uint32_t segment_index =
+          vector.isDense() ? pos : vector.active_neurons[pos];
+      if (segment_index >= (_current_dim - _prev_dim)) {
+        std::stringstream ss;
+        ss << "[SegmentedSparseFeatureVector::extendWithBoltVector] Setting "
+              "value at index = "
+           << segment_index
+           << " of vector segment with dim = " << _current_dim - _prev_dim;
+        throw std::invalid_argument(ss.str());
+      }
+      uint32_t concat_index = _prev_dim + segment_index;
+      _indices.push_back(concat_index);
+      _values.push_back(vector.activations[pos]);
+    }
+    if (!vector.isDense()) {
+      _added_sparse = true;
+    } else {
+      _n_dense_added += vector.len;
+    }
   }
 
   BoltVector toBoltVector() final {
@@ -81,6 +101,24 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
   }
 
  private:
+  void assertCanAddSparseFeatures() const {
+    if (_n_dense_added > 0) {
+      throw std::invalid_argument(
+          "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] A block "
+          "cannot "
+          "add both dense and sparse features.");
+    }
+  }
+
+  void assertCanAddDenseFeatures() const {
+    if (_added_sparse) {
+      throw std::invalid_argument(
+          "[SegmentedSparseFeatureVector::addDenseFeatureToSegment] A block "
+          "cannot "
+          "add both dense and sparse features.");
+    }
+  }
+
   bool _added_sparse = false;
   uint32_t _n_dense_added = 0;
   uint32_t _current_dim = 0;
@@ -114,6 +152,24 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
 
     _values.push_back(value);
     _n_dense_added++;
+  }
+
+  void extendWithBoltVector(const BoltVector& vector) final {
+    if (!vector.isDense()) {
+      throw std::invalid_argument(
+          "[SegmentedDenseFeatureVector::extendWithBoltVector] "
+          "SegmentedDenseFeatureVector cannot be extended with a sparse bolt "
+          "vector.");
+    }
+    if (vector.len >= _latest_segment_dim) {
+      std::stringstream ss;
+      ss << "[SegmentedDenseFeatureVector::extendWithBoltVector] Adding "
+         << vector.len << " dense features to vector segment with dim = "
+         << _latest_segment_dim;
+      throw std::invalid_argument(ss.str());
+    }
+    _values.insert(_values.end(), vector.activations,
+                   vector.activations + vector.len);
   }
 
   BoltVector toBoltVector() final {

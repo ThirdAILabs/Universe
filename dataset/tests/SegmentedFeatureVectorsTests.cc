@@ -1,9 +1,11 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <cstdlib>
+#include <numeric>
 #include <random>
 #include <stdexcept>
 #include <unordered_map>
@@ -115,6 +117,9 @@ class SegmentedFeatureVectorTest : public testing::Test {
     }
     return expected_idx_vals;
   }
+
+  // Exposes protected method to test functions.
+  static auto getEntries(SegmentedFeatureVector& vec) { return vec.entries(); }
 
   /**
    * Given a segmented feature vector and a vector of segments that the vector
@@ -264,6 +269,57 @@ TEST_F(SegmentedSparseFeatureVectorTest,
 }
 
 /**
+ * Test that a bolt vector can be properly concatenated with an existing sparse
+ * feature vector. Specifically, we want to check that the resulting vector is
+ * correct when there are segments before and after the bolt vector segment,
+ * and that this works with both sparse and dense bolt vectors.
+ */
+TEST_F(SegmentedSparseFeatureVectorTest, ExtendWithBoltVectorWorksProperly) {
+  SegmentedSparseFeatureVector vec;
+
+  uint32_t first_segment_dim = 10;
+  uint32_t first_segment_idx = 3;
+  float first_segment_val = 1.0;
+  addVectorFeature(vec, first_segment_dim);
+  vec.addSparseFeatureToSegment(first_segment_idx, first_segment_val);
+
+  uint32_t sparse_vector_dim = 30;
+  std::vector<uint32_t> sparse_vector_indices = {1, 5};
+  std::vector<float> sparse_vector_values = {0.5, 5.0};
+  auto sparse_vector_segment =
+      BoltVector::makeSparseVector(sparse_vector_indices, sparse_vector_values);
+  addVectorFeature(vec, sparse_vector_dim);
+  vec.extendWithBoltVector(sparse_vector_segment);
+
+  uint32_t dense_vector_dim = 3;
+  std::vector<float> dense_vector_values = {1.0, 2.0, 3.0};
+  auto dense_vector_segment = BoltVector::makeDenseVector(dense_vector_values);
+  addVectorFeature(vec, dense_vector_dim);
+  vec.extendWithBoltVector(dense_vector_segment);
+
+  uint32_t last_segment_dim = 15;
+  uint32_t last_segment_idx = 10;
+  float last_segment_val = 0.2;
+  addVectorFeature(vec, last_segment_dim);
+  vec.addSparseFeatureToSegment(last_segment_idx, last_segment_val);
+
+  auto entries = getEntries(vec);
+  ASSERT_EQ(entries.size(), 7);
+
+  uint32_t expected_offset = 0;
+  ASSERT_FLOAT_EQ(entries.at(expected_offset + 3), 1.0);
+  expected_offset += first_segment_dim;
+  ASSERT_FLOAT_EQ(entries.at(expected_offset + 1), 0.5);
+  ASSERT_FLOAT_EQ(entries.at(expected_offset + 5), 5.0);
+  expected_offset += sparse_vector_dim;
+  ASSERT_FLOAT_EQ(entries.at(expected_offset + 0), 1.0);
+  ASSERT_FLOAT_EQ(entries.at(expected_offset + 1), 2.0);
+  ASSERT_FLOAT_EQ(entries.at(expected_offset + 2), 3.0);
+  expected_offset += dense_vector_dim;
+  ASSERT_FLOAT_EQ(entries.at(expected_offset + 10), 0.2);
+}
+
+/**
  * Ensures that any one segment can only have either sparse features
  * or dense features and not both.
  */
@@ -327,4 +383,68 @@ TEST_F(SegmentedDenseFeatureVectorTest, ProducesBoltVectorWithCorrectFeatures) {
   checkBoltVectorHasSegments(bolt_vec, segments);
 }
 
+/**
+ * Test that a bolt vector can be properly concatenated with an existing dense
+ * feature vector. Specifically, we want to check that the resulting vector is
+ * correct when there are segments before and after the bolt vector segment.
+ * Unlike SegmentedSparseFeatureVector, SegmentedDenseFeatureVector cannot be
+ * extended with a bolt vector.
+ */
+TEST_F(SegmentedDenseFeatureVectorTest, ExtendWithBoltVectorWorksProperly) {
+  SegmentedSparseFeatureVector vec;
+
+  uint32_t first_segment_dim = 10;
+  std::vector<float> first_segment_vals(first_segment_dim);
+  std::iota(first_segment_vals.begin(), first_segment_vals.end(), 0.0);
+  addVectorFeature(vec, first_segment_dim);
+  for (auto val : first_segment_vals) {
+    vec.addDenseFeatureToSegment(val);
+  }
+
+  uint32_t dense_vector_dim = 3;
+  std::vector<float> dense_vector_values = {1.0, 2.0, 3.0};
+  auto dense_vector_segment = BoltVector::makeDenseVector(dense_vector_values);
+  addVectorFeature(vec, dense_vector_dim);
+  vec.extendWithBoltVector(dense_vector_segment);
+
+  uint32_t last_segment_dim = 10;
+  std::vector<float> last_segment_vals(last_segment_dim);
+  std::iota(last_segment_vals.begin(), last_segment_vals.end(), 0.0);
+  addVectorFeature(vec, last_segment_dim);
+  for (auto val : last_segment_vals) {
+    vec.addDenseFeatureToSegment(val);
+  }
+
+  auto final_vector = vec.toBoltVector();
+
+  for (uint32_t i = 0; i < first_segment_dim; i++) {
+    ASSERT_EQ(final_vector.activations[i], first_segment_vals[i]);
+  }
+
+  for (uint32_t i = 0; i < dense_vector_dim; i++) {
+    ASSERT_EQ(final_vector.activations[first_segment_dim + i],
+              dense_vector_values[i]);
+  }
+
+  for (uint32_t i = 0; i < last_segment_dim; i++) {
+    ASSERT_EQ(
+        final_vector.activations[first_segment_dim + dense_vector_dim + i],
+        last_segment_vals[i]);
+  }
+}
+
+TEST_F(SegmentedDenseFeatureVectorTest, ExtendWithSparseBoltVectorThrows) {
+  SegmentedDenseFeatureVector vec;
+
+  auto sparse_vector_segment =
+      BoltVector::singleElementSparseVector(/* active_neuron= */ 5);
+
+  addVectorFeature(vec, /* dim= */ 10);
+
+  expectThrow(
+      [&]() { vec.extendWithBoltVector(sparse_vector_segment); },
+      "[SegmentedDenseFeatureVector::extendWithBoltVector] "
+      "SegmentedDenseFeatureVector cannot be extended with a sparse bolt "
+      "vector.");
+}
 }  // namespace thirdai::dataset

@@ -10,6 +10,7 @@
 #include <cereal/types/vector.hpp>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/metadata/Metadata.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <algorithm>
@@ -82,7 +83,7 @@ using UserItemHistoryBlockPtr = std::shared_ptr<UserItemHistoryBlock>;
 /**
  * Tracks up to the last N items associated with each user.
  */
-class UserItemHistoryBlock final : public Block {
+class UserItemHistoryBlock : public Block {
  public:
   UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
                        uint32_t timestamp_col,
@@ -222,6 +223,9 @@ class UserItemHistoryBlock final : public Block {
     return nullptr;
   }
 
+  // Constructor for Cereal
+  UserItemHistoryBlock() {}
+
  private:
   std::vector<uint32_t> getItemIds(const std::string& item_str) {
     if (!_item_col_delimiter) {
@@ -251,6 +255,7 @@ class UserItemHistoryBlock final : public Block {
          record++) {
       if (record->timestamp <= timestamp_seconds) {
         vec.addSparseFeatureToSegment(record->item, 1.0);
+        encodeItem(record->item, vec);
         added++;
       }
       seen++;
@@ -265,6 +270,10 @@ class UserItemHistoryBlock final : public Block {
       user_history.erase(user_history.begin(),
                          user_history.begin() + n_outdated);
     }
+  }
+
+  virtual void encodeItem(uint32_t item_id, SegmentedFeatureVector& vec) {
+    vec.addSparseFeatureToSegment(item_id, 1.0);
   }
 
   // Returns elements removed from the item history in chronological order.
@@ -298,9 +307,6 @@ class UserItemHistoryBlock final : public Block {
   std::optional<char> _item_col_delimiter;
   int64_t _time_lag;
 
-  // Constructor for Cereal
-  UserItemHistoryBlock() {}
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
@@ -311,6 +317,56 @@ class UserItemHistoryBlock final : public Block {
   }
 };
 
+class MetadataUserItemHistoryBlock final : public UserItemHistoryBlock {
+ public:
+  MetadataUserItemHistoryBlock(
+      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
+      ThreadSafeVocabularyPtr user_id_map, MetadataPtr item_metadata,
+      ItemHistoryCollectionPtr item_history_collection, uint32_t track_last_n,
+      bool should_update_history = true, bool include_current_row = false,
+      std::optional<char> item_col_delimiter = std::nullopt,
+      int64_t time_lag = 0)
+      : UserItemHistoryBlock(user_col, item_col, timestamp_col,
+                             std::move(user_id_map),
+                             item_metadata->getKeyToUidVocab(),
+                             std::move(item_history_collection), track_last_n,
+                             should_update_history, include_current_row,
+                             item_col_delimiter, time_lag),
+        _item_metadata(std::move(item_metadata)) {}
+
+  static auto make(uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
+                   ThreadSafeVocabularyPtr user_id_map,
+                   MetadataPtr item_metadata,
+                   ItemHistoryCollectionPtr item_history_collection,
+                   uint32_t track_last_n, bool should_update_history = true,
+                   bool include_current_row = false,
+                   std::optional<char> item_col_delimiter = std::nullopt,
+                   int64_t time_lag = 0) {
+    return std::make_shared<MetadataUserItemHistoryBlock>(
+        user_col, item_col, timestamp_col, std::move(user_id_map),
+        std::move(item_metadata), std::move(item_history_collection),
+        track_last_n, should_update_history, include_current_row,
+        item_col_delimiter, time_lag);
+  }
+
+ private:
+  void encodeItem(uint32_t item_id, SegmentedFeatureVector& vec) final {
+    vec.extendWithBoltVector(_item_metadata->getVectorForUid(item_id));
+  }
+
+  MetadataPtr _item_metadata;
+
+  // Constructor for Cereal
+  MetadataUserItemHistoryBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<UserItemHistoryBlock>(this), _item_metadata);
+  }
+};
+
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::UserItemHistoryBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::MetadataUserItemHistoryBlock)

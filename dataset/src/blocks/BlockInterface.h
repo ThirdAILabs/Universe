@@ -114,6 +114,11 @@ class SegmentedFeatureVector {
   virtual void addDenseFeatureToSegment(float value) = 0;
 
   /**
+   * Adds features from a bolt vector to the current vector segment.
+   */
+  virtual void extendWithBoltVector(const BoltVector& vector) = 0;
+
+  /**
    * Converts this vector to a BoltVector.
    */
   virtual BoltVector toBoltVector() = 0;

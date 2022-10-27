@@ -7,6 +7,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/metadata/Metadata.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exception>
 #include <memory>
@@ -25,11 +26,11 @@ class CategoricalBlock : public Block {
   // Declaration included from BlockInterface.h
   friend CategoricalBlockTest;
 
-  CategoricalBlock(uint32_t col, uint32_t n_classes,
+  CategoricalBlock(uint32_t col, uint32_t feature_dim,
                    std::optional<char> delimiter)
-      : _n_classes(n_classes), _col(col), _delimiter(delimiter) {}
+      : _dim(feature_dim), _col(col), _delimiter(delimiter) {}
 
-  uint32_t featureDim() const final { return _n_classes; };
+  uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return false; };
 
@@ -74,7 +75,7 @@ class CategoricalBlock : public Block {
   virtual std::exception_ptr encodeCategory(std::string_view category,
                                             SegmentedFeatureVector& vec) = 0;
 
-  uint32_t _n_classes;
+  uint32_t _dim;
 
   // Constructor for cereal.
   CategoricalBlock() {}
@@ -86,7 +87,7 @@ class CategoricalBlock : public Block {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Block>(this), _n_classes, _col, _delimiter);
+    archive(cereal::base_class<Block>(this), _col, _delimiter);
   }
 };
 
@@ -116,7 +117,7 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
                                     SegmentedFeatureVector& vec) final {
     char* end;
     uint32_t id = std::strtoul(category.data(), &end, 10);
-    if (id >= _n_classes) {
+    if (id >= _dim) {
       return std::make_exception_ptr(
           std::invalid_argument("Received label " + std::to_string(id) +
                                 " larger than or equal to n_classes"));
@@ -202,8 +203,57 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
 using StringLookupCategoricalBlockPtr =
     std::shared_ptr<StringLookupCategoricalBlock>;
 
+class MetadataCategoricalBlock final : public CategoricalBlock {
+ public:
+  MetadataCategoricalBlock(uint32_t col, MetadataPtr metadata,
+                           std::optional<char> delimiter = std::nullopt)
+      : CategoricalBlock(col, metadata->featureDim(), delimiter),
+        _metadata(std::move(metadata)) {}
+
+  static auto make(uint32_t col, MetadataPtr metadata,
+                   std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<MetadataCategoricalBlock>(col, std::move(metadata),
+                                                      delimiter);
+  }
+
+  std::string getResponsibleCategory(
+      uint32_t index, const std::string_view& category_value) const final {
+    (void)category_value;
+    (void)index;
+    // TODO(Geordie): This needs to be more descriptive.
+    return "metadata";
+  }
+
+ protected:
+  std::exception_ptr encodeCategory(std::string_view category,
+                                    SegmentedFeatureVector& vec) final {
+    auto key = std::string(category);
+
+    try {
+      vec.extendWithBoltVector(_metadata->getVectorForKey(key));
+    } catch (...) {
+      return std::current_exception();
+    }
+
+    return nullptr;
+  }
+
+ private:
+  MetadataPtr _metadata;
+
+  // Private constructor for cereal.
+  MetadataCategoricalBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<CategoricalBlock>(this), _metadata);
+  }
+};
+
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::CategoricalBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::NumericalCategoricalBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::StringLookupCategoricalBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::MetadataCategoricalBlock)
