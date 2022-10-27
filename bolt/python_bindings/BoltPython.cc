@@ -107,12 +107,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
   oracle_types_submodule.def(
       "categorical", sequential_classifier::DataType::categorical,
-<<<<<<< HEAD
       py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
-      py::arg("consecutive_integer_ids") = false,
-=======
-      py::arg("n_unique_classes"), py::arg("metadata") = nullptr,
->>>>>>> metadata-model-pipeline-2
+      py::arg("metadata") = nullptr, py::arg("consecutive_integer_ids") = false,
       R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
