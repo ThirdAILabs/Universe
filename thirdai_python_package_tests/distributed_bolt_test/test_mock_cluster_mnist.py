@@ -93,14 +93,14 @@ def train_distributed_bolt_check(ray_two_node_cluster_config):
 
     check_models_are_same_on_first_two_nodes(distributed_model)
 
-    predict_config = (
-        bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
+    eval_config = (
+        bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
     )
     test_data, test_labels = dataset.load_bolt_svm_dataset(
         "mnist_data/mnist.t", batch_size=256
     )
     metrics = distributed_model.get_model().predict(
-        test_data=test_data, test_labels=test_labels, predict_config=predict_config
+        test_data=test_data, test_labels=test_labels, eval_config=eval_config
     )
 
     print(metrics)

@@ -222,10 +222,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_LOADER)
       .def("evaluate", &evaluateOnFileWrapper<ModelPipeline>,
-           py::arg("filename"), py::arg("predict_config") = std::nullopt,
+           py::arg("filename"), py::arg("eval_config") = std::nullopt,
            docs::MODEL_PIPELINE_EVALUATE_FILE)
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
-           py::arg("predict_config") = std::nullopt,
+           py::arg("eval_config") = std::nullopt,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER)
       .def("predict", &predictWrapper<ModelPipeline, LineInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
@@ -283,7 +283,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
       .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
-           py::arg("filename"), py::arg("predict_config") = std::nullopt,
+           py::arg("filename"), py::arg("eval_config") = std::nullopt,
            docs::UDT_EVALUATE)
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
@@ -415,20 +415,19 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source,
-    std::optional<bolt::PredictConfig>& predict_config) {
-  auto output = model.evaluate(data_source, predict_config);
+    std::optional<bolt::EvalConfig>& eval_config) {
+  auto output = model.evaluate(data_source, eval_config);
 
   return convertInferenceTrackerToNumpy(output);
 }
 
 template <typename Model>
-py::object evaluateOnFileWrapper(
-    Model& model, const std::string& filename,
-    std::optional<bolt::PredictConfig>& predict_config) {
+py::object evaluateOnFileWrapper(Model& model, const std::string& filename,
+                                 std::optional<bolt::EvalConfig>& eval_config) {
   return evaluateOnDataLoaderWrapper(model,
                                      dataset::SimpleFileDataLoader::make(
                                          filename, DEFAULT_EVALUATE_BATCH_SIZE),
-                                     predict_config);
+                                     eval_config);
 }
 
 template <typename Model, typename InputType>

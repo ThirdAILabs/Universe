@@ -172,7 +172,7 @@ numpy array of the activations.
 
 Args:
     filename (str): Path to the dataset file.
-    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional.
+    eval_config (Option[bolt.EvalConfig]): The predict config is optional.
         It specifies metrics to compute and whether to use sparse
         inference.
 
@@ -187,8 +187,8 @@ Returns:
     target class names by calling the `class_names()` method.
 
 Examples:
-    >>> predict_config = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
-    >>> activations = model.evaluate(filename="./test_file", predict_config=predict_config)
+    >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
+    >>> activations = model.evaluate(filename="./test_file", eval_config=eval_config)
 
 Notes: 
     - If temporal tracking relationships are provided, UDT can make better predictions 

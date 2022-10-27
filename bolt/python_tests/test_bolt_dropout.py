@@ -29,7 +29,7 @@ def test_dropout_layer():
     train_cfg = bolt.TrainConfig(epochs=3, learning_rate=0.001).silence()
     model.train(train_x, train_y, train_cfg)
 
-    predict_cfg = bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
-    metrics = model.predict(test_x, test_y, predict_cfg)
+    eval_cfg = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
+    metrics = model.evaluate(test_x, test_y, eval_cfg)
 
     assert metrics[0]["categorical_accuracy"] >= 0.8

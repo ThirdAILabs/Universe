@@ -34,12 +34,12 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source,
-    std::optional<bolt::PredictConfig>& predict_config);
+    std::optional<bolt::EvalConfig>& eval_config);
 
 template <typename Model>
 py::object evaluateOnFileWrapper(
     Model& model, const std::string& filename,
-    std::optional<bolt::PredictConfig>& predict_config);
+    std::optional<bolt::EvalConfig>& eval_config);
 
 template <typename Model, typename InputType>
 py::object predictWrapper(Model& model, const InputType& sample,

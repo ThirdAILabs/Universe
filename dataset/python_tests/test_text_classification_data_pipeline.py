@@ -42,8 +42,8 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
     train_cfg = bolt.TrainConfig(learning_rate=0.001, epochs=1).silence()
     model.train(data, labels, train_cfg)
 
-    predict_cfg = bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
-    metrics = model.predict(data, labels, predict_cfg)
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
+    metrics = model.evaluate(data, labels, eval_config)
 
     assert metrics[0]["categorical_accuracy"] > 0.9
 

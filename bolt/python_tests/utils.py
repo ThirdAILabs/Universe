@@ -44,7 +44,7 @@ def train_network(network, train_data, train_labels, epochs, learning_rate=0.000
 
 
 def get_categorical_acc(network, examples, labels, batch_size=64):
-    acc, *_ = network.predict(
+    acc, *_ = network.evaluate(
         examples, labels, batch_size, metrics=["categorical_accuracy"], verbose=False
     )
     return acc["categorical_accuracy"]
@@ -263,17 +263,17 @@ def build_train_and_predict_single_hidden_layer(
 
     model.train(data, labels, train_config)
 
-    predict_config = (
-        bolt.PredictConfig()
+    eval_config = (
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
         .return_activations()
         .silence()
     )
 
     if enable_sparse_inference:
-        predict_config.enable_sparse_inference()
+        eval_config.enable_sparse_inference()
 
-    return model.predict(data, labels, predict_config)
+    return model.evaluate(data, labels, eval_config)
 
 
 def get_compressed_weight_gradients(
@@ -343,8 +343,8 @@ def compressed_training(
         batch_size=batch_size,
     )
 
-    predict_config = (
-        bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
+    eval_config = (
+        bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
     )
     for epochs in range(epochs):
         for batch_num in range(num_training_batches):
@@ -365,10 +365,10 @@ def compressed_training(
     wrapped_model.finish_training()
 
     model = wrapped_model.model
-    acc = model.predict(
+    acc = model.evaluate(
         test_data=dataset.from_numpy(test_data, batch_size=64),
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
-        predict_config=predict_config,
+        eval_config=eval_config,
     )
 
     return acc

@@ -61,12 +61,12 @@ def test_bolt_dag_on_mnist():
         train_data=train_data, train_labels=train_labels, train_config=train_config
     )
 
-    predict_config = (
-        bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
+    eval_config = (
+        bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
     )
 
-    metrics = model.predict(
-        test_data=test_data, test_labels=test_labels, predict_config=predict_config
+    metrics = model.evaluate(
+        test_data=test_data, test_labels=test_labels, eval_config=eval_config
     )
 
     assert metrics[0]["categorical_accuracy"] >= 0.9

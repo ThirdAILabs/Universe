@@ -52,10 +52,10 @@ def test_normalize_layer_activations():
         train_data=train_data, train_labels=train_labels, train_config=train_config
     )
 
-    predict_config = bolt.PredictConfig().with_metrics(["categorical_accuracy"])
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
 
-    metrics = model_with_normalization.predict(
-        test_data=train_data, test_labels=train_labels, predict_config=predict_config
+    metrics = model_with_normalization.evaluate(
+        test_data=train_data, test_labels=train_labels, eval_config=eval_config
     )
 
     assert metrics[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD

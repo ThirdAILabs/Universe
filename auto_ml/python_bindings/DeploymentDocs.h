@@ -614,7 +614,7 @@ activations.
 
 Args:
     filename (str): Path to the dataset file.
-    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional
+    eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
 
@@ -625,8 +625,8 @@ Returns:
     each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> predict_config = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
-    >>> activations = model.evaluate(filename="./test_file", predict_config=predict_config)
+    >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
+    >>> activations = model.evaluate(filename="./test_file", eval_config=eval_config)
 
 )pbdoc";
 
@@ -636,7 +636,7 @@ activations.
 
 Args:
     data_source (dataset.DataLoader): A data loader for the given dataset.
-    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional
+    eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
 
@@ -753,8 +753,8 @@ Returns:
     labels.
 
 Examples:
-    >>> predict_config = (
-            bolt.graph.PredictConfig.make()
+    >>> eval_config = (
+            bolt.EvalConfig()
             .with_metrics(["categorical_accuracy"])
             .enable_sparse_inference()
         )
@@ -764,7 +764,7 @@ Examples:
         ).with_validation(
             validation_data=val_data,
             validation_labels=val_labels,
-            predict_config=predict_config,
+            eval_config=eval_config,
             validation_frequency=10,
         )
 

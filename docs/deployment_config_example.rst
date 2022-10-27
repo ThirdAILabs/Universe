@@ -100,13 +100,13 @@ has a method to load a validation dataset since it contains the dataset loader f
 
 >>> val_data, val_labels = trained_text_classifier.load_validation_data("./validation_data")
 >>> validation_config = (
-        bolt.graph.PredictConfig.make()
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
     )
 >>> train_config = train_config.with_validation(
         validation_data=val_data,
         validation_labels=val_labels,
-        predict_config=validation_config,
+        eval_config=validation_config,
         validation_frequency=10,
     )
 
@@ -125,17 +125,17 @@ up to the specified number of batches.
 Evaluating with the ModelPipeline
 ---------------------------------
 
-Evaulate just requires an evaluation dataset or optionally a Bolt `PredictConfig` 
+Evaulate just requires an evaluation dataset or optionally a Bolt `EvalConfig` 
 if you would like to specify metrics or sparse inference. It returns the activations
 from the final layer of the model.
 
->>> predict_config = (
-        bolt.graph.PredictConfig.make()
+>>> eval_config = (
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
         .enable_sparse_inference()
     )
 >>> activations = model.evaluate(
-        filename="./test_data", predict_config=predict_config
+        filename="./test_data", eval_config=eval_config
     )
 
 Inference with the ModelPipeline
