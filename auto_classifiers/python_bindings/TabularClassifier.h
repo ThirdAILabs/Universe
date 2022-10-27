@@ -60,7 +60,7 @@ class TabularClassifier final
 
   static std::unique_ptr<TabularClassifier> load(const std::string& filename) {
     auto deserialize_into =
-        serialization::loadFromFile(new TabularClassifier(), filename);
+        serialization::loadFromFile<TabularClassifier>(filename);
 
     if (deserialize_into->_metadata) {
       deserialize_into->createBatchProcessor();

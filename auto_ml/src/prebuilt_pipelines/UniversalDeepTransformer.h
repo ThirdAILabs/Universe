@@ -122,8 +122,7 @@ class UniversalDeepTransformer : public ModelPipeline {
 
   static std::unique_ptr<UniversalDeepTransformer> load(
       const std::string& filename) {
-    return serialization::loadFromFile(new UniversalDeepTransformer(),
-                                       filename);
+    return serialization::loadFromFile<UniversalDeepTransformer>(filename);
   }
 
  private:

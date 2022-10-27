@@ -43,7 +43,7 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
 
   static std::unique_ptr<TextClassifier> load(const std::string& filename) {
-    return serialization::loadFromFile(new TextClassifier(), filename);
+    return serialization::loadFromFile<TextClassifier>(filename);
   }
 
  protected:

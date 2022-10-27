@@ -176,7 +176,7 @@ class ModelPipeline {
   }
 
   static std::unique_ptr<ModelPipeline> load(const std::string& filename) {
-    return serialization::loadFromFile(new ModelPipeline(), filename);
+    return serialization::loadFromFile<ModelPipeline>(filename);
   }
 
   std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(

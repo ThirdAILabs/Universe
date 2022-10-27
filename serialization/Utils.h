@@ -18,12 +18,11 @@ static inline void saveToFile(T& to_be_serialized,
 }
 
 template <typename T>
-static inline std::unique_ptr<T> loadFromFile(T* empty_obj,
-                                              const std::string& filename) {
+static inline std::unique_ptr<T> loadFromFile(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   cereal::BinaryInputArchive iarchive(filestream);
-  std::unique_ptr<T> deserialize_into(empty_obj);
+  std::unique_ptr<T> deserialize_into(new T());
   iarchive(*deserialize_into);
 
   return deserialize_into;

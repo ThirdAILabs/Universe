@@ -45,8 +45,7 @@ class MultiLabelTextClassifier final
 
   static std::unique_ptr<MultiLabelTextClassifier> load(
       const std::string& filename) {
-    return serialization::loadFromFile(new MultiLabelTextClassifier(),
-                                       filename);
+    return serialization::loadFromFile<MultiLabelTextClassifier>(filename);
   }
 
   void updateThreshold(float new_threshold) { _threshold = new_threshold; }

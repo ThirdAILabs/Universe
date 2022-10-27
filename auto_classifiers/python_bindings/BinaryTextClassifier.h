@@ -39,7 +39,7 @@ class BinaryTextClassifier final
 
   static std::unique_ptr<BinaryTextClassifier> load(
       const std::string& filename) {
-    return serialization::loadFromFile(new BinaryTextClassifier(), filename);
+    return serialization::loadFromFile<BinaryTextClassifier>(filename);
   }
 
  protected:
