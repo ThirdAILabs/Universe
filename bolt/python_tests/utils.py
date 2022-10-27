@@ -343,9 +343,7 @@ def compressed_training(
         batch_size=batch_size,
     )
 
-    eval_config = (
-        bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
-    )
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
     for epochs in range(epochs):
         for batch_num in range(num_training_batches):
             wrapped_model.compute_and_store_batch_gradients(batch_num)

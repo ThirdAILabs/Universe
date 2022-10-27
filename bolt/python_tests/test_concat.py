@@ -44,9 +44,7 @@ def run_simple_test(
         train_config=train_config,
     )
 
-    eval_config = (
-        bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
-    )
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
 
     metrics = model.evaluate(
         test_data=train_data,

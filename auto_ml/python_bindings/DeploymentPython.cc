@@ -206,7 +206,22 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def_static("load", &DeploymentConfig::load, py::arg("filename"),
                   docs::DEPLOYMENT_CONFIG_LOAD);
 
-  py::class_<ModelPipeline>(submodule, "ModelPipeline")
+  py::class_<OracleDatasetFactory, OracleDatasetFactoryPtr>(submodule,
+                                                            "TemporalContext")
+      .def("reset", &OracleDatasetFactory::resetTemporalTrackers,
+           docs::TEMPORAL_CONTEXT_RESET)
+      .def("update_temporal_trackers",
+           py::overload_cast<const LineInput&>(
+               &OracleDatasetFactory::updateTemporalTrackers),
+           py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
+      .def("batch_update_temporal_trackers",
+           py::overload_cast<const LineInputBatch&>(
+               &OracleDatasetFactory::batchUpdateTemporalTrackers),
+           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
+}
+
+void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
+  py::class_<ModelPipeline>(bolt_submodule, "Pipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_CONFIG)
@@ -248,7 +263,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
 
-  py::class_<OracleConfig, OracleConfigPtr>(submodule, "OracleConfig")
+  py::class_<OracleConfig, OracleConfigPtr>(bolt_submodule, "OracleConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
                     std::string, std::string, uint32_t, char>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
@@ -256,21 +271,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            docs::ORACLE_CONFIG_INIT);
 
-  py::class_<OracleDatasetFactory, OracleDatasetFactoryPtr>(submodule,
-                                                            "TemporalContext")
-      .def("reset", &OracleDatasetFactory::resetTemporalTrackers,
-           docs::TEMPORAL_CONTEXT_RESET)
-      .def("update_temporal_trackers",
-           py::overload_cast<const LineInput&>(
-               &OracleDatasetFactory::updateTemporalTrackers),
-           py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
-      .def("batch_update_temporal_trackers",
-           py::overload_cast<const LineInputBatch&>(
-               &OracleDatasetFactory::batchUpdateTemporalTrackers),
-           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
-
-  py::class_<UniversalDeepTransformer>(submodule, "UniversalDeepTransformer",
-                                       docs::UDT_CLASS)
+  py::class_<UniversalDeepTransformer>(
+      bolt_submodule, "UniversalDeepTransformer", docs::UDT_CLASS)
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
@@ -360,7 +362,7 @@ py::object makeUserSpecifiedParameter(const std::string& name,
   }
 
   if (py::str(type).cast<std::string>() ==
-      "<class 'thirdai._thirdai.deployment.OracleConfig'>") {
+      "<class 'thirdai._thirdai.bolt.OracleConfig'>") {
     return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(name));
   }
 

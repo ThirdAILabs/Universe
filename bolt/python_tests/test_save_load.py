@@ -63,9 +63,7 @@ def test_save_load_dag():
     new_model = bolt.nn.Model.load(filename=save_loc)
 
     # Verify accuracy matches.
-    test_metrics2 = new_model.evaluate(
-        data, labels, eval_config=get_eval_config()
-    )[0]
+    test_metrics2 = new_model.evaluate(data, labels, eval_config=get_eval_config())[0]
     assert test_metrics2["categorical_accuracy"] >= 0.9
     assert (
         test_metrics1["categorical_accuracy"] == test_metrics2["categorical_accuracy"]
@@ -76,9 +74,7 @@ def test_save_load_dag():
     new_model.train(
         data, labels, train_config=get_train_config(epochs=2, batch_size=100)
     )
-    test_metrics3 = new_model.evaluate(
-        data, labels, eval_config=get_eval_config()
-    )[0]
+    test_metrics3 = new_model.evaluate(data, labels, eval_config=get_eval_config())[0]
     assert test_metrics3["categorical_accuracy"] >= 0.9
 
 

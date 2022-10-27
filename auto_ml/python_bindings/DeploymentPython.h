@@ -16,6 +16,8 @@ namespace thirdai::automl::deployment::python {
 
 void createDeploymentSubmodule(py::module_& thirdai_module);
 
+void defineModelPipelineAndUDT(py::module_& bolt_submodule);
+
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs);
 
@@ -37,9 +39,8 @@ py::object evaluateOnDataLoaderWrapper(
     std::optional<bolt::EvalConfig>& eval_config);
 
 template <typename Model>
-py::object evaluateOnFileWrapper(
-    Model& model, const std::string& filename,
-    std::optional<bolt::EvalConfig>& eval_config);
+py::object evaluateOnFileWrapper(Model& model, const std::string& filename,
+                                 std::optional<bolt::EvalConfig>& eval_config);
 
 template <typename Model, typename InputType>
 py::object predictWrapper(Model& model, const InputType& sample,

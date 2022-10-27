@@ -63,7 +63,7 @@ Examples:
     >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
     >>> # We want to predict next week's sales performance for each product using temporal context.
     >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "product_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
@@ -90,7 +90,7 @@ Examples:
     >>> # Alternatively suppose our data has the following columns: "user_id", "movie_id", "hours_watched", "timestamp"
     >>> # We want to build a movie recommendation system.
     >>> # Then we may configure UDT as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "user_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
@@ -217,7 +217,7 @@ Returns:
 
 Examples:
     >>> # Suppose we configure UDT as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "user_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
@@ -312,7 +312,7 @@ Returns:
 
 Examples:
     >>> # Suppose we configure UDT as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "user_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
@@ -364,7 +364,7 @@ Args:
 
 Example:
     >>> # Suppose we configure UDT to do movie recommendation as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "user_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
@@ -404,7 +404,7 @@ Args:
 
 Example:
     >>> # Suppose we configure UDT to do movie recommendation as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "user_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
@@ -480,7 +480,7 @@ Returns:
 
 Example:
     >>> # Suppose we configure UDT as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "user_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
@@ -547,8 +547,8 @@ Returns:
     The loaded instance of UDT.
 
 Example:
-    >>> model = deployment.UniversalDeepTransformer(...)
-    >>> model = deployment.UniversalDeepTransformer.load("udt_savefile.bolt")
+    >>> model = bolt.UniversalDeepTransformer(...)
+    >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
 )pbdoc";
 
 }  // namespace thirdai::automl::deployment::python::docs

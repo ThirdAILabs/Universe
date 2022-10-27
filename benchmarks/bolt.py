@@ -161,9 +161,7 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
     for epoch_num in range(num_epochs):
 
         freeze_hash_table_if_needed(model, experiment_config, epoch_num)
-        switch_to_sparse_inference_if_needed(
-            eval_config, experiment_config, epoch_num
-        )
+        switch_to_sparse_inference_if_needed(eval_config, experiment_config, epoch_num)
 
         train_metrics = model.train(
             train_data=datasets["train_data"],
@@ -424,9 +422,7 @@ def freeze_hash_table_if_needed(model, experiment_config, current_epoch):
         model.freeze_hash_tables()
 
 
-def switch_to_sparse_inference_if_needed(
-    eval_config, experiment_config, current_epoch
-):
+def switch_to_sparse_inference_if_needed(eval_config, experiment_config, current_epoch):
     use_sparse_inference = (
         "sparse_inference_epoch" in experiment_config.keys()
         and current_epoch >= experiment_config["sparse_inference_epoch"]

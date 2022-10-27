@@ -33,7 +33,7 @@ def make_serialized_oracle_config():
 
     dataset_config = deployment.OracleDatasetFactory(
         config=deployment.UserSpecifiedParameter(
-            "config", type=deployment.OracleConfig
+            "config", type=bolt.OracleConfig
         ),
         parallel=deployment.ConstantParameter(False),
         text_pairgram_word_limit=deployment.ConstantParameter(15),
@@ -84,10 +84,10 @@ def make_simple_oracle_model():
         ],
     )
 
-    model = deployment.ModelPipeline(
+    model = bolt.Pipeline(
         config_path=CONFIG_FILE,
         parameters={
-            "config": deployment.OracleConfig(
+            "config": bolt.OracleConfig(
                 data_types={
                     "userId": bolt.types.categorical(n_unique_classes=3),
                     "movieId": bolt.types.categorical(n_unique_classes=3),
@@ -109,7 +109,7 @@ def test_oracle_save_load():
     model.train(TRAIN_FILE, train_config, batch_size=2048)
     model.save("saveLoc")
     before_load_output = model.evaluate(TEST_FILE)
-    model = deployment.ModelPipeline.load("saveLoc")
+    model = bolt.Pipeline.load("saveLoc")
     after_load_output = model.evaluate(TEST_FILE)
 
     assert (before_load_output == after_load_output).all()
@@ -166,7 +166,7 @@ def test_context_serialization():
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     model.save("saveLoc")
-    saved_model = deployment.ModelPipeline.load("saveLoc")
+    saved_model = bolt.Pipeline.load("saveLoc")
     saved_context = saved_model.get_data_processor()
 
     sample = "0,,2022-08-31"

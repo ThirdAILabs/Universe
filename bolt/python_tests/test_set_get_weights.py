@@ -33,9 +33,7 @@ def test_dag_get_set_weights():
     model.train(
         train_data=train_data, train_labels=train_labels, train_config=train_config
     )
-    eval_config = (
-        bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
-    )
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
 
     metrics = model.evaluate(
         test_data=train_data,

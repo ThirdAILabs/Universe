@@ -113,7 +113,7 @@ def trained_text_classifier(clinc_dataset):
 
     config.save(CONFIG_FILE)
 
-    model = deployment.ModelPipeline(
+    model = bolt.Pipeline(
         config_path=CONFIG_FILE,
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
@@ -213,7 +213,7 @@ def test_model_save_and_load(trained_text_classifier, clinc_dataset):
 
     trained_text_classifier.save(SAVE_FILE)
 
-    model = deployment.ModelPipeline.load(SAVE_FILE)
+    model = bolt.Pipeline.load(SAVE_FILE)
 
     # Check that predictions match after saving
     new_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)

@@ -162,7 +162,7 @@ class Mach:
         eval_config = bolt.EvalConfig().return_activations().silence()
         results = np.array(
             [
-                classifier.predict(
+                classifier.evaluate(
                     dataset.from_numpy(batch_np, batch_size=len(batch_np)),
                     test_labels=None,
                     eval_config=eval_config,
@@ -189,7 +189,7 @@ class Mach:
         eval_config = bolt.EvalConfig().return_activations()
         results = np.array(
             [
-                classifier.predict(
+                classifier.evaluate(
                     dataset.from_numpy(batch_np, batch_size=len(batch_np)),
                     test_labels=None,
                     eval_config=eval_config,
