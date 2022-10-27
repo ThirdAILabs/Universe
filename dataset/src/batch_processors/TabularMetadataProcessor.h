@@ -17,7 +17,8 @@ namespace thirdai::dataset {
 enum class TabularDataType {
   Numeric,
   Categorical,
-  Label
+  Label,
+  Ignore,
 };  // TODO(david) add datetime/text support
 
 /**
@@ -139,41 +140,39 @@ class TabularMetadata {
 
   void verifyInputs() {
     for (uint32_t col = 0; col < _column_dtypes.size(); col++) {
-      switch (colType(col)) {
-        case TabularDataType::Numeric: {
-          if (!_col_min_maxes.count(col)) {
-            throw std::invalid_argument(
-                "Column " + std::to_string(col) +
-                " specified as Numeric has no given min/max values.");
-          }
-          if (_col_to_num_bins && !_col_to_num_bins->count(col)) {
-            throw std::invalid_argument(
-                "Column " + std::to_string(col) +
-                " specified as Numeric has no given number of bins.");
-          }
-          break;
+      if (colType(col) == TabularDataType::Numeric) {
+        if (!_col_min_maxes.count(col)) {
+          throw std::invalid_argument(
+              "Column " + std::to_string(col) +
+              " specified as Numeric has no given min/max values.");
         }
-        case TabularDataType::Categorical: {
-          if (_col_min_maxes.count(col)) {
-            throw std::invalid_argument(
-                "Column " + std::to_string(col) +
-                " specified as Categorical has min/max values.");
-          }
-          if (_col_to_num_bins && _col_to_num_bins->count(col)) {
-            throw std::invalid_argument(
-                "Column " + std::to_string(col) +
-                " specified as Categorical has bin values.");
-          }
-          break;
+        if (_col_to_num_bins && !_col_to_num_bins->count(col)) {
+          throw std::invalid_argument(
+              "Column " + std::to_string(col) +
+              " specified as Numeric has no given number of bins.");
         }
-        case TabularDataType::Label: {
-          if (_label_col) {
-            throw std::invalid_argument(
-                "Found multiple 'label' columns in dataset.");
-          }
-          _label_col = col;
-          break;
+        break;
+      }
+      if (colType(col) != TabularDataType::Numeric) {
+        if (_col_min_maxes.count(col)) {
+          throw std::invalid_argument(
+              "Column " + std::to_string(col) +
+              " specified as non-numeric has min/max values.");
         }
+        if (_col_to_num_bins && _col_to_num_bins->count(col)) {
+          throw std::invalid_argument(
+              "Column " + std::to_string(col) +
+              " specified as non-numeric has bin values.");
+        }
+        break;
+      }
+      if (colType(col) == TabularDataType::Label) {
+        if (_label_col) {
+          throw std::invalid_argument(
+              "Found multiple 'label' columns in dataset.");
+        }
+        _label_col = col;
+        break;
       }
     }
   }
@@ -262,6 +261,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
           break;
         }
         case TabularDataType::Categorical:
+        case TabularDataType::Ignore:
           break;
         case TabularDataType::Label: {
           _class_name_to_id->getUid(str_value);

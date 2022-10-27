@@ -67,7 +67,21 @@ struct TextDataType {
   }
 };
 
-struct NumericalDataType {};
+struct NumericalDataType {
+  explicit NumericalDataType(std::pair<double, double> _col_min_maxes)
+      : col_min_maxes(_col_min_maxes) {}
+
+  NumericalDataType() : col_min_maxes(std::nullopt) {}
+
+  std::optional<std::pair<double, double>> col_min_maxes;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(col_min_maxes);
+  }
+};
 
 struct DateDataType {};
 

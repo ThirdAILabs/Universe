@@ -3,10 +3,13 @@
 #include "Aliases.h"
 #include "OracleConfig.h"
 #include "TemporalContext.h"
+#include <_types/_uint32_t.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
+#include <dataset/src/blocks/TabularPairGram.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -15,6 +18,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace thirdai::automl::deployment {
@@ -30,6 +34,13 @@ class FeatureComposer {
 
     auto non_temporal_columns =
         getNonTemporalColumns(config.data_types, temporal_relationships);
+
+    bool using_tabular_pairgram = true;
+    // Accumulating column types for use in the TabularPairGram block
+    // TODO(david/geordie) change when moving to new data pipeline
+    std::unordered_map<uint32_t, dataset::TabularDataType> tabular_data_types;
+    std::unordered_map<uint32_t, std::pair<double, double>>
+        tabular_col_min_maxes;
 
     /*
       Order of column names and data types is always consistent because
@@ -68,7 +79,32 @@ class FeatureComposer {
       if (data_type.isDate()) {
         blocks.push_back(dataset::DateBlock::make(col_num));
       }
+
+      if (using_tabular_pairgram) {
+        if (data_type.isCategorical()) {
+          tabular_data_types[col_num] = dataset::TabularDataType::Categorical;
+        } else if (data_type.isNumerical()) {
+          tabular_data_types[col_num] = dataset::TabularDataType::Numeric;
+          auto col_min_maxes = data_type.asNumerical().col_min_maxes;
+          if (col_min_maxes) {
+            tabular_col_min_maxes[col_num] = *col_min_maxes;
+          } else {
+            throw std::invalid_argument(
+                "Cannot construct tabular feature block without min max "
+                "numerical values for column: " +
+                std::to_string(col_num) + ".");
+          }
+        } else {
+          tabular_data_types[col_num] = dataset::TabularDataType::Ignore;
+        }
+      }
     }
+
+    if (using_tabular_pairgram) {
+      blocks.push_back(
+          makeTabularPairgramBlock(tabular_data_types, tabular_col_min_maxes));
+    }
+
     return blocks;
   }
 
@@ -248,6 +284,23 @@ class FeatureComposer {
         /* history= */ numerical_history,
         /* should_update_history= */ should_update_history,
         /* include_current_row= */ temporal_meta.include_current_row);
+  }
+
+  static dataset::TabularPairGramPtr makeTabularPairgramBlock(
+      const std::unordered_map<uint32_t, dataset::TabularDataType>&
+          tabular_data_types,
+      const std::unordered_map<uint32_t, std::pair<double, double>>&
+          col_min_maxes) {
+    std::vector<dataset::TabularDataType> ordered_tabular_types;
+    for (uint32_t col_num = 0; col_num < tabular_data_types.size(); col_num++) {
+      ordered_tabular_types.push_back(tabular_data_types.at(col_num));
+    }
+
+    auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
+        ordered_tabular_types, col_min_maxes, nullptr);
+
+    return std::make_shared<dataset::TabularPairGram>(
+        tabular_metadata, /* output_range = */ 100000);
   }
 
   static dataset::ThreadSafeVocabularyPtr& vocabForColumn(

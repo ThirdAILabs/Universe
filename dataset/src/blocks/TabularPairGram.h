@@ -60,6 +60,7 @@ class TabularPairGram : public Block {
           break;
         }
         case TabularDataType::Label:
+        case TabularDataType::Ignore:
           break;
       }
     }
