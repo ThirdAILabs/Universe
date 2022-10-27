@@ -126,7 +126,7 @@ Notes:
 
 Examples:
     >>> param = deployment.OptionMappedParameter(option_name="size", values={"small": 10, "large": 20})
-    >>> model = deployment.ModelPipeline(config, parameters={"size": "small"})
+    >>> model = bolt.Pipeline(config, parameters={"size": "small"})
 )pbdoc";
 
 const char* const USER_SPECIFIED_PARAMETER = R"pbdoc(
@@ -152,7 +152,7 @@ Notes:
 
 Examples:
     >>> param = deployment.UserSpecifiedParameter(name="n_classes", type=int)
-    >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 32})
+    >>> model = bolt.Pipeline(config, parameters={"n_classes": 32})
  
 )pbdoc";
 
@@ -185,7 +185,7 @@ Notes:
 
 Examples:
     >>> param = deployment.AutotunedSparsityParameter(dimension_parameter_name="n_classes")
-    >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 1000})
+    >>> model = bolt.Pipeline(config, parameters={"n_classes": 1000})
 
 )pbdoc";
 
@@ -527,7 +527,7 @@ Returns
     ModelPipeline:
 
 Examples:
-    >>> model = deployment.ModelPipeline(
+    >>> model = bolt.Pipeline(
             deployment_config=deployment.DeploymentConfig(...),
             parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
         )
@@ -548,7 +548,7 @@ Returns
     ModelPipeline:
 
 Examples:
-    >>> model = deployment.ModelPipeline(
+    >>> model = bolt.Pipeline(
             config_path="path_to_a_config",
             parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
         )

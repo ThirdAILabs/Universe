@@ -22,9 +22,9 @@ void createBoltNNSubmodule(py::module_& bolt_submodule);
 void createLossesSubmodule(py::module_& nn_submodule);
 
 py::tuple dagEvaluatePythonWrapper(BoltGraph& model,
-                                  const dataset::BoltDatasetList& data,
-                                  const dataset::BoltDatasetPtr& labels,
-                                  const EvalConfig& eval_config);
+                                   const dataset::BoltDatasetList& data,
+                                   const dataset::BoltDatasetPtr& labels,
+                                   const EvalConfig& eval_config);
 
 py::tuple dagGetInputGradientSingleWrapper(
     const std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>&

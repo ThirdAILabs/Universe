@@ -61,9 +61,7 @@ def test_bolt_dag_on_mnist():
         train_data=train_data, train_labels=train_labels, train_config=train_config
     )
 
-    eval_config = (
-        bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
-    )
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
 
     metrics = model.evaluate(
         test_data=test_data, test_labels=test_labels, eval_config=eval_config
