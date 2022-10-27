@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
@@ -79,6 +82,16 @@ class TabularPairGram : public Block {
   }
 
  private:
+  // Private constructor for cereal
+  TabularPairGram() {}
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_metadata, _output_range);
+  }
+
   TabularMetadataPtr _metadata;
   uint32_t _output_range;
 };
@@ -86,3 +99,5 @@ class TabularPairGram : public Block {
 using TabularPairGramPtr = std::shared_ptr<TabularPairGram>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::TabularPairGram)

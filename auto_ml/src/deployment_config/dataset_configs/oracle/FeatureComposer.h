@@ -3,7 +3,6 @@
 #include "Aliases.h"
 #include "OracleConfig.h"
 #include "TemporalContext.h"
-#include <_types/_uint32_t.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -34,13 +33,6 @@ class FeatureComposer {
 
     auto non_temporal_columns =
         getNonTemporalColumns(config.data_types, temporal_relationships);
-
-    bool using_tabular_pairgram = true;
-    // Accumulating column types for use in the TabularPairGram block
-    // TODO(david/geordie) change when moving to new data pipeline
-    std::unordered_map<uint32_t, dataset::TabularDataType> tabular_data_types;
-    std::unordered_map<uint32_t, std::pair<double, double>>
-        tabular_col_min_maxes;
 
     /*
       Order of column names and data types is always consistent because
@@ -79,30 +71,13 @@ class FeatureComposer {
       if (data_type.isDate()) {
         blocks.push_back(dataset::DateBlock::make(col_num));
       }
-
-      if (using_tabular_pairgram) {
-        if (data_type.isCategorical()) {
-          tabular_data_types[col_num] = dataset::TabularDataType::Categorical;
-        } else if (data_type.isNumerical()) {
-          tabular_data_types[col_num] = dataset::TabularDataType::Numeric;
-          auto col_min_maxes = data_type.asNumerical().col_min_maxes;
-          if (col_min_maxes) {
-            tabular_col_min_maxes[col_num] = *col_min_maxes;
-          } else {
-            throw std::invalid_argument(
-                "Cannot construct tabular feature block without min max "
-                "numerical values for column: " +
-                std::to_string(col_num) + ".");
-          }
-        } else {
-          tabular_data_types[col_num] = dataset::TabularDataType::Ignore;
-        }
-      }
     }
 
+    bool using_tabular_pairgram = true;
     if (using_tabular_pairgram) {
       blocks.push_back(
-          makeTabularPairgramBlock(tabular_data_types, tabular_col_min_maxes));
+          makeTabularPairgramBlock(config.data_types, config.target,
+                                   non_temporal_columns, column_numbers));
     }
 
     return blocks;
@@ -287,17 +262,41 @@ class FeatureComposer {
   }
 
   static dataset::TabularPairGramPtr makeTabularPairgramBlock(
-      const std::unordered_map<uint32_t, dataset::TabularDataType>&
-          tabular_data_types,
-      const std::unordered_map<uint32_t, std::pair<double, double>>&
-          col_min_maxes) {
-    std::vector<dataset::TabularDataType> ordered_tabular_types;
-    for (uint32_t col_num = 0; col_num < tabular_data_types.size(); col_num++) {
-      ordered_tabular_types.push_back(tabular_data_types.at(col_num));
+      const ColumnDataTypes& column_datatypes, const std::string& target_name,
+      const std::unordered_set<std::string>& non_temporal_columns,
+      const ColumnNumberMap& column_numbers) {
+    std::vector<dataset::TabularDataType> tabular_datatypes(
+        column_datatypes.size());
+    std::fill(tabular_datatypes.begin(), tabular_datatypes.end(),
+              dataset::TabularDataType::Ignore);
+
+    std::unordered_map<uint32_t, std::pair<double, double>> col_min_maxes;
+
+    for (const auto& [col_name, data_type] : column_datatypes) {
+      if (!non_temporal_columns.count(col_name) || col_name == target_name) {
+        continue;
+      }
+
+      uint32_t col_num = column_numbers.at(col_name);
+
+      if (data_type.isCategorical()) {
+        std::cout << "FOUND CATEGORICAL COLUMN" << std::endl;
+        tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
+      } else if (data_type.isNumerical()) {
+        std::cout << "FOUND NUMERIC COLUMN" << std::endl;
+        // if the user has specified min/max for numeric column, include in
+        // tabular pairgrams, otherwise don't
+        if (auto min_maxes = data_type.asNumerical().min_maxes) {
+          std::cout << "  FOUND SOME MIN MAXES" << std::endl;
+
+          col_min_maxes[col_num] = *min_maxes;
+          tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
+        }
+      }
     }
 
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
-        ordered_tabular_types, col_min_maxes, nullptr);
+        tabular_datatypes, col_min_maxes, /* class_name_to_id = = */ nullptr);
 
     return std::make_shared<dataset::TabularPairGram>(
         tabular_metadata, /* output_range = */ 100000);
