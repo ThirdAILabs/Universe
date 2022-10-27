@@ -96,7 +96,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                                      "InferenceOutput");
 
   py::class_<Node, NodePtr>(graph_submodule, "Node")
-      .def_property_readonly("name", [](Node& node) { return node.name(); });
+      .def_property_readonly("name", [](Node& node) { return node.name(); })
+      .def("disable_sparse_parameter_updates",
+           &Node::disableSparseParameterUpdates,
+           "Forces the node to use dense parameter updates.");
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
                                                               "FullyConnected")
@@ -182,10 +185,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.")
-      .def("disable_sparse_parameter_updates",
-           &FullyConnectedNode::disableSparseParameterUpdates,
-           "Forces the node to use dense parameter updates.");
+          "Returns a ParameterReference object to the bias gradients vector.");
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
@@ -260,10 +260,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::return_value_policy::reference_internal,
           "Returns a ParameterReference object to the weight gradients "
-          "matrix.")
-      .def("disable_sparse_parameter_updates",
-           &EmbeddingNode::disableSparseParameterUpdates,
-           "Forces the node to use dense parameter updates.");
+          "matrix.");
 
   py::class_<DotProductNode, DotProductNodePtr, Node>(graph_submodule,
                                                       "DotProduct")

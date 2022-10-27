@@ -231,10 +231,13 @@ class Node {
     return *_name;
   }
 
-  // This function prevents nodes from using sparse optimizations during
-  // parameter updates. This is to make updateParameters work during distributed
-  // training or disable the optimization in the few cases where they are not
-  // beneficial.
+  /**
+   * This function prevents nodes from using sparse optimizations during
+   * parameter updates. This is to make updateParameters work during distributed
+   * training or disable the optimization in the few cases where they are not
+   * beneficial. By default it is a NOOP but nodes can override if they have
+   * parameters that they apply sparse updates to.
+   */
   virtual void disableSparseParameterUpdates() {}
 
   virtual ~Node() = default;

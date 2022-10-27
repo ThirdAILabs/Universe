@@ -178,9 +178,6 @@ void EmbeddingLayer::updateParametersDense(float lr, uint32_t iter, float B1,
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
-  std::vector<std::pair<uint64_t, uint64_t>> disjoint_ranges =
-      getDisjointUpdateRanges();
-
 #pragma omp parallel for default(none) \
     shared(B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
   for (uint64_t n = 0; n < _embedding_block_size; n++) {
