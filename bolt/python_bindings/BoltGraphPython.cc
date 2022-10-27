@@ -184,7 +184,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           py::return_value_policy::reference,
           "Returns a ParameterReference object to the bias gradients vector.")
       .def("enable_sparse_sparse_optimization",
-           &FullyConnectedNode::enableSparseSparseOptimization);
+           &FullyConnectedNode::enableSparseSparseOptimization)
+      .def("trainable", &FullyConnectedNode::trainable);
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
@@ -198,7 +199,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "parameters required for normalizing the input. \n")
       .def("__call__", &LayerNormNode::addPredecessor, py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this "
-           "normalization layer.");
+           "normalization layer.")
+      .def("trainable", &LayerNormNode::trainable);
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
@@ -209,7 +211,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("input_layers"),
            "Tells the graph which layers will be concatenated. Must be at "
            "least one node (although this is just an identity function, so "
-           "really should be at least two).");
+           "really should be at least two).")
+      .def("trainable", &ConcatenateNode::trainable);
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
@@ -219,7 +222,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def(py::init(&SwitchNode::makeAutotuned), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation"), py::arg("n_layers"))
       .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
-           py::arg("token_input"));
+           py::arg("token_input"))
+      .def("trainable", &SwitchNode::trainable);
 #endif
 
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
@@ -259,13 +263,15 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::return_value_policy::reference_internal,
           "Returns a ParameterReference object to the weight gradients "
-          "matrix.");
+          "matrix.")
+      .def("trainable", &EmbeddingNode::trainable);
 
   py::class_<DotProductNode, DotProductNodePtr, Node>(graph_submodule,
                                                       "DotProduct")
       .def(py::init(&DotProductNode::make))
       .def("__call__", &DotProductNode::setPredecessors, py::arg("lhs"),
-           py::arg("rhs"));
+           py::arg("rhs"))
+      .def("trainable", &DotProductNode::trainable);
 
   graph_submodule.def("TokenInput", &Input::makeTokenInput, py::arg("dim"),
                       py::arg("num_tokens_range"));

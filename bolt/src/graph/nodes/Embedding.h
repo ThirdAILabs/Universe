@@ -94,6 +94,11 @@ class EmbeddingNode final : public Node,
     // enabling distributed training doesn't change anything.
   }
 
+  bool trainable(bool flag) final {
+    _embedding_layer->setTrainable(flag);
+    return _embedding_layer->getTrainable();
+  }
+
   std::vector<float>& getRawEmbeddingBlock() {
     return _embedding_layer->getRawEmbeddingBlock();
   }

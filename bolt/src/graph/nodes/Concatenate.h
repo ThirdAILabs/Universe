@@ -74,6 +74,11 @@ class ConcatenateNode final
     // NOOP since the Concatenate node doesn't have any paramters
   }
 
+  bool trainable(bool flag) final {
+    (void)flag;
+    return false;
+  }
+
  private:
   void compileImpl() final { _compiled = true; }
 

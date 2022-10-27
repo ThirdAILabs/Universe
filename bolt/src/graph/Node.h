@@ -239,6 +239,10 @@ class Node {
   // what.
   virtual void enableDistributedTraining() = 0;
 
+  // Sets a node to be trainable or not. If set to non-trainable, gradient based
+  // updates to parameters are ignored during backpropogation.
+  virtual bool trainable(bool) = 0;
+
   virtual ~Node() = default;
 
  protected:

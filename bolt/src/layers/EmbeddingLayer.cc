@@ -14,7 +14,8 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _log_embedding_block_size(config.logEmbeddingBlockSize()),
       _reduction(config.reduction()),
       _num_tokens_per_input(config.numTokensPerInput()),
-      _hash_fn(seed) {
+      _hash_fn(seed),
+      _trainable(true) {
   switch (_reduction) {
     case EmbeddingReductionType::SUM:
       break;
@@ -131,6 +132,9 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
 
 void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
                                       float B2, float eps) {
+  if (!_trainable) {
+    return;
+  }
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 

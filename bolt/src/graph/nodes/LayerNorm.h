@@ -82,6 +82,11 @@ class LayerNormNode final : public Node,
     // NOOP since the LayerNorm node doesn't have any paramters
   }
 
+  bool trainable(bool flag) override {
+    (void)flag;
+    return false;
+  }
+
  private:
   void compileImpl() final { _compiled = true; }
 

@@ -119,6 +119,14 @@ class SwitchNode final : public Node,
     }
   }
 
+  bool trainable(bool flag) final {
+    bool result = true;
+    for (auto& fc_node : _layers) {
+      result = result && fc_node->trainable(flag);
+    }
+    return result;
+  }
+
  private:
   void compileImpl() final {
     for (auto& layer : _layers) {

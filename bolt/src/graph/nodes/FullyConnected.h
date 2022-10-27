@@ -228,6 +228,11 @@ class FullyConnectedNode final
     _layer->enableDistributedTraining();
   }
 
+  bool trainable(bool flag) final {
+    _layer->setTrainable(flag);
+    return _layer->getTrainable();
+  }
+
  private:
   void compileImpl() final {
     assert(_config.has_value());
