@@ -50,6 +50,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString)
+      .def("dense", &BoltVector::dense)
       .def("to_numpy", [](const BoltVector& vector) -> py::object {
         NumpyArray<float> activations_array(vector.len);
         std::copy(vector.activations, vector.activations + vector.len,
@@ -432,6 +433,14 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
+
+  dataset_submodule.def("inferenceBatch", &inferenceBatch, py::arg("vocab"),
+                        py::arg("rows"), py::arg("output_range"),
+                        py::arg("mask_percentage") = 0.0f);
+
+  dataset_submodule.def("inferenceSample", &inferenceSample, py::arg("vocab"),
+                        py::arg("row"), py::arg("mask_indices"),
+                        py::arg("output_range"));
 
   py::class_<Vocabulary, std::shared_ptr<Vocabulary>>(dataset_submodule,
                                                       "Vocabulary")
