@@ -33,14 +33,7 @@ class BinaryTextClassifier final
             ReturnMode::NumpyArray),
         _use_sparse_inference(use_sparse_inference) {}
 
-  void save(const std::string& filename) {
-    serialization::simpleSaveToFile(*this, filename);
-  }
-
-  static std::unique_ptr<BinaryTextClassifier> load(
-      const std::string& filename) {
-    return serialization::simpleLoadFromFile<BinaryTextClassifier>(filename);
-  }
+  ADD_SIMPLE_SAVE_LOAD_METHODS(BinaryTextClassifier)
 
  protected:
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>

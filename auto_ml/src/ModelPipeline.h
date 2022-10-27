@@ -171,13 +171,7 @@ class ModelPipeline {
                                      sample);
   }
 
-  void save(const std::string& filename) {
-    serialization::simpleSaveToFile(*this, filename);
-  }
-
-  static std::unique_ptr<ModelPipeline> load(const std::string& filename) {
-    return serialization::simpleLoadFromFile<ModelPipeline>(filename);
-  }
+  ADD_SIMPLE_SAVE_LOAD_METHODS(ModelPipeline)
 
   std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(
       const std::string& filename) {

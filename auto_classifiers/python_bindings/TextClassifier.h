@@ -38,13 +38,7 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
     _label_id_lookup = dataset::ThreadSafeVocabulary::make(n_classes);
   }
 
-  void save(const std::string& filename) {
-    serialization::simpleSaveToFile(*this, filename);
-  }
-
-  static std::unique_ptr<TextClassifier> load(const std::string& filename) {
-    return serialization::simpleLoadFromFile<TextClassifier>(filename);
-  }
+  ADD_SIMPLE_SAVE_LOAD_METHODS(TextClassifier)
 
  protected:
   std::unique_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>

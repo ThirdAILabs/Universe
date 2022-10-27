@@ -116,15 +116,7 @@ class UniversalDeepTransformer : public ModelPipeline {
     return oracleDatasetFactory().className(neuron_id);
   }
 
-  void save(const std::string& filename) {
-    serialization::simpleSaveToFile(*this, filename);
-  }
-
-  static std::unique_ptr<UniversalDeepTransformer> load(
-      const std::string& filename) {
-    return serialization::simpleLoadFromFile<UniversalDeepTransformer>(
-        filename);
-  }
+  ADD_SIMPLE_SAVE_LOAD_METHODS(UniversalDeepTransformer)
 
  private:
   explicit UniversalDeepTransformer(ModelPipeline&& model)

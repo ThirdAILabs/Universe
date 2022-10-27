@@ -39,15 +39,7 @@ class MultiLabelTextClassifier final
       : AutoClassifierBase(createModel(n_classes), ReturnMode::NumpyArray),
         _threshold(threshold) {}
 
-  void save(const std::string& filename) {
-    serialization::simpleSaveToFile(*this, filename);
-  }
-
-  static std::unique_ptr<MultiLabelTextClassifier> load(
-      const std::string& filename) {
-    return serialization::simpleLoadFromFile<MultiLabelTextClassifier>(
-        filename);
-  }
+  ADD_SIMPLE_SAVE_LOAD_METHODS(MultiLabelTextClassifier)
 
   void updateThreshold(float new_threshold) { _threshold = new_threshold; }
 
