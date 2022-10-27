@@ -547,29 +547,37 @@ InferenceResult BoltGraph::predict(
   return {std::move(metric_vals), std::move(outputTracker)};
 }
 
-// Forking predictSingle for a convenience method to getActivations
-BoltVector BoltGraph::getActivations(const std::vector<BoltVector>& test_data,
-                                     bool use_sparse_inference,
-                                     const std::string& layer_name) {
-  std::vector<BoltVector> test_data_copy = test_data;
-  SingleBatchDatasetContext single_predict_context(std::move(test_data_copy));
+BoltBatch BoltGraph::getActivations(const std::vector<BoltBatch>& test_data,
+                                    bool use_sparse_inference,
+                                    const std::string& layer_name) {
+  std::vector<BoltBatch> batch_copy(test_data);
+  SingleBatchDatasetContext single_predict_context(std::move(batch_copy));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
                    /* returning_activations = */ true,
                    /* num_metrics_tracked = */ 0);
 
-  prepareToProcessBatches(/* batch_size = */ 1, use_sparse_inference);
+  uint32_t batch_size = single_predict_context.batchSize();
+
+  prepareToProcessBatches(batch_size, use_sparse_inference);
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
   try {
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
-    forward(/* vec_index = */ 0, nullptr);
-    auto layer = getNodeByName(layer_name);
-    BoltVector output_copy = layer->getOutputVector(/* vec_index = */ 0);
+
+    std::vector<BoltVector> outputs(batch_size);
+
+#pragma omp parallel for default(none) shared(batch_size, outputs, layer_name)
+    for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
+      forward(vec_index, nullptr);
+      auto layer = getNodeByName(layer_name);
+      outputs[vec_index] = layer->getOutputVector(vec_index);
+    }
+
     cleanupAfterBatchProcessing();
-    return output_copy;
+    return BoltBatch(std::move(outputs));
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
