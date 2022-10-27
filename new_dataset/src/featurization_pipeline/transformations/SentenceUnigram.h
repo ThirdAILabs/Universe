@@ -6,7 +6,6 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
 #include <hashing/src/MurmurHash.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
