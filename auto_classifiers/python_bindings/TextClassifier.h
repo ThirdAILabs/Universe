@@ -39,11 +39,11 @@ class TextClassifier final : public AutoClassifierBase<std::string> {
   }
 
   void save(const std::string& filename) {
-    serialization::saveToFile(*this, filename);
+    serialization::simpleSaveToFile(*this, filename);
   }
 
   static std::unique_ptr<TextClassifier> load(const std::string& filename) {
-    return serialization::loadFromFile<TextClassifier>(filename);
+    return serialization::simpleLoadFromFile<TextClassifier>(filename);
   }
 
  protected:

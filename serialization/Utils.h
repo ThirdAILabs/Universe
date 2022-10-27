@@ -9,8 +9,8 @@
 namespace thirdai::serialization {
 
 template <typename T>
-static inline void saveToFile(T& to_be_serialized,
-                              const std::string& filename) {
+static inline void simpleSaveToFile(T& to_be_serialized,
+                                    const std::string& filename) {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   cereal::BinaryOutputArchive oarchive(filestream);
@@ -18,7 +18,8 @@ static inline void saveToFile(T& to_be_serialized,
 }
 
 template <typename T>
-static inline std::unique_ptr<T> loadFromFile(const std::string& filename) {
+static inline std::unique_ptr<T> simpleLoadFromFile(
+    const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   cereal::BinaryInputArchive iarchive(filestream);

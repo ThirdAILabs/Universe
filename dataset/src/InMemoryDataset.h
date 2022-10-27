@@ -112,12 +112,12 @@ class InMemoryDataset : public DatasetBase {
   static std::shared_ptr<InMemoryDataset<BATCH_T>> load(
       const std::string& filename) {
     auto deserialized =
-        serialization::loadFromFile<InMemoryDataset<BATCH_T>>(filename);
+        serialization::simpleLoadFromFile<InMemoryDataset<BATCH_T>>(filename);
     return deserialized;
   }
 
   void save(const std::string& filename) {
-    serialization::saveToFile(*this, filename);
+    serialization::simpleSaveToFile(*this, filename);
   }
 
   InMemoryDataset() : _len(0), _batch_size(0) {}

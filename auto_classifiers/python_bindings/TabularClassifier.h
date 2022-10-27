@@ -55,12 +55,12 @@ class TabularClassifier final
         _batch_processor(nullptr) {}
 
   void save(const std::string& filename) {
-    serialization::saveToFile(*this, filename);
+    serialization::simpleSaveToFile(*this, filename);
   }
 
   static std::unique_ptr<TabularClassifier> load(const std::string& filename) {
     auto deserialize_into =
-        serialization::loadFromFile<TabularClassifier>(filename);
+        serialization::simpleLoadFromFile<TabularClassifier>(filename);
 
     if (deserialize_into->_metadata) {
       deserialize_into->createBatchProcessor();

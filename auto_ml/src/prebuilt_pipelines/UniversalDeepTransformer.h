@@ -117,12 +117,13 @@ class UniversalDeepTransformer : public ModelPipeline {
   }
 
   void save(const std::string& filename) {
-    serialization::saveToFile(*this, filename);
+    serialization::simpleSaveToFile(*this, filename);
   }
 
   static std::unique_ptr<UniversalDeepTransformer> load(
       const std::string& filename) {
-    return serialization::loadFromFile<UniversalDeepTransformer>(filename);
+    return serialization::simpleLoadFromFile<UniversalDeepTransformer>(
+        filename);
   }
 
  private:

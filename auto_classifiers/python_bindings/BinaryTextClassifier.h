@@ -34,12 +34,12 @@ class BinaryTextClassifier final
         _use_sparse_inference(use_sparse_inference) {}
 
   void save(const std::string& filename) {
-    serialization::saveToFile(*this, filename);
+    serialization::simpleSaveToFile(*this, filename);
   }
 
   static std::unique_ptr<BinaryTextClassifier> load(
       const std::string& filename) {
-    return serialization::loadFromFile<BinaryTextClassifier>(filename);
+    return serialization::simpleLoadFromFile<BinaryTextClassifier>(filename);
   }
 
  protected:

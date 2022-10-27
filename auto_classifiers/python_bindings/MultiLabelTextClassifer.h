@@ -40,12 +40,13 @@ class MultiLabelTextClassifier final
         _threshold(threshold) {}
 
   void save(const std::string& filename) {
-    serialization::saveToFile(*this, filename);
+    serialization::simpleSaveToFile(*this, filename);
   }
 
   static std::unique_ptr<MultiLabelTextClassifier> load(
       const std::string& filename) {
-    return serialization::loadFromFile<MultiLabelTextClassifier>(filename);
+    return serialization::simpleLoadFromFile<MultiLabelTextClassifier>(
+        filename);
   }
 
   void updateThreshold(float new_threshold) { _threshold = new_threshold; }
