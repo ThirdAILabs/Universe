@@ -11,10 +11,11 @@ from nbconvert.preprocessors import ExecutePreprocessor
 TIMEOUT = 600
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 
+
 def get_notebook_paths(temp_dir):
     # Collect all of the jupyter notebooks in the Demos repo
     subprocess.call(["git", "clone", DEMO_URL], cwd=temp_dir)
-    notebook_dir = os.path.join(temp_dir, "Demos", '*.ipynb')
+    notebook_dir = os.path.join(temp_dir, "Demos", "*.ipynb")
     notebook_paths = glob.glob(notebook_dir)
     return notebook_paths
 
@@ -25,7 +26,11 @@ def run_demo_notebooks(notebook_paths, temp_dir):
             # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
             nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
             # The resources argument is needed to execute the notebook in the temporary directory
-            ep = ExecutePreprocessor(timeout=TIMEOUT, kernel_name='python3', resources={'metadata': {'path': temp_dir}})
+            ep = ExecutePreprocessor(
+                timeout=TIMEOUT,
+                kernel_name="python3",
+                resources={"metadata": {"path": temp_dir}},
+            )
             nb_out = ep.preprocess(nb_in)
 
 
@@ -36,5 +41,5 @@ def main():
     shutil.rmtree(temp_dir)  # Clean up the files used for the test
 
 
-if __name__=='__main__':
+if __name__ == "__main__":
     main()
