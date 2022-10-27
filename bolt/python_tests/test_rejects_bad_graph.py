@@ -27,9 +27,7 @@ def get_simple_train_config():
 
 
 def get_simple_predict_config():
-    return (
-        bolt.PredictConfig().silence().with_metrics(["mean_squared_error"])
-    )
+    return bolt.PredictConfig().silence().with_metrics(["mean_squared_error"])
 
 
 def get_random_dense_bolt_dataset(rows, cols):

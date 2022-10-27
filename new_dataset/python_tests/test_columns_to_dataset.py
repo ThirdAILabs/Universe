@@ -150,9 +150,7 @@ def test_multiple_sparse_dense_columns_to_dataset():
 
 
 def test_string_col_to_dataset_throws():
-    columns = data.ColumnMap(
-        {"column1": data.columns.StringColumn(["test1", "test2"])}
-    )
+    columns = data.ColumnMap({"column1": data.columns.StringColumn(["test1", "test2"])})
 
     with pytest.raises(
         ValueError, match="Cannot convert column without dimension to dataset"

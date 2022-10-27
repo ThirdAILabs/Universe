@@ -98,9 +98,9 @@ def get_simple_dag_model(
         dim=hidden_layer_dim, sparsity=hidden_layer_sparsity, activation="relu"
     )(input_layer)
 
-    output_layer = bolt.nn.FullyConnected(
-        dim=output_dim, activation=output_activation
-    )(hidden_layer)
+    output_layer = bolt.nn.FullyConnected(dim=output_dim, activation=output_activation)(
+        hidden_layer
+    )
 
     model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
 

@@ -60,9 +60,7 @@ def test_token_sum():
     train_1, train_2, train_labels = generate_sum_datasets_and_labels(
         input_dim=input_dim, num_examples=num_train
     )
-    train_config = bolt.TrainConfig(
-        learning_rate=0.01, epochs=num_epochs
-    ).silence()
+    train_config = bolt.TrainConfig(learning_rate=0.01, epochs=num_epochs).silence()
     model.train(
         train_data=[train_1, train_2],
         train_labels=train_labels,

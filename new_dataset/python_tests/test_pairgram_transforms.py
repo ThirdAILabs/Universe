@@ -32,9 +32,7 @@ def cross_column_pairgram_dataset():
     num_cols = NUM_WORDS
     string_columns = [get_str_col(NUM_ROWS) for _ in range(num_cols)]
 
-    columns = data.ColumnMap(
-        {f"column{i}": string_columns[i] for i in range(num_cols)}
-    )
+    columns = data.ColumnMap({f"column{i}": string_columns[i] for i in range(num_cols)})
 
     column_name_list = [f"column{i}" for i in range(num_cols)]
 

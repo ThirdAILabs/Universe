@@ -11,9 +11,7 @@ def get_train_config(epochs, batch_size):
 
 
 def get_predict_config():
-    return (
-        bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
-    )
+    return bolt.PredictConfig().with_metrics(["categorical_accuracy"]).silence()
 
 
 class ModelWithLayers:

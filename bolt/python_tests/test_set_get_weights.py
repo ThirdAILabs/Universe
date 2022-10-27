@@ -29,9 +29,7 @@ def test_dag_get_set_weights():
         output_dim=dataset_dim,
     )
 
-    train_config = bolt.TrainConfig(
-        learning_rate=LEARNING_RATE, epochs=5
-    ).silence()
+    train_config = bolt.TrainConfig(learning_rate=LEARNING_RATE, epochs=5).silence()
     model.train(
         train_data=train_data, train_labels=train_labels, train_config=train_config
     )

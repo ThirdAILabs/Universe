@@ -13,9 +13,9 @@ __all__ = [
 
 # Include these so we can use them just by import the top level.
 import thirdai.bolt as bolt
+import thirdai.data as data
 import thirdai.dataset as dataset
 import thirdai.hashing as hashing
-import thirdai.data as data
 import thirdai.search as search
 
 # Relay __version__ from C++

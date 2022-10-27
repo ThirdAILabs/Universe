@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai import dataset, deployment, data
+from thirdai import data, dataset, deployment
 
 
 class DatasetLoader(ABC):

@@ -75,9 +75,7 @@ def test_concat_values_dragon_vector():
         seed_for_hashing=1,
         sample_population_size=50,
     )
-    concatenated_weights = bolt.nn.ParameterReference.concat(
-        [compressed_weights] * 2
-    )
+    concatenated_weights = bolt.nn.ParameterReference.concat([compressed_weights] * 2)
     first_layer.weights.set(concatenated_weights)
 
     new_first_layer_weights = first_layer.weights.copy().flatten()

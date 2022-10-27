@@ -194,9 +194,7 @@ def test_train_with_validation(trained_text_classifier):
 
     val_data, val_labels = trained_text_classifier.load_validation_data(TEST_FILE)
 
-    train_config = bolt.TrainConfig(
-        epochs=1, learning_rate=0.001
-    ).with_validation(
+    train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001).with_validation(
         validation_data=val_data,
         validation_labels=val_labels,
         predict_config=predict_config,

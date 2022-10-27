@@ -48,9 +48,7 @@ class CookieMonster:
             dim=output_dim, activation="softmax"
         )(self.hidden_layer)
 
-        self.model = bolt.nn.Model(
-            inputs=[self.input_layer], output=self.output_layer
-        )
+        self.model = bolt.nn.Model(inputs=[self.input_layer], output=self.output_layer)
 
         self.model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
