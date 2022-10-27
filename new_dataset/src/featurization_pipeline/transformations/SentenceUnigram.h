@@ -6,6 +6,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
 #include <hashing/src/MurmurHash.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
@@ -58,11 +59,13 @@ class SentenceUnigram : public Transformation {
       const StringColumnPtr& input_column, uint32_t num_rows) {
     std::vector<std::vector<std::pair<uint32_t, float>>> column_values(
         num_rows);
+    // set here because pragma doesnt like sharing private member variables
+    std::optional<uint32_t> output_range = _output_range;
 #pragma omp parallel for default(none) \
-    shared(num_rows, column_values, input_column, _output_range)
+    shared(num_rows, column_values, input_column, output_range)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::string text = (*input_column)[row_idx];
-      std::vector<uint32_t> unigrams = computeUnigrams(text);
+      std::vector<uint32_t> unigrams = computeUnigrams(text, output_range);
 
       std::vector<std::pair<uint32_t, float>> deduplicated_unigrams;
       // TODO(any): make TextEncodingUtils more usable
@@ -80,11 +83,13 @@ class SentenceUnigram : public Transformation {
   SparseArrayColumnPtr rawUnigramColumn(const StringColumnPtr& input_column,
                                         uint32_t num_rows) {
     std::vector<std::vector<uint32_t>> column_values(num_rows);
+    // set here because pragma doesnt like sharing private member variables
+    std::optional<uint32_t> output_range = _output_range;
 #pragma omp parallel for default(none) \
-    shared(num_rows, column_values, input_column)
+    shared(num_rows, column_values, input_column, output_range)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::string text = (*input_column)[row_idx];
-      std::vector<uint32_t> unigrams = computeUnigrams(text);
+      std::vector<uint32_t> unigrams = computeUnigrams(text, output_range);
       column_values[row_idx] = unigrams;
     }
 
@@ -92,11 +97,12 @@ class SentenceUnigram : public Transformation {
                                                      _output_range);
   }
 
-  std::vector<uint32_t> computeUnigrams(const std::string& text) {
+  static std::vector<uint32_t> computeUnigrams(
+      const std::string& text, std::optional<uint32_t> output_range) {
     std::vector<uint32_t> unigrams;
-    if (_output_range) {
+    if (output_range) {
       unigrams =
-          TextEncodingUtils::computeRawUnigramsWithRange(text, *_output_range);
+          TextEncodingUtils::computeRawUnigramsWithRange(text, *output_range);
     } else {
       unigrams = TextEncodingUtils::computeRawUnigrams(text);
     }

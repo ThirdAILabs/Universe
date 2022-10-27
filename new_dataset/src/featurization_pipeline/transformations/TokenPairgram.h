@@ -35,8 +35,11 @@ class TokenPairgram : public Transformation {
 
     std::vector<std::vector<std::pair<uint32_t, float>>> column_values(
         num_rows);
+
+    // set here because pragma doesnt like sharing private member variables
+    uint32_t output_range = _output_range;
 #pragma omp parallel for default(none) \
-    shared(num_rows, column_values, input_column, _output_range)
+    shared(num_rows, column_values, input_column, output_range)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       ArrayColumn<uint32_t>::RowReference input_tokens_buffer =
           (*input_column)[row_idx];
