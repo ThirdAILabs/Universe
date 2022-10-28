@@ -7,19 +7,12 @@ concurrency:
   cancel-in-progress: true
   
 # Controls when the workflow will run
-# todo(vihan) Uncomment this when we confirm this is working as expected
-#on:
-#  schedule:
-#      # Sets the workflow to run at the end of every day
-#      # Ref: https://jasonet.co/posts/scheduled-actions/
-#      - cron: "0 0 * * *"       
-
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-   
+  schedule:
+      # Sets the workflow to run at the end of every day
+      # Ref: https://jasonet.co/posts/scheduled-actions/
+      - cron: "0 0 * * *"       
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 

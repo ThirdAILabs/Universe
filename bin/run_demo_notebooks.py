@@ -22,7 +22,6 @@ def get_notebook_paths(temp_dir):
 
 
 def run_demo_notebooks(notebook_paths, temp_dir):
-    success = True
     failed_notebooks = []
     for notebook_path in notebook_paths:
         with open(notebook_path) as notebook_file:
@@ -38,11 +37,12 @@ def run_demo_notebooks(notebook_paths, temp_dir):
                 nb_out = ep.preprocess(nb_in)
             except:
                 notebook_name = Path(notebook_path).stem
-                success = False
                 failed_notebooks.append(notebook_name)
 
-    if not success:
+    if failed_notebooks:
         sys.exit(f"The following notebooks failed due to error: {failed_notebooks}")
+    else:
+        print("All notebooks ran successfully")
 
 
 def main():
