@@ -210,7 +210,7 @@ class DistributedDataParallel:
     def train(self) -> Dict[str, Union[int, str]]:
         """
         Runs distributed training on the passed in Bolt model on the passed in
-        Ray cluster. Note that this method does not call finishTraining on the
+        Ray cluster. Note that this method does not call finish_training on the
         underlying DistributedTrainingWrappers. This is not dangerous because
         the only way to do inference on the wrapped models is to call
         get_model(), which will do a pickle and depickle of the wrapped Bolt
