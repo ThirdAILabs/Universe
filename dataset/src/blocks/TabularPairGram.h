@@ -4,6 +4,8 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
+#include <hashing/src/UniversalHash.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exception>
@@ -18,8 +20,11 @@ namespace thirdai::dataset {
  */
 class TabularPairGram : public Block {
  public:
-  TabularPairGram(TabularMetadataPtr metadata, uint32_t output_range)
-      : _metadata(std::move(metadata)), _output_range(output_range) {}
+  TabularPairGram(TabularMetadataPtr metadata, uint32_t output_range,
+                  bool with_pairgrams = true)
+      : _metadata(std::move(metadata)),
+        _output_range(output_range),
+        _with_pairgrams(with_pairgrams) {}
 
   uint32_t featureDim() const final { return _output_range; };
 
@@ -68,15 +73,23 @@ class TabularPairGram : public Block {
       }
     }
 
-    std::vector<uint32_t> pairgram_hashes =
-        TextEncodingUtils::computeRawPairgramsFromUnigrams(unigram_hashes,
-                                                           _output_range);
+    std::vector<uint32_t> hashes_to_use;
+    if (_with_pairgrams) {
+      hashes_to_use = TextEncodingUtils::computeRawPairgramsFromUnigrams(
+          unigram_hashes, _output_range);
+    } else {
+      std::for_each(unigram_hashes.begin(), unigram_hashes.end(),
+                    [this](uint32_t& unigram_hash) {
+                      unigram_hash = unigram_hash % _output_range;
+                    });
+      hashes_to_use = unigram_hashes;
+    }
 
-    TextEncodingUtils::sumRepeatedIndices(
-        pairgram_hashes, /* base_value = */ 1.0,
-        [&](uint32_t pairgram, float value) {
-          vec.addSparseFeatureToSegment(pairgram, value);
-        });
+    TextEncodingUtils::sumRepeatedIndices(hashes_to_use, /* base_value = */ 1.0,
+                                          [&](uint32_t pairgram, float value) {
+                                            vec.addSparseFeatureToSegment(
+                                                pairgram, value);
+                                          });
 
     return nullptr;
   }
@@ -89,11 +102,13 @@ class TabularPairGram : public Block {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Block>(this), _metadata, _output_range);
+    archive(cereal::base_class<Block>(this), _metadata, _output_range,
+            _with_pairgrams);
   }
 
   TabularMetadataPtr _metadata;
   uint32_t _output_range;
+  bool _with_pairgrams;
 };
 
 using TabularPairGramPtr = std::shared_ptr<TabularPairGram>;

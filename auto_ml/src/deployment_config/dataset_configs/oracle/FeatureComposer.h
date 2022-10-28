@@ -53,7 +53,7 @@ class FeatureComposer {
       }
 
       if (data_type.isNumerical()) {
-        // blocks.push_back(dataset::DenseArrayBlock::makeSingle(col_num));
+        blocks.push_back(dataset::DenseArrayBlock::makeSingle(col_num));
       }
 
       if (data_type.isText()) {
@@ -73,11 +73,11 @@ class FeatureComposer {
       }
     }
 
-    if (use_cross_features) {
-      blocks.push_back(
-          makeTabularPairgramBlock(config.data_types, config.target,
-                                   non_temporal_columns, column_numbers));
-    }
+    // we always use tabular unigrams but add pairgrams on top of it if the
+    // use_cross_features flag is true
+    blocks.push_back(makeTabularPairgramBlock(
+        config.data_types, config.target, non_temporal_columns, column_numbers,
+        use_cross_features));
 
     return blocks;
   }
@@ -263,7 +263,7 @@ class FeatureComposer {
   static dataset::TabularPairGramPtr makeTabularPairgramBlock(
       const ColumnDataTypes& column_datatypes, const std::string& target_name,
       const std::unordered_set<std::string>& non_temporal_columns,
-      const ColumnNumberMap& column_numbers) {
+      const ColumnNumberMap& column_numbers, bool use_cross_features) {
     std::vector<dataset::TabularDataType> tabular_datatypes(
         column_numbers.numCols());
     std::fill(tabular_datatypes.begin(), tabular_datatypes.end(),
@@ -279,18 +279,10 @@ class FeatureComposer {
       uint32_t col_num = column_numbers.at(col_name);
 
       if (data_type.isCategorical()) {
-        std::cout << "FOUND CATEGORICAL COLUMN" << std::endl;
-        // tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
+        tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
       } else if (data_type.isNumerical()) {
-        std::cout << "FOUND NUMERIC COLUMN" << std::endl;
-        // if the user has specified min/max for numeric column, include in
-        // tabular pairgrams, otherwise don't
-        if (auto range = data_type.asNumerical().range) {
-          std::cout << "  FOUND SOME MIN MAXES" << std::endl;
-
-          col_ranges[col_num] = *range;
-          tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
-        }
+        col_ranges[col_num] = data_type.asNumerical().range;
+        tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
       }
     }
 
@@ -298,7 +290,8 @@ class FeatureComposer {
         tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr);
 
     return std::make_shared<dataset::TabularPairGram>(
-        tabular_metadata, /* output_range = */ 100000);
+        tabular_metadata, /* output_range = */ 100000,
+        /* with_pairgrams= */ use_cross_features);
   }
 
   static dataset::ThreadSafeVocabularyPtr& vocabForColumn(

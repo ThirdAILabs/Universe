@@ -73,11 +73,12 @@ struct TextDataType {
 };
 
 struct NumericalDataType {
-  explicit NumericalDataType(
-      std::optional<std::pair<double, double>> _range = std::nullopt)
+  explicit NumericalDataType(std::pair<double, double> _range)
       : range(std::move(_range)) {}
 
-  std::optional<std::pair<double, double>> range = std::nullopt;
+  std::pair<double, double> range;
+
+  NumericalDataType() {}
 
  private:
   friend class cereal::access;
@@ -112,8 +113,7 @@ class DataType {
                                  /* force_pairgram= */ use_attention));
   }
 
-  static auto numerical(
-      std::optional<std::pair<double, double>> range = std::nullopt) {
+  static auto numerical(std::pair<double, double> range) {
     return DataType(NumericalDataType(range));
   }
 

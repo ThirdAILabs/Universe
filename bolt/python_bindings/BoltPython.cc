@@ -136,10 +136,9 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 ...
             )
                              )pbdoc");
-  oracle_types_submodule.def("numerical",
-                             sequential_classifier::DataType::numerical,
-                             py::arg("range") = std::nullopt,
-                             R"pbdoc(
+  oracle_types_submodule.def(
+      "numerical", sequential_classifier::DataType::numerical, py::arg("range"),
+      R"pbdoc(
     Numerical column type. Use this object if a column contains numerical 
     data (the value is treated as a quantity). Examples include hours of 
     a movie watched, sale quantity, or population size.
