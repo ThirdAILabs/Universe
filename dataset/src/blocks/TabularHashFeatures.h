@@ -5,7 +5,6 @@
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <hashing/src/UniversalHash.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exception>
@@ -14,14 +13,13 @@ namespace thirdai::dataset {
 
 /**
  * @brief Given some metadata about a tabular dataset, assign unique categories
- * to columns and compute pairgrams of the categories.
- *
- * TODO(david): add a TabularBinningStrategy class to try out different methods
+ * to columns and compute either unigrams or pairgrams of the categories
+ * depending on the "with_pairgrams" flag.
  */
-class TabularPairGram : public Block {
+class TabularHashFeatures : public Block {
  public:
-  TabularPairGram(TabularMetadataPtr metadata, uint32_t output_range,
-                  bool with_pairgrams = true)
+  TabularHashFeatures(TabularMetadataPtr metadata, uint32_t output_range,
+                      bool with_pairgrams = true)
       : _metadata(std::move(metadata)),
         _output_range(output_range),
         _with_pairgrams(with_pairgrams) {}
@@ -96,7 +94,7 @@ class TabularPairGram : public Block {
 
  private:
   // Private constructor for cereal
-  TabularPairGram() {}
+  TabularHashFeatures() {}
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
@@ -111,8 +109,8 @@ class TabularPairGram : public Block {
   bool _with_pairgrams;
 };
 
-using TabularPairGramPtr = std::shared_ptr<TabularPairGram>;
+using TabularHashFeaturesPtr = std::shared_ptr<TabularHashFeatures>;
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::TabularPairGram)
+CEREAL_REGISTER_TYPE(thirdai::dataset::TabularHashFeatures)

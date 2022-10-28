@@ -34,8 +34,8 @@ enum class TabularDataType {
  * column_dtypes. Required for use in RCA but optional for general use.
  * @param col_to_num_bins Optional mapping from column number to the number of
  * bins to use for that column. Must specify a pair for each Numeric type as
- * specified in column_dtypes. If map is not passed in, TabularPairGram default
- * the number of bins to 10.
+ * specified in column_dtypes. If map is not passed in, TabularHashFeatures
+ * default the number of bins to 10.
  *
  * TODO(david): look at a TabularBinningStrategy class to try out different
  * methods?

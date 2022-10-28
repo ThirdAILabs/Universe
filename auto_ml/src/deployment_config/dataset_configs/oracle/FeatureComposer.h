@@ -8,7 +8,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
-#include <dataset/src/blocks/TabularPairGram.h>
+#include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -75,7 +75,7 @@ class FeatureComposer {
 
     // we always use tabular unigrams but add pairgrams on top of it if the
     // use_cross_features flag is true
-    blocks.push_back(makeTabularPairgramBlock(
+    blocks.push_back(makeTabularHashFeaturesBlock(
         config.data_types, config.target, non_temporal_columns, column_numbers,
         use_cross_features));
 
@@ -260,7 +260,7 @@ class FeatureComposer {
         /* include_current_row= */ temporal_meta.include_current_row);
   }
 
-  static dataset::TabularPairGramPtr makeTabularPairgramBlock(
+  static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
       const ColumnDataTypes& column_datatypes, const std::string& target_name,
       const std::unordered_set<std::string>& non_temporal_columns,
       const ColumnNumberMap& column_numbers, bool use_cross_features) {
@@ -289,7 +289,7 @@ class FeatureComposer {
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
         tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr);
 
-    return std::make_shared<dataset::TabularPairGram>(
+    return std::make_shared<dataset::TabularHashFeatures>(
         tabular_metadata, /* output_range = */ 100000,
         /* with_pairgrams= */ use_cross_features);
   }
