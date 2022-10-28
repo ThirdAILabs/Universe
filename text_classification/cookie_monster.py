@@ -38,21 +38,19 @@ class CookieMonster:
             mlflow.set_experiment("Cookie Monster")
 
     def construct(self, output_dim):
-        self.input_layer = bolt.graph.Input(dim=self.input_dimension)
-        self.hidden_layer = bolt.graph.FullyConnected(
+        self.input_layer = bolt.nn.Input(dim=self.input_dimension)
+        self.hidden_layer = bolt.nn.FullyConnected(
             dim=self.hidden_dim,
             sparsity=self.hidden_sparsity,
             activation="relu",
         )(self.input_layer)
-        self.output_layer = bolt.graph.FullyConnected(
+        self.output_layer = bolt.nn.FullyConnected(
             dim=output_dim, activation="softmax"
         )(self.hidden_layer)
 
-        self.model = bolt.graph.Model(
-            inputs=[self.input_layer], output=self.output_layer
-        )
+        self.model = bolt.nn.Model(inputs=[self.input_layer], output=self.output_layer)
 
-        self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+        self.model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     def set_output_dimension(self, dimension):
         if self.output_layer.get_dim() == dimension:
@@ -127,11 +125,11 @@ class CookieMonster:
                     epochs = config["epochs"]
                     learning_rate = config["learning_rate"]
 
-                    train_config = bolt.graph.TrainConfig.make(
+                    train_config = bolt.TrainConfig(
                         learning_rate=learning_rate, epochs=1
                     )
-                    predict_config = (
-                        bolt.graph.PredictConfig.make()
+                    eval_config = (
+                        bolt.EvalConfig()
                         .with_metrics(["categorical_accuracy"])
                         .silence()
                     )
@@ -145,8 +143,8 @@ class CookieMonster:
                     for i in range(epochs):
                         self.model.train(train_x, train_y, train_config=train_config)
                         if verbose:
-                            metrics = self.model.predict(
-                                test_x, test_y, predict_config=predict_config
+                            metrics = self.model.evaluate(
+                                test_x, test_y, eval_config=eval_config
                             )
                             print(
                                 "Epoch: ",
@@ -156,8 +154,8 @@ class CookieMonster:
                                 "\n",
                             )
 
-                    metrics = self.model.predict(
-                        test_x, test_y, predict_config=predict_config
+                    metrics = self.model.evaluate(
+                        test_x, test_y, eval_config=eval_config
                     )
                     print(
                         "Epoch: ",

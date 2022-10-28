@@ -130,11 +130,11 @@ class SequentialClassifier {
 
     auto [test_data, test_labels] = pipeline.loadInMemory();
 
-    PredictConfig config = PredictConfig::makeConfig()
-                               .withMetrics(std::move(metrics))
-                               .withOutputCallback(print_predictions_callback);
+    EvalConfig config = EvalConfig::makeConfig()
+                            .withMetrics(std::move(metrics))
+                            .withOutputCallback(print_predictions_callback);
 
-    auto results = _model->predict({test_data}, test_labels, config);
+    auto results = _model->evaluate({test_data}, test_labels, config);
 
     if (output_file) {
       output_file->close();

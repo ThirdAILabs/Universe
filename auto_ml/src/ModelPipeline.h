@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
@@ -77,27 +76,27 @@ class ModelPipeline {
 
   bolt::InferenceOutputTracker evaulate(
       const std::string& filename,
-      std::optional<bolt::PredictConfig>& predict_config_opt) {
+      std::optional<bolt::EvalConfig>& eval_config_opt) {
     return evaluate(dataset::SimpleFileDataLoader::make(
                         filename, DEFAULT_EVALUATE_BATCH_SIZE),
-                    predict_config_opt);
+                    eval_config_opt);
   }
 
   bolt::InferenceOutputTracker evaluate(
       const std::shared_ptr<dataset::DataLoader>& data_source,
-      std::optional<bolt::PredictConfig>& predict_config_opt) {
+      std::optional<bolt::EvalConfig>& eval_config_opt) {
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
         data_source, /* training= */ false);
 
     auto [data, labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
 
-    bolt::PredictConfig predict_config =
-        predict_config_opt.value_or(bolt::PredictConfig::makeConfig());
+    bolt::EvalConfig eval_config =
+        eval_config_opt.value_or(bolt::EvalConfig::makeConfig());
 
-    predict_config.returnActivations();
+    eval_config.returnActivations();
 
-    auto [_, output] = _model->predict({data}, labels, predict_config);
+    auto [_, output] = _model->evaluate({data}, labels, eval_config);
 
     if (auto threshold = _train_eval_config.predictionThreshold()) {
       uint32_t output_dim = output.numNonzerosInOutput();

@@ -43,9 +43,8 @@ class CrossColumnPairgram : public Transformation {
 
     uint32_t num_rows = column_map.numRows();
     std::vector<std::vector<uint32_t>> pairgrams(num_rows);
-
 #pragma omp parallel for default(none) \
-    shared(num_rows, columns, column_name_hashes, pairgrams, _output_range)
+    shared(num_rows, columns, column_name_hashes, pairgrams)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::vector<uint32_t> salted_unigrams;
       uint32_t col_num = 0;
