@@ -20,10 +20,14 @@ class Sgd final : public Optimizer {
 };
 
 class SgdFactory final : public OptimizerFactory {
+ public:
   OptimizerPtr getOptimizer(std::vector<float>& parameters,
                             std::vector<float>& gradients) final {
     return std::make_shared<Sgd>(parameters, gradients);
   }
+
+ private:
+  SgdFactory() {}
 
   friend class cereal::access;
   template <class Archive>
