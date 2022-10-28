@@ -143,10 +143,15 @@ py::module_ createBoltSubmodule(py::module_& module) {
     data (the value is treated as a quantity). Examples include hours of 
     a movie watched, sale quantity, or population size.
 
+    Args:
+        range (tuple(float, float)): The expected range (min to max) of the
+        numeric quantity. The more accurate this range to the test data, the 
+        better the model performance.
+
     Example:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
-                    "hours_watched": bolt.types.numerical()
+                    "hours_watched": bolt.types.numerical(range=(0, 25))
                 }
                 ...
             )
@@ -269,7 +274,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
-                    "ad_spend": bolt.types.numerical(),
+                    "ad_spend": bolt.types.numerical(range=(0, 10000)),
                     "sales_performance": bolt.types.categorical(n_unique_classes=5),
                 },
                 target="sales_performance"
@@ -329,7 +334,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
             Column type is one of:
             - `bolt.types.categorical(n_unique_values: int)`
-            - `bolt.types.numerical()`
+            - `bolt.types.numerical(range: tuple(float, float))`
             - `bolt.types.text(average_n_words: int=None)`
             - `bolt.types.date()`
             See bolt.types for details.
@@ -373,8 +378,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
-                    "ad_spend": bolt.types.numerical(),
-                    "sales_quantity": bolt.types.numerical(),
+                    "ad_spend": bolt.types.numerical(range=(0, 10000)),
+                    "sales_quantity": bolt.types.numerical(range=(0, 20)),
                     "sales_performance": bolt.types.categorical(n_unique_classes=5),
                 },
                 temporal_tracking_relationships={
@@ -399,7 +404,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
                     "user_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
                     "movie_id": bolt.types.categorical(n_unique_classes=3000),
-                    "hours_watched": bolt.types.numerical(),
+                    "hours_watched": bolt.types.numerical(range=(0, 25)),
                 },
                 temporal_tracking_relationships={
                     "user_id": [
