@@ -126,7 +126,7 @@ Notes:
 
 Examples:
     >>> param = deployment.OptionMappedParameter(option_name="size", values={"small": 10, "large": 20})
-    >>> model = deployment.ModelPipeline(config, parameters={"size": "small"})
+    >>> model = bolt.Pipeline(config, parameters={"size": "small"})
 )pbdoc";
 
 const char* const USER_SPECIFIED_PARAMETER = R"pbdoc(
@@ -152,7 +152,7 @@ Notes:
 
 Examples:
     >>> param = deployment.UserSpecifiedParameter(name="n_classes", type=int)
-    >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 32})
+    >>> model = bolt.Pipeline(config, parameters={"n_classes": 32})
  
 )pbdoc";
 
@@ -185,7 +185,7 @@ Notes:
 
 Examples:
     >>> param = deployment.AutotunedSparsityParameter(dimension_parameter_name="n_classes")
-    >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 1000})
+    >>> model = bolt.Pipeline(config, parameters={"n_classes": 1000})
 
 )pbdoc";
 
@@ -527,7 +527,7 @@ Returns
     ModelPipeline:
 
 Examples:
-    >>> model = deployment.ModelPipeline(
+    >>> model = bolt.Pipeline(
             deployment_config=deployment.DeploymentConfig(...),
             parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
         )
@@ -548,7 +548,7 @@ Returns
     ModelPipeline:
 
 Examples:
-    >>> model = deployment.ModelPipeline(
+    >>> model = bolt.Pipeline(
             config_path="path_to_a_config",
             parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
         )
@@ -560,7 +560,7 @@ Trains a ModelPipeline on a given dataset using a file on disk.
 
 Args:
     filename (str): Path to the dataset file.
-    train_config (bolt.graph.TrainConfig): The training config specifies the number
+    train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
@@ -575,7 +575,7 @@ Returns:
     None
 
 Examples:
-    >>> train_config = bolt.graph.TrainConfig.make(
+    >>> train_config = bolt.TrainConfig(
             epochs=5, learning_rate=0.01
         ).with_metrics(["mean_squared_error"])
     >>> model.train(
@@ -589,7 +589,7 @@ Trains a ModelPipeline on a given dataset using any DataLoader.
 
 Args:
     data_source (dataset.DataLoader): A data loader for the given dataset.
-    train_config (bolt.graph.TrainConfig): The training config specifies the number
+    train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
@@ -601,7 +601,7 @@ Returns:
     None
 
 Examples:
-    >>> train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
+    >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     >>> model.train(
             data_source=dataset.S3DataLoader(...), train_config=train_config, max_in_memory_batches=12
         )
@@ -614,7 +614,7 @@ activations.
 
 Args:
     filename (str): Path to the dataset file.
-    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional
+    eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
 
@@ -625,8 +625,8 @@ Returns:
     each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> predict_config = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
-    >>> activations = model.evaluate(filename="./test_file", predict_config=predict_config)
+    >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
+    >>> activations = model.evaluate(filename="./test_file", eval_config=eval_config)
 
 )pbdoc";
 
@@ -636,7 +636,7 @@ activations.
 
 Args:
     data_source (dataset.DataLoader): A data loader for the given dataset.
-    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional
+    eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
 
@@ -753,18 +753,18 @@ Returns:
     labels.
 
 Examples:
-    >>> predict_config = (
-            bolt.graph.PredictConfig.make()
+    >>> eval_config = (
+            bolt.EvalConfig()
             .with_metrics(["categorical_accuracy"])
             .enable_sparse_inference()
         )
     >>> val_data, val_labels = model.load_validation_data("./validation_file")
-    >>> train_config = bolt.graph.TrainConfig.make(
+    >>> train_config = bolt.TrainConfig(
             epochs=1, learning_rate=0.001
         ).with_validation(
             validation_data=val_data,
             validation_labels=val_labels,
-            predict_config=predict_config,
+            eval_config=eval_config,
             validation_frequency=10,
         )
 

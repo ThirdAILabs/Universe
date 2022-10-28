@@ -136,8 +136,8 @@ class DistributedDataParallel:
     def __init__(
         self,
         cluster_config: RayTrainingClusterConfig,
-        model: bolt.graph.Model,
-        train_config: bolt.graph.TrainConfig,
+        model: bolt.nn.Model,
+        train_config: bolt.TrainConfig,
         train_sources: List[DatasetLoader],
     ):
         """

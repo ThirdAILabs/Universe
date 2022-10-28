@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/SamplingConfig.h>
@@ -157,8 +156,10 @@ class UniversalDeepTransformer : public ModelPipeline {
 
     auto graph = std::make_shared<bolt::BoltGraph>(
         /* inputs= */ input_nodes, output);
+
     graph->compile(
         bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
+
     return graph;
   }
 

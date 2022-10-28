@@ -35,11 +35,11 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.graph,
+        model_to_wrap: bolt.nn.Model,
         train_source,
         id: int,
         primary_worker,
-        train_config: bolt.graph.TrainConfig,
+        train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
     ):

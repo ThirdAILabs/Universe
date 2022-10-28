@@ -20,7 +20,7 @@ def this_should_require_a_license_bolt():
 
     from thirdai import bolt
 
-    bolt.graph.Model(inputs=[], output=None)
+    bolt.nn.Model(inputs=[], output=None)
 
 
 from pathlib import Path

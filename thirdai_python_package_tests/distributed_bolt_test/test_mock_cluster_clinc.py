@@ -8,7 +8,7 @@ from cluster_utils import (
     check_models_are_same_on_first_two_nodes,
     ray_two_node_cluster_config,
 )
-from thirdai import bolt, new_dataset
+from thirdai import bolt, data
 
 pytestmark = [pytest.mark.distributed]
 
@@ -58,16 +58,16 @@ def setup_module():
 @pytest.fixture(scope="module")
 def clinc_model():
 
-    input_layer = bolt.graph.Input(dim=MODEL_INPUT_DIM)
-    hidden_layer = bolt.graph.FullyConnected(dim=100, activation="relu", sparsity=1)(
+    input_layer = bolt.nn.Input(dim=MODEL_INPUT_DIM)
+    hidden_layer = bolt.nn.FullyConnected(dim=100, activation="relu", sparsity=1)(
         input_layer
     )
-    output_layer = bolt.graph.FullyConnected(dim=151, sparsity=1, activation="softmax")(
+    output_layer = bolt.nn.FullyConnected(dim=151, sparsity=1, activation="softmax")(
         hidden_layer
     )
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     return model
 
@@ -91,9 +91,9 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
         for i in range(2)
     ]
 
-    x_featurizer = new_dataset.FeaturizationPipeline(
+    x_featurizer = data.FeaturizationPipeline(
         transformations=[
-            new_dataset.transformations.SentenceUnigram(
+            data.transformations.SentenceUnigram(
                 input_column="text",
                 output_column="text_hashed",
                 output_range=MODEL_INPUT_DIM,
@@ -101,7 +101,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
         ]
     )
 
-    y_featurizer = new_dataset.FeaturizationPipeline(transformations=[])
+    y_featurizer = data.FeaturizationPipeline(transformations=[])
 
     train_sources = [
         db.TabularDatasetLoader(
@@ -115,7 +115,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
         for column_map_generator in columnmap_generators
     ]
 
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.01, epochs=5)
+    train_config = bolt.TrainConfig(learning_rate=0.01, epochs=5)
     distributed_model = db.DistributedDataParallel(
         cluster_config=ray_two_node_cluster_config,
         model=clinc_model,
@@ -131,7 +131,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
 @pytest.mark.parametrize("ray_two_node_cluster_config", ["linear"], indirect=True)
 def test_distributed_classifer_accuracy(distributed_trained_clinc):
     model, x_featurizer, y_featurizer = distributed_trained_clinc
-    test_data = new_dataset.pandas_to_columnmap(
+    test_data = data.pandas_to_columnmap(
         pd.read_csv(TEST_FILE),
         int_col_dims={"intent": 151},
     )
@@ -142,12 +142,12 @@ def test_distributed_classifer_accuracy(distributed_trained_clinc):
         columns=["intent"], batch_size=BATCH_SIZE
     )
 
-    predict_config = (
-        bolt.graph.PredictConfig.make()
+    eval_config = (
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
         .enable_sparse_inference()
     )
 
     assert (
-        model.predict([test_x], test_y, predict_config)[0]["categorical_accuracy"] > 0.7
+        model.evaluate([test_x], test_y, eval_config)[0]["categorical_accuracy"] > 0.7
     )

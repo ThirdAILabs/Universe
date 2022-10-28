@@ -1,32 +1,32 @@
 import numpy as np
 import pytest
 from dataset_utils import dense_bolt_dataset_to_numpy, sparse_bolt_dataset_to_numpy
-from thirdai import new_dataset as dataset
+from thirdai import data
 
 pytestmark = [pytest.mark.unit]
 
 
 def get_sparse_value_column(n_rows, dim):
     column_np = np.random.randint(low=0, high=dim, size=(n_rows, 1))
-    column = dataset.columns.NumpySparseValueColumn(array=column_np, dim=dim)
+    column = data.columns.NumpySparseValueColumn(array=column_np, dim=dim)
     return column, column_np
 
 
 def get_dense_value_column(n_rows):
     column_np = np.random.rand(n_rows, 1)
-    column = dataset.columns.NumpyDenseValueColumn(array=column_np)
+    column = data.columns.NumpyDenseValueColumn(array=column_np)
     return column, column_np
 
 
 def get_sparse_array_column(n_rows, dim, num_nonzeros):
     column_np = np.random.randint(low=0, high=dim, size=(n_rows, num_nonzeros))
-    column = dataset.columns.NumpySparseArrayColumn(array=column_np, dim=dim)
+    column = data.columns.NumpySparseArrayColumn(array=column_np, dim=dim)
     return column, column_np
 
 
 def get_dense_array_column(n_rows, dim):
     column_np = np.random.rand(n_rows, dim)
-    column = dataset.columns.NumpyDenseArrayColumn(array=column_np)
+    column = data.columns.NumpyDenseArrayColumn(array=column_np)
     return column, column_np
 
 
@@ -36,7 +36,7 @@ def test_dense_columns_to_dataset():
     column1, column1_np = get_dense_value_column(n_rows)
     column2, column2_np = get_dense_array_column(n_rows, dim=7)
 
-    columns = dataset.ColumnMap({"column1": column1, "column2": column2})
+    columns = data.ColumnMap({"column1": column1, "column2": column2})
 
     featurized_vectors = dense_bolt_dataset_to_numpy(
         columns.convert_to_dataset(["column1", "column2"], batch_size=21)
@@ -61,7 +61,7 @@ def test_sparse_columns_to_dataset():
         n_rows, dim=column2_dim, num_nonzeros=column2_nonzeros
     )
 
-    columns = dataset.ColumnMap({"column1": column1, "column2": column2})
+    columns = data.ColumnMap({"column1": column1, "column2": column2})
 
     indices, values = sparse_bolt_dataset_to_numpy(
         columns.convert_to_dataset(["column1", "column2"], batch_size=7)
@@ -84,7 +84,7 @@ def test_dense_sparse_columns_to_dataset():
 
     column2, column2_np = get_sparse_array_column(n_rows, dim=20, num_nonzeros=7)
 
-    columns = dataset.ColumnMap({"column1": column1, "column2": column2})
+    columns = data.ColumnMap({"column1": column1, "column2": column2})
 
     indices, values = sparse_bolt_dataset_to_numpy(
         columns.convert_to_dataset(["column1", "column2"], batch_size=24)
@@ -120,7 +120,7 @@ def test_multiple_sparse_dense_columns_to_dataset():
 
     column4, column4_np = get_sparse_array_column(n_rows, dim=40, num_nonzeros=8)
 
-    columns = dataset.ColumnMap(
+    columns = data.ColumnMap(
         {"column1": column1, "column2": column2, "column3": column3, "column4": column4}
     )
 
@@ -150,9 +150,7 @@ def test_multiple_sparse_dense_columns_to_dataset():
 
 
 def test_string_col_to_dataset_throws():
-    columns = dataset.ColumnMap(
-        {"column1": dataset.columns.StringColumn(["test1", "test2"])}
-    )
+    columns = data.ColumnMap({"column1": data.columns.StringColumn(["test1", "test2"])})
 
     with pytest.raises(
         ValueError, match="Cannot convert column without dimension to dataset"
