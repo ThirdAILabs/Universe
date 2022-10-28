@@ -38,13 +38,11 @@ def run_demo_notebooks(notebook_paths, temp_dir):
                 nb_out = ep.preprocess(nb_in)
             except:
                 notebook_name = Path(notebook_path).stem
-                success=False
+                success = False
                 failed_notebooks.append(notebook_name)
 
     if not success:
         sys.exit(f"The following notebooks failed due to error: {failed_notebooks}")
-
-
 
 
 def main():
