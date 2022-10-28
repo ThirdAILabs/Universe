@@ -1,6 +1,7 @@
 #include "DeploymentPython.h"
 #include "DeploymentDocs.h"
 #include <bolt/python_bindings/ConversionUtils.h>
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SamplingConfig.h>
@@ -280,7 +281,9 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            py::arg("options") = OptionsMap(), docs::UDT_INIT)
       .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
-           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
+           py::arg("train_config") = bolt::TrainConfig::makeConfig(
+               /* learning_rate= */ 0.001, /* epochs= */ 3),
+           py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN)
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
