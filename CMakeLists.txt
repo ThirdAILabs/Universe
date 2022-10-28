@@ -229,7 +229,8 @@ set(BOLT_SOURCES
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc
     bolt/src/optimizers/Adam.cc
-    bolt/src/optimizers/Sgd.cc)
+    bolt/src/optimizers/Sgd.cc
+    bolt/src/optimizers/SignedMomentum.cc)
 
 set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
 
