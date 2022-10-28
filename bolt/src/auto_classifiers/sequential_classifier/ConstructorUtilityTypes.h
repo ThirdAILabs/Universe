@@ -79,6 +79,8 @@ struct NumericalDataType {
   std::optional<std::pair<double, double>> range;
 
  private:
+  NumericalDataType() {}
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
