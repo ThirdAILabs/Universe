@@ -52,10 +52,6 @@ class FeatureComposer {
             col_num, vocabForColumn(vocabularies, col_name, vocab_size)));
       }
 
-      if (data_type.isNumerical()) {
-        blocks.push_back(dataset::DenseArrayBlock::makeSingle(col_num));
-      }
-
       if (data_type.isText()) {
         auto text_meta = data_type.asText();
         if (text_meta.force_pairgram ||
