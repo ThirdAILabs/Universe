@@ -215,10 +215,6 @@ class Worker:
         """
         return self.model.num_batches()
 
-    @timed
-    def finish_training(self):
-        self.model.finish_training()
-
     def model(self):
         return self.model.model
 
