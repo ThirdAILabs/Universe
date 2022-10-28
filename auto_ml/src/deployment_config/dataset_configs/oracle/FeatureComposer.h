@@ -28,7 +28,7 @@ class FeatureComposer {
       const OracleConfig& config,
       const TemporalRelationships& temporal_relationships,
       const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
-      uint32_t text_pairgrams_word_limit, bool use_cross_features) {
+      uint32_t text_pairgrams_word_limit, bool column_contextualization) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto non_temporal_columns =
@@ -74,10 +74,10 @@ class FeatureComposer {
     }
 
     // we always use tabular unigrams but add pairgrams on top of it if the
-    // use_cross_features flag is true
+    // column_contextualization flag is true
     blocks.push_back(makeTabularHashFeaturesBlock(
         config.data_types, config.target, non_temporal_columns, column_numbers,
-        use_cross_features));
+        column_contextualization));
 
     return blocks;
   }
@@ -263,7 +263,7 @@ class FeatureComposer {
   static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
       const ColumnDataTypes& column_datatypes, const std::string& target_name,
       const std::unordered_set<std::string>& non_temporal_columns,
-      const ColumnNumberMap& column_numbers, bool use_cross_features) {
+      const ColumnNumberMap& column_numbers, bool column_contextualization) {
     std::vector<dataset::TabularDataType> tabular_datatypes(
         column_numbers.numCols());
     std::fill(tabular_datatypes.begin(), tabular_datatypes.end(),
@@ -291,7 +291,7 @@ class FeatureComposer {
 
     return std::make_shared<dataset::TabularHashFeatures>(
         tabular_metadata, /* output_range = */ 100000,
-        /* with_pairgrams= */ use_cross_features);
+        /* with_pairgrams= */ column_contextualization);
   }
 
   static dataset::ThreadSafeVocabularyPtr& vocabForColumn(

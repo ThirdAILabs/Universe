@@ -25,9 +25,12 @@ class DenseArrayBlock : public Block {
    * Arguments:
    *   start_col: int - the column number of the first dense array entry.
    *   dim: int - the dimension of the dense array; the number of dense values.
+   *   ranges: vector<pair<double, double>> - min
    */
-  DenseArrayBlock(uint32_t start_col, uint32_t dim)
-      : _start_col(start_col), _dim(dim) {}
+  DenseArrayBlock(uint32_t start_col, uint32_t dim,
+                  std::optional<std::vector<std::pair<double, double>>> ranges =
+                      std::nullopt)
+      : _start_col(start_col), _dim(dim), _ranges(std::move(ranges)) {}
 
   static auto make(uint32_t start_col, uint32_t dim) {
     return std::make_shared<DenseArrayBlock>(start_col, dim);
@@ -72,6 +75,7 @@ class DenseArrayBlock : public Block {
  private:
   uint32_t _start_col;
   uint32_t _dim;
+  std::optional<std::vector<std::pair<double, double>>> _ranges;
 
   // Private constructor for cereal.
   DenseArrayBlock() {}
