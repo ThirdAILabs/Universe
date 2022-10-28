@@ -109,6 +109,5 @@ def skip_pybind11_builtin_members(app, what, name, obj, skip, options):
 
 
 def setup(app):
-    app.add_css_file("custom.css")
     app.connect("autodoc-skip-member", skip_pybind11_builtin_members)
     app.connect("autodoc-process-signature", fix_pybind11_signatures)
