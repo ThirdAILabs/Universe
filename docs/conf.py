@@ -16,7 +16,6 @@
 
 import inspect
 
-
 # -- Project information -----------------------------------------------------
 
 project = "thirdai"
