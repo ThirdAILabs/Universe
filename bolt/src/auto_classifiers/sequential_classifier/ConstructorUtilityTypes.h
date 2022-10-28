@@ -72,10 +72,9 @@ struct TextDataType {
 };
 
 struct NumericalDataType {
-  explicit NumericalDataType(std::pair<double, double> _range)
+  explicit NumericalDataType(
+      std::optional<std::pair<double, double>> _range = std::nullopt)
       : range(_range) {}
-
-  NumericalDataType() : range(std::nullopt) {}
 
   std::optional<std::pair<double, double>> range;
 
@@ -112,7 +111,10 @@ class DataType {
                                  /* force_pairgram= */ use_attention));
   }
 
-  static auto numerical() { return DataType(NumericalDataType()); }
+  static auto numerical(
+      std::optional<std::pair<double, double>> range = std::nullopt) {
+    return DataType(NumericalDataType(range));
+  }
 
   static auto date() { return DataType(DateDataType()); }
 
