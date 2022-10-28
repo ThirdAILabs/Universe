@@ -73,7 +73,7 @@ class FeatureComposer {
       }
     }
 
-    bool using_tabular_pairgram = true;
+    bool using_tabular_pairgram = false;
     if (using_tabular_pairgram) {
       blocks.push_back(
           makeTabularPairgramBlock(config.data_types, config.target,
@@ -266,7 +266,7 @@ class FeatureComposer {
       const std::unordered_set<std::string>& non_temporal_columns,
       const ColumnNumberMap& column_numbers) {
     std::vector<dataset::TabularDataType> tabular_datatypes(
-        column_datatypes.size());
+        column_numbers.numCols());
     std::fill(tabular_datatypes.begin(), tabular_datatypes.end(),
               dataset::TabularDataType::Ignore);
 
@@ -296,7 +296,7 @@ class FeatureComposer {
     }
 
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
-        tabular_datatypes, col_ranges, /* class_name_to_id = = */ nullptr);
+        tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr);
 
     return std::make_shared<dataset::TabularPairGram>(
         tabular_metadata, /* output_range = */ 100000);

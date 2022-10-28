@@ -4,6 +4,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <utils/StringManipulation.h>
 #include <iostream>
@@ -74,13 +75,13 @@ struct TextDataType {
 struct NumericalDataType {
   explicit NumericalDataType(
       std::optional<std::pair<double, double>> _range = std::nullopt)
-      : range(_range) {}
+      : range(std::move(_range)) {}
 
   std::optional<std::pair<double, double>> range;
 
- private:
   NumericalDataType() {}
 
+ private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
@@ -163,7 +164,7 @@ class DataType {
                                 " datatype as a " + type_name + " datatype.");
   }
 
-  explicit DataType(AnyDataType value) : _value(value) {}
+  explicit DataType(AnyDataType value) : _value(std::move(value)) {}
 
   AnyDataType _value;
 
