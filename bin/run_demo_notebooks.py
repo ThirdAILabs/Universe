@@ -2,11 +2,12 @@ import glob
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
 import nbformat
-from nbconvert.preprocessors import ExecutePreprocessor
+from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 
 TIMEOUT = 600
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
@@ -21,17 +22,29 @@ def get_notebook_paths(temp_dir):
 
 
 def run_demo_notebooks(notebook_paths, temp_dir):
+    success = True
+    failed_notebooks = []
     for notebook_path in notebook_paths:
         with open(notebook_path) as notebook_file:
             # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
             nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
             # The resources argument is needed to execute the notebook in the temporary directory
-            ep = ExecutePreprocessor(
-                timeout=TIMEOUT,
-                kernel_name="python3",
-                resources={"metadata": {"path": temp_dir}},
-            )
-            nb_out = ep.preprocess(nb_in)
+            try:
+                ep = ExecutePreprocessor(
+                    timeout=TIMEOUT,
+                    kernel_name="python3",
+                    resources={"metadata": {"path": temp_dir}},
+                )
+                nb_out = ep.preprocess(nb_in)
+            except:
+                notebook_name = Path(notebook_path).stem
+                success=False
+                failed_notebooks.append(notebook_name)
+
+    if not success:
+        sys.exit(f"The following notebooks failed due to error: {failed_notebooks}")
+
+
 
 
 def main():

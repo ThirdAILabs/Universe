@@ -3,6 +3,7 @@
 ARG ROOT_CONTAINER=ubuntu:focal
 FROM $ROOT_CONTAINER
 
+# This line requires that we build the docker from the top-level directory of Universe
 ARG LICENSE=licensing/python_tests/license.serialized
 
 LABEL Description="Build Environment"

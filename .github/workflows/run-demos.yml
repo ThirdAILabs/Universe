@@ -7,12 +7,19 @@ concurrency:
   cancel-in-progress: true
   
 # Controls when the workflow will run
-on:
-  schedule:
-      # Sets the workflow to run at the end of every day
-      # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 0 * * *"       
+# todo(vihan) Uncomment this when we confirm this is working as expected
+#on:
+#  schedule:
+#      # Sets the workflow to run at the end of every day
+#      # Ref: https://jasonet.co/posts/scheduled-actions/
+#      - cron: "0 0 * * *"       
 
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+   
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -36,7 +43,7 @@ jobs:
         run: docker build -t thirdai/run_demos_build -f docker/demos/Dockerfile .
 
       - name: Build Package and Run Benchmark
-        run: docker run thirdai/run_demos_build bash -c "python3 run_demos.py"
+        run: docker run thirdai/run_demos_build bash -c "python3 run_demo_notebooks.py"
 
       - name: Delete Container
         run: sudo docker system prune -a -f   
