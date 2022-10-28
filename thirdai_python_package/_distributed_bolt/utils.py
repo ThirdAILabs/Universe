@@ -1,6 +1,6 @@
 import logging
 
-from thirdai import new_dataset
+from thirdai import data
 
 
 def init_logging(logger_file: str):
@@ -74,7 +74,7 @@ def _pandas_iterator(path, chunksize, node_index, num_nodes):
         yield None
 
 
-class PandasColumnMapGenerator(new_dataset.ColumnMapGenerator):
+class PandasColumnMapGenerator(data.ColumnMapGenerator):
     def __init__(
         self,
         path,
@@ -102,7 +102,7 @@ class PandasColumnMapGenerator(new_dataset.ColumnMapGenerator):
         if load is None:
             return None
 
-        return new_dataset.pandas_to_columnmap(
+        return data.pandas_to_columnmap(
             load,
             dense_int_cols=self.dense_int_cols,
             int_col_dims=self.int_col_dims,

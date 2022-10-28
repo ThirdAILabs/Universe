@@ -3,11 +3,11 @@ import platform
 import socket
 from typing import Any, Dict
 
-from thirdai._thirdai.bolt import graph
+from thirdai._thirdai import bolt
 
 
 # TODO how can we define this under bolt.graph.callbacks?
-class MlflowCallback(graph.callbacks.Callback):
+class MlflowCallback(bolt.callbacks.Callback):
     """An Mlflow callback is initialized for a single experiment run.
     Reusing an instance of MlflowCallback does not reset the run and instead
     logs params for the existing experiment.

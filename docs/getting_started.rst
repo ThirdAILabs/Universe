@@ -86,7 +86,7 @@ The following section illustrates defining a :obj:`TrainConfig
 
    tracked_metrics = ["mean_squared_error"]
 
-   predict_config = bolt.graph.PredictConfig.make().with_metrics(tracked_metrics)
+   eval_config = bolt.EvalConfig().with_metrics(tracked_metrics)
    train_config = (
        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
        .with_metrics(tracked_metrics)
@@ -109,10 +109,10 @@ The trained model can be used to test as illustrated below:
 
 .. code-block:: python
 
-    test_metrics = model.predict(
+    test_metrics = model.evaluate(
         test_data=mnist_dataset["test_data"],
         test_labels=mnist_dataset["test_labels"],
-        predict_config=predict_config,
+        eval_config=eval_config,
     )
 
 
@@ -167,7 +167,7 @@ validation at specified intervals of updates during training.
 
 .. code-block:: python
 
-   predict_config = bolt.graph.PredictConfig.make().with_metrics(tracked_metrics)
+   eval_config = bolt.EvalConfig().with_metrics(tracked_metrics)
 
    train_config = (
        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
@@ -175,7 +175,7 @@ validation at specified intervals of updates during training.
        .with_validation(
            [mnist_dataset["test_data"]],
            mnist_dataset["test_labels"],
-           predict_config,
+           eval_config,
            validation_frequency=32,
            save_best_per_metric="mean_squared_error",
        )

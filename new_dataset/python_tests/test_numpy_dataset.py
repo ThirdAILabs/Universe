@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from thirdai import new_dataset
+from thirdai import data
 
 
 def rows_equal(bolt_dataset_1, bolt_dataset_2):
@@ -15,7 +15,7 @@ def test_basic_dense_numpy():
     num_rows = 10
     num_cols = 10
     np_data = np.full((num_rows, num_cols), 1)
-    bolt_data = new_dataset.from_np(np_data)
+    bolt_data = data.from_np(np_data)
 
     row_count = 0
     for row in bolt_data:
@@ -27,7 +27,7 @@ def test_basic_dense_numpy():
 @pytest.mark.unit
 def test_simple_slice():
     np_data = np.random.rand(10, 10)
-    bolt_data = new_dataset.from_np(np_data)
+    bolt_data = data.from_np(np_data)
     slice = bolt_data[2:4]
 
     for i in range(2, 4):
@@ -40,11 +40,11 @@ def test_shuffle_works():
     np.random.seed(42)
     np_data = np.random.rand(10, 10).astype("float32")
     np.random.shuffle(np_data)
-    bolt_data_shuffled_in_numpy = new_dataset.from_np(np_data)
+    bolt_data_shuffled_in_numpy = data.from_np(np_data)
 
     np.random.seed(42)
     np_data = np.random.rand(10, 10).astype("float32")
-    bolt_data_shuffled_in_dataset = new_dataset.from_np(np_data)
+    bolt_data_shuffled_in_dataset = data.from_np(np_data)
     np.random.shuffle(bolt_data_shuffled_in_dataset)
 
     assert rows_equal(bolt_data_shuffled_in_numpy, bolt_data_shuffled_in_dataset)
@@ -59,7 +59,7 @@ def test_slice_is_a_view():
     """
     np_data = np.random.rand(40, 10)
 
-    bolt_data = new_dataset.from_np(np_data)
+    bolt_data = data.from_np(np_data)
     first_half = bolt_data[0:20]
 
     # This sets both the first half of bolt_data and first_half equal to the
@@ -78,7 +78,7 @@ def test_slice_is_a_view():
 def test_bad_slices():
     np_data = np.random.rand(40, 10)
 
-    bolt_data = new_dataset.from_np(np_data)
+    bolt_data = data.from_np(np_data)
 
     with pytest.raises(
         ValueError,
@@ -111,7 +111,7 @@ def test_bad_slices():
 @pytest.mark.unit
 def test_dataset_copy():
     np_data = np.random.rand(40, 10)
-    bolt_data = new_dataset.from_np(np_data)
+    bolt_data = data.from_np(np_data)
     bolt_data_copy = bolt_data.copy()
 
     bolt_data[0] = bolt_data[1]

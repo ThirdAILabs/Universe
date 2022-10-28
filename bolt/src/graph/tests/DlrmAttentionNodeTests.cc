@@ -59,11 +59,11 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
           n_ids, n_tokens, n_batches, batch_size, /* seed= */ 24090);
 
   auto train_cfg = TrainConfig::makeConfig(0.001, 10);
-  auto predict_cfg =
-      PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
+  auto eval_cfg =
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
   model.train({data, tokens}, labels, train_cfg);
-  auto [metrics, _] = model.predict({data, tokens}, labels, predict_cfg);
+  auto [metrics, _] = model.evaluate({data, tokens}, labels, eval_cfg);
 
   ASSERT_GE(metrics["categorical_accuracy"], 0.9);
 }
