@@ -65,7 +65,9 @@ class UniversalDeepTransformer : public ModelPipeline {
 
     bool column_contextualization = false;
     if (options.count("column_contextualization")) {
-      column_contextualization = true;
+      if (utils::lower(options.at("column_contextualization")) == "true") {
+        column_contextualization = true;
+      }
     }
 
     auto dataset_factory = OracleDatasetFactory::make(
