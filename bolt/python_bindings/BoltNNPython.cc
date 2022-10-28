@@ -116,7 +116,10 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
 #endif
 
   py::class_<Node, NodePtr>(nn_submodule, "Node")
-      .def_property_readonly("name", [](Node& node) { return node.name(); });
+      .def_property_readonly("name", [](Node& node) { return node.name(); })
+      .def("disable_sparse_parameter_updates",
+           &Node::disableSparseParameterUpdates,
+           "Forces the node to use dense parameter updates.");
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,
                                                               "FullyConnected")
@@ -202,9 +205,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.")
-      .def("enable_sparse_sparse_optimization",
-           &FullyConnectedNode::enableSparseSparseOptimization);
+          "Returns a ParameterReference object to the bias gradients vector.");
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       nn_submodule, "LayerNormalization")

@@ -22,7 +22,7 @@ class DistributedTrainingWrapper {
         _train_context(std::nullopt),
         _train_config(std::move(train_config)),
         _metric_aggregator(_train_config.getMetricAggregator()) {
-    _bolt_graph->enableDistributedTraining();
+    _bolt_graph->disableSparseParameterUpdates();
   }
 
   void computeAndStoreBatchGradients(uint32_t batch_idx) {

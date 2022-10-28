@@ -67,10 +67,6 @@ class Input final : public Node {
     throw std::logic_error("Should not call initOptimizer() on Input node");
   }
 
-  void enableDistributedTraining() final {
-    // NOOP since the Input node doesn't have any paramters
-  }
-
  private:
   void compileImpl() final {
     if (_expected_input_dim == 0) {
