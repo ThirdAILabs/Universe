@@ -56,7 +56,7 @@ Args:
         Input dataset for validation
     validation_label (dataset.BoltDataset): 
         Ground truth labels to use during validation
-    eval_config (bolt.graph.EvalConfig): 
+    eval_config (bolt.EvalConfig): 
         See EvalConfig.
     validation_frequency (int, optional): 
         Interval of updates (batches) to run validation and report

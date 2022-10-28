@@ -91,7 +91,7 @@ Training with the ModelPipeline
 Training is similar to the regular Bolt API where you pass in `TrainConfig` that allows
 specification of various hyperparameters and options. 
 
->>> train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
+>>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
 
 Optionally you can also specify options like metrics or validation. The `ModelPipeline`
 has a method to load a validation dataset since it contains the dataset loader functionality.

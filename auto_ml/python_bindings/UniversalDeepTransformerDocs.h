@@ -116,7 +116,7 @@ Trains a UniversalDeepTransformer (UDT) on a given dataset using a file on disk.
 
 Args:
     filename (str): Path to the dataset file.
-    train_config (bolt.graph.TrainConfig): The training config specifies the number
+    train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
@@ -130,7 +130,7 @@ Returns:
     None
 
 Examples:
-    >>> train_config = bolt.graph.TrainConfig.make(
+    >>> train_config = bolt.TrainConfig(
             epochs=5, learning_rate=0.01
         ).with_metrics(["mean_squared_error"])
     >>> model.train(
