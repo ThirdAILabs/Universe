@@ -560,7 +560,7 @@ Trains a ModelPipeline on a given dataset using a file on disk.
 
 Args:
     filename (str): Path to the dataset file.
-    train_config (bolt.graph.TrainConfig): The training config specifies the number
+    train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
@@ -575,7 +575,7 @@ Returns:
     None
 
 Examples:
-    >>> train_config = bolt.graph.TrainConfig.make(
+    >>> train_config = bolt.TrainConfig(
             epochs=5, learning_rate=0.01
         ).with_metrics(["mean_squared_error"])
     >>> model.train(
@@ -589,7 +589,7 @@ Trains a ModelPipeline on a given dataset using any DataLoader.
 
 Args:
     data_source (dataset.DataLoader): A data loader for the given dataset.
-    train_config (bolt.graph.TrainConfig): The training config specifies the number
+    train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
@@ -601,7 +601,7 @@ Returns:
     None
 
 Examples:
-    >>> train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
+    >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     >>> model.train(
             data_source=dataset.S3DataLoader(...), train_config=train_config, max_in_memory_batches=12
         )
@@ -759,7 +759,7 @@ Examples:
             .enable_sparse_inference()
         )
     >>> val_data, val_labels = model.load_validation_data("./validation_file")
-    >>> train_config = bolt.graph.TrainConfig.make(
+    >>> train_config = bolt.TrainConfig(
             epochs=1, learning_rate=0.001
         ).with_validation(
             validation_data=val_data,

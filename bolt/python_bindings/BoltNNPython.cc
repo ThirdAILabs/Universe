@@ -380,7 +380,7 @@ References:
 
 Examples:
     >>> train_config = (
-            bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)
+            bolt.TrainConfig(learning_rate=0.001, epochs=3)
             .with_metrics(["categorical_accuracy"])
         )
     >>> metrics = model.train(
