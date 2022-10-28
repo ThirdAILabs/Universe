@@ -38,14 +38,16 @@ namespace thirdai::automl::deployment {
 class OracleDatasetFactory final : public DatasetLoaderFactory {
  public:
   explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel,
-                                uint32_t text_pairgram_word_limit)
+                                uint32_t text_pairgram_word_limit,
+                                bool use_cross_features = false)
       : _config(std::move(config)),
         _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
             _config->data_types, _config->provided_relationships,
             _config->lookahead)),
         _context(std::make_shared<TemporalContext>()),
         _parallel(parallel),
-        _text_pairgram_word_limit(text_pairgram_word_limit) {
+        _text_pairgram_word_limit(text_pairgram_word_limit),
+        _use_cross_features(use_cross_features) {
     ColumnNumberMap mock_column_number_map(_config->data_types);
     auto mock_processor = makeLabeledUpdatingProcessor(mock_column_number_map);
 
@@ -325,7 +327,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
             *_config, _temporal_relationships, column_numbers, _vocabs,
-            _text_pairgram_word_limit);
+            _text_pairgram_word_limit, _use_cross_features);
 
     if (_temporal_relationships.empty()) {
       return blocks;
@@ -411,6 +413,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   uint32_t _label_dim;
   bool _parallel;
   uint32_t _text_pairgram_word_limit;
+  bool _use_cross_features;
 
   // Private constructor for cereal.
   OracleDatasetFactory() {}
@@ -422,7 +425,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
             _temporal_relationships, _context, _vocabs, _column_number_map,
             _column_number_to_name, _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _input_dim, _label_dim,
-            _parallel, _text_pairgram_word_limit);
+            _parallel, _text_pairgram_word_limit, _use_cross_features);
   }
 };
 
@@ -433,10 +436,12 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
   explicit OracleDatasetFactoryConfig(
       HyperParameterPtr<OracleConfigPtr> config,
       HyperParameterPtr<bool> parallel,
-      HyperParameterPtr<uint32_t> text_pairgram_word_limit)
+      HyperParameterPtr<uint32_t> text_pairgram_word_limit,
+      HyperParameterPtr<bool> use_cross_features)
       : _config(std::move(config)),
         _parallel(std::move(parallel)),
-        _text_pairgram_word_limit(std::move(text_pairgram_word_limit)) {}
+        _text_pairgram_word_limit(std::move(text_pairgram_word_limit)),
+        _use_cross_features(std::move(use_cross_features)) {}
 
   DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const final {
@@ -453,6 +458,7 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
   HyperParameterPtr<OracleConfigPtr> _config;
   HyperParameterPtr<bool> _parallel;
   HyperParameterPtr<uint32_t> _text_pairgram_word_limit;
+  HyperParameterPtr<bool> _use_cross_features;
 
   // Private constructor for cereal.
   OracleDatasetFactoryConfig() {}
@@ -461,7 +467,7 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _config,
-            _parallel, _text_pairgram_word_limit);
+            _parallel, _text_pairgram_word_limit, _use_cross_features);
   }
 };
 

@@ -77,9 +77,7 @@ struct NumericalDataType {
       std::optional<std::pair<double, double>> _range = std::nullopt)
       : range(std::move(_range)) {}
 
-  std::optional<std::pair<double, double>> range;
-
-  NumericalDataType() {}
+  std::optional<std::pair<double, double>> range = std::nullopt;
 
  private:
   friend class cereal::access;

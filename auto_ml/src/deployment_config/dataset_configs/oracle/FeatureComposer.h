@@ -28,7 +28,7 @@ class FeatureComposer {
       const OracleConfig& config,
       const TemporalRelationships& temporal_relationships,
       const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
-      uint32_t text_pairgrams_word_limit) {
+      uint32_t text_pairgrams_word_limit, bool use_cross_features) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto non_temporal_columns =
@@ -53,7 +53,7 @@ class FeatureComposer {
       }
 
       if (data_type.isNumerical()) {
-        blocks.push_back(dataset::DenseArrayBlock::makeSingle(col_num));
+        // blocks.push_back(dataset::DenseArrayBlock::makeSingle(col_num));
       }
 
       if (data_type.isText()) {
@@ -73,8 +73,7 @@ class FeatureComposer {
       }
     }
 
-    bool using_tabular_pairgram = false;
-    if (using_tabular_pairgram) {
+    if (use_cross_features) {
       blocks.push_back(
           makeTabularPairgramBlock(config.data_types, config.target,
                                    non_temporal_columns, column_numbers));
@@ -281,7 +280,7 @@ class FeatureComposer {
 
       if (data_type.isCategorical()) {
         std::cout << "FOUND CATEGORICAL COLUMN" << std::endl;
-        tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
+        // tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
       } else if (data_type.isNumerical()) {
         std::cout << "FOUND NUMERIC COLUMN" << std::endl;
         // if the user has specified min/max for numeric column, include in

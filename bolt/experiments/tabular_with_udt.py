@@ -24,9 +24,9 @@ with open(tabular_train_file) as f:
 
 tabular_model = deployment.UniversalDeepTransformer(
     data_types={
-        # "age":bolt.types.numerical(range=(17, 90)),
+        "age":bolt.types.numerical(range=(17, 90)),
         "workclass":bolt.types.categorical(n_unique_classes=9),
-        # "fnlwgt":bolt.types.numerical(range=(12285, 1484705)),
+        "fnlwgt":bolt.types.numerical(range=(12285, 1484705)),
         "education":bolt.types.categorical(n_unique_classes=16),
         "education-num":bolt.types.categorical(n_unique_classes=16),
         "marital-status":bolt.types.categorical(n_unique_classes=7),
@@ -34,9 +34,9 @@ tabular_model = deployment.UniversalDeepTransformer(
         "relationship":bolt.types.categorical(n_unique_classes=6),
         "race":bolt.types.categorical(n_unique_classes=5),
         "sex":bolt.types.categorical(n_unique_classes=2),
-        # "capital-gain":bolt.types.numerical(range=(0, 99999)),
-        # "capital-loss":bolt.types.numerical(range=(0, 4356)),
-        # "hours-per-week":bolt.types.numerical(range=(1, 99)),
+        "capital-gain":bolt.types.numerical(range=(0, 99999)),
+        "capital-loss":bolt.types.numerical(range=(0, 4356)),
+        "hours-per-week":bolt.types.numerical(range=(1, 99)),
         "native-country":bolt.types.categorical(n_unique_classes=42),
         "label":bolt.types.categorical(n_unique_classes=2),
     },
