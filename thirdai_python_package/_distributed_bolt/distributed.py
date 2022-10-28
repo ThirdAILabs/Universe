@@ -231,7 +231,6 @@ class DistributedDataParallel:
             total_batches_trained += 1
             train_state_manager.move_to_next_epoch()
 
-        train_state_manager.finish_training()
         return {
             "time": time.time() - train_start,
             "total_batches_trained": total_batches_trained,
