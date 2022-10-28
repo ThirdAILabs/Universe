@@ -270,7 +270,7 @@ class FeatureComposer {
     std::fill(tabular_datatypes.begin(), tabular_datatypes.end(),
               dataset::TabularDataType::Ignore);
 
-    std::unordered_map<uint32_t, std::pair<double, double>> col_min_maxes;
+    std::unordered_map<uint32_t, std::pair<double, double>> col_ranges;
 
     for (const auto& [col_name, data_type] : column_datatypes) {
       if (!non_temporal_columns.count(col_name) || col_name == target_name) {
@@ -286,17 +286,17 @@ class FeatureComposer {
         std::cout << "FOUND NUMERIC COLUMN" << std::endl;
         // if the user has specified min/max for numeric column, include in
         // tabular pairgrams, otherwise don't
-        if (auto min_maxes = data_type.asNumerical().min_maxes) {
+        if (auto range = data_type.asNumerical().range) {
           std::cout << "  FOUND SOME MIN MAXES" << std::endl;
 
-          col_min_maxes[col_num] = *min_maxes;
+          col_ranges[col_num] = *range;
           tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
         }
       }
     }
 
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
-        tabular_datatypes, col_min_maxes, /* class_name_to_id = = */ nullptr);
+        tabular_datatypes, col_ranges, /* class_name_to_id = = */ nullptr);
 
     return std::make_shared<dataset::TabularPairGram>(
         tabular_metadata, /* output_range = */ 100000);

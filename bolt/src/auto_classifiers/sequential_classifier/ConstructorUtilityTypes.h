@@ -72,18 +72,18 @@ struct TextDataType {
 };
 
 struct NumericalDataType {
-  explicit NumericalDataType(std::pair<double, double> _min_maxes)
-      : min_maxes(_min_maxes) {}
+  explicit NumericalDataType(std::pair<double, double> _range)
+      : range(_range) {}
 
-  NumericalDataType() : min_maxes(std::nullopt) {}
+  NumericalDataType() : range(std::nullopt) {}
 
-  std::optional<std::pair<double, double>> min_maxes;
+  std::optional<std::pair<double, double>> range;
 
  private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(min_maxes);
+    archive(range);
   }
 };
 
