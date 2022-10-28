@@ -55,6 +55,8 @@ class SignedMomentumFactory final : public OptimizerFactory {
   float _increase_scale_factor;
   float _decrease_scale_factor;
 
+  SignedMomentumFactory() {}
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
@@ -64,3 +66,5 @@ class SignedMomentumFactory final : public OptimizerFactory {
 };
 
 }  // namespace thirdai::bolt::optimizers
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::optimizers::SignedMomentumFactory)
