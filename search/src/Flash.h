@@ -96,11 +96,6 @@ class Flash {
       std::vector<LABEL_T>& query_result, uint32_t top_k) const;
 
   /**
-   * Makes sure the ids are within range for a batch with sequential ids
-   */
-  void verifyBatchSequentialIds(const BoltBatch& batch) const;
-
-  /**
    * Verifies that the passed in id is within the range of this FLASH instance
    * by throwing an error if the id is too large for the initialized size
    * (>2^16 for uin16_t, >2^32 for uint32_t, etc.).

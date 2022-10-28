@@ -76,7 +76,8 @@ void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
   std::vector<uint32_t> hashes = hashBatch(batch);
 
   assert(hashes.size() == batch.getBatchSize() * _num_tables);
-  verifyBatchSequentialIds(batch);
+
+  verifyIDFitsLabelTypeRange(batch.getBatchSize());
   _hashtable->insert(batch.getBatchSize(), labels.data(), hashes.data());
 
   incrementBatchElementsCounter(batch.getBatchSize());
@@ -89,15 +90,10 @@ std::vector<uint32_t> Flash<LABEL_T>::hashBatch(const BoltBatch& batch) const {
 }
 
 template <typename LABEL_T>
-void Flash<LABEL_T>::verifyBatchSequentialIds(const BoltBatch& batch) const {
-  uint64_t largest_batch_id = _batch_elements_counter + batch.getBatchSize();
-  verifyIDFitsLabelTypeRange(largest_batch_id);
-}
-
-template <typename LABEL_T>
 void Flash<LABEL_T>::verifyIDFitsLabelTypeRange(uint64_t id) const {
   uint64_t max_possible_value = std::numeric_limits<LABEL_T>::max();
-  if (id > max_possible_value) {
+
+  if (id + _batch_elements_counter > max_possible_value) {
     throw std::invalid_argument("Trying to insert vector with id " +
                                 std::to_string(id) +
                                 ", which is too large an id for this Flash.");
