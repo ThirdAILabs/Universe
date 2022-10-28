@@ -61,7 +61,10 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = []
 
 
+# Options are `fully-qualified` (thirdai.submodule.) and `short` (submodule.).
 autodoc_typehints_format = "short"
+
+# The type-signature for the class's constructor is not attached with the title.
 autodoc_class_signature = "separated"
 
 
