@@ -114,7 +114,7 @@ class Flash {
 
   // Keeps a counter of the number of batch elements seen so far.
   // SHOULD ONLY be incremented when addBatch is invoked.
-  uint32_t _batch_elements_counter;
+  uint64_t _batch_elements_counter;
 
   std::shared_ptr<hashtable::HashTable<LABEL_T>> _hashtable;
 
