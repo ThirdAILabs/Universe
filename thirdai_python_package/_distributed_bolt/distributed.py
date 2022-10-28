@@ -214,7 +214,8 @@ class DistributedDataParallel:
         underlying DistributedTrainingWrappers. This is not dangerous because
         the only way to do inference on the wrapped models is to call
         get_model(), which will do a pickle and depickle of the wrapped Bolt
-        model and throw away any batch state.
+        model, which has the side effect of throwing away any batch state as
+        it is not saved as part of the model.
 
         Returns:
             Dict: A dictionary with some statistics about training, including
