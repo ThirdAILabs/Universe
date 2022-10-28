@@ -1,14 +1,17 @@
+import copy
 import os
 import tempfile
 import textwrap
-from typing import List
+import time
+from typing import Dict, List, Tuple, Union
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._thirdai import bolt, logging
+from thirdai._distributed_bolt.dataset_loaders import DatasetLoader
+from thirdai._thirdai import bolt
 
 from .utils import get_num_cpus, init_logging
 
@@ -26,6 +29,8 @@ class RayTrainingClusterConfig:
         requested_cpus_per_node: int = -1,
         communication_type: str = "circular",
         cluster_address: str = "auto",
+        runtime_env: Dict = {},
+        ignore_reinit_error=False,
         log_dir: str = os.path.join(tempfile.gettempdir(), "thirdai"),
     ):
         """
@@ -34,6 +39,18 @@ class RayTrainingClusterConfig:
         Ray primary and replica worker configs. It computes and stores a
         a number of useful fields, including num_workers, communication_type,
         logging, primary_worker_config, and replica_worker_configs.
+
+
+        Args:
+            runtime_env: Environment variables, package dependencies, working
+            directory, and other dependencies a worker needs in its environment
+            to run. See
+            https://docs.ray.io/en/latest/ray-core/handling-dependencies.html#:~:text=A%20runtime%20environment%20describes%20the,on%20the%20cluster%20at%20runtime
+            ignore_reinit_error: Whether to supress the error that a cluster
+            already exists when this method tries to create a Ray cluster. If
+            this is true and a cluster exists, this constructor will just
+            connect to that cluster.
+
         """
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
@@ -62,9 +79,20 @@ class RayTrainingClusterConfig:
         # So, we need to change the OMP_NUM_THREADS to support parallization
         num_omp_threads = str(get_num_cpus())
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
-        runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
 
-        ray.init(address=cluster_address, runtime_env=runtime_env)
+        # We do a deepcopy here so we do not unexpectedly modify the input.
+        # This should not be a performance hit because it is just a shallow
+        # config.
+        runtime_env = copy.deepcopy(runtime_env)
+        if "env_vars" not in runtime_env:
+            runtime_env["env_vars"] = {}
+        runtime_env["env_vars"]["OMP_NUM_THREADS"] = str(get_num_cpus())
+
+        ray.init(
+            address=cluster_address,
+            runtime_env=runtime_env,
+            ignore_reinit_error=ignore_reinit_error,
+        )
         if not ray.is_initialized():
             raise Exception(
                 textwrap.dedent(
@@ -108,10 +136,9 @@ class DistributedDataParallel:
     def __init__(
         self,
         cluster_config: RayTrainingClusterConfig,
-        model: bolt.graph.Model,
-        train_config: bolt.graph.TrainConfig,
-        train_file_names: List[str],
-        batch_size: int,
+        model: bolt.nn.Model,
+        train_config: bolt.TrainConfig,
+        train_sources: List[DatasetLoader],
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -126,10 +153,10 @@ class DistributedDataParallel:
         self.logging = cluster_config.logging
         self.train_config = train_config
 
-        if len(train_file_names) != cluster_config.num_workers:
+        if len(train_sources) != cluster_config.num_workers:
             raise ValueError(
                 "Received ",
-                len(train_file_names),
+                len(train_sources),
                 " training datasets. Expected ",
                 cluster_config.num_workers,
                 " datasets, one for each node.",
@@ -147,28 +174,26 @@ class DistributedDataParallel:
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
             model_to_wrap=ray_model_ref,
-            train_file_name=train_file_names[0],
+            train_source=train_sources[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
-            batch_size=batch_size,
         )
 
         self.replica_workers = []
         for worker_id, replica_worker_config in enumerate(
-            cluster_config.replica_worker_configs
+            cluster_config.replica_worker_configs, start=1
         ):
             self.replica_workers.append(
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
                     model_to_wrap=ray_model_ref,
-                    train_file_name=train_file_names[worker_id + 1],
+                    train_source=train_sources[worker_id],
                     train_config=train_config,
-                    id=worker_id + 1,
+                    id=worker_id,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
                     log_dir=cluster_config.log_dir,
-                    batch_size=batch_size,
                 )
             )
 
@@ -182,10 +207,16 @@ class DistributedDataParallel:
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
         )
 
-    def train(self) -> None:
+    def train(self) -> Dict[str, Union[int, str]]:
         """
-        Trains the network using the communication type choosen.
+        Runs distributed training on the passed in Bolt model on the passed in
+        Ray cluster.
+
+        Returns:
+            Dict: A dictionary with some statistics about training, including
+            total batches trained and total real time.
         """
+        train_start = time.time()
         train_state_manager = TrainStateManager(
             self.workers,
             self.primary_worker,
@@ -193,14 +224,18 @@ class DistributedDataParallel:
             self.communication_type,
         )
 
+        total_batches_trained = 0
         for epoch in range(self.train_config.num_epochs):
-            for batch_id in range(self.num_of_batches):
-
-                # Here we are asking every worker to calculate their gradients and return
-                # once they all calculate their gradients
-                train_state_manager.train_batch(epoch, batch_id)
+            while train_state_manager.train_batch(epoch):
+                total_batches_trained += 1
+            total_batches_trained += 1
+            train_state_manager.move_to_next_epoch()
 
         train_state_manager.finish_training()
+        return {
+            "time": time.time() - train_start,
+            "total_batches_trained": total_batches_trained,
+        }
 
     def get_model(self, worker_id=0):
         return ray.get(self.workers[worker_id].model.remote())

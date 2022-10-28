@@ -6,9 +6,9 @@
 
 namespace thirdai::bolt::optimizers {
 
-class SgdOptimizer final : public Optimizer {
+class Sgd final : public Optimizer {
  public:
-  SgdOptimizer(std::vector<float>& parameters, std::vector<float>& gradients)
+  Sgd(std::vector<float>& parameters, std::vector<float>& gradients)
       : Optimizer(parameters, gradients) {}
 
   void updateRange(uint64_t start, uint64_t length, float learning_rate,
@@ -19,10 +19,10 @@ class SgdOptimizer final : public Optimizer {
   void completeTrainStep() final;
 };
 
-class SgdOptimizerFactory final : public OptimizerFactory {
+class SgdFactory final : public OptimizerFactory {
   OptimizerPtr getOptimizer(std::vector<float>& parameters,
                             std::vector<float>& gradients) final {
-    return std::make_shared<SgdOptimizer>(parameters, gradients);
+    return std::make_shared<Sgd>(parameters, gradients);
   }
 
   friend class cereal::access;
@@ -34,4 +34,4 @@ class SgdOptimizerFactory final : public OptimizerFactory {
 
 }  // namespace thirdai::bolt::optimizers
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::optimizers::SgdOptimizerFactory)
+CEREAL_REGISTER_TYPE(thirdai::bolt::optimizers::SgdFactory)

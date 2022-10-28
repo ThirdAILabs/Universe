@@ -1,9 +1,13 @@
 // Code to create thirdai modules
+#include <bolt/python_bindings/BoltNNPython.h>
 #include <bolt/python_bindings/BoltPython.h>
+#include <bolt/python_bindings/CallbacksPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_classifiers/python_bindings/AutoClassifiersPython.h>
 #include <auto_ml/python_bindings/DeploymentPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
+#include <new_dataset/python_bindings/DatasetPython.h>
+#include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <utils/Logging.h>
 #include <utils/Version.h>
@@ -114,13 +118,29 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:
   // https://pybind11.readthedocs.io/en/stable/faq.html#how-can-i-reduce-the-build-time
+  // TODO(Josh/Nick): Deprecate this call and change NewDataset/new_dataset to
+  // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
 
+  // Data Submodule
+  auto data_submodule = m.def_submodule("data");
+  thirdai::dataset::python::createDataSubmodule(data_submodule);
+  thirdai::dataset::python::createFeaturizationSubmodule(data_submodule);
+
+  // Hashing Submodule
   thirdai::hashing::python::createHashingSubmodule(m);
 
-  auto bolt_submodule = thirdai::bolt::python::createBoltSubmodule(m);
-
+  // Bolt Submodule
+  auto bolt_submodule = m.def_submodule("bolt");
+  thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
+  thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
+  thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
+  // TODO(Nicholas, Geordie): This should be depreciated in favor of
+  // ModelPipeline/UDT soon.
   thirdai::bolt::python::defineAutoClassifeirsInModule(bolt_submodule);
+  // TODO(Nicholas, Geordie): Move this to bolt
+  thirdai::automl::deployment::python::defineModelPipelineAndUDT(
+      bolt_submodule);
 
   thirdai::search::python::createSearchSubmodule(m);
 

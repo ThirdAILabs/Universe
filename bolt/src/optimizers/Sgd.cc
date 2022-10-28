@@ -2,8 +2,8 @@
 
 namespace thirdai::bolt::optimizers {
 
-void SgdOptimizer::updateRange(uint64_t start, uint64_t length,
-                               float learning_rate, bool parallel) {
+void Sgd::updateRange(uint64_t start, uint64_t length, float learning_rate,
+                      bool parallel) {
   if (parallel) {
 #pragma omp parallel for default(none) shared(start, length, learning_rate)
     for (uint64_t i = start; i < start + length; i++) {
@@ -16,11 +16,11 @@ void SgdOptimizer::updateRange(uint64_t start, uint64_t length,
   }
 }
 
-void SgdOptimizer::updateAtIndex(uint64_t index, float learning_rate) {
+void Sgd::updateAtIndex(uint64_t index, float learning_rate) {
   _parameters[index] += learning_rate * _gradients[index];
   _gradients[index] = 0;
 }
 
-void SgdOptimizer::completeTrainStep() {}
+void Sgd::completeTrainStep() {}
 
 }  // namespace thirdai::bolt::optimizers

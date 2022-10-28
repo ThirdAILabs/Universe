@@ -23,13 +23,11 @@ def get_good_model(input_and_output_dim):
 
 
 def get_simple_train_config():
-    return bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3).silence()
+    return bolt.TrainConfig(learning_rate=0.001, epochs=3).silence()
 
 
-def get_simple_predict_config():
-    return (
-        bolt.graph.PredictConfig.make().silence().with_metrics(["mean_squared_error"])
-    )
+def get_simple_eval_config():
+    return bolt.EvalConfig().silence().with_metrics(["mean_squared_error"])
 
 
 def get_random_dense_bolt_dataset(rows, cols):
@@ -45,7 +43,7 @@ def test_bad_dense_input_dim():
     num_train = 10
     model = get_good_model(input_and_output_dim)
     train_config = get_simple_train_config()
-    predict_config = get_simple_predict_config()
+    eval_config = get_simple_eval_config()
 
     for bad_dim in [input_and_output_dim + dif for dif in range(-3, 3, 2)]:
         bad_dim = input_and_output_dim - 1
@@ -68,34 +66,34 @@ def test_bad_dense_input_dim():
             ValueError,
             match=f".*Received dense BoltVector with dimension={bad_dim}, but was supposed to have dimension={input_and_output_dim}.*",
         ):
-            model.predict(data, labels, predict_config)
+            model.evaluate(data, labels, eval_config)
 
     data = get_random_dense_bolt_dataset(num_train, input_and_output_dim)
-    model.predict(data, labels, predict_config)
+    model.evaluate(data, labels, eval_config)
 
 
 def test_bad_inference_metrics():
     input_and_output_dim = 10
     num_train = 10
     model = get_good_model(input_and_output_dim)
-    predict_config = get_simple_predict_config()
+    eval_config = get_simple_eval_config()
 
     data = get_random_dense_bolt_dataset(num_train, input_and_output_dim)
     labels = None
-    predict_config = get_simple_predict_config().with_metrics([])
+    eval_config = get_simple_eval_config().with_metrics([])
     with pytest.raises(
         ValueError,
         match=f"Doing inference without returning activations and no metrics is a NOOP",
     ):
-        model.predict(data, labels, predict_config)
+        model.evaluate(data, labels, eval_config)
 
-    predict_config = get_simple_predict_config()
+    eval_config = get_simple_eval_config()
     with pytest.raises(
         ValueError, match=f"Cannot track accuracy metrics without labels"
     ):
-        model.predict(data, labels, predict_config)
+        model.evaluate(data, labels, eval_config)
 
-    predict_config = get_simple_predict_config()
+    eval_config = get_simple_eval_config()
 
 
 # We don't check inference here too because we label handling is the same
@@ -104,7 +102,7 @@ def test_bad_label_dim_dense():
     num_train = 10
     model = get_good_model(input_and_output_dim)
     train_config = get_simple_train_config()
-    predict_config = get_simple_predict_config()
+    eval_config = get_simple_eval_config()
 
     for bad_dim in [input_and_output_dim + dif for dif in range(-3, 3, 2)]:
         bad_dim = input_and_output_dim - 1
@@ -123,7 +121,7 @@ def test_label_train_num_example_mismatch():
     num_labels = 10
     model = get_good_model(input_and_output_dim)
     train_config = get_simple_train_config()
-    predict_config = get_simple_predict_config()
+    eval_config = get_simple_eval_config()
     data = get_random_dense_bolt_dataset(num_examples, input_and_output_dim)
     labels = get_random_dense_bolt_dataset(num_labels, input_and_output_dim)
 
@@ -137,4 +135,4 @@ def test_label_train_num_example_mismatch():
         ValueError,
         match=f".*found {num_labels} samples in one dataset and {num_examples} samples in another.*",
     ):
-        model.predict(data, labels, predict_config)
+        model.evaluate(data, labels, eval_config)

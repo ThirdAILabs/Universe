@@ -61,12 +61,7 @@ class ModelConfig {
 
     auto model = std::make_shared<bolt::BoltGraph>(inputs, output);
 
-// Disable the model summary in the release, but print it out for internal use.
-#if THIRDAI_EXPOSE_ALL
     model->compile(_loss);
-#else
-    model->compile(_loss, /* print_when_done= */ false);
-#endif
 
     return model;
   }

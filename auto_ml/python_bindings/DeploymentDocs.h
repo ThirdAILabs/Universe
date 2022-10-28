@@ -80,11 +80,11 @@ Constructs a ConstantHyperParameter which is a HyperParameter with a fixed value
 that cannot be impacted by user inputed parameters.
 
 Args:
-    value (bool, int, float, str, or bolt.SamplingConfig): The constant value that 
+    value (bool, int, float, str, bolt.SamplingConfig, or deployment.OracleConfig): The constant value that 
         the constant parameter will take. 
 
 Returns:
-    (BoolHyperParameter, UintHyperParameter, FloatHyperParameter, StrHyperParameter, or SamplingConfigHyperParameter):
+    (BoolHyperParameter, UintHyperParameter, FloatHyperParameter, StrHyperParameter, SamplingConfigHyperParameter, or OracleConfigHyperParameter):
         This function is overloaded and hence will construct the appropriate hyper 
         parameter for the type of the input value. 
         
@@ -126,7 +126,7 @@ Notes:
 
 Examples:
     >>> param = deployment.OptionMappedParameter(option_name="size", values={"small": 10, "large": 20})
-    >>> model = deployment.ModelPipeline(config, parameters={"size": "small"})
+    >>> model = bolt.Pipeline(config, parameters={"size": "small"})
 )pbdoc";
 
 const char* const USER_SPECIFIED_PARAMETER = R"pbdoc(
@@ -152,7 +152,7 @@ Notes:
 
 Examples:
     >>> param = deployment.UserSpecifiedParameter(name="n_classes", type=int)
-    >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 32})
+    >>> model = bolt.Pipeline(config, parameters={"n_classes": 32})
  
 )pbdoc";
 
@@ -185,8 +185,14 @@ Notes:
 
 Examples:
     >>> param = deployment.AutotunedSparsityParameter(dimension_parameter_name="n_classes")
-    >>> model = deployment.ModelPipeline(config, parameters={"n_classes": 1000})
+    >>> model = bolt.Pipeline(config, parameters={"n_classes": 1000})
 
+)pbdoc";
+
+const char* const DATASET_LABEL_DIM_PARAM = R"pbdoc(
+A hyperparameter that automatically configures the output dimension of the bolt 
+neural network used by ModelPipeline according to the dimension of the labels
+produced by the dataset factory.
 )pbdoc";
 
 const char* const NODE_CONFIG = R"pbdoc(
@@ -521,7 +527,7 @@ Returns
     ModelPipeline:
 
 Examples:
-    >>> model = deployment.ModelPipeline(
+    >>> model = bolt.Pipeline(
             deployment_config=deployment.DeploymentConfig(...),
             parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
         )
@@ -542,7 +548,7 @@ Returns
     ModelPipeline:
 
 Examples:
-    >>> model = deployment.ModelPipeline(
+    >>> model = bolt.Pipeline(
             config_path="path_to_a_config",
             parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
         )
@@ -554,7 +560,7 @@ Trains a ModelPipeline on a given dataset using a file on disk.
 
 Args:
     filename (str): Path to the dataset file.
-    train_config (bolt.graph.TrainConfig): The training config specifies the number
+    train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
@@ -569,7 +575,7 @@ Returns:
     None
 
 Examples:
-    >>> train_config = bolt.graph.TrainConfig.make(
+    >>> train_config = bolt.TrainConfig(
             epochs=5, learning_rate=0.01
         ).with_metrics(["mean_squared_error"])
     >>> model.train(
@@ -583,7 +589,7 @@ Trains a ModelPipeline on a given dataset using any DataLoader.
 
 Args:
     data_source (dataset.DataLoader): A data loader for the given dataset.
-    train_config (bolt.graph.TrainConfig): The training config specifies the number
+    train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
@@ -595,7 +601,7 @@ Returns:
     None
 
 Examples:
-    >>> train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
+    >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     >>> model.train(
             data_source=dataset.S3DataLoader(...), train_config=train_config, max_in_memory_batches=12
         )
@@ -608,7 +614,7 @@ activations.
 
 Args:
     filename (str): Path to the dataset file.
-    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional
+    eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
 
@@ -619,8 +625,8 @@ Returns:
     each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> predict_config = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
-    >>> activations = model.evaluate(filename="./test_file", predict_config=predict_config)
+    >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
+    >>> activations = model.evaluate(filename="./test_file", eval_config=eval_config)
 
 )pbdoc";
 
@@ -630,7 +636,7 @@ activations.
 
 Args:
     data_source (dataset.DataLoader): A data loader for the given dataset.
-    predict_config (Option[bolt.graph.PredictConfig]): The predict config is optional
+    eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
 
@@ -663,6 +669,33 @@ Returns:
 Examples:
     >>> activations = model.predict("The blue cat jumped")
 
+)pbdoc";
+
+const char* const MODEL_PIPELINE_EXPLAIN = R"pbdoc(
+Identifies the columns that are most responsible for a predicted outcome 
+and provides a brief description of the column's value.
+
+If a target is provided, the model will identify the columns that need 
+to change for the model to predict the target class.
+
+Args:
+    input_sample (Dict[str, str]): The input sample as a dictionary 
+        where the keys are column names as specified in data_types and the "
+        values are the respective column values. 
+    target (str): Optional. The desired target class. If provided, the
+    model will identify the columns that need to change for the model to 
+    predict the target class.
+
+Returns:
+    List[Explanation]:
+    A sorted list of `Explanation` objects that each contain the following fields:
+    `column_number`, `column_name`, `keyword`, and `percentage_significance`.
+    `column_number` and `column_name` identify the responsible column, 
+    `keyword` is a brief description of the value in this column, and
+    `percentage_significance` represents this column's contribution to the
+    predicted outcome. The list is sorted in descending order by the 
+    absolute value of the `percentage_significance` field of each element.
+    
 )pbdoc";
 
 const char* const MODEL_PIPELINE_PREDICT_TOKENS = R"pbdoc(
@@ -720,18 +753,18 @@ Returns:
     labels.
 
 Examples:
-    >>> predict_config = (
-            bolt.graph.PredictConfig.make()
+    >>> eval_config = (
+            bolt.EvalConfig()
             .with_metrics(["categorical_accuracy"])
             .enable_sparse_inference()
         )
     >>> val_data, val_labels = model.load_validation_data("./validation_file")
-    >>> train_config = bolt.graph.TrainConfig.make(
+    >>> train_config = bolt.TrainConfig(
             epochs=1, learning_rate=0.001
         ).with_validation(
             validation_data=val_data,
             validation_labels=val_labels,
-            predict_config=predict_config,
+            eval_config=eval_config,
             validation_frequency=10,
         )
 
@@ -762,6 +795,158 @@ Args:
 
 Returns:
     DeploymentConfig:
+
+)pbdoc";
+
+const char* const MODEL_PIPELINE_GET_DATA_PROCESSOR = R"pbdoc(
+Returns the data processor of the model pipeline.
+)pbdoc";
+
+const char* const MODEL_PIPELINE_LIST_ARTIFACTS = R"pbdoc(
+Lists the names of all artifacts associated with the current model pipeline.
+The availability of artifacts depends on the configuration of the model pipeline.
+
+Returns:
+    List[str]: A list of the model's artifact names.
+
+)pbdoc";
+
+const char* const ORACLE_CONFIG_INIT = R"pbdoc(
+A configuration object for Oracle.
+
+Oracle is an all-purpose classifier for tabular datasets. In addition to learning from
+the columns of a single row, Oracle can make use of "temporal context". For 
+example, if used to build a movie recommender, Oracle may use information 
+about the last 5 movies that a user has watched to recommend the next movie.
+Similarly, if used to forecast the outcome of marketing campaigns, Oracle may 
+use several months' worth of campaign history for each product to make better
+forecasts.
+
+Args:
+    data_types (Dict[str, bolt.types.ColumnType]): A mapping from column name to column type. 
+        This map specifies the columns that we want to pass into the model; it does 
+        not need to include all columns in the dataset.
+
+        Column type is one of:
+        - `bolt.types.categorical(n_unique_values: int)`
+        - `bolt.types.numerical()`
+        - `bolt.types.text(average_n_words: int=None)`
+        - `bolt.types.date()`
+        See bolt.types for details.
+
+        If `temporal_tracking_relationships` is non-empty, there must one 
+        bolt.types.date() column. This column contains date strings in YYYY-MM-DD format.
+        There can only be one bolt.types.date() column.
+    temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): Optional. 
+        A mapping from column name to a list of either other column names or bolt.temporal objects.
+        This mapping tells Oracle what columns can be tracked over time for each key.
+        For example, we may want to tell Oracle that we want to track a user's watch 
+        history by passing in a map like `{"user_id": ["movie_id"]}`
+
+        If we provide a mapping from a string to a list of strings like the above, 
+        the temporal tracking configuration will be autotuned. We can take control by 
+        passing in bolt.temporal objects intead of strings.
+
+        bolt.temporal object is one of:
+        - `bolt.temporal.categorical(column_name: str, track_last_n: int, column_known_during_inference: bool=False)
+        - `bolt.temporal.numerical(column_name: str, history_length: int, column_known_during_inference: bool=False)
+        See bolt.temporal for details.
+    target (str): Name of the column that contains the value to be predicted by
+        Oracle. The target column has to be a categorical column.
+    time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
+        or `"monthly"`/`"m"`. Interval of time that we are interested in. Temporal numerical 
+        features are clubbed according to this time granularity. E.g. if 
+        `time_granularity="w"` and the numerical values on days 1 and 2 are
+        345.25 and 201.1 respectively, then Oracle captures a single numerical 
+        value of 546.26 for the week instead of individual values for the two days.
+        Defaults to "daily".
+    lookahead (str): Optional. How far into the future the model needs to predict. This length of
+        time is in terms of time_granularity. E.g. 'time_granularity="daily"` and 
+        `lookahead=5` means the model needs to learn to predict 5 days ahead. Defaults to 0
+        (predict the immediate next thing).
+
+Examples:
+    >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
+    >>> # We want to predict next week's sales performance for each product using temporal context.
+    >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
+    >>> config = deployment.OracleConfig(
+            data_types={
+                "product_id": bolt.types.categorical(n_unique_classes=5000),
+                "timestamp": bolt.types.date(),
+                "ad_spend": bolt.types.numerical(),
+                "sales_quantity": bolt.types.numerical(),
+                "sales_performance": bolt.types.categorical(n_unique_classes=5),
+            },
+            temporal_tracking_relationships={
+                "product_id": [
+                    # Track last 5 weeks of ad spend
+                    bolt.temporal.numerical(column_name="ad_spend", history_length=5),
+                    # Track last 10 weeks of ad spend
+                    bolt.temporal.numerical(column_name="ad_spend", history_length=10),
+                    # Track last 5 weeks of sales performance
+                    bolt.temporal.categorical(column_name="sales_performance", history_length=5),
+                ]
+            },
+            target="sales_performance"
+            time_granularity="weekly",
+            lookahead=2 # predict 2 weeks ahead
+        )
+    >>> # Alternatively suppose our data has the following columns: "user_id", "movie_id", "hours_watched", "timestamp"
+    >>> # We want to build a movie recommendation system.
+    >>> # Then we may configure Oracle as follows:
+    >>> config = deployment.OracleConfig(
+            data_types={
+                "user_id": bolt.types.categorical(n_unique_classes=5000),
+                "timestamp": bolt.types.date(),
+                "movie_id": bolt.types.categorical(n_unique_classes=3000),
+                "hours_watched": bolt.types.numerical(),
+            },
+            temporal_tracking_relationships={
+                "user_id": [
+                    "movie_id", # autotuned movie temporal tracking
+                    bolt.temporal.numerical(column_name="hours_watched", history_length="5") # track last 5 days of hours watched.
+                ]
+            },
+            target="movie_id"
+        )
+
+Notes:
+    - Refer to the documentation bolt.types.ColumnType and bolt.temporal.TemporalConfig to better understand column types 
+        and temporal tracking configurations.
+
+)pbdoc";
+
+const char* const TEMPORAL_CONTEXT_RESET = R"pbdoc(
+Resets Oracle's temporal trackers. When temporal relationships are supplied, 
+Oracle assumes that we feed it data in chronological order. Thus, if we break 
+this assumption, we need to first reset the temporal trackers. 
+An example of when you would use this is when you want to repeat the Oracle 
+training routine on the same dataset. Since you would be training on data from 
+the same time period as before, we need to first reset the temporal trackers so 
+that we don't double count events.
+
+)pbdoc";
+
+const char* const TEMPORAL_CONTEXT_UPDATE = R"pbdoc(
+Updates the temporal trackers.
+
+If temporal tracking relationships are provided, Oracle can make better predictions 
+by taking temporal context into account. For example, Oracle may keep track of 
+the last few movies that a user has watched to better recommend the next movie. 
+Thus, Oracle is at its best when its internal temporal context gets updated with
+new true samples. `.update_temporal_trackers()` does exactly this. 
+
+)pbdoc";
+
+const char* const TEMPORAL_CONTEXT_UPDATE_BATCH = R"pbdoc(
+Updates the temporal trackers with batch input.
+
+If temporal tracking relationships are provided, Oracle can make better predictions 
+by taking temporal context into account. For example, Oracle may keep track of 
+the last few movies that a user has watched to better recommend the next movie. 
+Thus, Oracle is at its best when its internal temporal context gets updated with
+new true samples. Just like `.update_temporal_trackers()`, 
+`.batch_update_temporal_trackers()` does exactly this, except with a batch input.
 
 )pbdoc";
 

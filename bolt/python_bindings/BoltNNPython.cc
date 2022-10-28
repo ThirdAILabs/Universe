@@ -1,14 +1,10 @@
-#include "BoltGraphPython.h"
+#include "BoltNNPython.h"
 #include "ConversionUtils.h"
-#include "PyCallback.h"
 #include <bolt/src/graph/DistributedTrainingWrapper.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/callbacks/Callback.h>
-#include <bolt/src/graph/callbacks/EarlyStopCheckpoint.h>
-#include <bolt/src/graph/callbacks/LearningRateScheduler.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/DlrmAttention.h>
 #include <bolt/src/graph/nodes/DotProduct.h>
@@ -17,7 +13,9 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Switch.h>
-#include <dataset/src/Datasets.h>
+#include <bolt/src/optimizers/Adam.h>
+#include <bolt/src/optimizers/Optimizer.h>
+#include <bolt/src/optimizers/Sgd.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
 #include <pybind11/pytypes.h>
@@ -26,13 +24,15 @@
 
 namespace thirdai::bolt::python {
 
-void createBoltGraphSubmodule(py::module_& bolt_submodule) {
-  auto graph_submodule = bolt_submodule.def_submodule("graph");
+void createBoltNNSubmodule(py::module_& bolt_submodule) {
+  auto nn_submodule = bolt_submodule.def_submodule("nn");
+
   using ParameterArray =
       py::array_t<float, py::array::c_style | py::array::forcecast>;
 
   using SerializedCompressedVector = py::array_t<char, py::array::c_style>;
-  py::class_<ParameterReference>(graph_submodule, "ParameterReference")
+
+  py::class_<ParameterReference>(nn_submodule, "ParameterReference")
       .def("copy", &ParameterReference::copy,
            "Returns a copy of the parameters held in the ParameterReference as "
            "a numpy array.")
@@ -92,13 +92,38 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "the same hyperparamters.");
 
   // Needed so python can know that InferenceOutput objects can own memory
-  py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
+  py::class_<InferenceOutputTracker>(nn_submodule,  // NOLINT
                                      "InferenceOutput");
 
-  py::class_<Node, NodePtr>(graph_submodule, "Node")
-      .def_property_readonly("name", [](Node& node) { return node.name(); });
+#if THIRDAI_EXPOSE_ALL
+#pragma message("THIRDAI_EXPOSE_ALL is defined")                 // NOLINT
+  py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
+      nn_submodule, "SamplingConfig");
 
-  py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
+  py::class_<thirdai::bolt::DWTASamplingConfig,
+             std::shared_ptr<DWTASamplingConfig>, SamplingConfig>(
+      nn_submodule, "DWTASamplingConfig")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
+           py::arg("hashes_per_table"), py::arg("reservoir_size"));
+
+  py::class_<thirdai::bolt::FastSRPSamplingConfig,
+             std::shared_ptr<FastSRPSamplingConfig>, SamplingConfig>(
+      nn_submodule, "FastSRPSamplingConfig")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
+           py::arg("hashes_per_table"), py::arg("reservoir_size"));
+
+  py::class_<RandomSamplingConfig, std::shared_ptr<RandomSamplingConfig>,
+             SamplingConfig>(nn_submodule, "RandomSamplingConfig")
+      .def(py::init<>());
+#endif
+
+  py::class_<Node, NodePtr>(nn_submodule, "Node")
+      .def_property_readonly("name", [](Node& node) { return node.name(); })
+      .def("disable_sparse_parameter_updates",
+           &Node::disableSparseParameterUpdates,
+           "Forces the node to use dense parameter updates.");
+
+  py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,
                                                               "FullyConnected")
       .def(py::init(&FullyConnectedNode::makeDense), py::arg("dim"),
            py::arg("activation"),
@@ -182,12 +207,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
           py::return_value_policy::reference,
-          "Returns a ParameterReference object to the bias gradients vector.")
-      .def("enable_sparse_sparse_optimization",
-           &FullyConnectedNode::enableSparseSparseOptimization);
+          "Returns a ParameterReference object to the bias gradients vector.");
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
-      graph_submodule, "LayerNormalization")
+      nn_submodule, "LayerNormalization")
       .def(py::init(&LayerNormNode::make),
            "Constructs a normalization layer object.")
       .def(py::init(&LayerNormNode::makeWithConfig),
@@ -201,7 +224,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "normalization layer.");
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
-      graph_submodule, "Concatenate")
+      nn_submodule, "Concatenate")
       .def(
           py::init(&ConcatenateNode::make),
           "A layer that concatenates an arbitrary number of layers together.\n")
@@ -212,7 +235,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "really should be at least two).");
 
 #if THIRDAI_EXPOSE_ALL
-  py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
+  py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(nn_submodule,
                                                             "Switch")
       .def(py::init(&SwitchNode::makeDense), py::arg("dim"),
            py::arg("activation"), py::arg("n_layers"))
@@ -222,8 +245,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("token_input"));
 #endif
 
-  py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
-                                                    "Embedding")
+  py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(nn_submodule, "Embedding")
       .def(py::init(&EmbeddingNode::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
@@ -261,20 +283,20 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "Returns a ParameterReference object to the weight gradients "
           "matrix.");
 
-  py::class_<DotProductNode, DotProductNodePtr, Node>(graph_submodule,
+  py::class_<DotProductNode, DotProductNodePtr, Node>(nn_submodule,
                                                       "DotProduct")
       .def(py::init(&DotProductNode::make))
       .def("__call__", &DotProductNode::setPredecessors, py::arg("lhs"),
            py::arg("rhs"));
 
-  graph_submodule.def("TokenInput", &Input::makeTokenInput, py::arg("dim"),
-                      py::arg("num_tokens_range"));
+  nn_submodule.def("TokenInput", &Input::makeTokenInput, py::arg("dim"),
+                   py::arg("num_tokens_range"));
 
-  py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
+  py::class_<Input, InputPtr, Node>(nn_submodule, "Input")
       .def(py::init(&Input::make), py::arg("dim"),
            "Constructs an input layer node for the graph.");
 
-  py::class_<NormalizationLayerConfig>(graph_submodule, "LayerNormConfig")
+  py::class_<NormalizationLayerConfig>(nn_submodule, "LayerNormConfig")
       .def_static("make", &NormalizationLayerConfig::makeConfig)
       .def("center", &NormalizationLayerConfig::setCenteringFactor,
            py::arg("beta_regularizer"),
@@ -283,54 +305,13 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("gamma_regularizer"),
            "Sets the scaling factor the the normalization configuration.");
 
-  py::class_<DlrmAttentionNode, DlrmAttentionNodePtr, Node>(graph_submodule,
+  py::class_<DlrmAttentionNode, DlrmAttentionNodePtr, Node>(nn_submodule,
                                                             "DlrmAttention")
       .def(py::init())
       .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
            py::arg("embedding_layer"));
 
-  py::class_<TrainConfig, TrainConfigPtr>(graph_submodule, "TrainConfig")
-      .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
-                  py::arg("epochs"))
-      .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
-      .def("silence", &TrainConfig::silence)
-#if THIRDAI_EXPOSE_ALL
-      // We do not want to expose these methods to customers to hide complexity.
-      .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
-           py::arg("rebuild_hash_tables"))
-      .def("with_reconstruct_hash_functions",
-           &TrainConfig::withReconstructHashFunctions,
-           py::arg("reconstruct_hash_functions"))
-      // We do not want to expose this method because it will not work correctly
-      // with the ModelPipeline since it won't sae the entire pipeline.
-      .def("with_save_parameters", &TrainConfig::withSaveParameters,
-           py::arg("save_prefix"), py::arg("save_frequency"))
-#endif
-      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
-      .def("with_validation", &TrainConfig::withValidation,
-           py::arg("validation_data"), py::arg("validation_labels"),
-           py::arg("predict_config"), py::arg("validation_frequency") = 0)
-      .def_property_readonly(
-          "num_epochs", [](TrainConfig& config) { return config.epochs(); },
-          "Returns the number of epochs a model with this TrainConfig will "
-          "train for.")
-      .def_property_readonly(
-          "learning_rate",
-          [](TrainConfig& config) { return config.learningRate(); },
-          "Returns the learning rate a model with this TrainConfig will train "
-          "with.")
-      .def(getPickleFunction<TrainConfig>())
-      .def("with_log_loss_frequency", &TrainConfig::withLogLossFrequency,
-           py::arg("log_loss_frequency"));
-
-  py::class_<PredictConfig>(graph_submodule, "PredictConfig")
-      .def_static("make", &PredictConfig::makeConfig)
-      .def("enable_sparse_inference", &PredictConfig::enableSparseInference)
-      .def("with_metrics", &PredictConfig::withMetrics, py::arg("metrics"))
-      .def("silence", &PredictConfig::silence)
-      .def("return_activations", &PredictConfig::returnActivations);
-
-  py::class_<BoltGraph, BoltGraphPtr>(graph_submodule, "Model")
+  py::class_<BoltGraph, BoltGraphPtr>(nn_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"
@@ -407,7 +388,7 @@ References:
 
 Examples:
     >>> train_config = (
-            bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)
+            bolt.TrainConfig(learning_rate=0.001, epochs=3)
             .with_metrics(["categorical_accuracy"])
         )
     >>> metrics = model.train(
@@ -507,18 +488,16 @@ That's all for now, folks! More docs coming soon :)
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(
-          "predict",
+          "evaluate",
           [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
              const dataset::BoltDatasetPtr& labels,
-             const PredictConfig& predict_config) {
-            return dagPredictPythonWrapper(model, {data}, labels,
-                                           predict_config);
+             const EvalConfig& eval_config) {
+            return dagEvaluatePythonWrapper(model, {data}, labels, eval_config);
           },
-          py::arg("test_data"), py::arg("test_labels"),
-          py::arg("predict_config"))
+          py::arg("test_data"), py::arg("test_labels"), py::arg("eval_config"))
       .def(
-          "predict", &dagPredictPythonWrapper, py::arg("test_data"),
-          py::arg("test_labels"), py::arg("predict_config"),
+          "evaluate", &dagEvaluatePythonWrapper, py::arg("test_data"),
+          py::arg("test_labels"), py::arg("eval_config"),
           "Predicts the output given the input vectors and evaluates the "
           "predictions based on the given metrics.\n"
           "Arguments:\n"
@@ -528,8 +507,8 @@ That's all for now, folks! More docs coming soon :)
           " * test_labels: PyObject - Test labels, in the same format as "
           "test_data. This can also additionally be passed as None, in which "
           "case no metrics can be computed.\n"
-          " * predict_config: PredictConfig - the additional prediction "
-          "parameters. See the PredictConfig documentation above.\n\n"
+          " * eval_config: EvalConfig - the additional prediction "
+          "parameters. See the EvalConfig documentation above.\n\n"
           "Returns a tuple, where the first element is a mapping from metric "
           "names to their values. The second element, the output activation "
           "matrix, is only present if dont_return_activations was not called. "
@@ -578,15 +557,29 @@ That's all for now, folks! More docs coming soon :)
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,
                                          "DistributedTrainingWrapper")
-      .def(py::init<BoltGraphPtr, std::vector<dataset::BoltDatasetPtr>,
-                    dataset::BoltDatasetPtr, TrainConfig>(),
-           py::arg("model"), py::arg("train_data"), py::arg("train_labels"),
+      .def(py::init<BoltGraphPtr, TrainConfig>(), py::arg("model"),
            py::arg("train_config"))
       .def("compute_and_store_batch_gradients",
-           &DistributedTrainingWrapper::computeAndSaveBatchGradients,
-           py::arg("batch_idx"))
-      .def("update_parameters", &DistributedTrainingWrapper::updateParameters)
-      .def("finish_training", &DistributedTrainingWrapper::finishTraining)
+           &DistributedTrainingWrapper::computeAndStoreBatchGradients,
+           py::arg("batch_idx"),
+           "Uses the batch_idx'th batch of the currently "
+           "set dataset to accumulate a single batche's gradients in the "
+           "wrapped Bolt model.")
+      .def("update_parameters", &DistributedTrainingWrapper::updateParameters,
+           "Updates the parameters of the wrapped Bolt model. You should call "
+           "this manually after setting the gradients of the wrapped model.")
+      .def("num_batches", &DistributedTrainingWrapper::numBatches)
+      .def("set_datasets", &DistributedTrainingWrapper::setDatasets,
+           py::arg("train_data"), py::arg("train_labels"),
+           "Sets the current train data and labels the wrapper class uses for "
+           "computeAndStoreBatchGradients. We need this method instead of just "
+           "passing in a single pair of training data and training labels at "
+           "construction time because we might have a streaming dataset we "
+           "want to train on, which will entail switching out the current "
+           "datasets dynamically. If this is not the first time this method has"
+           "been called, the batch sizes of the passed in datasets must be the "
+           "same as when this method was called the first time.")
+      .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
       .def_property_readonly(
           "model",
           [](DistributedTrainingWrapper& node) { return node.getModel(); },
@@ -594,105 +587,79 @@ That's all for now, folks! More docs coming soon :)
           "The underlying Bolt model wrapped by this "
           "DistributedTrainingWrapper.");
 
-  createCallbacksSubmodule(graph_submodule);
+  createLossesSubmodule(nn_submodule);
+  createOptimizersSubmodule(nn_submodule);
 }
 
-void createCallbacksSubmodule(py::module_& graph_submodule) {
-  auto callbacks_submodule = graph_submodule.def_submodule("callbacks");
+void createLossesSubmodule(py::module_& nn_submodule) {
+  auto losses_submodule = nn_submodule.def_submodule("losses");
 
-  py::class_<Callback, PyCallback, CallbackPtr>(callbacks_submodule, "Callback")
-      .def(py::init<>())
-      .def("on_train_begin", &Callback::onTrainBegin)
-      .def("on_train_end", &Callback::onTrainEnd)
-      .def("on_epoch_begin", &Callback::onEpochBegin)
-      .def("on_epoch_end", &Callback::onEpochEnd)
-      .def("on_batch_begin", &Callback::onBatchBegin)
-      .def("on_batch_end", &Callback::onBatchEnd);
+  py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
+      losses_submodule, "LossFunction", "Base class for all loss functions");
 
-  py::class_<TrainState>(callbacks_submodule, "TrainState")
-      .def_readwrite("learning_rate", &TrainState::learning_rate)
-      .def_readwrite("verbose", &TrainState::verbose)
-      .def_readwrite("rebuild_hash_tables_batch",
-                     &TrainState::rebuild_hash_tables_batch)
-      .def_readwrite("reconstruct_hash_functions_batch",
-                     &TrainState::reconstruct_hash_functions_batch)
-      .def_readwrite("stop_training", &TrainState::stop_training)
-      .def_readonly("epoch_times", &TrainState::epoch_times)
-      .def("get_train_metrics", &TrainState::getTrainMetrics,
-           py::arg("metric_name"))
-      .def("get_all_train_metrics", &TrainState::getAllTrainMetrics)
-      .def("get_validation_metrics", &TrainState::getValidationMetrics,
-           py::arg("metric_name"))
-      .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
+  py::class_<CategoricalCrossEntropyLoss,
+             std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
+      losses_submodule, "CategoricalCrossEntropy",
+      "A loss function for multi-class (one label per sample) classification "
+      "tasks.")
+      .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
-  py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule,  // NOLINT
-                                        "LRSchedule");        // NOLINT
+  py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
+             LossFunction>(
+      losses_submodule, "BinaryCrossEntropy",
+      "A loss function for multi-label (multiple class labels per each sample) "
+      "classification tasks.")
+      .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
-  py::class_<MultiplicativeLR, MultiplicativeLRPtr, LRSchedule>(
-      callbacks_submodule, "MultiplicativeLR")
-      .def(py::init<float>(), py::arg("gamma"),
-           "The Multiplicative learning rate scheduler "
-           "multiplies the current learning rate by gamma every epoch.\n");
+  py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
+      losses_submodule, "MeanSquaredError",
+      "A loss function that minimizes mean squared error (MSE) for regression "
+      "tasks. "
+      ":math:`MSE = sum( (actual - prediction)^2 )`")
+      .def(py::init<>(), "Constructs a MeanSquaredError object.");
 
-  py::class_<ExponentialLR, ExponentialLRPtr, LRSchedule>(callbacks_submodule,
-                                                          "ExponentialLR")
-      .def(py::init<float>(), py::arg("gamma"),
-           "The exponential learning rate scheduler decays the learning"
-           "rate by an exponential factor of gamma for every epoch.\n");
+  py::class_<WeightedMeanAbsolutePercentageErrorLoss,
+             std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>,
+             LossFunction>(
+      losses_submodule, "WeightedMeanAbsolutePercentageError",
+      "A loss function to minimize weighted mean absolute percentage error "
+      "(WMAPE) "
+      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
+      "/ sum(|actual|)`")
+      .def(py::init<>(),
+           "Constructs a WeightedMeanAbsolutePercentageError object.");
 
-  py::class_<MultiStepLR, MultiStepLRPtr, LRSchedule>(callbacks_submodule,
-                                                      "MultiStepLR")
-      .def(py::init<float, std::vector<uint32_t>>(), py::arg("gamma"),
-           py::arg("milestones"),
-           "The Multi-step learning rate scheduler changes"
-           "the learning rate by a factor of gamma for every milestone"
-           "specified in the vector of milestones. \n");
+  py::class_<MarginBCE, std::shared_ptr<MarginBCE>, LossFunction>(
+      losses_submodule, "MarginBCE")
+      .def(py::init<float, float, bool>(), py::arg("positive_margin"),
+           py::arg("negative_margin"), py::arg("bound"));
+}
 
-  py::class_<LambdaSchedule, LambdaSchedulePtr, LRSchedule>(callbacks_submodule,
-                                                            "LambdaSchedule")
-      .def(py::init<const std::function<float(float, uint32_t)>&>(),
-           py::arg("schedule"),
-           "The Lambda scheduler changes the learning rate depending "
-           "on a custom lambda function."
-           "Arguments:\n"
-           " * schedule: learning rate schedule function with signature \n"
-           "         float schedule(float learning_rate, uint32_t epoch)\n");
+void createOptimizersSubmodule(py::module_& nn_submodule) {
+  auto optimizer_submodule = nn_submodule.def_submodule("optimizers");
 
-  py::class_<LearningRateScheduler, LearningRateSchedulerPtr, Callback>(
-      callbacks_submodule, "LearningRateScheduler")
-      .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
-      .def("get_final_lr", &LearningRateScheduler::getFinalLR);
+  py::class_<optimizers::OptimizerFactory,  // NOLINT
+             optimizers::OptimizerFactoryPtr>(optimizer_submodule, "Optimizer");
 
-  py::class_<KeyboardInterrupt, KeyboardInterruptPtr, Callback>(
-      callbacks_submodule, "KeyboardInterrupt")
+  py::class_<optimizers::AdamFactory, optimizers::OptimizerFactory,
+             std::shared_ptr<optimizers::AdamFactory>>(optimizer_submodule,
+                                                       "Adam")
+      .def(py::init<float, float>(),
+           py::arg("beta1") = optimizers::Adam::DEFAULT_BETA1,
+           py::arg("beta2") = optimizers::Adam::DEFAULT_BETA2);
+
+  py::class_<optimizers::SgdFactory,  // NOLINT
+             optimizers::OptimizerFactory,
+             std::shared_ptr<optimizers::SgdFactory>>(optimizer_submodule,
+                                                      "Sgd")
       .def(py::init<>());
-
-  py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
-      callbacks_submodule, "EarlyStopCheckpoint")
-      .def(
-          py::init<std::string, std::string, uint32_t, double>(),
-          py::arg("monitored_metric"), py::arg("model_save_path"),
-          py::arg("patience"), py::arg("min_delta"),
-          "This callback is intended to stop training early based on prediction"
-          " results from a given validation set. Saves the best model to "
-          "model_save_path.\n"
-          "Arguments:\n"
-          " * monitored_metric: The metric to monitor for early stopping. The "
-          "metric is assumed to be associated with validation data.\n"
-          " * model_save_path: string. The file path to save the model that "
-          "scored the best on the validation set\n"
-          " * patience: int. The nuber of epochs with no improvement in "
-          "validation score after which training will be stopped.\n"
-          " * min_delta: float. The minimum change in the monitored quantity "
-          "to qualify as an improvement, i.e. an absolute change of less than "
-          "min_delta will count as no improvement.\n");
 }
 
-py::tuple dagPredictPythonWrapper(BoltGraph& model,
-                                  const dataset::BoltDatasetList& data,
-                                  const dataset::BoltDatasetPtr& labels,
-                                  const PredictConfig& predict_config) {
-  auto [metrics, output] = model.predict(data, labels, predict_config);
+py::tuple dagEvaluatePythonWrapper(BoltGraph& model,
+                                   const dataset::BoltDatasetList& data,
+                                   const dataset::BoltDatasetPtr& labels,
+                                   const EvalConfig& eval_config) {
+  auto [metrics, output] = model.evaluate(data, labels, eval_config);
 
   // We need to get these now because we are about to std::move output
   const float* activation_pointer = output.getNonowningActivationPointer();

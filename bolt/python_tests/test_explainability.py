@@ -19,7 +19,7 @@ def get_trained_model(n_samples):
 
     train_x, train_y = gen_numpy_training_data(n_classes=n_classes, n_samples=n_samples)
 
-    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+    train_cfg = bolt.TrainConfig(learning_rate=0.001, epochs=10)
 
     model.train(
         train_x,
@@ -94,7 +94,7 @@ def test_get_input_gradients_load_and_save():
 
     model.save(model_saved_file)
 
-    loaded_model = bolt.graph.Model.load(model_saved_file)
+    loaded_model = bolt.nn.Model.load(model_saved_file)
 
     for batch_idx in range(len(test_x)):
         for vec_idx in range(len(test_x[batch_idx])):

@@ -129,6 +129,17 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
 }
 
 void EmbeddingLayer::updateParameters(float learning_rate) {
+  if (_disable_sparse_parameter_updates) {
+    _optimizer->updateRange(0, _embedding_block_size, learning_rate,
+                            /* parallel= */ true);
+  } else {
+    updateParametersSparse(learning_rate);
+  }
+
+  _optimizer->completeTrainStep();
+}
+
+void EmbeddingLayer::updateParametersSparse(float learning_rate) {
   std::vector<std::pair<uint64_t, uint64_t>> disjoint_ranges =
       getDisjointUpdateRanges();
 
@@ -136,7 +147,8 @@ void EmbeddingLayer::updateParameters(float learning_rate) {
   for (uint32_t pair_id = 0; pair_id < disjoint_ranges.size();  // NOLINT
        pair_id++) {
     // MSVC doesn't like if we iterate over objects, only integers
-    // (but clang-tidy wants the range based for loop, so we need NOLINT above)
+    // (but clang-tidy wants the range based for loop, so we need NOLINT
+    // above)
     const auto& pair = disjoint_ranges[pair_id];
 
     _optimizer->updateRange(pair.first, pair.second - pair.first, learning_rate,

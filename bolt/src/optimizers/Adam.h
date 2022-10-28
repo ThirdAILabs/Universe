@@ -8,10 +8,10 @@
 
 namespace thirdai::bolt::optimizers {
 
-class AdamOptimizer final : public Optimizer {
+class Adam final : public Optimizer {
  public:
-  AdamOptimizer(std::vector<float>& parameters, std::vector<float>& gradients,
-                float beta1, float beta2)
+  Adam(std::vector<float>& parameters, std::vector<float>& gradients,
+       float beta1, float beta2)
       : Optimizer(parameters, gradients),
         _momentum(parameters.size(), 0.0),
         _velocity(parameters.size(), 0.0),
@@ -46,16 +46,15 @@ class AdamOptimizer final : public Optimizer {
   uint32_t _iter;
 };
 
-class AdamOptimizerFactory final : public OptimizerFactory {
+class AdamFactory final : public OptimizerFactory {
  public:
-  explicit AdamOptimizerFactory(float beta1 = AdamOptimizer::DEFAULT_BETA1,
-                                float beta2 = AdamOptimizer::DEFAULT_BETA2)
+  explicit AdamFactory(float beta1 = Adam::DEFAULT_BETA1,
+                       float beta2 = Adam::DEFAULT_BETA2)
       : _beta1(beta1), _beta2(beta2) {}
 
   OptimizerPtr getOptimizer(std::vector<float>& parameters,
                             std::vector<float>& gradients) final {
-    return std::make_shared<AdamOptimizer>(parameters, gradients, _beta1,
-                                           _beta2);
+    return std::make_shared<Adam>(parameters, gradients, _beta1, _beta2);
   }
 
  private:
@@ -71,4 +70,4 @@ class AdamOptimizerFactory final : public OptimizerFactory {
 
 }  // namespace thirdai::bolt::optimizers
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::optimizers::AdamOptimizerFactory)
+CEREAL_REGISTER_TYPE(thirdai::bolt::optimizers::AdamFactory)

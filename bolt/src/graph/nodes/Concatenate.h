@@ -73,10 +73,6 @@ class ConcatenateNode final
     (void)optimizer_factory;
   }
 
-  void enableDistributedTraining() final {
-    // NOOP since the Concatenate node doesn't have any paramters
-  }
-
  private:
   void compileImpl() final { _compiled = true; }
 

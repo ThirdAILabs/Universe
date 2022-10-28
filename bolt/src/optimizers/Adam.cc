@@ -3,8 +3,8 @@
 
 namespace thirdai::bolt::optimizers {
 
-void AdamOptimizer::updateRange(uint64_t start, uint64_t length,
-                                float learning_rate, bool parallel) {
+void Adam::updateRange(uint64_t start, uint64_t length, float learning_rate,
+                       bool parallel) {
   if (parallel) {
 #pragma omp parallel for default(none) shared(start, length, learning_rate)
     for (uint64_t i = start; i < start + length; i++) {
@@ -17,7 +17,7 @@ void AdamOptimizer::updateRange(uint64_t start, uint64_t length,
   }
 }
 
-void AdamOptimizer::updateAtIndex(uint64_t index, float learning_rate) {
+void Adam::updateAtIndex(uint64_t index, float learning_rate) {
   assert(index < _parameter_length);
 
   float grad = _gradients[index];
@@ -34,7 +34,7 @@ void AdamOptimizer::updateAtIndex(uint64_t index, float learning_rate) {
   assert(!std::isnan(_parameters[index]));
 }
 
-void AdamOptimizer::completeTrainStep() {
+void Adam::completeTrainStep() {
   ++_iter;
 
   // These terms are used to correct the bias in adam, we compute them here

@@ -35,6 +35,9 @@
 
 namespace thirdai::dataset::python {
 
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
 void createDatasetSubmodule(py::module_& module) {
   // Separate submodule for bindings that we don't want to expose to users.
   auto internal_dataset_submodule = module.def_submodule("dataset_internal");
@@ -46,13 +49,30 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
-      .def("__repr__", &BoltVector::toString);
+      .def("__repr__", &BoltVector::toString)
+      .def("to_numpy", [](const BoltVector& vector) -> py::object {
+        NumpyArray<float> activations_array(vector.len);
+        std::copy(vector.activations, vector.activations + vector.len,
+                  activations_array.mutable_data());
+
+        if (vector.isDense()) {
+          return py::object(std::move(activations_array));
+        }
+
+        NumpyArray<uint32_t> active_neurons_array(vector.len);
+        std::copy(vector.active_neurons, vector.active_neurons + vector.len,
+                  active_neurons_array.mutable_data());
+
+        return py::make_tuple(active_neurons_array, activations_array);
+      });
 
   py::class_<Explanation>(dataset_submodule, "Explanation",
                           R"pbdoc(
      Represents an input column that is responsible for a predicted
      outcome.
       )pbdoc")
+      .def("__str__", &Explanation::toString)
+      .def("__repr__", &Explanation::toString)
       .def_readonly("column_number", &Explanation::column_number,
                     R"pbdoc(
      Identifies the responsible input column.

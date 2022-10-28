@@ -16,7 +16,7 @@ namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim,
-    bool is_distributed)
+    bool disable_sparse_parameter_updates)
     : _dim(config.getDim()),
       _prev_dim(prev_dim),
       _sparse_dim(config.getSparsity() * config.getDim()),
@@ -29,10 +29,8 @@ FullyConnectedLayer::FullyConnectedLayer(
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
       _biases(config.getDim()),
-      _is_distributed(is_distributed),
+      _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
       _sampling_mode(BoltSamplingMode::LSH),
-      _use_sparse_sparse_optimization(
-          config.shouldUseSparseSparseOptimization()),
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {
   std::random_device rd;
@@ -160,33 +158,6 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
                                                      uint32_t len_out) {
   _prev_is_dense = PREV_DENSE;
   _this_is_dense = DENSE;
-
-  if constexpr (!DENSE && !PREV_DENSE) {
-    // We track using _active_pairs_array even if we are using the sparse sparse
-    // optimization because it allows us to avoid duplicate weight updates
-    // during updateParameters.
-    for (uint64_t cur_index = 0; cur_index < len_out; cur_index++) {
-      uint64_t act_neuron = output.active_neurons[cur_index];
-      for (uint64_t prev_index = 0; prev_index < input.len; prev_index++) {
-        uint64_t prev_act_neuron = input.active_neurons[prev_index];
-        _active_pairs_array[act_neuron * _prev_dim + prev_act_neuron] = true;
-      }
-    }
-
-    if (_use_sparse_sparse_optimization) {
-      std::unique_ptr<ActiveNeuronsPair> active_pairs =
-          std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
-                                              std::vector<uint64_t>());
-      for (uint64_t i = 0; i < input.len; i++) {
-        active_pairs->first.push_back(input.active_neurons[i]);
-      }
-      for (uint64_t n = 0; n < len_out; n++) {
-        active_pairs->second.push_back(output.active_neurons[n]);
-      }
-#pragma omp critical
-      _active_pairs_raw.push_back(std::move(active_pairs));
-    }
-  }
 
   if constexpr (!DENSE) {
     for (uint64_t n = 0; n < len_out; n++) {
@@ -520,21 +491,15 @@ void FullyConnectedLayer::updateParameters(float learning_rate) {
    * was thinking of having different blocks. It also make is visually
    * more clear.
    */
-  if (_is_distributed) {  // NOLINT
+  if (_disable_sparse_parameter_updates ||
+      (_prev_is_dense && _this_is_dense)) {  // NOLINT
     updateDenseDenseWeightParameters(learning_rate);
   } else if (!_prev_is_dense && !_this_is_dense) {
-    if (_use_sparse_sparse_optimization) {
-      updateSparseSparseWeightParametersOptimized(learning_rate);
-    } else {
-      updateSparseSparseWeightParametersNormal(learning_rate);
-    }
-
+    updateSparseSparseWeightParameters(learning_rate);
   } else if (!_prev_is_dense && _this_is_dense) {
     updateSparseDenseWeightParameters(learning_rate);
   } else if (_prev_is_dense && !_this_is_dense) {
     updateDenseSparseWeightParameters(learning_rate);
-  } else {
-    updateDenseDenseWeightParameters(learning_rate);
   }
 
   _bias_optimizer->updateRange(0, _dim, learning_rate, /* parallel= */ true);
@@ -545,44 +510,16 @@ void FullyConnectedLayer::updateParameters(float learning_rate) {
   cleanupWithinBatchVars();
 }
 
-inline void FullyConnectedLayer::updateSparseSparseWeightParametersOptimized(
-    float learning_rate) {
-#pragma omp parallel for default(none) shared(learning_rate)
-  for (uint32_t pair_id = 0; pair_id < _active_pairs_raw.size();  // NOLINT
-       pair_id++) {
-    // MSVC doesn't like if we iterate over objects, only integers
-    // (but clang-tidy wants the range based for loop, so we need NOLINT
-    // above)
-    const auto& active_pair = _active_pairs_raw[pair_id];
-    for (uint64_t prev_neuron : active_pair->first) {
-      for (uint64_t cur_neuron : active_pair->second) {
-        uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
-        // This is a race condition but it is probably okay, it just means that
-        // we might by mistake update the same active pair twice.
-        if (_active_pairs_array[active_pair_index]) {
-          // We clean _active_pairs_array here for performance
-          _active_pairs_array[active_pair_index] = false;
-          _weight_optimizer->updateAtIndex(active_pair_index, learning_rate);
-        }
-      }
-    }
-  }
-}
-
-inline void FullyConnectedLayer::updateSparseSparseWeightParametersNormal(
+inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
     float learning_rate) {
 #pragma omp parallel for default(none) shared(learning_rate)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if (!_is_active[cur_neuron]) {
-      continue;
-    }
-    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
-      uint64_t active_pair_index = cur_neuron * _prev_dim + prev_neuron;
-      // TODO(David): could use bloom filter here also?
-      if (_active_pairs_array[active_pair_index]) {
-        // We clean _active_pairs_array here for performance
-        _active_pairs_array[active_pair_index] = false;
-        _weight_optimizer->updateAtIndex(active_pair_index, learning_rate);
+    if (_is_active[cur_neuron]) {
+      for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+        if (_prev_is_active[prev_neuron]) {
+          _weight_optimizer->updateAtIndex(cur_neuron * _prev_dim + prev_neuron,
+                                           learning_rate);
+        }
       }
     }
   }
@@ -622,11 +559,6 @@ inline void FullyConnectedLayer::updateDenseDenseWeightParameters(
 }
 
 inline void FullyConnectedLayer::cleanupWithinBatchVars() {
-  if (!_this_is_dense && !_prev_is_dense) {
-    _active_pairs_raw.clear();
-    // We cleanup _active_pairs_array as we use it in the sparse sparse weight
-    // update methods because otherwise this is a bottleneck.
-  }
   std::fill(_prev_is_active.begin(), _prev_is_active.end(), 0);
   std::fill(_is_active.begin(), _is_active.end(), 0);
 }
@@ -779,10 +711,8 @@ void FullyConnectedLayer::initOptimizer(
 }
 
 void FullyConnectedLayer::initActiveNeuronsTrackers() {
-  _active_pairs_array.assign(_dim * _prev_dim, false);
   _prev_is_active.assign(_prev_dim, false);
   _is_active.assign(_dim, false);
-  _active_pairs_raw.clear();
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
@@ -797,10 +727,6 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
       summary << " (hash_function=" << _hasher->getName() << ", ";
       _hash_table->summarize(summary);
       summary << ")";
-    }
-
-    if (_use_sparse_sparse_optimization) {
-      summary << ", sparse-sparse optimization enabled";
     }
   }
 

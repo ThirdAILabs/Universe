@@ -52,6 +52,10 @@ class EmbeddingLayer {
     }
   }
 
+  void disableSparseParameterUpdates() {
+    _disable_sparse_parameter_updates = true;
+  }
+
   std::vector<float>& getRawEmbeddingBlock() { return _embedding_block; }
 
   std::vector<float>& getRawEmbeddingBlockGradient() {
@@ -67,6 +71,8 @@ class EmbeddingLayer {
 
  private:
   std::vector<std::pair<uint64_t, uint64_t>> getDisjointUpdateRanges() const;
+
+  void updateParametersSparse(float learning_rate);
 
   inline uint32_t getEmbeddingBlockOffset(uint32_t token,
                                           uint32_t lookup_index) {
@@ -139,6 +145,7 @@ class EmbeddingLayer {
   std::vector<float> _embedding_block_gradients;
 
   optimizers::OptimizerPtr _optimizer;
+  bool _disable_sparse_parameter_updates;
 
   // This structure stores the embedding block offset for each token in each
   // input. This is used for backpropagation and for update paramters to know

@@ -19,7 +19,7 @@ def test_sgd():
         hidden_layer_dim=100,
         hidden_layer_sparsity=1.0,
         output_dim=n_classes,
-        optimizer=bolt.optimizers.Sgd(),
+        optimizer=bolt.nn.optimizers.Sgd(),
     )
 
     predict_config = bolt.graph.PredictConfig.make().with_metrics(
