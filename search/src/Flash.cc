@@ -34,29 +34,50 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function,
 }
 
 template <typename LABEL_T>
+std::vector<LABEL_T> Flash<LABEL_T>::createCurrentBatchLabels(
+    const LABEL_T& batch_size, const std::vector<LABEL_T>& all_labels) {
+  auto starting_label = all_labels.begin() + _batch_elements_counter;
+  auto ending_label = all_labels.begin() + _batch_elements_counter + batch_size;
+
+  std::vector<LABEL_T> current_batch_labels(batch_size);
+
+  std::copy(starting_label, ending_label, current_batch_labels.begin());
+
+  return current_batch_labels;
+}
+
+template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
-    const dataset::InMemoryDataset<BoltBatch>& dataset) {
+    const dataset::InMemoryDataset<BoltBatch>& dataset,
+    const std::vector<LABEL_T>& labels) {
   for (const auto& batch : dataset) {
-    addBatch(batch);
+    auto batch_size = batch.getBatchSize();
+
+    auto batch_labels = createCurrentBatchLabels(batch_size, labels);
+
+    addBatch(batch, batch_labels);
   }
 }
 
 template <typename LABEL_T>
-void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BoltBatch>& dataset) {
+void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BoltBatch>& dataset,
+                                const std::vector<LABEL_T>& labels) {
   while (auto batch_tuple = dataset.nextBatchTuple()) {
-    const auto& batch = batch_tuple.value();
-    addBatch(std::get<0>(batch));
+    const auto& batch = std::get<0>(batch_tuple.value());
+
+    auto batch_labels = createCurrentBatchLabels(batch.getBatchSize(), labels);
+    addBatch(batch, batch_labels);
   }
 }
 
 template <typename LABEL_T>
-void Flash<LABEL_T>::addBatch(const BoltBatch& batch) {
+void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
+                              const std::vector<LABEL_T>& labels) {
   std::vector<uint32_t> hashes = hashBatch(batch);
 
   assert(hashes.size() == batch.getBatchSize() * _num_tables);
   verifyBatchSequentialIds(batch);
-  _hashtable->insertSequential(batch.getBatchSize(), _batch_elements_counter,
-                               hashes.data());
+  _hashtable->insert(batch.getBatchSize(), labels.data(), hashes.data());
 
   incrementBatchElementsCounter(batch.getBatchSize());
 }
@@ -75,14 +96,8 @@ void Flash<LABEL_T>::verifyBatchSequentialIds(const BoltBatch& batch) const {
 
 template <typename LABEL_T>
 void Flash<LABEL_T>::verifyIDFitsLabelTypeRange(uint64_t id) const {
-  // Casting to a smaller integer is well specified behavior because we are
-  // dealing with only unsigned integers. If the largest_batch_id is out
-  // of range of LABEL_T, its first bits will get truncated and the equality
-  // check will fail (we cast back to uin64_t to ensure that the
-  // largest_batch_id itself is not casst down to LABEL_T).
-  LABEL_T cast_id = static_cast<LABEL_T>(id);
-  bool out_of_range = static_cast<uint64_t>(cast_id) != id;
-  if (out_of_range) {
+  uint64_t max_possible_value = std::numeric_limits<LABEL_T>::max();
+  if (id > max_possible_value) {
     throw std::invalid_argument("Trying to insert vector with id " +
                                 std::to_string(id) +
                                 ", which is too large an id for this Flash.");
@@ -119,8 +134,11 @@ std::vector<LABEL_T> Flash<LABEL_T>::getTopKUsingPriorityQueue(
   // We sort so counting is easy
   std::sort(query_result.begin(), query_result.end());
 
-  // To make this a max queue, we insert all element counts multiplied by -1
-  std::priority_queue<std::pair<int32_t, LABEL_T>> top_k_queue;
+  std::priority_queue<std::pair<int32_t, LABEL_T>,
+                      std::vector<std::pair<int32_t, LABEL_T>>,
+                      std::greater<std::pair<int32_t, LABEL_T>>>
+      queue;
+
   if (!query_result.empty()) {
     uint64_t current_element = query_result.at(0);
     uint32_t current_element_count = 0;
@@ -128,25 +146,25 @@ std::vector<LABEL_T> Flash<LABEL_T>::getTopKUsingPriorityQueue(
       if (element == current_element) {
         current_element_count++;
       } else {
-        top_k_queue.emplace(-current_element_count, current_element);
-        if (top_k_queue.size() > top_k) {
-          top_k_queue.pop();
+        queue.emplace(current_element_count, current_element);
+        if (queue.size() > top_k) {
+          queue.pop();
         }
         current_element = element;
         current_element_count = 1;
       }
     }
-    top_k_queue.emplace(-current_element_count, current_element);
-    if (top_k_queue.size() > top_k) {
-      top_k_queue.pop();
+    queue.emplace(current_element_count, current_element);
+    if (queue.size() > top_k) {
+      queue.pop();
     }
   }
 
   // Create and save results vector
   std::vector<LABEL_T> result;
-  while (!top_k_queue.empty()) {
-    result.push_back(top_k_queue.top().second);
-    top_k_queue.pop();
+  while (!queue.empty()) {
+    result.push_back(queue.top().second);
+    queue.pop();
   }
   std::reverse(result.begin(), result.end());
 

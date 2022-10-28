@@ -22,6 +22,15 @@ const uint32_t NUM_TABLES = 32;
 const uint32_t RANGE = 3000;
 const uint32_t NUM_VECTORS = 100;
 
+std::vector<uint32_t> createBatchLabels(uint32_t vector_size) {
+  std::vector<uint32_t> labels;
+  labels.reserve(vector_size);
+  for (uint32_t label = 0; label < vector_size; label++) {
+    labels.push_back(label);
+  }
+  return labels;
+}
+
 TEST(FlashIndexTest, FlashIndexSerializationTest) {
   uint32_t input_vector_dimension = 50;
 
@@ -45,8 +54,10 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
   auto flash_index = Flash<uint32_t>(
       std::make_shared<DensifiedMinHash>(HASHES_PER_TABLE, NUM_TABLES, RANGE));
 
+  auto labels = createBatchLabels(NUM_VECTORS);
+
   for (BoltBatch& batch : flash_index_batches) {
-    flash_index.addBatch(batch);
+    flash_index.addBatch(batch, labels);
   }
 
   std::vector<std::vector<std::vector<uint32_t>>> query_outputs;

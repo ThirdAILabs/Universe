@@ -193,7 +193,7 @@ class QueryCandidateGenerator {
 
     _flash_index = std::make_unique<Flash<uint32_t>>(
         _query_generator_config->getHashFunction());
-    _flash_index->addDataset(*data);
+    _flash_index->addDataset(*data, _labels);
   }
 
   /**
@@ -313,6 +313,7 @@ class QueryCandidateGenerator {
           _queries_to_ids_map[correct_query] = _ids_to_queries_map.size();
           _ids_to_queries_map.push_back(correct_query);
         }
+        _labels.push_back(_queries_to_ids_map.at(correct_query));
       }
       input_file_stream.close();
     } catch (const std::ifstream::failure& exception) {
@@ -344,6 +345,7 @@ class QueryCandidateGenerator {
   uint32_t _dimension_for_encodings;
 
   std::unique_ptr<Flash<uint32_t>> _flash_index;
+  std::vector<uint32_t> _labels;
 
   std::vector<dataset::BlockPtr> _input_blocks;
   std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;

@@ -52,14 +52,16 @@ class Flash {
    * loadNextBatches on the dataset should not have been called yet, and this
    * will run through the entire dataset.
    */
-  void addDataset(const dataset::InMemoryDataset<BoltBatch>& dataset);
+  void addDataset(const dataset::InMemoryDataset<BoltBatch>& dataset,
+                  const std::vector<LABEL_T>& labels);
 
-  void addDataset(dataset::StreamingDataset<BoltBatch>& dataset);
+  void addDataset(dataset::StreamingDataset<BoltBatch>& dataset,
+                  const std::vector<LABEL_T>& labels);
 
   /**
    * Insert this batch into the Flash data structure.
    */
-  void addBatch(const BoltBatch& batch);
+  void addBatch(const BoltBatch& batch, const std::vector<LABEL_T>& labels);
 
   /**
    * Perform a batch query on the Flash structure, for now on a Batch object.
@@ -72,6 +74,9 @@ class Flash {
                                                bool pad_zeros = false) const;
 
  private:
+  std::vector<LABEL_T> createCurrentBatchLabels(
+      const LABEL_T& batch_size, const std::vector<LABEL_T>& all_labels);
+
   constexpr void incrementBatchElementsCounter(uint32_t num_vectors) {
     _batch_elements_counter += num_vectors;
   }
