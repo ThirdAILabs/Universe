@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Graph.h"
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
-#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
@@ -22,7 +22,7 @@ class DistributedTrainingWrapper {
         _train_context(std::nullopt),
         _train_config(std::move(train_config)),
         _metric_aggregator(_train_config.getMetricAggregator()) {
-    _bolt_graph->enableDistributedTraining();
+    _bolt_graph->disableSparseParameterUpdates();
   }
 
   void computeAndStoreBatchGradients(uint32_t batch_idx) {

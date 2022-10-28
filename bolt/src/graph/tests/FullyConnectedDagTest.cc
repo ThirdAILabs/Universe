@@ -38,10 +38,9 @@ static TrainConfig getTrainConfig(uint32_t epochs) {
   return config;
 }
 
-static PredictConfig getPredictConfig() {
-  PredictConfig config = PredictConfig::makeConfig()
-                             .withMetrics({"categorical_accuracy"})
-                             .silence();
+static EvalConfig getEvalConfig() {
+  EvalConfig config =
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"}).silence();
 
   return config;
 }
@@ -57,7 +56,7 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
               getTrainConfig(/* epochs= */ 5));
 
   auto test_metrics =
-      model.predict(/* test_data= */ {data}, labels, getPredictConfig());
+      model.evaluate(/* test_data= */ {data}, labels, getEvalConfig());
 
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.98);
 }
@@ -73,7 +72,7 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
               getTrainConfig(/* epochs= */ 5));
 
   auto test_metrics =
-      model.predict(/* test_data= */ {data}, labels, getPredictConfig());
+      model.evaluate(/* test_data= */ {data}, labels, getEvalConfig());
 
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
@@ -92,10 +91,10 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
   model.train(/* train_data= */ {data}, labels,
               getTrainConfig(/* epochs= */ 5));
 
-  PredictConfig config = getPredictConfig().returnActivations();
+  EvalConfig config = getEvalConfig().returnActivations();
 
   auto [_, all_inference_output] =
-      model.predict(/* test_data= */ {data}, labels, config);
+      model.evaluate(/* test_data= */ {data}, labels, config);
 
   ASSERT_EQ(all_inference_output.numSamples(), data->len());
 
@@ -163,7 +162,7 @@ static void testSimpleDatasetMultiLayerModel(
             train_metrics.at("mean_squared_error").front());
 
   auto test_metrics =
-      model.predict(/* test_data= */ {data}, labels, getPredictConfig());
+      model.evaluate(/* test_data= */ {data}, labels, getEvalConfig());
 
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.99);
 }
@@ -191,7 +190,7 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
               getTrainConfig(/* epochs= */ 2));
 
   auto test_metrics =
-      model.predict(/* test_data= */ {data}, labels, getPredictConfig());
+      model.evaluate(/* test_data= */ {data}, labels, getEvalConfig());
 
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }

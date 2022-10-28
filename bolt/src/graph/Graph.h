@@ -59,9 +59,10 @@ class BoltGraph {
                    const dataset::BoltDatasetPtr& train_labels,
                    const TrainConfig& train_config);
 
-  InferenceResult predict(const std::vector<dataset::BoltDatasetPtr>& test_data,
-                          const dataset::BoltDatasetPtr& test_labels,
-                          const PredictConfig& predict_config);
+  InferenceResult evaluate(
+      const std::vector<dataset::BoltDatasetPtr>& test_data,
+      const dataset::BoltDatasetPtr& test_labels,
+      const EvalConfig& eval_config);
 
   std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
   getInputGradientSingle(
@@ -167,13 +168,11 @@ class BoltGraph {
   void updateSampling(uint32_t rebuild_hash_tables_batch,
                       uint32_t reconstruct_hash_functions_batch);
 
-  // This function makes sure all layers in the graph are prepard for
-  // distributed training. This chiefly is relevant during paramemeter updates,
-  // when a layer needs to know that it cannot rely on its own tracking of which
-  // neurons were activated (since the gradient will also be aggregated from
-  // other machines), and so it should do a dense parameter update no matter
-  // what.
-  void enableDistributedTraining();
+  // This function prevents nodes from using sparse optimizations during
+  // parameter updates. This is to make updateParameters work during distributed
+  // training or disable the optimization in the few cases where they are not
+  // beneficial.
+  void disableSparseParameterUpdates();
 
   constexpr bool checkBatchInterval(uint32_t num_batches) const {
     return (_updates % num_batches) == (num_batches - 1);

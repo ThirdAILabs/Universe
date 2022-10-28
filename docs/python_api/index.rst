@@ -12,8 +12,9 @@ This is the *complete* API documentation for the ``thirdai`` python package.
    thirdaibolttypes
    thirdaibolttemporal
    thirdaiboltmodels
-   thirdaiboltgraph
-   thirdaiboltgraphcallbacks
+   thirdaiboltnn
+   thirdaiboltnnlosses
+   thirdaiboltcallbacks
 
    thirdaidataset
    thirdaidatasetblocks

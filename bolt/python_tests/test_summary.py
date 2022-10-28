@@ -6,31 +6,31 @@ from thirdai import bolt
 
 @pytest.mark.unit
 def test_simple_bolt_dag_summary():
-    input_layer_1 = bolt.graph.Input(dim=10)
+    input_layer_1 = bolt.nn.Input(dim=10)
 
-    fc_layer_1 = bolt.graph.FullyConnected(
+    fc_layer_1 = bolt.nn.FullyConnected(
         dim=10,
         activation="relu",
     )(input_layer_1)
 
-    fc_layer_2 = bolt.graph.FullyConnected(
+    fc_layer_2 = bolt.nn.FullyConnected(
         dim=10,
         sparsity=0.01,
         activation="relu",
     )(fc_layer_1)
 
-    concat_layer = bolt.graph.Concatenate()([fc_layer_1, fc_layer_2])
+    concat_layer = bolt.nn.Concatenate()([fc_layer_1, fc_layer_2])
 
-    fc_layer_3 = bolt.graph.FullyConnected(
+    fc_layer_3 = bolt.nn.FullyConnected(
         dim=100,
         activation="relu",
     )(concat_layer)
 
-    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(fc_layer_3)
+    output_layer = bolt.nn.FullyConnected(dim=10, activation="softmax")(fc_layer_3)
 
-    model = bolt.graph.Model(inputs=[input_layer_1], output=output_layer)
+    model = bolt.nn.Model(inputs=[input_layer_1], output=output_layer)
 
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss(), print_when_done=False)
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy(), print_when_done=False)
 
     normal_summary = model.summary(detailed=False, print=False)
     detailed_summary = model.summary(detailed=True, print=False)

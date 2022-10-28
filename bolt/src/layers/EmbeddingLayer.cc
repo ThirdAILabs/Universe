@@ -131,6 +131,15 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
 
 void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
                                       float B2, float eps) {
+  if (_disable_sparse_parameter_updates) {
+    updateParametersDense(lr, iter, B1, B2, eps);
+  } else {
+    updateParametersSparse(lr, iter, B1, B2, eps);
+  }
+}
+
+void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
+                                            float B2, float eps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
@@ -161,6 +170,32 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
 
       _optimizer->gradients[n] = 0;
     }
+  }
+}
+
+void EmbeddingLayer::updateParametersDense(float lr, uint32_t iter, float B1,
+                                           float B2, float eps) {
+  float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
+  float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
+
+#pragma omp parallel for default(none) \
+    shared(B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
+  for (uint64_t n = 0; n < _embedding_block_size; n++) {
+    float grad = _optimizer->gradients[n];
+    assert(!std::isnan(grad));
+
+    _optimizer->momentum[n] = B1 * _optimizer->momentum[n] + (1 - B1) * grad;
+    _optimizer->velocity[n] =
+        B2 * _optimizer->velocity[n] + (1 - B2) * grad * grad;
+    assert(!std::isnan(_optimizer->momentum[n]));
+    assert(!std::isnan(_optimizer->velocity[n]));
+
+    _embedding_block[n] +=
+        lr * (_optimizer->momentum[n] / B1_bias_corrected) /
+        (std::sqrt(_optimizer->velocity[n] / B2_bias_corrected) + eps);
+    assert(!std::isnan(_embedding_block[n]));
+
+    _optimizer->gradients[n] = 0;
   }
 }
 

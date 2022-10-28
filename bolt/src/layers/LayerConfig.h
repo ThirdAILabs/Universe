@@ -48,7 +48,6 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   uint64_t _dim;
   float _sparsity;
   ActivationFunction _activation_fn;
-  bool _use_sparse_sparse_optimization;
   SamplingConfigPtr _sampling_config;
 
  public:
@@ -70,7 +69,6 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
       : _dim(dim),
         _sparsity(sparsity),
         _activation_fn(getActivationFunction(activation)),
-        _use_sparse_sparse_optimization(false),
         _sampling_config(std::move(sampling_config)) {
     if (_sparsity <= 0.0 || _sparsity > 1.0) {
       throw std::invalid_argument(
@@ -93,14 +91,6 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
     return _sampling_config;
   }
 
-  void enableSparseSparseOptimization() {
-    _use_sparse_sparse_optimization = true;
-  }
-
-  bool shouldUseSparseSparseOptimization() const {
-    return _use_sparse_sparse_optimization;
-  }
-
  private:
   static uint32_t clip(uint32_t input, uint32_t low, uint32_t high) {
     if (input < low) {
@@ -116,7 +106,7 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<SequentialLayerConfig>(this), _dim, _sparsity,
-            _activation_fn, _use_sparse_sparse_optimization, _sampling_config);
+            _activation_fn, _sampling_config);
   }
 };
 
