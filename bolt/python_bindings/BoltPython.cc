@@ -695,7 +695,7 @@ Args:
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
            )pbdoc");
 
-    createModelsSubmodule(bolt_submodule);
+  createModelsSubmodule(bolt_submodule);
 }
 
 void createModelsSubmodule(py::module_& bolt_submodule) {
