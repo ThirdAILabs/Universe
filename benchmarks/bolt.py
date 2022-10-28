@@ -171,7 +171,7 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         if use_mlflow:
             log_single_epoch_training_metrics(train_metrics)
 
-        predict_output = model.predict(
+        predict_output = model.evaluate(
             test_data=datasets["test_data"],
             test_labels=datasets["test_labels"],
             eval_config=eval_config,
