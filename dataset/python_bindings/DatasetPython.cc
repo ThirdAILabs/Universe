@@ -333,7 +333,16 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("i"), py::return_value_policy::reference)
       .def("__len__", &BoltDataset::numBatches)
       .def("save", &BoltDataset::save, py::arg("filename"))
-      .def_static("load", &BoltDataset::load, py::arg("filename"));
+      .def_static("load", &BoltDataset::load, py::arg("filename"))
+      .def(py::init([](py::iterable iterable) {
+             using Batches = std::vector<BoltBatch>;
+             auto batches = iterable.cast<Batches>();
+             std::shared_ptr<BoltDataset> dataset =
+                 std::make_shared<InMemoryDataset<BoltBatch>>(
+                     std::move(batches));
+             return dataset;
+           }),
+           py::arg("batches"));
 
   py::class_<numpy::WrappedNumpyVectors,  // NOLINT
              std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
