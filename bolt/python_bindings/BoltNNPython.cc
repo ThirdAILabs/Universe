@@ -16,6 +16,7 @@
 #include <bolt/src/optimizers/Adam.h>
 #include <bolt/src/optimizers/Optimizer.h>
 #include <bolt/src/optimizers/Sgd.h>
+#include <bolt/src/optimizers/SignedMomentum.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
 #include <pybind11/pytypes.h>
@@ -653,6 +654,13 @@ void createOptimizersSubmodule(py::module_& nn_submodule) {
              std::shared_ptr<optimizers::SgdFactory>>(optimizer_submodule,
                                                       "Sgd")
       .def(py::init<>());
+
+  py::class_<optimizers::SignedMomentumFactory,  // NOLINT
+             optimizers::OptimizerFactory,
+             std::shared_ptr<optimizers::SignedMomentumFactory>>(
+      optimizer_submodule, "SignedMomentum")
+      .def(py::init<float, float>(), py::arg("increase_scale_factor") = 1.25,
+           py::arg("decrease_scale_factor") = 0.5);
 }
 
 py::tuple dagEvaluatePythonWrapper(BoltGraph& model,
