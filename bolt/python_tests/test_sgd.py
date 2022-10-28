@@ -22,12 +22,10 @@ def test_sgd():
         optimizer=bolt.nn.optimizers.Sgd(),
     )
 
-    predict_config = bolt.graph.PredictConfig.make().with_metrics(
-        ["categorical_accuracy"]
-    )
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=1.0)
-
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=1.0)
     model.train(train_data, train_labels, train_config)
-    metrics = model.predict(test_data, test_labels, predict_config)[0]
+
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
+    metrics = model.evaluate(test_data, test_labels, eval_config)[0]
 
     assert metrics["categorical_accuracy"] >= 0.9
