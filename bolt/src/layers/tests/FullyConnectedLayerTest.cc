@@ -43,8 +43,7 @@ class FullyConnectedLayerTestFixture : public testing::Test {
                                              /* hashes_per_table= */ 1,
                                              /* reservoir_size= */ 10)},
                INPUT_DIM) {
-    auto optimizer_factory =
-        std::make_shared<optimizers::AdamOptimizerFactory>();
+    auto optimizer_factory = std::make_shared<optimizers::AdamFactory>();
     _layer.initOptimizer(optimizer_factory);
   }
 
