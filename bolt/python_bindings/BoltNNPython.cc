@@ -572,6 +572,7 @@ That's all for now, folks! More docs coming soon :)
            "datasets dynamically. If this is not the first time this method has"
            "been called, the batch sizes of the passed in datasets must be the "
            "same as when this method was called the first time.")
+      .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
       .def_property_readonly(
           "model",
           [](DistributedTrainingWrapper& node) { return node.getModel(); },

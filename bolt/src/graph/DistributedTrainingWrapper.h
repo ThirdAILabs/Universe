@@ -48,6 +48,11 @@ class DistributedTrainingWrapper {
 
   BoltGraphPtr getModel() { return _bolt_graph; }
 
+  void finishTraining() {
+    requireTrainContext();
+    _bolt_graph->cleanupAfterBatchProcessing();
+  }
+
   uint64_t numBatches() {
     if (!_train_context.has_value()) {
       return 0;

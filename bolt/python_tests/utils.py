@@ -360,6 +360,8 @@ def compressed_training(
             )
             wrapped_model.update_parameters()
 
+    wrapped_model.finish_training()
+
     model = wrapped_model.model
     acc = model.evaluate(
         test_data=dataset.from_numpy(test_data, batch_size=64),
