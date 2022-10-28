@@ -27,8 +27,6 @@ class SgdFactory final : public OptimizerFactory {
   }
 
  private:
-  SgdFactory() {}
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
