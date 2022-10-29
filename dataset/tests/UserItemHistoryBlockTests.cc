@@ -1,5 +1,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -239,9 +240,67 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
   ASSERT_EQ(batch[4].len, 3);
 }
 
-// TODO(Geordie): Test that if should_update_history == false, then history
-// should be the same before and after regardless of include_current_row
-// TODO(Geordie): Test that if include_current_row == true, then vector includes
-// last item, and not otherwise, regardless of should_update_history
+GenericBatchProcessor makeItemHistoryBatchProcessor(
+    ThreadSafeVocabularyPtr user_vocab, ThreadSafeVocabularyPtr item_vocab,
+    ItemHistoryCollectionPtr history, uint32_t track_last_n,
+    bool should_update_history) {
+  return {/* input_blocks= */ {UserItemHistoryBlock::make(
+              /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
+              std::move(user_vocab), std::move(item_vocab), std::move(history),
+              track_last_n, should_update_history,
+              /* include_current_row= */ true)},
+          /* label_blocks= */ {},
+          /* has_header= */ false,
+          /* delimiter= */ ',',
+          /* parallel= */ false};
+}
+
+TEST(UserItemHistoryBlockTests, HandlesNoUpdateCaseProperly) {
+  std::vector<std::string> updating_samples = {
+      {"user1,item1,2022-02-01"},
+      {"user1,item2,2022-02-02"},
+      {"user1,item3,2022-02-03"},
+      {"user1,item4,2022-02-08"},
+  };
+
+  std::vector<std::string> non_updating_sample = {
+      {"user1,item5,2022-02-10"},
+  };
+
+  auto user_vocab = ThreadSafeVocabulary::make(/* vocab_size= */ 1);
+  auto item_vocab = ThreadSafeVocabulary::make(/* vocab_size= */ 5);
+  auto history = ItemHistoryCollection::make(/* n_histories= */ 1);
+
+  auto updating_processor = makeItemHistoryBatchProcessor(
+      user_vocab, item_vocab, history,
+      /* track_last_n= */ updating_samples.size() + 1,
+      /* should_update_history= */ true);
+  updating_processor.createBatch(updating_samples);
+
+  std::vector<uint32_t> items_in_history;
+  for (auto item_struct : history->at(0)) {
+    items_in_history.push_back(item_struct.item);
+  }
+  ASSERT_EQ(items_in_history.size(), updating_samples.size());
+
+  auto non_updating_processor = makeItemHistoryBatchProcessor(
+      user_vocab, item_vocab, history,
+      /* track_last_n= */ updating_samples.size() + 1,
+      /* should_update_history= */ false);
+  auto non_updating_batch =
+      non_updating_processor.createBatch(non_updating_sample);
+
+  // Size is updating_samples.size() + 1 because it includes the non-updating
+  // sample
+  ASSERT_EQ(std::get<0>(non_updating_batch)[0].len,
+            updating_samples.size() + 1);
+
+  std::vector<uint32_t> final_items_in_history;
+  for (auto item_struct : history->at(0)) {
+    final_items_in_history.push_back(item_struct.item);
+  }
+
+  ASSERT_EQ(items_in_history, final_items_in_history);
+}
 
 }  // namespace thirdai::dataset
