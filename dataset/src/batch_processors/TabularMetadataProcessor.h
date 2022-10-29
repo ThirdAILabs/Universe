@@ -116,10 +116,10 @@ class TabularMetadata {
   /**
    * For values between the min and the max (inclusive), we divide that range
    * into N uniform chunks and return a bin number from 0 to N-1. Additionally
-   * we may return one of three other bins:
+   * we support three special cases of bins:
    *    - if we're given an empty str_val we return bin number N
-   *    - if the str_val is less than the min we return bin number N + 1
-   *    - if the str_val is greater than the max we return bin number N + 2
+   *    - if the str_val is less than the min we return bin number 0
+   *    - if the str_val is greater than the max we return bin number N - 1
    */
   uint32_t getColBin(uint32_t col, const std::string& str_val,
                      std::exception_ptr& exception_ptr) {
@@ -143,10 +143,10 @@ class TabularMetadata {
     uint32_t min = colMin(col);
     uint32_t max = colMax(col);
     if (value < min) {
-      return numBins(col) + 1;
+      return 0;
     }
     if (value > max) {
-      return numBins(col) + 2;
+      return numBins(col) - 1;
     }
 
     double binsize = getColBinsize(col);

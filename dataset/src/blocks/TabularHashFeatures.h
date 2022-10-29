@@ -114,7 +114,7 @@ class TabularHashFeatures : public Block {
       }
     }
 
-    std::vector<uint32_t> hashes_to_use;
+    std::vector<uint32_t> hashes;
     if (_with_pairgrams) {
       TextEncodingUtils::forEachPairgramFromUnigram(
           unigram_hashes, _output_range,
