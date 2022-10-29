@@ -2,6 +2,7 @@
 
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <functional>
 #include <string_view>
@@ -85,22 +86,42 @@ class TextEncodingUtils {
     return BoltVector::makeSparseVector(indices, values);
   }
 
-  /**
-   * Pairgrams in a vector with possible repeated indices
-   */
-  static std::vector<uint32_t> computeRawPairgramsFromUnigrams(
-      std::vector<uint32_t> unigram_hashes, uint32_t output_range) {
-    std::vector<uint32_t> pairgram_hashes;
+  struct PairGram {
+    uint32_t pairgram;
+    uint32_t first_token;
+    uint32_t second_token;
+  };
 
-    // Merge all ordered pairs of unigram hashes.
+  template <typename PAIRGRAM_PROCESSOR_T>
+  static void forEachPairgramFromUnigram(
+      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range,
+      PAIRGRAM_PROCESSOR_T pairgram_processor) {
+    static_assert(std::is_convertible<PAIRGRAM_PROCESSOR_T,
+                                      std::function<void(PairGram)>>::value);
+
     for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
       for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
         uint32_t combined_hash = hashing::HashUtils::combineHashes(
             unigram_hashes[prev_token], unigram_hashes[token]);
         combined_hash = combined_hash % output_range;
-        pairgram_hashes.push_back(combined_hash);
+        pairgram_processor({/* pairgram= */ combined_hash,
+                            /* first_token= */ unigram_hashes[prev_token],
+                            /* second_token= */ unigram_hashes[token]});
       }
     }
+  }
+
+  /**
+   * Pairgrams in a vector with possible repeated indices
+   */
+  static std::vector<uint32_t> computeRawPairgramsFromUnigrams(
+      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range) {
+    std::vector<uint32_t> pairgram_hashes;
+
+    forEachPairgramFromUnigram(unigram_hashes, output_range,
+                               [&](PairGram pairgram) {
+                                 pairgram_hashes.push_back(pairgram.pairgram);
+                               });
     return pairgram_hashes;
   }
 

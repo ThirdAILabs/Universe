@@ -73,10 +73,8 @@ void createDatasetSubmodule(py::module_& module) {
       )pbdoc")
       .def("__str__", &Explanation::toString)
       .def("__repr__", &Explanation::toString)
-      .def_readonly("column_number", &Explanation::column_number,
-                    R"pbdoc(
-     Identifies the responsible input column.
-      )pbdoc")
+      // We don't expose column_number because it doesn't always make sense to
+      // provide one column number; e.g. in tabular pairgram case.
       .def_readonly("percentage_significance",
                     &Explanation::percentage_significance,
                     R"pbdoc(

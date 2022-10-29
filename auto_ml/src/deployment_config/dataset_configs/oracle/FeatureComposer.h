@@ -283,7 +283,8 @@ class FeatureComposer {
     }
 
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
-        tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr);
+        tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr,
+        /* column_names= */ column_numbers.getColumnNumToColNameMap());
 
     return std::make_shared<dataset::TabularHashFeatures>(
         tabular_metadata, /* output_range = */ 100000,
