@@ -279,8 +279,8 @@ class UserItemHistoryBlock final : public Block {
   void removeNewItemsFromUserHistory(uint32_t user_id,
                                      std::vector<uint32_t>& new_item_ids) {
     auto& user_history = _per_user_history->at(user_id);
-    user_history.erase(user_history.begin(),
-                       user_history.begin() + new_item_ids.size());
+    user_history.erase(user_history.end() - new_item_ids.size(),
+                       user_history.end());
   }
 
   uint32_t _user_col;

@@ -137,9 +137,6 @@ class TrainStateManager:
 
         self.averaging_and_communication_time += time.time() - start_communication_time
 
-    def finish_training(self):
-        ray.get([worker.finish_training.remote() for worker in self.workers])
-
     def _update_parameters(self):
         """
         Calls primary worker for updating parameters across all nodes
