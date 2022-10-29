@@ -3,12 +3,14 @@
 #include <bolt_vector/tests/BoltVectorTestUtils.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <gtest/gtest.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/Datasets.h>
 #include <search/src/Flash.h>
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <numeric>
 #include <random>
 #include <vector>
 
@@ -25,18 +27,16 @@ const uint32_t NUM_VECTORS = 100;
 std::vector<uint32_t> createBatchLabels(uint32_t vector_size) {
   std::vector<uint32_t> labels;
   labels.reserve(vector_size);
-  for (uint32_t label = 0; label < vector_size; label++) {
-    labels.push_back(label);
-  }
+
+  std::iota(labels.begin(), labels.end(), 0);
   return labels;
 }
 
 TEST(FlashIndexTest, FlashIndexSerializationTest) {
   uint32_t input_vector_dimension = 50;
 
-  uint32_t batch_size = 20;
-  uint32_t num_queries = 1;
-  uint32_t words_per_query = 10;
+  uint32_t batch_size = 5;
+  uint32_t num_queries = 12;
   uint32_t top_k = 5;
 
   auto vectors_to_be_indexed =
@@ -45,10 +45,10 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
 
   auto flash_index_batches = createBatches(vectors_to_be_indexed, batch_size);
 
-  auto random_vectors_for_queries =
+  auto query_vectors =
       createRandomSparseVectors(input_vector_dimension, num_queries,
                                 std::normal_distribution<float>(0, 1));
-  auto queries = createBatches(random_vectors_for_queries, words_per_query);
+  auto query_batches = createBatches(query_vectors, batch_size);
 
   // Create a Flash object
   auto flash_index = Flash<uint32_t>(
@@ -61,8 +61,9 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
   }
 
   std::vector<std::vector<std::vector<uint32_t>>> query_outputs;
-  for (BoltBatch& query : queries) {
-    auto output_vectors = flash_index.queryBatch(query, top_k, false);
+
+  for (BoltBatch& batch : query_batches) {
+    auto output_vectors = flash_index.queryBatch(batch, top_k, true);
     query_outputs.push_back(output_vectors);
   }
 
@@ -82,18 +83,17 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
 
   std::vector<std::vector<std::vector<uint32_t>>>
       deserialized_flash_query_outputs;
-  for (BoltBatch& query : queries) {
+
+  for (BoltBatch& batch : query_batches) {
     auto output_vectors =
-        deserialized_flash_index.queryBatch(query, top_k, false);
+        deserialized_flash_index.queryBatch(batch, top_k, true);
     deserialized_flash_query_outputs.push_back(output_vectors);
   }
 
-  for (uint32_t batch_index = 0; batch_index < num_queries; batch_index++) {
-    for (uint32_t vec_index = 0; vec_index < query_outputs[batch_index].size();
-         vec_index++) {
-      ASSERT_TRUE(query_outputs[batch_index][vec_index] ==
-                  deserialized_flash_query_outputs[batch_index][vec_index]);
-    }
+  for (uint32_t batch_index = 0; batch_index < query_batches.size();
+       batch_index++) {
+    ASSERT_TRUE(query_outputs[batch_index] ==
+                deserialized_flash_query_outputs[batch_index]);
   }
 }
 }  // namespace thirdai::tests

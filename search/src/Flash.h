@@ -53,10 +53,10 @@ class Flash {
    * will run through the entire dataset.
    */
   void addDataset(const dataset::InMemoryDataset<BoltBatch>& dataset,
-                  const std::vector<LABEL_T>& labels);
+                  const std::vector<std::vector<LABEL_T>>& labels);
 
   void addDataset(dataset::StreamingDataset<BoltBatch>& dataset,
-                  const std::vector<LABEL_T>& labels);
+                  const std::vector<std::vector<LABEL_T>>& labels);
 
   /**
    * Insert this batch into the Flash data structure.
@@ -74,9 +74,6 @@ class Flash {
                                                bool pad_zeros = false) const;
 
  private:
-  std::vector<LABEL_T> createCurrentBatchLabels(
-      const LABEL_T& batch_size, const std::vector<LABEL_T>& all_labels);
-
   constexpr void incrementBatchElementsCounter(uint32_t num_vectors) {
     _batch_elements_counter += num_vectors;
   }

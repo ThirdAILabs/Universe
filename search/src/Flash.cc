@@ -2,6 +2,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <search/src/Flash.h>
 #include <algorithm>
@@ -34,39 +35,27 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function,
 }
 
 template <typename LABEL_T>
-std::vector<LABEL_T> Flash<LABEL_T>::createCurrentBatchLabels(
-    const LABEL_T& batch_size, const std::vector<LABEL_T>& all_labels) {
-  auto starting_label = all_labels.begin() + _batch_elements_counter;
-  auto ending_label = all_labels.begin() + _batch_elements_counter + batch_size;
-
-  std::vector<LABEL_T> current_batch_labels(batch_size);
-
-  std::copy(starting_label, ending_label, current_batch_labels.begin());
-
-  return current_batch_labels;
-}
-
-template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
     const dataset::InMemoryDataset<BoltBatch>& dataset,
-    const std::vector<LABEL_T>& labels) {
-  for (const auto& batch : dataset) {
-    auto batch_size = batch.getBatchSize();
+    const std::vector<std::vector<LABEL_T>>& labels) {
+  for (uint64_t batch_index = 0; batch_index < dataset.numBatches();
+       batch_index++) {
+    const auto& batch = dataset[batch_index];
 
-    auto batch_labels = createCurrentBatchLabels(batch_size, labels);
-
-    addBatch(batch, batch_labels);
+    addBatch(batch, labels[batch_index]);
   }
 }
 
 template <typename LABEL_T>
-void Flash<LABEL_T>::addDataset(dataset::StreamingDataset<BoltBatch>& dataset,
-                                const std::vector<LABEL_T>& labels) {
+void Flash<LABEL_T>::addDataset(
+    dataset::StreamingDataset<BoltBatch>& dataset,
+    const std::vector<std::vector<LABEL_T>>& labels) {
+  uint32_t batch_index = 0;
   while (auto batch_tuple = dataset.nextBatchTuple()) {
     const auto& batch = std::get<0>(batch_tuple.value());
 
-    auto batch_labels = createCurrentBatchLabels(batch.getBatchSize(), labels);
-    addBatch(batch, batch_labels);
+    addBatch(batch, labels[batch_index]);
+    batch_index++;
   }
 }
 
@@ -94,9 +83,9 @@ void Flash<LABEL_T>::verifyIDFitsLabelTypeRange(uint64_t id) const {
   uint64_t max_possible_value = std::numeric_limits<LABEL_T>::max();
 
   if (id + _batch_elements_counter > max_possible_value) {
-    throw std::invalid_argument("Trying to insert vector with id " +
-                                std::to_string(id) +
-                                ", which is too large an id for this Flash.");
+    throw std::invalid_argument(
+        "Trying to insert vector with id " + std::to_string(id) +
+        ", which is too large an id for this Flash Index.");
   }
 }
 

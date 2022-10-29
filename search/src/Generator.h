@@ -48,7 +48,7 @@ class QueryCandidateGeneratorConfig {
         _n_grams(std::move(n_grams)),
         _has_incorrect_queries(has_incorrect_queries) {}
 
-  // overloaded operator mainly for testing
+  // Overloaded operator mainly for testing
   bool operator==(const QueryCandidateGeneratorConfig& rhs) const {
     return this->_hash_function == rhs._hash_function &&
            this->_num_tables == rhs._num_tables &&
@@ -81,10 +81,7 @@ class QueryCandidateGeneratorConfig {
   }
 
   std::shared_ptr<hashing::HashFunction> getHashFunction() const {
-    auto hash_function = _hash_function;
-
-    std::for_each(hash_function.begin(), hash_function.end(),
-                  [](char& character) { character = std::tolower(character); });
+    auto hash_function = thirdai::utils::lower(_hash_function);
 
     if (hash_function == "densifiedminhash") {
       return std::make_shared<hashing::DensifiedMinHash>(_hashes_per_table,
@@ -185,22 +182,25 @@ class QueryCandidateGenerator {
    * @param file_name
    */
   void buildFlashIndex(const std::string& file_name) {
-    buildIDToQueryMapping(file_name,
-                          _query_generator_config->hasIncorrectQueries());
+    auto labels = getQueryLabels(
+        file_name, _query_generator_config->hasIncorrectQueries());
 
     auto data_loader = getDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
 
-    _flash_index = std::make_unique<Flash<uint32_t>>(
-        _query_generator_config->getHashFunction());
-    _flash_index->addDataset(*data, _labels);
+    if (!_flash_index) {
+      _flash_index = std::make_unique<Flash<uint32_t>>(
+          _query_generator_config->getHashFunction());
+    }
+
+    _flash_index->addDataset(*data, labels);
   }
 
   /**
    * @brief Given a vector of queries, returns top k generated queries
-   * by the flash instance for each of the query. For instance, if
+   * by the flash index for each of the queries. For instance, if
    * queries is a vector of size n, then the output will be a vector
-   * of size n, each of which is also a vector of size k.
+   * of size n, each of which is also a vector of size at most k.
    *
    * @param queries
    * @return A vector of suggested queries
@@ -221,18 +221,18 @@ class QueryCandidateGenerator {
       featurized_queries[query_index] =
           featurizeSingleQuery(queries[query_index]);
     }
-    std::vector<std::vector<uint32_t>> candidate_query_ids =
+    std::vector<std::vector<uint32_t>> candidate_query_labels =
         _flash_index->queryBatch(
             /* batch = */ BoltBatch(std::move(featurized_queries)),
             /* top_k = */ _query_generator_config->topK(),
-            /* pad_zeros = */ true);
+            /* pad_zeros = */ false);
 
     std::vector<std::vector<std::string>> outputs;
     outputs.reserve(queries.size());
 
-    for (auto& candidate_query_id_vector : candidate_query_ids) {
+    for (auto& candidate_query_label_vector : candidate_query_labels) {
       auto top_k_candidates =
-          getQueryCandidatesAsStrings(candidate_query_id_vector);
+          getQueryCandidatesAsStrings(candidate_query_label_vector);
 
       outputs.emplace_back(std::move(top_k_candidates));
     }
@@ -274,28 +274,37 @@ class QueryCandidateGenerator {
   }
 
   std::vector<std::string> getQueryCandidatesAsStrings(
-      const std::vector<uint32_t>& query_ids) {
+      const std::vector<uint32_t>& query_labels) {
     std::vector<std::string> output_strings;
-    output_strings.reserve(query_ids.size());
+    output_strings.reserve(query_labels.size());
 
-    for (const auto& query_id : query_ids) {
-      output_strings.push_back(_ids_to_queries_map[query_id]);
+    for (const auto& query_label : query_labels) {
+      output_strings.push_back(_labels_to_queries_map[query_label]);
     }
     return output_strings;
   }
 
   /**
-   * @brief Constructs a mapping from IDs to correct queries. This allows
+   * @brief Constructs a mapping from correct queries to the labels. This allows
    * us to convert the output of queryBatch() into strings representing
    * correct queries.
    *
    * @param file_name: File containing queries (Expected to be a CSV file).
+   * @param has_incorrect_queries: Identifies if the input CSV file contains
+   *        pairs of correct and incorrect queries.
+   *
+   * @return Labels for each batch
    */
-  void buildIDToQueryMapping(const std::string& file_name,
-                             bool has_incorrect_queries) {
+  std::vector<std::vector<uint32_t>> getQueryLabels(
+      const std::string& file_name, bool has_incorrect_queries) {
+    std::vector<std::vector<uint32_t>> labels;
+
     try {
       std::ifstream input_file_stream =
           dataset::SafeFileIO::ifstream(file_name, std::ios::in);
+
+      std::shared_ptr<std::vector<uint32_t>> current_batch_labels =
+          std::make_shared<std::vector<uint32_t>>();
 
       std::string row;
 
@@ -309,16 +318,35 @@ class QueryCandidateGenerator {
           correct_query = row;
         }
 
-        if (!_queries_to_ids_map.count(correct_query)) {
-          _queries_to_ids_map[correct_query] = _ids_to_queries_map.size();
-          _ids_to_queries_map.push_back(correct_query);
+        if (!_queries_to_labels_map.count(correct_query)) {
+          _queries_to_labels_map[correct_query] = _labels_to_queries_map.size();
+          _labels_to_queries_map.push_back(correct_query);
         }
-        _labels.push_back(_queries_to_ids_map.at(correct_query));
+
+        // Add the corresponding label to the current batch
+        current_batch_labels->push_back(
+            _queries_to_labels_map.at(correct_query));
+
+        if ((*current_batch_labels).size() ==
+            _query_generator_config->batchSize()) {
+          labels.push_back(*current_batch_labels);
+          current_batch_labels = std::make_shared<std::vector<uint32_t>>();
+        }
       }
       input_file_stream.close();
+
+      // Add remainig labels if present. This will happen
+      // if the entire dataset fits in one batch or the last
+      // batch has fewer elements than the batch size.
+      if (!(*current_batch_labels).empty()) {
+        labels.push_back(*current_batch_labels);
+      }
+
     } catch (const std::ifstream::failure& exception) {
       throw std::invalid_argument("Invalid input file name.");
     }
+
+    return labels;
   }
 
   BoltVector featurizeSingleQuery(const std::string& query) const {
@@ -337,6 +365,10 @@ class QueryCandidateGenerator {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
         file_name, _query_generator_config->batchSize());
 
+    if (_query_generator_config->hasIncorrectQueries()) {
+      return std::make_unique<dataset::StreamingGenericDatasetLoader>(
+          file_data_loader, _incorrect_queries_batch_processor);
+    }
     return std::make_unique<dataset::StreamingGenericDatasetLoader>(
         file_data_loader, _batch_processor);
   }
@@ -345,7 +377,6 @@ class QueryCandidateGenerator {
   uint32_t _dimension_for_encodings;
 
   std::unique_ptr<Flash<uint32_t>> _flash_index;
-  std::vector<uint32_t> _labels;
 
   std::vector<dataset::BlockPtr> _input_blocks;
   std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
@@ -354,15 +385,15 @@ class QueryCandidateGenerator {
       _incorrect_queries_batch_processor;
 
   /**
-   * Maintains a mapping from the assigned IDs to the original
+   * Maintains a mapping from the assigned labels to the original
    * queries loaded from a CSV file. Each unique query in the input
-   * CSV file is assigned a unique ID in an ascending order. This is
+   * CSV file is assigned a unique label in an ascending order. This is
    * a vector instead of an unordered map because queries are
-   * assigned IDs sequentially.
+   * assigned labels sequentially.
    */
-  std::vector<std::string> _ids_to_queries_map;
+  std::vector<std::string> _labels_to_queries_map;
 
-  std::unordered_map<std::string, uint32_t> _queries_to_ids_map;
+  std::unordered_map<std::string, uint32_t> _queries_to_labels_map;
 
   // private constructor for cereal
   QueryCandidateGenerator() {}
@@ -372,9 +403,9 @@ class QueryCandidateGenerator {
   void serialize(Archive& archive) {
     archive(_query_generator_config, _dimension_for_encodings, _flash_index,
             _input_blocks, _batch_processor, _incorrect_queries_batch_processor,
-            _ids_to_queries_map, _queries_to_ids_map);
+            _labels_to_queries_map, _queries_to_labels_map);
   }
-};  // namespace thirdai::bolt
+};
 
 using QueryCandidateGeneratorPtr = std::shared_ptr<QueryCandidateGenerator>;
 
