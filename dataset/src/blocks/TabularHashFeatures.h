@@ -71,23 +71,21 @@ class TabularHashFeatures : public Block {
       }
     }
 
-    std::vector<uint32_t> hashes_to_use;
+    std::vector<uint32_t> hashes;
     if (_with_pairgrams) {
-      hashes_to_use = TextEncodingUtils::computeRawPairgramsFromUnigrams(
+      hashes = TextEncodingUtils::computeRawPairgramsFromUnigrams(
           unigram_hashes, _output_range);
     } else {
-      std::for_each(unigram_hashes.begin(), unigram_hashes.end(),
-                    [this](uint32_t& unigram_hash) {
-                      unigram_hash = unigram_hash % _output_range;
-                    });
-      hashes_to_use = unigram_hashes;
+      for (auto& unigram_hash : unigram_hashes) {
+        unigram_hash = unigram_hash % _output_range;
+      }
+      hashes = std::move(unigram_hashes);
     }
 
-    TextEncodingUtils::sumRepeatedIndices(hashes_to_use, /* base_value = */ 1.0,
-                                          [&](uint32_t pairgram, float value) {
-                                            vec.addSparseFeatureToSegment(
-                                                pairgram, value);
-                                          });
+    TextEncodingUtils::sumRepeatedIndices(
+        hashes, /* base_value = */ 1.0, [&](uint32_t pairgram, float value) {
+          vec.addSparseFeatureToSegment(pairgram, value);
+        });
 
     return nullptr;
   }

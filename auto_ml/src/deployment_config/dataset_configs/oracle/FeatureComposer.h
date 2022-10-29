@@ -34,6 +34,11 @@ class FeatureComposer {
     auto non_temporal_columns =
         getNonTemporalColumns(config.data_types, temporal_relationships);
 
+    std::vector<dataset::TabularDataType> tabular_datatypes(
+        column_numbers.numCols(), dataset::TabularDataType::Ignore);
+
+    std::unordered_map<uint32_t, std::pair<double, double>> tabular_col_ranges;
+
     /*
       Order of column names and data types is always consistent because
       data_types is an ordered map. Thus, the order of the input blocks
@@ -50,6 +55,12 @@ class FeatureComposer {
         auto vocab_size = data_type.asCategorical().n_unique_classes;
         blocks.push_back(dataset::StringLookupCategoricalBlock::make(
             col_num, vocabForColumn(vocabularies, col_name, vocab_size)));
+        tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
+      }
+
+      if (data_type.isNumerical()) {
+        tabular_col_ranges[col_num] = data_type.asNumerical().range;
+        tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
       }
 
       if (data_type.isText()) {
@@ -72,8 +83,7 @@ class FeatureComposer {
     // we always use tabular unigrams but add pairgrams on top of it if the
     // column_contextualization flag is true
     blocks.push_back(makeTabularHashFeaturesBlock(
-        config.data_types, config.target, non_temporal_columns, column_numbers,
-        column_contextualization));
+        tabular_datatypes, tabular_col_ranges, column_contextualization));
 
     return blocks;
   }
@@ -257,31 +267,9 @@ class FeatureComposer {
   }
 
   static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
-      const ColumnDataTypes& column_datatypes, const std::string& target_name,
-      const std::unordered_set<std::string>& non_temporal_columns,
-      const ColumnNumberMap& column_numbers, bool column_contextualization) {
-    std::vector<dataset::TabularDataType> tabular_datatypes(
-        column_numbers.numCols());
-    std::fill(tabular_datatypes.begin(), tabular_datatypes.end(),
-              dataset::TabularDataType::Ignore);
-
-    std::unordered_map<uint32_t, std::pair<double, double>> col_ranges;
-
-    for (const auto& [col_name, data_type] : column_datatypes) {
-      if (!non_temporal_columns.count(col_name) || col_name == target_name) {
-        continue;
-      }
-
-      uint32_t col_num = column_numbers.at(col_name);
-
-      if (data_type.isCategorical()) {
-        tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
-      } else if (data_type.isNumerical()) {
-        col_ranges[col_num] = data_type.asNumerical().range;
-        tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
-      }
-    }
-
+      const std::vector<dataset::TabularDataType>& tabular_datatypes,
+      const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
+      bool column_contextualization) {
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
         tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr);
 
