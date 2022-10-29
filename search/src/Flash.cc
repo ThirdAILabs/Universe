@@ -2,7 +2,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <search/src/Flash.h>
 #include <algorithm>

@@ -12,6 +12,7 @@
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
@@ -213,9 +214,7 @@ class QueryCandidateGenerator {
           "Attempting to Generate Candidate Queries without Training the "
           "Generator.");
     }
-
     std::vector<BoltVector> featurized_queries(queries.size());
-
     for (uint32_t query_index = 0; query_index < queries.size();
          query_index++) {
       featurized_queries[query_index] =
@@ -244,18 +243,27 @@ class QueryCandidateGenerator {
       QueryCandidateGeneratorConfigPtr query_candidate_generator_config)
       : _query_generator_config(std::move(query_candidate_generator_config)),
         _dimension_for_encodings(
-            dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM),
-        _input_blocks(constructInputBlocks(_query_generator_config->nGrams(),
-                                           /* column_index = */ 0)),
-        _batch_processor(std::make_shared<dataset::GenericBatchProcessor>(
-            _input_blocks, std::vector<dataset::BlockPtr>{})) {
+            dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
+    std::vector<dataset::BlockPtr> training_input_blocks;
+
     if (_query_generator_config->hasIncorrectQueries()) {
-      auto blocks = constructInputBlocks(_query_generator_config->nGrams(),
-                                         /* column_index = */ 1);
-      _incorrect_queries_batch_processor =
+      training_input_blocks = constructInputBlocks(
+          _query_generator_config->nGrams(), /* column_index = */ 1);
+      auto inference_input_blocks = constructInputBlocks(
+          _query_generator_config->nGrams(), /* column_index = */ 0);
+
+      _inference_batch_processor =
           std::make_shared<dataset::GenericBatchProcessor>(
-              blocks, std::vector<dataset::BlockPtr>{});
+              inference_input_blocks, std::vector<dataset::BlockPtr>{});
+
+    } else {
+      training_input_blocks = constructInputBlocks(
+          _query_generator_config->nGrams(), /* column_index = */ 0);
     }
+
+    _training_batch_processor =
+        std::make_shared<dataset::GenericBatchProcessor>(
+            training_input_blocks, std::vector<dataset::BlockPtr>{});
   }
 
   std::vector<dataset::BlockPtr> constructInputBlocks(
@@ -351,10 +359,15 @@ class QueryCandidateGenerator {
 
   BoltVector featurizeSingleQuery(const std::string& query) const {
     BoltVector output_vector;
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        _training_batch_processor;
+    if (_query_generator_config->hasIncorrectQueries()) {
+      batch_processor = _inference_batch_processor;
+    }
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
     if (auto exception =
-            _batch_processor->makeInputVector(input_vector, output_vector)) {
+            batch_processor->makeInputVector(input_vector, output_vector)) {
       std::rethrow_exception(exception);
     }
     return output_vector;
@@ -365,24 +378,16 @@ class QueryCandidateGenerator {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
         file_name, _query_generator_config->batchSize());
 
-    if (_query_generator_config->hasIncorrectQueries()) {
-      return std::make_unique<dataset::StreamingGenericDatasetLoader>(
-          file_data_loader, _incorrect_queries_batch_processor);
-    }
     return std::make_unique<dataset::StreamingGenericDatasetLoader>(
-        file_data_loader, _batch_processor);
+        file_data_loader, _training_batch_processor);
   }
 
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;
   uint32_t _dimension_for_encodings;
 
   std::unique_ptr<Flash<uint32_t>> _flash_index;
-
-  std::vector<dataset::BlockPtr> _input_blocks;
-  std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
-
-  std::shared_ptr<dataset::GenericBatchProcessor>
-      _incorrect_queries_batch_processor;
+  std::shared_ptr<dataset::GenericBatchProcessor> _training_batch_processor;
+  std::shared_ptr<dataset::GenericBatchProcessor> _inference_batch_processor;
 
   /**
    * Maintains a mapping from the assigned labels to the original
@@ -402,7 +407,7 @@ class QueryCandidateGenerator {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_query_generator_config, _dimension_for_encodings, _flash_index,
-            _input_blocks, _batch_processor, _incorrect_queries_batch_processor,
+            _training_batch_processor, _inference_batch_processor,
             _labels_to_queries_map, _queries_to_labels_map);
   }
 };
