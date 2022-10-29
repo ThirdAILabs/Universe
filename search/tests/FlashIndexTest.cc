@@ -3,7 +3,6 @@
 #include <bolt_vector/tests/BoltVectorTestUtils.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <gtest/gtest.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/Datasets.h>
 #include <search/src/Flash.h>
 #include <algorithm>

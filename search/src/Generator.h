@@ -238,6 +238,10 @@ class QueryCandidateGenerator {
     return outputs;
   }
 
+  std::unordered_map<std::string, uint32_t> getQueriesToLabelsMap() const {
+    return _queries_to_labels_map;
+  }
+
  private:
   explicit QueryCandidateGenerator(
       QueryCandidateGeneratorConfigPtr query_candidate_generator_config)
