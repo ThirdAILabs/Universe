@@ -1,6 +1,5 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
