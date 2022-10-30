@@ -16,10 +16,13 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <dataset/src/DataLoader.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
 #include <cstdint>
@@ -48,6 +51,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         _parallel(parallel),
         _text_pairgram_word_limit(text_pairgram_word_limit),
         _column_contextualization(column_contextualization) {
+    FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
+
+    _vectors_map = processAllMetadata();
+
     ColumnNumberMap mock_column_number_map(_config->data_types);
     auto mock_processor = makeLabeledUpdatingProcessor(mock_column_number_map);
 
@@ -65,14 +72,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
-    auto header = data_loader->nextLine();
-    if (!header) {
-      throw std::invalid_argument(
-          "The dataset must have a header that contains column names.");
-    }
+    auto current_column_number_map = makeColumnNumberMap(data_loader);
 
-    auto current_column_number_map =
-        std::make_shared<ColumnNumberMap>(*header, _config->delimiter);
     if (!_column_number_map) {
       _column_number_map = std::move(current_column_number_map);
       _column_number_to_name = _column_number_map->getColumnNumToColNameMap();
@@ -206,6 +207,94 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   uint32_t getLabelDim() final { return _label_dim; }
 
  private:
+  PreprocessedVectorsMap processAllMetadata() {
+    PreprocessedVectorsMap metadata_vectors;
+    for (const auto& [col_name, col_type] : _config->data_types) {
+      if (col_type.isCategorical()) {
+        auto categorical = col_type.asCategorical();
+        if (categorical.metadata_config) {
+          metadata_vectors[col_name] =
+              makeProcessedVectorsForCategoricalColumn(col_name, categorical);
+        }
+      }
+    }
+    return metadata_vectors;
+  }
+
+  dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
+      const std::string& col_name, const CategoricalType& categorical) {
+    if (!categorical.metadata_config) {
+      throw std::invalid_argument(
+          "The given categorical column does not have a metadata config.");
+    }
+
+    auto metadata = categorical.metadata_config;
+
+    auto data_loader = dataset::SimpleFileDataLoader::make(
+        metadata->metadata_file,
+        /* target_batch_size= */ categorical.n_unique_classes);
+
+    auto column_numbers = makeColumnNumberMap(data_loader);
+
+    // Column
+
+    TemporalRelationships empty_temporal_relationships;
+
+    OracleConfig feature_config(
+        /* data_types= */ metadata->column_data_types,
+        /* temporal_tracking_relationships= */ {},
+        /* target= */ metadata->key);
+
+    ColumnVocabularies metadata_vocabs;  // Cannot use _vocabs because metadata
+                                         // may have same column names;
+
+    PreprocessedVectorsMap empty_vectors_map;
+
+    auto feature_blocks = FeatureComposer::makeNonTemporalFeatureBlocks(
+        feature_config, empty_temporal_relationships, *column_numbers,
+        metadata_vocabs, empty_vectors_map, _text_pairgram_word_limit,
+        _column_contextualization);
+
+    _vocabs[col_name] = dataset::ThreadSafeVocabulary::make(
+        /* vocab_size= */ categorical.n_unique_classes);
+
+    dataset::StreamingGenericDatasetLoader metadata_loader(
+        /* loader= */ data_loader,
+        /* processor= */
+        dataset::GenericBatchProcessor::make(
+            /* input_blocks= */ std::move(feature_blocks),
+            /* label_blocks= */ {dataset::StringLookupCategoricalBlock::make(
+                column_numbers->at(metadata->key), _vocabs[col_name])}));
+
+    auto [vectors, ids] = metadata_loader.loadInMemory();
+
+    if (vectors->numBatches() > 1 || vectors->numBatches() == 0 ||
+        vectors->at(0).getBatchSize() != categorical.n_unique_classes) {
+      throw std::invalid_argument(
+          "The number of metadata entries and unique values for column '" +
+          col_name + "' do not match.");
+    }
+
+    std::vector<BoltVector> preprocessed_vectors(categorical.n_unique_classes);
+    for (uint32_t i = 0; i < categorical.n_unique_classes; i++) {
+      auto id = ids->at(0)[i].active_neurons[0];
+      preprocessed_vectors[id] = std::move(vectors->at(0)[i]);
+    }
+
+    return std::make_shared<dataset::PreprocessedVectors>(
+        std::move(preprocessed_vectors), metadata_loader.getInputDim());
+  }
+
+  ColumnNumberMapPtr makeColumnNumberMap(dataset::DataLoaderPtr data_loader) {
+    auto header = data_loader->nextLine();
+    if (!header) {
+      throw std::invalid_argument(
+          "The dataset must have a header that contains column names.");
+    }
+
+    return std::make_shared<ColumnNumberMap>(*header, _config->delimiter);
+  }
+
   template <typename InputType>
   std::vector<BoltVector> featurizeInputImpl(const InputType& input,
                                              bool should_update_history) {
@@ -329,20 +418,18 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<dataset::BlockPtr> buildInputBlocks(
       const ColumnNumberMap& column_numbers, bool should_update_history) {
-    FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
-
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
-            *_config, _temporal_relationships, column_numbers,
-            _text_pairgram_word_limit, _column_contextualization);
+            *_config, _temporal_relationships, column_numbers, _vocabs,
+            _vectors_map, _text_pairgram_word_limit, _column_contextualization);
 
     if (_temporal_relationships.empty()) {
       return blocks;
     }
 
     auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
-        *_config, _temporal_relationships, column_numbers, _vocabs, *_context,
-        should_update_history);
+        *_config, _temporal_relationships, column_numbers, _vocabs,
+        _vectors_map, *_context, should_update_history);
 
     blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                   temporal_feature_blocks.end());
@@ -397,6 +484,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   TemporalContextPtr _context;
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
+  PreprocessedVectorsMap _vectors_map;
 
   ColumnNumberMapPtr _column_number_map;
   std::vector<std::string> _column_number_to_name;
@@ -429,8 +517,9 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
-            _temporal_relationships, _context, _vocabs, _column_number_map,
-            _column_number_to_name, _labeled_history_updating_processor,
+            _temporal_relationships, _context, _vocabs, _vectors_map,
+            _column_number_map, _column_number_to_name,
+            _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _input_dim, _label_dim,
             _parallel, _text_pairgram_word_limit, _column_contextualization);
   }

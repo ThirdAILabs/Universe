@@ -25,6 +25,8 @@
 
 namespace thirdai::automl::deployment {
 
+using CategoricalType = bolt::sequential_classifier::CategoricalDataType;
+
 using DataType = bolt::sequential_classifier::DataType;
 using ColumnDataTypes = std::map<std::string, DataType>;
 
