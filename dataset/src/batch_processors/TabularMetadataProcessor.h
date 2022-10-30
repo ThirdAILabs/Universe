@@ -182,7 +182,6 @@ class TabularMetadata {
               "Column " + std::to_string(col) +
               " specified as Numeric has no given number of bins.");
         }
-        break;
       }
       if (colType(col) != TabularDataType::Numeric) {
         if (_col_min_maxes.count(col)) {
@@ -195,7 +194,6 @@ class TabularMetadata {
               "Column " + std::to_string(col) +
               " specified as non-numeric has bin values.");
         }
-        break;
       }
       if (colType(col) == TabularDataType::Label) {
         if (_label_col) {
@@ -203,7 +201,6 @@ class TabularMetadata {
               "Found multiple 'label' columns in dataset.");
         }
         _label_col = col;
-        break;
       }
     }
   }
