@@ -136,7 +136,7 @@ class UserItemHistoryBlock : public Block {
         _item_col_delimiter(item_col_delimiter),
         _time_lag(time_lag) {}
 
-  uint32_t featureDim() const final { return _item_id_lookup->vocabSize(); }
+  uint32_t featureDim() const override { return _item_id_lookup->vocabSize(); }
 
   bool isDense() const final { return false; }
 
@@ -254,7 +254,6 @@ class UserItemHistoryBlock : public Block {
     for (auto record = user_history.rbegin(); record != user_history.rend();
          record++) {
       if (record->timestamp <= timestamp_seconds) {
-        vec.addSparseFeatureToSegment(record->item, 1.0);
         encodeItem(record->item, vec);
         added++;
       }
@@ -348,6 +347,8 @@ class MetadataUserItemHistoryBlock final : public UserItemHistoryBlock {
         track_last_n, should_update_history, include_current_row,
         item_col_delimiter, time_lag);
   }
+
+  uint32_t featureDim() const final { return _item_metadata->featureDim(); }
 
  private:
   void encodeItem(uint32_t item_id, SegmentedFeatureVector& vec) final {

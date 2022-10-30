@@ -48,14 +48,14 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         _context(std::make_shared<TemporalContext>()),
         _parallel(parallel),
         _text_pairgram_word_limit(text_pairgram_word_limit) {
+    _metadata =
+        buildColumnMetadata(_config->data_types, _text_pairgram_word_limit);
+
     ColumnNumberMap mock_column_number_map(_config->data_types);
     auto mock_processor = makeLabeledUpdatingProcessor(mock_column_number_map);
 
     _input_dim = mock_processor->getInputDim();
     _label_dim = mock_processor->getLabelDim();
-
-    _metadata =
-        buildColumnMetadata(_config->data_types, _text_pairgram_word_limit);
   }
 
   static std::shared_ptr<OracleDatasetFactory> make(
@@ -410,7 +410,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
           ColumnNumberMap column_number_map(*header, metadata_config.delimiter);
           ColumnVocabularies column_vocabularies;
 
-          OracleConfig config(data_types, {}, metadata_config.key);
+          OracleConfig config(metadata_config.column_data_types, {},
+                              metadata_config.key);
           TemporalRelationships empty_temporal_relationships;
 
           ColumnMetadata empty_metadata;
