@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import false
 from thirdai import bolt, deployment
 
 pytestmark = [pytest.mark.unit]
@@ -35,6 +36,7 @@ def make_serialized_oracle_config():
         config=deployment.UserSpecifiedParameter("config", type=bolt.OracleConfig),
         parallel=deployment.ConstantParameter(False),
         text_pairgram_word_limit=deployment.ConstantParameter(15),
+        column_contextualization=deployment.ConstantParameter(False),
     )
 
     train_eval_params = deployment.TrainEvalParameters(
