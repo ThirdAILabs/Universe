@@ -9,6 +9,7 @@
 #include <utils/StringManipulation.h>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -17,16 +18,23 @@
 
 namespace thirdai::bolt::sequential_classifier {
 
+struct CategoricalMetadataConfig;
+
+using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
+
 struct CategoricalDataType {
   explicit CategoricalDataType(uint32_t n_unique_classes,
                                std::optional<char> delimiter,
+                               CategoricalMetadataConfigPtr metadata,
                                bool contiguous_numerical_ids)
       : n_unique_classes(n_unique_classes),
         delimiter(delimiter),
+        metadata_config(std::move(metadata)),
         contiguous_numerical_ids(contiguous_numerical_ids) {}
 
   uint32_t n_unique_classes;
   std::optional<char> delimiter;
+  CategoricalMetadataConfigPtr metadata_config;
   bool contiguous_numerical_ids;
 
   CategoricalDataType() {}
@@ -35,7 +43,8 @@ struct CategoricalDataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(n_unique_classes, delimiter, contiguous_numerical_ids);
+    archive(n_unique_classes, delimiter, metadata_config,
+            contiguous_numerical_ids);
   }
 };
 
@@ -101,8 +110,10 @@ class DataType {
 
   static auto categorical(uint32_t n_unique_classes,
                           std::optional<char> delimiter = std::nullopt,
+                          CategoricalMetadataConfigPtr metadata = nullptr,
                           bool contiguous_numerical_ids = false) {
     return DataType(CategoricalDataType(n_unique_classes, delimiter,
+                                        std::move(metadata),
                                         contiguous_numerical_ids));
   }
 
@@ -174,10 +185,28 @@ class DataType {
   }
 };
 
+using ColumnDataTypes = std::map<std::string, DataType>;
+
+struct CategoricalMetadataConfig {
+  std::string metadata_file;
+  std::string key;
+  ColumnDataTypes column_data_types;
+  char delimiter = ',';
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(key, column_data_types);
+  }
+};
+
 struct TemporalCategoricalConfig {
   const std::string& column_name;
   uint32_t track_last_n;
   bool include_current_row;
+  bool use_metadata;
 };
 
 struct TemporalNumericalConfig {
@@ -193,11 +222,13 @@ class TemporalConfig {
   TemporalConfig() : _type(TemporalType::no_type) {}
 
   static auto categorical(std::string column_name, uint32_t track_last_n,
-                          bool include_current_row = false) {
+                          bool include_current_row = false,
+                          bool use_metadata = false) {
     return TemporalConfig(TemporalType::categorical, std::move(column_name),
                           /* track_last_n= */ track_last_n,
                           /* history_length= */ 0,
-                          /* include_current_row= */ include_current_row);
+                          /* include_current_row= */ include_current_row,
+                          /* use_metadata= */ use_metadata);
   }
 
   static auto numerical(std::string column_name, uint32_t history_length,
@@ -221,7 +252,7 @@ class TemporalConfig {
           "[TemporalConfig] Tried to cast non-categorical config as a "
           "categorical config.");
     }
-    return {_column_name, _track_last_n, _include_current_row};
+    return {_column_name, _track_last_n, _include_current_row, _use_metadata};
   }
 
   TemporalNumericalConfig asNumerical() const {
@@ -236,18 +267,20 @@ class TemporalConfig {
  private:
   TemporalConfig(TemporalType type, std::string column_name,
                  uint32_t track_last_n, uint32_t history_length,
-                 bool include_current_row)
+                 bool include_current_row, bool use_metadata = false)
       : _type(type),
         _column_name(std::move(column_name)),
         _track_last_n(track_last_n),
         _history_length(history_length),
-        _include_current_row(include_current_row) {}
+        _include_current_row(include_current_row),
+        _use_metadata(use_metadata) {}
 
   TemporalType _type;
   std::string _column_name;
   uint32_t _track_last_n;
   uint32_t _history_length;
   bool _include_current_row;
+  bool _use_metadata;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;

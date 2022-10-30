@@ -108,7 +108,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
   oracle_types_submodule.def(
       "categorical", sequential_classifier::DataType::categorical,
       py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
-      py::arg("consecutive_integer_ids") = false,
+      py::arg("metadata") = nullptr, py::arg("consecutive_integer_ids") = false,
       R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
@@ -127,11 +127,18 @@ py::module_ createBoltSubmodule(py::module_& module) {
             from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
             be arbitrary strings (including strings of integral ids that are 
             not within [0, n_unique_classes - 1]).
+        metadata (Metadata): Optional. A metadata object to be used when there 
+            is a separate metadata file corresponding to this categorical 
+            column.
     
     Example:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
-                    "user_id": bolt.types.categorical(n_unique_classes=5000)
+                    "user_id": bolt.types.categorical(
+                        n_unique_classes=5000, 
+                        delimiter=' ',
+                        metadata=bolt.types.metadata(filename="user_meta.csv", data_types={"age": bolt.types.numerical()}, key_column_name="user_id")
+                    )
                 }
                 ...
             )
@@ -199,6 +206,14 @@ py::module_ createBoltSubmodule(py::module_& module) {
             )
                              )pbdoc");
 
+  py::class_<sequential_classifier::CategoricalMetadataConfig,
+             sequential_classifier::CategoricalMetadataConfigPtr>(
+      oracle_types_submodule, "metadata")
+      .def(py::init<std::string, std::string,
+                    sequential_classifier::ColumnDataTypes, char>(),
+           py::arg("filename"), py::arg("key_column_name"),
+           py::arg("data_types"), py::arg("delimiter") = ',');
+
   auto oracle_temporal_submodule = bolt_submodule.def_submodule("temporal");
 
   py::class_<sequential_classifier::TemporalConfig>(  // NOLINT
@@ -209,6 +224,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
       "categorical", sequential_classifier::TemporalConfig::categorical,
       py::arg("column_name"), py::arg("track_last_n"),
       py::arg("column_known_during_inference") = false,
+      py::arg("use_metadata") = false,
       R"pbdoc(
     Temporal categorical config. Use this object to configure how a 
     categorical column is tracked over time. 
@@ -220,6 +236,10 @@ py::module_ createBoltSubmodule(py::module_& module) {
         column_known_during_inference (bool): Optional. Whether the 
             value of the tracked column is known during inference. Defaults 
             to False.
+        use_metadata (bool): Optional. Whether to use the metadata of the N 
+            tracked items, if metadata is provided in the corresponding 
+            categorical column type object. Ignored if no metadata is provided. 
+            Defaults to False.
 
     Example:
         >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend_level", "sales_performance"
