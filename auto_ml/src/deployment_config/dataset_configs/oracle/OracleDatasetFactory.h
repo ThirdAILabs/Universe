@@ -333,7 +333,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
-            *_config, _temporal_relationships, column_numbers, _vocabs,
+            *_config, _temporal_relationships, column_numbers,
             _text_pairgram_word_limit, _column_contextualization);
 
     if (_temporal_relationships.empty()) {

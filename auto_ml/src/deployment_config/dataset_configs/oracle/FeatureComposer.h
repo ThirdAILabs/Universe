@@ -44,8 +44,8 @@ class FeatureComposer {
   static std::vector<dataset::BlockPtr> makeNonTemporalFeatureBlocks(
       const OracleConfig& config,
       const TemporalRelationships& temporal_relationships,
-      const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
-      uint32_t text_pairgrams_word_limit, bool column_contextualization) {
+      const ColumnNumberMap& column_numbers, uint32_t text_pairgrams_word_limit,
+      bool column_contextualization) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto non_temporal_columns =
@@ -69,9 +69,6 @@ class FeatureComposer {
       uint32_t col_num = column_numbers.at(col_name);
 
       if (data_type.isCategorical()) {
-        auto vocab_size = data_type.asCategorical().n_unique_classes;
-        blocks.push_back(dataset::StringLookupCategoricalBlock::make(
-            col_num, vocabForColumn(vocabularies, col_name, vocab_size)));
         tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
       }
 
