@@ -43,7 +43,7 @@ void CategoricalTemporalTransformation::apply(ColumnMap& columns) {
 
   auto output_column = std::make_shared<VectorSparseArrayColumn>(
       std::move(output_histories), item_column->dimension().value().dim);
-      
+
   columns.setColumn(_output_column_name, output_column);
 }
 
