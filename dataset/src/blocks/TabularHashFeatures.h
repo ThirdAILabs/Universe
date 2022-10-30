@@ -8,6 +8,9 @@
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exception>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -24,6 +27,12 @@ class TabularHashFeatures : public Block {
         _output_range(output_range),
         _with_pairgrams(with_pairgrams) {}
 
+  struct Token {
+    uint32_t token;
+    uint32_t first_column;
+    uint32_t second_column;
+  };
+
   uint32_t featureDim() const final { return _output_range; };
 
   bool isDense() const final { return false; };
@@ -32,11 +41,21 @@ class TabularHashFeatures : public Block {
 
   Explanation explainIndex(
       uint32_t index_within_block,
-      const std::vector<std::string_view>& columnar_sample) final {
-    (void)columnar_sample;
-    (void)index_within_block;
-    throw std::invalid_argument(
-        "Explain feature is not yet implemented in tabular block!");
+      const std::vector<std::string_view>& input_row) final {
+    auto [col_num_1, col_num_2] =
+        getColumnNumbersForIndex(input_row, index_within_block);
+
+    if (col_num_1 == col_num_2) {
+      return {_metadata->getColumnName(col_num_1),
+              std::string(input_row[col_num_1])};
+    }
+
+    auto column_name = _metadata->getColumnName(col_num_1) + "," +
+                       _metadata->getColumnName(col_num_2);
+    auto keyword = std::string(input_row[col_num_1]) + "," +
+                   std::string(input_row[col_num_2]);
+
+    return {column_name, keyword};
   }
 
  protected:
@@ -47,6 +66,33 @@ class TabularHashFeatures : public Block {
   std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec) final {
+    std::unordered_map<uint32_t, uint32_t> unigram_to_col_num;
+    std::vector<uint32_t> tokens;
+    if (auto e = forEachOutputToken(
+            input_row, [&](Token token) { tokens.push_back(token.token); })) {
+      return e;
+    };
+
+    TextEncodingUtils::sumRepeatedIndices(
+        tokens, /* base_value = */ 1.0, [&](uint32_t pairgram, float value) {
+          vec.addSparseFeatureToSegment(pairgram, value);
+        });
+
+    return nullptr;
+  }
+
+  /**
+   * Iterates through every token and the corresponding source column numbers
+   * and applies a function. We do this to reduce code duplication between
+   * buildSegment() and explainIndex()
+   */
+  template <typename TOKEN_PROCESSOR_T>
+  std::exception_ptr forEachOutputToken(
+      const std::vector<std::string_view>& input_row,
+      TOKEN_PROCESSOR_T token_processor) {
+    static_assert(std::is_convertible<TOKEN_PROCESSOR_T,
+                                      std::function<void(Token)>>::value);
+    std::unordered_map<uint32_t, uint32_t> unigram_to_col_num;
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       std::string str_val(input_row[col]);
@@ -57,11 +103,13 @@ class TabularHashFeatures : public Block {
           if (err) {
             return err;
           }
+          unigram_to_col_num[unigram] = col;
           unigram_hashes.push_back(unigram);
           break;
         }
         case TabularDataType::Categorical: {
           uint32_t unigram = _metadata->getStringHashValue(str_val, col);
+          unigram_to_col_num[unigram] = col;
           unigram_hashes.push_back(unigram);
           break;
         }
@@ -73,21 +121,38 @@ class TabularHashFeatures : public Block {
 
     std::vector<uint32_t> hashes;
     if (_with_pairgrams) {
-      hashes = TextEncodingUtils::computeRawPairgramsFromUnigrams(
-          unigram_hashes, _output_range);
+      TextEncodingUtils::forEachPairgramFromUnigram(
+          unigram_hashes, _output_range,
+          [&](TextEncodingUtils::PairGram pairgram) {
+            Token token;
+            token.token = pairgram.pairgram;
+            token.first_column = unigram_to_col_num[pairgram.first_token];
+            token.second_column = unigram_to_col_num[pairgram.second_token];
+            token_processor(token);
+          });
     } else {
-      for (auto& unigram_hash : unigram_hashes) {
-        unigram_hash = unigram_hash % _output_range;
+      for (auto unigram : unigram_hashes) {
+        Token token;
+        token.token = unigram % _output_range;
+        token.first_column = unigram_to_col_num[unigram];
+        token.second_column = token.first_column;
+        token_processor(token);
       }
-      hashes = std::move(unigram_hashes);
     }
-
-    TextEncodingUtils::sumRepeatedIndices(
-        hashes, /* base_value = */ 1.0, [&](uint32_t pairgram, float value) {
-          vec.addSparseFeatureToSegment(pairgram, value);
-        });
-
     return nullptr;
+  }
+
+  std::pair<uint32_t, uint32_t> getColumnNumbersForIndex(
+      const std::vector<std::string_view>& input_row, uint32_t index) {
+    std::pair<uint32_t, uint32_t> col_nums;
+    if (auto e = forEachOutputToken(input_row, [&](Token token) {
+          if (token.token == index) {
+            col_nums = {token.first_column, token.second_column};
+          }
+        })) {
+      std::rethrow_exception(e);
+    }
+    return col_nums;
   }
 
  private:

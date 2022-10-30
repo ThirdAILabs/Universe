@@ -109,8 +109,8 @@ Args:
             specified number of unique values.
         delimiter (str): Optional. Defaults to None. A single character 
             (length-1 string) that separates multiple values in the same 
-            column. If not provided, Oracle assumes that there is only
-            one value in the column.
+            column. This can only be used for the target column. If not 
+            provided, Oracle assumes that there is only one value in the column.
         consecutive_integer_ids (bool): Optional. Defaults to None. When set to
             True, the values of this column are assumed to be integers ranging 
             from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 

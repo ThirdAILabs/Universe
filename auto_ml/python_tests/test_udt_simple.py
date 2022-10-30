@@ -89,8 +89,7 @@ def compare_explanations(explanations_1, explanations_2, assert_mode):
     all_equal = len(explanations_1) == len(explanations_2)
     for exp_1, exp_2 in zip(explanations_1, explanations_2):
         all_equal = all_equal and (
-            (exp_1.column_number == exp_2.column_number)
-            and (exp_1.column_name == exp_2.column_name)
+            (exp_1.column_name == exp_2.column_name)
             and (exp_1.percentage_significance == exp_2.percentage_significance)
             and (exp_1.keyword == exp_2.keyword)
         )
