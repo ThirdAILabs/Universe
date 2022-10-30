@@ -75,6 +75,7 @@ using SparseValueColumn = ValueColumn<uint32_t>;
 using DenseValueColumn = ValueColumn<float>;
 using IndexValueColumn = ValueColumn<std::pair<uint32_t, float>>;
 using StringColumn = ValueColumn<std::string>;
+using TimestampColumn = ValueColumn<int64_t>;
 
 using SparseValueColumnPtr = std::shared_ptr<ValueColumn<uint32_t>>;
 using DenseValueColumnPtr = std::shared_ptr<ValueColumn<float>>;

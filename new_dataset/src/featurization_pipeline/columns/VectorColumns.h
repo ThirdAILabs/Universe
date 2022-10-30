@@ -88,8 +88,8 @@ static void check2DArrayNonEmpty(const std::vector<std::vector<T>>& data) {
 
 class VectorSparseArrayColumn final : public ArrayColumn<uint32_t> {
  public:
-  VectorSparseArrayColumn(std::vector<std::vector<uint32_t>> data,
-                          std::optional<uint32_t> dim = std::nullopt)
+  explicit VectorSparseArrayColumn(std::vector<std::vector<uint32_t>> data,
+                                   std::optional<uint32_t> dim = std::nullopt)
       : _data(std::move(data)), _dim(dim) {
     check2DArrayNonEmpty<uint32_t>(_data);
 
@@ -140,7 +140,7 @@ class VectorSparseArrayColumn final : public ArrayColumn<uint32_t> {
 class VectorIndexValueArrayColumn final
     : public ArrayColumn<std::pair<uint32_t, float>> {
  public:
-  VectorIndexValueArrayColumn(
+  explicit VectorIndexValueArrayColumn(
       std::vector<std::vector<std::pair<uint32_t, float>>> data,
       std::optional<uint32_t> dim = std::nullopt)
       : _data(std::move(data)), _dim(dim) {
@@ -199,7 +199,8 @@ class VectorDenseArrayColumn final : public ArrayColumn<float> {
   }
 
   std::optional<DimensionInfo> dimension() const final {
-    return {{(uint32_t)_data[0].size(), /* is_dense= */ true}};
+    uint32_t dim = _data[0].size();
+    return {{dim, /* is_dense= */ true}};
   }
 
   uint64_t numRows() const final { return _data.size(); }

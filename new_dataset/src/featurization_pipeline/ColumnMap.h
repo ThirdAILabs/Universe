@@ -36,6 +36,9 @@ class ColumnMap {
 
   std::shared_ptr<StringColumn> getStringColumn(const std::string& name) const;
 
+  std::shared_ptr<TimestampColumn> getTimestampColumn(
+      const std::string& name) const;
+
   std::shared_ptr<SparseArrayColumn> getSparseArrayColumn(
       const std::string& name) const;
 

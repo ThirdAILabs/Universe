@@ -144,6 +144,16 @@ std::shared_ptr<StringColumn> ColumnMap::getStringColumn(
   return column;
 }
 
+std::shared_ptr<TimestampColumn> ColumnMap::getTimestampColumn(
+    const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<TimestampColumn>(getColumn(name));
+  if (!column) {
+    throw std::invalid_argument("Column '" + name +
+                                "' cannot be converted to TimestampColumn.");
+  }
+  return column;
+}
+
 std::shared_ptr<SparseArrayColumn> ColumnMap::getSparseArrayColumn(
     const std::string& name) const {
   auto column = std::dynamic_pointer_cast<SparseArrayColumn>(getColumn(name));
