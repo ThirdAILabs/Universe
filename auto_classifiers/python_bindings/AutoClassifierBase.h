@@ -64,14 +64,14 @@ class AutoClassifierBase {
 
     auto [data, labels] = dataset->loadInMemory();
 
-    PredictConfig predict_cfg = PredictConfig::makeConfig()
-                                    .withMetrics(getEvaluationMetrics())
-                                    .returnActivations();
+    EvalConfig eval_cfg = EvalConfig::makeConfig()
+                              .withMetrics(getEvaluationMetrics())
+                              .returnActivations();
     if (useSparseInference()) {
-      predict_cfg.enableSparseInference();
+      eval_cfg.enableSparseInference();
     }
 
-    auto [metrics, output] = _model->predict({data}, {labels}, predict_cfg);
+    auto [metrics, output] = _model->evaluate({data}, {labels}, eval_cfg);
 
     processPredictionsBeforeReturning(output);
 

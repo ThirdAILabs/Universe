@@ -1,5 +1,4 @@
 #include "BoltPython.h"
-#include "BoltGraphPython.h"
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
@@ -24,81 +23,71 @@
 
 namespace thirdai::bolt::python {
 
-py::module_ createBoltSubmodule(py::module_& module) {
-  auto bolt_submodule = module.def_submodule("bolt");
-
+void createBoltSubmodule(py::module_& bolt_submodule) {
+  py::class_<TrainConfig, TrainConfigPtr>(bolt_submodule, "TrainConfig")
+      .def(py::init(&TrainConfig::makeConfig), py::arg("learning_rate"),
+           py::arg("epochs"))
+      .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
+      .def("silence", &TrainConfig::silence)
 #if THIRDAI_EXPOSE_ALL
-#pragma message("THIRDAI_EXPOSE_ALL is defined")                 // NOLINT
-  py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
-      bolt_submodule, "SamplingConfig");
-
-  py::class_<thirdai::bolt::DWTASamplingConfig,
-             std::shared_ptr<DWTASamplingConfig>, SamplingConfig>(
-      bolt_submodule, "DWTASamplingConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("reservoir_size"));
-
-  py::class_<thirdai::bolt::FastSRPSamplingConfig,
-             std::shared_ptr<FastSRPSamplingConfig>, SamplingConfig>(
-      bolt_submodule, "FastSRPSamplingConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("reservoir_size"));
-
-  py::class_<RandomSamplingConfig, std::shared_ptr<RandomSamplingConfig>,
-             SamplingConfig>(bolt_submodule, "RandomSamplingConfig")
-      .def(py::init<>());
+      // We do not want to expose these methods to customers to hide complexity.
+      .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
+           py::arg("rebuild_hash_tables"))
+      .def("with_reconstruct_hash_functions",
+           &TrainConfig::withReconstructHashFunctions,
+           py::arg("reconstruct_hash_functions"))
+      // We do not want to expose this method because it will not work correctly
+      // with the ModelPipeline since it won't sae the entire pipeline.
+      .def("with_save_parameters", &TrainConfig::withSaveParameters,
+           py::arg("save_prefix"), py::arg("save_frequency"))
 #endif
+      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      .def("with_validation", &TrainConfig::withValidation,
+           py::arg("validation_data"), py::arg("validation_labels"),
+           py::arg("eval_config"), py::arg("validation_frequency") = 0,
+           py::arg("save_best_per_metric") = "",
+           R"pbdoc(
+Add validation options to execute validation during training. Can be used to
+configure input data and labels, frequency to validate and optionally saving
+best model per a specified metric.
 
-  // TODO(Geordie, Nicholas): put loss functions in its own submodule
+Args:
+    validation_data (dataset.BoltDataset): 
+        Input dataset for validation
+    validation_label (dataset.BoltDataset): 
+        Ground truth labels to use during validation
+    eval_config (bolt.EvalConfig): 
+        See EvalConfig.
+    validation_frequency (int, optional): 
+        Interval of updates (batches) to run validation and report
+        metrics. Defaults to 0, which is no validation amidst
+        training.
+    save_best_per_metric (str, optional): 
+        Whether to save best model based on validation. Needs
+        with_save_parameters(...) configured.  Defaults to empty
+        string, which implies no saving best model. Note that this requires the
+        tracked metric to be configured via `with_metrics(...)`.
 
-  /*
-    The second template argument to py::class_ specifies the holder class,
-    which by default would be a std::unique_ptr.
-    See: https://pybind11.readthedocs.io/en/stable/advanced/smart_ptrs.html
+)pbdoc")
+      .def_property_readonly(
+          "num_epochs", [](TrainConfig& config) { return config.epochs(); },
+          "Returns the number of epochs a model with this TrainConfig will "
+          "train for.")
+      .def_property_readonly(
+          "learning_rate",
+          [](TrainConfig& config) { return config.learningRate(); },
+          "Returns the learning rate a model with this TrainConfig will train "
+          "with.")
+      .def(getPickleFunction<TrainConfig>())
+      .def("with_log_loss_frequency", &TrainConfig::withLogLossFrequency,
+           py::arg("log_loss_frequency"));
 
-    The third template argument to py::class_ specifies the parent class if
-    there is a polymorphic relationship.
-    See: https://pybind11.readthedocs.io/en/stable/advanced/classes.html
-  */
-  py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
-      bolt_submodule, "LossFunction", "Base class for all loss functions");
-
-  py::class_<CategoricalCrossEntropyLoss,
-             std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
-      bolt_submodule, "CategoricalCrossEntropyLoss",
-      "A loss function for multi-class (one label per sample) classification "
-      "tasks.")
-      .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
-
-  py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
-             LossFunction>(
-      bolt_submodule, "BinaryCrossEntropyLoss",
-      "A loss function for multi-label (multiple class labels per each sample) "
-      "classification tasks.")
-      .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
-
-  py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
-      bolt_submodule, "MeanSquaredError",
-      "A loss function that minimizes mean squared error (MSE) for regression "
-      "tasks. "
-      ":math:`MSE = sum( (actual - prediction)^2 )`")
-      .def(py::init<>(), "Constructs a MeanSquaredError object.");
-
-  py::class_<WeightedMeanAbsolutePercentageErrorLoss,
-             std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>,
-             LossFunction>(
-      bolt_submodule, "WeightedMeanAbsolutePercentageError",
-      "A loss function to minimize weighted mean absolute percentage error "
-      "(WMAPE) "
-      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
-      "/ sum(|actual|)`")
-      .def(py::init<>(),
-           "Constructs a WeightedMeanAbsolutePercentageError object.");
-
-  py::class_<MarginBCE, std::shared_ptr<MarginBCE>, LossFunction>(
-      bolt_submodule, "MarginBCE")
-      .def(py::init<float, float, bool>(), py::arg("positive_margin"),
-           py::arg("negative_margin"), py::arg("bound"));
+  py::class_<EvalConfig>(bolt_submodule, "EvalConfig")
+      .def(py::init(&EvalConfig::makeConfig))
+      .def("enable_sparse_inference", &EvalConfig::enableSparseInference)
+      .def("with_metrics", &EvalConfig::withMetrics, py::arg("metrics"))
+      .def("silence", &EvalConfig::silence)
+      .def("return_activations", &EvalConfig::returnActivations);
 
   auto oracle_types_submodule = bolt_submodule.def_submodule("types");
 
@@ -709,10 +698,6 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> model.Oracle(...)
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
            )pbdoc");
-
-  createBoltGraphSubmodule(bolt_submodule);
-
-  return bolt_submodule;
 }
 
 }  // namespace thirdai::bolt::python

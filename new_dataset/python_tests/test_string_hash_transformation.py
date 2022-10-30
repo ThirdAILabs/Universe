@@ -1,23 +1,23 @@
 import pytest
 from dataset_utils import sparse_bolt_dataset_to_numpy
-from thirdai import new_dataset as dataset
+from thirdai import data
 
 pytestmark = [pytest.mark.unit]
 
 
 def get_str_col(col_length):
-    return dataset.columns.StringColumn([f"value{i}" for i in range(col_length)])
+    return data.columns.StringColumn([f"value{i}" for i in range(col_length)])
 
 
 def get_two_col_hashed_string_dataset(col_length, output_range):
 
     column1, column2 = get_str_col(col_length), get_str_col(col_length)
 
-    columns = dataset.ColumnMap({"column1": column1, "column2": column2})
+    columns = data.ColumnMap({"column1": column1, "column2": column2})
 
-    featurizer = dataset.FeaturizationPipeline(
+    featurizer = data.FeaturizationPipeline(
         transformations=[
-            dataset.transformations.StringHash(
+            data.transformations.StringHash(
                 input_column=column_name,
                 output_column=f"{column_name}_hashes",
                 output_range=output_range,

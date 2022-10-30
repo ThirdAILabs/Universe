@@ -4,9 +4,9 @@
 #include <cereal/types/vector.hpp>
 #include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
@@ -110,8 +110,8 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
     // added to the callback export.
 
     cleanupAfterBatchProcessing();
-    auto [validation_metrics, _] =
-        predict(validation->data(), validation->labels(), validation->config());
+    auto [validation_metrics, _] = evaluate(
+        validation->data(), validation->labels(), validation->config());
 
     if (save_context && _tracked_metric != nullptr) {
       auto query = validation_metrics.find(_tracked_metric->name());
@@ -265,8 +265,8 @@ MetricData BoltGraph::train(
     const std::optional<ValidationContext>& validation =
         train_config.getValidationContext();
     if (validation) {
-      auto [val_metrics, _] = predict(validation->data(), validation->labels(),
-                                      validation->config());
+      auto [val_metrics, _] = evaluate(validation->data(), validation->labels(),
+                                       validation->config());
       train_state.updateValidationMetrics(val_metrics);
     }
 
@@ -458,19 +458,18 @@ BoltGraph::getInputGradientSingle(
   }
 }
 
-InferenceResult BoltGraph::predict(
+InferenceResult BoltGraph::evaluate(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
-    const dataset::BoltDatasetPtr& test_labels,
-    const PredictConfig& predict_config) {
+    const dataset::BoltDatasetPtr& test_labels, const EvalConfig& eval_config) {
   DatasetContext predict_context(test_data, test_labels);
 
   bool has_labels = (test_labels != nullptr);
 
-  MetricAggregator metrics = predict_config.getMetricAggregator();
+  MetricAggregator metrics = eval_config.getMetricAggregator();
 
   verifyCanPredict(
       predict_context, has_labels,
-      /* returning_activations = */ predict_config.shouldReturnActivations(),
+      /* returning_activations = */ eval_config.shouldReturnActivations(),
       /* num_metrics_tracked = */ metrics.getNumMetricsTracked());
 
   /*
@@ -480,14 +479,14 @@ InferenceResult BoltGraph::predict(
    we need this to be able to support the largest batch size.
   */
   prepareToProcessBatches(predict_context.batchSize(),
-                          predict_config.sparseInferenceEnabled());
+                          eval_config.sparseInferenceEnabled());
 
   InferenceOutputTracker outputTracker(
-      _output, predict_config.shouldReturnActivations(),
+      _output, eval_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
 
   std::optional<ProgressBar> bar = makeOptionalProgressBar(
-      /*make=*/predict_config.verbose(),
+      /*make=*/eval_config.verbose(),
       /*description=*/"test",
       /*max_steps=*/predict_context.numBatches());
 
@@ -511,7 +510,7 @@ InferenceResult BoltGraph::predict(
         bar->increment();
       }
 
-      processOutputCallback(predict_config.outputCallback(), batch_size);
+      processOutputCallback(eval_config.outputCallback(), batch_size);
 
       outputTracker.saveOutputBatch(_output, batch_size);
     }
@@ -686,9 +685,9 @@ void BoltGraph::resetOutputGradients(uint32_t vec_index) {
   }
 }
 
-void BoltGraph::enableDistributedTraining() {
+void BoltGraph::disableSparseParameterUpdates() {
   for (NodePtr& node : _nodes) {
-    node->enableDistributedTraining();
+    node->disableSparseParameterUpdates();
   }
 }
 

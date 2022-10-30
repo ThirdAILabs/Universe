@@ -4,7 +4,7 @@ import pytest
 def test_bolt_smoke():
     from thirdai import bolt, search
 
-    bolt.graph.Model(inputs=[], output=None)
+    bolt.nn.Model(inputs=[], output=None)
 
 
 def test_docsearch_smoke():

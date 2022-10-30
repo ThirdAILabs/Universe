@@ -64,13 +64,13 @@ Define bolt model
 
 .. code-block:: python
 
-   input_layer = bolt.graph.Input(dim=784)
-   hidden_layer = bolt.graph.FullyConnected(dim=256, sparsity=0.1, activation="relu")(
+   input_layer = bolt.nn.Input(dim=784)
+   hidden_layer = bolt.nn.FullyConnected(dim=256, sparsity=0.1, activation="relu")(
        input_layer
    )
-   output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(hidden_layer)
+   output_layer = bolt.nn.FullyConnected(dim=10, activation="softmax")(hidden_layer)
 
-   model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+   model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
 
    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
@@ -80,15 +80,15 @@ Training
 --------
 
 The following section illustrates defining a :obj:`TrainConfig
-<thirdai.bolt.graph.TrainConfig>` to spawn the bolt training pipeline.
+<thirdai.bolt.TrainConfig>` to spawn the bolt training pipeline.
 
 .. code-block:: python
 
    tracked_metrics = ["mean_squared_error"]
 
-   predict_config = bolt.graph.PredictConfig.make().with_metrics(tracked_metrics)
+   eval_config = bolt.EvalConfig().with_metrics(tracked_metrics)
    train_config = (
-       bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+       bolt.TrainConfig(learning_rate=0.001, epochs=10)
        .with_metrics(tracked_metrics)
    )
 
@@ -109,10 +109,10 @@ The trained model can be used to test as illustrated below:
 
 .. code-block:: python
 
-    test_metrics = model.predict(
+    test_metrics = model.evaluate(
         test_data=mnist_dataset["test_data"],
         test_labels=mnist_dataset["test_labels"],
-        predict_config=predict_config,
+        eval_config=eval_config,
     )
 
 
@@ -121,7 +121,7 @@ Further training options
 ++++++++++++++++++++++++
 
 Enhancements to the training pipeline is achieved by modifying
-:obj:`TrainConfig <thirdai.bolt.graph.TrainConfig>`. In this section, we
+:obj:`TrainConfig <thirdai.bolt.TrainConfig>`. In this section, we
 demonstrate a few common use-cases. For understanding full capabilities, refer
 to the full API documentation.
 
@@ -135,12 +135,12 @@ logging backend.
 
 See :obj:`thirdai.logging <thirdai.logging>` API documentation for more
 details. Logging granularity during training can be controlled by the following
-modifications to :obj:`TrainConfig <thirdai.bolt.graph.TrainConfig>`.
+modifications to :obj:`TrainConfig <thirdai.bolt.TrainConfig>`.
 
 .. code-block:: python
 
    train_config = (
-       bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+       bolt.TrainConfig(learning_rate=0.001, epochs=10)
        .with_metrics(metrics)
        .with_log_loss_frequency(32)
    )
@@ -152,7 +152,7 @@ for information. For this, use the ``.silence()`` option.
 .. code-block:: python
 
    train_config = (
-       bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+       bolt.TrainConfig(learning_rate=0.001, epochs=10)
        .with_metrics(metrics)
        .with_log_loss_frequency(32)
        .silence()
@@ -162,20 +162,20 @@ Validation
 ----------
 
 The following code demonstrates adding a validation-set to the
-:obj:`TrainConfig <thirdai.bolt.graph.TrainConfig>` from the MNIST example, to achieve
+:obj:`TrainConfig <thirdai.bolt.TrainConfig>` from the MNIST example, to achieve
 validation at specified intervals of updates during training. 
 
 .. code-block:: python
 
-   predict_config = bolt.graph.PredictConfig.make().with_metrics(tracked_metrics)
+   eval_config = bolt.EvalConfig().with_metrics(tracked_metrics)
 
    train_config = (
-       bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+       bolt.TrainConfig(learning_rate=0.001, epochs=10)
        .with_metrics(metrics)
        .with_validation(
            [mnist_dataset["test_data"]],
            mnist_dataset["test_labels"],
-           predict_config,
+           eval_config,
            validation_frequency=32,
            save_best_per_metric="mean_squared_error",
        )
@@ -188,12 +188,12 @@ Saving models
 
 Inorder to save-models at defined intervals of updates, use the following
 additions, making use of the :meth:`.with_save_parameters(...)
-<thirdai.bolt.graph.TrainConfig.with_save_parameters>` option:
+<thirdai.bolt.TrainConfig.with_save_parameters>` option:
 
 .. code-block:: python
 
    train_config = (
-       bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+       bolt.TrainConfig(learning_rate=0.001, epochs=10)
        .with_metrics(metrics)
        .with_save_parameters(save_prefix="model", save_frequency=32)
    )
@@ -216,8 +216,8 @@ callback can be passed to the ``TrainConfig``, as demonstrated below:
 
 
    train_config = (
-       bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=10)
+       bolt.TrainConfig(learning_rate=0.001, epochs=10)
        .with_metrics(metrics)
-       .with_callbacks([bolt.graph.callbacks.KeyboardInterrupt()])
+       .with_callbacks([bolt.callbacks.KeyboardInterrupt()])
    )
 
