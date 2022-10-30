@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from thirdai import bolt, deployment
+from thirdai import bolt
 import os
 
 CENSUS_INCOME_BASE_DOWNLOAD_URL = (
@@ -180,13 +180,13 @@ def make_trained_model_with_metadata(metadata_src):
     else:
         raise ValueError(metadata_src + " is not a valid metadata_src")
 
-    model = deployment.UniversalDeepTransformer(
+    model = bolt.UniversalDeepTransformer(
         data_types, temporal_tracking_relationships=temporal, target="label"
     )
 
-    train_config = bolt.graph.TrainConfig.make(
-        epochs=3, learning_rate=0.01
-    ).with_metrics(["categorical_accuracy"])
+    train_config = bolt.TrainConfig(epochs=3, learning_rate=0.01).with_metrics(
+        ["categorical_accuracy"]
+    )
 
     model.train(TRAIN_FILE, train_config)
 
