@@ -16,6 +16,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 namespace thirdai::automl::deployment {
@@ -222,21 +223,14 @@ class FeatureComposer {
     time_lag *= dataset::QuantityHistoryTracker::granularityToSeconds(
         config.time_granularity);
 
-    if (metadata) {
-      return dataset::MetadataUserItemHistoryBlock::make(
-          /* user_col= */ column_numbers.at(key_column),
-          /* item_col= */ column_numbers.at(tracked_column),
-          /* timestamp_col= */ column_numbers.at(timestamp_column),
-          /* user_id_map= */ vocabForColumn(vocabs, key_column, key_vocab_size),
-          /* item_metadata= */ std::move(metadata),
-          /* item_history_collection= */
-          context.categoricalHistoryForId(temporal_relationship_id,
-                                          /* n_users= */ key_vocab_size),
-          /* track_last_n= */ temporal_meta.track_last_n,
-          /* should_update_history= */ should_update_history,
-          /* include_current_row= */ temporal_meta.include_current_row,
-          /* item_col_delimiter= */ tracked_meta.delimiter,
-          /* time_lag= */ time_lag);
+    std::variant<dataset::ThreadSafeVocabularyPtr, dataset::MetadataPtr>
+        item_id_map;
+
+    if (metadata && temporal_meta.use_metadata) {
+      item_id_map = std::move(metadata);
+    } else {
+      item_id_map =
+          vocabForColumn(vocabs, tracked_column, tracked_meta.n_unique_classes);
     }
 
     return dataset::UserItemHistoryBlock::make(
@@ -244,8 +238,7 @@ class FeatureComposer {
         /* item_col= */ column_numbers.at(tracked_column),
         /* timestamp_col= */ column_numbers.at(timestamp_column),
         /* user_id_map= */ vocabForColumn(vocabs, key_column, key_vocab_size),
-        /* item_id_map= */
-        vocabForColumn(vocabs, tracked_column, tracked_meta.n_unique_classes),
+        /* item_id_map= */ std::move(item_id_map),
         /* records= */
         context.categoricalHistoryForId(temporal_relationship_id,
                                         /* n_users= */ key_vocab_size),

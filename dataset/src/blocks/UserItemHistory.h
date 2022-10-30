@@ -22,6 +22,7 @@
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
+#include <variant>
 
 namespace thirdai::dataset {
 
@@ -85,21 +86,20 @@ using UserItemHistoryBlockPtr = std::shared_ptr<UserItemHistoryBlock>;
  */
 class UserItemHistoryBlock : public Block {
  public:
-  UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
-                       uint32_t timestamp_col,
-                       ThreadSafeVocabularyPtr user_id_map,
-                       ThreadSafeVocabularyPtr item_id_map,
-                       ItemHistoryCollectionPtr item_history_collection,
-                       uint32_t track_last_n, bool should_update_history = true,
-                       bool include_current_row = false,
-                       std::optional<char> item_col_delimiter = std::nullopt,
-                       int64_t time_lag = 0)
+  UserItemHistoryBlock(
+      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
+      ThreadSafeVocabularyPtr user_id_map, ThreadSafeVocabularyPtr item_id_map,
+      ItemHistoryCollectionPtr item_history_collection, uint32_t track_last_n,
+      bool should_update_history = true, bool include_current_row = false,
+      std::optional<char> item_col_delimiter = std::nullopt,
+      int64_t time_lag = 0, MetadataPtr item_metadata = nullptr)
       : _user_col(user_col),
         _item_col(item_col),
         _timestamp_col(timestamp_col),
         _track_last_n(track_last_n),
         _user_id_lookup(std::move(user_id_map)),
         _item_id_lookup(std::move(item_id_map)),
+        _item_metadata(std::move(item_metadata)),
         _per_user_history(std::move(item_history_collection)),
         _should_update_history(should_update_history),
         _include_current_row(include_current_row),
@@ -136,7 +136,10 @@ class UserItemHistoryBlock : public Block {
         _item_col_delimiter(item_col_delimiter),
         _time_lag(time_lag) {}
 
-  uint32_t featureDim() const override { return _item_id_lookup->vocabSize(); }
+  uint32_t featureDim() const final {
+    return _item_metadata ? _item_metadata->featureDim()
+                          : _item_id_lookup->vocabSize();
+  }
 
   bool isDense() const final { return false; }
 
@@ -148,16 +151,26 @@ class UserItemHistoryBlock : public Block {
 
   static UserItemHistoryBlockPtr make(
       uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
-      ThreadSafeVocabularyPtr user_id_map, ThreadSafeVocabularyPtr item_id_map,
+      ThreadSafeVocabularyPtr user_id_map,
+      std::variant<ThreadSafeVocabularyPtr, MetadataPtr> item_id_map,
       ItemHistoryCollectionPtr records, uint32_t track_last_n,
       bool should_update_history = true, bool include_current_row = false,
       std::optional<char> item_col_delimiter = std::nullopt,
       int64_t time_lag = 0) {
+    ThreadSafeVocabularyPtr item_vocab =
+        std::holds_alternative<ThreadSafeVocabularyPtr>(item_id_map)
+            ? std::get<ThreadSafeVocabularyPtr>(item_id_map)
+            : std::get<MetadataPtr>(item_id_map)->getKeyToUidVocab();
+    MetadataPtr metadata =
+        std::holds_alternative<ThreadSafeVocabularyPtr>(item_id_map)
+            ? nullptr
+            : std::get<MetadataPtr>(item_id_map);
+
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, std::move(user_id_map),
-        std::move(item_id_map), std::move(records), track_last_n,
+        std::move(item_vocab), std::move(records), track_last_n,
         should_update_history, include_current_row, item_col_delimiter,
-        time_lag);
+        time_lag, std::move(metadata));
   }
 
   static UserItemHistoryBlockPtr make(
@@ -177,6 +190,9 @@ class UserItemHistoryBlock : public Block {
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) final {
     (void)input_row;
+    if (_item_metadata) {
+      return {_item_col, "Metadata of previously seen item"};
+    }
     return {_item_col, "Previously seen '" +
                            _item_id_lookup->getString(index_within_block) +
                            "'"};
@@ -272,7 +288,11 @@ class UserItemHistoryBlock : public Block {
   }
 
   virtual void encodeItem(uint32_t item_id, SegmentedFeatureVector& vec) {
-    vec.addSparseFeatureToSegment(item_id, 1.0);
+    if (!_item_metadata) {
+      vec.addSparseFeatureToSegment(item_id, 1.0);
+    } else {
+      vec.extendWithBoltVector(_item_metadata->getVectorForUid(item_id));
+    }
   }
 
   // Returns elements removed from the item history in chronological order.
@@ -298,6 +318,7 @@ class UserItemHistoryBlock : public Block {
 
   ThreadSafeVocabularyPtr _user_id_lookup;
   ThreadSafeVocabularyPtr _item_id_lookup;
+  MetadataPtr _item_metadata;
 
   std::shared_ptr<ItemHistoryCollection> _per_user_history;
 
@@ -311,63 +332,11 @@ class UserItemHistoryBlock : public Block {
   void serialize(Archive& archive) {
     archive(cereal::base_class<Block>(this), _user_col, _item_col,
             _timestamp_col, _track_last_n, _user_id_lookup, _item_id_lookup,
-            _per_user_history, _should_update_history, _include_current_row,
-            _item_col_delimiter, _time_lag);
-  }
-};
-
-class MetadataUserItemHistoryBlock final : public UserItemHistoryBlock {
- public:
-  MetadataUserItemHistoryBlock(
-      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
-      ThreadSafeVocabularyPtr user_id_map, MetadataPtr item_metadata,
-      ItemHistoryCollectionPtr item_history_collection, uint32_t track_last_n,
-      bool should_update_history = true, bool include_current_row = false,
-      std::optional<char> item_col_delimiter = std::nullopt,
-      int64_t time_lag = 0)
-      : UserItemHistoryBlock(user_col, item_col, timestamp_col,
-                             std::move(user_id_map),
-                             item_metadata->getKeyToUidVocab(),
-                             std::move(item_history_collection), track_last_n,
-                             should_update_history, include_current_row,
-                             item_col_delimiter, time_lag),
-        _item_metadata(std::move(item_metadata)) {}
-
-  static auto make(uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
-                   ThreadSafeVocabularyPtr user_id_map,
-                   MetadataPtr item_metadata,
-                   ItemHistoryCollectionPtr item_history_collection,
-                   uint32_t track_last_n, bool should_update_history = true,
-                   bool include_current_row = false,
-                   std::optional<char> item_col_delimiter = std::nullopt,
-                   int64_t time_lag = 0) {
-    return std::make_shared<MetadataUserItemHistoryBlock>(
-        user_col, item_col, timestamp_col, std::move(user_id_map),
-        std::move(item_metadata), std::move(item_history_collection),
-        track_last_n, should_update_history, include_current_row,
-        item_col_delimiter, time_lag);
-  }
-
-  uint32_t featureDim() const final { return _item_metadata->featureDim(); }
-
- private:
-  void encodeItem(uint32_t item_id, SegmentedFeatureVector& vec) final {
-    vec.extendWithBoltVector(_item_metadata->getVectorForUid(item_id));
-  }
-
-  MetadataPtr _item_metadata;
-
-  // Constructor for Cereal
-  MetadataUserItemHistoryBlock() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<UserItemHistoryBlock>(this), _item_metadata);
+            _item_metadata, _per_user_history, _should_update_history,
+            _include_current_row, _item_col_delimiter, _time_lag);
   }
 };
 
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::UserItemHistoryBlock)
-CEREAL_REGISTER_TYPE(thirdai::dataset::MetadataUserItemHistoryBlock)

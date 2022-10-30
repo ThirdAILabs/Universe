@@ -148,12 +148,12 @@ def make_metadata():
     )
 
 
-def make_trained_model_with_metadata(metadata, metadata_src):
+def make_trained_model_with_metadata(metadata_src):
     n_unique_ids = len(pd.concat([pd.read_csv(TRAIN_FILE), pd.read_csv(TEST_FILE)]))
     if metadata_src == "user":
         data_types = {
             USER_COLUMN_NAME: bolt.types.categorical(
-                n_unique_classes=n_unique_ids, metadata=metadata
+                n_unique_classes=n_unique_ids, metadata=make_metadata()
             ),
             LABEL_COLUMN_NAME: bolt.types.categorical(n_unique_classes=2),
         }
@@ -162,7 +162,7 @@ def make_trained_model_with_metadata(metadata, metadata_src):
         data_types = {
             USER_COLUMN_NAME: bolt.types.categorical(n_unique_classes=1),
             ITEM_COLUMN_NAME: bolt.types.categorical(
-                n_unique_classes=n_unique_ids, metadata=metadata
+                n_unique_classes=n_unique_ids, metadata=make_metadata()
             ),
             LABEL_COLUMN_NAME: bolt.types.categorical(n_unique_classes=2),
             TS_COLUMN_NAME: bolt.types.date(),
@@ -170,7 +170,10 @@ def make_trained_model_with_metadata(metadata, metadata_src):
         temporal = {
             USER_COLUMN_NAME: [
                 bolt.temporal.categorical(
-                    ITEM_COLUMN_NAME, track_last_n=1, column_known_during_inference=True
+                    ITEM_COLUMN_NAME,
+                    track_last_n=1,
+                    column_known_during_inference=True,
+                    use_metadata=True,
                 )
             ]
         }
@@ -217,10 +220,12 @@ def test_metadata():
     for metadata_src in ["user", "item"]:
         curate_from_census_income_dataset(curate_metadata_for=metadata_src)
 
-        metadata = make_metadata()
-
-        model = make_trained_model_with_metadata(metadata, metadata_src=metadata_src)
+        model = make_trained_model_with_metadata(metadata_src=metadata_src)
 
         acc = get_accuracy_on_test_data(model, TEST_FILE)
 
         assert acc > 0.8
+
+        os.remove(TRAIN_FILE)
+        os.remove(TEST_FILE)
+        os.remove(METADATA_FILENAME)

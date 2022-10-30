@@ -221,7 +221,7 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
     (void)category_value;
     (void)index;
     // TODO(Geordie): This needs to be more descriptive.
-    return "metadata";
+    return "Metadata";
   }
 
  protected:
