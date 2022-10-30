@@ -2,7 +2,6 @@
 
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <functional>
 #include <string_view>
