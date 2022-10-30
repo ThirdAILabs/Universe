@@ -11,6 +11,8 @@
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset {
 
@@ -74,7 +76,7 @@ class TabularMetadata {
 
   TabularDataType colType(uint32_t col) { return _column_dtypes[col]; }
 
-  uint32_t getStringHashValue(const std::string& str_val, uint32_t col) const {
+  static uint32_t getStringHashValue(const std::string& str_val, uint32_t col) {
     // to ensure hashes are unique across columns we add salt based on the col
     const char* char_salt = reinterpret_cast<const char*>(&col);
     std::string str_salt(char_salt, 4);
@@ -91,6 +93,19 @@ class TabularMetadata {
         static_cast<uint64_t>(bin) << 32 | static_cast<uint64_t>(col);
     const char* val_to_hash = reinterpret_cast<const char*>(&uniqueBin);
     return TextEncodingUtils::computeUnigram(val_to_hash, /* len = */ 8);
+  }
+
+  std::string getColumnName(uint32_t col_number) {
+    if (_column_names.empty()) {
+      throw std::runtime_error(
+          "Column names not provided to tabular processor.");
+    }
+    if (col_number >= _column_names.size()) {
+      throw std::invalid_argument(
+          "Tabular processor: " + std::to_string(col_number) +
+          " is not a valid column number.");
+    }
+    return _column_names[col_number];
   }
 
  private:
@@ -167,7 +182,6 @@ class TabularMetadata {
               "Column " + std::to_string(col) +
               " specified as Numeric has no given number of bins.");
         }
-        break;
       }
       if (colType(col) != TabularDataType::Numeric) {
         if (_col_min_maxes.count(col)) {
@@ -180,7 +194,6 @@ class TabularMetadata {
               "Column " + std::to_string(col) +
               " specified as non-numeric has bin values.");
         }
-        break;
       }
       if (colType(col) == TabularDataType::Label) {
         if (_label_col) {
@@ -188,7 +201,6 @@ class TabularMetadata {
               "Found multiple 'label' columns in dataset.");
         }
         _label_col = col;
-        break;
       }
     }
   }

@@ -245,7 +245,11 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
         _unlabeled_non_updating_processor);
 
     for (auto& response : result) {
-      response.column_name = _column_number_to_name[response.column_number];
+      // We need this conditional because tabular pairgram block provides its
+      // own column name.
+      if (response.column_name.empty()) {
+        response.column_name = _column_number_to_name[response.column_number];
+      }
     }
 
     return result;
@@ -325,9 +329,11 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<dataset::BlockPtr> buildInputBlocks(
       const ColumnNumberMap& column_numbers, bool should_update_history) {
+    FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
+
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
-            *_config, _temporal_relationships, column_numbers, _vocabs,
+            *_config, _temporal_relationships, column_numbers,
             _text_pairgram_word_limit, _column_contextualization);
 
     if (_temporal_relationships.empty()) {
@@ -393,7 +399,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
 
   ColumnNumberMapPtr _column_number_map;
-  std::unordered_map<uint32_t, std::string> _column_number_to_name;
+  std::vector<std::string> _column_number_to_name;
 
   /*
     The labeled history-updating processor is used for training and evaluation,
