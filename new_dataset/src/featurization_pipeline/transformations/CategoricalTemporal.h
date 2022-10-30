@@ -43,7 +43,7 @@ class InteractionHistory {
           break;
         }
       }
-      // Any item that is within the last k of the given timestamp is not stale.
+      // Any item that is within the last n of the given timestamp is not stale.
       non_stale_items++;
     }
 
