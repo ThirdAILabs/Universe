@@ -329,6 +329,6 @@ class FeatureComposer {
     }
     return column_vocabs.at(column_name);
   }
-};  // namespace thirdai::automl::deployment
+};
 
 }  // namespace thirdai::automl::deployment
