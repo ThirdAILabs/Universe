@@ -40,10 +40,14 @@ struct Explanation {
   Explanation(uint32_t column_number, std::string keyword)
       : column_number(column_number), keyword(std::move(keyword)) {}
 
+  Explanation(std::string column_name, std::string keyword)
+      : column_number(0),
+        keyword(std::move(keyword)),
+        column_name(std::move(column_name)) {}
+
   std::string toString() const {
     std::stringstream s;
-    s << "column_number: " << column_number << " | column_name: \""
-      << column_name << "\" | keyword: \"" << keyword
+    s << "column_name: \"" << column_name << "\" | keyword: \"" << keyword
       << "\" | percentage_significance: " << percentage_significance;
     return s.str();
   }

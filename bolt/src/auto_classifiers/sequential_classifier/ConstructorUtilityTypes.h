@@ -4,6 +4,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <utils/StringManipulation.h>
 #include <iostream>
@@ -80,7 +81,21 @@ struct TextDataType {
   }
 };
 
-struct NumericalDataType {};
+struct NumericalDataType {
+  explicit NumericalDataType(std::pair<double, double> _range)
+      : range(std::move(_range)) {}
+
+  std::pair<double, double> range;
+
+  NumericalDataType() {}
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(range);
+  }
+};
 
 struct DateDataType {};
 
@@ -109,7 +124,9 @@ class DataType {
                                  /* force_pairgram= */ use_attention));
   }
 
-  static auto numerical() { return DataType(NumericalDataType()); }
+  static auto numerical(std::pair<double, double> range) {
+    return DataType(NumericalDataType(range));
+  }
 
   static auto date() { return DataType(DateDataType()); }
 

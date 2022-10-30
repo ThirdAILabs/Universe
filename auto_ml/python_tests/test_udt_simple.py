@@ -51,7 +51,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
                 n_unique_classes=3, consecutive_integer_ids=integer_label
             ),
             "timestamp": bolt.types.date(),
-            "hoursWatched": bolt.types.numerical(),
+            "hoursWatched": bolt.types.numerical(range=(0, 5)),
         },
         temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
@@ -89,8 +89,7 @@ def compare_explanations(explanations_1, explanations_2, assert_mode):
     all_equal = len(explanations_1) == len(explanations_2)
     for exp_1, exp_2 in zip(explanations_1, explanations_2):
         all_equal = all_equal and (
-            (exp_1.column_number == exp_2.column_number)
-            and (exp_1.column_name == exp_2.column_name)
+            (exp_1.column_name == exp_2.column_name)
             and (exp_1.percentage_significance == exp_2.percentage_significance)
             and (exp_1.keyword == exp_2.keyword)
         )
@@ -243,7 +242,7 @@ def test_works_without_temporal_relationships():
         data_types={
             "userId": bolt.types.categorical(n_unique_classes=3),
             "movieId": bolt.types.categorical(n_unique_classes=3),
-            "hoursWatched": bolt.types.numerical(),
+            "hoursWatched": bolt.types.numerical(range=(0, 5)),
         },
         target="movieId",
     )

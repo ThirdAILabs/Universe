@@ -3,10 +3,12 @@
 #include "Aliases.h"
 #include "OracleConfig.h"
 #include "TemporalContext.h"
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
+#include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/metadata/Metadata.h>
@@ -16,6 +18,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -23,15 +26,37 @@ namespace thirdai::automl::deployment {
 
 class FeatureComposer {
  public:
+  static void verifyConfigIsValid(
+      const OracleConfig& config,
+      const TemporalRelationships& temporal_relationships) {
+    if (temporal_relationships.count(config.target)) {
+      throw std::invalid_argument(
+          "The target column cannot be a temporal tracking key.");
+    }
+    for (const auto& [name, type] : config.data_types) {
+      if (type.isCategorical()) {
+        if (type.asCategorical().delimiter && (name != config.target)) {
+          throw std::invalid_argument(
+              "Only the target column can have a delimiter.");
+        }
+      }
+    }
+  }
+
   static std::vector<dataset::BlockPtr> makeNonTemporalFeatureBlocks(
       const OracleConfig& config,
       const TemporalRelationships& temporal_relationships,
-      const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
-      ColumnMetadata& metadata, uint32_t text_pairgrams_word_limit) {
+      const ColumnNumberMap& column_numbers, ColumnMetadata& metadata,
+      uint32_t text_pairgrams_word_limit, bool column_contextualization) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto non_temporal_columns =
         getNonTemporalColumns(config.data_types, temporal_relationships);
+
+    std::vector<dataset::TabularDataType> tabular_datatypes(
+        column_numbers.numCols(), dataset::TabularDataType::Ignore);
+
+    std::unordered_map<uint32_t, std::pair<double, double>> tabular_col_ranges;
 
     /*
       Order of column names and data types is always consistent because
@@ -46,12 +71,8 @@ class FeatureComposer {
       uint32_t col_num = column_numbers.at(col_name);
 
       if (data_type.isCategorical()) {
-        auto vocab_size = data_type.asCategorical().n_unique_classes;
-        auto delimiter = data_type.asCategorical().delimiter;
-        blocks.push_back(dataset::StringLookupCategoricalBlock::make(
-            col_num, vocabForColumn(vocabularies, col_name, vocab_size),
-            delimiter));
-        // Add metadata encoding in addition to one hot encoding of id.
+        tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
+
         if (metadata.count(col_name)) {
           blocks.push_back(dataset::MetadataCategoricalBlock::make(
               col_num, metadata.at(col_name),
@@ -60,7 +81,8 @@ class FeatureComposer {
       }
 
       if (data_type.isNumerical()) {
-        blocks.push_back(dataset::DenseArrayBlock::makeSingle(col_num));
+        tabular_col_ranges[col_num] = data_type.asNumerical().range;
+        tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
       }
 
       if (data_type.isText()) {
@@ -79,6 +101,13 @@ class FeatureComposer {
         blocks.push_back(dataset::DateBlock::make(col_num));
       }
     }
+
+    // we always use tabular unigrams but add pairgrams on top of it if the
+    // column_contextualization flag is true
+    blocks.push_back(
+        makeTabularHashFeaturesBlock(tabular_datatypes, tabular_col_ranges,
+                                     column_numbers, column_contextualization));
+
     return blocks;
   }
 
@@ -276,6 +305,19 @@ class FeatureComposer {
         /* history= */ numerical_history,
         /* should_update_history= */ should_update_history,
         /* include_current_row= */ temporal_meta.include_current_row);
+  }
+
+  static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
+      const std::vector<dataset::TabularDataType>& tabular_datatypes,
+      const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
+      const ColumnNumberMap& column_numbers, bool column_contextualization) {
+    auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
+        tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr,
+        /* column_names= */ column_numbers.getColumnNumToColNameMap());
+
+    return std::make_shared<dataset::TabularHashFeatures>(
+        tabular_metadata, /* output_range = */ 100000,
+        /* with_pairgrams= */ column_contextualization);
   }
 
   static dataset::ThreadSafeVocabularyPtr& vocabForColumn(
