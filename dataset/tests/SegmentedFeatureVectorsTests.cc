@@ -1,6 +1,5 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
