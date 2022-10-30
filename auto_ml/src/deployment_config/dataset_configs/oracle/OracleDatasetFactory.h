@@ -450,16 +450,16 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   std::vector<std::string> _column_number_to_name;
 
   /*
-    The labeled history-updating processor is used for training and
-    evaluation, which automatically updates the temporal context, as well as
-    for manually updating the temporal context.
+    The labeled history-updating processor is used for training and evaluation,
+    which automatically updates the temporal context, as well as for manually
+    updating the temporal context.
 
-    The Unlabeled non-updating processor is used for inference and
-    explanations. These processes should not update the history because the
-    tracked variable is often unavailable during inference. E.g. if we track
-    the movies watched by a user to recommend the next movie to watch, the
-    true movie that he ends up watching is not available during inference, so
-    we should not update the history.
+    The Unlabeled non-updating processor is used for inference and explanations.
+    These processes should not update the history because the tracked variable
+    is often unavailable during inference. E.g. if we track the movies watched
+    by a user to recommend the next movie to watch, the true movie that he ends
+    up watching is not available during inference, so we should not update the
+    history.
   */
   dataset::GenericBatchProcessorPtr _labeled_history_updating_processor;
   dataset::GenericBatchProcessorPtr _unlabeled_non_updating_processor;
