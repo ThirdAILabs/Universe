@@ -35,11 +35,11 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.graph,
+        model_to_wrap: bolt.nn.Model,
         train_source,
         id: int,
         primary_worker,
-        train_config: bolt.graph.TrainConfig,
+        train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
     ):
@@ -214,10 +214,6 @@ class Worker:
         This function returns the total number of batches the workers have.
         """
         return self.model.num_batches()
-
-    @timed
-    def finish_training(self):
-        self.model.finish_training()
 
     def model(self):
         return self.model.model

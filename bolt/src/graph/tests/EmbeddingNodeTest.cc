@@ -45,9 +45,8 @@ TEST(EmbeddingNodeTest, SimpleTokenDataset) {
           .withMetrics({"mean_squared_error"})
           .silence();
 
-  PredictConfig predict_config = PredictConfig::makeConfig()
-                                     .withMetrics({"categorical_accuracy"})
-                                     .silence();
+  EvalConfig eval_config =
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"}).silence();
 
   auto train_metrics = model.train(
       /* train_data= */ {data}, labels, train_config);
@@ -55,8 +54,8 @@ TEST(EmbeddingNodeTest, SimpleTokenDataset) {
   ASSERT_GT(train_metrics["mean_squared_error"].front(),
             train_metrics["mean_squared_error"].back());
 
-  auto test_metrics = model.predict(
-      /* test_data= */ {data}, labels, predict_config);
+  auto test_metrics = model.evaluate(
+      /* test_data= */ {data}, labels, eval_config);
 
   ASSERT_GT(test_metrics.first["categorical_accuracy"], 0.9);
 }

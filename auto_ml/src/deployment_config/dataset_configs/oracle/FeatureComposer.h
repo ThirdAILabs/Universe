@@ -111,9 +111,9 @@ class FeatureComposer {
 
     // we always use tabular unigrams but add pairgrams on top of it if the
     // column_contextualization flag is true
-    blocks.push_back(
-        makeTabularHashFeaturesBlock(tabular_datatypes, tabular_col_ranges,
-                                     column_numbers, column_contextualization));
+    blocks.push_back(makeTabularHashFeaturesBlock(
+        tabular_datatypes, tabular_col_ranges,
+        column_numbers.getColumnNumToColNameMap(), column_contextualization));
 
     return blocks;
   }
@@ -309,10 +309,11 @@ class FeatureComposer {
   static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
       const std::vector<dataset::TabularDataType>& tabular_datatypes,
       const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
-      const ColumnNumberMap& column_numbers, bool column_contextualization) {
+      const std::vector<std::string>& num_to_name,
+      bool column_contextualization) {
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
         tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr,
-        /* column_names= */ column_numbers.getColumnNumToColNameMap());
+        /* column_names= */ num_to_name);
 
     return std::make_shared<dataset::TabularHashFeatures>(
         tabular_metadata, /* output_range = */ 100000,

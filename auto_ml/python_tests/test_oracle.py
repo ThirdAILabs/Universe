@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import false
 from thirdai import bolt, deployment
 
 pytestmark = [pytest.mark.unit]
@@ -28,15 +29,14 @@ def make_serialized_oracle_config():
                 predecessor="hidden",
             ),
         ],
-        loss=bolt.CategoricalCrossEntropyLoss(),
+        loss=bolt.nn.losses.CategoricalCrossEntropy(),
     )
 
     dataset_config = deployment.OracleDatasetFactory(
-        config=deployment.UserSpecifiedParameter(
-            "config", type=deployment.OracleConfig
-        ),
+        config=deployment.UserSpecifiedParameter("config", type=bolt.OracleConfig),
         parallel=deployment.ConstantParameter(False),
         text_pairgram_word_limit=deployment.ConstantParameter(15),
+        column_contextualization=deployment.ConstantParameter(False),
     )
 
     train_eval_params = deployment.TrainEvalParameters(
@@ -84,10 +84,10 @@ def make_simple_oracle_model():
         ],
     )
 
-    model = deployment.ModelPipeline(
+    model = bolt.Pipeline(
         config_path=CONFIG_FILE,
         parameters={
-            "config": deployment.OracleConfig(
+            "config": bolt.OracleConfig(
                 data_types={
                     "userId": bolt.types.categorical(n_unique_classes=3),
                     "movieId": bolt.types.categorical(n_unique_classes=3),
@@ -105,11 +105,11 @@ def make_simple_oracle_model():
 def test_oracle_save_load():
     model = make_simple_oracle_model()
 
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
     model.save("saveLoc")
     before_load_output = model.evaluate(TEST_FILE)
-    model = deployment.ModelPipeline.load("saveLoc")
+    model = bolt.Pipeline.load("saveLoc")
     after_load_output = model.evaluate(TEST_FILE)
 
     assert (before_load_output == after_load_output).all()
@@ -117,7 +117,7 @@ def test_oracle_save_load():
 
 def test_multiple_predict_returns_same():
     model = make_simple_oracle_model()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     sample = "0,,2022-08-31"
@@ -130,7 +130,7 @@ def test_multiple_predict_returns_same():
 
 def test_explanations_total_percentage():
     model = make_simple_oracle_model()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     sample = "0,,2022-08-31"
@@ -145,7 +145,7 @@ def test_explanations_total_percentage():
 def test_index_changes_predict():
     model = make_simple_oracle_model()
     context = model.get_data_processor()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     sample = "0,,2022-08-31"
@@ -162,11 +162,11 @@ def test_index_changes_predict():
 def test_context_serialization():
     model = make_simple_oracle_model()
     context = model.get_data_processor()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     model.save("saveLoc")
-    saved_model = deployment.ModelPipeline.load("saveLoc")
+    saved_model = bolt.Pipeline.load("saveLoc")
     saved_context = saved_model.get_data_processor()
 
     sample = "0,,2022-08-31"

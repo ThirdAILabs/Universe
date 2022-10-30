@@ -85,7 +85,7 @@ def trained_text_classifier(clinc_dataset):
                 predecessor="hidden",
             ),
         ],
-        loss=bolt.CategoricalCrossEntropyLoss(),
+        loss=bolt.nn.losses.CategoricalCrossEntropy(),
     )
 
     dataset_config = deployment.SingleBlockDatasetFactory(
@@ -113,12 +113,12 @@ def trained_text_classifier(clinc_dataset):
 
     config.save(CONFIG_FILE)
 
-    model = deployment.ModelPipeline(
+    model = bolt.Pipeline(
         config_path=CONFIG_FILE,
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     )
 
-    train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     model.train(
         filename=TRAIN_FILE,
         train_config=train_config,
@@ -131,13 +131,13 @@ def trained_text_classifier(clinc_dataset):
 
 @pytest.fixture(scope="module")
 def model_predictions(trained_text_classifier):
-    predict_config = (
-        bolt.graph.PredictConfig.make()
+    eval_config = (
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
         .enable_sparse_inference()
     )
     logits = trained_text_classifier.evaluate(
-        filename=TEST_FILE, predict_config=predict_config
+        filename=TEST_FILE, eval_config=eval_config
     )
     predictions = np.argmax(logits, axis=1)
     return predictions
@@ -186,20 +186,18 @@ def batch_predictions(samples, original_predictions, batch_size=10):
 
 
 def test_train_with_validation(trained_text_classifier):
-    predict_config = (
-        bolt.graph.PredictConfig.make()
+    eval_config = (
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
         .enable_sparse_inference()
     )
 
     val_data, val_labels = trained_text_classifier.load_validation_data(TEST_FILE)
 
-    train_config = bolt.graph.TrainConfig.make(
-        epochs=1, learning_rate=0.001
-    ).with_validation(
+    train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001).with_validation(
         validation_data=val_data,
         validation_labels=val_labels,
-        predict_config=predict_config,
+        eval_config=eval_config,
         validation_frequency=10,
     )
 
@@ -215,14 +213,14 @@ def test_model_save_and_load(trained_text_classifier, clinc_dataset):
 
     trained_text_classifier.save(SAVE_FILE)
 
-    model = deployment.ModelPipeline.load(SAVE_FILE)
+    model = bolt.Pipeline.load(SAVE_FILE)
 
     # Check that predictions match after saving
     new_predictions = np.argmax(model.evaluate(TEST_FILE), axis=1)
     assert np.array_equal(old_predictions, new_predictions)
 
     # Check that we can still fine tune the model
-    train_config = bolt.graph.TrainConfig.make(epochs=1, learning_rate=0.0001)
+    train_config = bolt.TrainConfig(epochs=1, learning_rate=0.0001)
     model.train(filename=TRAIN_FILE, train_config=train_config)
 
     _, labels = clinc_dataset

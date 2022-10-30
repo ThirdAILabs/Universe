@@ -7,6 +7,8 @@
 #include <string_view>
 #include <type_traits>
 
+// TODO(Geordie): This file is due for major refactoring
+
 namespace thirdai::dataset {
 
 /**

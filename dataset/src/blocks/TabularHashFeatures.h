@@ -81,6 +81,11 @@ class TabularHashFeatures : public Block {
     return nullptr;
   }
 
+  /**
+   * Iterates through every token and the corresponding source column numbers
+   * and applies a function. We do this to reduce code duplication between
+   * buildSegment() and explainIndex()
+   */
   template <typename TOKEN_PROCESSOR_T>
   std::exception_ptr forEachOutputToken(
       const std::vector<std::string_view>& input_row,
