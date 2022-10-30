@@ -109,8 +109,8 @@ Args:
             specified number of unique values.
         delimiter (str): Optional. Defaults to None. A single character 
             (length-1 string) that separates multiple values in the same 
-            column. If not provided, Oracle assumes that there is only
-            one value in the column.
+            column. This can only be used for the target column. If not 
+            provided, Oracle assumes that there is only one value in the column.
         consecutive_integer_ids (bool): Optional. Defaults to None. When set to
             True, the values of this column are assumed to be integers ranging 
             from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
@@ -125,17 +125,22 @@ Args:
                 ...
             )
                              )pbdoc");
-  oracle_types_submodule.def("numerical",
-                             sequential_classifier::DataType::numerical,
-                             R"pbdoc(
+  oracle_types_submodule.def(
+      "numerical", sequential_classifier::DataType::numerical, py::arg("range"),
+      R"pbdoc(
     Numerical column type. Use this object if a column contains numerical 
     data (the value is treated as a quantity). Examples include hours of 
     a movie watched, sale quantity, or population size.
 
+    Args:
+        range (tuple(float, float)): The expected range (min to max) of the
+        numeric quantity. The more accurate this range to the test data, the 
+        better the model performance.
+
     Example:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
-                    "hours_watched": bolt.types.numerical()
+                    "hours_watched": bolt.types.numerical(range=(0, 25))
                 }
                 ...
             )
@@ -258,7 +263,7 @@ Args:
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
-                    "ad_spend": bolt.types.numerical(),
+                    "ad_spend": bolt.types.numerical(range=(0, 10000)),
                     "sales_performance": bolt.types.categorical(n_unique_classes=5),
                 },
                 target="sales_performance"
@@ -318,7 +323,7 @@ Args:
 
             Column type is one of:
             - `bolt.types.categorical(n_unique_values: int)`
-            - `bolt.types.numerical()`
+            - `bolt.types.numerical(range: tuple(float, float))`
             - `bolt.types.text(average_n_words: int=None)`
             - `bolt.types.date()`
             See bolt.types for details.
@@ -362,8 +367,8 @@ Args:
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
-                    "ad_spend": bolt.types.numerical(),
-                    "sales_quantity": bolt.types.numerical(),
+                    "ad_spend": bolt.types.numerical(range=(0, 10000)),
+                    "sales_quantity": bolt.types.numerical(range=(0, 20)),
                     "sales_performance": bolt.types.categorical(n_unique_classes=5),
                 },
                 temporal_tracking_relationships={
@@ -388,7 +393,7 @@ Args:
                     "user_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
                     "movie_id": bolt.types.categorical(n_unique_classes=3000),
-                    "hours_watched": bolt.types.numerical(),
+                    "hours_watched": bolt.types.numerical(range=(0, 25)),
                 },
                 temporal_tracking_relationships={
                     "user_id": [

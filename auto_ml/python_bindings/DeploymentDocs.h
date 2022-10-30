@@ -829,7 +829,7 @@ Args:
 
         Column type is one of:
         - `bolt.types.categorical(n_unique_values: int)`
-        - `bolt.types.numerical()`
+        - `bolt.types.numerical(range: tuple(float, float))`
         - `bolt.types.text(average_n_words: int=None)`
         - `bolt.types.date()`
         See bolt.types for details.
@@ -873,8 +873,8 @@ Examples:
             data_types={
                 "product_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
-                "ad_spend": bolt.types.numerical(),
-                "sales_quantity": bolt.types.numerical(),
+                "ad_spend": bolt.types.numerical(range=(0, 10000)),
+                "sales_quantity": bolt.types.numerical(range=(0, 20)),
                 "sales_performance": bolt.types.categorical(n_unique_classes=5),
             },
             temporal_tracking_relationships={
@@ -899,7 +899,7 @@ Examples:
                 "user_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
                 "movie_id": bolt.types.categorical(n_unique_classes=3000),
-                "hours_watched": bolt.types.numerical(),
+                "hours_watched": bolt.types.numerical(range=(0, 25)),
             },
             temporal_tracking_relationships={
                 "user_id": [
