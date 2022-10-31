@@ -40,7 +40,7 @@ jobs:
           ACTIONS_DEPLOY_KEY: ${{ secrets.PUBLIC_DOCS_DEPLOY_KEY }}
           EXTERNAL_REPOSITORY: ThirdAILabs/thirdailabs.github.io
           PUBLISH_BRANCH: main
-          PUBLISH_DIR: docs/public_docs/_build
+          PUBLISH_DIR: docs/public_docs/_build/html
         with:
           emptyCommits: false
           commitMessage: ${{ github.event.head_commit.message }}
