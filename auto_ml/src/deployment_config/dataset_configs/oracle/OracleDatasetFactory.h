@@ -13,6 +13,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -230,59 +231,33 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
 
     auto metadata = categorical.metadata_config;
 
-    auto data_loader = dataset::SimpleFileDataLoader::make(
-        metadata->metadata_file,
-        /* target_batch_size= */ categorical.n_unique_classes);
+    auto data_loader =
+        dataset::SimpleFileDataLoader::make(metadata->metadata_file,
+                                            /* target_batch_size= */ 2048);
 
     auto column_numbers = makeColumnNumberMap(data_loader);
 
-    // Column
+    auto input_blocks = buildMetadataInputBlocks(*metadata, *column_numbers);
 
-    TemporalRelationships empty_temporal_relationships;
-
-    OracleConfig feature_config(
-        /* data_types= */ metadata->column_data_types,
-        /* temporal_tracking_relationships= */ {},
-        /* target= */ metadata->key);
-
-    ColumnVocabularies metadata_vocabs;  // Cannot use _vocabs because metadata
-                                         // may have same column names;
-
-    PreprocessedVectorsMap empty_vectors_map;
-
-    auto feature_blocks = FeatureComposer::makeNonTemporalFeatureBlocks(
-        feature_config, empty_temporal_relationships, *column_numbers,
-        metadata_vocabs, empty_vectors_map, _text_pairgram_word_limit,
-        _column_contextualization);
-
+    /*
+      Use _vocabs here because we want to reuse the vocabulary for the key
+      column of the metadata for the corresponding categorical column in the
+      main dataset
+    */
     _vocabs[col_name] = dataset::ThreadSafeVocabulary::make(
         /* vocab_size= */ categorical.n_unique_classes);
+    auto label_block = dataset::StringLookupCategoricalBlock::make(
+        column_numbers->at(metadata->key), _vocabs[col_name]);
 
     dataset::StreamingGenericDatasetLoader metadata_loader(
         /* loader= */ data_loader,
         /* processor= */
         dataset::GenericBatchProcessor::make(
-            /* input_blocks= */ std::move(feature_blocks),
-            /* label_blocks= */ {dataset::StringLookupCategoricalBlock::make(
-                column_numbers->at(metadata->key), _vocabs[col_name])}));
+            /* input_blocks= */ std::move(input_blocks),
+            /* label_blocks= */ {std::move(label_block)}));
 
-    auto [vectors, ids] = metadata_loader.loadInMemory();
-
-    if (vectors->numBatches() > 1 || vectors->numBatches() == 0 ||
-        vectors->at(0).getBatchSize() != categorical.n_unique_classes) {
-      throw std::invalid_argument(
-          "The number of metadata entries and unique values for column '" +
-          col_name + "' do not match.");
-    }
-
-    std::vector<BoltVector> preprocessed_vectors(categorical.n_unique_classes);
-    for (uint32_t i = 0; i < categorical.n_unique_classes; i++) {
-      auto id = ids->at(0)[i].active_neurons[0];
-      preprocessed_vectors[id] = std::move(vectors->at(0)[i]);
-    }
-
-    return std::make_shared<dataset::PreprocessedVectors>(
-        std::move(preprocessed_vectors), metadata_loader.getInputDim());
+    return preprocessedVectorsFromDataset(metadata_loader, col_name,
+                                          categorical.n_unique_classes);
   }
 
   ColumnNumberMapPtr makeColumnNumberMap(dataset::DataLoaderPtr data_loader) {
@@ -293,6 +268,49 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     }
 
     return std::make_shared<ColumnNumberMap>(*header, _config->delimiter);
+  }
+
+  std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
+      const MetadataConfig& metadata_config,
+      const ColumnNumberMap& column_numbers) const {
+    OracleConfig feature_config(
+        /* data_types= */ metadata_config.column_data_types,
+        /* temporal_tracking_relationships= */ {},
+        /* target= */ metadata_config.key);
+    TemporalRelationships empty_temporal_relationships;
+    ColumnVocabularies metadata_vocabs;  // Cannot use _vocabs because metadata
+                                         // may have same column names;
+
+    PreprocessedVectorsMap empty_vectors_map;
+
+    return FeatureComposer::makeNonTemporalFeatureBlocks(
+        feature_config, empty_temporal_relationships, column_numbers,
+        metadata_vocabs, empty_vectors_map, _text_pairgram_word_limit,
+        _column_contextualization);
+  }
+
+  static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
+      dataset::StreamingGenericDatasetLoader& dataset,
+      const std::string& col_name, uint32_t n_unique_classes) {
+    auto [vectors, ids] = dataset.loadInMemory();
+
+    if (vectors->len() != n_unique_classes) {
+      throw std::invalid_argument(
+          "The number of metadata entries and unique values for column '" +
+          col_name + "' do not match.");
+    }
+
+    std::vector<BoltVector> preprocessed_vectors(n_unique_classes);
+
+    for (uint32_t batch = 0; batch < vectors->numBatches(); batch++) {
+      for (uint32_t vec = 0; vec < vectors->at(batch).getBatchSize(); vec++) {
+        auto id = ids->at(batch)[vec].active_neurons[0];
+        preprocessed_vectors[id] = std::move(vectors->at(batch)[vec]);
+      }
+    }
+
+    return std::make_shared<dataset::PreprocessedVectors>(
+        std::move(preprocessed_vectors), dataset.getInputDim());
   }
 
   template <typename InputType>

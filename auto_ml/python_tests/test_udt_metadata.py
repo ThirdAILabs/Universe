@@ -9,6 +9,14 @@ CENSUS_INCOME_BASE_DOWNLOAD_URL = (
 
 ORIGINAL_TRAIN_FILE = "./census_income_train.csv"
 ORIGINAL_TEST_FILE = "./census_income_test.csv"
+METADATA_FILENAME = "metadata.csv"
+TRAIN_FILE = "train.csv"
+TEST_FILE = "test.csv"
+USER_COLUMN_NAME = "user"
+ITEM_COLUMN_NAME = "item"
+LABEL_COLUMN_NAME = "label"
+KEY_COLUMN_NAME = "id"
+TS_COLUMN_NAME = "timestamp"
 
 COLUMN_NAMES = [
     "age",
@@ -48,30 +56,23 @@ def setup_module():
             file.writelines([line.replace(".", "") for line in data[1:]])
 
 
-METADATA_FILENAME = "metadata.csv"
-TRAIN_FILE = "train.csv"
-TEST_FILE = "test.csv"
-USER_COLUMN_NAME = "user"
-ITEM_COLUMN_NAME = "item"
-LABEL_COLUMN_NAME = "label"
-KEY_COLUMN_NAME = "id"
-TS_COLUMN_NAME = "timestamp"
+def load_dataframes():
+    orig_train_df = pd.read_csv(ORIGINAL_TRAIN_FILE, header=None)
+    orig_train_df.columns = COLUMN_NAMES
+    orig_test_df = pd.read_csv(ORIGINAL_TEST_FILE, header=None)
+    orig_test_df.columns = COLUMN_NAMES
+    return orig_train_df, orig_test_df
 
 
 def write_metadata_file(orig_train_df, orig_test_df):
     all_df = pd.concat([orig_train_df, orig_test_df], ignore_index=True)
-    metadata_columns = COLUMN_NAMES[:-1]
+    metadata_columns = COLUMN_NAMES[:-1]  # Exclude label column
     metadata_df = all_df[metadata_columns]
     metadata_df[KEY_COLUMN_NAME] = pd.Series(np.arange(len(all_df)))
     metadata_df.to_csv(METADATA_FILENAME, index=False)
 
 
-def curate_from_census_income_dataset(curate_metadata_for):
-    orig_train_df = pd.read_csv(ORIGINAL_TRAIN_FILE, header=None)
-    orig_train_df.columns = COLUMN_NAMES
-    orig_test_df = pd.read_csv(ORIGINAL_TEST_FILE, header=None)
-    orig_test_df.columns = COLUMN_NAMES
-
+def curate_from_census_income_dataset(orig_train_df, orig_test_df, curate_metadata_for):
     write_metadata_file(orig_train_df, orig_test_df)
 
     train_id_series = pd.Series(np.arange(len(orig_train_df)))
@@ -125,8 +126,8 @@ def curate_from_census_income_dataset(curate_metadata_for):
     test_df.to_csv(TEST_FILE, index=False)
 
 
-def make_metadata():
-    return bolt.types.metadata(
+def make_trained_model_with_metadata(n_samples, metadata_src):
+    metadata = bolt.types.metadata(
         filename=METADATA_FILENAME,
         key_column_name="id",
         data_types={
@@ -147,13 +148,10 @@ def make_metadata():
         },
     )
 
-
-def make_trained_model_with_metadata(metadata_src):
-    n_unique_ids = len(pd.concat([pd.read_csv(TRAIN_FILE), pd.read_csv(TEST_FILE)]))
     if metadata_src == "user":
         data_types = {
             USER_COLUMN_NAME: bolt.types.categorical(
-                n_unique_classes=n_unique_ids, metadata=make_metadata()
+                n_unique_classes=n_samples, metadata=metadata
             ),
             LABEL_COLUMN_NAME: bolt.types.categorical(n_unique_classes=2),
         }
@@ -162,7 +160,7 @@ def make_trained_model_with_metadata(metadata_src):
         data_types = {
             USER_COLUMN_NAME: bolt.types.categorical(n_unique_classes=1),
             ITEM_COLUMN_NAME: bolt.types.categorical(
-                n_unique_classes=n_unique_ids, metadata=make_metadata()
+                n_unique_classes=n_samples, metadata=metadata
             ),
             LABEL_COLUMN_NAME: bolt.types.categorical(n_unique_classes=2),
             TS_COLUMN_NAME: bolt.types.date(),
@@ -193,39 +191,54 @@ def make_trained_model_with_metadata(metadata_src):
     return model
 
 
-def get_n_classes(dataframe):
-    return len(dataframe["label"].unique())
-
-
-def get_ground_truths(trained_model, test_file):
-    df = pd.read_csv(test_file)
-    n_classes = get_n_classes(df)
+def get_ground_truths(trained_model, original_test_df):
+    n_classes = original_test_df["label"].unique()
     classes = {}
     for i in range(n_classes):
         classes[trained_model.class_name(i)] = i
-    ground_truth = df["label"].map(classes).to_numpy()
+    ground_truth = original_test_df["label"].map(classes).to_numpy()
     return ground_truth
 
 
-def get_accuracy_on_test_data(trained_model, test_file):
+def get_accuracy_on_test_data(trained_model, original_test_df):
 
-    results = trained_model.evaluate(test_file)
+    results = trained_model.evaluate(original_test_df)
     result_ids = np.argmax(results, axis=1)
-    ground_truth = get_ground_truths(trained_model, test_file)
+    ground_truth = get_ground_truths(trained_model, original_test_df)
 
     return sum(result_ids == ground_truth) / len(result_ids)
 
 
 def test_metadata():
-    for metadata_src in ["user", "item"]:
-        curate_from_census_income_dataset(curate_metadata_for=metadata_src)
+    """Metadata support allows us to preprocess vectors from a metadata file
+    that corresponds with a categorical column in the main dataset. When we load
+    the main dataset, by appending the corresponding preprocessed vector.
 
-        model = make_trained_model_with_metadata(metadata_src=metadata_src)
+    For example, we may have a metadata file with the following columns:
+    user,feature_1,feature_2
+
+    And a main dataset with the following columns:
+    timestamp,movie,user
+
+    For each row in the main dataset, we will append vectors from the metadata
+    file that corresponds to the user in the row.
+
+    To test this, we take a tabular dataset and move every column except the
+    label column to a metadata file. We also add an "id" column whose values are
+    row indices. The main dataset will only consist of "id" and label columns.
+    Thus, the model can only learn properly if it successfully uses metadata.
+    """
+    for metadata_src in ["user", "item"]:
+        train_df, test_df = load_dataframes()
+
+        curate_from_census_income_dataset(
+            train_df, test_df, curate_metadata_for=metadata_src
+        )
+
+        model = make_trained_model_with_metadata(
+            n_samples=len(pd.concat([train_df, test_df])), metadata_src=metadata_src
+        )
 
         acc = get_accuracy_on_test_data(model, TEST_FILE)
 
         assert acc > 0.8
-
-        os.remove(TRAIN_FILE)
-        os.remove(TEST_FILE)
-        os.remove(METADATA_FILENAME)
