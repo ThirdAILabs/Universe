@@ -17,7 +17,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  sync-python-docs:
+  sync-public-python-docs:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
@@ -28,13 +28,13 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - name: Build Universe
-        run: bin/build.py -f THIRDAI_BUILD_LICENSE -e docs
+        run: pip3 install . [docs] --verbose --force
 
       - name: Build public docs
         run: |
           (cd docs/public_docs && make html)
 
-      - name: publish new docs
+      - name: Publish new docs
         uses: peaceiris/actions-gh-pages@v2
         env:
           ACTIONS_DEPLOY_KEY: ${{ secrets.PUBLIC_DOCS_DEPLOY_KEY }}
