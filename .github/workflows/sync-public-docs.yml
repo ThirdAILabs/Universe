@@ -28,7 +28,7 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - name: Build Universe
-        run: pip3 install . [docs] --verbose --force
+        run: pip3 install .[docs] --verbose --force
 
       - name: Build public docs
         run: |
