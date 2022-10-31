@@ -1,4 +1,4 @@
-name: Sync Python Docs
+name: Sync Public Python Docs
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
@@ -8,9 +8,10 @@ concurrency:
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on push requests for the main branch
-  push:
-    branches: [public-docs, main]
+  # Triggers the workflow on release.
+  release:
+    types:
+      - published
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -31,6 +32,8 @@ jobs:
         run: pip3 install .[docs] --verbose --force
 
       - name: Build public docs
+      # We need the .nojekyll here because gh actions uses jekyll by default 
+      # and it doesn't work with the _static directory created by sphinx.
         run: |
           (cd docs/public_docs && make html && touch _build/html/.nojekyll)
 
