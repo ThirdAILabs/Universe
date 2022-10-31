@@ -50,9 +50,10 @@ QueryCandidateGeneratorConfig getQueryCandidateGeneratorConfig() {
       /* hash_function = */ "DensifiedMinHash",
       /* num_tables = */ NUM_TABLES,
       /* hashes_per_table = */ HASHES_PER_TABLE,
-      /* input_dim = */ NUM_VECTORS,
       /* top_k = */ 5,
-      /* n_grams = */ {3, 4});
+      /* n_grams = */ {3, 4},
+      /* has_incorrect_queries = */ false,
+      /* input_dim = */ NUM_VECTORS);
 }
 
 void assertQueryingWithoutTrainingThrowsException(

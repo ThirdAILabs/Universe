@@ -710,14 +710,15 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
   py::class_<bolt::QueryCandidateGeneratorConfig,
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
-      .def(py::init<std::string, uint32_t, uint32_t, uint32_t, uint32_t,
-                    std::vector<uint32_t>, bool, uint32_t, uint32_t>(),
-           py::arg("hash_function"), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("input_dim"),
-           py::arg("top_k") = 5, py::arg("n_grams"),
-           py::arg("has_incorrect_queries") = false,
-           py::arg("batch_size") = 10000, py::arg("range") = 1000000,
-           R"pbdoc(
+      .def(
+          py::init<std::string, uint32_t, uint32_t, uint32_t,
+                   std::vector<uint32_t>, bool, uint32_t, uint32_t, uint32_t>(),
+          py::arg("hash_function"), py::arg("num_tables"),
+          py::arg("hashes_per_table"), py::arg("top_k") = 5, py::arg("n_grams"),
+          py::arg("has_incorrect_queries") = false,
+          py::arg("input_dim") = 100000, py::arg("batch_size") = 10000,
+          py::arg("range") = 1000000,
+          R"pbdoc(
     Initializes a QueryCandidateGeneratorConfig object.
 
      Args:
@@ -726,11 +727,11 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
                         DensifiedMinHash and DWTA.
         num_tables (int): Number of hash tables to construct.
         hashes_per_table (int): Number of hashes per table.
-        input_dim (int): Input dimension 
         top_k (int): The number of closest queries to return
         n_grams (List[int]): List of N-gram blocks to use. 
         has_incorrect_queries(bool): Flag to identify if flash is initialized
             with single queries or tuples of incorrect and correct queries.
+        input_dim (int): Input dimension 
         batch_size (int): batch size. It is defaulted to 10000. 
         range (int) : The range for the hash function used. 
     Returns: 

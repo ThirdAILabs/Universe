@@ -34,9 +34,10 @@ using thirdai::search::Flash;
 class QueryCandidateGeneratorConfig {
  public:
   QueryCandidateGeneratorConfig(std::string hash_function, uint32_t num_tables,
-                                uint32_t hashes_per_table, uint32_t input_dim,
-                                uint32_t top_k, std::vector<uint32_t> n_grams,
+                                uint32_t hashes_per_table, uint32_t top_k,
+                                std::vector<uint32_t> n_grams,
                                 bool has_incorrect_queries = false,
+                                uint32_t input_dim = 100000,
                                 uint32_t batch_size = 10000,
                                 uint32_t range = 1000000)
       : _hash_function(std::move(hash_function)),

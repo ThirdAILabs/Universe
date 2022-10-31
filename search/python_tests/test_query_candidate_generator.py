@@ -130,9 +130,10 @@ def test_flash_generator():
         hash_function="DensifiedMinHash",
         num_tables=300,
         hashes_per_table=32,
-        input_dim=100,
+        top_k=5,
         n_grams=[3, 4],
         has_incorrect_queries=True,
+        input_dim=100,
     )
     generator_config.save(CONFIG_FILE)
 
