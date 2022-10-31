@@ -1,7 +1,6 @@
 import thirdai.distributed_bolt as db
 from thirdai import bolt, dataset
 
-
 def get_mnist_model():
     input_layer = bolt.graph.Input(dim=784)
 
@@ -27,19 +26,16 @@ if __name__ == "__main__":
         .with_log_loss_frequency(32)
     )
     cluster_config = db.RayTrainingClusterConfig(
-        num_workers=2, requested_cpus_per_node=48, communication_type="linear"
+        num_workers=2, requested_cpus_per_node=1, communication_type="linear"
     )
-    data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='text', equal=False)
-    ray_dataset = data_parallel_ingest.get_ray_dataset(paths='/share/pratik/data/mnist')
+    
 
     wrapped_model = db.DistributedDataParallel(
         cluster_config=cluster_config,
         model=model,
         train_config=train_config,
-        train_file_names=None,
+        train_file_names=dataset_paths,
         batch_size=256,
-        data_parallel_ingest_spec=data_parallel_ingest,
-        ray_dataset=ray_dataset
     )
     wrapped_model.train()
 

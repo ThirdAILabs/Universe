@@ -6,7 +6,7 @@ from time import time
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
 
-from ..utils import get_gradients, parse_svm_dataset
+from ..utils import get_gradients, parse_svm_dataset, RayBlockWritePathProvider
 
 
 def timed(f):
@@ -72,20 +72,20 @@ class Worker:
         self, data_shard, data_parallel_ingest_spec, batch_size
     ):
         file_path = None
-        file_path_prefix = (
+        file_path_prefix = os.path.join(
             data_parallel_ingest_spec.save_location
-            + data_parallel_ingest_spec.save_prefix
+            , f"block_{self.id}"
         )
         dataset_type = data_parallel_ingest_spec.dataset_type
+        if not os.path.exists(file_path_prefix):
+            os.mkdir(file_path_prefix)
         if dataset_type == "csv":
-            file_path = file_path_prefix + ".csv"
-            data_shard.write_csv(path=file_path)
-        elif dataset_type == "text":
-            file_path = file_path_prefix + ".txt"
-            data_shard.write_text(path=file_path)
+            data_shard.write_csv(file_path_prefix, block_path_provider=RayBlockWritePathProvider())
+            file_path = os.path.join(file_path_prefix, 'train_file')
         elif dataset_type == "numpy":
-            file_path = file_path_prefix + ".npy"
-            data_shard.write_numpy(path=file_path)
+            data_shard.write_numpy(file_path_prefix, block_path_provider=RayBlockWritePathProvider())
+            file_path = os.path.join(file_path_prefix, 'train_file')
+            
 
         self.load_dataset_on_each_worker(file_path, batch_size)
 

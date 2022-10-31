@@ -2,6 +2,28 @@ import logging
 
 from thirdai._thirdai import bolt, dataset
 
+from ray.data.datasource.file_based_datasource import BlockWritePathProvider
+import os
+
+
+class RayBlockWritePathProvider(BlockWritePathProvider):
+    def _get_write_path_for_block(
+        self,
+        base_path,
+        *,
+        filesystem=None,
+        dataset_uuid=None,
+        block=None,
+        block_index=None,
+        file_format=None,
+    ):
+        suffix = (
+            f"train_file"
+        )
+        
+        file_path = os.path.join(base_path, suffix)
+        return file_path
+
 
 def parse_svm_dataset(train_filename, batch_size):
     return dataset.load_bolt_svm_dataset(
@@ -68,3 +90,4 @@ def set_gradients(wrapped_model, gradients):
             gradient_position += 1
 
     return gradients
+

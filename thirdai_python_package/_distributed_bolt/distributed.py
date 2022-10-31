@@ -66,7 +66,7 @@ class RayTrainingClusterConfig:
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
         runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(get_num_cpus())}}
 
-        ray.init(address=cluster_address, runtime_env=runtime_env)
+        ray.init(address=cluster_address, runtime_env=runtime_env, ignore_reinit_error=True)
         if not ray.is_initialized():
             raise Exception(
                 textwrap.dedent(
@@ -116,7 +116,7 @@ class DataParallelIngestSpec:
         exclusive and exhaustive.
 
 
-        :param dataset_type: different dataset format. Currently Supported: csv, text, numpy.
+        :param dataset_type: different dataset format. Currently Supported: csv, numpy.
         :type dataset_type: str
         :param equal: Whether to guarantee each split has an equal
                 number of records. This may drop records if they cannot be
@@ -138,6 +138,7 @@ class DataParallelIngestSpec:
         self,
         paths: Union[str, List[str]],
         remote_file_system=None,
+        parallelism: int=1,
     ):
         """
         Get the shards to pass to train workers
@@ -151,16 +152,32 @@ class DataParallelIngestSpec:
         :raises ValueError: If dataset format specified not supported.
         :return: Dataset
         :rtype: ray.data.Dataset
+
+        Partitioning Local Dataset:
+            data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
+            ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S)
+    
+        Partitioning Dataset from AWS S3 buckets:
+            data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
+            ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, remote_file_system=paf.S3FileSystem(
+                region=YOUR_REGION,
+                access_key=YOUR_ACCESS_KEY,
+                secret_key=YOUR_SECRET_KEY,
+            ))
+
+        
+        
+        Note: Parallelism is number of CPUs to be used from the ray cluster while reading a dataset. So, increasing
+            parallelism would decrease the number of available CPUs for data parallel training.
+        
         """
 
         ray_dataset = None
         if self.dataset_type == "csv":
-            ray_dataset = ray.data.read_csv(paths=paths, filesystem=remote_file_system)
-        elif self.dataset_type == "text":
-            ray_dataset = ray.data.read_text(paths=paths, filesystem=remote_file_system)
+            ray_dataset = ray.data.read_csv(paths=paths, filesystem=remote_file_system, parallelism=parallelism)
         elif self.dataset_type == "numpy":
             ray_dataset = ray.data.read_numpy(
-                paths=paths, filesystem=remote_file_system
+                paths=paths, filesystem=remote_file_system, parallelism=parallelism
             )
 
         if ray_dataset == None:
@@ -202,14 +219,15 @@ class DistributedDataParallel:
         self.logging = cluster_config.logging
         self.train_config = train_config
 
-        if len(train_file_names) != cluster_config.num_workers:
-            raise ValueError(
-                "Received ",
-                len(train_file_names),
-                " training datasets. Expected ",
-                cluster_config.num_workers,
-                " datasets, one for each node.",
-            )
+        if train_file_names != None:
+            if len(train_file_names) != cluster_config.num_workers:
+                raise ValueError(
+                    "Received ",
+                    len(train_file_names),
+                    " training datasets. Expected ",
+                    cluster_config.num_workers,
+                    " datasets, one for each node.",
+                )
 
         self.logging.info("Training has started!")
 
@@ -256,7 +274,7 @@ class DistributedDataParallel:
             ray_data_shards = ray_dataset.split(
                 n=len(self.workers),
                 equal=data_parallel_ingest_spec.equal,
-                locality=self.workers,
+                locality_hints=self.workers,
             )
             ray.get(
                 [
