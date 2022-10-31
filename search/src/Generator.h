@@ -256,7 +256,7 @@ class QueryCandidateGenerator {
       auto inference_input_blocks = constructInputBlocks(
           _query_generator_config->nGrams(), /* column_index = */ 0);
 
-      auto _training_batch_processor =
+      _training_batch_processor =
           std::make_shared<dataset::GenericBatchProcessor>(
               training_input_blocks, std::vector<dataset::BlockPtr>{});
 
