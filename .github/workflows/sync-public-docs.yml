@@ -35,12 +35,12 @@ jobs:
           (cd docs/public_docs && make html)
 
       - name: publish new docs
-            uses: peaceiris/actions-gh-pages@v2
-            env:
-              ACTIONS_DEPLOY_KEY: ${{ secrets.PUBLIC_DOCS_DEPLOY_KEY }}
-              EXTERNAL_REPOSITORY: ThirdAILabs/thirdailabs.github.io
-              PUBLISH_BRANCH: main
-              PUBLISH_DIR: docs/public_docs/_build
-            with:
-              emptyCommits: false
-              commitMessage: ${{ github.event.head_commit.message }}
+        uses: peaceiris/actions-gh-pages@v2
+        env:
+          ACTIONS_DEPLOY_KEY: ${{ secrets.PUBLIC_DOCS_DEPLOY_KEY }}
+          EXTERNAL_REPOSITORY: ThirdAILabs/thirdailabs.github.io
+          PUBLISH_BRANCH: main
+          PUBLISH_DIR: docs/public_docs/_build
+        with:
+          emptyCommits: false
+          commitMessage: ${{ github.event.head_commit.message }}
