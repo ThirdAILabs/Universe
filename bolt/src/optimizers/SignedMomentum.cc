@@ -1,4 +1,5 @@
 #include "SignedMomentum.h"
+#include <algorithm>
 
 namespace thirdai::bolt::optimizers {
 
@@ -17,7 +18,8 @@ void SignedMomentum::updateRange(uint64_t start, uint64_t length,
 }
 
 void SignedMomentum::updateAtIndex(uint64_t index, float learning_rate) {
-  float gradient = _gradients[index];
+  float gradient = clip(_gradients[index], 1e2);
+
   if ((gradient < 0.0 && !_last_gradient_positive[index]) ||
       (gradient > 0.0 && _last_gradient_positive[index])) {
     _learning_rate_scaling_factor[index] *= _increase_scale_factor;
