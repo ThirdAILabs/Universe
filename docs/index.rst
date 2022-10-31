@@ -8,6 +8,8 @@
 thirdai
 =======
 
+.. image:: images/thirdai_logo.png
+
 To get access to our package, refer to `thirdai.com
 <https://www.thirdai.com/>`_. 
 
