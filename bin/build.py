@@ -54,7 +54,7 @@ def main():
     parser.add_argument(
         "-e",
         "--extras",
-        default="", 
+        default="",
         choices=["", "test", "benchmark", "distributed", "all", "docs"],
         metavar="EXTRAS",  # Don't print the choices because they're ugly
         help="A string corresponding to the additional python dependencies the build should ensure are installed. See setup.py for the specific packages each option entails.",
@@ -107,7 +107,7 @@ def main():
         checked_system_call(f"pip3 install .{args.extras} --verbose --force")
 
     else:
-        cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DFEATURE_FLAGS='{joined_feature_flags}'"
+        cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DTHIRDAI_FEATURE_FLAGS='{joined_feature_flags}'"
         build_command = f"cmake --build build --target {args.target} -j {args.jobs}"
 
         checked_system_call(cmake_command)
