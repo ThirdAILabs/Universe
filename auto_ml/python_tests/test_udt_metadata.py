@@ -192,7 +192,7 @@ def make_trained_model_with_metadata(n_samples, metadata_src):
 
 
 def get_ground_truths(trained_model, original_test_df):
-    n_classes = original_test_df["label"].unique()
+    n_classes = len(original_test_df["label"].unique())
     classes = {}
     for i in range(n_classes):
         classes[trained_model.class_name(i)] = i
@@ -202,7 +202,7 @@ def get_ground_truths(trained_model, original_test_df):
 
 def get_accuracy_on_test_data(trained_model, original_test_df):
 
-    results = trained_model.evaluate(original_test_df)
+    results = trained_model.evaluate(TEST_FILE)
     result_ids = np.argmax(results, axis=1)
     ground_truth = get_ground_truths(trained_model, original_test_df)
 
@@ -239,6 +239,6 @@ def test_metadata():
             n_samples=len(pd.concat([train_df, test_df])), metadata_src=metadata_src
         )
 
-        acc = get_accuracy_on_test_data(model, TEST_FILE)
+        acc = get_accuracy_on_test_data(model, test_df)
 
         assert acc > 0.8
