@@ -186,6 +186,11 @@ add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 set(SKIP_PERFORMANCE_COMPARISON ON)
 add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
+# This is so we can include cryptopp/*.h. We want this even if the build flag
+# isn't there so it always gets included in the compile_commands.json file and
+# can work with vscode
+include_directories(deps)
+
 find_package(Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
