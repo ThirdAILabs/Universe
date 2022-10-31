@@ -256,6 +256,10 @@ class QueryCandidateGenerator {
       auto inference_input_blocks = constructInputBlocks(
           _query_generator_config->nGrams(), /* column_index = */ 0);
 
+      auto _training_batch_processor =
+          std::make_shared<dataset::GenericBatchProcessor>(
+              training_input_blocks, std::vector<dataset::BlockPtr>{});
+
       _inference_batch_processor =
           std::make_shared<dataset::GenericBatchProcessor>(
               inference_input_blocks, std::vector<dataset::BlockPtr>{});
@@ -263,11 +267,13 @@ class QueryCandidateGenerator {
     } else {
       training_input_blocks = constructInputBlocks(
           _query_generator_config->nGrams(), /* column_index = */ 0);
-    }
 
-    _training_batch_processor =
-        std::make_shared<dataset::GenericBatchProcessor>(
-            training_input_blocks, std::vector<dataset::BlockPtr>{});
+      _training_batch_processor =
+          std::make_shared<dataset::GenericBatchProcessor>(
+              training_input_blocks, std::vector<dataset::BlockPtr>{});
+
+      _inference_batch_processor = _training_batch_processor;
+    }
   }
 
   std::vector<dataset::BlockPtr> constructInputBlocks(
@@ -341,7 +347,7 @@ class QueryCandidateGenerator {
 
         if ((*current_batch_labels).size() ==
             _query_generator_config->batchSize()) {
-          labels.push_back(*current_batch_labels);
+          labels.push_back(std::move(*current_batch_labels));
           current_batch_labels = std::make_shared<std::vector<uint32_t>>();
         }
       }
@@ -351,7 +357,7 @@ class QueryCandidateGenerator {
       // if the entire dataset fits in one batch or the last
       // batch has fewer elements than the batch size.
       if (!(*current_batch_labels).empty()) {
-        labels.push_back(*current_batch_labels);
+        labels.push_back(std::move(*current_batch_labels));
       }
 
     } catch (const std::ifstream::failure& exception) {
@@ -363,15 +369,10 @@ class QueryCandidateGenerator {
 
   BoltVector featurizeSingleQuery(const std::string& query) const {
     BoltVector output_vector;
-    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
-        _training_batch_processor;
-    if (_query_generator_config->hasIncorrectQueries()) {
-      batch_processor = _inference_batch_processor;
-    }
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
-    if (auto exception =
-            batch_processor->makeInputVector(input_vector, output_vector)) {
+    if (auto exception = _inference_batch_processor->makeInputVector(
+            input_vector, output_vector)) {
       std::rethrow_exception(exception);
     }
     return output_vector;
