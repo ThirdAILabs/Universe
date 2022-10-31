@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from dataset_utils import sparse_bolt_dataset_to_numpy
-from thirdai import new_dataset as dataset
+from thirdai import data
 
 pytestmark = [pytest.mark.unit]
 
@@ -15,21 +15,21 @@ def test_binning_transformation():
     column2_np = np.arange(start=10, stop=n_rows + 10, dtype=np.float32)
     np.random.shuffle(column2_np)
 
-    column1 = dataset.columns.NumpyDenseValueColumn(column1_np)
-    column2 = dataset.columns.NumpyDenseValueColumn(column2_np)
+    column1 = data.columns.NumpyDenseValueColumn(column1_np)
+    column2 = data.columns.NumpyDenseValueColumn(column2_np)
 
-    columns = dataset.ColumnMap({"column1": column1, "column2": column2})
+    columns = data.ColumnMap({"column1": column1, "column2": column2})
 
-    featurizer = dataset.FeaturizationPipeline(
+    featurizer = data.FeaturizationPipeline(
         transformations=[
-            dataset.transformations.Binning(
+            data.transformations.Binning(
                 input_column="column1",
                 output_column="column1_binned",
                 inclusive_min=0,
                 exclusive_max=100,
                 num_bins=5,
             ),
-            dataset.transformations.Binning(
+            data.transformations.Binning(
                 input_column="column2",
                 output_column="column2",
                 inclusive_min=10,

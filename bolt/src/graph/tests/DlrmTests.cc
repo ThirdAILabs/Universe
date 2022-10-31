@@ -87,11 +87,11 @@ float runDlrmTest(bool dense_features_are_noise,
           /* batch_size= */ batch_size, dense_features_are_noise,
           categorical_features_are_noise, /* seed= */ 2631);
 
-  auto predict_cfg =
-      PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
+  auto eval_cfg =
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
   auto [test_metrics, _] =
-      model.predict({test_data, test_tokens}, test_labels, predict_cfg);
+      model.evaluate({test_data, test_tokens}, test_labels, eval_cfg);
 
   return test_metrics["categorical_accuracy"];
 }

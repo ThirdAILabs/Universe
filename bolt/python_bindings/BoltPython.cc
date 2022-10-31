@@ -1,5 +1,4 @@
 #include "BoltPython.h"
-#include "BoltGraphPython.h"
 #include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
 #include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
@@ -24,91 +23,82 @@
 
 namespace thirdai::bolt::python {
 
-py::module_ createBoltSubmodule(py::module_& module) {
-  auto bolt_submodule = module.def_submodule("bolt");
-
+void createBoltSubmodule(py::module_& bolt_submodule) {
+  py::class_<TrainConfig, TrainConfigPtr>(bolt_submodule, "TrainConfig")
+      .def(py::init(&TrainConfig::makeConfig), py::arg("learning_rate"),
+           py::arg("epochs"))
+      .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
+      .def("silence", &TrainConfig::silence)
 #if THIRDAI_EXPOSE_ALL
-#pragma message("THIRDAI_EXPOSE_ALL is defined")                 // NOLINT
-  py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
-      bolt_submodule, "SamplingConfig");
-
-  py::class_<thirdai::bolt::DWTASamplingConfig,
-             std::shared_ptr<DWTASamplingConfig>, SamplingConfig>(
-      bolt_submodule, "DWTASamplingConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("reservoir_size"));
-
-  py::class_<thirdai::bolt::FastSRPSamplingConfig,
-             std::shared_ptr<FastSRPSamplingConfig>, SamplingConfig>(
-      bolt_submodule, "FastSRPSamplingConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("reservoir_size"));
-
-  py::class_<RandomSamplingConfig, std::shared_ptr<RandomSamplingConfig>,
-             SamplingConfig>(bolt_submodule, "RandomSamplingConfig")
-      .def(py::init<>());
+      // We do not want to expose these methods to customers to hide complexity.
+      .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
+           py::arg("rebuild_hash_tables"))
+      .def("with_reconstruct_hash_functions",
+           &TrainConfig::withReconstructHashFunctions,
+           py::arg("reconstruct_hash_functions"))
+      // We do not want to expose this method because it will not work correctly
+      // with the ModelPipeline since it won't sae the entire pipeline.
+      .def("with_save_parameters", &TrainConfig::withSaveParameters,
+           py::arg("save_prefix"), py::arg("save_frequency"))
 #endif
+      .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
+      .def("with_validation", &TrainConfig::withValidation,
+           py::arg("validation_data"), py::arg("validation_labels"),
+           py::arg("eval_config"), py::arg("validation_frequency") = 0,
+           py::arg("save_best_per_metric") = "",
+           R"pbdoc(
+Add validation options to execute validation during training. Can be used to
+configure input data and labels, frequency to validate and optionally saving
+best model per a specified metric.
 
-  // TODO(Geordie, Nicholas): put loss functions in its own submodule
+Args:
+    validation_data (dataset.BoltDataset): 
+        Input dataset for validation
+    validation_label (dataset.BoltDataset): 
+        Ground truth labels to use during validation
+    eval_config (bolt.EvalConfig): 
+        See EvalConfig.
+    validation_frequency (int, optional): 
+        Interval of updates (batches) to run validation and report
+        metrics. Defaults to 0, which is no validation amidst
+        training.
+    save_best_per_metric (str, optional): 
+        Whether to save best model based on validation. Needs
+        with_save_parameters(...) configured.  Defaults to empty
+        string, which implies no saving best model. Note that this requires the
+        tracked metric to be configured via `with_metrics(...)`.
 
-  /*
-    The second template argument to py::class_ specifies the holder class,
-    which by default would be a std::unique_ptr.
-    See: https://pybind11.readthedocs.io/en/stable/advanced/smart_ptrs.html
+)pbdoc")
+      .def_property_readonly(
+          "num_epochs", [](TrainConfig& config) { return config.epochs(); },
+          "Returns the number of epochs a model with this TrainConfig will "
+          "train for.")
+      .def_property_readonly(
+          "learning_rate",
+          [](TrainConfig& config) { return config.learningRate(); },
+          "Returns the learning rate a model with this TrainConfig will train "
+          "with.")
+      .def(getPickleFunction<TrainConfig>())
+      .def("with_log_loss_frequency", &TrainConfig::withLogLossFrequency,
+           py::arg("log_loss_frequency"));
 
-    The third template argument to py::class_ specifies the parent class if
-    there is a polymorphic relationship.
-    See: https://pybind11.readthedocs.io/en/stable/advanced/classes.html
-  */
-  py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
-      bolt_submodule, "LossFunction", "Base class for all loss functions");
-
-  py::class_<CategoricalCrossEntropyLoss,
-             std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
-      bolt_submodule, "CategoricalCrossEntropyLoss",
-      "A loss function for multi-class (one label per sample) classification "
-      "tasks.")
-      .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
-
-  py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
-             LossFunction>(
-      bolt_submodule, "BinaryCrossEntropyLoss",
-      "A loss function for multi-label (multiple class labels per each sample) "
-      "classification tasks.")
-      .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
-
-  py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
-      bolt_submodule, "MeanSquaredError",
-      "A loss function that minimizes mean squared error (MSE) for regression "
-      "tasks. "
-      ":math:`MSE = sum( (actual - prediction)^2 )`")
-      .def(py::init<>(), "Constructs a MeanSquaredError object.");
-
-  py::class_<WeightedMeanAbsolutePercentageErrorLoss,
-             std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>,
-             LossFunction>(
-      bolt_submodule, "WeightedMeanAbsolutePercentageError",
-      "A loss function to minimize weighted mean absolute percentage error "
-      "(WMAPE) "
-      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
-      "/ sum(|actual|)`")
-      .def(py::init<>(),
-           "Constructs a WeightedMeanAbsolutePercentageError object.");
-
-  py::class_<MarginBCE, std::shared_ptr<MarginBCE>, LossFunction>(
-      bolt_submodule, "MarginBCE")
-      .def(py::init<float, float, bool>(), py::arg("positive_margin"),
-           py::arg("negative_margin"), py::arg("bound"));
+  py::class_<EvalConfig>(bolt_submodule, "EvalConfig")
+      .def(py::init(&EvalConfig::makeConfig))
+      .def("enable_sparse_inference", &EvalConfig::enableSparseInference)
+      .def("with_metrics", &EvalConfig::withMetrics, py::arg("metrics"))
+      .def("silence", &EvalConfig::silence)
+      .def("return_activations", &EvalConfig::returnActivations);
 
   auto oracle_types_submodule = bolt_submodule.def_submodule("types");
 
   py::class_<sequential_classifier::DataType>(  // NOLINT
       oracle_types_submodule, "ColumnType", "Base class for bolt types.");
 
-  oracle_types_submodule.def("categorical",
-                             sequential_classifier::DataType::categorical,
-                             py::arg("n_unique_classes"),
-                             R"pbdoc(
+  oracle_types_submodule.def(
+      "categorical", sequential_classifier::DataType::categorical,
+      py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
+      py::arg("consecutive_integer_ids") = false,
+      R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
     movie titles, or age groups.
@@ -117,32 +107,48 @@ py::module_ createBoltSubmodule(py::module_& module) {
         n_unique_classes (int): Number of unique categories in the column.
             Oracle throws an error if the column contains more than the 
             specified number of unique values.
+        delimiter (str): Optional. Defaults to None. A single character 
+            (length-1 string) that separates multiple values in the same 
+            column. This can only be used for the target column. If not 
+            provided, Oracle assumes that there is only one value in the column.
+        consecutive_integer_ids (bool): Optional. Defaults to None. When set to
+            True, the values of this column are assumed to be integers ranging 
+            from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
+            be arbitrary strings (including strings of integral ids that are 
+            not within [0, n_unique_classes - 1]).
     
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(n_unique_classes=5000)
                 }
                 ...
             )
                              )pbdoc");
-  oracle_types_submodule.def("numerical",
-                             sequential_classifier::DataType::numerical,
-                             R"pbdoc(
+  oracle_types_submodule.def(
+      "numerical", sequential_classifier::DataType::numerical, py::arg("range"),
+      R"pbdoc(
     Numerical column type. Use this object if a column contains numerical 
     data (the value is treated as a quantity). Examples include hours of 
     a movie watched, sale quantity, or population size.
 
+    Args:
+        range (tuple(float, float)): The expected range (min to max) of the
+        numeric quantity. The more accurate this range to the test data, the 
+        better the model performance.
+
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
-                    "hours_watched": bolt.types.numerical()
+                    "hours_watched": bolt.types.numerical(range=(0, 25))
                 }
                 ...
             )
                              )pbdoc");
   oracle_types_submodule.def("text", sequential_classifier::DataType::text,
                              py::arg("average_n_words") = std::nullopt,
+                             py::arg("embedding_size") = "m",
+                             py::arg("use_attention") = false,
                              R"pbdoc(
     Text column type. Use this object if a column contains text data 
     (the meaning of the text matters). Examples include descriptions, 
@@ -152,9 +158,14 @@ py::module_ createBoltSubmodule(py::module_& module) {
         average_n_words (int): Optional. Average number of words in the 
             text column in each row. If provided, Oracle may make 
             optimizations as appropriate.
+        embedding_size (str): Optional. One of "small"/"s", "medium"/"m",
+            or "large"/"l". Defaults to "m".
+        use_attention (bool): Optional. If true, oracle is guaranteed to
+            use attention when processing this text column. Otherwise, 
+            oracle will only use attention when appropriate.
     
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_motto": bolt.types.text(average_n_words=10),
                     "user_bio": bolt.types.text()
@@ -169,7 +180,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
     Date strings must be in YYYY-MM-DD format.
  
     Example:
-        >>> bolt.Oracle(
+        >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "timestamp": bolt.types.date()
                 }
@@ -204,7 +215,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend level and sales performance over time.
         >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> model = deployment.UniversalDeepTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
@@ -248,11 +259,11 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend and sales performance over time.
         >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
-        >>> model = bolt.Oracle(
+        >>> model = deployment.UniversalDeepTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
-                    "ad_spend": bolt.types.numerical(),
+                    "ad_spend": bolt.types.numerical(range=(0, 10000)),
                     "sales_performance": bolt.types.categorical(n_unique_classes=5),
                 },
                 target="sales_performance"
@@ -312,7 +323,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
 
             Column type is one of:
             - `bolt.types.categorical(n_unique_values: int)`
-            - `bolt.types.numerical()`
+            - `bolt.types.numerical(range: tuple(float, float))`
             - `bolt.types.text(average_n_words: int=None)`
             - `bolt.types.date()`
             See bolt.types for details.
@@ -356,8 +367,8 @@ py::module_ createBoltSubmodule(py::module_& module) {
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
-                    "ad_spend": bolt.types.numerical(),
-                    "sales_quantity": bolt.types.numerical(),
+                    "ad_spend": bolt.types.numerical(range=(0, 10000)),
+                    "sales_quantity": bolt.types.numerical(range=(0, 20)),
                     "sales_performance": bolt.types.categorical(n_unique_classes=5),
                 },
                 temporal_tracking_relationships={
@@ -382,7 +393,7 @@ py::module_ createBoltSubmodule(py::module_& module) {
                     "user_id": bolt.types.categorical(n_unique_classes=5000),
                     "timestamp": bolt.types.date(),
                     "movie_id": bolt.types.categorical(n_unique_classes=3000),
-                    "hours_watched": bolt.types.numerical(),
+                    "hours_watched": bolt.types.numerical(range=(0, 25)),
                 },
                 temporal_tracking_relationships={
                     "user_id": [
@@ -687,10 +698,6 @@ py::module_ createBoltSubmodule(py::module_& module) {
         >>> model.Oracle(...)
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
            )pbdoc");
-
-  createBoltGraphSubmodule(bolt_submodule);
-
-  return bolt_submodule;
 }
 
 }  // namespace thirdai::bolt::python

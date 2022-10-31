@@ -134,6 +134,16 @@ std::shared_ptr<IndexValueColumn> ColumnMap::getIndexValueColumn(
   return column;
 }
 
+std::shared_ptr<StringColumn> ColumnMap::getStringColumn(
+    const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<StringColumn>(getColumn(name));
+  if (!column) {
+    throw std::invalid_argument("Column '" + name +
+                                "' cannot be converted to StringColumn.");
+  }
+  return column;
+}
+
 std::shared_ptr<SparseArrayColumn> ColumnMap::getSparseArrayColumn(
     const std::string& name) const {
   auto column = std::dynamic_pointer_cast<SparseArrayColumn>(getColumn(name));
@@ -171,6 +181,14 @@ ColumnPtr ColumnMap::getColumn(const std::string& name) const {
                                 "'.");
   }
   return _columns.at(name);
+}
+
+std::vector<std::string> ColumnMap::columns() const {
+  std::vector<std::string> columns;
+  for (auto const& map_entry : _columns) {
+    columns.push_back(map_entry.first);
+  }
+  return columns;
 }
 
 }  // namespace thirdai::dataset

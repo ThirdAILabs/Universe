@@ -10,7 +10,9 @@
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <utils/StringManipulation.h>
 #include <exception>
+#include <optional>
 #include <stdexcept>
 #include <string_view>
 #include <unordered_map>
@@ -65,16 +67,24 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
     return batch_list;
   }
 
+  uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
+    if (std::holds_alternative<uint32_t>(label)) {
+      return std::get<uint32_t>(label);
+    }
+
+    throw std::invalid_argument(
+        "This model does not support string labels; label must be a "
+        "non-negative integer.");
+  }
+
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const std::string& sample) final {
     auto input_row = dataset::ProcessorUtils::parseCsvRow(sample, _delimiter);
-    auto result = bolt::getSignificanceSortedExplanations(
-        gradients_indices, gradients_ratio, input_row,
-        _unlabeled_batch_processor);
-
-    return result;
+    return bolt::getSignificanceSortedExplanations(gradients_indices,
+                                                   gradients_ratio, input_row,
+                                                   _unlabeled_batch_processor);
   }
 
   std::vector<bolt::InputPtr> getInputNodes() final {
@@ -136,7 +146,7 @@ class SingleBlockDatasetFactoryConfig final
           delimiter + "'.");
     }
 
-    return std::make_unique<SingleBlockDatasetFactory>(
+    return std::make_shared<SingleBlockDatasetFactory>(
         /* data_block= */ data_block,
         /* unlabeled_data_block= */ unlabeled_data_block,
         /* label_block=*/label_block, /* shuffle= */ shuffle,

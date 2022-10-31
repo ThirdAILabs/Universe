@@ -1,13 +1,6 @@
 import logging
 
-from thirdai._thirdai import bolt, dataset
-
-
-def parse_svm_dataset(train_filename, batch_size):
-    return dataset.load_bolt_svm_dataset(
-        train_filename,
-        batch_size,
-    )
+from thirdai import data
 
 
 def init_logging(logger_file: str):
@@ -68,3 +61,54 @@ def set_gradients(wrapped_model, gradients):
             gradient_position += 1
 
     return gradients
+
+
+def _pandas_iterator(path, chunksize, node_index, num_nodes):
+    import pandas as pd
+
+    with pd.read_csv(path, chunksize=chunksize) as reader:
+        for chunk_id, chunk in enumerate(reader):
+            if chunk_id % num_nodes == node_index:
+                yield chunk
+    while True:
+        yield None
+
+
+class PandasColumnMapGenerator(data.ColumnMapGenerator):
+    def __init__(
+        self,
+        path,
+        num_nodes,
+        node_index,
+        lines_per_load,
+        dense_int_cols=set(),
+        int_col_dims={},
+    ):
+        self.path = path
+        self.num_nodes = num_nodes
+        self.node_index = node_index
+        self.lines_per_load = lines_per_load
+        self.dense_int_cols = dense_int_cols
+        self.int_col_dims = int_col_dims
+        self.current_iterator = None
+
+    def next(self):
+        # We do this here instead of the constructor so we don't need to
+        # pickle the generator
+        if self.current_iterator == None:
+            self.restart()
+
+        load = next(self.current_iterator)
+        if load is None:
+            return None
+
+        return data.pandas_to_columnmap(
+            load,
+            dense_int_cols=self.dense_int_cols,
+            int_col_dims=self.int_col_dims,
+        )
+
+    def restart(self):
+        self.current_iterator = _pandas_iterator(
+            self.path, self.lines_per_load, self.node_index, self.num_nodes
+        )

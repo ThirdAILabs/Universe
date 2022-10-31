@@ -34,6 +34,8 @@ class ColumnMap {
   std::shared_ptr<IndexValueColumn> getIndexValueColumn(
       const std::string& name) const;
 
+  std::shared_ptr<StringColumn> getStringColumn(const std::string& name) const;
+
   std::shared_ptr<SparseArrayColumn> getSparseArrayColumn(
       const std::string& name) const;
 
@@ -48,6 +50,8 @@ class ColumnMap {
   void setColumn(const std::string& name, ColumnPtr column) {
     _columns[name] = std::move(column);
   }
+
+  std::vector<std::string> columns() const;
 
  private:
   std::vector<ColumnPtr> selectColumns(

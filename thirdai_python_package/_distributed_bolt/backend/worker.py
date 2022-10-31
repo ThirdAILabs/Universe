@@ -6,7 +6,7 @@ from time import time
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
 
-from ..utils import get_gradients, parse_svm_dataset
+from ..utils import get_gradients
 
 
 def timed(f):
@@ -35,44 +35,33 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.graph,
-        train_file_name: str,
+        model_to_wrap: bolt.nn.Model,
+        train_source,
         id: int,
         primary_worker,
-        train_config: bolt.graph.TrainConfig,
+        train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
-        batch_size: int,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
 
+        self.train_source = train_source
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
         start = time()
-        self.train_data, self.train_labels = parse_svm_dataset(
-            train_file_name, batch_size
-        )
-        end = time()
-
-        logging.info(f"func data_loading | time {(end - start)*1000} ms")
-
-        start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
-            train_data=[self.train_data],
-            train_labels=self.train_labels,
             train_config=train_config,
         )
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
 
-        # Set up variables
         self.num_workers = num_workers
         self.id = id
         self.primary_worker = primary_worker
@@ -96,6 +85,11 @@ class Worker:
                         Use: "circular" or "linear" or "gloo". 
                     """
                 )
+            )
+
+        if not self._try_load_new_datasets_into_model():
+            raise ValueError(
+                "There must be at least one loadable dataset in the passed in data source."
             )
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
@@ -142,25 +136,35 @@ class Worker:
         """
         return self.comm.receive_array_partitions(update_id)
 
-    @timed
-    def compute_and_store_batch_gradients(self, batch_no: int):
+    def compute_and_store_next_batch_gradients(self) -> bool:
         """
-        This function is called only when the mode of communication is
-        linear.
-
-        This functions calls the API 'calculateGradientSingleNode',
-        which calculates the gradients for the network managed by
-        this particular worker. The calculateGradientSingleNode trains
-        the network and calculates the gradient for the particular
-        training batch with batch no. batch_no and with loss function
-        specified in the config.
-
-        :param batch_no: training batch to calculate gradients on.
-        :type batch_no: int
-        :return: check whether training is complete or not
-        :rtype: bool
+        Computes and stores the gradients on all nodes. After this returns,
+        all nodes are ready to communicate gradients. Returns whether this
+        worker has another batch.
         """
-        self.comm.compute_and_store_batch_gradients(batch_no)
+        if (
+            self.train_data == None
+            or self.train_labels == None
+            or self.model.num_batches() == 0
+        ):
+            raise ValueError(
+                "Cannot call train when we have run out of training data (this function has previously returned False without a subsequent call to move_to_next_epoch())"
+            )
+        self.comm.compute_and_store_batch_gradients(self.batch_id_within_dataset)
+
+        self.batch_id_within_dataset += 1
+        if self.batch_id_within_dataset == self.model.num_batches():
+            return self._try_load_new_datasets_into_model()
+        elif self.batch_id_within_dataset > self.model.num_batches():
+            raise ValueError(
+                "Found a batch id higher than the number of batches which we should have caught during the last batch."
+            )
+        else:
+            return True
+
+    def move_to_next_epoch(self):
+        self.train_source.restart()
+        self._try_load_new_datasets_into_model()
 
     @timed
     def get_calculated_gradients(self):
@@ -209,11 +213,32 @@ class Worker:
         """
         This function returns the total number of batches the workers have.
         """
-        return len(self.train_data)
-
-    @timed
-    def finish_training(self):
-        self.model.finish_training()
+        return self.model.num_batches()
 
     def model(self):
         return self.model.model
+
+    @timed
+    def _try_load_new_datasets_into_model(self) -> bool:
+        """
+        Returns whether the load was successful (if the generator stream is over
+        then this will fail until we call restart on it).
+        """
+        load = self.train_source.next()
+
+        if load == None:
+            self.train_data = None
+            self.train_labels = None
+            return False
+
+        self.train_data, self.train_labels = load
+        self.model.set_datasets(self.train_data, self.train_labels)
+        self.batch_id_within_dataset = 0
+
+        # This case should not be true since we currently require datasets
+        # to be nonempty, but this is a good hedge against future data
+        # pipeline changes
+        if self.model.num_batches() == 0:
+            return False
+
+        return True

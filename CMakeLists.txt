@@ -242,6 +242,7 @@ set(DATASET_SOURCES dataset/src/Vocabulary.cc)
 
 set(NEW_DATASET_SOURCES
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
+    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc)
 
 set(COMPRESSION_SOURCES compression/src/CountSketch.cc
@@ -276,7 +277,8 @@ pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
   bolt/python_bindings/BoltPython.cc
-  bolt/python_bindings/BoltGraphPython.cc
+  bolt/python_bindings/BoltNNPython.cc
+  bolt/python_bindings/CallbacksPython.cc
   dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
