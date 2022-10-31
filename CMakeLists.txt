@@ -223,37 +223,28 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 endif()
 
 set(THIRDAI_SOURCES
-    # bolt
     bolt/src/auto_classifiers/AutoClassifierBase.cc
     bolt/src/graph/Graph.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc
-    # search
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
-    # hashing
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
     hashing/src/MurmurHash.cc
     hashing/src/SRP.cc
     hashing/src/UniversalHash.cc
-    # hashtable
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
-    # license
     wrappers/src/LicenseWrapper.cc
-    # dataset
     dataset/src/Vocabulary.cc
-    # new_dataset
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
-    # compression
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    # utils
     utils/Logging.cc)
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
