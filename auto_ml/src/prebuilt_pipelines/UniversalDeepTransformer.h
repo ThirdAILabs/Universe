@@ -62,10 +62,18 @@ class UniversalDeepTransformer : public ModelPipeline {
         std::move(target_col), std::move(time_granularity), lookahead,
         delimiter);
 
+    bool column_contextualization = false;
+    if (options.count("column_contextualization")) {
+      if (utils::lower(options.at("column_contextualization")) == "true") {
+        column_contextualization = true;
+      }
+    }
+
     auto dataset_factory = OracleDatasetFactory::make(
         /* config= */ std::move(dataset_config),
         /* parallel= */ false,
-        /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT);
+        /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
+        /* column_contextualization= */ column_contextualization);
 
     auto model = buildOracleBoltGraph(
         /* input_nodes= */ dataset_factory->getInputNodes(),

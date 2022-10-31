@@ -219,7 +219,7 @@ TEST(SequentialClassifierTest, TestLoadSave) {
           {"timestamp", DataType::date()},
           {"static_text", DataType::text()},
           {"static_category", DataType::categorical(/* n_unique_classes= */ 4)},
-          {"count", DataType::numerical()},
+          {"count", DataType::numerical(std::make_pair(1, 7))},
       },
       /* temporal_tracking_relationships= */
       {{"user",
@@ -290,7 +290,7 @@ TEST(SequentialClassifierTest, TestDenseSequentialFeatures) {
           {"user", DataType::categorical(/* n_unique_classes= */ 1)},
           {"target", DataType::categorical(/* n_unique_classes= */ 2)},
           {"timestamp", DataType::date()},
-          {"count", DataType::numerical()},
+          {"count", DataType::numerical(std::make_pair(1, 7))},
       },
       /* temporal_tracking_relationships= */
       {{"user",

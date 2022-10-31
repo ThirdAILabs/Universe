@@ -14,7 +14,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
-#include <dataset/src/blocks/TabularPairGram.h>
+#include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
@@ -73,10 +73,8 @@ void createDatasetSubmodule(py::module_& module) {
       )pbdoc")
       .def("__str__", &Explanation::toString)
       .def("__repr__", &Explanation::toString)
-      .def_readonly("column_number", &Explanation::column_number,
-                    R"pbdoc(
-     Identifies the responsible input column.
-      )pbdoc")
+      // We don't expose column_number because it doesn't always make sense to
+      // provide one column number; e.g. in tabular pairgram case.
       .def_readonly("percentage_significance",
                     &Explanation::percentage_significance,
                     R"pbdoc(
@@ -248,16 +246,17 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("column_names") = std::vector<std::string>(),
            py::arg("col_to_num_bins") = std::nullopt);
 
-  py::class_<TabularPairGram, Block, std::shared_ptr<TabularPairGram>>(
-      block_submodule, "TabularPairGram",
+  py::class_<TabularHashFeatures, Block, std::shared_ptr<TabularHashFeatures>>(
+      block_submodule, "TabularHashFeatures",
       "Given some metadata about a tabular dataset, assign unique "
-      "categories "
-      "to columns and compute pairgrams of the categories.")
-      .def(py::init<std::shared_ptr<TabularMetadata>, uint32_t>(),
-           py::arg("metadata"), py::arg("output_range"))
-      .def("feature_dim", &TabularPairGram::featureDim,
+      "categories to columns and compute either pairgramsor unigrams of the "
+      "categories depending on the 'use_pairgrams' flag.")
+      .def(py::init<std::shared_ptr<TabularMetadata>, uint32_t, bool>(),
+           py::arg("metadata"), py::arg("output_range"),
+           py::arg("use_pairgrams"))
+      .def("feature_dim", &TabularHashFeatures::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &TabularPairGram::isDense,
+      .def("is_dense", &TabularHashFeatures::isDense,
            "Returns false since text blocks always produce sparse "
            "features.");
 #endif

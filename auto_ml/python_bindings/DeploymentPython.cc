@@ -183,9 +183,10 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              std::shared_ptr<OracleDatasetFactoryConfig>>(
       submodule, "OracleDatasetFactory")
       .def(py::init<HyperParameterPtr<OracleConfigPtr>, HyperParameterPtr<bool>,
-                    HyperParameterPtr<uint32_t>>(),
+                    HyperParameterPtr<uint32_t>, HyperParameterPtr<bool>>(),
            py::arg("config"), py::arg("parallel"),
-           py::arg("text_pairgram_word_limit"));
+           py::arg("text_pairgram_word_limit"),
+           py::arg("column_contextualization"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
