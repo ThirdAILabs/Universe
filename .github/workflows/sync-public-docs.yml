@@ -32,7 +32,7 @@ jobs:
 
       - name: Build public docs
         run: |
-          (cd docs/public_docs && make html)
+          (cd docs/public_docs && make html && touch _build/html/.nojekyll)
 
       - name: Publish new docs
         uses: peaceiris/actions-gh-pages@v2
