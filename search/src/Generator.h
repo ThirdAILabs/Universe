@@ -321,9 +321,7 @@ class QueryCandidateGenerator {
       std::ifstream input_file_stream =
           dataset::SafeFileIO::ifstream(file_name, std::ios::in);
 
-      std::shared_ptr<std::vector<uint32_t>> current_batch_labels =
-          std::make_shared<std::vector<uint32_t>>();
-
+      std::vector<uint32_t> current_batch_labels;
       std::string row;
 
       while (std::getline(input_file_stream, row)) {
@@ -342,13 +340,12 @@ class QueryCandidateGenerator {
         }
 
         // Add the corresponding label to the current batch
-        current_batch_labels->push_back(
+        current_batch_labels.push_back(
             _queries_to_labels_map.at(correct_query));
 
-        if ((*current_batch_labels).size() ==
+        if (current_batch_labels.size() ==
             _query_generator_config->batchSize()) {
-          labels.push_back(std::move(*current_batch_labels));
-          current_batch_labels = std::make_shared<std::vector<uint32_t>>();
+          labels.push_back(std::move(current_batch_labels));
         }
       }
       input_file_stream.close();
@@ -356,8 +353,8 @@ class QueryCandidateGenerator {
       // Add remainig labels if present. This will happen
       // if the entire dataset fits in one batch or the last
       // batch has fewer elements than the batch size.
-      if (!(*current_batch_labels).empty()) {
-        labels.push_back(std::move(*current_batch_labels));
+      if (!current_batch_labels.empty()) {
+        labels.push_back(std::move(current_batch_labels));
       }
 
     } catch (const std::ifstream::failure& exception) {
