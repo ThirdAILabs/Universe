@@ -93,8 +93,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<InferenceOutputTracker>(nn_submodule,  // NOLINT
                                      "InferenceOutput");
 
-#if THIRDAI_EXPOSE_ALL
-#pragma message("THIRDAI_EXPOSE_ALL is defined")                 // NOLINT
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
       nn_submodule, "SamplingConfig");
 
@@ -113,7 +111,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<RandomSamplingConfig, std::shared_ptr<RandomSamplingConfig>,
              SamplingConfig>(nn_submodule, "RandomSamplingConfig")
       .def(py::init<>());
-#endif
 
   py::class_<Node, NodePtr>(nn_submodule, "Node")
       .def_property_readonly("name", [](Node& node) { return node.name(); })
@@ -142,7 +139,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            " * activation: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-#if THIRDAI_EXPOSE_ALL
       .def(py::init(&FullyConnectedNode::make), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation"),
            py::arg("sampling_config"),
@@ -156,7 +152,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
-#endif
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this fully "
@@ -232,7 +227,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(nn_submodule,
                                                             "Switch")
       .def(py::init(&SwitchNode::makeDense), py::arg("dim"),
@@ -241,7 +235,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("sparsity"), py::arg("activation"), py::arg("n_layers"))
       .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
            py::arg("token_input"));
-#endif
 
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(nn_submodule, "Embedding")
       .def(py::init(&EmbeddingNode::make), py::arg("num_embedding_lookups"),
@@ -393,7 +386,6 @@ Examples:
 That's all for now, folks! More docs coming soon :)
 
 )pbdoc")
-#if THIRDAI_EXPOSE_ALL
       .def(
           "get_input_gradients_single",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
@@ -423,7 +415,6 @@ That's all for now, folks! More docs coming soon :)
           "corresponding indices for sparse inputs."
           " and (1) list of gradients "
           "corresponds to the input vector.")
-#endif
       .def(
           "explain_prediction",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
