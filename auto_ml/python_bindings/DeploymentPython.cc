@@ -21,6 +21,7 @@
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
+#include <auto_ml/src/prebuilt_pipelines/UDTGenerator.h>
 #include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/cast.h>
@@ -281,6 +282,8 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            py::arg("options") = OptionsMap(), docs::UDT_INIT)
+      .def(py::init(&UDTGenerator::buildUDT), py::arg("target_column"),
+           py::arg("source_column"), py::arg("dataset_size"))
       .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
            py::arg("train_config") = bolt::TrainConfig::makeConfig(
                /* learning_rate= */ 0.001, /* epochs= */ 3),

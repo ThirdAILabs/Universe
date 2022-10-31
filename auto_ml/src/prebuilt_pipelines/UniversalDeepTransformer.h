@@ -13,6 +13,7 @@
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
+#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformerBase.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
@@ -31,7 +32,8 @@ using OptionsMap = std::unordered_map<std::string, std::string>;
  * potential clients can tinker with without having to download a serialized
  * deployment config file.
  */
-class UniversalDeepTransformer : public ModelPipeline {
+class UniversalDeepTransformer : public ModelPipeline,
+                                 public UniversalDeepTransformerBase {
   static inline const std::string NUM_TABLES_STR = "num_tables";
   static inline const std::string HASHES_PER_TABLE_STR = "hashes_per_table";
   static inline const std::string RESERVOIR_SIZE_STR = "reservoir_size";
@@ -122,7 +124,7 @@ class UniversalDeepTransformer : public ModelPipeline {
     return oracleDatasetFactory().className(neuron_id);
   }
 
-  void save(const std::string& filename) {
+  void save(const std::string& filename) final {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
