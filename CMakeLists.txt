@@ -30,9 +30,9 @@ message(STATUS "Project version: ${PROJECT_VERSION_STRING_FULL}")
 message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
-message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
-separate_arguments(FEATURE_FLAGS)
-message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
+message("\tBuilding with feature flags: ${THIRDAI_FEATURE_FLAGS}")
+separate_arguments(THIRDAI_FEATURE_FLAGS)
+message("\tFeature flags seperated into CMake List: ${THIRDAI_FEATURE_FLAGS}")
 message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
@@ -42,7 +42,7 @@ message("====================================")
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license
 # (THIRDAI_CHECK_LICENSE). If just the THIRDAI_CHECK_LICENSE flag is set there
 # will be a linker error.
-list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
@@ -186,11 +186,6 @@ add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 set(SKIP_PERFORMANCE_COMPARISON ON)
 add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
-# This is so we can include cryptopp/*.h. We want this even if the build flag
-# isn't there so it always gets included in the compile_commands.json file and
-# can work with vscode
-include_directories(deps)
-
 find_package(Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
@@ -222,45 +217,41 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
-set(BOLT_SOURCES
-    bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
-    bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
-    bolt/src/layers/ConvLayer.cc)
-
-set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
-
-set(HASHING_SOURCES
-    hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
-    hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
-
-set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
-                      hashtable/src/VectorHashTable.cc)
-
-set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
-
-set(DATASET_SOURCES dataset/src/Vocabulary.cc)
-
-set(NEW_DATASET_SOURCES
+set(THIRDAI_SOURCES
+    # bolt
+    bolt/src/auto_classifiers/AutoClassifierBase.cc
+    bolt/src/graph/Graph.cc
+    bolt/src/layers/EmbeddingLayer.cc
+    bolt/src/layers/FullyConnectedLayer.cc
+    bolt/src/layers/ConvLayer.cc
+    # search
+    search/src/MaxFlash.cc
+    search/src/MaxFlashArray.cc
+    # hashing
+    hashing/src/DensifiedMinHash.cc
+    hashing/src/DWTA.cc
+    hashing/src/FastSRP.cc
+    hashing/src/MurmurHash.cc
+    hashing/src/SRP.cc
+    hashing/src/UniversalHash.cc
+    # hashtable
+    hashtable/src/SampledHashTable.cc
+    hashtable/src/VectorHashTable.cc
+    # license
+    wrappers/src/LicenseWrapper.cc
+    # dataset
+    dataset/src/Vocabulary.cc
+    # new_dataset
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
-    new_dataset/src/featurization_pipeline/ColumnMap.cc)
+    new_dataset/src/featurization_pipeline/ColumnMap.cc
+    # compression
+    compression/src/CountSketch.cc
+    compression/src/DragonVector.cc
+    # utils
+    utils/Logging.cc)
 
-set(COMPRESSION_SOURCES compression/src/CountSketch.cc
-                        compression/src/DragonVector.cc)
-
-set(UTILS_SOURCES utils/Logging.cc)
-
-add_library(
-  thirdai STATIC
-  ${BOLT_SOURCES}
-  ${SEARCH_SOURCES}
-  ${HASHING_SOURCES}
-  ${HASHTABLE_SOURCES}
-  ${LICENSE_SOURCES}
-  ${DATASET_SOURCES}
-  ${NEW_DATASET_SOURCES}
-  ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES})
+add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
@@ -295,8 +286,8 @@ if(NOT MSVC)
 endif()
 
 # Add feature flags passed in from python
-target_compile_definitions(thirdai PRIVATE ${FEATURE_FLAGS})
-target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
+target_compile_definitions(thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
+target_compile_definitions(_thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
 
 # In debug mode we are using ASan (address sanitizer) to provide better
 # information on errors. We only run with this in debug mode because it carries
