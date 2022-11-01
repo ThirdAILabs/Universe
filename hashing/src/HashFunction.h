@@ -14,9 +14,9 @@ class HashFunction {
       : _num_tables(num_tables), _range(range) {}
 
   /**
-   * Populates num_hashes number of hashes for each element in the dataset into
-   * the output array. The output array should be of size
-   * num_hashes * batch_size.
+   * Populates `num_tables` number of hashes for each element in the dataset
+   * into the output array. The output array should be of size num_tables *
+   * batch_size.
    *
    * The output array should be in vector major order. It should return all of
    * the hashes from the first vector, all of the hashes from the second, and

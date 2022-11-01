@@ -15,6 +15,7 @@
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <search/src/Generator.h>
 #include <limits>
 #include <optional>
 #include <sstream>
@@ -698,6 +699,184 @@ Args:
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
            )pbdoc");
 #endif
+
+  createModelsSubmodule(bolt_submodule);
+}
+
+void createModelsSubmodule(py::module_& bolt_submodule) {
+  auto models_submodule = bolt_submodule.def_submodule("models");
+
+#if THIRDAI_EXPOSE_ALL
+  py::class_<bolt::QueryCandidateGeneratorConfig,
+             bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
+                                                     "GeneratorConfig")
+      .def(
+          py::init<std::string, uint32_t, uint32_t, uint32_t,
+                   std::vector<uint32_t>, bool, uint32_t, uint32_t, uint32_t>(),
+          py::arg("hash_function"), py::arg("num_tables"),
+          py::arg("hashes_per_table"), py::arg("top_k") = 5, py::arg("n_grams"),
+          py::arg("has_incorrect_queries") = false,
+          py::arg("input_dim") = 100000, py::arg("batch_size") = 10000,
+          py::arg("range") = 1000000,
+          R"pbdoc(
+    Initializes a QueryCandidateGeneratorConfig object.
+
+     Args:
+        hash_function (str): A specific hash function 
+                        to use. Supported hash functions include FastSRP,
+                        DensifiedMinHash and DWTA.
+        num_tables (int): Number of hash tables to construct.
+        hashes_per_table (int): Number of hashes per table.
+        top_k (int): The number of closest queries to return
+        n_grams (List[int]): List of N-gram blocks to use. 
+        has_incorrect_queries(bool): Flag to identify if flash is initialized
+            with single queries or tuples of incorrect and correct queries.
+        input_dim (int): Input dimension 
+        batch_size (int): batch size. It is defaulted to 10000. 
+        range (int) : The range for the hash function used. 
+    Returns: 
+        QueryCandidateGeneratorConfig
+
+    Example:
+        >>> generator_config = bolt.models.GeneratorConfig(
+                hash_function="DensifiedMinHash",
+                num_tables=100,
+                hashes_per_table=15,
+                input_dim=100,
+                top_k=5,
+                n_grams=[3,4],
+                has_incorrect_queries=True,
+                batch_size=10000,
+            )
+            )pbdoc")
+      .def("save", &bolt::QueryCandidateGeneratorConfig::save,
+           py::arg("file_name"),
+           R"pbdoc(
+    Saves a query candidate generator config object at the specified file path. 
+    This can be used to provide a query candidate generator architecture to customers.
+
+    Args:
+        file_name (str): File path specification for where to save the 
+                generator configuration object. 
+
+    Returns:
+        None
+
+            )pbdoc")
+
+      .def_static("load", &bolt::QueryCandidateGeneratorConfig::load,
+                  py::arg("config_file_name"),
+                  R"pbdoc(
+    Loads a query candidate generator config object from a specific file location. 
+
+    Args:
+        config_file_name (str): Path to the file containing a saved config.
+
+        Returns:
+            QueryCandidateGeneratorConfig:
+
+            )pbdoc");
+
+#endif
+
+  py::class_<bolt::QueryCandidateGenerator,
+             std::shared_ptr<bolt::QueryCandidateGenerator>>(models_submodule,
+                                                             "Generator")
+      .def(py::init(&bolt::QueryCandidateGenerator::
+                        buildGeneratorFromSerializedConfig),
+           py::arg("config_file_name"),
+           R"pbdoc(
+    Initializes an QueryCandidateGenerator object.
+            
+    The config file should at least contain the following elements:
+        - num_hash_tables: Number of hash tables to construct.
+        - hashes_per_table: Hashes for each hash table.
+    Args:
+        config_file_name (str): The path to the config file
+    Returns:
+        QueryCandidateGenerator
+
+    Example:
+        >>> CONFIG_FILE = "/path/to/config/file"
+        >>> generator = bolt.models.Generator(
+                config_file_name=CONFIG_FILE
+            )
+
+           )pbdoc")
+
+      .def("save", &bolt::QueryCandidateGenerator::save, py::arg("file_name"),
+           R"pbdoc(
+    Saves a query candidate generator object at the specified file path. 
+
+    Args:
+        file_name (str): File path specification for where to save the 
+                generator object. 
+
+    Returns:
+        None
+
+            )pbdoc")
+
+      .def_static("load", &bolt::QueryCandidateGenerator::load,
+                  py::arg("file_name"),
+                  R"pbdoc(
+    Loads a query candidate generator object from a specific file location.
+    Throws an exception if the file does not exist at the specified path.  
+
+    Args:
+        config_file_name (str): Path to the file containing a saved config.
+
+        Returns:
+            QueryCandidateGenerator:
+
+            )pbdoc")
+
+      .def("train", &bolt::QueryCandidateGenerator::buildFlashIndex,
+           py::arg("file_name"),
+           R"pbdoc(
+    Constructs a flash index by reading from a CSV file. 
+    If `has_incorrect_queries` is set in QueryCandidateGeneratorConfig, the input CSV file is 
+    expected to have two columns: the first containing correct queries, and 
+    the second containing the incorrect queries. 
+
+    Otherwise, the input CSV file is expected to have just one column
+    with only correct queries. 
+            
+    Args:
+        config_file_name (str): The path to the file containing the queries
+ 
+    Returns:
+        None
+
+    Example:
+        >>> generator = bolt.models.Generator(...)
+        >>> query_file_name = "/path/to/query/file/name"
+        >>> generator.train(file_name=query_file_name)
+
+           )pbdoc")
+
+      .def("generate", &bolt::QueryCandidateGenerator::queryFromList,
+           py::arg("queries"),
+           R"pbdoc(
+    Generates a list of correct candidate queries for each of the the given 
+    queries in the list. 
+    By default, 5 queries are chosen as output. If less than 5 queries are 
+    found, then the output list is padded with empty strings. 
+
+    Args:
+        queries (List[str]): Input queries
+
+    Returns:
+        List[List[str]]: The generated list of queries by flash. 
+
+    Example:
+        >>> generator = bolt.models.Generator(...)
+        >>> query_file_name = "/path/to/query/file/name"
+        >>> generator.build_index(file_name=query_file_name)
+        >>> candidates = generator.generate(query=["first incorrect query",
+                                                   "second incorrect query"])
+
+           )pbdoc");
 }
 
 }  // namespace thirdai::bolt::python
