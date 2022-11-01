@@ -1,6 +1,7 @@
 #pragma once
 
 #include <compression/src/CompressedVector.h>
+#include <compression/src/CompressionFactory.h>
 #include <compression/src/CountSketch.h>
 #include <compression/src/DragonVector.h>
 #include <pybind11/buffer_info.h>
@@ -17,6 +18,9 @@ namespace py = pybind11;
 namespace thirdai::compression::python {
 using SerializedCompressedVector =
     py::array_t<char, py::array::c_style | py::array::forcecast>;
+
+template <class T>
+using CompressedVector = std::variant<DragonVector<T>, CountSketch<T>>;
 
 template <class T>
 std::variant<DragonVector<T>, CountSketch<T>> deserializeCompressedVector(
@@ -55,5 +59,20 @@ convertPyListToCompressedVectors(const py::list& py_compressed_vectors) {
         deserializeCompressedVector<T>(serialized_data));
   }
   return compressed_vectors;
+}
+
+template <class T>
+SerializedCompressedVector createNumpyArrayFromCompressedVector(
+    char* serialized_compressed_vector, uint32_t serialized_size,
+    CompressedVector<T> compressed_vector) {
+  std::visit(
+      thirdai::compression::SerializeVisitor<T>(serialized_compressed_vector),
+      compressed_vector);
+
+  py::capsule free_when_done(serialized_compressed_vector,
+                             [](void* ptr) { delete static_cast<char*>(ptr); });
+
+  return SerializedCompressedVector(
+      serialized_size, serialized_compressed_vector, free_when_done);
 }
 }  // namespace thirdai::compression::python
