@@ -48,8 +48,8 @@ class UniversalDeepTransformer : public ModelPipeline {
    *  - embedding_dimension: hidden layer size. Accepts non-negative integer as
    *    a string, e.g. "512".
    *  - parallel_data_processing: Whether dataset should be processed in
-   *    parallel. Defaults to false because small datasets tend to have the same
-   *    users in the same batch.
+   *    parallel. Defaults to false because parallel training with temporal
+   *    relationships on small datasets can lead to a reduction in accuracy.
    *  - num_tables, hashes_per_table, reservoir_size: output neuron sampling
    *    configuration. Accepts non-negative integer as a string, e.g. "512". If
    *    provided, all three variables must be provided.
