@@ -21,6 +21,7 @@ To get access to our package, refer to `thirdai.com
    thirdaibase
 
    thirdaibolt
+   thirdaiboltmodels
    thirdaibolttypes
    thirdaibolttemporal
    thirdaiboltcallbacks

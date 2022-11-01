@@ -38,6 +38,7 @@ jobs:
           (cd docs/public_docs && make html && touch _build/html/.nojekyll)
 
       - name: Publish new docs
+      # https://github.com/peaceiris/actions-gh-pages
         uses: peaceiris/actions-gh-pages@v2
         env:
           ACTIONS_DEPLOY_KEY: ${{ secrets.PUBLIC_DOCS_DEPLOY_KEY }}
