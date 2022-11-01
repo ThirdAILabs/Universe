@@ -5,13 +5,17 @@ name: Run Public Demo Notebooks
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-  
+
+push:
+    branches: [vihan-slack-bot]
+  pull_request:
+    branches: [vihan-slack-bot]
 # Controls when the workflow will run
-on:
-  schedule:
-      # Sets the workflow to run at the end of every day
-      # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 0 * * *"       
+#on:
+#  schedule:
+#      # Sets the workflow to run at the end of every day
+#      # Ref: https://jasonet.co/posts/scheduled-actions/
+#      - cron: "0 0 * * *"       
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -39,4 +43,24 @@ jobs:
         run: docker run thirdai/run_demos_build bash -c "python3 run_demo_notebooks.py"
 
       - name: Delete Container
-        run: sudo docker system prune -a -f   
+        run: sudo docker system prune -a -f
+
+- name: Notify slack success
+  if: success()
+  env:
+    SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFICATIONS_BOT_TOKEN }}
+  uses: voxmedia/github-action-slack-notify-build@v1
+  with:
+    channel: app-alerts
+    status: SUCCESS
+    color: good
+
+- name: Notify slack fail
+  if: failure()
+  env:
+    SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFICATIONS_BOT_TOKEN }}
+  uses: voxmedia/github-action-slack-notify-build@v1
+  with:
+    channel: app-alerts
+    status: FAILED
+    color: danger   
