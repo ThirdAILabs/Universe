@@ -52,7 +52,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
-          channel: demos_testing
+          channel_id: demos_testing
           status: SUCCESS
           color: good
 
@@ -62,6 +62,6 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
-          channel: app-alerts
+          channel_id: demos_testing
           status: FAILED
           color: danger   
