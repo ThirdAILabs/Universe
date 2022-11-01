@@ -13,7 +13,6 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
