@@ -6,17 +6,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-on:
-  push:
-    branches: [vihan-slack-bot]
-  pull_request:
-    branches: [vihan-slack-bot]
 # Controls when the workflow will run
-#on:
-#  schedule:
-#      # Sets the workflow to run at the end of every day
-#      # Ref: https://jasonet.co/posts/scheduled-actions/
-#      - cron: "0 0 * * *"       
+on:
+  schedule:
+      # Sets the workflow to run at the end of every day
+      # Ref: https://jasonet.co/posts/scheduled-actions/
+      - cron: "0 0 * * *"       
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -45,8 +40,8 @@ jobs:
 
       - name: Delete Container
         run: sudo docker system prune -a -f
-
-      - name: Notify slack success
+        
+      - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
         if: success()
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
