@@ -188,8 +188,8 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
 
 def get_sampling_config(layer_config):
     if layer_config.get("use_random_sampling", False):
-        return bolt.RandomSamplingConfig()
-    return bolt.SamplingConfig(
+        return bolt.nn.RandomSamplingConfig()
+    return bolt.nn.SamplingConfig(
         hashes_per_table=config_get_required(layer_config, "hashes_per_table"),
         num_tables=config_get_required(layer_config, "num_tables"),
         range_pow=config_get_required(layer_config, "range_pow"),
@@ -229,9 +229,6 @@ def construct_fully_connected_node(fc_config):
             activation=config_get_required(fc_config, "activation"),
             sampling_config=get_sampling_config(fc_config),
         )
-
-    if fc_config.get("use_sparse_sparse_optimization", False):
-        layer.enable_sparse_sparse_optimization()
 
     return layer
 
