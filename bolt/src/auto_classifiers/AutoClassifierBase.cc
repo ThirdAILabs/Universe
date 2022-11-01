@@ -106,13 +106,13 @@ void AutoClassifierBase::predict(
     (*output_file) << class_id_to_class_name[class_id] << std::endl;
   };
 
-  PredictConfig config = PredictConfig::makeConfig()
-                             .enableSparseInference()
-                             .withMetrics({"categorical_accuracy"})
-                             .withOutputCallback(print_predictions_callback)
-                             .silence();
+  EvalConfig config = EvalConfig::makeConfig()
+                          .enableSparseInference()
+                          .withMetrics({"categorical_accuracy"})
+                          .withOutputCallback(print_predictions_callback)
+                          .silence();
 
-  _model->predict({test_data}, test_labels, config);
+  _model->evaluate({test_data}, test_labels, config);
 
   if (output_file) {
     output_file->close();

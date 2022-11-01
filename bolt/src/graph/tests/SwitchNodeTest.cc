@@ -73,11 +73,10 @@ TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
 
   auto [test_data, test_tokens, test_labels] = generateSwitchDataset();
 
-  auto predict_cfg =
-      PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
+  auto eval_cfg =
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-  auto result =
-      model.predict({test_data, test_tokens}, test_labels, predict_cfg);
+  auto result = model.evaluate({test_data, test_tokens}, test_labels, eval_cfg);
 
   ASSERT_GE(result.first["categorical_accuracy"], 0.95);
 }

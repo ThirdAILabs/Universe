@@ -78,10 +78,6 @@ class LayerNormNode final : public Node,
 
   void initOptimizer() final {}
 
-  void enableDistributedTraining() final {
-    // NOOP since the LayerNorm node doesn't have any paramters
-  }
-
   bool trainable(bool flag) override {
     (void)flag;
     return false;

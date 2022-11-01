@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/SamplingConfig.h>
@@ -63,10 +62,18 @@ class UniversalDeepTransformer : public ModelPipeline {
         std::move(target_col), std::move(time_granularity), lookahead,
         delimiter);
 
+    bool column_contextualization = false;
+    if (options.count("column_contextualization")) {
+      if (utils::lower(options.at("column_contextualization")) == "true") {
+        column_contextualization = true;
+      }
+    }
+
     auto dataset_factory = OracleDatasetFactory::make(
         /* config= */ std::move(dataset_config),
         /* parallel= */ false,
-        /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT);
+        /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
+        /* column_contextualization= */ column_contextualization);
 
     auto model = buildOracleBoltGraph(
         /* input_nodes= */ dataset_factory->getInputNodes(),
@@ -158,16 +165,8 @@ class UniversalDeepTransformer : public ModelPipeline {
     auto graph = std::make_shared<bolt::BoltGraph>(
         /* inputs= */ input_nodes, output);
 
-    auto loss =
-        bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
-
-    // Disable the model summary in the release, but print it out for internal
-    // use.
-#if THIRDAI_EXPOSE_ALL
-    graph->compile(loss);
-#else
-    graph->compile(loss, /* print_when_done= */ false);
-#endif
+    graph->compile(
+        bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
 
     return graph;
   }

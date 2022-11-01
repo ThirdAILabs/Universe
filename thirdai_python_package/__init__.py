@@ -3,7 +3,7 @@ __all__ = [
     "bolt",
     "search",
     "dataset",
-    "new_dataset",
+    "data",
     "hashing",
     "distributed_bolt",
     "set_thirdai_license_path",
@@ -13,9 +13,9 @@ __all__ = [
 
 # Include these so we can use them just by import the top level.
 import thirdai.bolt as bolt
+import thirdai.data as data
 import thirdai.dataset as dataset
 import thirdai.hashing as hashing
-import thirdai.new_dataset as new_dataset
 import thirdai.search as search
 
 # Relay __version__ from C++

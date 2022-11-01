@@ -37,7 +37,8 @@ class FullyConnectedLayer final {
   FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
-                      uint64_t prev_dim, bool is_distributed = false);
+                      uint64_t prev_dim,
+                      bool disable_sparse_parameter_updates = false);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
@@ -48,7 +49,9 @@ class FullyConnectedLayer final {
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
-  void enableDistributedTraining() { _is_distributed = true; };
+  void disableSparseParameterUpdates() {
+    _disable_sparse_parameter_updates = true;
+  };
 
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool use_sparsity) const {
@@ -125,14 +128,6 @@ class FullyConnectedLayer final {
 
   void initOptimizer();
 
-  void enableSparseSparseOptimization() {
-    _use_sparse_sparse_optimization = true;
-  }
-
-  void disableSparseSparseOptimization() {
-    _use_sparse_sparse_optimization = false;
-  }
-
   ~FullyConnectedLayer() = default;
 
  private:
@@ -162,13 +157,9 @@ class FullyConnectedLayer final {
 
   // A flag to check whether the current network is running in normal
   // or distributed mode
-  bool _is_distributed;
+  bool _disable_sparse_parameter_updates;
 
   BoltSamplingMode _sampling_mode;
-
-  // Whether to track ActivePairs in raw form (the sparse sparse "optimization")
-  // Default set in constructor is false
-  bool _use_sparse_sparse_optimization;
 
   /* --------------- Within-batch variables ------------------------------
    * These variables are set while we are processing a batch (usually during
@@ -201,23 +192,6 @@ class FullyConnectedLayer final {
   // current layer which are active at some point in the batch.
   std::vector<bool> _is_active;
 
-  /* The following two variables are only used if _prev_is_dense == false and
-   * _this_is_dense == false. They track exactly which pairs of neurons were
-   * active in two different ways: _active_pairs_array marks position
-   * cur_neuron * _prev_dim + prev_neuron with true if (prev_neuron, cur_neuron)
-   * was active during the training of the current batch. _active_pairs_raw
-   * appends an ActivePair object for each example. The ActivePair object
-   * contains all of the [prev_neurons] and [cur_neurons] that were active for
-   * that example (the active pairs for that example are then a cartesian
-   * product of those two lists).
-   * IMPORTANT: we only use _active_pairs_raw when
-   * _use_sparse_sparse_optimization is true.
-   */
-  std::vector<bool> _active_pairs_array;
-  using ActiveNeuronsPair =
-      std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
-  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs_raw;
-
   // -------------------------------------------------------------------------
 
   void initActiveNeuronsTrackers();
@@ -226,17 +200,16 @@ class FullyConnectedLayer final {
     return _sampling_mode == BoltSamplingMode::RandomSampling;
   }
 
-  inline void updateSparseSparseWeightParametersNormal(float lr, float B1,
-                                                       float B2, float eps,
-                                                       float B1_bias_corrected,
-                                                       float B2_bias_corrected);
-  inline void updateSparseSparseWeightParametersOptimized(
-      float lr, float B1, float B2, float eps, float B1_bias_corrected,
-      float B2_bias_corrected);
+  inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
+                                                 float eps,
+                                                 float B1_bias_corrected,
+                                                 float B2_bias_corrected);
+
   inline void updateSparseDenseWeightParameters(float lr, float B1, float B2,
                                                 float eps,
                                                 float B1_bias_corrected,
                                                 float B2_bias_corrected);
+
   inline void updateDenseSparseWeightParameters(float lr, float B1, float B2,
                                                 float eps,
                                                 float B1_bias_corrected,
@@ -245,11 +218,13 @@ class FullyConnectedLayer final {
                                                float eps,
                                                float B1_bias_corrected,
                                                float B2_bias_corrected);
+
   inline void updateSingleWeightParameters(uint64_t prev_neuron,
                                            uint64_t cur_neuron, float lr,
                                            float B1, float B2, float eps,
                                            float B1_bias_corrected,
                                            float B2_bias_corrected);
+
   inline void updateBiasParameters(float lr, float B1, float B2, float eps,
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
@@ -295,7 +270,7 @@ class FullyConnectedLayer final {
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _is_distributed, _sampling_mode, _use_sparse_sparse_optimization);
+            _disable_sparse_parameter_updates, _sampling_mode);
   }
 
   /**
@@ -317,7 +292,7 @@ class FullyConnectedLayer final {
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _is_distributed, _sampling_mode, _use_sparse_sparse_optimization);
+            _disable_sparse_parameter_updates, _sampling_mode);
 
     // TODO(david) another way to reduce memory for inference is to remove these
     // in addition to the optimizer as mentioned above

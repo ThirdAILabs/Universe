@@ -34,11 +34,10 @@ BoltGraph getTrainedModel() {
 
 double testModel(BoltGraph& model, dataset::BoltDatasetPtr& test_data,
                  dataset::BoltDatasetPtr& test_labels) {
-  PredictConfig predict_config = PredictConfig::makeConfig()
-                                     .withMetrics({"categorical_accuracy"})
-                                     .silence();
+  EvalConfig eval_config =
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"}).silence();
 
-  auto [metrics, _] = model.predict({test_data}, test_labels, predict_config);
+  auto [metrics, _] = model.evaluate({test_data}, test_labels, eval_config);
 
   return metrics["categorical_accuracy"];
 }

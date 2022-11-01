@@ -80,7 +80,7 @@ config or by passing in the DeploymentConfig directly.
 2. To construct the `ModelPipeline` we need to pass in the saved config as well as
    the values needed for any `UserSpecifiedParameter` or `OptionMappedParameter`.
 
->>> model = deployment.ModelPipeline(
+>>> model = bolt.Pipeline(
         config_path="./saved_config",
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     ) 
@@ -91,7 +91,7 @@ Training with the ModelPipeline
 Training is similar to the regular Bolt API where you pass in `TrainConfig` that allows
 specification of various hyperparameters and options. 
 
->>> train_config = bolt.graph.TrainConfig.make(epochs=5, learning_rate=0.01)
+>>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
 
 Optionally you can also specify options like metrics or validation. The `ModelPipeline`
 has a method to load a validation dataset since it contains the dataset loader functionality.
@@ -100,13 +100,13 @@ has a method to load a validation dataset since it contains the dataset loader f
 
 >>> val_data, val_labels = trained_text_classifier.load_validation_data("./validation_data")
 >>> validation_config = (
-        bolt.graph.PredictConfig.make()
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
     )
 >>> train_config = train_config.with_validation(
         validation_data=val_data,
         validation_labels=val_labels,
-        predict_config=validation_config,
+        eval_config=validation_config,
         validation_frequency=10,
     )
 
@@ -125,17 +125,17 @@ up to the specified number of batches.
 Evaluating with the ModelPipeline
 ---------------------------------
 
-Evaulate just requires an evaluation dataset or optionally a Bolt `PredictConfig` 
+Evaulate just requires an evaluation dataset or optionally a Bolt `EvalConfig` 
 if you would like to specify metrics or sparse inference. It returns the activations
 from the final layer of the model.
 
->>> predict_config = (
-        bolt.graph.PredictConfig.make()
+>>> eval_config = (
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
         .enable_sparse_inference()
     )
 >>> activations = model.evaluate(
-        filename="./test_data", predict_config=predict_config
+        filename="./test_data", eval_config=eval_config
     )
 
 Inference with the ModelPipeline
@@ -157,4 +157,4 @@ Saving & Loading the ModelPipeline
 The model pipeline supports save/load functions just like most of our library. 
 
 >>> model.save("./saved_model_pipeline")
->>> new_model = deployment.ModelPipeline.load("./saved_model_pipeline")
+>>> new_model = bolt.Pipeline.load("./saved_model_pipeline")

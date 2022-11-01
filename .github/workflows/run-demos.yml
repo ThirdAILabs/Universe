@@ -1,0 +1,42 @@
+name: Run Public Demo Notebooks
+
+# Kills old jobs from the same pr if we push a new commit
+# See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+  
+# Controls when the workflow will run
+on:
+  schedule:
+      # Sets the workflow to run at the end of every day
+      # Ref: https://jasonet.co/posts/scheduled-actions/
+      - cron: "0 0 * * *"       
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  run_demo_notebooks:
+    runs-on: self-hosted
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+      # the rest of the steps
+
+      - name: Open Permissions
+        run: sudo chmod -R 777 ${{ github.workspace }}
+
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Build docker
+        run: docker build -t thirdai/run_demos_build -f docker/demos/Dockerfile .
+
+      - name: Build Package and Run Benchmark
+        run: docker run thirdai/run_demos_build bash -c "python3 run_demo_notebooks.py"
+
+      - name: Delete Container
+        run: sudo docker system prune -a -f   

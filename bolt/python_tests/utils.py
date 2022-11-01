@@ -44,7 +44,7 @@ def train_network(network, train_data, train_labels, epochs, learning_rate=0.000
 
 
 def get_categorical_acc(network, examples, labels, batch_size=64):
-    acc, *_ = network.predict(
+    acc, *_ = network.evaluate(
         examples, labels, batch_size, metrics=["categorical_accuracy"], verbose=False
     )
     return acc["categorical_accuracy"]
@@ -72,14 +72,14 @@ def train_single_node_distributed_network(
 # input_dim=output_dim, 50% sparsity by default, and a softmax
 # activation
 def gen_single_sparse_node(num_classes, sparsity=0.5):
-    input_layer = bolt.graph.Input(dim=num_classes)
+    input_layer = bolt.nn.Input(dim=num_classes)
 
-    output_layer = bolt.graph.FullyConnected(
+    output_layer = bolt.nn.FullyConnected(
         dim=num_classes, sparsity=sparsity, activation="softmax"
     )(input_layer)
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     return model
 
@@ -90,19 +90,19 @@ def get_simple_dag_model(
     hidden_layer_sparsity,
     output_dim,
     output_activation="softmax",
-    loss=bolt.CategoricalCrossEntropyLoss(),
+    loss=bolt.nn.losses.CategoricalCrossEntropy(),
 ):
-    input_layer = bolt.graph.Input(dim=input_dim)
+    input_layer = bolt.nn.Input(dim=input_dim)
 
-    hidden_layer = bolt.graph.FullyConnected(
+    hidden_layer = bolt.nn.FullyConnected(
         dim=hidden_layer_dim, sparsity=hidden_layer_sparsity, activation="relu"
     )(input_layer)
 
-    output_layer = bolt.graph.FullyConnected(
-        dim=output_dim, activation=output_activation
-    )(hidden_layer)
+    output_layer = bolt.nn.FullyConnected(dim=output_dim, activation=output_activation)(
+        hidden_layer
+    )
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
 
     model.compile(loss)
 
@@ -117,29 +117,29 @@ def get_simple_concat_model(
     num_classes,
 ):
 
-    input_layer = bolt.graph.Input(dim=num_classes)
+    input_layer = bolt.nn.Input(dim=num_classes)
 
-    hidden_layer_top = bolt.graph.FullyConnected(
+    hidden_layer_top = bolt.nn.FullyConnected(
         dim=hidden_layer_top_dim,
         sparsity=hidden_layer_top_sparsity,
         activation="relu",
     )(input_layer)
 
-    hidden_layer_bottom = bolt.graph.FullyConnected(
+    hidden_layer_bottom = bolt.nn.FullyConnected(
         dim=hidden_layer_bottom_dim,
         sparsity=hidden_layer_bottom_sparsity,
         activation="relu",
     )(input_layer)
 
-    concate_layer = bolt.graph.Concatenate()([hidden_layer_top, hidden_layer_bottom])
+    concate_layer = bolt.nn.Concatenate()([hidden_layer_top, hidden_layer_bottom])
 
-    output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
+    output_layer = bolt.nn.FullyConnected(dim=num_classes, activation="softmax")(
         concate_layer
     )
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
 
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     return model
 
@@ -170,18 +170,18 @@ def build_simple_hidden_layer_model(
     hidden_dim=10,
     output_dim=10,
 ):
-    input_layer = bolt.graph.Input(dim=input_dim)
+    input_layer = bolt.nn.Input(dim=input_dim)
 
-    hidden_layer = bolt.graph.FullyConnected(
+    hidden_layer = bolt.nn.FullyConnected(
         dim=hidden_dim,
         activation="relu",
     )(input_layer)
 
-    output_layer = bolt.graph.FullyConnected(dim=output_dim, activation="softmax")(
+    output_layer = bolt.nn.FullyConnected(dim=output_dim, activation="softmax")(
         hidden_layer
     )
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
 
     return model
 
@@ -198,24 +198,24 @@ def simple_bolt_model_in_distributed_training_wrapper(
     train_data = dataset.from_numpy(train_data, batch_size=batch_size)
     train_labels = dataset.from_numpy(train_labels, batch_size=batch_size)
 
-    input_layer = bolt.graph.Input(dim=num_classes)
-    hidden_layer = bolt.graph.FullyConnected(
+    input_layer = bolt.nn.Input(dim=num_classes)
+    hidden_layer = bolt.nn.FullyConnected(
         dim=hidden_layer_dim,
         sparsity=sparsity,
         activation="relu",
     )(input_layer)
-    output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
+    output_layer = bolt.nn.FullyConnected(dim=num_classes, activation="softmax")(
         hidden_layer
     )
 
     train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=learning_rate, epochs=3)
+        bolt.TrainConfig(learning_rate=learning_rate, epochs=3)
         .silence()
         .with_rebuild_hash_tables(3000)
         .with_reconstruct_hash_functions(10000)
     )
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(bolt.CategoricalCrossEntropyLoss())
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model.compile(bolt.nn.losses.CategoricalCrossEntropy())
 
     wrapper = bolt.DistributedTrainingWrapper(
         model=model,
@@ -242,38 +242,38 @@ def build_train_and_predict_single_hidden_layer(
     data = dataset.from_numpy((data_np), batch_size=batch_size)
     labels = dataset.from_numpy(labels_np, batch_size=batch_size)
 
-    input_layer = bolt.graph.Input(dim=input_output_dim)
-    output_layer = bolt.graph.FullyConnected(
+    input_layer = bolt.nn.Input(dim=input_output_dim)
+    output_layer = bolt.nn.FullyConnected(
         dim=input_output_dim,
         activation="softmax",
         sparsity=output_sparsity,
-        sampling_config=bolt.DWTASamplingConfig(
+        sampling_config=bolt.nn.DWTASamplingConfig(
             hashes_per_table=3, num_tables=64, reservoir_size=8
         ),
     )(input_layer)
     if optimize_sparse_sparse:
         output_layer.enable_sparse_sparse_optimization()
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(bolt.CategoricalCrossEntropyLoss())
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model.compile(bolt.nn.losses.CategoricalCrossEntropy())
 
-    train_config = bolt.graph.TrainConfig.make(
+    train_config = bolt.TrainConfig(
         learning_rate=learning_rate, epochs=epochs
     ).silence()
 
     model.train(data, labels, train_config)
 
-    predict_config = (
-        bolt.graph.PredictConfig.make()
+    eval_config = (
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
         .return_activations()
         .silence()
     )
 
     if enable_sparse_inference:
-        predict_config.enable_sparse_inference()
+        eval_config.enable_sparse_inference()
 
-    return model.predict(data, labels, predict_config)
+    return model.evaluate(data, labels, eval_config)
 
 
 def get_compressed_weight_gradients(
@@ -343,9 +343,7 @@ def compressed_training(
         batch_size=batch_size,
     )
 
-    predict_config = (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
-    )
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
     for epochs in range(epochs):
         for batch_num in range(num_training_batches):
             wrapped_model.compute_and_store_batch_gradients(batch_num)
@@ -365,10 +363,10 @@ def compressed_training(
     wrapped_model.finish_training()
 
     model = wrapped_model.model
-    acc = model.predict(
+    acc = model.evaluate(
         test_data=dataset.from_numpy(test_data, batch_size=64),
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
-        predict_config=predict_config,
+        eval_config=eval_config,
     )
 
     return acc

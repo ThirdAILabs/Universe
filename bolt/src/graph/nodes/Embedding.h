@@ -89,9 +89,8 @@ class EmbeddingNode final : public Node,
         "EmbeddingNode is in an invalid internal state");
   }
 
-  void enableDistributedTraining() final {
-    // NOOP since the Embedding node always updates all of its parameters, so
-    // enabling distributed training doesn't change anything.
+  void disableSparseParameterUpdates() final {
+    _embedding_layer->disableSparseParameterUpdates();
   }
 
   bool trainable(bool flag) final {

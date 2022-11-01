@@ -114,10 +114,6 @@ class DotProductNode final
             << " (DotProduct)\n";
   }
 
-  void enableDistributedTraining() final {
-    // NOOP since the DotProduct node doesn't have any paramters
-  }
-
   std::string type() const final { return "dot_product"; }
 
   std::vector<NodePtr> getPredecessorsImpl() const final {

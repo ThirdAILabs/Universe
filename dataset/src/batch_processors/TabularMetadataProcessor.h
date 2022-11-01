@@ -11,13 +11,16 @@
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
+#include <string>
 
 namespace thirdai::dataset {
 
 enum class TabularDataType {
   Numeric,
   Categorical,
-  Label
+  Label,
+  Ignore,
 };  // TODO(david) add datetime/text support
 
 /**
@@ -33,8 +36,8 @@ enum class TabularDataType {
  * column_dtypes. Required for use in RCA but optional for general use.
  * @param col_to_num_bins Optional mapping from column number to the number of
  * bins to use for that column. Must specify a pair for each Numeric type as
- * specified in column_dtypes. If map is not passed in, TabularPairGram default
- * the number of bins to 10.
+ * specified in column_dtypes. If map is not passed in, TabularHashFeatures
+ * default the number of bins to 10.
  *
  * TODO(david): look at a TabularBinningStrategy class to try out different
  * methods?
@@ -73,7 +76,7 @@ class TabularMetadata {
 
   TabularDataType colType(uint32_t col) { return _column_dtypes[col]; }
 
-  uint32_t getStringHashValue(const std::string& str_val, uint32_t col) const {
+  static uint32_t getStringHashValue(const std::string& str_val, uint32_t col) {
     // to ensure hashes are unique across columns we add salt based on the col
     const char* char_salt = reinterpret_cast<const char*>(&col);
     std::string str_salt(char_salt, 4);
@@ -92,14 +95,34 @@ class TabularMetadata {
     return TextEncodingUtils::computeUnigram(val_to_hash, /* len = */ 8);
   }
 
+  std::string getColumnName(uint32_t col_number) {
+    if (_column_names.empty()) {
+      throw std::runtime_error(
+          "Column names not provided to tabular processor.");
+    }
+    if (col_number >= _column_names.size()) {
+      throw std::invalid_argument(
+          "Tabular processor: " + std::to_string(col_number) +
+          " is not a valid column number.");
+    }
+    return _column_names[col_number];
+  }
+
  private:
   double getColBinsize(uint32_t col) {
     return (colMax(col) - colMin(col)) / numBins(col);
   }
 
+  /**
+   * For values between the min and the max (inclusive), we divide that range
+   * into N uniform chunks and return a bin number from 0 to N-1. Additionally
+   * we support three special cases of bins:
+   *    - if we're given an empty str_val we return bin number N
+   *    - if the str_val is less than the min we return bin number 0
+   *    - if the str_val is greater than the max we return bin number N - 1
+   */
   uint32_t getColBin(uint32_t col, const std::string& str_val,
                      std::exception_ptr& exception_ptr) {
-    // map empty values to their own bin
     if (str_val.empty()) {
       return numBins(col);
     }
@@ -117,6 +140,15 @@ class TabularMetadata {
       // Thus we return some arbitrary value to do that.
       return 0;
     }
+    uint32_t min = colMin(col);
+    uint32_t max = colMax(col);
+    if (value < min) {
+      return 0;
+    }
+    if (value > max) {
+      return numBins(col) - 1;
+    }
+
     double binsize = getColBinsize(col);
     if (binsize == 0) {
       return 0;
@@ -139,41 +171,36 @@ class TabularMetadata {
 
   void verifyInputs() {
     for (uint32_t col = 0; col < _column_dtypes.size(); col++) {
-      switch (colType(col)) {
-        case TabularDataType::Numeric: {
-          if (!_col_min_maxes.count(col)) {
-            throw std::invalid_argument(
-                "Column " + std::to_string(col) +
-                " specified as Numeric has no given min/max values.");
-          }
-          if (_col_to_num_bins && !_col_to_num_bins->count(col)) {
-            throw std::invalid_argument(
-                "Column " + std::to_string(col) +
-                " specified as Numeric has no given number of bins.");
-          }
-          break;
+      if (colType(col) == TabularDataType::Numeric) {
+        if (!_col_min_maxes.count(col)) {
+          throw std::invalid_argument(
+              "Column " + std::to_string(col) +
+              " specified as Numeric has no given min/max values.");
         }
-        case TabularDataType::Categorical: {
-          if (_col_min_maxes.count(col)) {
-            throw std::invalid_argument(
-                "Column " + std::to_string(col) +
-                " specified as Categorical has min/max values.");
-          }
-          if (_col_to_num_bins && _col_to_num_bins->count(col)) {
-            throw std::invalid_argument(
-                "Column " + std::to_string(col) +
-                " specified as Categorical has bin values.");
-          }
-          break;
+        if (_col_to_num_bins && !_col_to_num_bins->count(col)) {
+          throw std::invalid_argument(
+              "Column " + std::to_string(col) +
+              " specified as Numeric has no given number of bins.");
         }
-        case TabularDataType::Label: {
-          if (_label_col) {
-            throw std::invalid_argument(
-                "Found multiple 'label' columns in dataset.");
-          }
-          _label_col = col;
-          break;
+      }
+      if (colType(col) != TabularDataType::Numeric) {
+        if (_col_min_maxes.count(col)) {
+          throw std::invalid_argument(
+              "Column " + std::to_string(col) +
+              " specified as non-numeric has min/max values.");
         }
+        if (_col_to_num_bins && _col_to_num_bins->count(col)) {
+          throw std::invalid_argument(
+              "Column " + std::to_string(col) +
+              " specified as non-numeric has bin values.");
+        }
+      }
+      if (colType(col) == TabularDataType::Label) {
+        if (_label_col) {
+          throw std::invalid_argument(
+              "Found multiple 'label' columns in dataset.");
+        }
+        _label_col = col;
       }
     }
   }
@@ -196,7 +223,8 @@ class TabularMetadata {
 
   std::vector<std::string> _column_names;
 
-  // one additional bin is reserved for empty values
+  // three additional bins are reserved: one for empty values, one for values
+  // less than the min, and one for values greater than the max
   std::optional<std::unordered_map<uint32_t, uint32_t>> _col_to_num_bins;
 
   std::optional<uint32_t> _label_col;
@@ -262,6 +290,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
           break;
         }
         case TabularDataType::Categorical:
+        case TabularDataType::Ignore:
           break;
         case TabularDataType::Label: {
           _class_name_to_id->getUid(str_value);

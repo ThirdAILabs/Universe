@@ -3,7 +3,7 @@ import os
 import tempfile
 import textwrap
 import time
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Union
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
@@ -136,8 +136,8 @@ class DistributedDataParallel:
     def __init__(
         self,
         cluster_config: RayTrainingClusterConfig,
-        model: bolt.graph.Model,
-        train_config: bolt.graph.TrainConfig,
+        model: bolt.nn.Model,
+        train_config: bolt.TrainConfig,
         train_sources: List[DatasetLoader],
     ):
         """
@@ -210,7 +210,12 @@ class DistributedDataParallel:
     def train(self) -> Dict[str, Union[int, str]]:
         """
         Runs distributed training on the passed in Bolt model on the passed in
-        Ray cluster.
+        Ray cluster. Note that this method does not call finish_training on the
+        underlying DistributedTrainingWrappers. This is not dangerous because
+        the only way to do inference on the wrapped models is to call
+        get_model(), which will do a pickle and depickle of the wrapped Bolt
+        model, which has the side effect of throwing away any batch state as
+        it is not saved as part of the model.
 
         Returns:
             Dict: A dictionary with some statistics about training, including
@@ -231,7 +236,6 @@ class DistributedDataParallel:
             total_batches_trained += 1
             train_state_manager.move_to_next_epoch()
 
-        train_state_manager.finish_training()
         return {
             "time": time.time() - train_start,
             "total_batches_trained": total_batches_trained,

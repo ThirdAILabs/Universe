@@ -213,19 +213,8 @@ class FullyConnectedNode final
     return _layer->getBiasGradientsPtr();
   }
 
-  void enableSparseSparseOptimization() {
-    // Exactly one of _config and _layer is guarenteed to have a value.
-    // Implementing an enableSparseSparseOptimization method in both places
-    // allows us to set it at any time (even before compilation).
-    if (_config.has_value()) {
-      _config->enableSparseSparseOptimization();
-    } else {
-      _layer->enableSparseSparseOptimization();
-    }
-  }
-
-  void enableDistributedTraining() final {
-    _layer->enableDistributedTraining();
+  void disableSparseParameterUpdates() final {
+    _layer->disableSparseParameterUpdates();
   }
 
   bool trainable(bool flag) final {
