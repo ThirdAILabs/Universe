@@ -67,7 +67,7 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
 
 #if THIRDAI_EXPOSE_ALL
   auto transformations_submodule =
-      dataset_submodule.def_submodule("transfocd rmations");
+      dataset_submodule.def_submodule("transformations");
 
   py::class_<Transformation, std::shared_ptr<Transformation>>(  // NOLINT
       transformations_submodule, "Transformation");
