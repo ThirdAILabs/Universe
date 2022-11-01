@@ -138,17 +138,16 @@ using QueryCandidateGeneratorConfigPtr =
 class QueryCandidateGenerator {
  public:
   static QueryCandidateGenerator make(
-      QueryCandidateGeneratorConfigPtr flash_QueryCandidateGenerator_config) {
-    return QueryCandidateGenerator(
-        std::move(flash_QueryCandidateGenerator_config));
+      QueryCandidateGeneratorConfigPtr query_candidate_generator_config) {
+    return QueryCandidateGenerator(std::move(query_candidate_generator_config));
   }
 
   static QueryCandidateGenerator buildGeneratorFromSerializedConfig(
       const std::string& config_file_name) {
-    auto flash_QueryCandidateGenerator_config =
+    auto query_candidate_generator_config =
         QueryCandidateGeneratorConfig::load(config_file_name);
 
-    return QueryCandidateGenerator::make(flash_QueryCandidateGenerator_config);
+    return QueryCandidateGenerator::make(query_candidate_generator_config);
   }
 
   void save(const std::string& file_name) {

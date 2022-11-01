@@ -8,11 +8,14 @@ namespace thirdai::automl::deployment {
 class UniversalDeepTransformerBase {
  public:
   UniversalDeepTransformerBase() {}
-  virtual void save(const std::string& filename) = 0;
+  void save(const std::string& filename);
   static std::unique_ptr<UniversalDeepTransformerBase> load(
       const std::string& filename);
 
   virtual ~UniversalDeepTransformerBase() = default;
+
+protected:
+    static UniversalDeepTransformerBase buildUDT();
 };
 
 }  // namespace thirdai::automl::deployment

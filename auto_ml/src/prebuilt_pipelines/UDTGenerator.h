@@ -1,14 +1,12 @@
 #pragma once
 
 #include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
-#include <generator/src/Generator.h>
 #include <search/src/Generator.h>
-// #include <search/src/Generator.h>
-
-// using thirdai::bolt::QueryCandidateGeneratorConfig;
-// using thirdai::bolt::QueryCandidateGenerator;
 
 namespace thirdai::automl::deployment {
+
+using thirdai::bolt::QueryCandidateGenerator;
+using thirdai::bolt::QueryCandidateGeneratorConfig;
 
 class UDTGenerator : public ModelPipeline, public UniversalDeepTransformerBase {
  public:
