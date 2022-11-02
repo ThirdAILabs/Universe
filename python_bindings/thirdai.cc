@@ -118,7 +118,6 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:
   // https://pybind11.readthedocs.io/en/stable/faq.html#how-can-i-reduce-the-build-time
-
   // TODO(Josh/Nick): Deprecate this call and change NewDataset/new_dataset to
   // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
@@ -134,16 +133,11 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Bolt Submodule
   auto bolt_submodule = m.def_submodule("bolt");
   thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
-#if THIRDAI_EXPOSE_ALL
   thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
-#endif
   thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
-
-#if THIRDAI_EXPOSE_ALL
   // TODO(Nicholas, Geordie): This should be depreciated in favor of
   // ModelPipeline/UDT soon.
   thirdai::bolt::python::defineAutoClassifeirsInModule(bolt_submodule);
-#endif
   // TODO(Nicholas, Geordie): Move this to bolt
   thirdai::automl::deployment::python::defineModelPipelineAndUDT(
       bolt_submodule);
