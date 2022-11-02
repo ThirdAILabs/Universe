@@ -150,6 +150,8 @@ with open("thirdai.version") as version_file:
     if suffix:
         version = "{}+{}".format(version, suffix)
 
+print(find_packages(where="thirdai_python_package", exclude=["experimental"]))
+
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
@@ -199,7 +201,7 @@ setup(
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
     },
     packages=["thirdai"]
-    + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
+    + ["thirdai." + p for p in find_packages(where="thirdai_python_package", exclude=["experimental"])],
     license="proprietary",
     package_dir={"thirdai": "thirdai_python_package"},
 )
