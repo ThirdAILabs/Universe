@@ -287,7 +287,6 @@ Args:
           long term trends.
       )pbdoc");
 
-#if THIRDAI_EXPOSE_ALL
   /**
    * Sequential Classifier
    */
@@ -449,8 +448,10 @@ Args:
         - `model.train()` resets Oracle's temporal context at the start of training to 
           prevent unwanted information from leaking into the training routine.
            )pbdoc")
+#if THIRDAI_EXPOSE_ALL
       .def("summarizeModel", &SequentialClassifier::summarizeModel,
            "Deprecated\n")
+#endif
       .def("evaluate", &SequentialClassifier::predict,
            py::arg("validation_file"),
            py::arg("metrics") = std::vector<std::string>({"recall@1"}),
@@ -698,7 +699,6 @@ Args:
         >>> model.Oracle(...)
         >>> model = bolt.Oracle.load("oracle_savefile.bolt")
            )pbdoc");
-#endif
 
   createModelsSubmodule(bolt_submodule);
 }

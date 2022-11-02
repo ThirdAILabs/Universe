@@ -27,5 +27,3 @@ This is the *complete* API documentation for the ``thirdai`` python package.
    thirdaihashing
    
    thirdaisearch
-
-   thirdaiexperimental

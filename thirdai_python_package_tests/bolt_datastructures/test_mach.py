@@ -5,7 +5,7 @@ from hashlib import new
 
 import numpy as np
 import pytest
-from thirdai import bolt, dataset, experimental
+from thirdai import bolt, dataset
 
 
 # Returns data and labels for learning the function f(a) = a, where a is
@@ -45,7 +45,7 @@ def build_and_train_mach(
         num_examples=num_train,
     )
 
-    mach = experimental.Mach(
+    mach = bolt.Mach(
         max_label=input_and_output_dim,
         num_classifiers=4,
         input_dim=input_and_output_dim,
@@ -112,7 +112,7 @@ def test_mach_save_load():
     save_folder_name = "mach_saved_for_test"
     mach.save(save_folder_name)
 
-    newMach = experimental.Mach.load(save_folder_name)
+    newMach = bolt.Mach.load(save_folder_name)
 
     assert recall_fast_before_save == get_recall(
         newMach.query_fast(test_x_np)[0], test_y_np, num_true_labels_per_sample

@@ -17,6 +17,17 @@ namespace thirdai::dataset::python {
 
 void createDatasetSubmodule(py::module_& module);
 
+/*
+ * This function takes a single sentence, and parses it into an sparse
+ * vector of features. Right now it only supports the following parsing:
+ * unigram tokenizer + murmurhash tokens into indices.
+ * This function returns a tuple of python arrays, where the first array is
+ * the indices of the features in the dataset, and the second array is the
+ * values.
+ */
+std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
+parseSentenceToUnigramsPython(const std::string& sentence, uint32_t dimension);
+
 /**
  * Checks whether the given bolt dataset and dense 2d matrix
  * have the same values. For testing purposes only.
