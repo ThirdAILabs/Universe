@@ -8,12 +8,10 @@ concurrency:
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [vihan-benchmarks-slack]
-  pull_request:
-    branches: [vihan-benchmarks-slack]
-
+  schedule:
+      # Sets the workflow to run at 1300 UTC every Saturday
+      # Ref: https://jasonet.co/posts/scheduled-actions/
+      - cron: "0 13 * * 6" 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
