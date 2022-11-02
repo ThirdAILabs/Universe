@@ -49,6 +49,9 @@ class UniversalDeepTransformer : public ModelPipeline,
    *    tables after a single epoch
    *  - embedding_dimension: hidden layer size. Accepts non-negative integer as
    *    a string, e.g. "512".
+   *  - parallel_data_processing: Whether dataset should be processed in
+   *    parallel. Defaults to false because parallel training with temporal
+   *    relationships on small datasets can lead to a reduction in accuracy.
    *  - num_tables, hashes_per_table, reservoir_size: output neuron sampling
    *    configuration. Accepts non-negative integer as a string, e.g. "512". If
    *    provided, all three variables must be provided.
@@ -71,9 +74,15 @@ class UniversalDeepTransformer : public ModelPipeline,
       }
     }
 
+    bool parallel_data_processing = false;
+    if (options.count("parallel_data_processing")) {
+      if (utils::lower(options.at("parallel_data_processing")) == "true") {
+        parallel_data_processing = false;
+      }
+    }
     auto dataset_factory = OracleDatasetFactory::make(
         /* config= */ std::move(dataset_config),
-        /* parallel= */ false,
+        /* parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
         /* column_contextualization= */ column_contextualization);
 

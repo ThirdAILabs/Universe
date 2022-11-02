@@ -291,8 +291,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
                          /* should_update_history= */ true);
 
     auto processor = dataset::GenericBatchProcessor::make(
-        std::move(input_blocks), {label_block});
-    processor->setParallelism(_parallel);
+        std::move(input_blocks), {label_block}, /* has_header= */ false,
+        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
     return processor;
   }
 
@@ -309,8 +309,8 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     auto processor = dataset::GenericBatchProcessor::make(
         buildInputBlocks(/* column_numbers= */ column_number_map,
                          /* should_update_history= */ false),
-        /* label_blocks= */ {});
-    processor->setParallelism(_parallel);
+        /* label_blocks= */ {}, /* has_header= */ false,
+        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
     return processor;
   }
 
