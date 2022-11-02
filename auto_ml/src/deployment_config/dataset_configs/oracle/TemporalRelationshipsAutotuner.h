@@ -83,8 +83,8 @@ class TemporalRelationshipsAutotuner {
       configs.push_back(TemporalConfig::categorical(
           trackable_col, track_last_n, /* include_current_row= */ false,
           /* use_metadata= */ track_last_n == window_sizes.at(2)));
-          // Use metadata for the middle window size to avoid excessive bias 
-          // towards most recent item and avoid having too many features.
+      // Use metadata for the middle window size to avoid excessive bias
+      // towards most recent item and avoid having too many features.
     }
   }
 };
