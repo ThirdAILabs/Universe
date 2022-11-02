@@ -13,6 +13,7 @@ void createCallbacksSubmodule(py::module_& module) {
   auto callbacks_submodule = module.def_submodule("callbacks");
 
   py::class_<Callback, PyCallback, CallbackPtr>(callbacks_submodule, "Callback")
+#if THIRDAI_EXPOSE_ALL
       .def(py::init<>())
       .def("on_train_begin", &Callback::onTrainBegin)
       .def("on_train_end", &Callback::onTrainEnd)
@@ -36,6 +37,7 @@ void createCallbacksSubmodule(py::module_& module) {
       .def("get_validation_metrics", &TrainState::getValidationMetrics,
            py::arg("metric_name"))
       .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
+#endif
 
   py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule,  // NOLINT
                                         "LRSchedule");        // NOLINT
