@@ -262,6 +262,11 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
    */
   dataset::GenericBatchProcessorPtr makeLabeledUpdatingProcessor(
       const ColumnNumberMap& column_number_map) {
+    if (!_config->data_types.count(_config->target)) {
+      throw std::invalid_argument(
+          "data_types parameter must include the target column.");
+    }
+
     auto target_type = _config->data_types.at(_config->target);
     if (!target_type.isCategorical()) {
       throw std::invalid_argument(
