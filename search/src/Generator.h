@@ -9,6 +9,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
+#include <hashing/src/MinHash.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -84,6 +85,11 @@ class QueryCandidateGeneratorConfig {
 
   std::shared_ptr<hashing::HashFunction> getHashFunction() const {
     auto hash_function = thirdai::utils::lower(_hash_function);
+
+    if (hash_function == "minhash") {
+      return std::make_shared<hashing::MinHash>(_hashes_per_table, _num_tables,
+                                                _range);
+    }
 
     if (hash_function == "densifiedminhash") {
       return std::make_shared<hashing::DensifiedMinHash>(_hashes_per_table,
