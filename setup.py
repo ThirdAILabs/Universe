@@ -27,8 +27,10 @@ else:
     build_mode = "Release"
 if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
+    expose_all = "THIRDAI_EXPOSE_ALL" in feature_flags
 else:
     feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
+    expose_all = False
 
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -150,7 +152,6 @@ with open("thirdai.version") as version_file:
     if suffix:
         version = "{}+{}".format(version, suffix)
 
-print(find_packages(where="thirdai_python_package", exclude=["experimental"]))
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
@@ -201,7 +202,14 @@ setup(
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
     },
     packages=["thirdai"]
-    + ["thirdai." + p for p in find_packages(where="thirdai_python_package", exclude=["experimental"])],
+    + [
+        "thirdai." + p
+        for p in find_packages(
+            where="thirdai_python_package",
+            # We don't want the experimental submodule included in releases.
+            exclude=[] if expose_all else ["experimental"],
+        )
+    ],
     license="proprietary",
     package_dir={"thirdai": "thirdai_python_package"},
 )
