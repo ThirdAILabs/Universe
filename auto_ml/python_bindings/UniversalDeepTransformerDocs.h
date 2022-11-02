@@ -499,13 +499,13 @@ Example:
     >>> print(explanations[0])
     column_number: 0 | column_name: "special_event" | keyword: "christmas" | percentage_significance: 25.2
     >>> print(explanations[1])
-    column_number: 1 | column_name: "movie_title" | keyword: "Previously seen 'Die Hard'" | percentage_significance: -22.3
+    column_number: 1 | column_name: "movie_title" | keyword: "'Die Hard' is one of last 5 values" | percentage_significance: -22.3
     
 Notes: 
     - `percentage_significance` can be positive or negative depending on the 
       relationship between the responsible column and the prediction. In the above
       example, the `percentage_significance` associated with the explanation
-      "Previously seen 'Die Hard'" is negative because recently watching "Die Hard" is 
+      "'Die Hard' is one of last 5 values" is negative because recently watching "Die Hard" is 
       negatively correlated with the target class "Home Alone". A large negative value
       is just as "explanatory" as a large positive value.
     - The values of columns that are tracked temporally may be unknown during inference
