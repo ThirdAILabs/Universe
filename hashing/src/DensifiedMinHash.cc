@@ -30,18 +30,6 @@ void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
       "DensifiedMinHash cannot hash dense arrays.");
 }
 
-void printArray(const uint32_t* array, uint32_t len, const std::string& name) {
-  std::cout << "\n" << name << " = [";
-  for (uint32_t n = 0; n < len; n++) {
-    if (array[n] == UINT32_MAX) {
-      std::cout << " null";
-    } else {
-      std::cout << " " << array[n];
-    }
-  }
-  std::cout << " ]\n" << std::endl;
-}
-
 void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
                                         const float* values, uint32_t length,
                                         uint32_t* output) const {
@@ -63,22 +51,15 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
     hashes[bin_id] = std::min(hash, hashes[bin_id]);
   }
 
-  printArray(hashes.data(), hashes.size(), "Before densification");
-
   HashUtils::safeDensifyHashes(hashes.data(), _total_num_hashes,
                                /* unset_hash_value= */ 0);
-
-  printArray(hashes.data(), hashes.size(), "After densification");
 
   HashUtils::defaultCompactHashes(hashes.data(), output, _num_tables,
                                   _hashes_per_table);
 
-  printArray(output, _num_tables, "After Compaction");
   for (uint32_t i = 0; i < _num_tables; i++) {
     output[i] %= _range;
   }
-
-  printArray(output, _num_tables, "After Mod");
 }
 
 }  // namespace thirdai::hashing
