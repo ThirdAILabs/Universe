@@ -205,9 +205,9 @@ class UniversalDeepTransformer : public ModelPipeline {
         }
       } else {
         throw std::invalid_argument(
-            "Option " + option_name +
-            " is invalid. Possible options include 'contextual_columns', "
-            "'force_parallel', 'freeze_hash_tables'.");
+            "Option '" + option_name +
+            "' is invalid. Possible options include 'contextual_columns', "
+            "'force_parallel', 'freeze_hash_tables', 'embedding_dimension'.");
       }
     }
 
@@ -217,10 +217,10 @@ class UniversalDeepTransformer : public ModelPipeline {
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,
                                const std::string& expected_option_value) {
-    throw std::invalid_argument("Given invalid value for option " +
-                                option_name + ". Expected value " +
-                                expected_option_value + " but received value " +
-                                given_option_value + ".");
+    throw std::invalid_argument("Given invalid value for option '" +
+                                option_name + "'. Expected value '" +
+                                expected_option_value + "' but received value '" +
+                                given_option_value + "'.");
   }
 
   // Private constructor for cereal.
