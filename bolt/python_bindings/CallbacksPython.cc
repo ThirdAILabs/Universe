@@ -13,7 +13,7 @@ void createCallbacksSubmodule(py::module_& module) {
   auto callbacks_submodule = module.def_submodule("callbacks");
 
   py::class_<Callback, PyCallback, CallbackPtr>(callbacks_submodule, "Callback")
-#if THIRDAI_EXPOSE_ALL
+      // #if THIRDAI_EXPOSE_ALL
       .def(py::init<>())
       .def("on_train_begin", &Callback::onTrainBegin)
       .def("on_train_end", &Callback::onTrainEnd)
@@ -37,7 +37,7 @@ void createCallbacksSubmodule(py::module_& module) {
       .def("get_validation_metrics", &TrainState::getValidationMetrics,
            py::arg("metric_name"))
       .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
-#endif
+  // #endif
 
   py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule,  // NOLINT
                                         "LRSchedule");        // NOLINT
@@ -85,23 +85,22 @@ void createCallbacksSubmodule(py::module_& module) {
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
-      .def(
-          py::init<std::string, std::string, uint32_t, double>(),
-          py::arg("monitored_metric"), py::arg("model_save_path"),
-          py::arg("patience"), py::arg("min_delta"),
-          "This callback is intended to stop training early based on prediction"
-          " results from a given validation set. Saves the best model to "
-          "model_save_path.\n"
-          "Arguments:\n"
-          " * monitored_metric: The metric to monitor for early stopping. The "
-          "metric is assumed to be associated with validation data.\n"
-          " * model_save_path: string. The file path to save the model that "
-          "scored the best on the validation set\n"
-          " * patience: int. The nuber of epochs with no improvement in "
-          "validation score after which training will be stopped.\n"
-          " * min_delta: float. The minimum change in the monitored quantity "
-          "to qualify as an improvement, i.e. an absolute change of less than "
-          "min_delta will count as no improvement.\n");
+      .def(py::init<std::string, std::string, uint32_t, double>(),
+           py::arg("monitored_metric"), py::arg("model_save_path"),
+           py::arg("patience"), py::arg("min_delta"), R"pbdoc(
+This callback is intended to stop training early based on prediction results 
+from a given validation set. Saves the best model to model_save_path.
+Args:
+     monitored_metric (string): The metric to monitor for early stopping. The 
+          metric is assumed to be associated with validation data.
+     model_save_path (string): The file path to save the model that scored the 
+          best on the validation set
+     patience (int): The nuber of epochs with no improvement in validation score
+          after which training will be stopped.
+     min_delta (float): The minimum change in the monitored quantity to qualify 
+          as an improvement, i.e. an absolute change of less than min_delta will
+          count as no improvement.
+)pbdoc");
 }
 
 }  // namespace thirdai::bolt::python
