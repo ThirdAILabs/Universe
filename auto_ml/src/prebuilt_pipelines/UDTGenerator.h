@@ -25,10 +25,12 @@ class UDTGenerator : public ModelPipeline, public UniversalDeepTransformerBase {
     (void)source_column;
     (void)dataset_size;
 
-    return;
+    UDTGenerator gen;
+
+    return gen;
   }
 
-  void save(const std::string& filename) final { (void)filename; }
+  static void save(const std::string& filename) { (void)filename; }
 
   static std::unique_ptr<UDTGenerator> load(const std::string& filename) {
     auto file = filename;
@@ -53,7 +55,7 @@ class UDTGenerator : public ModelPipeline, public UniversalDeepTransformerBase {
  private:
   void setupGeneratorConfig() {}
 
-  std::unique_ptr<Generator> _generator;
+  std::unique_ptr<QueryCandidateGenerator> _generator;
 };
 
 }  // namespace thirdai::automl::deployment
