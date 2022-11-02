@@ -65,36 +65,19 @@ class UniversalDeepTransformer : public ModelPipeline {
         std::move(target_col), std::move(time_granularity), lookahead,
         delimiter);
 
-    bool column_contextualization = false;
-    if (options.count("column_contextualization")) {
-      if (utils::lower(options.at("column_contextualization")) == "true") {
-        column_contextualization = true;
-      }
-    }
+    auto [contextual_columns, parallel_data_processing, freeze_hash_tables] =
+        processUDTOptions(options);
 
-    bool parallel_data_processing = false;
-    if (options.count("parallel_data_processing")) {
-      if (utils::lower(options.at("parallel_data_processing")) == "true") {
-        parallel_data_processing = false;
-      }
-    }
     auto dataset_factory = OracleDatasetFactory::make(
         /* config= */ std::move(dataset_config),
         /* parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
-        /* column_contextualization= */ column_contextualization);
+        /* contextual_columns= */ contextual_columns);
 
     auto model = buildOracleBoltGraph(
         /* input_nodes= */ dataset_factory->getInputNodes(),
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* options= */ options);
-
-    bool freeze_hash_tables = true;
-    if (options.count("freeze_hash_tables")) {
-      if (utils::lower(options.at("freeze_hash_tables")) == "false") {
-        freeze_hash_tables = false;
-      }
-    }
 
     TrainEvalParameters train_eval_parameters(
         /* rebuild_hash_tables_interval= */ std::nullopt,
@@ -219,6 +202,64 @@ class UniversalDeepTransformer : public ModelPipeline {
       long as the model.
     */
     return *std::dynamic_pointer_cast<OracleDatasetFactory>(_dataset_factory);
+  }
+
+  struct UDTOptions {
+    bool contextual_columns = false;
+    bool parallel_data_processing = false;
+    bool freeze_hash_tables = true;
+  };
+
+  static inline std::vector<std::string> possible_options = {
+      "contextual_columns", "parallel_data_processing", "freeze_hash_tables"};
+
+  static UDTOptions processUDTOptions(
+      const std::unordered_map<std::string, std::string>& options_map) {
+    auto options = UDTOptions();
+
+    for (const auto& [option_name, option_value] : options_map) {
+      if (std::find(possible_options.begin(), possible_options.end(),
+                    option_name) != possible_options.end()) {
+        throw std::invalid_argument(
+            "Option " + option_name +
+            " is invalid. Possible options include 'contextual_columns', "
+            "'parallel_data_processing', 'freeze_hash_tables'.");
+      }
+
+      if (option_name == "contextual_columns") {
+        if (option_value == "true") {
+          options.contextual_columns = true;
+        } else {
+          throwOptionError(option_name, option_value,
+                           /* expected_option_value= */ "true");
+        }
+      } else if (option_name == "parallel_data_processing") {
+        if (option_value == "true") {
+          options.parallel_data_processing = false;
+        } else {
+          throwOptionError(option_name, option_value,
+                           /* expected_option_value= */ "true");
+        }
+      } else if (option_name == "freeze_hash_tables") {
+        if (option_value == "false") {
+          options.freeze_hash_tables = false;
+        } else {
+          throwOptionError(option_name, option_value,
+                           /* expected_option_value= */ "false");
+        }
+      }
+    }
+
+    return options;
+  }
+
+  static void throwOptionError(const std::string& option_name,
+                               const std::string& given_option_value,
+                               const std::string& expected_option_value) {
+    throw std::invalid_argument("Given invalid value for option " +
+                                option_name + ". Expected value " +
+                                expected_option_value + " but received value " +
+                                given_option_value + ".");
   }
 
   // Private constructor for cereal.
