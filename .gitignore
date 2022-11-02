@@ -31,8 +31,7 @@ thirdai.egg-info
 *.der
 
 # Docs
-docs/internal_docs/_*
-docs/public_docs/_*
+docs/_*
 
 # Wheels
 dist

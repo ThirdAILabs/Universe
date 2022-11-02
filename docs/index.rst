@@ -8,8 +8,6 @@
 thirdai
 =======
 
-.. image:: images/thirdai_logo.png
-
 To get access to our package, refer to `thirdai.com
 <https://www.thirdai.com/>`_. 
 
@@ -17,21 +15,11 @@ To get access to our package, refer to `thirdai.com
    :maxdepth: 2
 
    installation
-   
-   thirdaibase
+   getting_started
+   distributed_tutorial
+   deployment_config_example
 
-   thirdaibolt
-   thirdaiboltmodels
-   thirdaibolttypes
-   thirdaibolttemporal
-   thirdaiboltcallbacks
-
-   thirdaidataset
-
-   thirdailog
-   
-   thirdaisearch
-
+   python_api/index
 
 
 
