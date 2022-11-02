@@ -108,6 +108,34 @@ class HashUtils {
 #endif
   }
 
+  static void safeDensifyHashes(uint32_t* hashes, uint32_t num_hashes,
+                                uint32_t unset_hash_value = 0) {
+    for (uint32_t i = 0; i < num_hashes; i++) {
+      if (hashes[i] == UINT32_MAX) {
+        uint32_t offset = simpleIntegerHash(i);
+        for (uint32_t j = offset; j < num_hashes; j++) {
+          uint32_t other_hash = hashes[i + j];
+          if (other_hash != UINT32_MAX && other_hash != unset_hash_value) {
+            hashes[i] = other_hash;
+            break;
+          }
+        }
+        if (hashes[i] == UINT32_MAX) {
+          for (uint32_t j = 0; j < offset; j++) {
+            uint32_t other_hash = hashes[i + j];
+            if (other_hash != UINT32_MAX && other_hash != unset_hash_value) {
+              hashes[i] = other_hash;
+              break;
+            }
+          }
+        }
+        if (hashes[i] == UINT32_MAX) {
+          hashes[i] = unset_hash_value;
+        }
+      }
+    }
+  }
+
   /**
    * Does an in place densification of hashes, as described in the DOPH paper.
    * Currently unset hashes should be represented by UINT32_MAX. For a given
