@@ -37,7 +37,7 @@ namespace thirdai::automl::deployment {
 
 class OracleDatasetFactory final : public DatasetLoaderFactory {
  public:
-  explicit OracleDatasetFactory(OracleConfigPtr config, bool parallel,
+  explicit OracleDatasetFactory(OracleConfigPtr config, bool force_parallel,
                                 uint32_t text_pairgram_word_limit,
                                 bool contextual_columns = false)
       : _config(std::move(config)),
@@ -45,7 +45,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
             _config->data_types, _config->provided_relationships,
             _config->lookahead)),
         _context(std::make_shared<TemporalContext>()),
-        _parallel(parallel),
+        _parallel(_temporal_relationships.empty() || force_parallel),
         _text_pairgram_word_limit(text_pairgram_word_limit),
         _contextual_columns(contextual_columns) {
     ColumnNumberMap mock_column_number_map(_config->data_types);
@@ -56,11 +56,11 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 
   static std::shared_ptr<OracleDatasetFactory> make(
-      OracleConfigPtr config, bool parallel, uint32_t text_pairgram_word_limit,
-      bool contextual_columns = false) {
-    return std::make_shared<OracleDatasetFactory>(std::move(config), parallel,
-                                                  text_pairgram_word_limit,
-                                                  contextual_columns);
+      OracleConfigPtr config, bool force_parallel,
+      uint32_t text_pairgram_word_limit, bool contextual_columns = false) {
+    return std::make_shared<OracleDatasetFactory>(
+        std::move(config), force_parallel, text_pairgram_word_limit,
+        contextual_columns);
   }
 
   DatasetLoaderPtr getLabeledDatasetLoader(
