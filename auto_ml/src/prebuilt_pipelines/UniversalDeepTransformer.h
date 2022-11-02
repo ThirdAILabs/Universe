@@ -5,7 +5,6 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
@@ -32,9 +31,6 @@ using OptionsMap = std::unordered_map<std::string, std::string>;
  * deployment config file.
  */
 class UniversalDeepTransformer : public ModelPipeline {
-  static inline const std::string NUM_TABLES_STR = "num_tables";
-  static inline const std::string HASHES_PER_TABLE_STR = "hashes_per_table";
-  static inline const std::string RESERVOIR_SIZE_STR = "reservoir_size";
   static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
   static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
@@ -50,9 +46,8 @@ class UniversalDeepTransformer : public ModelPipeline {
    *  - parallel_data_processing: Whether dataset should be processed in
    *    parallel. Defaults to false because parallel training with temporal
    *    relationships on small datasets can lead to a reduction in accuracy.
-   *  - num_tables, hashes_per_table, reservoir_size: output neuron sampling
-   *    configuration. Accepts non-negative integer as a string, e.g. "512". If
-   *    provided, all three variables must be provided.
+   *  - contextual_columns: "true" or "false". Decides whether to do tabular
+   *    pairgrams or not. Defaults to false and only does tabular unigrams.
    */
   static UniversalDeepTransformer buildUDT(
       ColumnDataTypes data_types,
@@ -65,8 +60,8 @@ class UniversalDeepTransformer : public ModelPipeline {
         std::move(target_col), std::move(time_granularity), lookahead,
         delimiter);
 
-    auto [contextual_columns, parallel_data_processing, freeze_hash_tables] =
-        processUDTOptions(options);
+    auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
+          embedding_dimension] = processUDTOptions(options);
 
     auto dataset_factory = OracleDatasetFactory::make(
         /* config= */ std::move(dataset_config),
@@ -77,7 +72,7 @@ class UniversalDeepTransformer : public ModelPipeline {
     auto model = buildOracleBoltGraph(
         /* input_nodes= */ dataset_factory->getInputNodes(),
         /* output_dim= */ dataset_factory->getLabelDim(),
-        /* options= */ options);
+        /* hidden_layer_size= */ embedding_dimension);
 
     TrainEvalParameters train_eval_parameters(
         /* rebuild_hash_tables_interval= */ std::nullopt,
@@ -139,19 +134,15 @@ class UniversalDeepTransformer : public ModelPipeline {
 
   static bolt::BoltGraphPtr buildOracleBoltGraph(
       std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
-      const OptionsMap& options) {
-    auto hidden = bolt::FullyConnectedNode::makeDense(hiddenLayerDim(options),
+      uint32_t hidden_layer_size) {
+    auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
                                                       /* activation= */ "relu");
     hidden->addPredecessor(input_nodes[0]);
 
     auto sparsity = AutotunedSparsityParameter::autotuneSparsity(output_dim);
-    auto sampling_config = samplingConfig(options);
     const auto* activation = "softmax";
-    auto output = sampling_config
-                      ? bolt::FullyConnectedNode::make(
-                            output_dim, sparsity, activation, *sampling_config)
-                      : bolt::FullyConnectedNode::makeAutotuned(
-                            output_dim, sparsity, activation);
+    auto output = bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity,
+                                                          activation);
     output->addPredecessor(hidden);
 
     auto graph = std::make_shared<bolt::BoltGraph>(
@@ -161,38 +152,6 @@ class UniversalDeepTransformer : public ModelPipeline {
         bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
 
     return graph;
-  }
-
-  static uint32_t hiddenLayerDim(const OptionsMap& options) {
-    if (options.count("embedding_dimension")) {
-      return utils::toInteger(options.at("embedding_dimension").data());
-    }
-    return DEFAULT_HIDDEN_DIM;
-  }
-
-  static std::optional<bolt::SamplingConfigPtr> samplingConfig(
-      const OptionsMap& options) {
-    if (options.count(NUM_TABLES_STR) && options.count(HASHES_PER_TABLE_STR) &&
-        options.count(RESERVOIR_SIZE_STR)) {
-      return std::make_shared<bolt::DWTASamplingConfig>(
-          /* num_tables= */ utils::toInteger(options.at(NUM_TABLES_STR).data()),
-          /* hashes_per_table= */
-          utils::toInteger(options.at(HASHES_PER_TABLE_STR).data()),
-          /* reservoir_size= */
-          utils::toInteger(options.at(RESERVOIR_SIZE_STR).data()));
-    }
-
-    if (!options.count(NUM_TABLES_STR) &&
-        !options.count(HASHES_PER_TABLE_STR) &&
-        !options.count(RESERVOIR_SIZE_STR)) {
-      return std::nullopt;
-    }
-
-    throw std::invalid_argument(
-        "The options map must include either all or none of the "
-        "SamplingConfig variables ('" +
-        NUM_TABLES_STR + "', '" + HASHES_PER_TABLE_STR + "', and '" +
-        RESERVOIR_SIZE_STR + "').");
   }
 
   OracleDatasetFactory& oracleDatasetFactory() const {
@@ -208,6 +167,7 @@ class UniversalDeepTransformer : public ModelPipeline {
     bool contextual_columns = false;
     bool force_parallel = false;
     bool freeze_hash_tables = true;
+    uint32_t embedding_dimension = DEFAULT_HIDDEN_DIM;
   };
 
   static UDTOptions processUDTOptions(
@@ -235,6 +195,13 @@ class UniversalDeepTransformer : public ModelPipeline {
         } else {
           throwOptionError(option_name, option_value,
                            /* expected_option_value= */ "false");
+        }
+      } else if (option_name == "embedding_dimension") {
+        if (option_name == "embedding_dimension") {
+          options.embedding_dimension = utils::toInteger(option_value.c_str());
+        } else {
+          throwOptionError(option_name, option_value,
+                           /* expected_option_value= */ "parseable to integer");
         }
       } else {
         throw std::invalid_argument(
