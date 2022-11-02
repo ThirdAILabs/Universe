@@ -30,11 +30,11 @@ class Optimizer {
   virtual ~Optimizer() = default;
 
  protected:
-  static constexpr float clip(float gradient, float threshold) {
-    if (gradient > threshold) {
-      gradient = threshold;
-    } else if (gradient < -threshold) {
-      gradient = -threshold;
+  static constexpr float clip(float gradient, float min, float max) {
+    if (gradient > max) {
+      gradient = max;
+    } else if (gradient < min) {
+      gradient = min;
     }
     return gradient;
   }

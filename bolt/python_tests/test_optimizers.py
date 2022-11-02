@@ -49,7 +49,7 @@ def test_signed_momentum():
         optimizer=bolt.nn.optimizers.SignedMomentum(),
     )
 
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.1)
     model.train(train_data, train_labels, train_config)
 
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
