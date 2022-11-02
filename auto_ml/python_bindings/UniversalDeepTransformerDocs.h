@@ -462,7 +462,7 @@ Args:
     input_sample (Dict[str, str]): The input sample as a dictionary 
         where the keys are column names as specified in data_types and the "
         values are the respective column values. 
-    target (str): Optional. The desired target class. If provided, the
+    target_class (str): Optional. The desired target class. If provided, the
         model will identify the columns that need to change for the model to 
         predict the target class.
 
@@ -494,7 +494,7 @@ Example:
         )
     >>> # Make a single prediction
     >>> explanations = model.explain(
-            input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, target=35
+            input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, target_class=35
         )
     >>> print(explanations[0])
     column_number: 0 | column_name: "special_event" | keyword: "christmas" | percentage_significance: 25.2
