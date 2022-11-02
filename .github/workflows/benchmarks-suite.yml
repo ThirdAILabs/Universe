@@ -6,6 +6,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
@@ -13,16 +14,8 @@ on:
   pull_request:
     branches: [vihan-benchmarks-slack]
 
-  workflow_dispatch:
-# Controls when the workflow will run
-#on:
-#  schedule:
-#      # Sets the workflow to run at 1300 UTC every Saturday
-#      # Ref: https://jasonet.co/posts/scheduled-actions/
-#      - cron: "0 13 * * 6"       
-#
   # Allows you to run this workflow manually from the Actions tab
-  # workflow_dispatch:
+  workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -49,7 +42,7 @@ jobs:
       - name: Delete Container
         run: sudo docker system prune -a -f
 
-     - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
+      - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
         if: success()
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
