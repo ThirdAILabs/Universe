@@ -210,22 +210,11 @@ class UniversalDeepTransformer : public ModelPipeline {
     bool freeze_hash_tables = true;
   };
 
-  static inline std::vector<std::string> possible_options = {
-      "contextual_columns", "force_parallel", "freeze_hash_tables"};
-
   static UDTOptions processUDTOptions(
       const std::unordered_map<std::string, std::string>& options_map) {
     auto options = UDTOptions();
 
     for (const auto& [option_name, option_value] : options_map) {
-      if (std::find(possible_options.begin(), possible_options.end(),
-                    option_name) != possible_options.end()) {
-        throw std::invalid_argument(
-            "Option " + option_name +
-            " is invalid. Possible options include 'contextual_columns', "
-            "'force_parallel', 'freeze_hash_tables'.");
-      }
-
       if (option_name == "contextual_columns") {
         if (option_value == "true") {
           options.contextual_columns = true;
@@ -247,6 +236,11 @@ class UniversalDeepTransformer : public ModelPipeline {
           throwOptionError(option_name, option_value,
                            /* expected_option_value= */ "false");
         }
+      } else {
+        throw std::invalid_argument(
+            "Option " + option_name +
+            " is invalid. Possible options include 'contextual_columns', "
+            "'force_parallel', 'freeze_hash_tables'.");
       }
     }
 
