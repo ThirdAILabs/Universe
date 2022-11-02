@@ -197,17 +197,19 @@ class UniversalDeepTransformer : public ModelPipeline {
                            /* expected_option_value= */ "false");
         }
       } else if (option_name == "embedding_dimension") {
-        if (option_name == "embedding_dimension") {
-          options.embedding_dimension = utils::toInteger(option_value.c_str());
+        uint32_t int_value = utils::toInteger(option_value.c_str());
+        if (int_value != 0) {
+          options.embedding_dimension = int_value;
         } else {
-          throwOptionError(option_name, option_value,
-                           /* expected_option_value= */ "parseable to integer");
+          throw std::invalid_argument("Invalid value for option '" +
+                                      option_name + "'. Received value '" +
+                                      option_value + "'.");
         }
       } else {
         throw std::invalid_argument(
-            "Option " + option_name +
-            " is invalid. Possible options include 'contextual_columns', "
-            "'force_parallel', 'freeze_hash_tables'.");
+            "Option '" + option_name +
+            "' is invalid. Possible options include 'contextual_columns', "
+            "'force_parallel', 'freeze_hash_tables', 'embedding_dimension'.");
       }
     }
 
@@ -217,10 +219,10 @@ class UniversalDeepTransformer : public ModelPipeline {
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,
                                const std::string& expected_option_value) {
-    throw std::invalid_argument("Given invalid value for option " +
-                                option_name + ". Expected value " +
-                                expected_option_value + " but received value " +
-                                given_option_value + ".");
+    throw std::invalid_argument(
+        "Given invalid value for option '" + option_name +
+        "'. Expected value '" + expected_option_value +
+        "' but received value '" + given_option_value + "'.");
   }
 
   // Private constructor for cereal.

@@ -264,6 +264,8 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
 
+#if THIRDAI_EXPOSE_ALL
+  // TODO(Geordie): Can this be either removed/renamed/moved to bolt?
   py::class_<OracleConfig, OracleConfigPtr>(bolt_submodule, "OracleConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
                     std::string, std::string, uint32_t, char>(),
@@ -271,6 +273,7 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            docs::ORACLE_CONFIG_INIT);
+#endif
 
   py::class_<UniversalDeepTransformer>(
       bolt_submodule, "UniversalDeepTransformer", docs::UDT_CLASS)
