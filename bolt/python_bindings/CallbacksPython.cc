@@ -77,9 +77,11 @@ void createCallbacksSubmodule(py::module_& module) {
       .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
       .def("get_final_lr", &LearningRateScheduler::getFinalLR);
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<KeyboardInterrupt, KeyboardInterruptPtr, Callback>(
       callbacks_submodule, "KeyboardInterrupt")
       .def(py::init<>());
+#endif
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")

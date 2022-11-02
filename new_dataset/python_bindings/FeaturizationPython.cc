@@ -56,6 +56,16 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
                                                      "NumpyDenseArrayColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
 
+  py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
+      .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
+           py::arg("columns"))
+      .def("convert_to_dataset", &ColumnMap::convertToDataset,
+           py::arg("columns"), py::arg("batch_size"))
+      .def("num_rows", &ColumnMap::numRows)
+      .def("__getitem__", &ColumnMap::getColumn)
+      .def("columns", &ColumnMap::columns);
+
+#if THIRDAI_EXPOSE_ALL
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
 
@@ -97,21 +107,13 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"),
            py::arg("output_range"));
 
-  py::class_<ColumnMap>(dataset_submodule, "ColumnMap")
-      .def(py::init<std::unordered_map<std::string, ColumnPtr>>(),
-           py::arg("columns"))
-      .def("convert_to_dataset", &ColumnMap::convertToDataset,
-           py::arg("columns"), py::arg("batch_size"))
-      .def("num_rows", &ColumnMap::numRows)
-      .def("__getitem__", &ColumnMap::getColumn)
-      .def("columns", &ColumnMap::columns);
-
   py::class_<FeaturizationPipeline, FeaturizationPipelinePtr>(
       dataset_submodule, "FeaturizationPipeline")
       .def(py::init<std::vector<TransformationPtr>>(),
            py::arg("transformations"))
       .def("featurize", &FeaturizationPipeline::featurize, py::arg("columns"))
       .def(bolt::python::getPickleFunction<FeaturizationPipeline>());
+#endif
 }
 
 }  // namespace thirdai::dataset::python

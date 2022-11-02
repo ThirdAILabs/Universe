@@ -1,4 +1,4 @@
-name: Sync Python Docs
+name: Sync Internal Python Docs
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
@@ -39,10 +39,10 @@ jobs:
 
       - name: Build docs
         run: |
-          (cd docs && make html)
+          (cd docs/internal_docs && make html)
 
       - name: Remove current docs
         run: ssh ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }} "rm -rf /home/ubuntu/html"
 
       - name: Copy built docs
-        run: scp -r docs/_build/html ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }}:/home/ubuntu/
+        run: scp -r docs/internal_docs/_build/html ${{ secrets.DOC_HOSTING_EC2_USERNAME }}@${{ secrets.DOC_HOSTING_REMOTE_SERVER }}:/home/ubuntu/
