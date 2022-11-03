@@ -350,11 +350,11 @@ class QueryCandidateGenerator {
 
       std::string row, correct_query;
       while (std::getline(input_file_stream, row)) {
-        correct_query = std::string(dataset::ProcessorUtils::parseCsvRow(row, ',')[0]);
+        correct_query =
+            std::string(dataset::ProcessorUtils::parseCsvRow(row, ',')[0]);
         output_queries.emplace_back(std::move(correct_query));
       }
-    }
-    catch (const std::ifstream::failure& exception) {
+    } catch (const std::ifstream::failure& exception) {
       throw std::invalid_argument("Invalid input file name.");
     }
 

@@ -18,16 +18,24 @@ class UDTGenerator : public ModelPipeline, public UniversalDeepTransformerBase {
    * - dataset_size: Size of the dataset. Options include ["small", "medium",
    * "large"]
    */
-  static UniversalDeepTransformerBase buildUDT(
-      const std::string& target_column, const std::string& source_column,
-      const std::string& dataset_size) {
+  static UDTGenerator buildUDT(const std::string& target_column,
+                               const std::string& source_column,
+                               const std::string& dataset_size) {
     (void)target_column;
     (void)source_column;
     (void)dataset_size;
 
-    UDTGenerator gen;
+    
 
-    return gen;
+    auto generator_config = QueryCandidateGeneratorConfig(
+        /* hash_function = */ "minhash", /* num_tables = */ 128,
+        /* hashes_per_table = */ 5, /* top_k = */ 5, /* n_grams = */ {3, 4},
+        /* has_incorrect_queries = */ true, /* input_dim = */ 100);
+
+    auto generator = QueryCandidateGenerator::make(
+        std::make_shared<QueryCandidateGeneratorConfig>(generator_config));
+
+    return generator;
   }
 
   static void save(const std::string& filename) { (void)filename; }
