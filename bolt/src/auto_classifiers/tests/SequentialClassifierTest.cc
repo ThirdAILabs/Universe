@@ -170,8 +170,8 @@ void assertWordsWithinBlock(const std::vector<std::string>& column_names,
   // these sequential reasons based on values in the sequential column in train
   // data.
   std::vector<std::string> sequential_reasons = {
-      "Previously seen 'A'", "Previously seen 'B'", "Previously seen 'C'",
-      "Previously seen 'D'"};
+      "'A' is one of last 3 values", "'B' is one of last 3 values",
+      "'C' is one of last 3 values", "'D' is one of last 3 values"};
   std::vector<std::string> text_reasons =
       getWordsInTextColumn(input["static_text"]);
   for (uint32_t i = 0; i < words_responsible.size(); i++) {
