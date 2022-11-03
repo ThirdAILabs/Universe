@@ -1,9 +1,13 @@
 enable_testing()
 include(GoogleTest)
 
-add_executable(MaxFlashArrayTest MaxFlashArrayTest.cc)
+set(SEARCH_TESTS MaxFlashArrayTest FlashIndexTest QueryCandidateGeneratorTest)
 
-target_link_libraries(MaxFlashArrayTest PRIVATE thirdai gtest_main)
+foreach(SEARCH_TEST IN LISTS SEARCH_TESTS)
+  add_executable(${SEARCH_TEST} ${SEARCH_TEST}.cc)
+  target_link_libraries(${SEARCH_TEST} PRIVATE thirdai gtest_main)
 
-gtest_discover_tests(MaxFlashArrayTest DISCOVERY_TIMEOUT
-                     ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+  gtest_discover_tests(${SEARCH_TEST} DISCOVERY_TIMEOUT
+                       ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})
+
+endforeach(SEARCH_TEST IN LISTS SEARCH_TESTS)
