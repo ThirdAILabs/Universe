@@ -36,7 +36,7 @@ def make_serialized_oracle_config():
         config=deployment.UserSpecifiedParameter("config", type=bolt.OracleConfig),
         parallel=deployment.ConstantParameter(False),
         text_pairgram_word_limit=deployment.ConstantParameter(15),
-        column_contextualization=deployment.ConstantParameter(False),
+        contextual_columns=deployment.ConstantParameter(False),
     )
 
     train_eval_params = deployment.TrainEvalParameters(
