@@ -13,6 +13,7 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
@@ -138,17 +139,16 @@ using QueryCandidateGeneratorConfigPtr =
 class QueryCandidateGenerator {
  public:
   static QueryCandidateGenerator make(
-      QueryCandidateGeneratorConfigPtr flash_QueryCandidateGenerator_config) {
-    return QueryCandidateGenerator(
-        std::move(flash_QueryCandidateGenerator_config));
+      QueryCandidateGeneratorConfigPtr query_candidate_generator_config) {
+    return QueryCandidateGenerator(std::move(query_candidate_generator_config));
   }
 
   static QueryCandidateGenerator buildGeneratorFromSerializedConfig(
       const std::string& config_file_name) {
-    auto flash_QueryCandidateGenerator_config =
+    auto query_candidate_generator_config =
         QueryCandidateGeneratorConfig::load(config_file_name);
 
-    return QueryCandidateGenerator::make(flash_QueryCandidateGenerator_config);
+    return QueryCandidateGenerator::make(query_candidate_generator_config);
   }
 
   void save(const std::string& file_name) {
@@ -239,6 +239,52 @@ class QueryCandidateGenerator {
     return outputs;
   }
 
+  /**
+   * @brief Returns a list of recommended queries and Computes Recall (Rk@1).
+   *
+   * @param file_name: CSV file expected to have correct queries in column 0,
+   * and incorrect queries in column 1.
+   * @return A tuple of recommended queries and the recall value
+   */
+  std::tuple<std::vector<std::vector<std::string>>, float> evaluateOnFile(
+      const std::string& file_name) {
+    if (!_flash_index) {
+      throw exceptions::QueryCandidateGeneratorException(
+          "Attempting to Evaluate the Generator without Training.");
+    }
+
+    /**
+     * Assertion ensures that the right batch processor is used to process
+     * the evaluation data
+     */
+    assert(_query_generator_config->hasIncorrectQueries());
+    auto data_loader = getDatasetLoader(file_name);
+    auto [data, _] = data_loader->loadInMemory();
+
+    std::vector<std::vector<std::string>> output_queries;
+    for (const auto& batch : *data) {
+      std::vector<std::vector<uint32_t>> candidate_query_labels =
+          _flash_index->queryBatch(
+              /* batch = */ batch,
+              /* top_k = */ _query_generator_config->topK(),
+              /* pad_zeros = */ false);
+
+      for (auto& candidate_query_label_vector : candidate_query_labels) {
+        auto top_k = getQueryCandidatesAsStrings(candidate_query_label_vector);
+        output_queries.push_back(std::move(top_k));
+      }
+    }
+
+    std::vector<std::string> correct_queries =
+        dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
+            file_name, /* column_index = */ 0);
+
+    auto recall = computeRecallAtK(/* correct_queries = */ correct_queries,
+                                   /* generated_queries = */ output_queries);
+
+    return std::make_tuple(output_queries, recall);
+  }
+
   std::unordered_map<std::string, uint32_t> getQueriesToLabelsMap() const {
     return _queries_to_labels_map;
   }
@@ -298,9 +344,36 @@ class QueryCandidateGenerator {
     output_strings.reserve(query_labels.size());
 
     for (const auto& query_label : query_labels) {
-      output_strings.push_back(_labels_to_queries_map[query_label]);
+      output_strings.push_back(std::move(_labels_to_queries_map[query_label]));
     }
     return output_strings;
+  }
+
+  /**
+   * @brief computes recall (Rk@1)
+   *
+   * @param correct_queries: Vector of queries correct queries of size n.
+   * @param generated_queries: Vector of generated queries by the flash index.
+   * This is expected to be of size n and each element in the vector is also a
+   * vector of size k.
+   * @return recall
+   */
+  static float computeRecallAtK(
+      const std::vector<std::string>& correct_queries,
+      const std::vector<std::vector<std::string>>& generated_queries) {
+    assert(correct_queries.size() == generated_queries.size());
+    uint64_t correct_results = 0;
+
+    for (uint64_t query_index = 0; query_index < correct_queries.size();
+         query_index++) {
+      auto top_k_queries = generated_queries[query_index];
+      auto correct_query = correct_queries[query_index];
+      if (std::find(top_k_queries.begin(), top_k_queries.end(),
+                    correct_query) != top_k_queries.end()) {
+        correct_results += 1;
+      }
+    }
+    return (correct_results * 1.0) / correct_queries.size();
   }
 
   /**
