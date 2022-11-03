@@ -152,7 +152,6 @@ def test_flash_generator():
             1 if query_pairs[query_index][0] in generated_candidates[query_index] else 0
         )
 
-    print(correct_results / DATASET_SIZE)
     assert correct_results / DATASET_SIZE > 0.95
 
     delete_created_files()
