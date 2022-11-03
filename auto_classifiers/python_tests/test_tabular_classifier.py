@@ -1,6 +1,5 @@
 import os
 import platform
-from multiprocessing.sharedctypes import Value
 
 import pandas as pd
 import pytest
@@ -10,7 +9,7 @@ from auto_classifier_utils import (
 )
 from thirdai import bolt
 
-pytestmark = [pytest.mark.integration, pytest.mark.release]
+pytestmark = [pytest.mark.integration]
 
 CENSUS_INCOME_BASE_DOWNLOAD_URL = (
     "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"

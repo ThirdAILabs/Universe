@@ -5,7 +5,7 @@ from hashlib import new
 
 import numpy as np
 import pytest
-from thirdai import bolt, dataset, experimental
+from thirdai import bolt, dataset
 
 
 # Returns data and labels for learning the function f(a) = a, where a is
@@ -38,6 +38,9 @@ def build_and_train_mach(
     batch_size=512,
     num_epochs=5,
 ):
+
+    # Import here to avoid collection error on release tests.
+    from thirdai import experimental
 
     train_x_np, train_y_np = generate_random_easy_sparse(
         output_dim=input_and_output_dim,
@@ -80,6 +83,9 @@ def get_recall(result, test_y, num_true_labels_per_sample):
 
 @pytest.mark.unit
 def test_mach_save_load():
+    # Import here to avoid collection error on release tests.
+    from thirdai import experimental
+
     num_train = 100
     num_test = 100
     num_true_labels_per_sample = 10

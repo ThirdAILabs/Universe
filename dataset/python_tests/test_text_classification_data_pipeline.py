@@ -3,7 +3,6 @@ import os
 import numpy as np
 import pytest
 from thirdai import bolt, dataset
-from thirdai.dataset import DataPipeline, blocks
 
 
 def generate_text_classification_dataset(filename, delim):
@@ -21,11 +20,11 @@ def generate_text_classification_dataset(filename, delim):
 def helper_for_text_classification_data_pipeline(text_block, delim):
     file = "test_text_classification.csv"
     generate_text_classification_dataset(file, delim)
-    pipeline = DataPipeline(
+    pipeline = dataset.DataPipeline(
         file,
         batch_size=256,
         input_blocks=[text_block],
-        label_blocks=[blocks.NumericalId(col=0, n_classes=3)],
+        label_blocks=[dataset.blocks.NumericalId(col=0, n_classes=3)],
         delimiter=delim,
     )
     [data, labels] = pipeline.load_in_memory()
@@ -52,17 +51,27 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_unigrams():
-    helper_for_text_classification_data_pipeline(blocks.TextUniGram(col=1), ",")
-    helper_for_text_classification_data_pipeline(blocks.TextUniGram(col=1), "\t")
+    helper_for_text_classification_data_pipeline(dataset.blocks.TextUniGram(col=1), ",")
+    helper_for_text_classification_data_pipeline(
+        dataset.blocks.TextUniGram(col=1), "\t"
+    )
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_pairgrams():
-    helper_for_text_classification_data_pipeline(blocks.TextPairGram(col=1), ",")
-    helper_for_text_classification_data_pipeline(blocks.TextPairGram(col=1), "\t")
+    helper_for_text_classification_data_pipeline(
+        dataset.blocks.TextPairGram(col=1), ","
+    )
+    helper_for_text_classification_data_pipeline(
+        dataset.blocks.TextPairGram(col=1), "\t"
+    )
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_chartrigrams():
-    helper_for_text_classification_data_pipeline(blocks.TextCharKGram(col=1, k=3), ",")
-    helper_for_text_classification_data_pipeline(blocks.TextCharKGram(col=1, k=3), "\t")
+    helper_for_text_classification_data_pipeline(
+        dataset.blocks.TextCharKGram(col=1, k=3), ","
+    )
+    helper_for_text_classification_data_pipeline(
+        dataset.blocks.TextCharKGram(col=1, k=3), "\t"
+    )

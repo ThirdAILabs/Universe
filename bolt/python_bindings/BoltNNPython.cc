@@ -25,6 +25,7 @@ namespace thirdai::bolt::python {
 void createBoltNNSubmodule(py::module_& bolt_submodule) {
   auto nn_submodule = bolt_submodule.def_submodule("nn");
 
+#if THIRDAI_EXPOSE_ALL
   using ParameterArray =
       py::array_t<float, py::array::c_style | py::array::forcecast>;
 
@@ -88,10 +89,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           "in nature but comes at the cost of a higher memory footprint. "
           "Note: Only concatenate compressed vectors of the same type with "
           "the same hyperparamters.");
-
-  // Needed so python can know that InferenceOutput objects can own memory
-  py::class_<InferenceOutputTracker>(nn_submodule,  // NOLINT
-                                     "InferenceOutput");
 
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
       nn_submodule, "SamplingConfig");
@@ -301,6 +298,11 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       .def(py::init())
       .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
            py::arg("embedding_layer"));
+#endif
+
+  // Needed so python can know that InferenceOutput objects can own memory
+  py::class_<InferenceOutputTracker>(nn_submodule,  // NOLINT
+                                     "InferenceOutput");
 
   py::class_<BoltGraph, BoltGraphPtr>(nn_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
