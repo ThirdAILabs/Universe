@@ -13,7 +13,7 @@ from thirdai._distributed_bolt.backend.train_state_manager import TrainStateMana
 from thirdai._distributed_bolt.dataset_loaders import DatasetLoader
 from thirdai._thirdai import bolt
 
-from .utils import get_num_cpus, init_logging
+from .utils import get_num_cpus, init_logging, RayBlockWritePathProvider
 
 
 class RayTrainingClusterConfig:
@@ -125,6 +125,115 @@ class RayTrainingClusterConfig:
             ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=100)
             for _ in range(self.num_workers - 1)
         ]
+
+class DataParallelIngestSpec:
+    def __init__(
+        self,
+        dataset_type: str,
+        save_location: str = "/tmp/thirdai/"
+    ):
+        """
+        This class writes a wrapper on Ray Data for copying and splitting training
+        data from single source or multiple sources to files stored locally or remote,
+        to n(num_workers) different file(one on each node of the cluster), being fully
+        exclusive and exhaustive.
+        :param dataset_type: different dataset format. Currently Supported: csv, numpy.
+        :type dataset_type: str
+        :param equal: Whether to guarantee each split has an equal
+                number of records. This may drop records if they cannot be
+                divided equally among the splits, defaults to False
+        :type equal: bool, optional
+        :param save_location: The path to the destination directory, where dataset
+                files will be written to, defaults to '/tmp/thirdai/'
+        :type save_location: str, optional
+        :param save_prefix: The name of the file, to which dataset file is written
+                to, defaults to 'training_data'
+        :type save_prefix: str, optional
+        """
+        self.dataset_type = dataset_type
+        self.equal = equal
+        self.save_location = save_location
+
+    def split_dataset_across_nodes(
+        self,
+        equal: bool = False,
+        paths: Union[str, List[str]],
+        remote_file_system=None,
+        parallelism: int=1,
+        cluster_address: str='auto',
+        num_workers,
+    ):
+        """
+        Get the shards to pass to train workers
+        :param paths: A single file/directory path or a list of file/directory paths.
+            A list of paths can contain both files and directories.
+        :type paths: Union[str, List[str]]
+        :param remote_file_system: The filesystem implementation to read from,
+                defaults to None
+        :type remote_file_system: Optional[pyarrow.fs.FileSystem], optional
+        :raises ValueError: If dataset format specified not supported.
+        :return: Dataset
+        :rtype: ray.data.Dataset
+        Partitioning Local Dataset:
+            data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
+            ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, num_workers=NUM_WORKERS)
+    
+        Partitioning Dataset from AWS S3 buckets:
+            data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
+            ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, remote_file_system=paf.S3FileSystem(
+                region=YOUR_REGION,
+                access_key=YOUR_ACCESS_KEY,
+                secret_key=YOUR_SECRET_KEY,
+            ), num_workers=NUM_WORKERS)
+        
+        
+        """
+        @ray.remote(num_cpus=get_num_cpus())
+        class DataTransferActor:
+            def __init__(self, dataset_type, save_location):
+                self.dataset_type = dataset_type
+                self.save_location = save_location
+
+
+            def consume(self, shard):
+                file_path = None
+                file_path_prefix = os.path.join(
+                    self.save_location
+                    , f"block"
+                )
+                dataset_type = self.dataset_type
+                if not os.path.exists(file_path_prefix):
+                    os.mkdir(file_path_prefix)
+                if dataset_type == "csv":
+                    data_shard.write_csv(file_path_prefix, block_path_provider=RayBlockWritePathProvider())
+                    file_path = os.path.join(file_path_prefix, 'train_file')
+                elif dataset_type == "numpy":
+                    data_shard.write_numpy(file_path_prefix, block_path_provider=RayBlockWritePathProvider())
+                    file_path = os.path.join(file_path_prefix, 'train_file')
+
+
+        ray_dataset = None
+        if self.dataset_type == "csv":
+            ray_dataset = ray.data.read_csv(paths=paths, filesystem=remote_file_system, parallelism=parallelism)
+        elif self.dataset_type == "numpy":
+            ray_dataset = ray.data.read_numpy(
+                paths=paths, filesystem=remote_file_system, parallelism=parallelism
+            )
+
+        if ray_dataset == None:
+            raise ValueError(
+                f"Dataset Type: {dataset_type} is not"
+                "supported. Supported types are csv,"
+                "or numpy"
+            )
+
+
+        workers = [DataTransferActor.remote(self.dataset_type, self.save_location) for i in range(num_workers)]
+        ray_data_shards = ray_dataset.split(n=num_workers, equal=equal, locality=workers)
+
+
+        train_file_names = ray.get([worker.consume.remote(shard) for shard, worker in zip(ray_data_shards, workers)])
+        return train_file_names
 
 
 class DistributedDataParallel:
