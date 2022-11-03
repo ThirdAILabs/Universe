@@ -206,8 +206,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           },
           py::return_value_policy::reference,
           "Returns a ParameterReference object to the bias gradients vector.")
-      .def("enable_sparse_sparse_optimization",
-           &FullyConnectedNode::enableSparseSparseOptimization)
       .def("trainable", &FullyConnectedNode::trainable);
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
