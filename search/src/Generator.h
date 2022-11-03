@@ -186,7 +186,7 @@ class QueryCandidateGenerator {
     auto labels = getQueryLabels(
         file_name, _query_generator_config->hasIncorrectQueries());
 
-    auto data_loader = getDatasetLoader(file_name);
+    auto data_loader = getDatasetLoader(file_name, /* evaluate = */ false);
     auto [data, _] = data_loader->loadInMemory();
 
     if (!_flash_index) {
@@ -236,6 +236,44 @@ class QueryCandidateGenerator {
       outputs.emplace_back(std::move(top_k_candidates));
     }
     return outputs;
+  }
+
+  /**
+   * @brief Returns a list of recommended queries and Computes Recall@1.
+   *
+   * @param file_name: CSV file expected to have correct queries in column 0,
+   * and incorrect queries in column 1.
+   * @return A tuple of recommended queries and the recall value
+   */
+  std::tuple<std::vector<std::string>, float> evaluateOnFile(
+      const std::string& file_name) {
+    if (!_flash_index) {
+      throw exceptions::QueryCandidateGeneratorException(
+          "Attempting to Evaluate the Generator without Training.");
+    }
+    auto data_loader = getDatasetLoader(file_name, /* evaluate = */ true);
+    auto [data, _] = data_loader->loadInMemory();
+
+    std::vector<std::vector<std::string>> output_queries;
+    output_queries.reserve(data->numBatches());
+
+    for (const auto& batch : *data) {
+      std::vector<std::vector<uint32_t>> candidate_query_labels =
+          _flash_index->queryBatch(
+              /* batch = */ batch,
+              /* top_k = */ _query_generator_config->topK(),
+              /* pad_zeros = */ false);
+
+      for (auto& candidate_query_label_vector : candidate_query_labels) {
+        auto top_k = getQueryCandidatesAsStrings(candidate_query_label_vector);
+        output_queries.emplace_back(std::move(top_k));
+      }
+    }
+
+    /* compute recall@1 */
+    uint64_t correct_results = 0;
+
+    return {};
   }
 
   std::unordered_map<std::string, uint32_t> getQueriesToLabelsMap() const {
@@ -297,9 +335,30 @@ class QueryCandidateGenerator {
     output_strings.reserve(query_labels.size());
 
     for (const auto& query_label : query_labels) {
-      output_strings.push_back(_labels_to_queries_map[query_label]);
+      output_strings.push_back(std::move(_labels_to_queries_map[query_label]));
     }
     return output_strings;
+  }
+
+  static std::vector<std::string> processEvaluationQueries(
+      const std::string& file_name) {
+    std::vector<std::string> output_queries;
+
+    try {
+      std::ifstream input_file_stream =
+          dataset::SafeFileIO::ifstream(file_name, std::ios::in);
+
+      std::string row, correct_query;
+      while (std::getline(input_file_stream, row)) {
+        correct_query = std::string(dataset::ProcessorUtils::parseCsvRow(row, ',')[0]);
+        output_queries.emplace_back(std::move(correct_query));
+      }
+    }
+    catch (const std::ifstream::failure& exception) {
+      throw std::invalid_argument("Invalid input file name.");
+    }
+
+    return output_queries;
   }
 
   /**
@@ -376,12 +435,14 @@ class QueryCandidateGenerator {
   }
 
   std::unique_ptr<dataset::StreamingGenericDatasetLoader> getDatasetLoader(
-      const std::string& file_name) {
+      const std::string& file_name, bool evaluate) {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
         file_name, _query_generator_config->batchSize());
 
-    return std::make_unique<dataset::StreamingGenericDatasetLoader>(
-        file_data_loader, _training_batch_processor);
+    return evaluate ? std::make_unique<dataset::StreamingGenericDatasetLoader>(
+                          file_data_loader, _inference_batch_processor)
+                    : std::make_unique<dataset::StreamingGenericDatasetLoader>(
+                          file_data_loader, _training_batch_processor);
   }
 
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;

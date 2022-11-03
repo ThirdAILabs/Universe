@@ -14,8 +14,8 @@ class UniversalDeepTransformerBase {
 
   virtual ~UniversalDeepTransformerBase() = default;
 
-protected:
-    static UniversalDeepTransformerBase buildUDT();
+ protected:
+  static UniversalDeepTransformerBase buildUDT();
 };
 
 }  // namespace thirdai::automl::deployment
