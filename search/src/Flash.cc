@@ -16,7 +16,6 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function)
     : _hash_function(std::move(function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
-      _batch_elements_counter(0),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, false>>(
           _num_tables, _range)) {
   thirdai::licensing::LicenseWrapper::checkLicense();
@@ -61,31 +60,19 @@ void Flash<LABEL_T>::addDataset(
 template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
                               const std::vector<LABEL_T>& labels) {
+  assert(batch.getBatchSize() == labels.size());
+
   std::vector<uint32_t> hashes = hashBatch(batch);
 
   assert(hashes.size() == batch.getBatchSize() * _num_tables);
 
-  verifyIDFitsLabelTypeRange(batch.getBatchSize());
   _hashtable->insert(batch.getBatchSize(), labels.data(), hashes.data());
-
-  incrementBatchElementsCounter(batch.getBatchSize());
 }
 
 template <typename LABEL_T>
 std::vector<uint32_t> Flash<LABEL_T>::hashBatch(const BoltBatch& batch) const {
   auto hashes = _hash_function->hashBatchParallel(batch);
   return hashes;
-}
-
-template <typename LABEL_T>
-void Flash<LABEL_T>::verifyIDFitsLabelTypeRange(uint64_t id) const {
-  uint64_t max_possible_value = std::numeric_limits<LABEL_T>::max();
-
-  if (id + _batch_elements_counter > max_possible_value) {
-    throw std::invalid_argument(
-        "Trying to insert vector with id " + std::to_string(id) +
-        ", which is too large an id for this Flash Index.");
-  }
 }
 
 template <typename LABEL_T>

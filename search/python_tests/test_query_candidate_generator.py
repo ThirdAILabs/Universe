@@ -130,10 +130,9 @@ def test_flash_generator():
         hash_function="DensifiedMinHash",
         num_tables=300,
         hashes_per_table=32,
-        top_k=5,
+        range=100,
         n_grams=[3, 4],
         has_incorrect_queries=True,
-        input_dim=100,
     )
     generator_config.save(CONFIG_FILE)
 
@@ -144,7 +143,7 @@ def test_flash_generator():
     query_pairs = read_csv_file(file_name=TRANSFORMED_QUERIES)
 
     generated_candidates = generator.generate(
-        queries=[query_pair[1] for query_pair in query_pairs]
+        queries=[query_pair[1] for query_pair in query_pairs], top_k=5
     )
 
     correct_results = 0
