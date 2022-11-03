@@ -105,7 +105,7 @@ class QueryCandidateGeneratorConfig {
     }
     throw exceptions::NotImplemented(
         "Unsupported Hash Function. Supported Hash Functions include: "
-        "DensifiedMinHash, DWTA, and FastSRP.");
+        "DensifiedMinHash MinHash, DWTA, and FastSRP.");
   }
 
   constexpr uint32_t batchSize() const { return _batch_size; }
