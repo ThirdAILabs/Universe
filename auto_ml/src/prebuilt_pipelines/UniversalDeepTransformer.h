@@ -43,8 +43,8 @@ class UniversalDeepTransformer : public ModelPipeline {
    *    tables after a single epoch
    *  - embedding_dimension: hidden layer size. Accepts non-negative integer as
    *    a string, e.g. "512".
-   *  - parallel_data_processing: Whether dataset should be processed in
-   *    parallel. Defaults to false because parallel training with temporal
+   *  - force_parallel: Whether to force parallel dataset processing.
+   *    Defaults to false because parallel training with temporal
    *    relationships on small datasets can lead to a reduction in accuracy.
    *  - contextual_columns: "true" or "false". Decides whether to do tabular
    *    pairgrams or not. Defaults to false and only does tabular unigrams.
