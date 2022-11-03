@@ -127,9 +127,9 @@ def test_flash_generator():
     write_input_dataset_to_csv(transformed_queries, TRANSFORMED_QUERIES)
 
     generator_config = bolt.models.GeneratorConfig(
-        hash_function="DensifiedMinHash",
-        num_tables=300,
-        hashes_per_table=32,
+        hash_function="MinHash",
+        num_tables=20,
+        hashes_per_table=10,
         range=100,
         n_grams=[3, 4],
         has_incorrect_queries=True,
@@ -152,6 +152,7 @@ def test_flash_generator():
             1 if query_pairs[query_index][0] in generated_candidates[query_index] else 0
         )
 
+    print(correct_results / DATASET_SIZE)
     assert correct_results / DATASET_SIZE > 0.95
 
     delete_created_files()
