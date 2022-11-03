@@ -6,6 +6,12 @@ import time
 from typing import Dict, List, Union
 
 import ray
+from ray.util.placement_group import (
+    placement_group,
+)
+from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
+
+
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
@@ -126,7 +132,7 @@ class RayTrainingClusterConfig:
             for _ in range(self.num_workers - 1)
         ]
 
-class DataParallelIngestSpec:
+class DataParallelIngest:
     def __init__(
         self,
         dataset_type: str,
@@ -151,7 +157,6 @@ class DataParallelIngestSpec:
         :type save_prefix: str, optional
         """
         self.dataset_type = dataset_type
-        self.equal = equal
         self.save_location = save_location
 
     def split_dataset_across_nodes(
@@ -227,8 +232,12 @@ class DataParallelIngestSpec:
                 "or numpy"
             )
 
+        pg = placement_group([{"CPU": get_num_cpus()}] , strategy="STRICT_SPREAD")
+        ray.get(pg.ready())
 
-        workers = [DataTransferActor.remote(self.dataset_type, self.save_location) for i in range(num_workers)]
+        workers = [DataTransferActor.options(
+                    scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=pg))
+                    .remote(self.dataset_type, self.save_location) for i in range(num_workers)]
         ray_data_shards = ray_dataset.split(n=num_workers, equal=equal, locality=workers)
 
 
