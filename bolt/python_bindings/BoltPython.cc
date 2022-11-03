@@ -885,19 +885,19 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
     Evaluates the query candidate generator using the input from a CSV file. 
     The input file is expected to have pairs of correct and incorrect queries 
     in that order. 
-    This function also returns the recall at K.
+    This function also prints the recall at K.
 
     Args:
         file_name (str): Input file
 
     Returns:
-        tuple(List[List[str]], float): A tuple of generated candidate queries for 
-        each incorrect query in the input file, and the computed recall.
+        List[List[str]]: Generated candidate queries for 
+        each incorrect query in the input file.
 
     Example:
         >>> generator = bolt.models.Generator(confi_file_name="config_file")
         >>> generator.train(file_name="train_file")
-        >>> candidate_queries, recall = generator.evaluate(file_name="eval_file")
+        >>> candidate_queries = generator.evaluate(file_name="eval_file")
            )pbdoc");
 }
 

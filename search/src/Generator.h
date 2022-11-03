@@ -240,24 +240,27 @@ class QueryCandidateGenerator {
   }
 
   /**
-   * @brief Returns a list of recommended queries and Computes Recall (Rk@1).
+   * @brief Returns a list of recommended queries and Computes Recall at K
+   * (R1@K).
    *
    * @param file_name: CSV file expected to have correct queries in column 0,
    * and incorrect queries in column 1.
-   * @return A tuple of recommended queries and the recall value
+   * @return Recommended queries
    */
-  std::tuple<std::vector<std::vector<std::string>>, float> evaluateOnFile(
+  std::vector<std::vector<std::string>> evaluateOnFile(
       const std::string& file_name) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Evaluate the Generator without Training.");
     }
 
-    /**
-     * Assertion ensures that the right batch processor is used to process
-     * the evaluation data
-     */
-    assert(_query_generator_config->hasIncorrectQueries());
+    if (!_query_generator_config->hasIncorrectQueries()) {
+      throw exceptions::QueryCandidateGeneratorException(
+          "Attempting to Evaluate the Generator after a Mismatching Training "
+          "Configuration. The Training and Evaluation Files should have Pairs "
+          "of Correct and Incorrect Queries.");
+    }
+
     auto data_loader = getDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
 
@@ -279,10 +282,11 @@ class QueryCandidateGenerator {
         dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
             file_name, /* column_index = */ 0);
 
-    auto recall = computeRecallAtK(/* correct_queries = */ correct_queries,
-                                   /* generated_queries = */ output_queries);
+    computeRecallAtK(/* correct_queries = */ correct_queries,
+                     /* generated_queries = */ output_queries,
+                     /* K = */ _query_generator_config->topK());
 
-    return std::make_tuple(output_queries, recall);
+    return output_queries;
   }
 
   std::unordered_map<std::string, uint32_t> getQueriesToLabelsMap() const {
@@ -344,36 +348,38 @@ class QueryCandidateGenerator {
     output_strings.reserve(query_labels.size());
 
     for (const auto& query_label : query_labels) {
-      output_strings.push_back(std::move(_labels_to_queries_map[query_label]));
+      output_strings.push_back(_labels_to_queries_map[query_label]);
     }
     return output_strings;
   }
 
   /**
-   * @brief computes recall (Rk@1)
+   * @brief computes recall at K (R1@K)
    *
-   * @param correct_queries: Vector of queries correct queries of size n.
+   * @param correct_queries: Vector of correct queries of size n.
    * @param generated_queries: Vector of generated queries by the flash index.
    * This is expected to be of size n and each element in the vector is also a
    * vector of size k.
    * @return recall
    */
-  static float computeRecallAtK(
+  static void computeRecallAtK(
       const std::vector<std::string>& correct_queries,
-      const std::vector<std::vector<std::string>>& generated_queries) {
+      const std::vector<std::vector<std::string>>& generated_queries, int K) {
     assert(correct_queries.size() == generated_queries.size());
     uint64_t correct_results = 0;
 
     for (uint64_t query_index = 0; query_index < correct_queries.size();
          query_index++) {
-      auto top_k_queries = generated_queries[query_index];
-      auto correct_query = correct_queries[query_index];
+      const auto& top_k_queries = generated_queries[query_index];
+      const auto& correct_query = correct_queries[query_index];
       if (std::find(top_k_queries.begin(), top_k_queries.end(),
                     correct_query) != top_k_queries.end()) {
         correct_results += 1;
       }
     }
-    return (correct_results * 1.0) / correct_queries.size();
+    auto recall = (correct_results * 1.0) / correct_queries.size();
+
+    std::cout << "Recall @" << K << " = " << recall << std::endl;
   }
 
   /**

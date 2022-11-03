@@ -139,7 +139,20 @@ def test_flash_generator():
 
     generator = bolt.models.Generator(config_file_name=CONFIG_FILE)
     generator.train(file_name=TRANSFORMED_QUERIES)
-    _, recall = generator.evaluate(file_name=TRANSFORMED_QUERIES)
-    assert recall >= 0.57
+
+    query_pairs = read_csv_file(file_name=TRANSFORMED_QUERIES)
+
+    generated_candidates = generator.generate(
+        queries=[query_pair[1] for query_pair in query_pairs]
+    )
+
+    correct_results = 0
+    for query_index in range(len(query_pairs)):
+        correct_results += (
+            1 if query_pairs[query_index][0] in generated_candidates[query_index] else 0
+        )
+
+    recall = correct_results / DATASET_SIZE
+    assert recall > 0.95
 
     delete_created_files()

@@ -28,17 +28,13 @@ class ProcessorUtils {
       const std::string& file_name, uint32_t column_index) {
     std::vector<std::string> aggregated_rows;
 
-    try {
-      std::ifstream input_file_stream =
-          dataset::SafeFileIO::ifstream(file_name, std::ios::in);
+    std::ifstream input_file_stream =
+        dataset::SafeFileIO::ifstream(file_name, std::ios::in);
 
-      std::string row, target_column;
-      while (std::getline(input_file_stream, row)) {
-        target_column = std::string(parseCsvRow(row, ',')[column_index]);
-        aggregated_rows.emplace_back(std::move(target_column));
-      }
-    } catch (const std::ifstream::failure& exception) {
-      throw std::invalid_argument("Invalid input file name.");
+    std::string row, target_column;
+    while (std::getline(input_file_stream, row)) {
+      target_column = std::string(parseCsvRow(row, ',')[column_index]);
+      aggregated_rows.emplace_back(std::move(target_column));
     }
 
     return aggregated_rows;
