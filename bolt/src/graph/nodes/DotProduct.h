@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
@@ -256,3 +257,5 @@ using DotProductNodePtr = std::shared_ptr<DotProductNode>;
 }  // namespace thirdai::bolt
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::DotProductNode)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::Node,
+                                     thirdai::bolt::DotProductNode)
