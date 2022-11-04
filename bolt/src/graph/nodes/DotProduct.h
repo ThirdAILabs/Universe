@@ -242,10 +242,7 @@ class DotProductNode final
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    (void)archive;
-
-    // This is a hack.
-    _compiled = true;
+    archive(cereal::base_class<Node>(this), _lhs, _rhs, _compiled);
   }
 
   NodePtr _lhs;
