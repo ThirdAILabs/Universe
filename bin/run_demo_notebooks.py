@@ -29,12 +29,13 @@ def run_demo_notebooks(notebook_paths, temp_dir):
             nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
             # The resources argument is needed to execute the notebook in the temporary directory
             temp_path = os.path.join(temp_dir, "Demos")
-            ep = ExecutePreprocessor(
+            try:
+                ep = ExecutePreprocessor(
                     timeout=None,
                     kernel_name="python3",
                     resources={"metadata": {"path": temp_path}},
                  )
-            nb_out = ep.preprocess(nb_in)
+                nb_out = ep.preprocess(nb_in)
             except:
                 notebook_name = Path(notebook_path).stem
                 failed_notebooks.append(notebook_name)
@@ -47,7 +48,6 @@ def run_demo_notebooks(notebook_paths, temp_dir):
 
 def main():
     temp_dir = tempfile.mkdtemp()
-    print(temp_dir)
     demo_notebook_paths = get_notebook_paths(temp_dir)
     run_demo_notebooks(demo_notebook_paths, temp_dir)
     shutil.rmtree(temp_dir)  # Clean up the files used for the test
