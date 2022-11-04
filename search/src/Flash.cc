@@ -37,9 +37,9 @@ template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
     const dataset::InMemoryDataset<BoltBatch>& dataset,
     const std::vector<std::vector<LABEL_T>>& labels) {
-  if (dataset.len() != labels.size()) {
+  if (dataset.numBatches() != labels.size()) {
     throw std::invalid_argument(
-        "Dataset and labels must have the same length.");
+        "Number of data and label batches must be same.");
   }
   for (uint64_t batch_index = 0; batch_index < dataset.numBatches();
        batch_index++) {
