@@ -9,7 +9,6 @@ from pathlib import Path
 import nbformat
 from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 
-TIMEOUT = 600
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 
 
@@ -31,10 +30,10 @@ def run_demo_notebooks(notebook_paths, temp_dir):
             temp_path = os.path.join(temp_dir, "Demos")
             try:
                 ep = ExecutePreprocessor(
-                    timeout=None,
-                    kernel_name="python3",
-                    resources={"metadata": {"path": temp_path}},
-                 )
+                        timeout=None,
+                        kernel_name="python3",
+                        resources={"metadata": {"path": temp_path}},
+                     )
                 nb_out = ep.preprocess(nb_in)
             except:
                 notebook_name = Path(notebook_path).stem
