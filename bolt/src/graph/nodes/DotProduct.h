@@ -243,6 +243,9 @@ class DotProductNode final
   template <class Archive>
   void serialize(Archive& archive) {
     (void)archive;
+
+    // This is a hack.
+    _compiled = true;
   }
 
   NodePtr _lhs;
