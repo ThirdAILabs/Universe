@@ -39,7 +39,7 @@ void createCallbacksSubmodule(py::module_& module) {
       .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
 #else
   py::class_<Callback, PyCallback, CallbackPtr>(callbacks_submodule,  // NOLINT
-                                                "Callback")           // NOLINT
+                                                "Callback");          // NOLINT
 #endif
 
   py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule,  // NOLINT
