@@ -65,7 +65,9 @@ void Flash<LABEL_T>::addDataset(
 template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
                               const std::vector<LABEL_T>& labels) {
-  assert(batch.getBatchSize() == labels.size());
+  if (batch.getBatchSize() != labels.size()) {
+    throw std::invalid_argument("Batch size and number of labels must match.");
+  }
 
   std::vector<uint32_t> hashes = hashBatch(batch);
 
