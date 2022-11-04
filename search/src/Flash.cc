@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <memory>
 #include <queue>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::search {
@@ -36,6 +37,10 @@ template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
     const dataset::InMemoryDataset<BoltBatch>& dataset,
     const std::vector<std::vector<LABEL_T>>& labels) {
+  if (dataset.len() != labels.size()) {
+    throw std::invalid_argument(
+        "Dataset and labels must have the same length.");
+  }
   for (uint64_t batch_index = 0; batch_index < dataset.numBatches();
        batch_index++) {
     const auto& batch = dataset[batch_index];
