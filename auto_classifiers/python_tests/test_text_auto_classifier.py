@@ -9,7 +9,7 @@ from auto_classifier_utils import (
 )
 from thirdai import bolt
 
-pytestmark = [pytest.mark.integration, pytest.mark.release]
+pytestmark = [pytest.mark.integration]
 
 TRAIN_FILE = "./clinc_train.csv"
 TEST_FILE = "./clinc_test.csv"

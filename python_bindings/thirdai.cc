@@ -134,9 +134,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Bolt Submodule
   auto bolt_submodule = m.def_submodule("bolt");
   thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
-#if THIRDAI_EXPOSE_ALL
   thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
-#endif
   thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
 
 #if THIRDAI_EXPOSE_ALL

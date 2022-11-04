@@ -90,8 +90,10 @@ def get_simple_dag_model(
     hidden_layer_sparsity,
     output_dim,
     output_activation="softmax",
-    loss=bolt.nn.losses.CategoricalCrossEntropy(),
+    loss=None,
 ):
+    if not loss:
+        loss = bolt.nn.losses.CategoricalCrossEntropy()
     input_layer = bolt.nn.Input(dim=input_dim)
 
     hidden_layer = bolt.nn.FullyConnected(

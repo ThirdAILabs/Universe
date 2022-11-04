@@ -1,6 +1,5 @@
 import os
 import platform
-from multiprocessing.sharedctypes import Value
 
 import pandas as pd
 import pytest
@@ -10,7 +9,7 @@ from auto_classifier_utils import (
 )
 from thirdai import bolt
 
-pytestmark = [pytest.mark.integration, pytest.mark.release]
+pytestmark = [pytest.mark.integration]
 
 CENSUS_INCOME_BASE_DOWNLOAD_URL = (
     "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"
@@ -305,7 +304,7 @@ def test_failure_on_too_many_labels():
 
     with pytest.raises(
         ValueError,
-        match=r"\[ThreadSafeVocabulary\] Expected 1 unique strings but found more.",
+        match=r"Expected 1 unique strings but found new string 'label2'.",
     ):
         classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
 

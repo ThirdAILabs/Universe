@@ -520,8 +520,11 @@ Constructs a ModelPipeline from a deployment config and a set of input parameter
 Args:
     deployment_config (DeploymentConfig): A config for the ModelPipeline.
     parameters (Dict[str, Union[bool, int, float, str]]): A mapping from parameter 
-        names to values. This is used to pass in values to UserSpecifiedParameters, 
-        or provide the name of the option to use for OptionMappedParameters.
+        names to values. This is used to pass in any additional parameters required
+        to construct the desired model. The keys should be the names of the parameters
+        as strings and the values can be integers, floats, strings, or bools depending
+        on what the type of the parameter is. An exception will be thrown if a required
+        parameter is not specified or if the the parameter is not the right type.
 
 Returns
     ModelPipeline:
@@ -541,8 +544,11 @@ parameters.
 Args:
     config_path (str): A path to a serialized deployment config for the ModelPipeline.
     parameters (Dict[str, Union[bool, int, float, str]]): A mapping from parameter 
-        names to values. This is used to pass in values to UserSpecifiedParameters, 
-        or provide the name of the option to use for OptionMappedParameters.
+        names to values. This is used to pass in any additional parameters required
+        to construct the desired model. The keys should be the names of the parameters
+        as strings and the values can be integers, floats, strings, or bools depending
+        on what the type of the parameter is. An exception will be thrown if a required
+        parameter is not specified or if the the parameter is not the right type.
 
 Returns
     ModelPipeline:
