@@ -46,7 +46,7 @@ class NumericalHistory {
     return observations;
   }
 
-  void add(uint32_t user_id, float value, int64_t timestamp) {
+  void add(uint32_t user_id, int64_t timestamp, float value) {
     auto query_string =
         queryString(user_id, GroupedTimestamp(timestamp, _granularity));
     _latest_sketch.increment(query_string, value);
@@ -58,6 +58,11 @@ class NumericalHistory {
       std::swap(_older_sketch, _latest_sketch);
       _latest_sketch_start_timestamp = next_timestamp;
     }
+  }
+
+  void reset() {
+    _latest_sketch.clear();
+    _older_sketch.clear();
   }
 
  private:
@@ -81,7 +86,5 @@ class NumericalHistory {
             _latest_sketch_start_timestamp);
   }
 };
-
-
 
 }  // namespace thirdai::dataset
