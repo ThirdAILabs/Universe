@@ -12,6 +12,11 @@ namespace thirdai::dataset {
 
 class QuantityHistoryTracker;
 
+struct SketchSize {
+  uint32_t n_rows;
+  uint32_t range;
+};
+
 class CountMinSketch {
   friend QuantityHistoryTracker;
 
@@ -19,6 +24,16 @@ class CountMinSketch {
   CountMinSketch(uint32_t n_rows, uint32_t range, uint32_t seed)
       : _n_rows(n_rows),
         _range(range),
+        _sketch(_n_rows * _range),
+        _seeds(_n_rows) {
+    for (size_t i = 0; i < _n_rows; ++i) {
+      _seeds[i] = (i + 1) * seed;
+    }
+  }
+
+  CountMinSketch(SketchSize sketch_size, uint32_t seed)
+      : _n_rows(sketch_size.n_rows),
+        _range(sketch_size.range),
         _sketch(_n_rows * _range),
         _seeds(_n_rows) {
     for (size_t i = 0; i < _n_rows; ++i) {
