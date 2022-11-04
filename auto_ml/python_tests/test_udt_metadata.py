@@ -40,12 +40,12 @@ COLUMN_NAMES = [
 def setup_module():
     if not os.path.exists(ORIGINAL_TRAIN_FILE):
         os.system(
-            f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.data --output {TRAIN_FILE}"
+            f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.data --output {ORIGINAL_TRAIN_FILE}"
         )
 
     if not os.path.exists(ORIGINAL_TEST_FILE):
         os.system(
-            f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.test --output {TEST_FILE}"
+            f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.test --output {ORIGINAL_TEST_FILE}"
         )
         # reformat the test file
         with open(ORIGINAL_TEST_FILE, "r") as file:
