@@ -238,44 +238,6 @@ class QueryCandidateGenerator {
     return outputs;
   }
 
-  /**
-   * @brief Returns a list of recommended queries and Computes Recall@1.
-   *
-   * @param file_name: CSV file expected to have correct queries in column 0,
-   * and incorrect queries in column 1.
-   * @return A tuple of recommended queries and the recall value
-   */
-  std::tuple<std::vector<std::string>, float> evaluateOnFile(
-      const std::string& file_name) {
-    if (!_flash_index) {
-      throw exceptions::QueryCandidateGeneratorException(
-          "Attempting to Evaluate the Generator without Training.");
-    }
-    auto data_loader = getDatasetLoader(file_name, /* evaluate = */ true);
-    auto [data, _] = data_loader->loadInMemory();
-
-    std::vector<std::vector<std::string>> output_queries;
-    output_queries.reserve(data->numBatches());
-
-    for (const auto& batch : *data) {
-      std::vector<std::vector<uint32_t>> candidate_query_labels =
-          _flash_index->queryBatch(
-              /* batch = */ batch,
-              /* top_k = */ _query_generator_config->topK(),
-              /* pad_zeros = */ false);
-
-      for (auto& candidate_query_label_vector : candidate_query_labels) {
-        auto top_k = getQueryCandidatesAsStrings(candidate_query_label_vector);
-        output_queries.emplace_back(std::move(top_k));
-      }
-    }
-
-    /* compute recall@1 */
-    uint64_t correct_results = 0;
-
-    return {};
-  }
-
   std::unordered_map<std::string, uint32_t> getQueriesToLabelsMap() const {
     return _queries_to_labels_map;
   }

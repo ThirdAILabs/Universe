@@ -15,6 +15,7 @@ class UniversalDeepTransformerBase {
   virtual ~UniversalDeepTransformerBase() = default;
 
  protected:
+  //  explicit UniversalDeepTransformerBase()
   static UniversalDeepTransformerBase buildUDT();
 };
 
