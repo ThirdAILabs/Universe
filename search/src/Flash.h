@@ -74,10 +74,6 @@ class Flash {
                                                bool pad_zeros = false) const;
 
  private:
-  constexpr void incrementBatchElementsCounter(uint32_t num_vectors) {
-    _batch_elements_counter += num_vectors;
-  }
-
   /**
    * Returns a vector of concatenated hashes for the input batch
    */
@@ -92,29 +88,17 @@ class Flash {
   std::vector<LABEL_T> getTopKUsingPriorityQueue(
       std::vector<LABEL_T>& query_result, uint32_t top_k) const;
 
-  /**
-   * Verifies that the passed in id is within the range of this FLASH instance
-   * by throwing an error if the id is too large for the initialized size
-   * (>2^16 for uin16_t, >2^32 for uint32_t, etc.).
-   */
-  void verifyIDFitsLabelTypeRange(uint64_t id) const;
-
   std::shared_ptr<hashing::HashFunction> _hash_function;
 
   uint32_t _num_tables;
   uint32_t _range;
-
-  // Keeps a counter of the number of batch elements seen so far.
-  // SHOULD ONLY be incremented when addBatch is invoked.
-  uint64_t _batch_elements_counter;
 
   std::shared_ptr<hashtable::HashTable<LABEL_T>> _hashtable;
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_hash_function, _num_tables, _range, _batch_elements_counter,
-            _hashtable);
+    archive(_hash_function, _num_tables, _range, _hashtable);
   }
 };
 
