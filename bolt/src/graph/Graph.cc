@@ -88,9 +88,12 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
 
   if (save_context && save_context->frequency() != 0 &&
       _updates % save_context->frequency() == 0) {
+    cleanupAfterBatchProcessing();
     const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
     logging::info("Saving most recent model to {}", checkpoint_path);
     save(checkpoint_path);
+    prepareToProcessBatches(batch_size,
+                            /* use_sparsity=*/true);
   }
 
   const std::optional<ValidationContext>& validation =
