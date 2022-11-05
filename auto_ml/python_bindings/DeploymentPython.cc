@@ -174,9 +174,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
       submodule, "SingleBlockDatasetFactory")
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
-                    HyperParameterPtr<std::string>>(),
+                    HyperParameterPtr<std::string>, bool>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
-           py::arg("delimiter"),
+           py::arg("delimiter"), py::arg("has_header") = false,
            docs::SINGLE_BLOCK_DATASET_FACTORY_CONFIG_INIT);
 
   py::class_<OracleDatasetFactoryConfig, DatasetLoaderFactoryConfig,
