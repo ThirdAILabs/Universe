@@ -257,5 +257,3 @@ using DotProductNodePtr = std::shared_ptr<DotProductNode>;
 }  // namespace thirdai::bolt
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::DotProductNode)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::Node,
-                                     thirdai::bolt::DotProductNode)
