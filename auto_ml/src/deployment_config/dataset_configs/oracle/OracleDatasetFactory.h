@@ -92,9 +92,15 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
           makeUnlabeledNonUpdatingProcessor(*_column_number_map);
     }
 
-    return std::make_unique<GenericDatasetLoader>(
+    auto loader = std::make_unique<GenericDatasetLoader>(
         data_loader, _labeled_history_updating_processor,
         /* shuffle= */ training);
+
+    // The batch processor will treat the next line as a header
+    // Restart so batch processor does not skip a sample.
+    loader->restart();
+
+    return loader;
   }
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
@@ -296,7 +302,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
                          /* should_update_history= */ true);
 
     auto processor = dataset::GenericBatchProcessor::make(
-        std::move(input_blocks), {label_block}, /* has_header= */ false,
+        std::move(input_blocks), {label_block}, /* has_header= */ true,
         /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
     return processor;
   }
