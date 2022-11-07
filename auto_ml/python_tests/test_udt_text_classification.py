@@ -1,7 +1,7 @@
 import pytest
 from download_datasets import download_clinc_dataset
 from model_test_utils import (
-    compute_evaulate_accuracy,
+    compute_evaluate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
     compute_saved_and_retrained_accuarcy,
@@ -39,7 +39,7 @@ def test_udt_text_classification_accuarcy(
     model = train_udt_text_classification
     _, test_filename, inference_samples = download_clinc_dataset
 
-    acc = compute_evaulate_accuracy(
+    acc = compute_evaluate_accuracy(
         model, test_filename, inference_samples, use_class_name=False
     )
     assert acc >= ACCURACY_THRESHOLD

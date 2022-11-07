@@ -1,7 +1,7 @@
 import pytest
 from download_datasets import download_census_income
 from model_test_utils import (
-    compute_evaulate_accuracy,
+    compute_evaluate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
     compute_saved_and_retrained_accuarcy,
@@ -48,7 +48,7 @@ def test_utd_tabular_accuracy(train_udt_tabular, download_census_income):
     model = train_udt_tabular
     _, test_filename, inference_samples = download_census_income
 
-    acc = compute_evaulate_accuracy(
+    acc = compute_evaluate_accuracy(
         model, test_filename, inference_samples, use_class_name=True
     )
     assert acc >= ACCURACY_THRESHOLD

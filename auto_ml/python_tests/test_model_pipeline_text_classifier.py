@@ -1,7 +1,7 @@
 import pytest
 from download_datasets import download_clinc_dataset
 from model_test_utils import (
-    compute_evaulate_accuracy,
+    compute_evaluate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
     compute_saved_and_retrained_accuarcy,
@@ -94,7 +94,7 @@ def test_model_pipeline_text_classifier_accuracy(
     model = train_model_pipeline_text_classifier
     _, test_filename, inference_samples = download_clinc_dataset_model_pipeline
 
-    acc = compute_evaulate_accuracy(
+    acc = compute_evaluate_accuracy(
         model, test_filename, inference_samples, use_class_name=False
     )
     assert acc >= ACCURACY_THRESHOLD

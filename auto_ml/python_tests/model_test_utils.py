@@ -22,7 +22,7 @@ def _get_label_postprocessing_fn(model, use_class_name):
         return lambda pred: pred
 
 
-def compute_evaulate_accuracy(model, test_filename, inference_samples, use_class_name):
+def compute_evaluate_accuracy(model, test_filename, inference_samples, use_class_name):
     label_fn = _get_label_postprocessing_fn(model, use_class_name)
 
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
@@ -69,7 +69,7 @@ def compute_saved_and_retrained_accuarcy(
     train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001)
     loaded_model.train(train_filename, train_config)
 
-    acc = compute_evaulate_accuracy(
+    acc = compute_evaluate_accuracy(
         loaded_model, test_filename, inference_samples, use_class_name
     )
 
