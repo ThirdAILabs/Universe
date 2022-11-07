@@ -2,20 +2,24 @@
 
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
+#include <cereal/types/vector.hpp>
 #include <utils/StringManipulation.h>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <variant>
 
-namespace thirdai::bolt::sequential_classifier {
+namespace thirdai::automl::deployment {
 
 struct CategoricalDataType {
   explicit CategoricalDataType(uint32_t n_unique_classes,
@@ -174,6 +178,8 @@ class DataType {
   }
 };
 
+using ColumnDataTypes = std::map<std::string, DataType>;
+
 struct TemporalCategoricalConfig {
   const std::string& column_name;
   uint32_t track_last_n;
@@ -258,4 +264,11 @@ class TemporalConfig {
   }
 };
 
-}  // namespace thirdai::bolt::sequential_classifier
+using UserProvidedTemporalRelationships =
+    std::map<std::string,
+             std::vector<std::variant<std::string, TemporalConfig>>>;
+
+using TemporalRelationships =
+    std::map<std::string, std::vector<TemporalConfig>>;
+
+}  // namespace thirdai::automl::deployment
