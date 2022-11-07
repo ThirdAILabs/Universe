@@ -47,7 +47,7 @@ def test_freeze_layers():
         test_metrics1 = model.evaluate(data, labels, evaluate_config)[0]
         assert test_metrics1["categorical_accuracy"] >= 0.8
 
-    train_predict(model, data, labels)
+    train_evaluate(model, data, labels)
 
     before = {
         "weights": hidden_layer.weights.copy().flatten(),
@@ -56,7 +56,7 @@ def test_freeze_layers():
 
     # Freeze and train
     hidden_layer.trainable(False)
-    train_predict(model, data, labels)
+    train_evaluate(model, data, labels)
 
     after = {
         "weights": hidden_layer.weights.copy().flatten(),
@@ -69,7 +69,7 @@ def test_freeze_layers():
 
     # Undo freeze and train
     hidden_layer.trainable(True)
-    train_predict(model, data, labels)
+    train_evaluate(model, data, labels)
     after = {
         "weights": hidden_layer.weights.copy().flatten(),
         "biases": hidden_layer.biases.copy().flatten(),
