@@ -67,8 +67,8 @@ Examples:
             data_types={
                 "product_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
-                "ad_spend": bolt.types.numerical(),
-                "sales_quantity": bolt.types.numerical(),
+                "ad_spend": bolt.types.numerical(range=(0, 10000)),
+                "sales_quantity": bolt.types.numerical(range=(0, 20)),
                 "sales_performance": bolt.types.categorical(n_unique_classes=5),
             },
             temporal_tracking_relationships={
@@ -95,7 +95,7 @@ Examples:
                 "user_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
                 "movie_id": bolt.types.categorical(n_unique_classes=3000),
-                "hours_watched": bolt.types.numerical(),
+                "hours_watched": bolt.types.numerical(range=(0, 25)),
             },
             temporal_tracking_relationships={
                 "user_id": [
@@ -462,7 +462,7 @@ Args:
     input_sample (Dict[str, str]): The input sample as a dictionary 
         where the keys are column names as specified in data_types and the "
         values are the respective column values. 
-    target (str): Optional. The desired target class. If provided, the
+    target_class (str): Optional. The desired target class. If provided, the
         model will identify the columns that need to change for the model to 
         predict the target class.
 
@@ -494,18 +494,18 @@ Example:
         )
     >>> # Make a single prediction
     >>> explanations = model.explain(
-            input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, target=35
+            input_sample={"user_id": "A33225", "timestamp": "2022-02-02", "special_event": "christmas"}, target_class=35
         )
     >>> print(explanations[0])
     column_number: 0 | column_name: "special_event" | keyword: "christmas" | percentage_significance: 25.2
     >>> print(explanations[1])
-    column_number: 1 | column_name: "movie_title" | keyword: "Previously seen 'Die Hard'" | percentage_significance: -22.3
+    column_number: 1 | column_name: "movie_title" | keyword: "'Die Hard' is one of last 5 values" | percentage_significance: -22.3
     
 Notes: 
     - `percentage_significance` can be positive or negative depending on the 
       relationship between the responsible column and the prediction. In the above
       example, the `percentage_significance` associated with the explanation
-      "Previously seen 'Die Hard'" is negative because recently watching "Die Hard" is 
+      "'Die Hard' is one of last 5 values" is negative because recently watching "Die Hard" is 
       negatively correlated with the target class "Home Alone". A large negative value
       is just as "explanatory" as a large positive value.
     - The values of columns that are tracked temporally may be unknown during inference

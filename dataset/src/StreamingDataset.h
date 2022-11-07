@@ -120,7 +120,17 @@ class StreamingDataset {
 
   uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
 
-  virtual void restart() { _data_loader->restart(); }
+  virtual void restart() {
+    _data_loader->restart();
+
+    // When we restart we need to make sure we don't reread the header. s
+    if (_batch_processor->expectsHeader()) {
+      auto header = _data_loader->nextLine();
+      if (!header) {
+        throw std::invalid_argument("Cannot read empty file.");
+      }
+    }
+  }
 
   static std::shared_ptr<StreamingDataset<BATCH_Ts...>> loadDataset(
       std::shared_ptr<DataLoader> data_loader,

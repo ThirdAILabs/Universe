@@ -80,11 +80,11 @@ Constructs a ConstantHyperParameter which is a HyperParameter with a fixed value
 that cannot be impacted by user inputed parameters.
 
 Args:
-    value (bool, int, float, str, bolt.SamplingConfig, or deployment.OracleConfig): The constant value that 
+    value (bool, int, float, str, bolt.SamplingConfig, or deployment.UDTConfig): The constant value that 
         the constant parameter will take. 
 
 Returns:
-    (BoolHyperParameter, UintHyperParameter, FloatHyperParameter, StrHyperParameter, SamplingConfigHyperParameter, or OracleConfigHyperParameter):
+    (BoolHyperParameter, UintHyperParameter, FloatHyperParameter, StrHyperParameter, SamplingConfigHyperParameter, or UDTConfigHyperParameter):
         This function is overloaded and hence will construct the appropriate hyper 
         parameter for the type of the input value. 
         
@@ -812,13 +812,13 @@ Returns:
 )pbdoc";
 
 const char* const ORACLE_CONFIG_INIT = R"pbdoc(
-A configuration object for Oracle.
+A configuration object for UDT.
 
-Oracle is an all-purpose classifier for tabular datasets. In addition to learning from
-the columns of a single row, Oracle can make use of "temporal context". For 
-example, if used to build a movie recommender, Oracle may use information 
+UDT is an all-purpose classifier for tabular datasets. In addition to learning from
+the columns of a single row, UDT can make use of "temporal context". For 
+example, if used to build a movie recommender, UDT may use information 
 about the last 5 movies that a user has watched to recommend the next movie.
-Similarly, if used to forecast the outcome of marketing campaigns, Oracle may 
+Similarly, if used to forecast the outcome of marketing campaigns, UDT may 
 use several months' worth of campaign history for each product to make better
 forecasts.
 
@@ -829,7 +829,7 @@ Args:
 
         Column type is one of:
         - `bolt.types.categorical(n_unique_values: int)`
-        - `bolt.types.numerical()`
+        - `bolt.types.numerical(range: tuple(float, float))`
         - `bolt.types.text(average_n_words: int=None)`
         - `bolt.types.date()`
         See bolt.types for details.
@@ -839,8 +839,8 @@ Args:
         There can only be one bolt.types.date() column.
     temporal_tracking_relationships (Dict[str, List[str or bolt.temporal.TemporalConfig]]): Optional. 
         A mapping from column name to a list of either other column names or bolt.temporal objects.
-        This mapping tells Oracle what columns can be tracked over time for each key.
-        For example, we may want to tell Oracle that we want to track a user's watch 
+        This mapping tells UDT what columns can be tracked over time for each key.
+        For example, we may want to tell UDT that we want to track a user's watch 
         history by passing in a map like `{"user_id": ["movie_id"]}`
 
         If we provide a mapping from a string to a list of strings like the above, 
@@ -852,12 +852,12 @@ Args:
         - `bolt.temporal.numerical(column_name: str, history_length: int, column_known_during_inference: bool=False)
         See bolt.temporal for details.
     target (str): Name of the column that contains the value to be predicted by
-        Oracle. The target column has to be a categorical column.
+        UDT. The target column has to be a categorical column.
     time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
         or `"monthly"`/`"m"`. Interval of time that we are interested in. Temporal numerical 
         features are clubbed according to this time granularity. E.g. if 
         `time_granularity="w"` and the numerical values on days 1 and 2 are
-        345.25 and 201.1 respectively, then Oracle captures a single numerical 
+        345.25 and 201.1 respectively, then UDT captures a single numerical 
         value of 546.26 for the week instead of individual values for the two days.
         Defaults to "daily".
     lookahead (str): Optional. How far into the future the model needs to predict. This length of
@@ -869,12 +869,12 @@ Examples:
     >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
     >>> # We want to predict next week's sales performance for each product using temporal context.
     >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
-    >>> config = deployment.OracleConfig(
+    >>> config = deployment.UDTConfig(
             data_types={
                 "product_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
-                "ad_spend": bolt.types.numerical(),
-                "sales_quantity": bolt.types.numerical(),
+                "ad_spend": bolt.types.numerical(range=(0, 10000)),
+                "sales_quantity": bolt.types.numerical(range=(0, 20)),
                 "sales_performance": bolt.types.categorical(n_unique_classes=5),
             },
             temporal_tracking_relationships={
@@ -893,13 +893,13 @@ Examples:
         )
     >>> # Alternatively suppose our data has the following columns: "user_id", "movie_id", "hours_watched", "timestamp"
     >>> # We want to build a movie recommendation system.
-    >>> # Then we may configure Oracle as follows:
-    >>> config = deployment.OracleConfig(
+    >>> # Then we may configure UDT as follows:
+    >>> config = deployment.UDTConfig(
             data_types={
                 "user_id": bolt.types.categorical(n_unique_classes=5000),
                 "timestamp": bolt.types.date(),
                 "movie_id": bolt.types.categorical(n_unique_classes=3000),
-                "hours_watched": bolt.types.numerical(),
+                "hours_watched": bolt.types.numerical(range=(0, 25)),
             },
             temporal_tracking_relationships={
                 "user_id": [
@@ -917,10 +917,10 @@ Notes:
 )pbdoc";
 
 const char* const TEMPORAL_CONTEXT_RESET = R"pbdoc(
-Resets Oracle's temporal trackers. When temporal relationships are supplied, 
-Oracle assumes that we feed it data in chronological order. Thus, if we break 
+Resets UDT's temporal trackers. When temporal relationships are supplied, 
+UDT assumes that we feed it data in chronological order. Thus, if we break 
 this assumption, we need to first reset the temporal trackers. 
-An example of when you would use this is when you want to repeat the Oracle 
+An example of when you would use this is when you want to repeat the UDT 
 training routine on the same dataset. Since you would be training on data from 
 the same time period as before, we need to first reset the temporal trackers so 
 that we don't double count events.
@@ -930,10 +930,10 @@ that we don't double count events.
 const char* const TEMPORAL_CONTEXT_UPDATE = R"pbdoc(
 Updates the temporal trackers.
 
-If temporal tracking relationships are provided, Oracle can make better predictions 
-by taking temporal context into account. For example, Oracle may keep track of 
+If temporal tracking relationships are provided, UDT can make better predictions 
+by taking temporal context into account. For example, UDT may keep track of 
 the last few movies that a user has watched to better recommend the next movie. 
-Thus, Oracle is at its best when its internal temporal context gets updated with
+Thus, UDT is at its best when its internal temporal context gets updated with
 new true samples. `.update_temporal_trackers()` does exactly this. 
 
 )pbdoc";
@@ -941,10 +941,10 @@ new true samples. `.update_temporal_trackers()` does exactly this.
 const char* const TEMPORAL_CONTEXT_UPDATE_BATCH = R"pbdoc(
 Updates the temporal trackers with batch input.
 
-If temporal tracking relationships are provided, Oracle can make better predictions 
-by taking temporal context into account. For example, Oracle may keep track of 
+If temporal tracking relationships are provided, UDT can make better predictions 
+by taking temporal context into account. For example, UDT may keep track of 
 the last few movies that a user has watched to better recommend the next movie. 
-Thus, Oracle is at its best when its internal temporal context gets updated with
+Thus, UDT is at its best when its internal temporal context gets updated with
 new true samples. Just like `.update_temporal_trackers()`, 
 `.batch_update_temporal_trackers()` does exactly this, except with a batch input.
 
