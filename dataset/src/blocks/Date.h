@@ -50,9 +50,9 @@ class DateBlock : public Block {
       throw std::invalid_argument("index is out of bounds for date block.");
     }
     if (index_within_block < day_of_week_dim) {
-      reason = "day_of_week";
+      reason = getDayOfWeek(index_within_block);
     } else if (index_within_block < (day_of_week_dim + month_of_year_dim)) {
-      reason = "month_of_year";
+      reason = getMonthOfYear(index_within_block - day_of_week_dim);
     } else if (index_within_block <
                (day_of_week_dim + month_of_year_dim + week_of_month_dim)) {
       reason = "week_of_month";
