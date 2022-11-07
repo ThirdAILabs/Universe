@@ -235,6 +235,7 @@ set(THIRDAI_SOURCES
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
     hashing/src/MurmurHash.cc
+    hashing/src/MinHash.cc
     hashing/src/SRP.cc
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
