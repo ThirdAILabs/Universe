@@ -390,17 +390,6 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
                         py::arg("data"), py::arg("batch_size") = std::nullopt);
 
-  dataset_submodule.def(
-      "bolt_tokenizer", &parseSentenceToUnigramsPython, py::arg("sentence"),
-      py::arg("dimension") = 100000,
-      "Utility that turns a sentence into a sequence of token embeddings. To "
-      "be used for text classification tasks.\n"
-      "Arguments:\n"
-      " * sentence: String - Sentence to be tokenized.\n"
-      " * dimensions: Int (positive) - (Optional) The dimension of each token "
-      "embedding. "
-      "Defaults to 100,000.");
-
   py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
       .def(py::init<std::shared_ptr<Vocabulary>, uint32_t>(),
            py::arg("vocabulary"), py::arg("pairgram_range"))
@@ -444,36 +433,6 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<FixedVocabulary, Vocabulary, std::shared_ptr<FixedVocabulary>>(
       dataset_submodule, "FixedVocabulary")
       .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
-}
-
-std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToUnigramsPython(const std::string& sentence, uint32_t dimension) {
-  std::vector<uint32_t> unigrams =
-      TextEncodingUtils::computeRawUnigramsWithRange(sentence, dimension);
-
-  std::vector<uint32_t> indices;
-  std::vector<uint32_t> values;
-  TextEncodingUtils::sumRepeatedIndices(unigrams, /* base_value= */ 1.0,
-                                        [&](uint32_t index, float value) {
-                                          indices.push_back(index);
-                                          values.push_back(value);
-                                        });
-
-  auto result = py::array_t<uint32_t>(indices.size());
-  py::buffer_info indx_buf = result.request();
-  uint32_t* indx_ptr = static_cast<uint32_t*>(indx_buf.ptr);
-
-  auto result_2 = py::array_t<uint32_t>(values.size());
-  py::buffer_info val_buf = result_2.request();
-  uint32_t* val_ptr = static_cast<uint32_t*>(val_buf.ptr);
-
-  assert(indices.size() == values.size());
-  for (uint32_t i = 0; i < indices.size(); i++) {
-    indx_ptr[i] = indices[i];
-    val_ptr[i] = values[i];
-  }
-
-  return std::make_tuple(result, result_2);
 }
 
 bool denseBoltDatasetMatchesDenseMatrix(

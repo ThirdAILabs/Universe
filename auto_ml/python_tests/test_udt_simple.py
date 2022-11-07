@@ -1,9 +1,9 @@
 from random import sample
 
 import pytest
-from thirdai import bolt, deployment
+from thirdai import bolt
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 TRAIN_FILE = "tempTrainFile.csv"
 TEST_FILE = "tempTestFile.csv"
