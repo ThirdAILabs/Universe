@@ -120,7 +120,7 @@ def test_invalid_option_parameter_option():
 def test_invalid_parameter_type_throws():
     with pytest.raises(
         ValueError,
-        match=r"Invalid type '<class 'list'>'. Values of parameters dictionary must be bool, int, float, str, OracleConfig, or TemporalContext.",
+        match=r"Invalid type '<class 'list'>'. Values of parameters dictionary must be bool, int, float, str, or UDTConfig.",
     ):
         bolt.Pipeline(
             deployment_config=get_config(),

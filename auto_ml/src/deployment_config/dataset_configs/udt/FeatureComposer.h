@@ -1,14 +1,19 @@
 #pragma once
 
-#include "Aliases.h"
-#include "OracleConfig.h"
+#include <cereal/types/memory.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include "ColumnNumberMap.h"
+#include "DataTypes.h"
 #include "TemporalContext.h"
+#include "UDTConfig.h"
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
+#include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -22,10 +27,13 @@
 
 namespace thirdai::automl::deployment {
 
+using ColumnVocabularies =
+    std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr>;
+
 class FeatureComposer {
  public:
   static void verifyConfigIsValid(
-      const OracleConfig& config,
+      const UDTConfig& config,
       const TemporalRelationships& temporal_relationships) {
     if (temporal_relationships.count(config.target)) {
       throw std::invalid_argument(
@@ -42,7 +50,7 @@ class FeatureComposer {
   }
 
   static std::vector<dataset::BlockPtr> makeNonTemporalFeatureBlocks(
-      const OracleConfig& config,
+      const UDTConfig& config,
       const TemporalRelationships& temporal_relationships,
       const ColumnNumberMap& column_numbers, uint32_t text_pairgrams_word_limit,
       bool contextual_columns) {
@@ -104,7 +112,7 @@ class FeatureComposer {
   }
 
   static std::vector<dataset::BlockPtr> makeTemporalFeatureBlocks(
-      const OracleConfig& config,
+      const UDTConfig& config,
       const TemporalRelationships& temporal_relationships,
       const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
       TemporalContext& context, bool should_update_history) {
@@ -193,7 +201,7 @@ class FeatureComposer {
     return temporal_relationships.count(column_name);
   }
 
-  static std::string getTimestampColumnName(const OracleConfig& config) {
+  static std::string getTimestampColumnName(const UDTConfig& config) {
     std::optional<std::string> timestamp;
     for (const auto& [col_name, data_type] : config.data_types) {
       if (data_type.isDate()) {
@@ -213,7 +221,7 @@ class FeatureComposer {
   }
 
   static dataset::BlockPtr makeTemporalCategoricalBlock(
-      uint32_t temporal_relationship_id, const OracleConfig& config,
+      uint32_t temporal_relationship_id, const UDTConfig& config,
       TemporalContext& context, const ColumnNumberMap& column_numbers,
       ColumnVocabularies& vocabs, const TemporalConfig& temporal_config,
       const std::string& key_column, const std::string& timestamp_column,
@@ -253,7 +261,7 @@ class FeatureComposer {
   }
 
   static dataset::BlockPtr makeTemporalNumericalBlock(
-      uint32_t temporal_relationship_id, const OracleConfig& config,
+      uint32_t temporal_relationship_id, const UDTConfig& config,
       TemporalContext& context, const ColumnNumberMap& column_numbers,
       const TemporalConfig& temporal_config, const std::string& key_column,
       const std::string& timestamp_column, bool should_update_history) {
