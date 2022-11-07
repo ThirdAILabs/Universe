@@ -659,10 +659,11 @@ void createOptimizersSubmodule(py::module_& nn_submodule) {
              optimizers::OptimizerFactory,
              std::shared_ptr<optimizers::SignedMomentumFactory>>(
       optimizer_submodule, "SignedMomentum")
-      .def(py::init<float, float, float>(),
+      .def(py::init<float, float, float, float, float>(),
            py::arg("increase_scale_factor") = 1.25,
            py::arg("decrease_scale_factor") = 0.5,
-           py::arg("gradient_clip_threshold") = 1e4);
+           py::arg("gradient_clip_threshold") = 1e4, py::arg("min_lr") = 1e-8,
+           py::arg("max_lr") = 1e2);
 }
 
 py::tuple dagEvaluatePythonWrapper(BoltGraph& model,

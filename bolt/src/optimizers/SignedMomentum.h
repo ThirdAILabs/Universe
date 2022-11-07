@@ -18,13 +18,15 @@ class SignedMomentum final : public Optimizer {
  public:
   SignedMomentum(std::vector<float>& parameters, std::vector<float>& gradients,
                  float increase_scale_factor, float decrease_scale_factor,
-                 float gradient_clip_threshold)
+                 float gradient_clip_threshold, float min_lr, float max_lr)
       : Optimizer(parameters, gradients),
         _learning_rate_scaling_factor(parameters.size(), 1.0),
         _last_gradient_positive(parameters.size(), false),
         _increase_scale_factor(increase_scale_factor),
         _decrease_scale_factor(decrease_scale_factor),
-        _gradient_clip_threshold(gradient_clip_threshold) {}
+        _gradient_clip_threshold(gradient_clip_threshold),
+        _min_lr(min_lr),
+        _max_lr(max_lr) {}
 
   void updateRange(uint64_t start, uint64_t length, float learning_rate,
                    bool parallel) final;
@@ -39,28 +41,35 @@ class SignedMomentum final : public Optimizer {
   float _increase_scale_factor;
   float _decrease_scale_factor;
   float _gradient_clip_threshold;
+  float _min_lr;
+  float _max_lr;
 };
 
 class SignedMomentumFactory final : public OptimizerFactory {
  public:
   SignedMomentumFactory(float increase_scale_factor,
                         float decrease_scale_factor,
-                        float gradient_clip_threshold)
+                        float gradient_clip_threshold, float min_lr,
+                        float max_lr)
       : _increase_scale_factor(increase_scale_factor),
         _decrease_scale_factor(decrease_scale_factor),
-        _gradient_clip_threshold(gradient_clip_threshold) {}
+        _gradient_clip_threshold(gradient_clip_threshold),
+        _min_lr(min_lr),
+        _max_lr(max_lr) {}
 
   OptimizerPtr getOptimizer(std::vector<float>& parameters,
                             std::vector<float>& gradients) final {
     return std::make_shared<SignedMomentum>(
         parameters, gradients, _increase_scale_factor, _decrease_scale_factor,
-        _gradient_clip_threshold);
+        _gradient_clip_threshold, _min_lr, _max_lr);
   }
 
  private:
   float _increase_scale_factor;
   float _decrease_scale_factor;
   float _gradient_clip_threshold;
+  float _min_lr;
+  float _max_lr;
 
   SignedMomentumFactory() {}
 
@@ -68,7 +77,7 @@ class SignedMomentumFactory final : public OptimizerFactory {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<OptimizerFactory>(this), _increase_scale_factor,
-            _decrease_scale_factor, _gradient_clip_threshold);
+            _decrease_scale_factor, _gradient_clip_threshold, _min_lr, _max_lr);
   }
 };
 

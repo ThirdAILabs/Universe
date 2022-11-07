@@ -25,9 +25,9 @@ void SignedMomentum::updateAtIndex(uint64_t index, float learning_rate) {
   if ((gradient < 0.0 && !_last_gradient_positive[index]) ||
       (gradient > 0.0 && _last_gradient_positive[index])) {
     float scale_factor = _learning_rate_scaling_factor[index];
-    scale_factor =
-        std::clamp<float>(scale_factor * _increase_scale_factor, /*min=*/1e-8,
-                          /*max=*/1e2);
+    scale_factor = std::clamp<float>(scale_factor * _increase_scale_factor,
+                                     /*min=*/_min_lr,
+                                     /*max=*/_max_lr);
     _learning_rate_scaling_factor[index] = scale_factor;
   } else if (gradient != 0.0) {
     /**
@@ -39,7 +39,7 @@ void SignedMomentum::updateAtIndex(uint64_t index, float learning_rate) {
      */
     float scale_factor = _learning_rate_scaling_factor[index];
     scale_factor = std::clamp<float>(scale_factor * _decrease_scale_factor,
-                                     /*min=*/1e-8, /*max=*/1e2);
+                                     /*min=*/_min_lr, /*max=*/_max_lr);
     _learning_rate_scaling_factor[index] = scale_factor;
 
     _last_gradient_positive[index] = gradient > 0.0;
