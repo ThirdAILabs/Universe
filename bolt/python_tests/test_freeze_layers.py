@@ -33,18 +33,18 @@ def test_freeze_layers():
     # Generate dataset.
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
-    def train_predict(model, data, labels):
-        # Train and predict before freezing hash tables.
+    def train_evaluate(model, data, labels):
+        # Train and evaluate before freezing hash tables.
         train_config = bolt.TrainConfig(learning_rate=0.001, epochs=2)
         model.train(data, labels, train_config)
 
-        predict_config = (
+        evaluate_config = (
             bolt.EvalConfig()
             .enable_sparse_inference()
             .with_metrics(["categorical_accuracy"])
         )
 
-        test_metrics1 = model.predict(data, labels, predict_config)[0]
+        test_metrics1 = model.evaluate(data, labels, evaluate_config)[0]
         assert test_metrics1["categorical_accuracy"] >= 0.8
 
     train_predict(model, data, labels)
