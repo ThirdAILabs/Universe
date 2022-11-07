@@ -9,7 +9,9 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
+#include <hashing/src/HashFunction.h>
 #include <hashing/src/MinHash.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -34,18 +36,22 @@ using thirdai::search::Flash;
 
 class QueryCandidateGeneratorConfig {
  public:
-  QueryCandidateGeneratorConfig(std::string hash_function, uint32_t num_tables,
-                                uint32_t hashes_per_table, uint32_t range,
-                                std::vector<uint32_t> n_grams,
+  QueryCandidateGeneratorConfig(const std::string& hash_function,
+                                uint32_t num_tables, uint32_t hashes_per_table,
+                                uint32_t range, std::vector<uint32_t> n_grams,
                                 bool has_incorrect_queries = false,
+                                bool use_reservoir_sampling = false,
+                                uint32_t reservoir_size = 10000,
                                 uint32_t batch_size = 10000)
-      : _hash_function(std::move(hash_function)),
+      : _hash_function(getHashFunction(hash_function)),
         _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
         _batch_size(batch_size),
         _range(range),
         _n_grams(std::move(n_grams)),
-        _has_incorrect_queries(has_incorrect_queries) {}
+        _has_incorrect_queries(has_incorrect_queries),
+        _use_reservoir_sampling(use_reservoir_sampling),
+        _reservoir_size(reservoir_size) {}
 
   // Overloaded operator mainly for testing
   bool operator==(const QueryCandidateGeneratorConfig& rhs) const {
@@ -54,7 +60,9 @@ class QueryCandidateGeneratorConfig {
            this->_hashes_per_table == rhs._hashes_per_table &&
            this->_batch_size == rhs._batch_size && this->_range == rhs._range &&
            this->_n_grams == rhs._n_grams &&
-           this->_has_incorrect_queries == rhs._has_incorrect_queries;
+           this->_has_incorrect_queries == rhs._has_incorrect_queries &&
+           this->_use_reservoir_sampling == rhs._use_reservoir_sampling &&
+           this->_reservoir_size == rhs._reservoir_size;
   }
 
   void save(const std::string& config_file_name) const {
@@ -78,9 +86,28 @@ class QueryCandidateGeneratorConfig {
     return deserialized_config;
   }
 
-  std::shared_ptr<hashing::HashFunction> getHashFunction() const {
-    auto hash_function = thirdai::utils::lower(_hash_function);
+  constexpr uint32_t batchSize() const { return _batch_size; }
 
+  constexpr uint32_t reservoirSize() const {
+    assert(_use_reservoir_sampling);
+    return _reservoir_size;
+  }
+
+  constexpr bool hasIncorrectQueries() const { return _has_incorrect_queries; }
+
+  constexpr bool useReservoirSampling() const {
+    return _use_reservoir_sampling;
+  }
+
+  std::shared_ptr<hashing::HashFunction> hashFunction() const {
+    return _hash_function;
+  }
+
+  std::vector<uint32_t> nGrams() const { return _n_grams; }
+
+ private:
+  std::shared_ptr<hashing::HashFunction> getHashFunction(
+      const std::string& hash_function) {
     if (hash_function == "minhash") {
       return std::make_shared<hashing::MinHash>(_hashes_per_table, _num_tables,
                                                 _range);
@@ -94,14 +121,7 @@ class QueryCandidateGeneratorConfig {
         "DensifiedMinHash, MinHash.");
   }
 
-  constexpr uint32_t batchSize() const { return _batch_size; }
-
-  constexpr bool hasIncorrectQueries() const { return _has_incorrect_queries; }
-
-  std::vector<uint32_t> nGrams() const { return _n_grams; }
-
- private:
-  std::string _hash_function;
+  std::shared_ptr<hashing::HashFunction> _hash_function;
   uint32_t _num_tables;
   uint32_t _hashes_per_table;
 
@@ -111,6 +131,8 @@ class QueryCandidateGeneratorConfig {
 
   // Identifies if the dataset contains pairs of correct and incorrect queries
   bool _has_incorrect_queries;
+  bool _use_reservoir_sampling;
+  uint32_t _reservoir_size;
 
   // Private constructor for cereal
   QueryCandidateGeneratorConfig() {}
@@ -119,7 +141,8 @@ class QueryCandidateGeneratorConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_hash_function, _num_tables, _hashes_per_table, _batch_size, _range,
-            _n_grams, _has_incorrect_queries);
+            _n_grams, _has_incorrect_queries, _use_reservoir_sampling,
+            _reservoir_size);
   }
 };
 
@@ -182,8 +205,12 @@ class QueryCandidateGenerator {
     auto [data, _] = data_loader->loadInMemory();
 
     if (!_flash_index) {
-      _flash_index = std::make_unique<Flash<uint32_t>>(
-          _query_generator_config->getHashFunction());
+      _flash_index = _query_generator_config->useReservoirSampling()
+                         ? std::make_unique<Flash<uint32_t>>(
+                               _query_generator_config->hashFunction(),
+                               _query_generator_config->reservoirSize())
+                         : std::make_unique<Flash<uint32_t>>(
+                               _query_generator_config->hashFunction());
     }
 
     _flash_index->addDataset(*data, labels);

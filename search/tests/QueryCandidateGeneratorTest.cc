@@ -17,7 +17,6 @@ namespace thirdai::tests {
 
 const uint32_t HASHES_PER_TABLE = 3;
 const uint32_t NUM_TABLES = 32;
-const uint32_t NUM_VECTORS = 100;
 
 constexpr const char* CONFIG_FILE = "flash_config";
 constexpr const char* QUERIES_FILE = "queries.csv";
