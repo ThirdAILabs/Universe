@@ -364,7 +364,7 @@ class QueryCandidateGenerator {
     }
     auto recall = (correct_results * 1.0) / correct_queries.size();
 
-    std::cout << "Recall @" << K << " = " << recall << std::endl;
+    std::cout << "Recall@" << K << " = " << recall << std::endl;
   }
 
   /**
