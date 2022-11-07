@@ -5,11 +5,12 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include "Aliases.h"
+#include "ColumnNumberMap.h"
+#include "DataTypes.h"
 #include "FeatureComposer.h"
-#include "OracleConfig.h"
 #include "TemporalContext.h"
 #include "TemporalRelationshipsAutotuner.h"
+#include "UDTConfig.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -35,11 +36,11 @@
 
 namespace thirdai::automl::deployment {
 
-class OracleDatasetFactory final : public DatasetLoaderFactory {
+class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
-  explicit OracleDatasetFactory(OracleConfigPtr config, bool force_parallel,
-                                uint32_t text_pairgram_word_limit,
-                                bool contextual_columns = false)
+  explicit UDTDatasetFactory(UDTConfigPtr config, bool force_parallel,
+                             uint32_t text_pairgram_word_limit,
+                             bool contextual_columns = false)
       : _config(std::move(config)),
         _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
             _config->data_types, _config->provided_relationships,
@@ -55,10 +56,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     _label_dim = mock_processor->getLabelDim();
   }
 
-  static std::shared_ptr<OracleDatasetFactory> make(
-      OracleConfigPtr config, bool force_parallel,
+  static std::shared_ptr<UDTDatasetFactory> make(
+      UDTConfigPtr config, bool force_parallel,
       uint32_t text_pairgram_word_limit, bool contextual_columns = false) {
-    return std::make_shared<OracleDatasetFactory>(
+    return std::make_shared<UDTDatasetFactory>(
         std::move(config), force_parallel, text_pairgram_word_limit,
         contextual_columns);
   }
@@ -91,6 +92,10 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
       _unlabeled_non_updating_processor =
           makeUnlabeledNonUpdatingProcessor(*_column_number_map);
     }
+
+    // The batch processor will treat the next line as a header
+    // Restart so batch processor does not skip a sample.
+    data_loader->restart();
 
     return std::make_unique<GenericDatasetLoader>(
         data_loader, _labeled_history_updating_processor,
@@ -296,7 +301,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
                          /* should_update_history= */ true);
 
     auto processor = dataset::GenericBatchProcessor::make(
-        std::move(input_blocks), {label_block}, /* has_header= */ false,
+        std::move(input_blocks), {label_block}, /* has_header= */ true,
         /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
     return processor;
   }
@@ -397,7 +402,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
     return s.str();
   }
 
-  OracleConfigPtr _config;
+  UDTConfigPtr _config;
   TemporalRelationships _temporal_relationships;
 
   TemporalContextPtr _context;
@@ -428,7 +433,7 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   bool _contextual_columns;
 
   // Private constructor for cereal.
-  OracleDatasetFactory() {}
+  UDTDatasetFactory() {}
 
   friend class cereal::access;
   template <class Archive>
@@ -441,13 +446,12 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
   }
 };
 
-using OracleDatasetFactoryPtr = std::shared_ptr<OracleDatasetFactory>;
+using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
-class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
+class UDTDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
  public:
-  explicit OracleDatasetFactoryConfig(
-      HyperParameterPtr<OracleConfigPtr> config,
-      HyperParameterPtr<bool> parallel,
+  explicit UDTDatasetFactoryConfig(
+      HyperParameterPtr<UDTConfigPtr> config, HyperParameterPtr<bool> parallel,
       HyperParameterPtr<uint32_t> text_pairgram_word_limit,
       HyperParameterPtr<bool> contextual_columns)
       : _config(std::move(config)),
@@ -462,18 +466,17 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
     auto text_pairgram_word_limit =
         _text_pairgram_word_limit->resolve(user_specified_parameters);
 
-    return OracleDatasetFactory::make(config, parallel,
-                                      text_pairgram_word_limit);
+    return UDTDatasetFactory::make(config, parallel, text_pairgram_word_limit);
   }
 
  private:
-  HyperParameterPtr<OracleConfigPtr> _config;
+  HyperParameterPtr<UDTConfigPtr> _config;
   HyperParameterPtr<bool> _parallel;
   HyperParameterPtr<uint32_t> _text_pairgram_word_limit;
   HyperParameterPtr<bool> _contextual_columns;
 
   // Private constructor for cereal.
-  OracleDatasetFactoryConfig() {}
+  UDTDatasetFactoryConfig() {}
 
   friend class cereal::access;
   template <class Archive>
@@ -485,6 +488,6 @@ class OracleDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
 
 }  // namespace thirdai::automl::deployment
 
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OracleDatasetFactoryConfig)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UDTDatasetFactoryConfig)
 
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OracleDatasetFactory)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UDTDatasetFactory)

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/Aliases.h>
+#include "DataTypes.h"
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
