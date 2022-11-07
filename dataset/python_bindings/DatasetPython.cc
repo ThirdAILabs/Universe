@@ -93,7 +93,6 @@ void createDatasetSubmodule(py::module_& module) {
      Identifies the responsible input column.
       )pbdoc");
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",
       "Block abstract class.\n\n"
@@ -219,6 +218,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &MockBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
+#if THIRDAI_EXPOSE_ALL
   py::enum_<TabularDataType>(dataset_submodule, "TabularDataType")
       .value("Label", TabularDataType::Label)
       .value("Categorical", TabularDataType::Categorical)
@@ -269,7 +269,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def("resource_name", &DataLoader::resourceName)
       .def("restart", &DataLoader::restart);
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleBufferConfig")
       .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
            py::arg("seed") = time(NULL));
@@ -320,7 +319,6 @@ void createDatasetSubmodule(py::module_& module) {
       "expected categorical features in each dataset.\n"
       "Returns a tuple containing a BoltDataset, BoltTokenDataset to store the "
       "dense and categorical features, and a BoltDataset storing the labels.");
-#endif
 
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule, "BoltDataset")
       // We need to explicitly static cast these methods because there are
@@ -392,7 +390,6 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
                         py::arg("data"), py::arg("batch_size") = std::nullopt);
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
       .def(py::init<std::shared_ptr<Vocabulary>, uint32_t>(),
            py::arg("vocabulary"), py::arg("pairgram_range"))
@@ -436,8 +433,6 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<FixedVocabulary, Vocabulary, std::shared_ptr<FixedVocabulary>>(
       dataset_submodule, "FixedVocabulary")
       .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
-
-#endif
 }
 
 bool denseBoltDatasetMatchesDenseMatrix(
