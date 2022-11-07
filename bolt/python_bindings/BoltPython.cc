@@ -1,7 +1,5 @@
 #include "BoltPython.h"
 #include <bolt/python_bindings/ConversionUtils.h>
-#include <bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h>
-#include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -9,6 +7,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <auto_ml/src/deployment_config/dataset_configs/udt/DataTypes.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <pybind11/cast.h>
@@ -90,13 +89,13 @@ Args:
       .def("silence", &EvalConfig::silence)
       .def("return_activations", &EvalConfig::returnActivations);
 
-  auto oracle_types_submodule = bolt_submodule.def_submodule("types");
+  auto udt_types_submodule = bolt_submodule.def_submodule("types");
 
-  py::class_<sequential_classifier::DataType>(  // NOLINT
-      oracle_types_submodule, "ColumnType", "Base class for bolt types.");
+  py::class_<automl::deployment::DataType>(  // NOLINT
+      udt_types_submodule, "ColumnType", "Base class for bolt types.");
 
-  oracle_types_submodule.def(
-      "categorical", sequential_classifier::DataType::categorical,
+  udt_types_submodule.def(
+      "categorical", automl::deployment::DataType::categorical,
       py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
       py::arg("consecutive_integer_ids") = false,
       R"pbdoc(
@@ -106,12 +105,12 @@ Args:
 
     Args:
         n_unique_classes (int): Number of unique categories in the column.
-            Oracle throws an error if the column contains more than the 
+            UDT throws an error if the column contains more than the 
             specified number of unique values.
         delimiter (str): Optional. Defaults to None. A single character 
             (length-1 string) that separates multiple values in the same 
             column. This can only be used for the target column. If not 
-            provided, Oracle assumes that there is only one value in the column.
+            provided, UDT assumes that there is only one value in the column.
         consecutive_integer_ids (bool): Optional. Defaults to None. When set to
             True, the values of this column are assumed to be integers ranging 
             from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
@@ -126,9 +125,9 @@ Args:
                 ...
             )
                              )pbdoc");
-  oracle_types_submodule.def(
-      "numerical", sequential_classifier::DataType::numerical, py::arg("range"),
-      R"pbdoc(
+  udt_types_submodule.def("numerical", automl::deployment::DataType::numerical,
+                          py::arg("range"),
+                          R"pbdoc(
     Numerical column type. Use this object if a column contains numerical 
     data (the value is treated as a quantity). Examples include hours of 
     a movie watched, sale quantity, or population size.
@@ -146,24 +145,24 @@ Args:
                 ...
             )
                              )pbdoc");
-  oracle_types_submodule.def("text", sequential_classifier::DataType::text,
-                             py::arg("average_n_words") = std::nullopt,
-                             py::arg("embedding_size") = "m",
-                             py::arg("use_attention") = false,
-                             R"pbdoc(
+  udt_types_submodule.def("text", automl::deployment::DataType::text,
+                          py::arg("average_n_words") = std::nullopt,
+                          py::arg("embedding_size") = "m",
+                          py::arg("use_attention") = false,
+                          R"pbdoc(
     Text column type. Use this object if a column contains text data 
     (the meaning of the text matters). Examples include descriptions, 
     search queries, and user bios.
 
     Args:
         average_n_words (int): Optional. Average number of words in the 
-            text column in each row. If provided, Oracle may make 
+            text column in each row. If provided, UDT may make 
             optimizations as appropriate.
         embedding_size (str): Optional. One of "small"/"s", "medium"/"m",
             or "large"/"l". Defaults to "m".
-        use_attention (bool): Optional. If true, oracle is guaranteed to
+        use_attention (bool): Optional. If true, udt is guaranteed to
             use attention when processing this text column. Otherwise, 
-            oracle will only use attention when appropriate.
+            udt will only use attention when appropriate.
     
     Example:
         >>> deployment.UniversalDeepTransformer(
@@ -175,8 +174,8 @@ Args:
             )
 
                              )pbdoc");
-  oracle_types_submodule.def("date", sequential_classifier::DataType::date,
-                             R"pbdoc(
+  udt_types_submodule.def("date", automl::deployment::DataType::date,
+                          R"pbdoc(
     Date column type. Use this object if a column contains date strings. 
     Date strings must be in YYYY-MM-DD format.
  
@@ -189,17 +188,17 @@ Args:
             )
                              )pbdoc");
 
-  auto oracle_temporal_submodule = bolt_submodule.def_submodule("temporal");
+  auto udt_temporal_submodule = bolt_submodule.def_submodule("temporal");
 
-  py::class_<sequential_classifier::TemporalConfig>(  // NOLINT
-      oracle_temporal_submodule, "TemporalConfig",
+  py::class_<automl::deployment::TemporalConfig>(  // NOLINT
+      udt_temporal_submodule, "TemporalConfig",
       "Base class for temporal feature configs.");
 
-  oracle_temporal_submodule.def(
-      "categorical", sequential_classifier::TemporalConfig::categorical,
-      py::arg("column_name"), py::arg("track_last_n"),
-      py::arg("column_known_during_inference") = false,
-      R"pbdoc(
+  udt_temporal_submodule.def("categorical",
+                             automl::deployment::TemporalConfig::categorical,
+                             py::arg("column_name"), py::arg("track_last_n"),
+                             py::arg("column_known_during_inference") = false,
+                             R"pbdoc(
     Temporal categorical config. Use this object to configure how a 
     categorical column is tracked over time. 
 
@@ -215,7 +214,7 @@ Args:
         >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend_level", "sales_performance"
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend level and sales performance over time.
-        >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
+        >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
         >>> model = deployment.UniversalDeepTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
@@ -239,18 +238,18 @@ Args:
         - The same column can be tracked more than once, allowing us to capture both short and
           long term trends.
       )pbdoc");
-  oracle_temporal_submodule.def(
-      "numerical", sequential_classifier::TemporalConfig::numerical,
-      py::arg("column_name"), py::arg("history_length"),
-      py::arg("column_known_during_inference") = false,
-      R"pbdoc(
+  udt_temporal_submodule.def("numerical",
+                             automl::deployment::TemporalConfig::numerical,
+                             py::arg("column_name"), py::arg("history_length"),
+                             py::arg("column_known_during_inference") = false,
+                             R"pbdoc(
     Temporal numerical config. Use this object to configure how a 
     numerical column is tracked over time. 
 
     Args:
         column_name (str): The name of the tracked column.
         history_length (int): Amount of time to look back. Time is in terms 
-            of the time granularity passed to the Oracle constructor.
+            of the time granularity passed to the UDT constructor.
         column_known_during_inference (bool): Optional. Whether the 
             value of the tracked column is known during inference. Defaults 
             to False.
@@ -259,7 +258,7 @@ Args:
         >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_performance"
         >>> # We want to predict the current week's sales performance for each product using temporal context.
         >>> # For each product ID, we would like to track both their ad spend and sales performance over time.
-        >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:
+        >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
         >>> model = deployment.UniversalDeepTransformer(
                 data_types={
                     "product_id": bolt.types.categorical(n_unique_classes=5000),
