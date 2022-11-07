@@ -451,7 +451,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("inferenceBatch", &inferenceBatch, py::arg("vocab"),
                         py::arg("rows"), py::arg("output_range"),
-                        py::arg("mask_percentage") = 0.0f);
+                        py::arg("mask_percentage") = 0.0F);
 
   dataset_submodule.def("inferenceSample", &inferenceSample, py::arg("vocab"),
                         py::arg("row"), py::arg("mask_indices"),
