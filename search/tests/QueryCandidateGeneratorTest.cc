@@ -50,16 +50,16 @@ QueryCandidateGeneratorConfig getQueryCandidateGeneratorConfig() {
       /* hash_function = */ "DensifiedMinHash",
       /* num_tables = */ NUM_TABLES,
       /* hashes_per_table = */ HASHES_PER_TABLE,
-      /* top_k = */ 5,
+      /* range= */ 100,
       /* n_grams = */ {3, 4},
-      /* has_incorrect_queries = */ false,
-      /* input_dim = */ NUM_VECTORS);
+      /* has_incorrect_queries = */ false);
 }
 
 void assertQueryingWithoutTrainingThrowsException(
     QueryCandidateGenerator& query_candidate_generator) {
   ASSERT_THROW(query_candidate_generator.queryFromList(  // NOLINT
-                   /* queries = */ {"first test query", "second test query"}),
+                   /* queries = */ {"first test query", "second test query"},
+                   /* top_k= */ 5),
                exceptions::QueryCandidateGeneratorException);
 }
 

@@ -22,7 +22,7 @@ def _get_label_postprocessing_fn(model, use_class_name):
         return lambda pred: pred
 
 
-def compute_model_accuracy(model, test_filename, inference_samples, use_class_name):
+def compute_evaluate_accuracy(model, test_filename, inference_samples, use_class_name):
     label_fn = _get_label_postprocessing_fn(model, use_class_name)
 
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
@@ -58,62 +58,26 @@ def compute_predict_batch_accuracy(
     return _compute_accuracy(predictions, inference_samples)
 
 
-def compute_saved_and_retrained_accuarcy(
-    model, train_filename, test_filename, inference_samples, use_class_name
+def check_saved_and_retrained_accuarcy(
+    model, train_filename, test_filename, inference_samples, use_class_name, accuracy
 ):
     SAVE_FILE = "./saved_model_file.bolt"
 
     model.save(SAVE_FILE)
     loaded_model = bolt.UniversalDeepTransformer.load(SAVE_FILE)
 
+    acc = compute_evaluate_accuracy(
+        model, test_filename, inference_samples, use_class_name
+    )
+    assert acc >= accuracy
+
     train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001)
     loaded_model.train(train_filename, train_config)
 
-    acc = compute_model_accuracy(
+    acc = compute_evaluate_accuracy(
         loaded_model, test_filename, inference_samples, use_class_name
     )
 
     os.remove(SAVE_FILE)
 
-    return acc
-
-
-def download_clinc_dataset_helper():
-    CLINC_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00570/clinc150_uci.zip"
-    CLINC_ZIP = "./clinc150_uci.zip"
-    CLINC_DIR = "./clinc"
-    MAIN_FILE = CLINC_DIR + "/clinc150_uci/data_full.json"
-    TRAIN_FILE = "./clinc_train.csv"
-    TEST_FILE = "./clinc_test.csv"
-
-    if not os.path.exists(CLINC_ZIP):
-        os.system(f"curl {CLINC_URL} --output {CLINC_ZIP}")
-
-    if not os.path.exists(MAIN_FILE):
-        with zipfile.ZipFile(CLINC_ZIP, "r") as zip_ref:
-            zip_ref.extractall(CLINC_DIR)
-
-    samples = json.load(open(MAIN_FILE))
-
-    train_samples = samples["train"]
-    test_samples = samples["test"]
-
-    train_text, train_category = zip(*train_samples)
-    test_text, test_category = zip(*test_samples)
-
-    train_df = pd.DataFrame({"text": train_text, "category": train_category})
-    test_df = pd.DataFrame({"text": test_text, "category": test_category})
-
-    train_df["text"] = train_df["text"].apply(lambda x: x.replace(",", ""))
-    train_df["category"] = pd.Categorical(train_df["category"]).codes
-    test_df["text"] = test_df["text"].apply(lambda x: x.replace(",", ""))
-    test_df["category"] = pd.Categorical(test_df["category"]).codes
-
-    train_df.to_csv(TRAIN_FILE, index=False, columns=["category", "text"])
-    test_df.to_csv(TEST_FILE, index=False, columns=["category", "text"])
-
-    inference_samples = []
-    for row in test_df.iterrows():
-        inference_samples.append(({"text": row[1]["text"]}, row[1]["category"]))
-
-    return TRAIN_FILE, TEST_FILE, inference_samples
+    assert acc >= accuracy

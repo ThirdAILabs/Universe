@@ -296,15 +296,13 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
   py::class_<bolt::QueryCandidateGeneratorConfig,
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
-      .def(
-          py::init<std::string, uint32_t, uint32_t, uint32_t,
-                   std::vector<uint32_t>, bool, uint32_t, uint32_t, uint32_t>(),
-          py::arg("hash_function"), py::arg("num_tables"),
-          py::arg("hashes_per_table"), py::arg("top_k") = 5, py::arg("n_grams"),
-          py::arg("has_incorrect_queries") = false,
-          py::arg("input_dim") = 100000, py::arg("batch_size") = 10000,
-          py::arg("range") = 1000000,
-          R"pbdoc(
+      .def(py::init<std::string, uint32_t, uint32_t, uint32_t,
+                    std::vector<uint32_t>, bool, uint32_t>(),
+           py::arg("hash_function"), py::arg("num_tables"),
+           py::arg("hashes_per_table"), py::arg("range"), py::arg("n_grams"),
+           py::arg("has_incorrect_queries") = false,
+           py::arg("batch_size") = 10000,
+           R"pbdoc(
     Initializes a QueryCandidateGeneratorConfig object.
 
      Args:
@@ -442,7 +440,7 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
            )pbdoc")
 
       .def("generate", &bolt::QueryCandidateGenerator::queryFromList,
-           py::arg("queries"),
+           py::arg("queries"), py::arg("top_k"),
            R"pbdoc(
     Generates a list of correct candidate queries for each of the the given 
     queries in the list. 

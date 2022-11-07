@@ -23,11 +23,9 @@ const uint32_t NUM_TABLES = 32;
 const uint32_t RANGE = 3000;
 const uint32_t NUM_VECTORS = 100;
 
-std::vector<uint32_t> createBatchLabels(uint32_t vector_size) {
-  std::vector<uint32_t> labels;
-  labels.reserve(vector_size);
-
-  std::iota(labels.begin(), labels.end(), 0);
+std::vector<uint32_t> createBatchLabels(uint32_t num_labels, uint32_t start) {
+  std::vector<uint32_t> labels(num_labels);
+  std::iota(labels.begin(), labels.end(), start);
   return labels;
 }
 
@@ -53,9 +51,10 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
   auto flash_index = Flash<uint32_t>(
       std::make_shared<DensifiedMinHash>(HASHES_PER_TABLE, NUM_TABLES, RANGE));
 
-  auto labels = createBatchLabels(NUM_VECTORS);
-
+  uint32_t label_offset = 0;
   for (BoltBatch& batch : flash_index_batches) {
+    label_offset += batch.getBatchSize();
+    auto labels = createBatchLabels(batch.getBatchSize(), label_offset);
     flash_index.addBatch(batch, labels);
   }
 

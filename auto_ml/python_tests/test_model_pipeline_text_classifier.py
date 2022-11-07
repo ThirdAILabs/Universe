@@ -1,15 +1,10 @@
-import os
-import random
-
-import datasets
-import numpy as np
 import pytest
+from download_datasets import download_clinc_dataset
 from model_test_utils import (
-    compute_model_accuracy,
+    check_saved_and_retrained_accuarcy,
+    compute_evaluate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
-    compute_saved_and_retrained_accuarcy,
-    download_clinc_dataset_helper,
 )
 from thirdai import bolt, deployment
 
@@ -19,14 +14,14 @@ ACCURACY_THRESHOLD = 0.8
 
 
 @pytest.fixture(scope="module")
-def download_clinc_dataset():
-    train, test, inference = download_clinc_dataset_helper()
+def download_clinc_dataset_model_pipeline(download_clinc_dataset):
+    train, test, inference = download_clinc_dataset
     inference = [(x["text"], y) for x, y in inference]
     return train, test, inference
 
 
 @pytest.fixture(scope="module")
-def train_model_pipeline_text_classifier(download_clinc_dataset):
+def train_model_pipeline_text_classifier(download_clinc_dataset_model_pipeline):
     model_config = deployment.ModelConfig(
         input_names=["input"],
         nodes=[
@@ -81,7 +76,7 @@ def train_model_pipeline_text_classifier(download_clinc_dataset):
         parameters={"size": "large", "output_dim": 150, "delimiter": ","},
     )
 
-    train_filename, _, _ = download_clinc_dataset
+    train_filename, _, _ = download_clinc_dataset_model_pipeline
 
     train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     model.train(
@@ -94,54 +89,64 @@ def train_model_pipeline_text_classifier(download_clinc_dataset):
 
 
 def test_model_pipeline_text_classifier_accuracy(
-    train_model_pipeline_text_classifier, download_clinc_dataset
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
 ):
     model = train_model_pipeline_text_classifier
-    _, test_filename, inference_samples = download_clinc_dataset
+    _, test_filename, inference_samples = download_clinc_dataset_model_pipeline
 
-    acc = compute_model_accuracy(
+    acc = compute_evaluate_accuracy(
         model, test_filename, inference_samples, use_class_name=False
     )
     assert acc >= ACCURACY_THRESHOLD
 
 
 def test_model_pipeline_text_classifier_predict_single(
-    train_model_pipeline_text_classifier, download_clinc_dataset
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
 ):
     model = train_model_pipeline_text_classifier
-    _, _, inference_samples = download_clinc_dataset
+    _, _, inference_samples = download_clinc_dataset_model_pipeline
 
     acc = compute_predict_accuracy(model, inference_samples, use_class_name=False)
     assert acc >= ACCURACY_THRESHOLD
 
 
 def test_model_pipeline_text_classifier_predict_batch(
-    train_model_pipeline_text_classifier, download_clinc_dataset
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
 ):
     model = train_model_pipeline_text_classifier
-    _, _, inference_samples = download_clinc_dataset
+    _, _, inference_samples = download_clinc_dataset_model_pipeline
 
     acc = compute_predict_batch_accuracy(model, inference_samples, use_class_name=False)
     assert acc >= ACCURACY_THRESHOLD
 
 
 def test_model_pipeline_text_classification_save_load(
-    train_model_pipeline_text_classifier, download_clinc_dataset
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
 ):
     model = train_model_pipeline_text_classifier
-    train_filename, test_filename, inference_samples = download_clinc_dataset
+    (
+        train_filename,
+        test_filename,
+        inference_samples,
+    ) = download_clinc_dataset_model_pipeline
 
-    acc = compute_saved_and_retrained_accuarcy(
-        model, train_filename, test_filename, inference_samples, use_class_name=False
+    check_saved_and_retrained_accuarcy(
+        model,
+        train_filename,
+        test_filename,
+        inference_samples,
+        use_class_name=False,
+        accuracy=ACCURACY_THRESHOLD,
     )
-    assert acc >= ACCURACY_THRESHOLD
 
 
+# Because validatation doesn't return anything there isn't anything specific to test
+# here, this is just a sanity check that using validation produces no errors.
 def test_model_pipeline_text_classification_train_with_validation(
-    train_model_pipeline_text_classifier, download_clinc_dataset
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
 ):
     model = train_model_pipeline_text_classifier
-    train_filename, test_filename, _ = download_clinc_dataset
+    train_filename, test_filename, _ = download_clinc_dataset_model_pipeline
 
     eval_config = (
         bolt.EvalConfig()
