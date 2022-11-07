@@ -15,7 +15,7 @@ License
 -------
 
 By default, :code:`thirdai` package checks for license in the current working
-directory. If you are using a non-standard location, you may use
+directory. If you are using a different location, you may use
 :code:`thirdai.set_license_path(...)` to inform thirdai of the location.
 
 
