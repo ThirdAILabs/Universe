@@ -243,7 +243,6 @@ class DataParallelIngest:
                     .remote(self.dataset_type, self.save_location) for i in range(num_workers)]
         ray_data_shards = ray_dataset.split(n=num_workers, equal=True, locality_hints=workers)
 
-        print(ray_data_shards, workers)
         train_file_names = ray.get([worker.consume.remote(shard) for shard, worker in zip(ray_data_shards, workers)])
         ray.shutdown()
         return train_file_names
