@@ -76,7 +76,7 @@ TEST(QueryCandidateGeneratorTest, QueryCandidateGeneratorConfigSerialization) {
   EXPECT_EQ(std::remove(CONFIG_FILE), 0);
 }
 
-TEST(QueryCandidateGeneratorTest, GeneratorAssignUniqueLabels) {
+TEST(QueryCandidateGeneratorTest, GeneratorAssignscUniqueLabels) {
   auto config = getQueryCandidateGeneratorConfig();
 
   auto query_candidate_generator = QueryCandidateGenerator::make(
