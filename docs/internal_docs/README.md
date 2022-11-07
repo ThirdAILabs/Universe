@@ -4,7 +4,7 @@ There are different types of documentation you can build.
 ## HTML
 First, you will have to install the theme we are currently using:
 ```
-pip3 install sphinx-rtd-theme
+pip3 install sphinx sphinx-rtd-theme
 ```
 Then run 
 ```

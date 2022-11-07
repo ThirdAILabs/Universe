@@ -12,6 +12,7 @@ MOCK_EXPERIMENT_ARGS_VALUE = "dummy value"
 
 @pytest.mark.unit
 def test_mlflow_callback(mocker):
+    # Import here to avoid collection error since experimental is not defined in release mode.
     from thirdai.experimental import MlflowCallback
 
     set_tracking_uri_mock = mocker.patch("mlflow.set_tracking_uri")

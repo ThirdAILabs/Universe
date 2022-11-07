@@ -27,10 +27,10 @@ else:
     build_mode = "Release"
 if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
-    expose_all = "THIRDAI_EXPOSE_ALL" in feature_flags
+    is_public_release = "THIRDAI_EXPOSE_ALL" not in feature_flags
 else:
     feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
-    expose_all = False
+    is_public_release = True
 
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -207,7 +207,7 @@ setup(
         for p in find_packages(
             where="thirdai_python_package",
             # We don't want the experimental submodule included in releases.
-            exclude=[] if expose_all else ["experimental"],
+            exclude=["experimental"] if is_public_release else [],
         )
     ],
     license="proprietary",
