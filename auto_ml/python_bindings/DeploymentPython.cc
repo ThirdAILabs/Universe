@@ -1,6 +1,7 @@
 #include "DeploymentPython.h"
 #include "DeploymentDocs.h"
 #include <bolt/python_bindings/ConversionUtils.h>
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SamplingConfig.h>
@@ -16,10 +17,9 @@
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/Aliases.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/TemporalContext.h>
+#include <auto_ml/src/deployment_config/dataset_configs/udt/TemporalContext.h>
+#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
+#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/cast.h>
@@ -62,9 +62,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
       submodule, "SamplingConfigHyperParameter", docs::STR_HYPERPARAMETER);
 
-  py::class_<HyperParameter<OracleConfigPtr>,  // NOLINT
-             HyperParameterPtr<OracleConfigPtr>>(submodule,
-                                                 "OracleConfigHyperParameter");
+  py::class_<HyperParameter<UDTConfigPtr>,  // NOLINT
+             HyperParameterPtr<UDTConfigPtr>>(submodule,
+                                              "UDTConfigHyperParameter");
 
   /**
    * Do not change the order of these overloads. Because bool is a sublclass of
@@ -79,8 +79,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defConstantParameter<std::string>(submodule, /* add_docs= */ false);
   defConstantParameter<bolt::SamplingConfigPtr>(submodule,
                                                 /* add_docs= */ false);
-  defConstantParameter<OracleConfigPtr>(submodule,
-                                        /* add_docs= */ false);
+  defConstantParameter<UDTConfigPtr>(submodule,
+                                     /* add_docs= */ false);
 
   defOptionMappedParameter<bool>(submodule, /* add_docs= */ true);
   defOptionMappedParameter<uint32_t>(submodule, /* add_docs= */ false);
@@ -88,8 +88,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defOptionMappedParameter<std::string>(submodule, /* add_docs= */ false);
   defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule,
                                                     /* add_docs= */ false);
-  defOptionMappedParameter<OracleConfigPtr>(submodule,
-                                            /* add_docs= */ false);
+  defOptionMappedParameter<UDTConfigPtr>(submodule,
+                                         /* add_docs= */ false);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"),
@@ -173,18 +173,18 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              std::shared_ptr<SingleBlockDatasetFactoryConfig>>(
       submodule, "SingleBlockDatasetFactory")
       .def(py::init<BlockConfigPtr, BlockConfigPtr, HyperParameterPtr<bool>,
-                    HyperParameterPtr<std::string>>(),
+                    HyperParameterPtr<std::string>, bool>(),
            py::arg("data_block"), py::arg("label_block"), py::arg("shuffle"),
-           py::arg("delimiter"),
+           py::arg("delimiter"), py::arg("has_header") = false,
            docs::SINGLE_BLOCK_DATASET_FACTORY_CONFIG_INIT);
 
-  py::class_<OracleDatasetFactoryConfig, DatasetLoaderFactoryConfig,
-             std::shared_ptr<OracleDatasetFactoryConfig>>(
-      submodule, "OracleDatasetFactory")
-      .def(py::init<HyperParameterPtr<OracleConfigPtr>, HyperParameterPtr<bool>,
-                    HyperParameterPtr<uint32_t>>(),
+  py::class_<UDTDatasetFactoryConfig, DatasetLoaderFactoryConfig,
+             std::shared_ptr<UDTDatasetFactoryConfig>>(submodule,
+                                                       "UDTDatasetFactory")
+      .def(py::init<HyperParameterPtr<UDTConfigPtr>, HyperParameterPtr<bool>,
+                    HyperParameterPtr<uint32_t>, HyperParameterPtr<bool>>(),
            py::arg("config"), py::arg("parallel"),
-           py::arg("text_pairgram_word_limit"));
+           py::arg("text_pairgram_word_limit"), py::arg("contextual_columns"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
       .def(py::init<std::optional<uint32_t>, std::optional<uint32_t>, uint32_t,
@@ -206,17 +206,17 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def_static("load", &DeploymentConfig::load, py::arg("filename"),
                   docs::DEPLOYMENT_CONFIG_LOAD);
 
-  py::class_<OracleDatasetFactory, OracleDatasetFactoryPtr>(submodule,
-                                                            "TemporalContext")
-      .def("reset", &OracleDatasetFactory::resetTemporalTrackers,
+  py::class_<UDTDatasetFactory, UDTDatasetFactoryPtr>(submodule,
+                                                      "TemporalContext")
+      .def("reset", &UDTDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
            py::overload_cast<const LineInput&>(
-               &OracleDatasetFactory::updateTemporalTrackers),
+               &UDTDatasetFactory::updateTemporalTrackers),
            py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
       .def("batch_update_temporal_trackers",
            py::overload_cast<const LineInputBatch&>(
-               &OracleDatasetFactory::batchUpdateTemporalTrackers),
+               &UDTDatasetFactory::batchUpdateTemporalTrackers),
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
 }
 
@@ -263,7 +263,7 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
 
-  py::class_<OracleConfig, OracleConfigPtr>(bolt_submodule, "OracleConfig")
+  py::class_<UDTConfig, UDTConfigPtr>(bolt_submodule, "UDTConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
                     std::string, std::string, uint32_t, char>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
@@ -280,7 +280,9 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            py::arg("options") = OptionsMap(), docs::UDT_INIT)
       .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
-           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
+           py::arg("train_config") = bolt::TrainConfig::makeConfig(
+               /* learning_rate= */ 0.001, /* epochs= */ 3),
+           py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN)
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
@@ -362,14 +364,14 @@ py::object makeUserSpecifiedParameter(const std::string& name,
   }
 
   if (py::str(type).cast<std::string>() ==
-      "<class 'thirdai._thirdai.bolt.OracleConfig'>") {
-    return py::cast(UserSpecifiedParameter<OracleConfigPtr>::make(name));
+      "<class 'thirdai._thirdai.bolt.UDTConfig'>") {
+    return py::cast(UserSpecifiedParameter<UDTConfigPtr>::make(name));
   }
 
   throw std::invalid_argument("Invalid type '" +
                               py::str(type).cast<std::string>() +
                               "' passed to UserSpecifiedParameter. Must be one "
-                              "of bool, int, float, str, or OracleConfig.");
+                              "of bool, int, float, str, or UDTConfig.");
 }
 
 ModelPipeline createPipeline(const DeploymentConfigPtr& config,
@@ -393,14 +395,14 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
       cpp_parameters.emplace(name, UserParameterInput(value));
-    } else if (py::isinstance<OracleConfig>(v)) {
-      OracleConfigPtr value = v.cast<OracleConfigPtr>();
+    } else if (py::isinstance<UDTConfig>(v)) {
+      UDTConfigPtr value = v.cast<UDTConfigPtr>();
       cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
-      throw std::invalid_argument(
-          "Invalid type '" + py::str(v.get_type()).cast<std::string>() +
-          "'. Values of parameters dictionary must be "
-          "bool, int, float, str, OracleConfig, or TemporalContext.");
+      throw std::invalid_argument("Invalid type '" +
+                                  py::str(v.get_type()).cast<std::string>() +
+                                  "'. Values of parameters dictionary must be "
+                                  "bool, int, float, str, or UDTConfig.");
     }
   }
 

@@ -20,6 +20,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 namespace thirdai::dataset {
@@ -176,9 +177,9 @@ class UserItemHistoryBlock final : public Block {
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) final {
     (void)input_row;
-    return {_item_col, "Previously seen '" +
-                           _item_id_lookup->getString(index_within_block) +
-                           "'"};
+    return {_item_col, "'" + _item_id_lookup->getString(index_within_block) +
+                           "' is one of last " + std::to_string(_track_last_n) +
+                           " values"};
   }
 
  protected:
@@ -279,8 +280,8 @@ class UserItemHistoryBlock final : public Block {
   void removeNewItemsFromUserHistory(uint32_t user_id,
                                      std::vector<uint32_t>& new_item_ids) {
     auto& user_history = _per_user_history->at(user_id);
-    user_history.erase(user_history.begin(),
-                       user_history.begin() + new_item_ids.size());
+    user_history.erase(user_history.end() - new_item_ids.size(),
+                       user_history.end());
   }
 
   uint32_t _user_col;

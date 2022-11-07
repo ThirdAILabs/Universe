@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/vector.hpp>
 #include "HashTable.h"
 #include <atomic>
 #include <random>
@@ -76,15 +78,31 @@ class VectorHashTable final : public HashTable<LABEL_T> {
     return table * tableRange() + hash;
   }
 
-  const uint32_t _num_tables;
-  const uint64_t _table_range;
+  uint32_t _num_tables;
+  uint64_t _table_range;
   std::vector<std::vector<LABEL_T>> _buckets;
 
   // These will be 0 or length 0 if USE_RESERVOIR is false
   std::vector<uint32_t> _generated_rand_nums;
   std::vector<uint32_t> _num_elements_tried_insert_into_bucket;
-  const uint64_t _max_reservoir_size;
+  uint64_t _max_reservoir_size;
   std::atomic<uint32_t> counter = 0;
+
+  // private constructor for cereal
+  VectorHashTable<LABEL_T, USE_RESERVOIR>() : counter(0) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HashTable<LABEL_T>>(this), _num_tables,
+            _table_range, _buckets, _generated_rand_nums,
+            _num_elements_tried_insert_into_bucket, _max_reservoir_size);
+  }
 };
 
 }  // namespace thirdai::hashtable
+
+CEREAL_REGISTER_TYPE(thirdai::hashtable::VectorHashTable<uint32_t, false>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::VectorHashTable<uint32_t, true>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::VectorHashTable<uint64_t, false>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::VectorHashTable<uint64_t, true>)

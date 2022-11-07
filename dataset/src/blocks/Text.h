@@ -187,6 +187,9 @@ class CharKGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
+    if (text.empty()) {
+      return nullptr;
+    }
     std::string lower_case_text = utils::lower(text);
 
     std::vector<uint32_t> char_k_grams;

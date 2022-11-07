@@ -30,4 +30,10 @@ class NodeStateMachineError : public std::logic_error {
                          message) {}
 };
 
+class QueryCandidateGeneratorException : public std::logic_error {
+ public:
+  explicit QueryCandidateGeneratorException(const std::string& message)
+      : std::logic_error("Query Candidate Generator Exception: " + message) {}
+};
+
 }  // namespace thirdai::exceptions

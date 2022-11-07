@@ -24,17 +24,17 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
   SingleBlockDatasetFactory(dataset::BlockPtr data_block,
                             dataset::BlockPtr unlabeled_data_block,
                             dataset::BlockPtr label_block, bool shuffle,
-                            char delimiter)
+                            char delimiter, bool has_header)
       : _labeled_batch_processor(
             std::make_shared<dataset::GenericBatchProcessor>(
                 std::vector<dataset::BlockPtr>{std::move(data_block)},
                 std::vector<dataset::BlockPtr>{std::move(label_block)},
-                /* has_header= */ false, delimiter)),
+                /* has_header= */ has_header, delimiter)),
         _unlabeled_batch_processor(
             std::make_shared<dataset::GenericBatchProcessor>(
                 std::vector<dataset::BlockPtr>{std::move(unlabeled_data_block)},
                 std::vector<dataset::BlockPtr>{},
-                /* has_header= */ false, delimiter)),
+                /* has_header= */ has_header, delimiter)),
         _shuffle(shuffle),
         _delimiter(delimiter) {}
 
@@ -119,11 +119,13 @@ class SingleBlockDatasetFactoryConfig final
   SingleBlockDatasetFactoryConfig(BlockConfigPtr data_block,
                                   BlockConfigPtr label_block,
                                   HyperParameterPtr<bool> shuffle,
-                                  HyperParameterPtr<std::string> delimiter)
+                                  HyperParameterPtr<std::string> delimiter,
+                                  bool has_header)
       : _data_block(std::move(data_block)),
         _label_block(std::move(label_block)),
         _shuffle(std::move(shuffle)),
-        _delimiter(std::move(delimiter)) {}
+        _delimiter(std::move(delimiter)),
+        _has_header(has_header) {}
 
   DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const final {
@@ -150,7 +152,7 @@ class SingleBlockDatasetFactoryConfig final
         /* data_block= */ data_block,
         /* unlabeled_data_block= */ unlabeled_data_block,
         /* label_block=*/label_block, /* shuffle= */ shuffle,
-        /* delimiter= */ delimiter.at(0));
+        /* delimiter= */ delimiter.at(0), /* has_header= */ _has_header);
   }
 
  private:
@@ -158,6 +160,7 @@ class SingleBlockDatasetFactoryConfig final
   BlockConfigPtr _label_block;
   HyperParameterPtr<bool> _shuffle;
   HyperParameterPtr<std::string> _delimiter;
+  bool _has_header;
 
   // Private constructor for cereal.
   SingleBlockDatasetFactoryConfig() {}
@@ -166,7 +169,7 @@ class SingleBlockDatasetFactoryConfig final
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _data_block,
-            _label_block, _shuffle, _delimiter);
+            _label_block, _shuffle, _delimiter, _has_header);
   }
 };
 
