@@ -149,21 +149,19 @@ class DataParallelIngest:
         self,
         paths: Union[str, List[str]],
         num_workers,
-        num_cpus_per_placement_group: int = get_num_cpus(),
         remote_file_system=None,
         parallelism: int = 1,
         cluster_address: str = "auto",
     ):
         """
-        Get the shards to pass to train workers
+        Reads the training data, splits it and save the data in the save location 
+        under 'block/train_file' for each of the node in the cluster.
 
         :param paths: A single file/directory path or a list of file/directory paths.
             A list of paths can contain both files and directories.
         :type paths: Union[str, List[str]]
         :param num_workers: Total number of Nodes in Cluster
         :type num_workers: int
-        :param num_cpus_per_placement_group: number of CPUS in each placement group, defaults to get_num_cpus()
-        :type num_cpus_per_placement_group: int, optional
         :param remote_file_system: The filesystem implementation to read from,
                 defaults to None, defaults to None
         :type remote_file_system: Optional[pyarrow.fs.FileSystem], optional
@@ -174,21 +172,35 @@ class DataParallelIngest:
         :raises ValueError: If dataset format specified not supported.
         :return: Dataset
         :rtype: ray.data.Dataset
+
+        Examples:
+
         Partitioning Local Dataset:
+        
             data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
             ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, num_workers=NUM_WORKERS)
 
+
         Partitioning Dataset from AWS S3 buckets:
+
             import pyarrow.fs as paf
             data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
-            ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, remote_file_system=paf.S3FileSystem(
+            dataset_locations = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, remote_file_system=paf.S3FileSystem(
                 region=YOUR_REGION,
                 access_key=YOUR_ACCESS_KEY,
                 secret_key=YOUR_SECRET_KEY,
             ), num_workers=NUM_WORKERS)
+
+        Note: 
+        1. Make sure parallelism+1 <= num_cpus_on_node, for all nodes in the ray cluster. Ohterwise 
+            the schedulaer would just hang.
+        2. Right now, only CSV and numpy files are supported by Ray Data. 
+            See: https://docs.ray.io/en/latest/data/api/dataset.html#i-o-and-conversion
+        
         """
 
-        @ray.remote(num_cpus=num_cpus_per_placement_group / 2)
+
+        @ray.remote(num_cpus=1)
         class DataTransferActor:
             def __init__(self, dataset_type, save_location):
                 self.dataset_type = dataset_type
@@ -215,6 +227,20 @@ class DataParallelIngest:
 
                 return file_path
 
+        pg = placement_group(
+            [{"CPU": 1}] * num_workers,
+            strategy="STRICT_SPREAD",
+        )
+        ray.get(pg.ready())
+
+        workers = [
+            DataTransferActor.options(
+                scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=pg)
+            ).remote(self.dataset_type, self.save_location)
+            for i in range(num_workers)
+        ]
+
+
         ray_dataset = None
         if self.dataset_type == "csv":
             ray_dataset = ray.data.read_csv(
@@ -232,18 +258,6 @@ class DataParallelIngest:
                 "or numpy"
             )
 
-        pg = placement_group(
-            [{"CPU": num_cpus_per_placement_group / 2}] * num_workers,
-            strategy="STRICT_SPREAD",
-        )
-        ray.get(pg.ready())
-
-        workers = [
-            DataTransferActor.options(
-                scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=pg)
-            ).remote(self.dataset_type, self.save_location)
-            for i in range(num_workers)
-        ]
         ray_data_shards = ray_dataset.split(
             n=num_workers, equal=True, locality_hints=workers
         )
