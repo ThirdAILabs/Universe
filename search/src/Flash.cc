@@ -28,7 +28,6 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function,
     : _hash_function(std::move(function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
-      _batch_elements_counter(0),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(
           _num_tables, reservoir_size, _range)) {
   thirdai::licensing::LicenseWrapper::checkLicense();

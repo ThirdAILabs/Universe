@@ -73,7 +73,6 @@ class UDTGenerator : public QueryCandidateGenerator,
   explicit UDTGenerator(QueryCandidateGenerator&& model)
       : QueryCandidateGenerator(std::move(model)) {}
 
-
   std::unique_ptr<QueryCandidateGenerator> _generator;
 };
 

@@ -37,6 +37,8 @@ class QueryCandidateGeneratorConfig {
   QueryCandidateGeneratorConfig(std::string hash_function, uint32_t num_tables,
                                 uint32_t hashes_per_table, uint32_t range,
                                 std::vector<uint32_t> n_grams,
+                                uint32_t source_column_index = 0,
+                                uint32_t target_column_index = 0,
                                 bool has_incorrect_queries = false,
                                 uint32_t batch_size = 10000)
       : _hash_function(std::move(hash_function)),
@@ -45,13 +47,17 @@ class QueryCandidateGeneratorConfig {
         _batch_size(batch_size),
         _range(range),
         _n_grams(std::move(n_grams)),
-        _has_incorrect_queries(has_incorrect_queries) {}
+        _has_incorrect_queries(has_incorrect_queries),
+        _source_column_index(source_column_index),
+        _target_column_index(target_column_index) {}
 
   // Overloaded operator mainly for testing
   bool operator==(const QueryCandidateGeneratorConfig& rhs) const {
     return this->_hash_function == rhs._hash_function &&
            this->_num_tables == rhs._num_tables &&
            this->_hashes_per_table == rhs._hashes_per_table &&
+           this->_source_column_index == rhs._source_column_index && 
+           this->_target_column_index == rhs._target_column_index && 
            this->_batch_size == rhs._batch_size && this->_range == rhs._range &&
            this->_n_grams == rhs._n_grams &&
            this->_has_incorrect_queries == rhs._has_incorrect_queries;
@@ -95,8 +101,9 @@ class QueryCandidateGeneratorConfig {
   }
 
   constexpr uint32_t batchSize() const { return _batch_size; }
-
   constexpr bool hasIncorrectQueries() const { return _has_incorrect_queries; }
+  constexpr uint32_t sourceColumnIndex() const { return _source_column_index; }
+  constexpr uint32_t targetColumnIndex() const { return _target_column_index; }
 
   std::vector<uint32_t> nGrams() const { return _n_grams; }
 
@@ -111,6 +118,8 @@ class QueryCandidateGeneratorConfig {
 
   // Identifies if the dataset contains pairs of correct and incorrect queries
   bool _has_incorrect_queries;
+  uint32_t _source_column_index;
+  uint32_t _target_column_index;
 
   // Private constructor for cereal
   QueryCandidateGeneratorConfig() {}
@@ -244,9 +253,11 @@ class QueryCandidateGenerator {
 
     if (_query_generator_config->hasIncorrectQueries()) {
       training_input_blocks = constructInputBlocks(
-          _query_generator_config->nGrams(), /* column_index = */ 1);
+          _query_generator_config->nGrams(),
+          /* column_index = */ _query_generator_config->sourceColumnIndex());
       auto inference_input_blocks = constructInputBlocks(
-          _query_generator_config->nGrams(), /* column_index = */ 0);
+          _query_generator_config->nGrams(),
+          /* column_index = */ _query_generator_config->targetColumnIndex());
 
       _training_batch_processor =
           std::make_shared<dataset::GenericBatchProcessor>(
@@ -257,8 +268,11 @@ class QueryCandidateGenerator {
               inference_input_blocks, std::vector<dataset::BlockPtr>{});
 
     } else {
+      assert(_query_generator_config->sourceColumnIndex() ==
+             _query_generator_config->_target_column_index());
       training_input_blocks = constructInputBlocks(
-          _query_generator_config->nGrams(), /* column_index = */ 0);
+          _query_generator_config->nGrams(),
+          /* column_index = */ _query_generator_config->targetColumnIndex());
 
       _training_batch_processor =
           std::make_shared<dataset::GenericBatchProcessor>(
@@ -292,27 +306,6 @@ class QueryCandidateGenerator {
       output_strings.push_back(std::move(_labels_to_queries_map[query_label]));
     }
     return output_strings;
-  }
-
-  static std::vector<std::string> processEvaluationQueries(
-      const std::string& file_name) {
-    std::vector<std::string> output_queries;
-
-    try {
-      std::ifstream input_file_stream =
-          dataset::SafeFileIO::ifstream(file_name, std::ios::in);
-
-      std::string row, correct_query;
-      while (std::getline(input_file_stream, row)) {
-        correct_query =
-            std::string(dataset::ProcessorUtils::parseCsvRow(row, ',')[0]);
-        output_queries.emplace_back(std::move(correct_query));
-      }
-    } catch (const std::ifstream::failure& exception) {
-      throw std::invalid_argument("Invalid input file name.");
-    }
-
-    return output_queries;
   }
 
   /**
@@ -389,13 +382,11 @@ class QueryCandidateGenerator {
   }
 
   std::unique_ptr<dataset::StreamingGenericDatasetLoader> getDatasetLoader(
-      const std::string& file_name, bool evaluate) {
+      const std::string& file_name) {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
         file_name, _query_generator_config->batchSize());
 
-    return evaluate ? std::make_unique<dataset::StreamingGenericDatasetLoader>(
-                          file_data_loader, _inference_batch_processor)
-                    : std::make_unique<dataset::StreamingGenericDatasetLoader>(
+    return std::make_unique<dataset::StreamingGenericDatasetLoader>(
                           file_data_loader, _training_batch_processor);
   }
 
