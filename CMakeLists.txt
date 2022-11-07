@@ -223,7 +223,6 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 endif()
 
 set(THIRDAI_SOURCES
-    bolt/src/auto_classifiers/AutoClassifierBase.cc
     bolt/src/graph/Graph.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
@@ -235,6 +234,7 @@ set(THIRDAI_SOURCES
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
     hashing/src/MurmurHash.cc
+    hashing/src/MinHash.cc
     hashing/src/SRP.cc
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
@@ -272,7 +272,6 @@ pybind11_add_module(
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
-  auto_classifiers/python_bindings/AutoClassifiersPython.cc
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
