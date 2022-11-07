@@ -217,6 +217,8 @@ class DataParallelIngest:
                     data_shard.write_numpy(file_path_prefix, block_path_provider=RayBlockWritePathProvider())
                     file_path = os.path.join(file_path_prefix, 'train_file')
 
+                return file_path
+
 
         ray_dataset = None
         if self.dataset_type == "csv":
