@@ -1,23 +1,16 @@
-import os
-
 import pytest
+from download_datasets import download_clinc_dataset
 from model_test_utils import (
-    compute_model_accuracy,
+    compute_evaulate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
     compute_saved_and_retrained_accuarcy,
-    download_clinc_dataset_helper,
 )
 from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 ACCURACY_THRESHOLD = 0.8
-
-
-@pytest.fixture(scope="module")
-def download_clinc_dataset():
-    return download_clinc_dataset_helper()
 
 
 @pytest.fixture(scope="module")
@@ -46,7 +39,7 @@ def test_udt_text_classification_accuarcy(
     model = train_udt_text_classification
     _, test_filename, inference_samples = download_clinc_dataset
 
-    acc = compute_model_accuracy(
+    acc = compute_evaulate_accuracy(
         model, test_filename, inference_samples, use_class_name=False
     )
     assert acc >= ACCURACY_THRESHOLD
