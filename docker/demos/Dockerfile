@@ -13,6 +13,7 @@ SHELL ["/bin/bash", "-c"]
 RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends install \
     git \
     curl \
+    wget \
     # Install python and pip
     python3 \
     python3-dev \
