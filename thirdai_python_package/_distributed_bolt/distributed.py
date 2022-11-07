@@ -154,7 +154,7 @@ class DataParallelIngest:
         cluster_address: str = "auto",
     ):
         """
-        Reads the training data, splits it and save the data in the save location 
+        Reads the training data, splits it and save the data in the save location
         under 'block/train_file' for each of the node in the cluster.
 
         :param paths: A single file/directory path or a list of file/directory paths.
@@ -176,7 +176,7 @@ class DataParallelIngest:
         Examples:
 
         Partitioning Local Dataset:
-        
+
             data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
             ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, num_workers=NUM_WORKERS)
 
@@ -191,14 +191,13 @@ class DataParallelIngest:
                 secret_key=YOUR_SECRET_KEY,
             ), num_workers=NUM_WORKERS)
 
-        Note: 
-        1. Make sure parallelism+1 <= num_cpus_on_node, for all nodes in the ray cluster. Ohterwise 
+        Note:
+        1. Make sure parallelism+1 <= num_cpus_on_node, for all nodes in the ray cluster. Ohterwise
             the schedulaer would just hang.
-        2. Right now, only CSV and numpy files are supported by Ray Data. 
+        2. Right now, only CSV and numpy files are supported by Ray Data.
             See: https://docs.ray.io/en/latest/data/api/dataset.html#i-o-and-conversion
-        
-        """
 
+        """
 
         @ray.remote(num_cpus=1)
         class DataTransferActor:
@@ -239,7 +238,6 @@ class DataParallelIngest:
             ).remote(self.dataset_type, self.save_location)
             for i in range(num_workers)
         ]
-
 
         ray_dataset = None
         if self.dataset_type == "csv":
