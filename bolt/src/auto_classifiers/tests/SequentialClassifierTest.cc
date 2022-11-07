@@ -12,6 +12,7 @@
 #include <fstream>
 #include <optional>
 #include <random>
+#include <stdexcept>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -165,8 +166,13 @@ void assertPercentageSignificance(std::vector<float> percentage_significances) {
 void assertWordsWithinBlock(const std::vector<std::string>& column_names,
                             std::unordered_map<std::string, std::string> input,
                             const std::vector<std::string>& words_responsible) {
-  std::vector<std::string> timestamp_reasons = {
-      "day_of_week", "week_of_month", "month_of_year", "week_of_year"};
+  dataset::TimeObject _time;
+  try {
+    _time = dataset::TimeObject(input["timestamp"]);
+  } catch (const std::invalid_argument& e) {
+    throw std::invalid_argument(e);
+  }
+  std::vector<std::string> timestamp_reason = {"week_of_month", "week_of_year"};
   // these sequential reasons based on values in the sequential column in train
   // data.
   std::vector<std::string> sequential_reasons = {
@@ -176,6 +182,11 @@ void assertWordsWithinBlock(const std::vector<std::string>& column_names,
       getWordsInTextColumn(input["static_text"]);
   for (uint32_t i = 0; i < words_responsible.size(); i++) {
     if (column_names[i] == "timestamp") {
+      auto timestamp_reasons = timestamp_reason;
+      timestamp_reasons.push_back(dataset::getMonthOfYear(_time.month()));
+      uint32_t day_of_week =
+          (_time.secondsSinceEpoch() / dataset::TimeObject::SECONDS_IN_DAY) % 7;
+      timestamp_reasons.push_back(dataset::getDayOfWeek(day_of_week));
       ASSERT_TRUE(std::find(timestamp_reasons.begin(), timestamp_reasons.end(),
                             words_responsible[i]) != timestamp_reasons.end());
     } else if (column_names[i] == "sequential") {
