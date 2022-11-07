@@ -253,14 +253,6 @@ class QueryCandidateGenerator {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Evaluate the Generator without Training.");
     }
-
-    if (!_query_generator_config->hasIncorrectQueries()) {
-      throw exceptions::QueryCandidateGeneratorException(
-          "Attempting to Evaluate the Generator after a Mismatching Training "
-          "Configuration. The Training and Evaluation Files should have Pairs "
-          "of Correct and Incorrect Queries.");
-    }
-
     auto data_loader = getDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
 
@@ -278,14 +270,15 @@ class QueryCandidateGenerator {
       }
     }
 
-    std::vector<std::string> correct_queries =
-        dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
-            file_name, /* column_index = */ 0);
+    if (_query_generator_config->hasIncorrectQueries()) {
+      std::vector<std::string> correct_queries =
+          dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
+              file_name, /* column_index = */ 0);
 
-    computeRecallAtK(/* correct_queries = */ correct_queries,
-                     /* generated_queries = */ output_queries,
-                     /* K = */ _query_generator_config->topK());
-
+      computeRecallAtK(/* correct_queries = */ correct_queries,
+                       /* generated_queries = */ output_queries,
+                       /* K = */ _query_generator_config->topK());
+    }
     return output_queries;
   }
 

@@ -895,7 +895,7 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
         each incorrect query in the input file.
 
     Example:
-        >>> generator = bolt.models.Generator(confi_file_name="config_file")
+        >>> generator = bolt.models.Generator(config_file_name="config_file")
         >>> generator.train(file_name="train_file")
         >>> candidate_queries = generator.evaluate(file_name="eval_file")
            )pbdoc");
