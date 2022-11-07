@@ -230,10 +230,12 @@ set(THIRDAI_SOURCES
     bolt/src/layers/ConvLayer.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
+    search/src/Flash.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
     hashing/src/FastSRP.cc
     hashing/src/MurmurHash.cc
+    hashing/src/MinHash.cc
     hashing/src/SRP.cc
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
