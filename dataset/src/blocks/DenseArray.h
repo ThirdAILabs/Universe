@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <cmath>
 #include <memory>
@@ -28,6 +31,10 @@ class DenseArrayBlock : public Block {
 
   static auto make(uint32_t start_col, uint32_t dim) {
     return std::make_shared<DenseArrayBlock>(start_col, dim);
+  }
+
+  static auto makeSingle(uint32_t start_col) {
+    return std::make_shared<DenseArrayBlock>(start_col, /* dim= */ 1);
   }
 
   uint32_t featureDim() const final { return _dim; };
@@ -65,8 +72,19 @@ class DenseArrayBlock : public Block {
  private:
   uint32_t _start_col;
   uint32_t _dim;
+
+  // Private constructor for cereal.
+  DenseArrayBlock() {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Block>(this), _start_col, _dim);
+  }
 };
 
 using DenseArrayBlockPtr = std::shared_ptr<DenseArrayBlock>;
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::DenseArrayBlock)

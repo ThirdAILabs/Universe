@@ -1,6 +1,7 @@
-from thirdai import bolt
-from utils import gen_numpy_training_data, get_simple_dag_model
 import pytest
+from thirdai import bolt
+
+from utils import gen_numpy_training_data, get_simple_dag_model
 
 pytestmark = [pytest.mark.unit]
 
@@ -19,15 +20,15 @@ def test_freeze_dag_hash_tables():
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
     # Train and predict before freezing hash tables.
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=2)
+    train_config = bolt.TrainConfig(learning_rate=0.001, epochs=2)
     model.train(data, labels, train_config)
 
-    predict_config = (
-        bolt.graph.PredictConfig.make()
+    eval_config = (
+        bolt.EvalConfig()
         .enable_sparse_inference()
         .with_metrics(["categorical_accuracy"])
     )
-    test_metrics1 = model.predict(data, labels, predict_config)[0]
+    test_metrics1 = model.evaluate(data, labels, eval_config)[0]
 
     assert test_metrics1["categorical_accuracy"] >= 0.8
 
@@ -36,6 +37,6 @@ def test_freeze_dag_hash_tables():
 
     model.train(data, labels, train_config)
 
-    test_metrics2 = model.predict(data, labels, predict_config)[0]
+    test_metrics2 = model.evaluate(data, labels, eval_config)[0]
     assert test_metrics2["categorical_accuracy"] >= 0.9
     assert test_metrics2["categorical_accuracy"] > test_metrics1["categorical_accuracy"]

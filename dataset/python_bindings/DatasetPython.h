@@ -3,7 +3,6 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
-#include <dataset/src/core/BlockBatchProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/gil.h>
 #include <pybind11/numpy.h>
@@ -51,34 +50,17 @@ bool denseBoltDatasetIsPermutationOfDenseMatrix(
  */
 bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2);
 
-class PyBlockBatchProcessor : public BlockBatchProcessor {
- public:
-  PyBlockBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
-                        std::vector<std::shared_ptr<Block>> target_blocks,
-                        uint32_t output_batch_size, size_t est_num_elems)
-      : BlockBatchProcessor(std::move(input_blocks), std::move(target_blocks),
-                            output_batch_size, est_num_elems) {}
-
-  /**
-   * Just like the original processBatch method but GIL is released
-   * so we can process batches while the next input rows are
-   * processed in python.
-   */
-  void processBatchPython(std::vector<std::vector<std::string>>& batch) {
-    py::gil_scoped_release release;
-    processBatch(batch);
-  }
-};
-
 class MLMDatasetLoader {
  public:
-  explicit MLMDatasetLoader(uint32_t pairgram_range)
-      : _batch_processor(
-            std::make_shared<MaskedSentenceBatchProcessor>(pairgram_range)) {}
-
-  MLMDatasetLoader(uint32_t pairgram_range, float masked_tokens_percentage)
+  explicit MLMDatasetLoader(std::shared_ptr<Vocabulary> vocab,
+                            uint32_t pairgram_range)
       : _batch_processor(std::make_shared<MaskedSentenceBatchProcessor>(
-            pairgram_range, masked_tokens_percentage)) {}
+            std::move(vocab), pairgram_range)) {}
+
+  MLMDatasetLoader(std::shared_ptr<Vocabulary> vocab, uint32_t pairgram_range,
+                   float masked_tokens_percentage)
+      : _batch_processor(std::make_shared<MaskedSentenceBatchProcessor>(
+            std::move(vocab), pairgram_range, masked_tokens_percentage)) {}
 
   py::tuple load(const std::string& filename, uint32_t batch_size) {
     auto data_loader =

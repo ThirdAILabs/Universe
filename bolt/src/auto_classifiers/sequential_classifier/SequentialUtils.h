@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>
+#include <vector>
 
 namespace thirdai::bolt::sequential_classifier {
 
@@ -73,29 +74,6 @@ static inline void autotuneTemporalFeatures(
   config.temporal_tracking_relationships = temporal_configs;
 }
 
-static inline dataset::QuantityTrackingGranularity stringToGranularity(
-    std::string&& granularity_string) {
-  auto lower_granularity_string = utils::lower(granularity_string);
-  if (lower_granularity_string == "daily" || lower_granularity_string == "d") {
-    return dataset::QuantityTrackingGranularity::Daily;
-  }
-  if (lower_granularity_string == "weekly" || lower_granularity_string == "w") {
-    return dataset::QuantityTrackingGranularity::Weekly;
-  }
-  if (lower_granularity_string == "biweekly" ||
-      lower_granularity_string == "b") {
-    return dataset::QuantityTrackingGranularity::Biweekly;
-  }
-  if (lower_granularity_string == "monthly" ||
-      lower_granularity_string == "m") {
-    return dataset::QuantityTrackingGranularity::Monthly;
-  }
-  throw std::invalid_argument(
-      granularity_string +
-      " is not a valid granularity option. The options are 'daily' / 'd', "
-      "'weekly' / 'w', 'biweekly' / 'b', and 'monthly' / 'm',");
-}
-
 /**
  * Stores persistent states for data preprocessing.
  */
@@ -131,9 +109,10 @@ struct DataState {
 
 class ColumnNumberMap {
  public:
-  ColumnNumberMap(const std::string& header, char delimiter) {
+  ColumnNumberMap(const std::string& header, char delimiter) : _n_cols(0) {
     auto header_columns =
         dataset::ProcessorUtils::parseCsvRow(header, delimiter);
+    _n_cols = header_columns.size();
     for (uint32_t col_num = 0; col_num < header_columns.size(); col_num++) {
       std::string col_name(header_columns[col_num]);
       _name_to_num[col_name] = col_num;
@@ -142,7 +121,8 @@ class ColumnNumberMap {
 
   ColumnNumberMap() {}
 
-  explicit ColumnNumberMap(const std::map<std::string, DataType>& data_types) {
+  explicit ColumnNumberMap(const std::map<std::string, DataType>& data_types)
+      : _n_cols(data_types.size()) {
     uint32_t col_num = 0;
     for (const auto& [col_name, _] : data_types) {
       _name_to_num[col_name] = col_num;
@@ -160,24 +140,31 @@ class ColumnNumberMap {
     return _name_to_num.at(col_name);
   }
 
+  bool equals(const ColumnNumberMap& other) {
+    return other._name_to_num == _name_to_num;
+  }
+
   size_t size() const { return _name_to_num.size(); }
 
-  std::unordered_map<uint32_t, std::string> getColumnNumToColNameMap() {
-    std::unordered_map<uint32_t, std::string> col_num_to_col_name;
-    for (const auto& map : _name_to_num) {
-      col_num_to_col_name[map.second] = map.first;
+  size_t numCols() const { return _n_cols; }
+
+  std::vector<std::string> getColumnNumToColNameMap() const {
+    std::vector<std::string> col_num_to_col_name(numCols());
+    for (const auto& [name, num] : _name_to_num) {
+      col_num_to_col_name[num] = name;
     }
     return col_num_to_col_name;
   }
 
  private:
   std::unordered_map<std::string, uint32_t> _name_to_num;
+  uint32_t _n_cols;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_name_to_num);
+    archive(_name_to_num, _n_cols);
   }
 };
 
@@ -271,6 +258,10 @@ class DataProcessing {
         input_blocks.push_back(
             dataset::DateBlock::make(/* col= */ col_nums.at(col_name)));
       }
+    }
+
+    if (config.temporal_tracking_relationships.empty()) {
+      return input_blocks;
     }
 
     auto timestamp = getTimestamp(config);

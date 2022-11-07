@@ -29,12 +29,19 @@ class DataLoader {
   uint32_t _target_batch_size;
 };
 
+using DataLoaderPtr = std::shared_ptr<DataLoader>;
+
 class SimpleFileDataLoader final : public DataLoader {
  public:
   SimpleFileDataLoader(const std::string& filename, uint32_t target_batch_size)
       : DataLoader(target_batch_size),
         _file(SafeFileIO::ifstream(filename)),
         _filename(filename) {}
+
+  static std::shared_ptr<SimpleFileDataLoader> make(
+      const std::string& filename, uint32_t target_batch_size) {
+    return std::make_shared<SimpleFileDataLoader>(filename, target_batch_size);
+  }
 
   std::optional<std::vector<std::string>> nextBatch() final {
     if (_file.eof()) {

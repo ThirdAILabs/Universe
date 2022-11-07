@@ -1,4 +1,3 @@
-import numpy as np
 import ray
 from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
@@ -23,22 +22,22 @@ class PrimaryWorker(Worker):
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.graph.Model,
-        train_file_name: str,
-        train_config: bolt.graph.TrainConfig,
+        model_to_wrap: bolt.nn.Model,
+        train_source,
+        train_config: bolt.TrainConfig,
         communication_type: str,
-        batch_size: int,
+        log_dir: str,
     ):
 
         super().__init__(
             num_workers=num_workers,
             model_to_wrap=model_to_wrap,
-            train_file_name=train_file_name,
+            train_source=train_source,
             id=0,
             primary_worker=self,
             train_config=train_config,
             communication_type=communication_type,
-            batch_size=batch_size,
+            log_dir=log_dir,
         )
 
     def run_circular_cluster_communication(self, workers):
@@ -71,34 +70,6 @@ class PrimaryWorker(Worker):
                     ]
                 )
                 update_id -= 1
-
-    def run_linear_cluster_communication(self, workers):
-        """
-        This function implements the linear way of communicating between the node.
-        In this way of communication, each of the worker calculates their gradients,
-        send their gradients to the supervisor and the supervisor sums the gradients,
-        averages it and and send the gradients back to the workers.
-
-        :param workers: batch number for the particular worker with worker id (id).
-        :type workers: int
-        """
-        gradients_list = ray.get(
-            [worker.get_calculated_gradients.remote() for worker in workers]
-        )
-
-        # Here we are initializing the w_average_gradients for storing the sum
-        self.gradient_averages = [
-            np.array(gradients_list[0][i]) for i in range(len(gradients_list[0]))
-        ]
-
-        for worker_id in range(1, len(gradients_list)):
-            for gradient_id in range(len(self.gradient_averages)):
-                self.gradient_averages[gradient_id] += gradients_list[worker_id][
-                    gradient_id
-                ]
-
-        for gradient_id in range(len(self.gradient_averages)):
-            self.gradient_averages[gradient_id] /= len(workers)
 
     def gradients_avg(self):
         """

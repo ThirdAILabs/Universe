@@ -9,7 +9,7 @@
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/blocks/TabularPairGram.h>
+#include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exceptions/src/Exceptions.h>
@@ -167,7 +167,7 @@ class TabularClassifier final
           "metadata as nullptr.");
     }
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
-        std::make_shared<dataset::TabularPairGram>(
+        std::make_shared<dataset::TabularHashFeatures>(
             _metadata, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)};
 
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {

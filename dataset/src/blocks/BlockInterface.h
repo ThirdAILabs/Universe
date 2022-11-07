@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -31,9 +33,24 @@ using BlockPtr = std::shared_ptr<Block>;
  * keyword is responsible for this.
  * 4. column_name : if the classifer has map we can return column_name also.
  */
+// TODO(Geordie / Yash): it might make more sense to make
+// percentage_significance unsigned and add a "correlation" field that is
+// either positive or negative
 struct Explanation {
   Explanation(uint32_t column_number, std::string keyword)
       : column_number(column_number), keyword(std::move(keyword)) {}
+
+  Explanation(std::string column_name, std::string keyword)
+      : column_number(0),
+        keyword(std::move(keyword)),
+        column_name(std::move(column_name)) {}
+
+  std::string toString() const {
+    std::stringstream s;
+    s << "column_name: \"" << column_name << "\" | keyword: \"" << keyword
+      << "\" | percentage_significance: " << percentage_significance;
+    return s.str();
+  }
 
   uint32_t column_number;
   float percentage_significance = 0.0;
@@ -188,6 +205,13 @@ class Block {
   virtual std::exception_ptr buildSegment(
       const std::vector<std::string_view>& input_row,
       SegmentedFeatureVector& vec) = 0;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 }  // namespace thirdai::dataset

@@ -5,10 +5,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.integration]
 import numpy as np
 from thirdai import bolt
 
-from utils import (
-    build_simple_hidden_layer_model,
-    compressed_training,
-)
+from utils import build_simple_hidden_layer_model, compressed_training
 
 INPUT_DIM = 10
 HIDDEN_DIM = 10
@@ -24,7 +21,7 @@ def test_get_set_values_dragon_vector():
     model = build_simple_hidden_layer_model(
         input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
     )
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     first_layer = model.get_layer("fc_1")
 
@@ -66,7 +63,7 @@ def test_concat_values_dragon_vector():
     model = build_simple_hidden_layer_model(
         input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
     )
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     first_layer = model.get_layer("fc_1")
     old_first_layer_weights = first_layer.weights.copy().flatten()
@@ -78,9 +75,7 @@ def test_concat_values_dragon_vector():
         seed_for_hashing=1,
         sample_population_size=50,
     )
-    concatenated_weights = bolt.graph.ParameterReference.concat(
-        [compressed_weights] * 2
-    )
+    concatenated_weights = bolt.nn.ParameterReference.concat([compressed_weights] * 2)
     first_layer.weights.set(concatenated_weights)
 
     new_first_layer_weights = first_layer.weights.copy().flatten()

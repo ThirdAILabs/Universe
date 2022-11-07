@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Node.h"
+#include <bolt/src/metrics/MetricAggregator.h>
 
 namespace thirdai::bolt {
 

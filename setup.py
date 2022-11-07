@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
+import multiprocessing
 import os
 import re
 import subprocess
 import sys
-import multiprocessing
 
-from setuptools import setup, Extension, find_packages
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
@@ -133,7 +133,7 @@ class CMakeBuild(build_ext):
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
         build_args += ["-j{}".format(num_jobs)]
-        cmake_args += [f"-DFEATURE_FLAGS={feature_flags}"]
+        cmake_args += [f"-DTHIRDAI_FEATURE_FLAGS={feature_flags}"]
 
         build_dir = "build/"
         if not os.path.exists(build_dir):
@@ -146,6 +146,9 @@ class CMakeBuild(build_ext):
 version = None
 with open("thirdai.version") as version_file:
     version = version_file.read().strip()
+    suffix = os.environ.get("THIRDAI_BUILD_IDENTIFIER", None)
+    if suffix:
+        version = "{}+{}".format(version, suffix)
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
@@ -180,6 +183,7 @@ setup(
             "toml",
             "psutil",
             "transformers",
+            "pandas",
             "cryptography<=36.0.2",
             "tokenizers==0.11.6",
         ],

@@ -1,13 +1,14 @@
-from multiprocessing.sharedctypes import Value
-from thirdai import bolt
-import pytest
 import os
-import pandas as pd
 import platform
+from multiprocessing.sharedctypes import Value
+
+import pandas as pd
+import pytest
 from auto_classifier_utils import (
-    compute_accuracy_of_predictions,
     check_autoclassifier_predict_correctness,
+    compute_accuracy_of_predictions,
 )
+from thirdai import bolt
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -304,7 +305,7 @@ def test_failure_on_too_many_labels():
 
     with pytest.raises(
         ValueError,
-        match=r"\[ThreadSafeVocabulary\] Expected 1 unique strings but found more.",
+        match=r"Expected 1 unique strings but found new string 'label2'.",
     ):
         classifier.train(TEMP_TABULAR_TRAIN_FILE, epochs=1, learning_rate=0.1)
 

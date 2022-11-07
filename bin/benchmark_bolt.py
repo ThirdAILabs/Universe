@@ -2,8 +2,8 @@
 
 import argparse
 import os
-from datetime import date
 import subprocess
+from datetime import date
 from pathlib import Path
 
 
@@ -39,7 +39,7 @@ def main():
         os.path.dirname(os.path.realpath(__file__))
         if (
             subprocess.call(
-                f"python3 benchmarks/bolt.py --disable_upload_artifacts --run_name {run_name}  {config} ",
+                f"python3 benchmarks/bolt.py --disable_upload_artifacts --disable_mlflow  {config} ",
                 shell=True,
                 cwd=universe_dir,
             )

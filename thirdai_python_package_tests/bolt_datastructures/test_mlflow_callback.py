@@ -1,7 +1,7 @@
-import pytest
-from thirdai.bolt import MlflowCallback
-from test_callbacks import train_model_with_callback
 import mlflow
+import pytest
+from test_callbacks import train_model_with_callback
+from thirdai.bolt import MlflowCallback
 
 MOCK_TRACKING_URI = "dummy link"
 MOCK_EXPERIMENT_NAME = "dummy experiment"

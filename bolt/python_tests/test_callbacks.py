@@ -1,7 +1,9 @@
+import os.path
+
 import pytest
 from thirdai import bolt
+
 from utils import gen_numpy_training_data, get_simple_dag_model
-import os.path
 
 pytestmark = [pytest.mark.unit]
 
@@ -30,7 +32,7 @@ def train_model_with_callback(callback):
     )
 
     train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=EPOCHS)
+        bolt.TrainConfig(learning_rate=0.001, epochs=EPOCHS)
         .with_metrics(["categorical_accuracy"])
         .with_callbacks([callback])
     )
@@ -38,7 +40,7 @@ def train_model_with_callback(callback):
     return model.train(data, labels, train_config)
 
 
-class CountCallback(bolt.graph.callbacks.Callback):
+class CountCallback(bolt.callbacks.Callback):
     def __init__(self):
         super().__init__()
         self.train_begin_count = 0
@@ -80,7 +82,7 @@ def test_callbacks_count_properly():
     assert count_callback.batch_end_count == (N_SAMPLES / BATCH_SIZE) * EPOCHS
 
 
-class SaveOnFifthEpoch(bolt.graph.callbacks.Callback):
+class SaveOnFifthEpoch(bolt.callbacks.Callback):
     def __init__(self):
         super().__init__()
         self.epoch_count = 0
@@ -101,7 +103,7 @@ def test_callbacks_call_cpp_functions():
     os.remove(SAVE_FILENAME)
 
 
-class StopOnFifthEpoch(bolt.graph.callbacks.Callback):
+class StopOnFifthEpoch(bolt.callbacks.Callback):
     def __init__(self):
         super().__init__()
         self.epoch_count = 0
@@ -120,7 +122,7 @@ def test_callbacks_stop_correctly():
     assert stop_on_fifth_callback.epoch_count == 5
 
 
-class CollectTrainAccuracy(bolt.graph.callbacks.Callback):
+class CollectTrainAccuracy(bolt.callbacks.Callback):
     def __init__(self):
         super().__init__()
         self.accuracies = []

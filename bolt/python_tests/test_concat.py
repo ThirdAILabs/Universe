@@ -1,6 +1,7 @@
-from thirdai import bolt
-from utils import gen_numpy_training_data, get_simple_concat_model
 import pytest
+from thirdai import bolt
+
+from utils import gen_numpy_training_data, get_simple_concat_model
 
 
 # TODO(josh): Refactor this test once we have exposed support for multiple
@@ -33,7 +34,7 @@ def run_simple_test(
         batch_size_for_conversion=batch_size,
     )
 
-    train_config = bolt.graph.TrainConfig.make(
+    train_config = bolt.TrainConfig(
         learning_rate=learning_rate, epochs=num_training_epochs
     ).silence()
 
@@ -43,14 +44,12 @@ def run_simple_test(
         train_config=train_config,
     )
 
-    predict_config = (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
-    )
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
 
-    metrics = model.predict(
+    metrics = model.evaluate(
         test_data=train_data,
         test_labels=train_labels,
-        predict_config=predict_config,
+        eval_config=eval_config,
     )
 
     assert metrics[0]["categorical_accuracy"] >= accuracy_threshold

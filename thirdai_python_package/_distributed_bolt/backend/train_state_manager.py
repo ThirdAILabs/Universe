@@ -1,5 +1,7 @@
-import ray
 import time
+
+import numpy as np
+import ray
 
 
 class TrainStateManager:
@@ -27,6 +29,13 @@ class TrainStateManager:
         self.logging = logging
         self.communication_type = communication_type
         self.logging.info(f"Using {communication_type} method for communication")
+        # This tracks the total number of batches completed in this epoch for
+        # the distributed job.
+        # This differs from the batch count on each worker, which just tracks
+        # the current batch within the current dataset on the worker, which will
+        # be different if each worker has multiple datasets streamed in, or if
+        # something causes a worker to be restarted in the middle of training.
+        self.batch_id_within_epoch = 0
         if communication_type == "circular":
             for i in range(len(self.workers)):
                 ray.get(
@@ -37,35 +46,76 @@ class TrainStateManager:
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
-    def train_batch(self, epoch_id, batch_id):
+    def run_linear_cluster_communication(self):
         """
-        Train the Model
+        This function implements the linear way of communicating between the node.
+        In this way of communication, each of the worker calculates their gradients,
+        send their gradients to the supervisor and the supervisor sums the gradients,
+        averages it and and send the gradients back to the workers.
 
-        :param epoch_id: Running Epoch
-        :type epoch_id: int
-        :param batch_id: Batch number to train on
-        :type batch_id: int
+        :param workers: batch number for the particular worker with worker id (id).
+        :type workers: int
         """
-        self._compute_and_store_batch_gradients(batch_id)
-        self._communicate()
-        self._update_parameters()
-        self._log_training(batch_id, epoch_id)
 
-    def _compute_and_store_batch_gradients(self, batch_no):
-        """
-        Call compute_and_store_batch_gradients function on each of the worker
+        gradients_list = ray.get(
+            [worker.get_calculated_gradients.remote() for worker in self.workers]
+        )
 
-        :param batch_no: Batch Id for this particular training
-        :type batch_no: Integer
-        """
-        start_calculating_gradients_time = time.time()
+        # We initialize the sum of gradient variables by setting them equal to the
+        # first set of gradients
+        self.gradient_averages = [
+            np.array(gradients_list[0][i]) for i in range(len(gradients_list[0]))
+        ]
+
+        for worker_id in range(1, len(gradients_list)):
+            for gradient_id in range(len(self.gradient_averages)):
+                self.gradient_averages[gradient_id] += gradients_list[worker_id][
+                    gradient_id
+                ]
+
+        for gradient_id in range(len(self.gradient_averages)):
+            self.gradient_averages[gradient_id] /= len(self.workers)
+
+        # Here we are putting the references for averaged gradients in the ray plasma store.
+        # This allows us to do just a single copy of the gradient array to shared disk, instead
+        # of 1 per worker.
+        gradient_averages_ref = ray.put(self.gradient_averages)
         ray.get(
             [
-                worker.compute_and_store_batch_gradients.remote(batch_no)
+                worker.receive_gradients.remote(gradient_averages_ref)
+                for worker in self.workers
+            ]
+        )
+
+    def train_batch(self, epoch):
+        """
+        Trains the model and returns whether all workers have a next batch.
+        """
+        all_workers_have_next_batch = self._compute_and_store_next_batch_gradients()
+        self._communicate()
+        self._update_parameters()
+        self._log_post_batch(epoch)
+        self.batch_id_within_epoch += 1
+        return all_workers_have_next_batch
+
+    def move_to_next_epoch(self):
+        self.batch_id_within_epoch = 0
+        ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
+
+    def _compute_and_store_next_batch_gradients(self):
+        """
+        Calls compute_and_store_batch_gradients function on each of the
+        workers and returns whether all workers have a next batch.
+        """
+        start_calculating_gradients_time = time.time()
+        has_next_batches = ray.get(
+            [
+                worker.compute_and_store_next_batch_gradients.remote()
                 for worker in self.workers
             ]
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
+        return all(has_next_batches)
 
     def _communicate(self):
         """
@@ -74,22 +124,18 @@ class TrainStateManager:
         """
         start_communication_time = time.time()
         if self.communication_type == "linear":
-            ray.get(
-                self.primary_worker.run_linear_cluster_communication.remote(
-                    self.workers
-                )
-            )
+            self.run_linear_cluster_communication()
         elif self.communication_type == "circular":
             ray.get(
                 self.primary_worker.run_circular_cluster_communication.remote(
                     self.workers
                 )
             )
-        ray.get([worker.receive_gradients.remote() for worker in self.workers])
-        self.averaging_and_communication_time += time.time() - start_communication_time
+            ray.get([worker.receive_gradients.remote() for worker in self.workers])
+        elif self.communication_type == "gloo":
+            ray.get([worker.receive_gradients.remote() for worker in self.workers])
 
-    def finish_training(self):
-        ray.get([worker.finish_training.remote() for worker in self.workers])
+        self.averaging_and_communication_time += time.time() - start_communication_time
 
     def _update_parameters(self):
         """
@@ -101,15 +147,14 @@ class TrainStateManager:
         )
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
-    def _log_training(self, batch_no, epoch):
+    def _log_post_batch(self, epoch):
         """
-        Logs the training after every batch
-
-        :param batch_no: Batch index for current training
-        :type batch_no: int
-        :param epoch: Current training epoch
-        :type epoch: int
+        Logs the training after every batch using the current minimum training
+        epoch across workers and the stored self.batch_id_within_epoch in this
+        manager, which counts how many total "batches" (iterations of compute
+        gradients, communicate, update parameters) we have completed in this
+        epoch so far.
         """
         self.logging.info(
-            f"Epoch No: {epoch}, Batch No: {batch_no}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
+            f"Epoch No: {epoch}, Batch Count: {self.batch_id_within_epoch}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
         )

@@ -1,7 +1,8 @@
 # Add a release test marker for all tests in this file (the tests will only
 # work when built in release mode)
-import pytest
 import platform
+
+import pytest
 
 pytestmark = [pytest.mark.release]
 
@@ -19,7 +20,7 @@ def this_should_require_a_license_bolt():
 
     from thirdai import bolt
 
-    bolt.graph.Model(inputs=[], output=None)
+    bolt.nn.Model(inputs=[], output=None)
 
 
 from pathlib import Path
