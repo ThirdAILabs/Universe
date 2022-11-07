@@ -6,12 +6,8 @@ import time
 from typing import Dict, List, Union
 
 import ray
-from ray.util.placement_group import (
-    placement_group,
-)
+from ray.util.placement_group import placement_group
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
-
-
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
@@ -19,7 +15,7 @@ from thirdai._distributed_bolt.backend.train_state_manager import TrainStateMana
 from thirdai._distributed_bolt.dataset_loaders import DatasetLoader
 from thirdai._thirdai import bolt
 
-from .utils import get_num_cpus, init_logging, RayBlockWritePathProvider
+from .utils import RayBlockWritePathProvider, get_num_cpus, init_logging
 
 
 class RayTrainingClusterConfig:
@@ -132,12 +128,9 @@ class RayTrainingClusterConfig:
             for _ in range(self.num_workers - 1)
         ]
 
+
 class DataParallelIngest:
-    def __init__(
-        self,
-        dataset_type: str,
-        save_location: str = "/tmp/thirdai/"
-    ):
+    def __init__(self, dataset_type: str, save_location: str = "/tmp/thirdai/"):
         """
         This class writes a wrapper on Ray Data for copying and splitting training
         data from single source or multiple sources to files stored locally or remote,
@@ -165,8 +158,8 @@ class DataParallelIngest:
         num_workers,
         num_cpus_per_placement_group: int = get_num_cpus(),
         remote_file_system=None,
-        parallelism: int=1,
-        cluster_address: str='auto',
+        parallelism: int = 1,
+        cluster_address: str = "auto",
     ):
         """
         Get the shards to pass to train workers
@@ -182,7 +175,7 @@ class DataParallelIngest:
         Partitioning Local Dataset:
             data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
             ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, num_workers=NUM_WORKERS)
-    
+
         Partitioning Dataset from AWS S3 buckets:
             import pyarrow.fs as paf
             data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
@@ -191,38 +184,42 @@ class DataParallelIngest:
                 access_key=YOUR_ACCESS_KEY,
                 secret_key=YOUR_SECRET_KEY,
             ), num_workers=NUM_WORKERS)
-        
-        
+
+
         """
-        @ray.remote(num_cpus=num_cpus_per_placement_group/2)
+
+        @ray.remote(num_cpus=num_cpus_per_placement_group / 2)
         class DataTransferActor:
             def __init__(self, dataset_type, save_location):
                 self.dataset_type = dataset_type
                 self.save_location = save_location
 
-
             def consume(self, data_shard):
                 file_path = None
-                file_path_prefix = os.path.join(
-                    self.save_location
-                    , f"block"
-                )
+                file_path_prefix = os.path.join(self.save_location, f"block")
                 dataset_type = self.dataset_type
                 if not os.path.exists(file_path_prefix):
                     os.mkdir(file_path_prefix)
                 if dataset_type == "csv":
-                    data_shard.write_csv(file_path_prefix, block_path_provider=RayBlockWritePathProvider())
-                    file_path = os.path.join(file_path_prefix, 'train_file')
+                    data_shard.write_csv(
+                        file_path_prefix,
+                        block_path_provider=RayBlockWritePathProvider(),
+                    )
+                    file_path = os.path.join(file_path_prefix, "train_file")
                 elif dataset_type == "numpy":
-                    data_shard.write_numpy(file_path_prefix, block_path_provider=RayBlockWritePathProvider())
-                    file_path = os.path.join(file_path_prefix, 'train_file')
+                    data_shard.write_numpy(
+                        file_path_prefix,
+                        block_path_provider=RayBlockWritePathProvider(),
+                    )
+                    file_path = os.path.join(file_path_prefix, "train_file")
 
                 return file_path
 
-
         ray_dataset = None
         if self.dataset_type == "csv":
-            ray_dataset = ray.data.read_csv(paths=paths, filesystem=remote_file_system, parallelism=parallelism).repartition(num_workers)
+            ray_dataset = ray.data.read_csv(
+                paths=paths, filesystem=remote_file_system, parallelism=parallelism
+            ).repartition(num_workers)
         elif self.dataset_type == "numpy":
             ray_dataset = ray.data.read_numpy(
                 paths=paths, filesystem=remote_file_system, parallelism=parallelism
@@ -235,15 +232,28 @@ class DataParallelIngest:
                 "or numpy"
             )
 
-        pg = placement_group([{"CPU":num_cpus_per_placement_group/2}] * num_workers, strategy="STRICT_SPREAD")
+        pg = placement_group(
+            [{"CPU": num_cpus_per_placement_group / 2}] * num_workers,
+            strategy="STRICT_SPREAD",
+        )
         ray.get(pg.ready())
 
-        workers = [DataTransferActor.options(
-                    scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=pg))
-                    .remote(self.dataset_type, self.save_location) for i in range(num_workers)]
-        ray_data_shards = ray_dataset.split(n=num_workers, equal=True, locality_hints=workers)
+        workers = [
+            DataTransferActor.options(
+                scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=pg)
+            ).remote(self.dataset_type, self.save_location)
+            for i in range(num_workers)
+        ]
+        ray_data_shards = ray_dataset.split(
+            n=num_workers, equal=True, locality_hints=workers
+        )
 
-        train_file_names = ray.get([worker.consume.remote(shard) for shard, worker in zip(ray_data_shards, workers)])
+        train_file_names = ray.get(
+            [
+                worker.consume.remote(shard)
+                for shard, worker in zip(ray_data_shards, workers)
+            ]
+        )
         ray.shutdown()
         return train_file_names
 

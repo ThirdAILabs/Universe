@@ -1,9 +1,8 @@
 import logging
-
-from thirdai import data
+import os
 
 from ray.data.datasource.file_based_datasource import BlockWritePathProvider
-import os
+from thirdai import data
 
 
 class RayBlockWritePathProvider(BlockWritePathProvider):
@@ -17,9 +16,7 @@ class RayBlockWritePathProvider(BlockWritePathProvider):
         block_index=None,
         file_format=None,
     ):
-        suffix = (
-            f"train_file"
-        )
+        suffix = f"train_file"
 
         file_path = os.path.join(base_path, suffix)
         return file_path
