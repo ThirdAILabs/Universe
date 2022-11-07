@@ -17,17 +17,17 @@ def test_freeze_layers():
     output_activation = "softmax"
     loss = bolt.nn.losses.CategoricalCrossEntropy()
 
-    input_layer = bolt.graph.Input(dim=input_dim)
+    input_layer = bolt.nn.Input(dim=input_dim)
 
-    hidden_layer = bolt.graph.FullyConnected(
+    hidden_layer = bolt.nn.FullyConnected(
         dim=hidden_layer_dim, sparsity=hidden_layer_sparsity, activation="relu"
     )(input_layer)
 
-    output_layer = bolt.graph.FullyConnected(
-        dim=output_dim, activation=output_activation
-    )(hidden_layer)
+    output_layer = bolt.nn.FullyConnected(dim=output_dim, activation=output_activation)(
+        hidden_layer
+    )
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
     model.compile(loss)
 
     # Generate dataset.
@@ -35,11 +35,11 @@ def test_freeze_layers():
 
     def train_predict(model, data, labels):
         # Train and predict before freezing hash tables.
-        train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=2)
+        train_config = bolt.TrainConfig(learning_rate=0.001, epochs=2)
         model.train(data, labels, train_config)
 
         predict_config = (
-            bolt.graph.PredictConfig.make()
+            bolt.EvalConfig()
             .enable_sparse_inference()
             .with_metrics(["categorical_accuracy"])
         )
