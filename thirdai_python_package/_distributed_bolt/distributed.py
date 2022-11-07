@@ -161,12 +161,12 @@ class DataParallelIngest:
 
     def split_dataset_across_nodes(
         self,
-        equal: bool = False,
         paths: Union[str, List[str]],
+        num_workers,
+        num_cpus_per_placement_group: int = get_num_cpus(),
         remote_file_system=None,
         parallelism: int=1,
         cluster_address: str='auto',
-        num_workers,
     ):
         """
         Get the shards to pass to train workers
@@ -184,6 +184,7 @@ class DataParallelIngest:
             ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, num_workers=NUM_WORKERS)
     
         Partitioning Dataset from AWS S3 buckets:
+            import pyarrow.fs as paf
             data_parallel_ingest = db.DataParallelIngestSpec(dataset_type='csv', equal=True)
             ray_dataset = data_parallel_ingest.get_ray_dataset(paths=DATASET_PATH/S, remote_file_system=paf.S3FileSystem(
                 region=YOUR_REGION,
@@ -193,14 +194,14 @@ class DataParallelIngest:
         
         
         """
-        @ray.remote(num_cpus=get_num_cpus())
+        @ray.remote(num_cpus=num_cpus_per_placement_group/2)
         class DataTransferActor:
             def __init__(self, dataset_type, save_location):
                 self.dataset_type = dataset_type
                 self.save_location = save_location
 
 
-            def consume(self, shard):
+            def consume(self, data_shard):
                 file_path = None
                 file_path_prefix = os.path.join(
                     self.save_location
@@ -219,11 +220,11 @@ class DataParallelIngest:
 
         ray_dataset = None
         if self.dataset_type == "csv":
-            ray_dataset = ray.data.read_csv(paths=paths, filesystem=remote_file_system, parallelism=parallelism)
+            ray_dataset = ray.data.read_csv(paths=paths, filesystem=remote_file_system, parallelism=parallelism).repartition(num_workers)
         elif self.dataset_type == "numpy":
             ray_dataset = ray.data.read_numpy(
                 paths=paths, filesystem=remote_file_system, parallelism=parallelism
-            )
+            ).repartition(num_workers)
 
         if ray_dataset == None:
             raise ValueError(
@@ -232,16 +233,17 @@ class DataParallelIngest:
                 "or numpy"
             )
 
-        pg = placement_group([{"CPU": get_num_cpus()}] , strategy="STRICT_SPREAD")
+        pg = placement_group([{"CPU":num_cpus_per_placement_group/2}] * num_workers, strategy="STRICT_SPREAD")
         ray.get(pg.ready())
 
         workers = [DataTransferActor.options(
                     scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=pg))
                     .remote(self.dataset_type, self.save_location) for i in range(num_workers)]
-        ray_data_shards = ray_dataset.split(n=num_workers, equal=equal, locality=workers)
+        ray_data_shards = ray_dataset.split(n=num_workers, equal=True, locality_hints=workers)
 
-
+        print(ray_data_shards, workers)
         train_file_names = ray.get([worker.consume.remote(shard) for shard, worker in zip(ray_data_shards, workers)])
+        ray.shutdown()
         return train_file_names
 
 
