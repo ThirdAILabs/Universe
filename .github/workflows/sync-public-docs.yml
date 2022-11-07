@@ -9,8 +9,6 @@ concurrency:
 # Controls when the workflow will run
 on:
   # Triggers the workflow on release.
-  push:
-    branchs: [public-docs]
   release:
     types:
       - published
