@@ -92,15 +92,13 @@ class OracleDatasetFactory final : public DatasetLoaderFactory {
           makeUnlabeledNonUpdatingProcessor(*_column_number_map);
     }
 
-    auto loader = std::make_unique<GenericDatasetLoader>(
-        data_loader, _labeled_history_updating_processor,
-        /* shuffle= */ training);
-
     // The batch processor will treat the next line as a header
     // Restart so batch processor does not skip a sample.
-    loader->restart();
+    data_loader->restart();
 
-    return loader;
+    return std::make_unique<GenericDatasetLoader>(
+        data_loader, _labeled_history_updating_processor,
+        /* shuffle= */ training);
   }
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
