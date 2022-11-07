@@ -187,6 +187,9 @@ class CategoricalCrossEntropy final : public Metric {
     return acc;
   }
 
+  double worst() const final { return std::numeric_limits<float>::max(); }
+  bool betterThan(double x, double y) const final { return x <= y; }
+
   void reset() final {
     _sum = 0;
     _num_samples = 0;
@@ -199,8 +202,6 @@ class CategoricalCrossEntropy final : public Metric {
   std::string summary() final {
     return fmt::format("{}: {:.3f}", NAME, value());
   }
-
-  bool smallerIsBetter() const final { return false; }
 
  private:
   std::atomic<float> _sum;
