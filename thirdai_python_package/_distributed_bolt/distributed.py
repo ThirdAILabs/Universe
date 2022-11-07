@@ -138,13 +138,6 @@ class DataParallelIngest:
         exclusive and exhaustive.
         :param dataset_type: different dataset format. Currently Supported: csv, numpy.
         :type dataset_type: str
-        :param equal: Whether to guarantee each split has an equal
-                number of records. This may drop records if they cannot be
-                divided equally among the splits, defaults to False
-        :type equal: bool, optional
-        :param save_location: The path to the destination directory, where dataset
-                files will be written to, defaults to '/tmp/thirdai/'
-        :type save_location: str, optional
         :param save_prefix: The name of the file, to which dataset file is written
                 to, defaults to 'training_data'
         :type save_prefix: str, optional
@@ -163,12 +156,21 @@ class DataParallelIngest:
     ):
         """
         Get the shards to pass to train workers
+
         :param paths: A single file/directory path or a list of file/directory paths.
             A list of paths can contain both files and directories.
         :type paths: Union[str, List[str]]
+        :param num_workers: Total number of Nodes in Cluster
+        :type num_workers: int
+        :param num_cpus_per_placement_group: number of CPUS in each placement group, defaults to get_num_cpus()
+        :type num_cpus_per_placement_group: int, optional
         :param remote_file_system: The filesystem implementation to read from,
-                defaults to None
+                defaults to None, defaults to None
         :type remote_file_system: Optional[pyarrow.fs.FileSystem], optional
+        :param parallelism: Number of parallel reads, defaults to 1
+        :type parallelism: int, optional
+        :param cluster_address: Address of the cluster to be used, defaults to "auto"
+        :type cluster_address: str, optional
         :raises ValueError: If dataset format specified not supported.
         :return: Dataset
         :rtype: ray.data.Dataset
@@ -184,8 +186,6 @@ class DataParallelIngest:
                 access_key=YOUR_ACCESS_KEY,
                 secret_key=YOUR_SECRET_KEY,
             ), num_workers=NUM_WORKERS)
-
-
         """
 
         @ray.remote(num_cpus=num_cpus_per_placement_group / 2)
