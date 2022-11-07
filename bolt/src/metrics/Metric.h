@@ -178,8 +178,7 @@ class CategoricalCrossEntropy final : public Metric {
       std::abort();
     }
 
-    // This is dangerous, unfortunately. Let's get compile working short term.
-    _sum.store(_sum.load() + -1 * sample_loss);
+    MetricUtilities::incrementAtomicFloat(_sum, -1 * sample_loss);
     _num_samples++;
   }
 
