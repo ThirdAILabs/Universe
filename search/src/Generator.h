@@ -240,7 +240,7 @@ class QueryCandidateGenerator {
    * @return Recommended queries
    */
   std::vector<std::vector<std::string>> evaluateOnFile(
-      const std::string& file_name) {
+      const std::string& file_name, uint32_t top_k) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Evaluate the Generator without Training.");
@@ -253,7 +253,7 @@ class QueryCandidateGenerator {
       std::vector<std::vector<uint32_t>> candidate_query_labels =
           _flash_index->queryBatch(
               /* batch = */ batch,
-              /* top_k = */ _query_generator_config->topK(),
+              /* top_k = */ top_k,
               /* pad_zeros = */ false);
 
       for (auto& candidate_query_label_vector : candidate_query_labels) {
@@ -269,7 +269,7 @@ class QueryCandidateGenerator {
 
       computeRecallAtK(/* correct_queries = */ correct_queries,
                        /* generated_queries = */ output_queries,
-                       /* K = */ _query_generator_config->topK());
+                       /* K = */ top_k);
     }
     return output_queries;
   }
