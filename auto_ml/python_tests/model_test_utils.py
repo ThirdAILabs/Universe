@@ -58,13 +58,18 @@ def compute_predict_batch_accuracy(
     return _compute_accuracy(predictions, inference_samples)
 
 
-def compute_saved_and_retrained_accuarcy(
-    model, train_filename, test_filename, inference_samples, use_class_name
+def check_saved_and_retrained_accuarcy(
+    model, train_filename, test_filename, inference_samples, use_class_name, accuracy
 ):
     SAVE_FILE = "./saved_model_file.bolt"
 
     model.save(SAVE_FILE)
     loaded_model = bolt.UniversalDeepTransformer.load(SAVE_FILE)
+
+    acc = compute_evaluate_accuracy(
+        model, test_filename, inference_samples, use_class_name
+    )
+    assert acc >= accuracy
 
     train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001)
     loaded_model.train(train_filename, train_config)
@@ -75,4 +80,4 @@ def compute_saved_and_retrained_accuarcy(
 
     os.remove(SAVE_FILE)
 
-    return acc
+    assert acc >= accuracy

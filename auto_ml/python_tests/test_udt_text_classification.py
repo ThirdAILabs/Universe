@@ -1,10 +1,10 @@
 import pytest
 from download_datasets import download_clinc_dataset
 from model_test_utils import (
+    check_saved_and_retrained_accuarcy,
     compute_evaluate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
-    compute_saved_and_retrained_accuarcy,
 )
 from thirdai import bolt
 
@@ -51,10 +51,14 @@ def test_udt_text_classification_save_load(
     model = train_udt_text_classification
     train_filename, test_filename, inference_samples = download_clinc_dataset
 
-    acc = compute_saved_and_retrained_accuarcy(
-        model, train_filename, test_filename, inference_samples, use_class_name=False
+    check_saved_and_retrained_accuarcy(
+        model,
+        train_filename,
+        test_filename,
+        inference_samples,
+        use_class_name=False,
+        accuracy=ACCURACY_THRESHOLD,
     )
-    assert acc >= ACCURACY_THRESHOLD
 
 
 def test_udt_text_classification_predict_single(

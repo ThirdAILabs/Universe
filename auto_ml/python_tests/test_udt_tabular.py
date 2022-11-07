@@ -1,10 +1,10 @@
 import pytest
 from download_datasets import download_census_income
 from model_test_utils import (
+    check_saved_and_retrained_accuarcy,
     compute_evaluate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
-    compute_saved_and_retrained_accuarcy,
 )
 from thirdai import bolt
 
@@ -58,10 +58,14 @@ def test_udt_tabular_save_load(train_udt_tabular, download_census_income):
     model = train_udt_tabular
     train_filename, test_filename, inference_samples = download_census_income
 
-    acc = compute_saved_and_retrained_accuarcy(
-        model, train_filename, test_filename, inference_samples, use_class_name=True
+    check_saved_and_retrained_accuarcy(
+        model,
+        train_filename,
+        test_filename,
+        inference_samples,
+        use_class_name=True,
+        accuracy=ACCURACY_THRESHOLD,
     )
-    assert acc >= ACCURACY_THRESHOLD
 
 
 def test_udt_tabular_predict_single(train_udt_tabular, download_census_income):
