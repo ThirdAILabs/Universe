@@ -15,7 +15,7 @@ def test_freeze_layers():
     hidden_layer_sparsity = 0.15
     output_dim = n_classes
     output_activation = "softmax"
-    loss = bolt.CategoricalCrossEntropyLoss()
+    loss = bolt.nn.losses.CategoricalCrossEntropy()
 
     input_layer = bolt.graph.Input(dim=input_dim)
 
