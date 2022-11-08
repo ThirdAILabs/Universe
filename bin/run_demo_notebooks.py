@@ -9,7 +9,6 @@ from pathlib import Path
 import nbformat
 from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 
-TIMEOUT = 600
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 
 
@@ -28,11 +27,12 @@ def run_demo_notebooks(notebook_paths, temp_dir):
             # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
             nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
             # The resources argument is needed to execute the notebook in the temporary directory
+            temp_path = os.path.join(temp_dir, "Demos")
             try:
                 ep = ExecutePreprocessor(
-                    timeout=TIMEOUT,
+                    timeout=None,
                     kernel_name="python3",
-                    resources={"metadata": {"path": temp_dir}},
+                    resources={"metadata": {"path": temp_path}},
                 )
                 nb_out = ep.preprocess(nb_in)
             except:

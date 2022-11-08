@@ -10,9 +10,8 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleConfig.h>
-#include <auto_ml/src/deployment_config/dataset_configs/oracle/OracleDatasetFactory.h>
-#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformerBase.h>
+#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
+#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
@@ -25,7 +24,7 @@ using OptionsMap = std::unordered_map<std::string, std::string>;
 
 /**
  * UniversalDeepTransformer is a wrapper around the model pipeline that uses the
- * OracleDatasetFactory and a two-layer bolt model. This was built for two
+ * UDTDatasetFactory and a two-layer bolt model. This was built for two
  * reasons. Firstly, it showcases our autoML capabilities through automated
  * feature engineering. Secondly, it serves as a convenience class that
  * potential clients can tinker with without having to download a serialized
@@ -38,7 +37,7 @@ class UniversalDeepTransformer : public ModelPipeline {
 
  public:
   /**
-   * Factory method. The arguments are the same as OracleConfig, with the
+   * Factory method. The arguments are the same as UDTConfig, with the
    * addition of an "options" map which can have the following fields:
    *  - freeze_hash_tables: Accepts "true" or "false". If true, freezes the hash
    *    tables after a single epoch
@@ -56,7 +55,7 @@ class UniversalDeepTransformer : public ModelPipeline {
       std::string target_col, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::unordered_map<std::string, std::string>& options = {}) {
-    auto dataset_config = std::make_shared<OracleConfig>(
+    auto dataset_config = std::make_shared<UDTConfig>(
         std::move(data_types), std::move(temporal_tracking_relationships),
         std::move(target_col), std::move(time_granularity), lookahead,
         delimiter);
@@ -64,13 +63,13 @@ class UniversalDeepTransformer : public ModelPipeline {
     auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
           embedding_dimension] = processUDTOptions(options);
 
-    auto dataset_factory = OracleDatasetFactory::make(
+    auto dataset_factory = UDTDatasetFactory::make(
         /* config= */ std::move(dataset_config),
         /* parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
         /* contextual_columns= */ contextual_columns);
 
-    auto model = buildOracleBoltGraph(
+    auto model = buildUDTBoltGraph(
         /* input_nodes= */ dataset_factory->getInputNodes(),
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* hidden_layer_size= */ embedding_dimension);
@@ -94,20 +93,18 @@ class UniversalDeepTransformer : public ModelPipeline {
     // "fc_1" is the name of the penultimate layer.
   }
 
-  void resetTemporalTrackers() {
-    oracleDatasetFactory().resetTemporalTrackers();
-  }
+  void resetTemporalTrackers() { udtDatasetFactory().resetTemporalTrackers(); }
 
   void updateTemporalTrackers(const MapInput& update) {
-    oracleDatasetFactory().updateTemporalTrackers(update);
+    udtDatasetFactory().updateTemporalTrackers(update);
   }
 
   void batchUpdateTemporalTrackers(const MapInputBatch& updates) {
-    oracleDatasetFactory().batchUpdateTemporalTrackers(updates);
+    udtDatasetFactory().batchUpdateTemporalTrackers(updates);
   }
 
   auto className(uint32_t neuron_id) const {
-    return oracleDatasetFactory().className(neuron_id);
+    return udtDatasetFactory().className(neuron_id);
   }
 
   void save(const std::string& filename) final {
@@ -133,7 +130,7 @@ class UniversalDeepTransformer : public ModelPipeline {
   explicit UniversalDeepTransformer(ModelPipeline&& model)
       : ModelPipeline(model) {}
 
-  static bolt::BoltGraphPtr buildOracleBoltGraph(
+  static bolt::BoltGraphPtr buildUDTBoltGraph(
       std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
       uint32_t hidden_layer_size) {
     auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
@@ -155,13 +152,13 @@ class UniversalDeepTransformer : public ModelPipeline {
     return graph;
   }
 
-  OracleDatasetFactory& oracleDatasetFactory() const {
+  UDTDatasetFactory& udtDatasetFactory() const {
     /*
       It is safe to return an l-reference because the parent class stores a
       smart pointer. This ensures that the object is always in scope for as
       long as the model.
     */
-    return *std::dynamic_pointer_cast<OracleDatasetFactory>(_dataset_factory);
+    return *std::dynamic_pointer_cast<UDTDatasetFactory>(_dataset_factory);
   }
 
   struct UDTOptions {

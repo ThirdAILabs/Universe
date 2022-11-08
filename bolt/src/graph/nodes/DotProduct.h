@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
@@ -231,6 +234,12 @@ class DotProductNode final
     return overlapping_neurons;
   }
 
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _lhs, _rhs, _compiled);
+  }
+
   NodePtr _lhs;
   NodePtr _rhs;
   bool _compiled;
@@ -241,3 +250,5 @@ class DotProductNode final
 using DotProductNodePtr = std::shared_ptr<DotProductNode>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::DotProductNode)

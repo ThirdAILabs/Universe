@@ -39,13 +39,16 @@ def build_and_train_mach(
     num_epochs=5,
 ):
 
+    # Import here to avoid collection error since experimental is not defined in release mode.
+    from thirdai import experimental
+
     train_x_np, train_y_np = generate_random_easy_sparse(
         output_dim=input_and_output_dim,
         num_true_labels_per_example=num_true_labels_per_sample,
         num_examples=num_train,
     )
 
-    mach = bolt.Mach(
+    mach = experimental.Mach(
         max_label=input_and_output_dim,
         num_classifiers=4,
         input_dim=input_and_output_dim,
@@ -80,6 +83,9 @@ def get_recall(result, test_y, num_true_labels_per_sample):
 
 @pytest.mark.unit
 def test_mach_save_load():
+    # Import here to avoid collection error since experimental is not defined in release mode.
+    from thirdai import experimental
+
     num_train = 100
     num_test = 100
     num_true_labels_per_sample = 10
@@ -112,7 +118,7 @@ def test_mach_save_load():
     save_folder_name = "mach_saved_for_test"
     mach.save(save_folder_name)
 
-    newMach = bolt.Mach.load(save_folder_name)
+    newMach = experimental.Mach.load(save_folder_name)
 
     assert recall_fast_before_save == get_recall(
         newMach.query_fast(test_x_np)[0], test_y_np, num_true_labels_per_sample
