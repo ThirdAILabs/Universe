@@ -40,7 +40,8 @@ class BoltGraph {
         _inputs(std::move(inputs)),
         _epoch(0),
         _updates(0),
-        _tracked_metric(nullptr) {
+        _tracked_metric(nullptr),
+        _first(true) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
@@ -214,6 +215,8 @@ class BoltGraph {
   // We need this value saved across training. Reset should be done by force.
   double _best_validation_metric;
   std::shared_ptr<Metric> _tracked_metric;
+
+  uint32_t _first;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;
