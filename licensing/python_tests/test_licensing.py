@@ -20,7 +20,9 @@ def this_should_require_a_license_bolt():
 
     from thirdai import bolt
 
-    bolt.nn.Model(inputs=[], output=None)
+    bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical(1)}, target="col"
+    )
 
 
 from pathlib import Path
