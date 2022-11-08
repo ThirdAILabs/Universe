@@ -5,6 +5,9 @@ from thirdai import bolt, dataset
 pytestmark = [pytest.mark.unit]
 
 
+# This generates a dataset of one hot encoded vectors (with random noise added) and 
+# binary labels where the label is 1 if the vectors have the same index one-hot-encoded, 
+# and the label is 0 if the one-hot-encoded index is different.
 def generate_dataset(n_classes, n_samples, batch_size):
     possible_one_hot_encodings = np.eye(n_classes)
 
@@ -14,6 +17,8 @@ def generate_dataset(n_classes, n_samples, batch_size):
 
     # Make the tokens the same where the label is 1
     rhs_tokens = np.where(labels_np, lhs_tokens, rhs_tokens)
+    # Correct any labels in case the tokens happened to be the same by chance.
+    labels_np = np.where(lhs_tokens == rhs_tokens, 1, 0)
 
     lhs_inputs = possible_one_hot_encodings[lhs_tokens]
     rhs_inputs = possible_one_hot_encodings[rhs_tokens]
@@ -56,7 +61,7 @@ def compute_acc(labels, scores, threshold):
 
 
 def run_dot_product_test(lhs_sparsity, rhs_sparsity, predict_threshold, acc_threshold):
-    n_classes = 100
+    n_classes = 50
     n_samples = 2000
     batch_size = 100
 
@@ -80,28 +85,33 @@ def run_dot_product_test(lhs_sparsity, rhs_sparsity, predict_threshold, acc_thre
     scores = activations[:, 0]
     acc = compute_acc(labels=test_labels_np, scores=scores, threshold=predict_threshold)
 
+    print(acc)
     assert acc >= acc_threshold
 
 
 def test_dot_product_dense_dense_embeddings():
+    # Accuracy is around 0.96-0.97
     run_dot_product_test(
-        lhs_sparsity=1.0, rhs_sparsity=1.0, predict_threshold=0.9, acc_threshold=0.7
+        lhs_sparsity=1.0, rhs_sparsity=1.0, predict_threshold=0.9, acc_threshold=0.8
     )
 
 
 def test_dot_product_dense_sparse_embeddings():
+    # Accuracy is around 0.95-0.97
     run_dot_product_test(
-        lhs_sparsity=1.0, rhs_sparsity=0.2, predict_threshold=0.98, acc_threshold=0.7
+        lhs_sparsity=1.0, rhs_sparsity=0.2, predict_threshold=0.98, acc_threshold=0.8
     )
 
 
 def test_dot_product_sparse_dense_embeddings():
+    # Accuracy is around 0.95-0.97
     run_dot_product_test(
-        lhs_sparsity=0.2, rhs_sparsity=1.0, predict_threshold=0.98, acc_threshold=0.7
+        lhs_sparsity=0.2, rhs_sparsity=1.0, predict_threshold=0.98, acc_threshold=0.8
     )
 
 
 def test_dot_product_sparse_sparse_embeddings():
+    # Accuracy is around 0.85-0.9
     run_dot_product_test(
-        lhs_sparsity=0.2, rhs_sparsity=0.2, predict_threshold=0.998, acc_threshold=0.6
+        lhs_sparsity=0.2, rhs_sparsity=0.2, predict_threshold=0.998, acc_threshold=0.7
     )
