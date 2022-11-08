@@ -1,9 +1,8 @@
-import pytest
 import numpy as np
 import pandas as pd
-from thirdai import bolt
+import pytest
 from download_datasets import download_census_income
-
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
