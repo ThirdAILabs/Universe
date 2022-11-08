@@ -79,11 +79,11 @@ struct TextDataType {
 
 struct NumericalDataType {
   explicit NumericalDataType(std::pair<double, double> _range,
-                             std::string _sampling)
-      : range(std::move(_range)), sampling(std::move(_sampling)) {}
+                             std::string _granularity)
+      : range(std::move(_range)), granularity(std::move(_granularity)) {}
 
   std::pair<double, double> range;
-  std::string sampling;
+  std::string granularity;
 
   NumericalDataType() {}
 
@@ -91,7 +91,7 @@ struct NumericalDataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(range, sampling);
+    archive(range, granularity);
   }
 };
 
@@ -121,8 +121,8 @@ class DataType {
   }
 
   static auto numerical(std::pair<double, double> range,
-                        std::string sampling = "s") {
-    return DataType(NumericalDataType(range, std::move(sampling)));
+                        std::string granularity = "m") {
+    return DataType(NumericalDataType(range, std::move(granularity)));
   }
 
   static auto date() { return DataType(DateDataType()); }

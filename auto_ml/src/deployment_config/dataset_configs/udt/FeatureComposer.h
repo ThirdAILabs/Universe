@@ -84,7 +84,7 @@ class FeatureComposer {
       if (data_type.isNumerical()) {
         tabular_col_ranges[col_num] = data_type.asNumerical().range;
         tabular_col_bins[col_num] =
-            getNumberOfBins(data_type.asNumerical().sampling);
+            getNumberOfBins(data_type.asNumerical().granularity);
         tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
       }
 
@@ -166,25 +166,25 @@ class FeatureComposer {
   }
 
  private:
-  static uint32_t getNumberOfBins(const std::string& sampling_size) {
-    auto lower_size = utils::lower(sampling_size);
-    if (lower_size == "vs" || lower_size == "verysmall") {
+  static uint32_t getNumberOfBins(const std::string& granularity_size) {
+    auto lower_size = utils::lower(granularity_size);
+    if (lower_size == "xs" || lower_size == "extrasmall") {
       return 10;
     }
     if (lower_size == "s" || lower_size == "small") {
-      return 100;
+      return 75;
     }
     if (lower_size == "m" || lower_size == "medium") {
-      return 500;
+      return 300;
     }
     if (lower_size == "l" || lower_size == "large") {
       return 1000;
     }
-    if (lower_size == "vl" || lower_size == "verylarge") {
+    if (lower_size == "xl" || lower_size == "extralarge") {
       return 3000;
     }
     throw std::invalid_argument(
-        "[sampling] We do not support " + sampling_size +
+        "[sampling] We do not support " + granularity_size +
         " sampling but supports 'verysmall/vs' or 'small/s' or 'medium/m' or "
         "'large/l' 'verylarge/vl'.");
   }
