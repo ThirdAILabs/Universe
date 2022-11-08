@@ -50,8 +50,7 @@ QueryCandidateGeneratorConfig getQueryCandidateGeneratorConfig() {
       /* num_tables = */ NUM_TABLES,
       /* hashes_per_table = */ HASHES_PER_TABLE,
       /* range= */ 100,
-      /* n_grams = */ {3, 4},
-      /* has_incorrect_queries = */ false);
+      /* n_grams = */ {3, 4});
 }
 
 void assertQueryingWithoutTrainingThrowsException(
