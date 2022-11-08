@@ -1,4 +1,4 @@
-from random import sample
+import platform
 
 import pytest
 from thirdai import bolt
@@ -175,6 +175,10 @@ def test_different_explanation_target_returns_different_results():
     compare_explanations(explain_target_1, explain_target_2, assert_mode="not_equal")
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception leads to an access violation on windows.",
+)
 def test_explanations_target_label_format():
     model = make_simple_trained_model(integer_label=False)
     # Call this method to make sure it does not throw an error
