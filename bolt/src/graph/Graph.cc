@@ -79,7 +79,7 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
                                    const TrainConfig& train_config,
                                    MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
-      _updates % train_config.logLossFrequency() == 0) {
+      (_first || _updates % train_config.logLossFrequency() == 0)) {
     logging::info("train | epoch {} | updates {} | {}", (_epoch), _updates,
                   train_metrics.summary());
   }
@@ -87,19 +87,19 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
   const std::optional<SaveContext>& save_context = train_config.saveContext();
 
   if (save_context && save_context->frequency() != 0 &&
-      _updates % save_context->frequency() == 0) {
-    cleanupAfterBatchProcessing();
+      (_first || _updates % save_context->frequency() == 0)) {
+    // cleanupAfterBatchProcessing();
     const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
     logging::info("Saving most recent model to {}", checkpoint_path);
     save(checkpoint_path);
-    prepareToProcessBatches(batch_size,
-                            /* use_sparsity=*/true);
+    // prepareToProcessBatches(batch_size,
+    // /* use_sparsity=*/true);
   }
 
   const std::optional<ValidationContext>& validation =
       train_config.getValidationContext();
   if (validation && validation->frequency() != 0 &&
-      (_updates % validation->frequency() == 0)) {
+      (_first || _updates % validation->frequency() == 0)) {
     // TODO(jerin-thirdai): The implications of doing
     // cleanupAfterBatchProcessing and prepareToProcessBatches is not
     // fully understood here. These two functions should not exist, but
@@ -134,6 +134,8 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
             _tracked_metric->name());
       }
     }
+
+    _first = false;
 
     prepareToProcessBatches(batch_size,
                             /* use_sparsity=*/true);
