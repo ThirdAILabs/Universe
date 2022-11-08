@@ -168,6 +168,9 @@ class FeatureComposer {
  private:
   static uint32_t getNumberOfBins(const std::string& sampling_size) {
     auto lower_size = utils::lower(sampling_size);
+    if (lower_size == "vs" || lower_size == "verysmall") {
+      return 10;
+    }
     if (lower_size == "s" || lower_size == "small") {
       return 100;
     }
@@ -177,9 +180,13 @@ class FeatureComposer {
     if (lower_size == "l" || lower_size == "large") {
       return 1000;
     }
+    if (lower_size == "vl" || lower_size == "verylarge") {
+      return 3000;
+    }
     throw std::invalid_argument(
-        "[sampling] We received sampling as " + sampling_size +
-        " but supports 'small/s' or 'medium/m' and 'large/l'.");
+        "[sampling] We do not support " + sampling_size +
+        " sampling but supports 'verysmall/vs' or 'small/s' or 'medium/m' or "
+        "'large/l' 'verylarge/vl'.");
   }
   /**
    * A column is encoded in a non-temporal way when it fulfils any
