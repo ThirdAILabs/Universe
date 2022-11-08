@@ -116,7 +116,7 @@ Args:
             from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
             be arbitrary strings (including strings of integral ids that are 
             not within [0, n_unique_classes - 1]).
-        metadata (Metadata): Optional. A metadata object to be used when there 
+        metadata (metadata): Optional. A metadata object to be used when there 
             is a separate metadata file corresponding to this categorical 
             column.
     

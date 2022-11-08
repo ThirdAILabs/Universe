@@ -73,7 +73,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
-    auto current_column_number_map = makeColumnNumberMap(data_loader);
+    auto current_column_number_map =
+        makeColumnNumberMap(*data_loader, _config->delimiter);
 
     if (!_column_number_map) {
       _column_number_map = std::move(current_column_number_map);
@@ -239,7 +240,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         dataset::SimpleFileDataLoader::make(metadata->metadata_file,
                                             /* target_batch_size= */ 2048);
 
-    auto column_numbers = makeColumnNumberMap(data_loader);
+    auto column_numbers =
+        makeColumnNumberMap(*data_loader, metadata->delimiter);
 
     auto input_blocks = buildMetadataInputBlocks(*metadata, *column_numbers);
 
@@ -258,20 +260,22 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         /* processor= */
         dataset::GenericBatchProcessor::make(
             /* input_blocks= */ std::move(input_blocks),
-            /* label_blocks= */ {std::move(label_block)}));
+            /* label_blocks= */ {std::move(label_block)},
+            /* has_header= */ false, /* delimiter= */ metadata->delimiter));
 
     return preprocessedVectorsFromDataset(metadata_loader, col_name,
                                           categorical.n_unique_classes);
   }
 
-  ColumnNumberMapPtr makeColumnNumberMap(dataset::DataLoaderPtr data_loader) {
-    auto header = data_loader->nextLine();
+  static ColumnNumberMapPtr makeColumnNumberMap(
+      dataset::DataLoader& data_loader, char delimiter) {
+    auto header = data_loader.nextLine();
     if (!header) {
       throw std::invalid_argument(
           "The dataset must have a header that contains column names.");
     }
 
-    return std::make_shared<ColumnNumberMap>(*header, _config->delimiter);
+    return std::make_shared<ColumnNumberMap>(*header, delimiter);
   }
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(

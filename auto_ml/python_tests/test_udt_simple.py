@@ -45,7 +45,9 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         ],
     )
 
-    write_lines_to_file(METADATA_FILE, ["id,feature", "0,1", "1,2", "4,3"])
+    keys = [0, 1, 2] if integer_label else [0, 1, 4]
+    metadata_lines = [str(key) + "," + str(val) for key, val in zip(keys, [1, 2, 3])]
+    write_lines_to_file(METADATA_FILE, ["id,feature"] + metadata_lines)
 
     metadata = bolt.types.metadata(
         filename=METADATA_FILE,
@@ -55,13 +57,11 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "userId": bolt.types.categorical(
-                n_unique_classes=3, metadata=None if integer_label else metadata
-            ),
+            "userId": bolt.types.categorical(n_unique_classes=3, metadata=metadata),
             "movieId": bolt.types.categorical(
                 n_unique_classes=3,
                 consecutive_integer_ids=integer_label,
-                metadata=None if integer_label else metadata,
+                metadata=metadata,
             ),
             "timestamp": bolt.types.date(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),

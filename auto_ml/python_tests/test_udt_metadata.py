@@ -1,75 +1,30 @@
+import pytest
 import numpy as np
 import pandas as pd
 from thirdai import bolt
-import os
+from download_datasets import download_census_income
 
-CENSUS_INCOME_BASE_DOWNLOAD_URL = (
-    "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"
-)
 
-ORIGINAL_TRAIN_FILE = "./census_income_train.csv"
-ORIGINAL_TEST_FILE = "./census_income_test.csv"
-METADATA_FILENAME = "metadata.csv"
+pytestmark = [pytest.mark.unit, pytest.mark.release]
+
+
+METADATA_FILE = "metadata.csv"
 TRAIN_FILE = "train.csv"
-TEST_FILE = "test.csv"
+TEST_FILE = "train.csv"
+KEY_COLUMN_NAME = "id"
 USER_COLUMN_NAME = "user"
 ITEM_COLUMN_NAME = "item"
 LABEL_COLUMN_NAME = "label"
-KEY_COLUMN_NAME = "id"
 TS_COLUMN_NAME = "timestamp"
-
-COLUMN_NAMES = [
-    "age",
-    "workclass",
-    "fnlwgt",
-    "education",
-    "education-num",
-    "marital-status",
-    "occupation",
-    "relationship",
-    "race",
-    "sex",
-    "capital-gain",
-    "capital-loss",
-    "hours-per-week",
-    "native-country",
-    "label",
-]
-
-
-def setup_module():
-    if not os.path.exists(ORIGINAL_TRAIN_FILE):
-        os.system(
-            f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.data --output {ORIGINAL_TRAIN_FILE}"
-        )
-
-    if not os.path.exists(ORIGINAL_TEST_FILE):
-        os.system(
-            f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.test --output {ORIGINAL_TEST_FILE}"
-        )
-        # reformat the test file
-        with open(ORIGINAL_TEST_FILE, "r") as file:
-            data = file.read().splitlines(True)
-        with open(ORIGINAL_TEST_FILE, "w") as file:
-            # for some reason each of the labels end with a "." in the test set
-            # loop through data[1:] since the first line is bogus
-            file.writelines([line.replace(".", "") for line in data[1:]])
-
-
-def load_dataframes():
-    orig_train_df = pd.read_csv(ORIGINAL_TRAIN_FILE, header=None)
-    orig_train_df.columns = COLUMN_NAMES
-    orig_test_df = pd.read_csv(ORIGINAL_TEST_FILE, header=None)
-    orig_test_df.columns = COLUMN_NAMES
-    return orig_train_df, orig_test_df
+DELIMITER = "}"  # Make sure custom delimiters work
 
 
 def write_metadata_file(orig_train_df, orig_test_df):
     all_df = pd.concat([orig_train_df, orig_test_df], ignore_index=True)
-    metadata_columns = COLUMN_NAMES[:-1]  # Exclude label column
+    metadata_columns = all_df.columns[:-1]  # Exclude label column
     metadata_df = all_df[metadata_columns]
     metadata_df[KEY_COLUMN_NAME] = pd.Series(np.arange(len(all_df)))
-    metadata_df.to_csv(METADATA_FILENAME, index=False)
+    metadata_df.to_csv(METADATA_FILE, index=False, sep=DELIMITER)
 
 
 def curate_from_census_income_dataset(orig_train_df, orig_test_df, curate_metadata_for):
@@ -128,12 +83,12 @@ def curate_from_census_income_dataset(orig_train_df, orig_test_df, curate_metada
 
 def make_trained_model_with_metadata(n_samples, metadata_src):
     metadata = bolt.types.metadata(
-        filename=METADATA_FILENAME,
-        key_column_name="id",
+        filename=METADATA_FILE,
+        key_column_name=KEY_COLUMN_NAME,
         data_types={
-            # "age": bolt.types.numerical(range=(17, 90)),
+            "age": bolt.types.numerical(range=(17, 90)),
             "workclass": bolt.types.categorical(n_unique_classes=9),
-            # "fnlwgt": bolt.types.numerical(range=(12285, 1484705)),
+            "fnlwgt": bolt.types.numerical(range=(12285, 1484705)),
             "education": bolt.types.categorical(n_unique_classes=16),
             "education-num": bolt.types.categorical(n_unique_classes=16),
             "marital-status": bolt.types.categorical(n_unique_classes=7),
@@ -141,11 +96,12 @@ def make_trained_model_with_metadata(n_samples, metadata_src):
             "relationship": bolt.types.categorical(n_unique_classes=6),
             "race": bolt.types.categorical(n_unique_classes=5),
             "sex": bolt.types.categorical(n_unique_classes=2),
-            # "capital-gain": bolt.types.numerical(range=(0, 99999)),
-            # "capital-loss": bolt.types.numerical(range=(0, 4356)),
-            # "hours-per-week": bolt.types.numerical(range=(1, 99)),
+            "capital-gain": bolt.types.numerical(range=(0, 99999)),
+            "capital-loss": bolt.types.numerical(range=(0, 4356)),
+            "hours-per-week": bolt.types.numerical(range=(1, 99)),
             "native-country": bolt.types.categorical(n_unique_classes=42),
         },
+        delimiter=DELIMITER,
     )
 
     if metadata_src == "user":
@@ -209,7 +165,7 @@ def get_accuracy_on_test_data(trained_model, original_test_df):
     return sum(result_ids == ground_truth) / len(result_ids)
 
 
-def test_metadata():
+def test_metadata(download_census_income):
     """Metadata support allows us to preprocess vectors from a metadata file
     that corresponds with a categorical column in the main dataset. When we load
     the main dataset, by appending the corresponding preprocessed vector.
@@ -228,9 +184,12 @@ def test_metadata():
     row indices. The main dataset will only consist of "id" and label columns.
     Thus, the model can only learn properly if it successfully uses metadata.
     """
-    for metadata_src in ["user", "item"]:
-        train_df, test_df = load_dataframes()
+    orig_train_file, orig_test_file, _ = download_census_income
 
+    train_df = pd.read_csv(orig_train_file)
+    test_df = pd.read_csv(orig_test_file)
+
+    for metadata_src in ["user", "item"]:
         curate_from_census_income_dataset(
             train_df, test_df, curate_metadata_for=metadata_src
         )

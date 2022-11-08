@@ -107,6 +107,8 @@ struct NoneDataType {};
 using AnyDataType = std::variant<NoneDataType, DateDataType, NumericalDataType,
                                  CategoricalDataType, TextDataType>;
 
+// TODO(Geordie): Instead of having this all-knowing method class
+// we should just use interface + dynamic casting.
 class DataType {
  public:
   DataType() : _value(NoneDataType()) {}
@@ -201,7 +203,7 @@ struct CategoricalMetadataConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(key, column_data_types);
+    archive(metadata_file, key, column_data_types, delimiter);
   }
 };
 
@@ -220,6 +222,8 @@ struct TemporalNumericalConfig {
 
 enum class TemporalType { categorical, numerical, no_type };
 
+// TODO(Geordie): Instead of having this all-knowing method class
+// we should just use interface + dynamic casting.
 class TemporalConfig {
  public:
   TemporalConfig() : _type(TemporalType::no_type) {}
