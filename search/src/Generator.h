@@ -37,7 +37,7 @@ class QueryCandidateGeneratorConfig {
   QueryCandidateGeneratorConfig(
       const std::string& hash_function, uint32_t num_tables,
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
-      bool has_incorrect_queries = false, bool use_reservoir_sampling = false,
+      bool has_incorrect_queries = false,
       std::optional<uint32_t> reservoir_size = std::nullopt,
       uint32_t batch_size = 10000)
       : _num_tables(num_tables),
@@ -46,7 +46,6 @@ class QueryCandidateGeneratorConfig {
         _range(range),
         _n_grams(std::move(n_grams)),
         _has_incorrect_queries(has_incorrect_queries),
-        _use_reservoir_sampling(use_reservoir_sampling),
         _reservoir_size(reservoir_size) {
     _hash_function = getHashFunction(
         /* hash_function = */ thirdai::utils::lower(hash_function));
@@ -60,7 +59,6 @@ class QueryCandidateGeneratorConfig {
            this->_batch_size == rhs._batch_size && this->_range == rhs._range &&
            this->_n_grams == rhs._n_grams &&
            this->_has_incorrect_queries == rhs._has_incorrect_queries &&
-           this->_use_reservoir_sampling == rhs._use_reservoir_sampling &&
            this->_reservoir_size == rhs._reservoir_size;
   }
 
@@ -87,16 +85,9 @@ class QueryCandidateGeneratorConfig {
 
   constexpr uint32_t batchSize() const { return _batch_size; }
 
-  constexpr uint32_t reservoirSize() const {
-    assert(_reservoir_size.has_value());
-    return _reservoir_size.value();
-  }
+  std::optional<uint32_t> reservoirSize() const { return _reservoir_size; }
 
   constexpr bool hasIncorrectQueries() const { return _has_incorrect_queries; }
-
-  constexpr bool useReservoirSampling() const {
-    return _use_reservoir_sampling;
-  }
 
   std::shared_ptr<hashing::HashFunction> hashFunction() const {
     return _hash_function;
@@ -132,7 +123,6 @@ class QueryCandidateGeneratorConfig {
 
   // Identifies if the dataset contains pairs of correct and incorrect queries
   bool _has_incorrect_queries;
-  bool _use_reservoir_sampling;
   std::optional<uint32_t> _reservoir_size;
 
   // Private constructor for cereal
@@ -142,8 +132,7 @@ class QueryCandidateGeneratorConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_hash_function, _num_tables, _hashes_per_table, _batch_size, _range,
-            _n_grams, _has_incorrect_queries, _use_reservoir_sampling,
-            _reservoir_size);
+            _n_grams, _has_incorrect_queries, _reservoir_size);
   }
 };
 
@@ -206,9 +195,9 @@ class QueryCandidateGenerator {
 
     if (!_flash_index) {
       auto hash_function = _query_generator_config->hashFunction();
-      if (_query_generator_config->useReservoirSampling()) {
+      if (_query_generator_config->reservoirSize().has_value()) {
         _flash_index = std::make_unique<Flash<uint32_t>>(
-            hash_function, _query_generator_config->reservoirSize());
+            hash_function, _query_generator_config->reservoirSize().value());
       } else {
         _flash_index = std::make_unique<Flash<uint32_t>>(hash_function);
       }
