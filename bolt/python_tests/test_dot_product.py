@@ -5,8 +5,8 @@ from thirdai import bolt, dataset
 pytestmark = [pytest.mark.unit]
 
 
-# This generates a dataset of one hot encoded vectors (with random noise added) and 
-# binary labels where the label is 1 if the vectors have the same index one-hot-encoded, 
+# This generates a dataset of one hot encoded vectors (with random noise added) and
+# binary labels where the label is 1 if the vectors have the same index one-hot-encoded,
 # and the label is 0 if the one-hot-encoded index is different.
 def generate_dataset(n_classes, n_samples, batch_size):
     possible_one_hot_encodings = np.eye(n_classes)
