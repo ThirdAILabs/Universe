@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dataset/src/utils/SafeFileIO.h>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -20,6 +22,23 @@ class ProcessorUtils {
       start = end + 1;
     }
     return parsed;
+  }
+
+  static std::vector<std::string> aggregateSingleColumnCsvRows(
+      const std::string& file_name, uint32_t column_index) {
+    std::vector<std::string> aggregated_rows;
+
+    std::ifstream input_file_stream =
+        dataset::SafeFileIO::ifstream(file_name, std::ios::in);
+
+    std::string row;
+    while (std::getline(input_file_stream, row)) {
+      std::string target_column =
+          std::string(parseCsvRow(row, ',')[column_index]);
+      aggregated_rows.emplace_back(std::move(target_column));
+    }
+
+    return aggregated_rows;
   }
 };
 
