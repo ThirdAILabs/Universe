@@ -134,13 +134,16 @@ Args:
 
     Args:
         range (tuple(float, float)): The expected range (min to max) of the
-        numeric quantity. The more accurate this range to the test data, the 
-        better the model performance.
+            numeric quantity. The more accurate this range to the test data, the 
+            better the model performance.
+        sampling (str): Optional. One of "verysmall"/"vs", "small"/"s", "medium"/"m",
+            , "large"/"l" or "verylarge"/"vl" . Defaults to "s".
+
 
     Example:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
-                    "hours_watched": bolt.types.numerical(range=(0, 25))
+                    "hours_watched": bolt.types.numerical(range=(0, 25),sampling="vs")
                 }
                 ...
             )
