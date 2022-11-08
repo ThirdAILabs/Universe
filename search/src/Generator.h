@@ -41,15 +41,17 @@ class QueryCandidateGeneratorConfig {
       bool has_incorrect_queries = false, bool use_reservoir_sampling = false,
       std::optional<uint32_t> reservoir_size = std::nullopt,
       uint32_t batch_size = 10000)
-      : _hash_function(getHashFunction(thirdai::utils::lower(hash_function))),
-        _num_tables(num_tables),
+      : _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
         _batch_size(batch_size),
         _range(range),
         _n_grams(std::move(n_grams)),
         _has_incorrect_queries(has_incorrect_queries),
         _use_reservoir_sampling(use_reservoir_sampling),
-        _reservoir_size(reservoir_size) {}
+        _reservoir_size(reservoir_size) {
+    _hash_function = getHashFunction(
+        /* hash_function = */ thirdai::utils::lower(hash_function));
+  }
 
   // Overloaded operator mainly for testing
   bool operator==(const QueryCandidateGeneratorConfig& rhs) const {
@@ -204,13 +206,12 @@ class QueryCandidateGenerator {
     auto [data, _] = data_loader->loadInMemory();
 
     if (!_flash_index) {
+      auto hash_function = _query_generator_config->hashFunction();
       if (_query_generator_config->useReservoirSampling()) {
         _flash_index = std::make_unique<Flash<uint32_t>>(
-            _query_generator_config->hashFunction(),
-            _query_generator_config->reservoirSize());
+            hash_function, _query_generator_config->reservoirSize());
       } else {
-        _flash_index = std::make_unique<Flash<uint32_t>>(
-            _query_generator_config->hashFunction());
+        _flash_index = std::make_unique<Flash<uint32_t>>(hash_function);
       }
     }
 

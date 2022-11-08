@@ -68,7 +68,8 @@ TEST(QueryCandidateGeneratorTest, QueryCandidateGeneratorConfigSerialization) {
   config.save(/*config_file_name = */ CONFIG_FILE);
 
   auto deserialized_config =
-      QueryCandidateGeneratorConfig::load(/* config_file_name = */ CONFIG_FILE);
+      QueryCandidateGeneratorConfig::load(/* config_file_name = */
+                                          CONFIG_FILE);
 
   ASSERT_EQ(config, *deserialized_config);
 
@@ -87,13 +88,12 @@ TEST(QueryCandidateGeneratorTest, GeneratorAssignsUniqueLabels) {
   assertQueryingWithoutTrainingThrowsException(query_candidate_generator);
 
   query_candidate_generator.buildFlashIndex(/* file_name = */ QUERIES_FILE);
-  ASSERT_EQ(1, 1);
-  // auto queries_to_labels_map =
-  //     query_candidate_generator.getQueriesToLabelsMap();
+  auto queries_to_labels_map =
+      query_candidate_generator.getQueriesToLabelsMap();
 
-  // ASSERT_EQ(queries_to_labels_map.size(), INPUT_ROWS.size() - 4);
+  ASSERT_EQ(queries_to_labels_map.size(), INPUT_ROWS.size() - 4);
 
-  // EXPECT_EQ(std::remove(QUERIES_FILE), 0);
+  EXPECT_EQ(std::remove(QUERIES_FILE), 0);
 }
 
 }  // namespace thirdai::tests

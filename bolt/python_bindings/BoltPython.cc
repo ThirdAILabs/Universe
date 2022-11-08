@@ -297,10 +297,13 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t,
-                    std::vector<uint32_t>, bool, uint32_t>(),
+                    std::vector<uint32_t>, bool, bool, std::optional<uint32_t>,
+                    uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("range"), py::arg("n_grams"),
            py::arg("has_incorrect_queries") = false,
+           py::arg("use_reservoir_sampling") = false,
+           py::arg("reservoir_size") = std::nullopt,
            py::arg("batch_size") = 10000,
            R"pbdoc(
     Initializes a QueryCandidateGeneratorConfig object.
@@ -311,12 +314,15 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
                         DensifiedMinHash and DWTA.
         num_tables (int): Number of hash tables to construct.
         hashes_per_table (int): Number of hashes per table.
-        n_grams (List[int]): List of N-gram blocks to use. 
-        has_incorrect_queries(bool): Flag to identify if flash is initialized
-            with single queries or tuples of incorrect and correct queries.
-        input_dim (int): Input dimension 
-        batch_size (int): batch size. It is defaulted to 10000. 
         range (int) : The range for the hash function used. 
+        n_grams (List[int]): List of N-gram blocks to use. 
+        has_incorrect_queries (bool): Flag to identify if flash is initialized
+            with single queries or tuples of incorrect and correct queries.
+        use_reservoir_sampling (bool): Flag to identify if the flash index uses
+            reservoir sampling. By default, reservoir sampling is not used. 
+        reservoir_size (int): Reservoir size to use when the flash index is 
+            constructed with reservoir sampling. 
+        batch_size (int): batch size. It is defaulted to 10000. 
     Returns: 
         QueryCandidateGeneratorConfig
 
