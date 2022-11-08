@@ -17,6 +17,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <variant>
 
 namespace thirdai::automl::deployment {
@@ -77,10 +78,12 @@ struct TextDataType {
 };
 
 struct NumericalDataType {
-  explicit NumericalDataType(std::pair<double, double> _range)
-      : range(std::move(_range)) {}
+  explicit NumericalDataType(std::pair<double, double> _range,
+                             std::string _sampling)
+      : range(std::move(_range)), sampling(std::move(_sampling)) {}
 
   std::pair<double, double> range;
+  std::string sampling;
 
   NumericalDataType() {}
 
@@ -88,7 +91,7 @@ struct NumericalDataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(range);
+    archive(range, sampling);
   }
 };
 
@@ -117,8 +120,9 @@ class DataType {
                                  /* force_pairgram= */ use_attention));
   }
 
-  static auto numerical(std::pair<double, double> range) {
-    return DataType(NumericalDataType(range));
+  static auto numerical(std::pair<double, double> range,
+                        std::string sampling = "s") {
+    return DataType(NumericalDataType(range, std::move(sampling)));
   }
 
   static auto date() { return DataType(DateDataType()); }

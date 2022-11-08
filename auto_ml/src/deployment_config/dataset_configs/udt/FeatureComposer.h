@@ -63,6 +63,7 @@ class FeatureComposer {
         column_numbers.numCols(), dataset::TabularDataType::Ignore);
 
     std::unordered_map<uint32_t, std::pair<double, double>> tabular_col_ranges;
+    std::unordered_map<uint32_t, uint32_t> tabular_col_bins;
 
     /*
       Order of column names and data types is always consistent because
@@ -82,6 +83,7 @@ class FeatureComposer {
 
       if (data_type.isNumerical()) {
         tabular_col_ranges[col_num] = data_type.asNumerical().range;
+        tabular_col_bins[col_num] = getNumberOfBins(data_type.asNumerical().sampling);
         tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
       }
 
@@ -106,7 +108,7 @@ class FeatureComposer {
     // contextual_columns flag is true
     blocks.push_back(makeTabularHashFeaturesBlock(
         tabular_datatypes, tabular_col_ranges,
-        column_numbers.getColumnNumToColNameMap(), contextual_columns));
+        column_numbers.getColumnNumToColNameMap(), contextual_columns,tabular_col_bins));
 
     return blocks;
   }
@@ -162,6 +164,21 @@ class FeatureComposer {
   }
 
  private:
+  static uint32_t getNumberOfBins(const std::string& sampling_size) {
+    auto lower_size = utils::lower(sampling_size);
+    if (lower_size == "s" || lower_size == "small") {
+      return 100;
+    }
+    if (lower_size == "m" || lower_size == "medium") {
+      return 500;
+    }
+    if (lower_size == "l" || lower_size == "large") {
+      return 1000;
+    }
+    throw std::invalid_argument(
+        "[sampling] We received sampling as " + sampling_size +
+        " but supports 'small/s' or 'medium/m' and 'large/l'.");
+  }
   /**
    * A column is encoded in a non-temporal way when it fulfils any
    * of the following:
@@ -292,10 +309,10 @@ class FeatureComposer {
   static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
       const std::vector<dataset::TabularDataType>& tabular_datatypes,
       const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
-      const std::vector<std::string>& num_to_name, bool contextual_columns) {
+      const std::vector<std::string>& num_to_name, bool contextual_columns,std::unordered_map<uint32_t, uint32_t> col_num_bins) {
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
         tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr,
-        /* column_names= */ num_to_name);
+        /* column_names= */ num_to_name,col_num_bins);
 
     return std::make_shared<dataset::TabularHashFeatures>(
         tabular_metadata, /* output_range = */ 100000,
