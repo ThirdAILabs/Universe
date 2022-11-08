@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>thirdai.bolt.models &mdash; thirdai  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="thirdai.bolt.nn" href="thirdaiboltnn.html" />
+    <link rel="prev" title="thirdai.bolt.temporal" href="thirdaibolttemporal.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> thirdai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_tutorial.html">Distributed training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment_config_example.html">Using the DeploymentConfig and ModelPipeline</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="thirdaibase.html">thirdai</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html">thirdai.bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html">thirdai.bolt.types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttemporal.html">thirdai.bolt.temporal</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">thirdai.bolt.models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.models.Generator"><code class="docutils literal notranslate"><span class="pre">Generator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.Generator.__annotations__"><code class="docutils literal notranslate"><span class="pre">Generator.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.Generator.__init__"><code class="docutils literal notranslate"><span class="pre">Generator.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.Generator.__module__"><code class="docutils literal notranslate"><span class="pre">Generator.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.Generator.generate"><code class="docutils literal notranslate"><span class="pre">Generator.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.Generator.load"><code class="docutils literal notranslate"><span class="pre">Generator.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.Generator.save"><code class="docutils literal notranslate"><span class="pre">Generator.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.Generator.train"><code class="docutils literal notranslate"><span class="pre">Generator.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.models.GeneratorConfig"><code class="docutils literal notranslate"><span class="pre">GeneratorConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.GeneratorConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">GeneratorConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.GeneratorConfig.__init__"><code class="docutils literal notranslate"><span class="pre">GeneratorConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.GeneratorConfig.__module__"><code class="docutils literal notranslate"><span class="pre">GeneratorConfig.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.GeneratorConfig.load"><code class="docutils literal notranslate"><span class="pre">GeneratorConfig.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.models.GeneratorConfig.save"><code class="docutils literal notranslate"><span class="pre">GeneratorConfig.save()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html">thirdai.bolt.nn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html">thirdai.bolt.nn.losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html">thirdai.bolt.callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html">thirdai.dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html">thirdai.dataset.blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html">thirdai.distributed_bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdailog.html">thirdai.logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html">thirdai.deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaihashing.html">thirdai.hashing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaisearch.html">thirdai.search</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">thirdai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Python API</a> &raquo;</li>
+      <li>thirdai.bolt.models</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/python_api/thirdaiboltmodels.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-thirdai.bolt.models">
+<span id="thirdai-bolt-models"></span><h1>thirdai.bolt.models<a class="headerlink" href="#module-thirdai.bolt.models" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.models.Generator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.models.</span></span><span class="sig-name descname"><span class="pre">Generator</span></span><a class="headerlink" href="#thirdai.bolt.models.Generator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.models.Generator.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.models.Generator.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.models.Generator.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.models.Generator" title="thirdai._thirdai.bolt.models.Generator"><span class="pre">thirdai._thirdai.bolt.models.Generator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.models.Generator.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initializes an QueryCandidateGenerator object.</p>
+<dl class="simple">
+<dt>The config file should at least contain the following elements:</dt><dd><ul class="simple">
+<li><p>num_hash_tables: Number of hash tables to construct.</p></li>
+<li><p>hashes_per_table: Hashes for each hash table.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config_file_name</strong> (<em>str</em>) – The path to the config file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>QueryCandidateGenerator</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">CONFIG_FILE</span> <span class="o">=</span> <span class="s2">&quot;/path/to/config/file&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Generator</span><span class="p">(</span>
+<span class="go">        config_file_name=CONFIG_FILE</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.models.Generator.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.models'</span></em><a class="headerlink" href="#thirdai.bolt.models.Generator.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.models.Generator.generate">
+<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.models.Generator" title="thirdai._thirdai.bolt.models.Generator"><span class="pre">thirdai._thirdai.bolt.models.Generator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">queries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#thirdai.bolt.models.Generator.generate" title="Permalink to this definition"></a></dt>
+<dd><p>Generates a list of correct candidate queries for each of the the given
+queries in the list.
+By default, 5 queries are chosen as output. If less than 5 queries are
+found, then the output list is padded with empty strings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>queries</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – Input queries</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The generated list of queries by flash.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[List[str]]</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Generator</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">query_file_name</span> <span class="o">=</span> <span class="s2">&quot;/path/to/query/file/name&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">build_index</span><span class="p">(</span><span class="n">file_name</span><span class="o">=</span><span class="n">query_file_name</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">candidates</span> <span class="o">=</span> <span class="n">generator</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;first incorrect query&quot;</span><span class="p">,</span>
+<span class="go">                                           &quot;second incorrect query&quot;])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.models.Generator.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.models.Generator" title="thirdai._thirdai.bolt.models.Generator"><span class="pre">thirdai._thirdai.bolt.models.Generator</span></a></span></span><a class="headerlink" href="#thirdai.bolt.models.Generator.load" title="Permalink to this definition"></a></dt>
+<dd><p>Loads a query candidate generator object from a specific file location.
+Throws an exception if the file does not exist at the specified path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config_file_name</strong> (<em>str</em>) – Path to the file containing a saved config.</p></li>
+<li><p><strong>Returns</strong> – QueryCandidateGenerator:</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.models.Generator.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.models.Generator" title="thirdai._thirdai.bolt.models.Generator"><span class="pre">thirdai._thirdai.bolt.models.Generator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.models.Generator.save" title="Permalink to this definition"></a></dt>
+<dd><p>Saves a query candidate generator object at the specified file path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>file_name</strong> (<em>str</em>) – File path specification for where to save the
+generator object.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.models.Generator.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.models.Generator" title="thirdai._thirdai.bolt.models.Generator"><span class="pre">thirdai._thirdai.bolt.models.Generator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.models.Generator.train" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs a flash index by reading from a CSV file.
+If <cite>has_incorrect_queries</cite> is set in QueryCandidateGeneratorConfig, the input CSV file is
+expected to have two columns: the first containing correct queries, and
+the second containing the incorrect queries.</p>
+<p>Otherwise, the input CSV file is expected to have just one column
+with only correct queries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config_file_name</strong> (<em>str</em>) – The path to the file containing the queries</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Generator</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">query_file_name</span> <span class="o">=</span> <span class="s2">&quot;/path/to/query/file/name&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">file_name</span><span class="o">=</span><span class="n">query_file_name</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.models.GeneratorConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.models.</span></span><span class="sig-name descname"><span class="pre">GeneratorConfig</span></span><a class="headerlink" href="#thirdai.bolt.models.GeneratorConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.models.GeneratorConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.models.GeneratorConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.models.GeneratorConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">self:</span> <span class="pre">thirdai._thirdai.bolt.models.GeneratorConfig,</span> <span class="pre">hash_function:</span> <span class="pre">str,</span> <span class="pre">num_tables:</span> <span class="pre">int,</span> <span class="pre">hashes_per_table:</span> <span class="pre">int,</span> <span class="pre">top_k:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">5,</span> <span class="pre">n_grams:</span> <span class="pre">List[int],</span> <span class="pre">has_incorrect_queries:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">input_dim:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">100000,</span> <span class="pre">batch_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">10000,</span> <span class="pre">range:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1000000</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.models.GeneratorConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initializes a QueryCandidateGeneratorConfig object.</p>
+<blockquote>
+<div><dl>
+<dt>Args:</dt><dd><dl class="simple">
+<dt>hash_function (str): A specific hash function</dt><dd><p>to use. Supported hash functions include FastSRP,
+DensifiedMinHash and DWTA.</p>
+</dd>
+</dl>
+<p>num_tables (int): Number of hash tables to construct.
+hashes_per_table (int): Number of hashes per table.
+top_k (int): The number of closest queries to return
+n_grams (List[int]): List of N-gram blocks to use.
+has_incorrect_queries(bool): Flag to identify if flash is initialized</p>
+<blockquote>
+<div><p>with single queries or tuples of incorrect and correct queries.</p>
+</div></blockquote>
+<p>input_dim (int): Input dimension
+batch_size (int): batch size. It is defaulted to 10000.
+range (int) : The range for the hash function used.</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>QueryCandidateGeneratorConfig</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">generator_config</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">GeneratorConfig</span><span class="p">(</span>
+<span class="go">        hash_function=&quot;DensifiedMinHash&quot;,</span>
+<span class="go">        num_tables=100,</span>
+<span class="go">        hashes_per_table=15,</span>
+<span class="go">        input_dim=100,</span>
+<span class="go">        top_k=5,</span>
+<span class="go">        n_grams=[3,4],</span>
+<span class="go">        has_incorrect_queries=True,</span>
+<span class="go">        batch_size=10000,</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.models.GeneratorConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.models'</span></em><a class="headerlink" href="#thirdai.bolt.models.GeneratorConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.models.GeneratorConfig.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.models.GeneratorConfig" title="thirdai._thirdai.bolt.models.GeneratorConfig"><span class="pre">thirdai._thirdai.bolt.models.GeneratorConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.models.GeneratorConfig.load" title="Permalink to this definition"></a></dt>
+<dd><p>Loads a query candidate generator config object from a specific file location.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config_file_name</strong> (<em>str</em>) – Path to the file containing a saved config.</p></li>
+<li><p><strong>Returns</strong> – QueryCandidateGeneratorConfig:</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.models.GeneratorConfig.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.models.GeneratorConfig" title="thirdai._thirdai.bolt.models.GeneratorConfig"><span class="pre">thirdai._thirdai.bolt.models.GeneratorConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.models.GeneratorConfig.save" title="Permalink to this definition"></a></dt>
+<dd><p>Saves a query candidate generator config object at the specified file path.
+This can be used to provide a query candidate generator architecture to customers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>file_name</strong> (<em>str</em>) – File path specification for where to save the
+generator configuration object.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="thirdaibolttemporal.html" class="btn btn-neutral float-left" title="thirdai.bolt.temporal" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="thirdaiboltnn.html" class="btn btn-neutral float-right" title="thirdai.bolt.nn" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, t.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

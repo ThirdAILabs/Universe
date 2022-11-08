@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Python API &mdash; thirdai  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="thirdai" href="thirdaibase.html" />
+    <link rel="prev" title="Using the DeploymentConfig and ModelPipeline" href="../deployment_config_example.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> thirdai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_tutorial.html">Distributed training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment_config_example.html">Using the DeploymentConfig and ModelPipeline</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibase.html">thirdai</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html">thirdai.bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html">thirdai.bolt.types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttemporal.html">thirdai.bolt.temporal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltmodels.html">thirdai.bolt.models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html">thirdai.bolt.nn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html">thirdai.bolt.nn.losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html">thirdai.bolt.callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html">thirdai.dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html">thirdai.dataset.blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html">thirdai.distributed_bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdailog.html">thirdai.logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html">thirdai.deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaihashing.html">thirdai.hashing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaisearch.html">thirdai.search</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">thirdai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Python API</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/python_api/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="python-api">
+<h1>Python API<a class="headerlink" href="#python-api" title="Permalink to this heading"></a></h1>
+<p>This is the <em>complete</em> API documentation for the <code class="docutils literal notranslate"><span class="pre">thirdai</span></code> python package.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="thirdaibase.html">thirdai</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibase.html#thirdai.set_global_num_threads"><code class="docutils literal notranslate"><span class="pre">set_global_num_threads()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaibolt.html">thirdai.bolt</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.BinaryTextClassifier"><code class="docutils literal notranslate"><span class="pre">BinaryTextClassifier</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.DistributedTrainingWrapper"><code class="docutils literal notranslate"><span class="pre">DistributedTrainingWrapper</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.EvalConfig"><code class="docutils literal notranslate"><span class="pre">EvalConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.Mach"><code class="docutils literal notranslate"><span class="pre">Mach</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.MlflowCallback"><code class="docutils literal notranslate"><span class="pre">MlflowCallback</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.MultiLabelTextClassifier"><code class="docutils literal notranslate"><span class="pre">MultiLabelTextClassifier</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.Oracle"><code class="docutils literal notranslate"><span class="pre">Oracle</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.OracleConfig"><code class="docutils literal notranslate"><span class="pre">OracleConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.Pipeline"><code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.TabularClassifier"><code class="docutils literal notranslate"><span class="pre">TabularClassifier</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.TextClassifier"><code class="docutils literal notranslate"><span class="pre">TextClassifier</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.TrainConfig"><code class="docutils literal notranslate"><span class="pre">TrainConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.UniversalDeepTransformer"><code class="docutils literal notranslate"><span class="pre">UniversalDeepTransformer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaibolttypes.html">thirdai.bolt.types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html#thirdai.bolt.types.ColumnType"><code class="docutils literal notranslate"><span class="pre">ColumnType</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html#thirdai.bolt.types.categorical"><code class="docutils literal notranslate"><span class="pre">categorical()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html#thirdai.bolt.types.date"><code class="docutils literal notranslate"><span class="pre">date()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html#thirdai.bolt.types.numerical"><code class="docutils literal notranslate"><span class="pre">numerical()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html#thirdai.bolt.types.text"><code class="docutils literal notranslate"><span class="pre">text()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaibolttemporal.html">thirdai.bolt.temporal</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttemporal.html#thirdai.bolt.temporal.TemporalConfig"><code class="docutils literal notranslate"><span class="pre">TemporalConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttemporal.html#thirdai.bolt.temporal.categorical"><code class="docutils literal notranslate"><span class="pre">categorical()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttemporal.html#thirdai.bolt.temporal.numerical"><code class="docutils literal notranslate"><span class="pre">numerical()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaiboltmodels.html">thirdai.bolt.models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltmodels.html#thirdai.bolt.models.Generator"><code class="docutils literal notranslate"><span class="pre">Generator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltmodels.html#thirdai.bolt.models.GeneratorConfig"><code class="docutils literal notranslate"><span class="pre">GeneratorConfig</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaiboltnn.html">thirdai.bolt.nn</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.Concatenate"><code class="docutils literal notranslate"><span class="pre">Concatenate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.DWTASamplingConfig"><code class="docutils literal notranslate"><span class="pre">DWTASamplingConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.DlrmAttention"><code class="docutils literal notranslate"><span class="pre">DlrmAttention</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.DotProduct"><code class="docutils literal notranslate"><span class="pre">DotProduct</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.Embedding"><code class="docutils literal notranslate"><span class="pre">Embedding</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.FastSRPSamplingConfig"><code class="docutils literal notranslate"><span class="pre">FastSRPSamplingConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.FullyConnected"><code class="docutils literal notranslate"><span class="pre">FullyConnected</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.InferenceOutput"><code class="docutils literal notranslate"><span class="pre">InferenceOutput</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.Input"><code class="docutils literal notranslate"><span class="pre">Input</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.LayerNormConfig"><code class="docutils literal notranslate"><span class="pre">LayerNormConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.LayerNormalization"><code class="docutils literal notranslate"><span class="pre">LayerNormalization</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.ParameterReference"><code class="docutils literal notranslate"><span class="pre">ParameterReference</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.RandomSamplingConfig"><code class="docutils literal notranslate"><span class="pre">RandomSamplingConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.SamplingConfig"><code class="docutils literal notranslate"><span class="pre">SamplingConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.Switch"><code class="docutils literal notranslate"><span class="pre">Switch</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.TokenInput"><code class="docutils literal notranslate"><span class="pre">TokenInput()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaiboltnnlosses.html">thirdai.bolt.nn.losses</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html#thirdai.bolt.nn.losses.BinaryCrossEntropy"><code class="docutils literal notranslate"><span class="pre">BinaryCrossEntropy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html#thirdai.bolt.nn.losses.CategoricalCrossEntropy"><code class="docutils literal notranslate"><span class="pre">CategoricalCrossEntropy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html#thirdai.bolt.nn.losses.LossFunction"><code class="docutils literal notranslate"><span class="pre">LossFunction</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html#thirdai.bolt.nn.losses.MarginBCE"><code class="docutils literal notranslate"><span class="pre">MarginBCE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html#thirdai.bolt.nn.losses.MeanSquaredError"><code class="docutils literal notranslate"><span class="pre">MeanSquaredError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html#thirdai.bolt.nn.losses.WeightedMeanAbsolutePercentageError"><code class="docutils literal notranslate"><span class="pre">WeightedMeanAbsolutePercentageError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaiboltcallbacks.html">thirdai.bolt.callbacks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.Callback"><code class="docutils literal notranslate"><span class="pre">Callback</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.EarlyStopCheckpoint"><code class="docutils literal notranslate"><span class="pre">EarlyStopCheckpoint</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.ExponentialLR"><code class="docutils literal notranslate"><span class="pre">ExponentialLR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.KeyboardInterrupt"><code class="docutils literal notranslate"><span class="pre">KeyboardInterrupt</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.LRSchedule"><code class="docutils literal notranslate"><span class="pre">LRSchedule</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.LambdaSchedule"><code class="docutils literal notranslate"><span class="pre">LambdaSchedule</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.LearningRateScheduler"><code class="docutils literal notranslate"><span class="pre">LearningRateScheduler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.MultiStepLR"><code class="docutils literal notranslate"><span class="pre">MultiStepLR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.MultiplicativeLR"><code class="docutils literal notranslate"><span class="pre">MultiplicativeLR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html#thirdai.bolt.callbacks.TrainState"><code class="docutils literal notranslate"><span class="pre">TrainState</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaidataset.html">thirdai.dataset</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltBatch"><code class="docutils literal notranslate"><span class="pre">BoltBatch</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltDataset"><code class="docutils literal notranslate"><span class="pre">BoltDataset</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltVector"><code class="docutils literal notranslate"><span class="pre">BoltVector</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.DataLoader"><code class="docutils literal notranslate"><span class="pre">DataLoader</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.DataPipeline"><code class="docutils literal notranslate"><span class="pre">DataPipeline</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.Explanation"><code class="docutils literal notranslate"><span class="pre">Explanation</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.FixedVocabulary"><code class="docutils literal notranslate"><span class="pre">FixedVocabulary</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.MLMDatasetLoader"><code class="docutils literal notranslate"><span class="pre">MLMDatasetLoader</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.S3DataLoader"><code class="docutils literal notranslate"><span class="pre">S3DataLoader</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.ShuffleBufferConfig"><code class="docutils literal notranslate"><span class="pre">ShuffleBufferConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.TabularDataType"><code class="docutils literal notranslate"><span class="pre">TabularDataType</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.TabularMetadata"><code class="docutils literal notranslate"><span class="pre">TabularMetadata</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.Vocabulary"><code class="docutils literal notranslate"><span class="pre">Vocabulary</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.WrappedNumpyVectors"><code class="docutils literal notranslate"><span class="pre">WrappedNumpyVectors</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.bolt_tokenizer"><code class="docutils literal notranslate"><span class="pre">bolt_tokenizer()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.from_numpy"><code class="docutils literal notranslate"><span class="pre">from_numpy()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.load_bolt_svm_dataset"><code class="docutils literal notranslate"><span class="pre">load_bolt_svm_dataset()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.load_click_through_dataset"><code class="docutils literal notranslate"><span class="pre">load_click_through_dataset()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.make_dense_vector"><code class="docutils literal notranslate"><span class="pre">make_dense_vector()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.make_sparse_vector"><code class="docutils literal notranslate"><span class="pre">make_sparse_vector()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.tokenize_to_svm"><code class="docutils literal notranslate"><span class="pre">tokenize_to_svm()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaidatasetblocks.html">thirdai.dataset.blocks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html#thirdai.dataset.blocks.Date"><code class="docutils literal notranslate"><span class="pre">Date</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html#thirdai.dataset.blocks.DenseArray"><code class="docutils literal notranslate"><span class="pre">DenseArray</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html#thirdai.dataset.blocks.NumericalId"><code class="docutils literal notranslate"><span class="pre">NumericalId</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html#thirdai.dataset.blocks.TabularHashFeatures"><code class="docutils literal notranslate"><span class="pre">TabularHashFeatures</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html#thirdai.dataset.blocks.TextCharKGram"><code class="docutils literal notranslate"><span class="pre">TextCharKGram</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html#thirdai.dataset.blocks.TextPairGram"><code class="docutils literal notranslate"><span class="pre">TextPairGram</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html#thirdai.dataset.blocks.TextUniGram"><code class="docutils literal notranslate"><span class="pre">TextUniGram</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaidistributed.html">thirdai.distributed_bolt</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html#thirdai.distributed_bolt.DistributedDataParallel"><code class="docutils literal notranslate"><span class="pre">DistributedDataParallel</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html#thirdai.distributed_bolt.PandasColumnMapGenerator"><code class="docutils literal notranslate"><span class="pre">PandasColumnMapGenerator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html#thirdai.distributed_bolt.RayTrainingClusterConfig"><code class="docutils literal notranslate"><span class="pre">RayTrainingClusterConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html#thirdai.distributed_bolt.SvmDatasetLoader"><code class="docutils literal notranslate"><span class="pre">SvmDatasetLoader</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html#thirdai.distributed_bolt.TabularDatasetLoader"><code class="docutils literal notranslate"><span class="pre">TabularDatasetLoader</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdailog.html">thirdai.logging</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdailog.html#setup">Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdailog.html#logging">Logging</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaideployment.html">thirdai.deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.AutotunedSparsityParameter"><code class="docutils literal notranslate"><span class="pre">AutotunedSparsityParameter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.BlockConfig"><code class="docutils literal notranslate"><span class="pre">BlockConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.BoolHyperParameter"><code class="docutils literal notranslate"><span class="pre">BoolHyperParameter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.ConstantParameter"><code class="docutils literal notranslate"><span class="pre">ConstantParameter()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.DatasetConfig"><code class="docutils literal notranslate"><span class="pre">DatasetConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.DatasetLabelDimensionParameter"><code class="docutils literal notranslate"><span class="pre">DatasetLabelDimensionParameter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.DenseArrayBlockConfig"><code class="docutils literal notranslate"><span class="pre">DenseArrayBlockConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.DeploymentConfig"><code class="docutils literal notranslate"><span class="pre">DeploymentConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.FloatHyperParameter"><code class="docutils literal notranslate"><span class="pre">FloatHyperParameter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.FullyConnectedNodeConfig"><code class="docutils literal notranslate"><span class="pre">FullyConnectedNodeConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.ModelConfig"><code class="docutils literal notranslate"><span class="pre">ModelConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.NodeConfig"><code class="docutils literal notranslate"><span class="pre">NodeConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.NumericalCategoricalBlockConfig"><code class="docutils literal notranslate"><span class="pre">NumericalCategoricalBlockConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.OptionMappedParameter"><code class="docutils literal notranslate"><span class="pre">OptionMappedParameter()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.OracleConfigHyperParameter"><code class="docutils literal notranslate"><span class="pre">OracleConfigHyperParameter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.OracleDatasetFactory"><code class="docutils literal notranslate"><span class="pre">OracleDatasetFactory</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.SamplingConfigHyperParameter"><code class="docutils literal notranslate"><span class="pre">SamplingConfigHyperParameter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.SingleBlockDatasetFactory"><code class="docutils literal notranslate"><span class="pre">SingleBlockDatasetFactory</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.StrHyperParameter"><code class="docutils literal notranslate"><span class="pre">StrHyperParameter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.TemporalContext"><code class="docutils literal notranslate"><span class="pre">TemporalContext</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.TextBlockConfig"><code class="docutils literal notranslate"><span class="pre">TextBlockConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.TrainEvalParameters"><code class="docutils literal notranslate"><span class="pre">TrainEvalParameters</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.UintHyperParameter"><code class="docutils literal notranslate"><span class="pre">UintHyperParameter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html#thirdai.deployment.UserSpecifiedParameter"><code class="docutils literal notranslate"><span class="pre">UserSpecifiedParameter()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaihashing.html">thirdai.hashing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaihashing.html#thirdai.hashing.HashFunction"><code class="docutils literal notranslate"><span class="pre">HashFunction</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaihashing.html#thirdai.hashing.MinHash"><code class="docutils literal notranslate"><span class="pre">MinHash</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaihashing.html#thirdai.hashing.SignedRandomProjection"><code class="docutils literal notranslate"><span class="pre">SignedRandomProjection</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thirdaisearch.html">thirdai.search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="thirdaisearch.html#thirdai.search.DocRetrieval"><code class="docutils literal notranslate"><span class="pre">DocRetrieval</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../deployment_config_example.html" class="btn btn-neutral float-left" title="Using the DeploymentConfig and ModelPipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="thirdaibase.html" class="btn btn-neutral float-right" title="thirdai" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, t.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

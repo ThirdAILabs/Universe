@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>thirdai.bolt.temporal &mdash; thirdai  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="thirdai.bolt.models" href="thirdaiboltmodels.html" />
+    <link rel="prev" title="thirdai.bolt.types" href="thirdaibolttypes.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> thirdai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_tutorial.html">Distributed training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment_config_example.html">Using the DeploymentConfig and ModelPipeline</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="thirdaibase.html">thirdai</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html">thirdai.bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html">thirdai.bolt.types</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">thirdai.bolt.temporal</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.temporal.TemporalConfig"><code class="docutils literal notranslate"><span class="pre">TemporalConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.temporal.TemporalConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">TemporalConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.temporal.TemporalConfig.__init__"><code class="docutils literal notranslate"><span class="pre">TemporalConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.temporal.TemporalConfig.__module__"><code class="docutils literal notranslate"><span class="pre">TemporalConfig.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.temporal.categorical"><code class="docutils literal notranslate"><span class="pre">categorical()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.temporal.numerical"><code class="docutils literal notranslate"><span class="pre">numerical()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltmodels.html">thirdai.bolt.models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html">thirdai.bolt.nn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html">thirdai.bolt.nn.losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html">thirdai.bolt.callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html">thirdai.dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html">thirdai.dataset.blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html">thirdai.distributed_bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdailog.html">thirdai.logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html">thirdai.deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaihashing.html">thirdai.hashing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaisearch.html">thirdai.search</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">thirdai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Python API</a> &raquo;</li>
+      <li>thirdai.bolt.temporal</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/python_api/thirdaibolttemporal.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-thirdai.bolt.temporal">
+<span id="thirdai-bolt-temporal"></span><h1>thirdai.bolt.temporal<a class="headerlink" href="#module-thirdai.bolt.temporal" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.temporal.TemporalConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.temporal.</span></span><span class="sig-name descname"><span class="pre">TemporalConfig</span></span><a class="headerlink" href="#thirdai.bolt.temporal.TemporalConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<p>Base class for temporal feature configs.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.temporal.TemporalConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.temporal.TemporalConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.temporal.TemporalConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.temporal.TemporalConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.temporal.TemporalConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.temporal'</span></em><a class="headerlink" href="#thirdai.bolt.temporal.TemporalConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="thirdai.bolt.temporal.categorical">
+<span class="sig-prename descclassname"><span class="pre">thirdai.bolt.temporal.</span></span><span class="sig-name descname"><span class="pre">categorical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">track_last_n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_known_during_inference</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.temporal.TemporalConfig" title="thirdai._thirdai.bolt.temporal.TemporalConfig"><span class="pre">thirdai._thirdai.bolt.temporal.TemporalConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.temporal.categorical" title="Permalink to this definition"></a></dt>
+<dd><p>Temporal categorical config. Use this object to configure how a
+categorical column is tracked over time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>column_name</strong> (<em>str</em>) – The name of the tracked column.</p></li>
+<li><p><strong>track_last_n</strong> (<em>int</em>) – Number of last categorical values to track
+per tracking id.</p></li>
+<li><p><strong>column_known_during_inference</strong> (<em>bool</em>) – Optional. Whether the
+value of the tracked column is known during inference. Defaults
+to False.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Suppose each row of our data has the following columns: &quot;product_id&quot;, &quot;timestamp&quot;, &quot;ad_spend_level&quot;, &quot;sales_performance&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># We want to predict the current week&#39;s sales performance for each product using temporal context.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># For each product ID, we would like to track both their ad spend level and sales performance over time.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Ad spend level is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">UniversalDeepTransformer</span><span class="p">(</span>
+<span class="go">        data_types={</span>
+<span class="go">            &quot;product_id&quot;: bolt.types.categorical(n_unique_classes=5000),</span>
+<span class="go">            &quot;timestamp&quot;: bolt.types.date(),</span>
+<span class="go">            &quot;ad_spend_level&quot;: bolt.types.categorical(n_unique_classes=5),</span>
+<span class="go">            &quot;sales_performance&quot;: bolt.types.categorical(n_unique_classes=5),</span>
+<span class="go">        },</span>
+<span class="go">        temporal_tracking_relationships={</span>
+<span class="go">            &quot;product_id&quot;: [</span>
+<span class="go">                bolt.temporal.categorical(column_name=&quot;ad_spend_level&quot;, track_last_n=5, column_known_during_inference=True),</span>
+<span class="go">                bolt.temporal.categorical(column_name=&quot;ad_spend_level&quot;, track_last_n=25, column_known_during_inference=True),</span>
+<span class="go">                bolt.temporal.categorical(column_name=&quot;sales_performance&quot;, track_last_n=5), # column_known_during_inference defaults to False</span>
+<span class="go">            ]</span>
+<span class="go">        },</span>
+<span class="go">        ...</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>Temporal categorical features are tracked as a set; if we track the last 5 ad spend levels,
+we capture what the last 5 ad spend levels are, but we do not capture their order.</p></li>
+<li><p>The same column can be tracked more than once, allowing us to capture both short and
+long term trends.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="thirdai.bolt.temporal.numerical">
+<span class="sig-prename descclassname"><span class="pre">thirdai.bolt.temporal.</span></span><span class="sig-name descname"><span class="pre">numerical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">history_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_known_during_inference</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.temporal.TemporalConfig" title="thirdai._thirdai.bolt.temporal.TemporalConfig"><span class="pre">thirdai._thirdai.bolt.temporal.TemporalConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.temporal.numerical" title="Permalink to this definition"></a></dt>
+<dd><p>Temporal numerical config. Use this object to configure how a
+numerical column is tracked over time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>column_name</strong> (<em>str</em>) – The name of the tracked column.</p></li>
+<li><p><strong>history_length</strong> (<em>int</em>) – Amount of time to look back. Time is in terms
+of the time granularity passed to the Oracle constructor.</p></li>
+<li><p><strong>column_known_during_inference</strong> (<em>bool</em>) – Optional. Whether the
+value of the tracked column is known during inference. Defaults
+to False.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Suppose each row of our data has the following columns: &quot;product_id&quot;, &quot;timestamp&quot;, &quot;ad_spend&quot;, &quot;sales_performance&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># We want to predict the current week&#39;s sales performance for each product using temporal context.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># For each product ID, we would like to track both their ad spend and sales performance over time.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Ad spend is known at the time of inference but sales performance is not. Then we can configure Oracle as follows:</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">UniversalDeepTransformer</span><span class="p">(</span>
+<span class="go">        data_types={</span>
+<span class="go">            &quot;product_id&quot;: bolt.types.categorical(n_unique_classes=5000),</span>
+<span class="go">            &quot;timestamp&quot;: bolt.types.date(),</span>
+<span class="go">            &quot;ad_spend&quot;: bolt.types.numerical(range=(0, 10000)),</span>
+<span class="go">            &quot;sales_performance&quot;: bolt.types.categorical(n_unique_classes=5),</span>
+<span class="go">        },</span>
+<span class="go">        target=&quot;sales_performance&quot;</span>
+<span class="go">        time_granularity=&quot;weekly&quot;,</span>
+<span class="go">        temporal_tracking_relationships={</span>
+<span class="go">            &quot;product_id&quot;: [</span>
+<span class="go">                # Track last 5 weeks of ad spend</span>
+<span class="go">                bolt.temporal.numerical(column_name=&quot;ad_spend&quot;, history_length=5, column_known_during_inference=True),</span>
+<span class="go">                # Track last 10 weeks of ad spend</span>
+<span class="go">                bolt.temporal.numerical(column_name=&quot;ad_spend&quot;, history_length=10, column_known_during_inference=True),</span>
+<span class="go">                # Track last 5 weeks of sales quantity</span>
+<span class="go">                bolt.temporal.numerical(column_name=&quot;sales_quantity&quot;, history_length=5), # column_known_during_inference defaults to False</span>
+<span class="go">            ]</span>
+<span class="go">        },</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>)</p>
+</div></blockquote>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>The same column can be tracked more than once, allowing us to capture both short and
+long term trends.</p></li>
+</ul>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="thirdaibolttypes.html" class="btn btn-neutral float-left" title="thirdai.bolt.types" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="thirdaiboltmodels.html" class="btn btn-neutral float-right" title="thirdai.bolt.models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, t.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>thirdai.bolt.graph &mdash; thirdai  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="thirdai.bolt.graph.callbacks" href="thirdaiboltgraphcallbacks.html" />
+    <link rel="prev" title="thirdai.bolt.temporal" href="thirdaibolttemporal.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> thirdai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_tutorial.html">Distributed training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment_config_example.html">Using the DeploymentConfig and ModelPipeline</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="thirdaibase.html">thirdai</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html">thirdai.bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html">thirdai.bolt.types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttemporal.html">thirdai.bolt.temporal</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">thirdai.bolt.graph</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.Concatenate"><code class="docutils literal notranslate"><span class="pre">Concatenate</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Concatenate.__annotations__"><code class="docutils literal notranslate"><span class="pre">Concatenate.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Concatenate.__call__"><code class="docutils literal notranslate"><span class="pre">Concatenate.__call__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Concatenate.__init__"><code class="docutils literal notranslate"><span class="pre">Concatenate.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Concatenate.__module__"><code class="docutils literal notranslate"><span class="pre">Concatenate.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.DlrmAttention"><code class="docutils literal notranslate"><span class="pre">DlrmAttention</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.DlrmAttention.__annotations__"><code class="docutils literal notranslate"><span class="pre">DlrmAttention.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.DlrmAttention.__call__"><code class="docutils literal notranslate"><span class="pre">DlrmAttention.__call__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.DlrmAttention.__init__"><code class="docutils literal notranslate"><span class="pre">DlrmAttention.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.DlrmAttention.__module__"><code class="docutils literal notranslate"><span class="pre">DlrmAttention.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.DotProduct"><code class="docutils literal notranslate"><span class="pre">DotProduct</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.DotProduct.__annotations__"><code class="docutils literal notranslate"><span class="pre">DotProduct.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.DotProduct.__call__"><code class="docutils literal notranslate"><span class="pre">DotProduct.__call__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.DotProduct.__init__"><code class="docutils literal notranslate"><span class="pre">DotProduct.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.DotProduct.__module__"><code class="docutils literal notranslate"><span class="pre">DotProduct.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.Embedding"><code class="docutils literal notranslate"><span class="pre">Embedding</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Embedding.__annotations__"><code class="docutils literal notranslate"><span class="pre">Embedding.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Embedding.__call__"><code class="docutils literal notranslate"><span class="pre">Embedding.__call__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Embedding.__init__"><code class="docutils literal notranslate"><span class="pre">Embedding.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Embedding.__module__"><code class="docutils literal notranslate"><span class="pre">Embedding.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Embedding.weight_gradients"><code class="docutils literal notranslate"><span class="pre">Embedding.weight_gradients</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Embedding.weights"><code class="docutils literal notranslate"><span class="pre">Embedding.weights</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected"><code class="docutils literal notranslate"><span class="pre">FullyConnected</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.__annotations__"><code class="docutils literal notranslate"><span class="pre">FullyConnected.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.__call__"><code class="docutils literal notranslate"><span class="pre">FullyConnected.__call__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.__init__"><code class="docutils literal notranslate"><span class="pre">FullyConnected.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.__module__"><code class="docutils literal notranslate"><span class="pre">FullyConnected.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.bias_gradients"><code class="docutils literal notranslate"><span class="pre">FullyConnected.bias_gradients</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.biases"><code class="docutils literal notranslate"><span class="pre">FullyConnected.biases</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.enable_sparse_sparse_optimization"><code class="docutils literal notranslate"><span class="pre">FullyConnected.enable_sparse_sparse_optimization()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.get_dim"><code class="docutils literal notranslate"><span class="pre">FullyConnected.get_dim()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.get_sparsity"><code class="docutils literal notranslate"><span class="pre">FullyConnected.get_sparsity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.load_parameters"><code class="docutils literal notranslate"><span class="pre">FullyConnected.load_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.save_parameters"><code class="docutils literal notranslate"><span class="pre">FullyConnected.save_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.set_sparsity"><code class="docutils literal notranslate"><span class="pre">FullyConnected.set_sparsity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.weight_gradients"><code class="docutils literal notranslate"><span class="pre">FullyConnected.weight_gradients</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected.weights"><code class="docutils literal notranslate"><span class="pre">FullyConnected.weights</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.InferenceOutput"><code class="docutils literal notranslate"><span class="pre">InferenceOutput</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.InferenceOutput.__annotations__"><code class="docutils literal notranslate"><span class="pre">InferenceOutput.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.InferenceOutput.__init__"><code class="docutils literal notranslate"><span class="pre">InferenceOutput.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.InferenceOutput.__module__"><code class="docutils literal notranslate"><span class="pre">InferenceOutput.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.Input"><code class="docutils literal notranslate"><span class="pre">Input</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Input.__annotations__"><code class="docutils literal notranslate"><span class="pre">Input.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Input.__init__"><code class="docutils literal notranslate"><span class="pre">Input.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Input.__module__"><code class="docutils literal notranslate"><span class="pre">Input.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig"><code class="docutils literal notranslate"><span class="pre">LayerNormConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">LayerNormConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig.__init__"><code class="docutils literal notranslate"><span class="pre">LayerNormConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig.__module__"><code class="docutils literal notranslate"><span class="pre">LayerNormConfig.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig.center"><code class="docutils literal notranslate"><span class="pre">LayerNormConfig.center()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig.make"><code class="docutils literal notranslate"><span class="pre">LayerNormConfig.make()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig.scale"><code class="docutils literal notranslate"><span class="pre">LayerNormConfig.scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormalization"><code class="docutils literal notranslate"><span class="pre">LayerNormalization</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormalization.__annotations__"><code class="docutils literal notranslate"><span class="pre">LayerNormalization.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormalization.__call__"><code class="docutils literal notranslate"><span class="pre">LayerNormalization.__call__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormalization.__init__"><code class="docutils literal notranslate"><span class="pre">LayerNormalization.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormalization.__module__"><code class="docutils literal notranslate"><span class="pre">LayerNormalization.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.__annotations__"><code class="docutils literal notranslate"><span class="pre">Model.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.__getstate__"><code class="docutils literal notranslate"><span class="pre">Model.__getstate__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.__init__"><code class="docutils literal notranslate"><span class="pre">Model.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.__module__"><code class="docutils literal notranslate"><span class="pre">Model.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.__setstate__"><code class="docutils literal notranslate"><span class="pre">Model.__setstate__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.__str__"><code class="docutils literal notranslate"><span class="pre">Model.__str__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.compile"><code class="docutils literal notranslate"><span class="pre">Model.compile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.explain_prediction"><code class="docutils literal notranslate"><span class="pre">Model.explain_prediction()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.explain_required_label"><code class="docutils literal notranslate"><span class="pre">Model.explain_required_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.freeze_hash_tables"><code class="docutils literal notranslate"><span class="pre">Model.freeze_hash_tables()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.get_input_confidence"><code class="docutils literal notranslate"><span class="pre">Model.get_input_confidence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.get_input_gradients_single"><code class="docutils literal notranslate"><span class="pre">Model.get_input_gradients_single()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.get_layer"><code class="docutils literal notranslate"><span class="pre">Model.get_layer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.load"><code class="docutils literal notranslate"><span class="pre">Model.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.nodes"><code class="docutils literal notranslate"><span class="pre">Model.nodes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.predict"><code class="docutils literal notranslate"><span class="pre">Model.predict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.save"><code class="docutils literal notranslate"><span class="pre">Model.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.summary"><code class="docutils literal notranslate"><span class="pre">Model.summary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Model.train"><code class="docutils literal notranslate"><span class="pre">Model.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Node.__annotations__"><code class="docutils literal notranslate"><span class="pre">Node.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Node.__init__"><code class="docutils literal notranslate"><span class="pre">Node.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Node.__module__"><code class="docutils literal notranslate"><span class="pre">Node.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Node.name"><code class="docutils literal notranslate"><span class="pre">Node.name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference"><code class="docutils literal notranslate"><span class="pre">ParameterReference</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference.__annotations__"><code class="docutils literal notranslate"><span class="pre">ParameterReference.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference.__init__"><code class="docutils literal notranslate"><span class="pre">ParameterReference.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference.__module__"><code class="docutils literal notranslate"><span class="pre">ParameterReference.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference.compress"><code class="docutils literal notranslate"><span class="pre">ParameterReference.compress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference.concat"><code class="docutils literal notranslate"><span class="pre">ParameterReference.concat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference.copy"><code class="docutils literal notranslate"><span class="pre">ParameterReference.copy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference.get"><code class="docutils literal notranslate"><span class="pre">ParameterReference.get()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference.set"><code class="docutils literal notranslate"><span class="pre">ParameterReference.set()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig"><code class="docutils literal notranslate"><span class="pre">PredictConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">PredictConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig.__init__"><code class="docutils literal notranslate"><span class="pre">PredictConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig.__module__"><code class="docutils literal notranslate"><span class="pre">PredictConfig.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig.enable_sparse_inference"><code class="docutils literal notranslate"><span class="pre">PredictConfig.enable_sparse_inference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig.make"><code class="docutils literal notranslate"><span class="pre">PredictConfig.make()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig.return_activations"><code class="docutils literal notranslate"><span class="pre">PredictConfig.return_activations()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig.silence"><code class="docutils literal notranslate"><span class="pre">PredictConfig.silence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig.with_metrics"><code class="docutils literal notranslate"><span class="pre">PredictConfig.with_metrics()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.Switch"><code class="docutils literal notranslate"><span class="pre">Switch</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Switch.__annotations__"><code class="docutils literal notranslate"><span class="pre">Switch.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Switch.__call__"><code class="docutils literal notranslate"><span class="pre">Switch.__call__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Switch.__init__"><code class="docutils literal notranslate"><span class="pre">Switch.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.Switch.__module__"><code class="docutils literal notranslate"><span class="pre">Switch.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.TokenInput"><code class="docutils literal notranslate"><span class="pre">TokenInput()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig"><code class="docutils literal notranslate"><span class="pre">TrainConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">TrainConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.__getstate__"><code class="docutils literal notranslate"><span class="pre">TrainConfig.__getstate__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.__init__"><code class="docutils literal notranslate"><span class="pre">TrainConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.__module__"><code class="docutils literal notranslate"><span class="pre">TrainConfig.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.__setstate__"><code class="docutils literal notranslate"><span class="pre">TrainConfig.__setstate__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.learning_rate"><code class="docutils literal notranslate"><span class="pre">TrainConfig.learning_rate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.make"><code class="docutils literal notranslate"><span class="pre">TrainConfig.make()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.num_epochs"><code class="docutils literal notranslate"><span class="pre">TrainConfig.num_epochs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.silence"><code class="docutils literal notranslate"><span class="pre">TrainConfig.silence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.with_callbacks"><code class="docutils literal notranslate"><span class="pre">TrainConfig.with_callbacks()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.with_log_loss_frequency"><code class="docutils literal notranslate"><span class="pre">TrainConfig.with_log_loss_frequency()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.with_metrics"><code class="docutils literal notranslate"><span class="pre">TrainConfig.with_metrics()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.with_rebuild_hash_tables"><code class="docutils literal notranslate"><span class="pre">TrainConfig.with_rebuild_hash_tables()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.with_reconstruct_hash_functions"><code class="docutils literal notranslate"><span class="pre">TrainConfig.with_reconstruct_hash_functions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.with_save_parameters"><code class="docutils literal notranslate"><span class="pre">TrainConfig.with_save_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig.with_validation"><code class="docutils literal notranslate"><span class="pre">TrainConfig.with_validation()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltgraphcallbacks.html">thirdai.bolt.graph.callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html">thirdai.dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html">thirdai.dataset.blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html">thirdai.distributed_bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdailog.html">thirdai.logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html">thirdai.deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaihashing.html">thirdai.hashing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaisearch.html">thirdai.search</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">thirdai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Python API</a> &raquo;</li>
+      <li>thirdai.bolt.graph</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/python_api/thirdaiboltgraph.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-thirdai.bolt.graph">
+<span id="thirdai-bolt-graph"></span><h1>thirdai.bolt.graph<a class="headerlink" href="#module-thirdai.bolt.graph" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Concatenate">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">Concatenate</span></span><a class="headerlink" href="#thirdai.bolt.graph.Concatenate" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Concatenate.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.Concatenate.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Concatenate.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Concatenate" title="thirdai._thirdai.bolt.graph.Concatenate"><span class="pre">thirdai._thirdai.bolt.graph.Concatenate</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><span class="pre">thirdai._thirdai.bolt.graph.Node</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.Concatenate" title="thirdai._thirdai.bolt.graph.Concatenate"><span class="pre">thirdai._thirdai.bolt.graph.Concatenate</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.Concatenate.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Tells the graph which layers will be concatenated. Must be at least one node (although this is just an identity function, so really should be at least two).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Concatenate.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Concatenate" title="thirdai._thirdai.bolt.graph.Concatenate"><span class="pre">thirdai._thirdai.bolt.graph.Concatenate</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Concatenate.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>A layer that concatenates an arbitrary number of layers together.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Concatenate.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.Concatenate.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DlrmAttention">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">DlrmAttention</span></span><a class="headerlink" href="#thirdai.bolt.graph.DlrmAttention" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DlrmAttention.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.DlrmAttention.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DlrmAttention.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.DlrmAttention" title="thirdai._thirdai.bolt.graph.DlrmAttention"><span class="pre">thirdai._thirdai.bolt.graph.DlrmAttention</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">fc_layer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding_layer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Embedding" title="thirdai._thirdai.bolt.graph.Embedding"><span class="pre">thirdai._thirdai.bolt.graph.Embedding</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.DlrmAttention" title="thirdai._thirdai.bolt.graph.DlrmAttention"><span class="pre">thirdai._thirdai.bolt.graph.DlrmAttention</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.DlrmAttention.__call__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DlrmAttention.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.DlrmAttention" title="thirdai._thirdai.bolt.graph.DlrmAttention"><span class="pre">thirdai._thirdai.bolt.graph.DlrmAttention</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.DlrmAttention.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DlrmAttention.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.DlrmAttention.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DotProduct">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">DotProduct</span></span><a class="headerlink" href="#thirdai.bolt.graph.DotProduct" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DotProduct.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.DotProduct.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DotProduct.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.DotProduct" title="thirdai._thirdai.bolt.graph.DotProduct"><span class="pre">thirdai._thirdai.bolt.graph.DotProduct</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">lhs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><span class="pre">thirdai._thirdai.bolt.graph.Node</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><span class="pre">thirdai._thirdai.bolt.graph.Node</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.DotProduct" title="thirdai._thirdai.bolt.graph.DotProduct"><span class="pre">thirdai._thirdai.bolt.graph.DotProduct</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.DotProduct.__call__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DotProduct.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.DotProduct" title="thirdai._thirdai.bolt.graph.DotProduct"><span class="pre">thirdai._thirdai.bolt.graph.DotProduct</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.DotProduct.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.DotProduct.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.DotProduct.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Embedding">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">Embedding</span></span><a class="headerlink" href="#thirdai.bolt.graph.Embedding" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Embedding.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.Embedding.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Embedding.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self:</span> <span class="pre">thirdai._thirdai.bolt.graph.Embedding</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">token_input_layer:</span> <span class="pre">thirdai::bolt::Input</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.Embedding" title="thirdai._thirdai.bolt.graph.Embedding"><span class="pre">thirdai._thirdai.bolt.graph.Embedding</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.Embedding.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Tells the graph which token input to use for this Embedding Node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Embedding.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Embedding" title="thirdai._thirdai.bolt.graph.Embedding"><span class="pre">thirdai._thirdai.bolt.graph.Embedding</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_embedding_lookups</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookup_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_embedding_block_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tokens_per_input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Embedding.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs an Embedding layer that can be used in the graph.
+:param * num_embedding_lookups: Int (positive) - The number of embedding lookups to perform for each token.
+:param * lookup_size: Int (positive) - How many consutive values to select as part of the embedding for each embedding lookup.
+:param * log_embedding_block_size: Int (positive) The log base 2 of the total size of the embedding block.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Embedding.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.Embedding.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Embedding.weight_gradients">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">weight_gradients</span></span><a class="headerlink" href="#thirdai.bolt.graph.Embedding.weight_gradients" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a ParameterReference object to the weight gradients matrix.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Embedding.weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">weights</span></span><a class="headerlink" href="#thirdai.bolt.graph.Embedding.weights" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a ParameterReference object to the weight matrix.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">FullyConnected</span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prev_layer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><span class="pre">thirdai._thirdai.bolt.graph.Node</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Tells the graph which layer should act as input to this fully connected layer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>__init__(self: thirdai._thirdai.bolt.graph.FullyConnected, dim: int, activation: str) -&gt; None</p></li>
+</ol>
+<p>Constructs a dense FullyConnectedLayer object.
+:param * dim: Int (positive) - The dimension of the layer.
+:param * activation: String specifying the activation function to use, no restrictions on case - We support five activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.</p>
+<ol class="arabic simple" start="2">
+<li><p>__init__(self: thirdai._thirdai.bolt.graph.FullyConnected, dim: int, sparsity: float, activation: str) -&gt; None</p></li>
+</ol>
+<p>Constructs a sparse FullyConnectedLayer object with sampling parameters autotuned.
+:param * dim: Int (positive) - The dimension of the layer.
+:param * sparsity: Float - What fraction of nuerons to activate during training and sparse inference.
+:param * activation: String specifying the activation function to use, no restrictions on case - We support five activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.</p>
+<ol class="arabic simple" start="3">
+<li><p>__init__(self: thirdai._thirdai.bolt.graph.FullyConnected, dim: int, sparsity: float, activation: str, sampling_config: thirdai._thirdai.bolt.SamplingConfig) -&gt; None</p></li>
+</ol>
+<p>Constructs a sparse FullyConnectedLayer object.
+:param * dim: Int (positive) - The dimension of the layer.
+:param * sparsity: Float - What fraction of nuerons to activate during training and sparse inference.
+:param * activation: String specifying the activation function to use, no restrictions on case - We support five activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.
+:param * sampling_config:
+:type * sampling_config: SamplingConfig</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.bias_gradients">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bias_gradients</span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.bias_gradients" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a ParameterReference object to the bias gradients vector.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.biases">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">biases</span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.biases" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a ParameterReference object to the bias vector.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.enable_sparse_sparse_optimization">
+<span class="sig-name descname"><span class="pre">enable_sparse_sparse_optimization</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.enable_sparse_sparse_optimization" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.get_dim">
+<span class="sig-name descname"><span class="pre">get_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.get_dim" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.get_sparsity">
+<span class="sig-name descname"><span class="pre">get_sparsity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.get_sparsity" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.load_parameters">
+<span class="sig-name descname"><span class="pre">load_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.load_parameters" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.save_parameters">
+<span class="sig-name descname"><span class="pre">save_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.save_parameters" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.set_sparsity">
+<span class="sig-name descname"><span class="pre">set_sparsity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">sparsity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.FullyConnected" title="thirdai._thirdai.bolt.graph.FullyConnected"><span class="pre">thirdai._thirdai.bolt.graph.FullyConnected</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.set_sparsity" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.weight_gradients">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">weight_gradients</span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.weight_gradients" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a ParameterReference object to the weight gradients matrix.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.FullyConnected.weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">weights</span></span><a class="headerlink" href="#thirdai.bolt.graph.FullyConnected.weights" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a ParameterReference object to the weight matrix.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.InferenceOutput">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">InferenceOutput</span></span><a class="headerlink" href="#thirdai.bolt.graph.InferenceOutput" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.InferenceOutput.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.InferenceOutput.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.InferenceOutput.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.InferenceOutput.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.InferenceOutput.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.InferenceOutput.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Input">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">Input</span></span><a class="headerlink" href="#thirdai.bolt.graph.Input" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Input.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.Input.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Input.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Input" title="thirdai._thirdai.bolt.graph.Input"><span class="pre">thirdai._thirdai.bolt.graph.Input</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Input.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs an input layer node for the graph.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Input.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.Input.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">LayerNormConfig</span></span><a class="headerlink" href="#thirdai.bolt.graph.LayerNormConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.LayerNormConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.LayerNormConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.LayerNormConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormConfig.center">
+<span class="sig-name descname"><span class="pre">center</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig" title="thirdai._thirdai.bolt.graph.LayerNormConfig"><span class="pre">thirdai._thirdai.bolt.graph.LayerNormConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_regularizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig" title="thirdai._thirdai.bolt.graph.LayerNormConfig"><span class="pre">thirdai._thirdai.bolt.graph.LayerNormConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.LayerNormConfig.center" title="Permalink to this definition"></a></dt>
+<dd><p>Sets the centering factor for the normalization configuration</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormConfig.make">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">make</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig" title="thirdai._thirdai.bolt.graph.LayerNormConfig"><span class="pre">thirdai._thirdai.bolt.graph.LayerNormConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.LayerNormConfig.make" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormConfig.scale">
+<span class="sig-name descname"><span class="pre">scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig" title="thirdai._thirdai.bolt.graph.LayerNormConfig"><span class="pre">thirdai._thirdai.bolt.graph.LayerNormConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_regularizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormConfig" title="thirdai._thirdai.bolt.graph.LayerNormConfig"><span class="pre">thirdai._thirdai.bolt.graph.LayerNormConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.LayerNormConfig.scale" title="Permalink to this definition"></a></dt>
+<dd><p>Sets the scaling factor the the normalization configuration.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormalization">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">LayerNormalization</span></span><a class="headerlink" href="#thirdai.bolt.graph.LayerNormalization" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormalization.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.LayerNormalization.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormalization.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormalization" title="thirdai._thirdai.bolt.graph.LayerNormalization"><span class="pre">thirdai._thirdai.bolt.graph.LayerNormalization</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prev_layer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><span class="pre">thirdai._thirdai.bolt.graph.Node</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.LayerNormalization" title="thirdai._thirdai.bolt.graph.LayerNormalization"><span class="pre">thirdai._thirdai.bolt.graph.LayerNormalization</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.LayerNormalization.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Tells the graph which layer should act as input to this normalization layer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormalization.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.LayerNormalization.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>__init__(self: thirdai._thirdai.bolt.graph.LayerNormalization) -&gt; None</p></li>
+</ol>
+<p>Constructs a normalization layer object.</p>
+<ol class="arabic simple" start="2">
+<li><p>__init__(self: thirdai._thirdai.bolt.graph.LayerNormalization, layer_norm_config: thirdai::bolt::NormalizationLayerConfig) -&gt; None</p></li>
+</ol>
+<dl class="simple">
+<dt>Constructs a normalization layer objectArguments:</dt><dd><ul class="simple">
+<li><p>layer_norm_config: NormalizationLayerConfig - configuration parameters required for normalizing the input.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.LayerNormalization.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.LayerNormalization.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">Model</span></span><a class="headerlink" href="#thirdai.bolt.graph.Model" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.Model.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.__getstate__">
+<span class="sig-name descname"><span class="pre">__getstate__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.__getstate__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.Model.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>__init__(self: thirdai._thirdai.bolt.graph.Model, inputs: List[thirdai._thirdai.bolt.graph.Input], output: thirdai._thirdai.bolt.graph.Node) -&gt; None</p></li>
+</ol>
+<p>Constructs a bolt model from a layer graph.
+:param * inputs:
+:type * inputs: List[Node]
+:param * output:
+:type * output: Node</p>
+<ol class="arabic simple" start="2">
+<li><p>__init__(self: thirdai._thirdai.bolt.graph.Model, inputs: List[thirdai._thirdai.bolt.graph.Input], output: thirdai._thirdai.bolt.graph.Node) -&gt; None</p></li>
+</ol>
+<p>Constructs a bolt model from a layer graph.
+:param * inputs:
+:type * inputs: List[InputNode]
+:param * inputs:
+:type * inputs: List[TokenInput]
+:param * output:
+:type * output: Node</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.Model.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.__setstate__">
+<span class="sig-name descname"><span class="pre">__setstate__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.__setstate__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.__str__">
+<span class="sig-name descname"><span class="pre">__str__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.__str__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.compile">
+<span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.LossFunction" title="thirdai._thirdai.bolt.LossFunction"><span class="pre">thirdai._thirdai.bolt.LossFunction</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_when_done</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.compile" title="Permalink to this definition"></a></dt>
+<dd><p>Compiles the graph for the given loss function. In this step the order in which to compute the layers is determined and various checks are preformed to ensure the model architecture is correct.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.explain_prediction">
+<span class="sig-name descname"><span class="pre">explain_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltVector" title="thirdai._thirdai.dataset.BoltVector"><span class="pre">thirdai._thirdai.dataset.BoltVector</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.explain_prediction" title="Permalink to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>explains why this model predicted the output with respect to input vector features.Arguments:</dt><dd><ul class="simple">
+<li><p>input_data: A single input sample. Returns a tuple consists of (0) optional, it only returns the corresponding indices for sparse inputs. and (1) list of values whichcorresponds to the features in input vector.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.explain_required_label">
+<span class="sig-name descname"><span class="pre">explain_required_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltVector" title="thirdai._thirdai.dataset.BoltVector"><span class="pre">thirdai._thirdai.dataset.BoltVector</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neuron_to_explain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.explain_required_label" title="Permalink to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>explains how the input vector values should change so that model predicts the desired label.Arguments:</dt><dd><ul class="simple">
+<li><p>input_data: A single input sample. * neuron_to_explain: desired label user wants model to predict. Returns a tuple consists of (0) optional, it only returns the corresponding indices for sparse inputs. and (1) list of values whichtells how each feature should change in the input vector.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.freeze_hash_tables">
+<span class="sig-name descname"><span class="pre">freeze_hash_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">insert_labels_if_not_found</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.freeze_hash_tables" title="Permalink to this definition"></a></dt>
+<dd><p>Prevents updates to hash tables in the model. If you plan to use sparse inference, you may get a significant performance improvement if you call this one or two epochs before you finish training. Otherwise you should not call this method. If insert_labels_if_not_found is true then if the output layer is sparse it will insert the training labels into the hash hash tables if they are not found for a given input.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.get_input_confidence">
+<span class="sig-name descname"><span class="pre">get_input_confidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltVector" title="thirdai._thirdai.dataset.BoltVector"><span class="pre">thirdai._thirdai.dataset.BoltVector</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.get_input_confidence" title="Permalink to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>gets some confidence values for the input vector, high the confidence more important the input feature for the model to predict.Arguments:</dt><dd><ul class="simple">
+<li><p>input_data: A single input sample. Returns a tuple consists of (0) optional, it only returns the corresponding indices for sparse inputs. and (1) list of confidence values which tells how much important each feature in the input vector.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.get_input_gradients_single">
+<span class="sig-name descname"><span class="pre">get_input_gradients_single</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltVector" title="thirdai._thirdai.dataset.BoltVector"><span class="pre">thirdai._thirdai.dataset.BoltVector</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explain_prediction_using_highest_activation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neuron_to_explain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.get_input_gradients_single" title="Permalink to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>Get the values of input gradients when back propagate label with the highest activation or second highest activation or with the required label.Arguments:</dt><dd><ul class="simple">
+<li><p>input_data: The input is single input sample. * explain_prediction_using_highest_activation: Boolean, if set to True, gives gradients correspond to highest activation, Otherwise gives gradients corresponds to second highest activation. * neuron_to_explain: Optional, expected label for input vector, if it is provided then model gives gradients corresponds to that label. Returns a tuple consists of (0) optional, it only returns the corresponding indices for sparse inputs. and (1) list of gradients corresponds to the input vector.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.get_layer">
+<span class="sig-name descname"><span class="pre">get_layer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><span class="pre">thirdai._thirdai.bolt.graph.Node</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.get_layer" title="Permalink to this definition"></a></dt>
+<dd><p>Looks up a layer (node) of the network by using the layer’s assigned name. As such, must be called after compile. You can determine which layer is which by printing a graph summary. Possible operations to perform on the returned object include setting layer sparsity, freezing weights, or saving to a file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.load" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.nodes">
+<span class="sig-name descname"><span class="pre">nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><span class="pre">thirdai._thirdai.bolt.graph.Node</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.nodes" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a list of all Nodes that make up the graph in traversal order. This list is guaranetted to be static after a model is compiled.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.Model.predict" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>predict(self: thirdai._thirdai.bolt.graph.Model, test_data: thirdai._thirdai.dataset.BoltDataset, test_labels: thirdai._thirdai.dataset.BoltDataset, predict_config: thirdai._thirdai.bolt.graph.PredictConfig) -&gt; tuple</p></li>
+<li><p>predict(self: thirdai._thirdai.bolt.graph.Model, test_data: List[thirdai._thirdai.dataset.BoltDataset], test_labels: thirdai._thirdai.dataset.BoltDataset, predict_config: thirdai._thirdai.bolt.graph.PredictConfig) -&gt; tuple</p></li>
+</ol>
+<p>Predicts the output given the input vectors and evaluates the predictions based on the given metrics.
+:param * test_data: PyObject - Test data, in the same one of 3 formats as accepted by the train method (a BoltDataset, a dense numpy array, or a tuple of dense numpy arrays representing a sparse dataset)
+:param * test_labels: PyObject - Test labels, in the same format as test_data. This can also additionally be passed as None, in which case no metrics can be computed.
+:param * predict_config: PredictConfig - the additional prediction parameters. See the PredictConfig documentation above.</p>
+<p>Returns a tuple, where the first element is a mapping from metric names to their values. The second element, the output activation matrix, is only present if dont_return_activations was not called. The third element, the active neuron matrix, is only present if we are returning activations AND the ouptut is sparse.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.save" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.Model" title="thirdai._thirdai.bolt.graph.Model"><span class="pre">thirdai._thirdai.bolt.graph.Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">print</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detailed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.Model.summary" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a summary of the network.
+:param * print: boolean. Optional, default True. When specified to “True”, summary will print the network summary in addition to returning it. * detailed: boolean. Optional, default False. When specified to “True”, summary will additionally return/print sampling config details for each layer in the network.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Model.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.Model.train" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>train(self: thirdai._thirdai.bolt.graph.Model, train_data: thirdai._thirdai.dataset.BoltDataset, train_labels: thirdai._thirdai.dataset.BoltDataset, train_config: thirdai._thirdai.bolt.graph.TrainConfig) -&gt; Dict[str, List[float]]</p></li>
+<li><p>train(self: thirdai._thirdai.bolt.graph.Model, train_data: List[thirdai._thirdai.dataset.BoltDataset], train_labels: thirdai._thirdai.dataset.BoltDataset, train_config: thirdai._thirdai.bolt.graph.TrainConfig) -&gt; Dict[str, List[float]]</p></li>
+</ol>
+<p>Trains the network on the given training data and labels with the given training
+config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_data</strong> (<em>List</em><em>[</em><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltDataset" title="thirdai.dataset.BoltDataset"><em>BoltDataset</em></a><em>] or </em><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltDataset" title="thirdai.dataset.BoltDataset"><em>BoltDataset</em></a>) – The data to train the model with.
+There should be exactly one BoltDataset for each Input node in the Bolt
+model, and each BoltDataset should have the same total number of
+vectors and the same batch size. The batch size for training is the
+batch size of the passed in BoltDatasets (you can specify this batch
+size when loading or creating a BoltDataset).</p></li>
+<li><p><strong>train_labels</strong> (<a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltDataset" title="thirdai.dataset.BoltDataset"><em>BoltDataset</em></a>) – The labels to use as ground truth during
+training. There should be the same number of total vectors and the
+same batch size in this BoltDataset as in the train_data list.</p></li>
+<li><p><strong>train_config</strong> (<a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai.bolt.graph.TrainConfig"><em>TrainConfig</em></a>) – The object describing all other training
+configuration details. See the TrainConfig documentation for more
+information as to possible options. This includes the number of epochs
+to train for, the verbosity of the training, the learning rate, and so
+much more!</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dictionary from metric name to a list of the value of that metric
+for each epoch (this also always includes an entry for ‘epoch_times’). The
+metrics that are returned are the metrics requested in the TrainConfig.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[Str, List[float]]</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Sparse bolt training was originally based off of SLIDE. See <a class="footnote-reference brackets" href="#id2" id="id1">1</a> for more details</p>
+<p class="rubric">References</p>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>“SLIDE : In Defense of Smart Algorithms over Hardware Acceleration for Large-Scale Deep Learning Systems”
+<a class="reference external" href="https://arxiv.org/pdf/1903.03129.pdf">https://arxiv.org/pdf/1903.03129.pdf</a>.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">train_config</span> <span class="o">=</span> <span class="p">(</span>
+<span class="go">        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)</span>
+<span class="go">        .with_metrics([&quot;categorical_accuracy&quot;])</span>
+<span class="go">    )</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">metrics</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">(</span>
+<span class="go">        train_data=train_data, train_labels=train_labels, train_config=train_config</span>
+<span class="go">    )</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span>
+<span class="go">{&#39;epoch_times&#39;: [1.7, 3.4, 5.2], &#39;categorical_accuracy&#39;: [0.4665, 0.887, 0.9685]}</span>
+</pre></div>
+</div>
+<p>That’s all for now, folks! More docs coming soon :)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Node">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">Node</span></span><a class="headerlink" href="#thirdai.bolt.graph.Node" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Node.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.Node.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Node.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.Node.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Node.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.Node.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Node.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#thirdai.bolt.graph.Node.name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.ParameterReference">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">ParameterReference</span></span><a class="headerlink" href="#thirdai.bolt.graph.ParameterReference" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.ParameterReference.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.ParameterReference.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.ParameterReference.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.ParameterReference.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.ParameterReference.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.ParameterReference.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.ParameterReference.compress">
+<span class="sig-name descname"><span class="pre">compress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference" title="thirdai._thirdai.bolt.graph.ParameterReference"><span class="pre">thirdai._thirdai.bolt.graph.ParameterReference</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">compression_scheme</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compression_density</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed_for_hashing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_population_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.int8</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#thirdai.bolt.graph.ParameterReference.compress" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a char array representing a compressed vector. sample_population_size is the number of random samples you take for estimating a threshold for dragon compression or the number of sketches needed for count_sketch</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.ParameterReference.concat">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">concat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">compressed_vectors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.int8</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#thirdai.bolt.graph.ParameterReference.concat" title="Permalink to this definition"></a></dt>
+<dd><p>Takes in a list of compressed vector objects and returns a concatenated compressed vector object. Concatenation is non-lossy in nature but comes at the cost of a higher memory footprint. Note: Only concatenate compressed vectors of the same type with the same hyperparamters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.ParameterReference.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference" title="thirdai._thirdai.bolt.graph.ParameterReference"><span class="pre">thirdai._thirdai.bolt.graph.ParameterReference</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.float32</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#thirdai.bolt.graph.ParameterReference.copy" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a copy of the parameters held in the ParameterReference as a numpy array.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.ParameterReference.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.ParameterReference" title="thirdai._thirdai.bolt.graph.ParameterReference"><span class="pre">thirdai._thirdai.bolt.graph.ParameterReference</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.float32</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#thirdai.bolt.graph.ParameterReference.get" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a numpy array which shadows the parameters held in the ParameterReference and acts as a reference to them, modifying this array will modify the parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.ParameterReference.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.ParameterReference.set" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>set(self: thirdai._thirdai.bolt.graph.ParameterReference, new_params: numpy.ndarray[numpy.int8]) -&gt; None</p></li>
+</ol>
+<p>Takes a char array as input that represents a compressed vector and decompresses and copies into the ParameterReference object.</p>
+<ol class="arabic simple" start="2">
+<li><p>set(self: thirdai._thirdai.bolt.graph.ParameterReference, new_params: numpy.ndarray[numpy.float32]) -&gt; None</p></li>
+</ol>
+<p>Takes a numpy array of floats as input and copies its contents into the parameters held in the parameter reference object.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.PredictConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">PredictConfig</span></span><a class="headerlink" href="#thirdai.bolt.graph.PredictConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.PredictConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.PredictConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.PredictConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.PredictConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.PredictConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.PredictConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.PredictConfig.enable_sparse_inference">
+<span class="sig-name descname"><span class="pre">enable_sparse_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig" title="thirdai._thirdai.bolt.graph.PredictConfig"><span class="pre">thirdai._thirdai.bolt.graph.PredictConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig" title="thirdai._thirdai.bolt.graph.PredictConfig"><span class="pre">thirdai._thirdai.bolt.graph.PredictConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.PredictConfig.enable_sparse_inference" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.PredictConfig.make">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">make</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig" title="thirdai._thirdai.bolt.graph.PredictConfig"><span class="pre">thirdai._thirdai.bolt.graph.PredictConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.PredictConfig.make" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.PredictConfig.return_activations">
+<span class="sig-name descname"><span class="pre">return_activations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig" title="thirdai._thirdai.bolt.graph.PredictConfig"><span class="pre">thirdai._thirdai.bolt.graph.PredictConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig" title="thirdai._thirdai.bolt.graph.PredictConfig"><span class="pre">thirdai._thirdai.bolt.graph.PredictConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.PredictConfig.return_activations" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.PredictConfig.silence">
+<span class="sig-name descname"><span class="pre">silence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig" title="thirdai._thirdai.bolt.graph.PredictConfig"><span class="pre">thirdai._thirdai.bolt.graph.PredictConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig" title="thirdai._thirdai.bolt.graph.PredictConfig"><span class="pre">thirdai._thirdai.bolt.graph.PredictConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.PredictConfig.silence" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.PredictConfig.with_metrics">
+<span class="sig-name descname"><span class="pre">with_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig" title="thirdai._thirdai.bolt.graph.PredictConfig"><span class="pre">thirdai._thirdai.bolt.graph.PredictConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.PredictConfig" title="thirdai._thirdai.bolt.graph.PredictConfig"><span class="pre">thirdai._thirdai.bolt.graph.PredictConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.PredictConfig.with_metrics" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Switch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">Switch</span></span><a class="headerlink" href="#thirdai.bolt.graph.Switch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.bolt.graph.Node" title="thirdai._thirdai.bolt.graph.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Switch.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.Switch.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Switch.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self:</span> <span class="pre">thirdai._thirdai.bolt.graph.Switch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prev_layer:</span> <span class="pre">thirdai._thirdai.bolt.graph.Node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">token_input:</span> <span class="pre">thirdai::bolt::Input</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.Switch" title="thirdai._thirdai.bolt.graph.Switch"><span class="pre">thirdai._thirdai.bolt.graph.Switch</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.Switch.__call__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Switch.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.Switch.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>__init__(self: thirdai._thirdai.bolt.graph.Switch, dim: int, activation: str, n_layers: int) -&gt; None</p></li>
+<li><p>__init__(self: thirdai._thirdai.bolt.graph.Switch, dim: int, sparsity: float, activation: str, n_layers: int) -&gt; None</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.Switch.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.Switch.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TokenInput">
+<span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">TokenInput</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tokens_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">thirdai::bolt::Input</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.TokenInput" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.bolt.graph.</span></span><span class="sig-name descname"><span class="pre">TrainConfig</span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.__getstate__">
+<span class="sig-name descname"><span class="pre">__getstate__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.__getstate__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.bolt.graph'</span></em><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.__setstate__">
+<span class="sig-name descname"><span class="pre">__setstate__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.__setstate__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.learning_rate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">learning_rate</span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.learning_rate" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the learning rate a model with this TrainConfig will train with.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.make">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">make</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.make" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.num_epochs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_epochs</span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.num_epochs" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the number of epochs a model with this TrainConfig will train for.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.silence">
+<span class="sig-name descname"><span class="pre">silence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.silence" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.with_callbacks">
+<span class="sig-name descname"><span class="pre">with_callbacks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">self:</span> <span class="pre">thirdai._thirdai.bolt.graph.TrainConfig,</span> <span class="pre">callbacks:</span> <span class="pre">List[thirdai::bolt::Callback]</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.with_callbacks" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.with_log_loss_frequency">
+<span class="sig-name descname"><span class="pre">with_log_loss_frequency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_loss_frequency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.with_log_loss_frequency" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.with_metrics">
+<span class="sig-name descname"><span class="pre">with_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.with_metrics" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.with_rebuild_hash_tables">
+<span class="sig-name descname"><span class="pre">with_rebuild_hash_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rebuild_hash_tables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.with_rebuild_hash_tables" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.with_reconstruct_hash_functions">
+<span class="sig-name descname"><span class="pre">with_reconstruct_hash_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconstruct_hash_functions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.with_reconstruct_hash_functions" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.with_save_parameters">
+<span class="sig-name descname"><span class="pre">with_save_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_frequency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.with_save_parameters" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.bolt.graph.TrainConfig.with_validation">
+<span class="sig-name descname"><span class="pre">with_validation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">self:</span> <span class="pre">thirdai._thirdai.bolt.graph.TrainConfig,</span> <span class="pre">validation_data:</span> <span class="pre">List[thirdai._thirdai.dataset.BoltDataset],</span> <span class="pre">validation_labels:</span> <span class="pre">thirdai._thirdai.dataset.BoltDataset,</span> <span class="pre">predict_config:</span> <span class="pre">thirdai::bolt::PredictConfig,</span> <span class="pre">validation_frequency:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.bolt.graph.TrainConfig" title="thirdai._thirdai.bolt.graph.TrainConfig"><span class="pre">thirdai._thirdai.bolt.graph.TrainConfig</span></a></span></span><a class="headerlink" href="#thirdai.bolt.graph.TrainConfig.with_validation" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="thirdaibolttemporal.html" class="btn btn-neutral float-left" title="thirdai.bolt.temporal" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="thirdaiboltgraphcallbacks.html" class="btn btn-neutral float-right" title="thirdai.bolt.graph.callbacks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, t.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

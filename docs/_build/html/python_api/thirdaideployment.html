@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>thirdai.deployment &mdash; thirdai  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="thirdai.hashing" href="thirdaihashing.html" />
+    <link rel="prev" title="thirdai.logging" href="thirdailog.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> thirdai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_tutorial.html">Distributed training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment_config_example.html">Using the DeploymentConfig and ModelPipeline</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="thirdaibase.html">thirdai</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html">thirdai.bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html">thirdai.bolt.types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttemporal.html">thirdai.bolt.temporal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltmodels.html">thirdai.bolt.models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html">thirdai.bolt.nn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html">thirdai.bolt.nn.losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html">thirdai.bolt.callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html">thirdai.dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html">thirdai.dataset.blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidistributed.html">thirdai.distributed_bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdailog.html">thirdai.logging</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">thirdai.deployment</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.AutotunedSparsityParameter"><code class="docutils literal notranslate"><span class="pre">AutotunedSparsityParameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.AutotunedSparsityParameter.__annotations__"><code class="docutils literal notranslate"><span class="pre">AutotunedSparsityParameter.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.AutotunedSparsityParameter.__init__"><code class="docutils literal notranslate"><span class="pre">AutotunedSparsityParameter.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.AutotunedSparsityParameter.__module__"><code class="docutils literal notranslate"><span class="pre">AutotunedSparsityParameter.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.BlockConfig"><code class="docutils literal notranslate"><span class="pre">BlockConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.BlockConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">BlockConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.BlockConfig.__init__"><code class="docutils literal notranslate"><span class="pre">BlockConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.BlockConfig.__module__"><code class="docutils literal notranslate"><span class="pre">BlockConfig.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.BoolHyperParameter"><code class="docutils literal notranslate"><span class="pre">BoolHyperParameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.BoolHyperParameter.__annotations__"><code class="docutils literal notranslate"><span class="pre">BoolHyperParameter.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.BoolHyperParameter.__init__"><code class="docutils literal notranslate"><span class="pre">BoolHyperParameter.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.BoolHyperParameter.__module__"><code class="docutils literal notranslate"><span class="pre">BoolHyperParameter.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.ConstantParameter"><code class="docutils literal notranslate"><span class="pre">ConstantParameter()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.DatasetConfig"><code class="docutils literal notranslate"><span class="pre">DatasetConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DatasetConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">DatasetConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DatasetConfig.__init__"><code class="docutils literal notranslate"><span class="pre">DatasetConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DatasetConfig.__module__"><code class="docutils literal notranslate"><span class="pre">DatasetConfig.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.DatasetLabelDimensionParameter"><code class="docutils literal notranslate"><span class="pre">DatasetLabelDimensionParameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DatasetLabelDimensionParameter.__annotations__"><code class="docutils literal notranslate"><span class="pre">DatasetLabelDimensionParameter.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DatasetLabelDimensionParameter.__init__"><code class="docutils literal notranslate"><span class="pre">DatasetLabelDimensionParameter.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DatasetLabelDimensionParameter.__module__"><code class="docutils literal notranslate"><span class="pre">DatasetLabelDimensionParameter.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DatasetLabelDimensionParameter.dimension_param_name"><code class="docutils literal notranslate"><span class="pre">DatasetLabelDimensionParameter.dimension_param_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.DenseArrayBlockConfig"><code class="docutils literal notranslate"><span class="pre">DenseArrayBlockConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DenseArrayBlockConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">DenseArrayBlockConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DenseArrayBlockConfig.__init__"><code class="docutils literal notranslate"><span class="pre">DenseArrayBlockConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DenseArrayBlockConfig.__module__"><code class="docutils literal notranslate"><span class="pre">DenseArrayBlockConfig.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.DeploymentConfig"><code class="docutils literal notranslate"><span class="pre">DeploymentConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DeploymentConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">DeploymentConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DeploymentConfig.__init__"><code class="docutils literal notranslate"><span class="pre">DeploymentConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DeploymentConfig.__module__"><code class="docutils literal notranslate"><span class="pre">DeploymentConfig.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DeploymentConfig.load"><code class="docutils literal notranslate"><span class="pre">DeploymentConfig.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.DeploymentConfig.save"><code class="docutils literal notranslate"><span class="pre">DeploymentConfig.save()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.FloatHyperParameter"><code class="docutils literal notranslate"><span class="pre">FloatHyperParameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.FloatHyperParameter.__annotations__"><code class="docutils literal notranslate"><span class="pre">FloatHyperParameter.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.FloatHyperParameter.__init__"><code class="docutils literal notranslate"><span class="pre">FloatHyperParameter.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.FloatHyperParameter.__module__"><code class="docutils literal notranslate"><span class="pre">FloatHyperParameter.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.FullyConnectedNodeConfig"><code class="docutils literal notranslate"><span class="pre">FullyConnectedNodeConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.FullyConnectedNodeConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">FullyConnectedNodeConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.FullyConnectedNodeConfig.__init__"><code class="docutils literal notranslate"><span class="pre">FullyConnectedNodeConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.FullyConnectedNodeConfig.__module__"><code class="docutils literal notranslate"><span class="pre">FullyConnectedNodeConfig.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.ModelConfig"><code class="docutils literal notranslate"><span class="pre">ModelConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.ModelConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">ModelConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.ModelConfig.__init__"><code class="docutils literal notranslate"><span class="pre">ModelConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.ModelConfig.__module__"><code class="docutils literal notranslate"><span class="pre">ModelConfig.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.NodeConfig"><code class="docutils literal notranslate"><span class="pre">NodeConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.NodeConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">NodeConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.NodeConfig.__init__"><code class="docutils literal notranslate"><span class="pre">NodeConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.NodeConfig.__module__"><code class="docutils literal notranslate"><span class="pre">NodeConfig.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.NumericalCategoricalBlockConfig"><code class="docutils literal notranslate"><span class="pre">NumericalCategoricalBlockConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.NumericalCategoricalBlockConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">NumericalCategoricalBlockConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.NumericalCategoricalBlockConfig.__init__"><code class="docutils literal notranslate"><span class="pre">NumericalCategoricalBlockConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.NumericalCategoricalBlockConfig.__module__"><code class="docutils literal notranslate"><span class="pre">NumericalCategoricalBlockConfig.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.OptionMappedParameter"><code class="docutils literal notranslate"><span class="pre">OptionMappedParameter()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.OracleConfigHyperParameter"><code class="docutils literal notranslate"><span class="pre">OracleConfigHyperParameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.OracleConfigHyperParameter.__annotations__"><code class="docutils literal notranslate"><span class="pre">OracleConfigHyperParameter.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.OracleConfigHyperParameter.__init__"><code class="docutils literal notranslate"><span class="pre">OracleConfigHyperParameter.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.OracleConfigHyperParameter.__module__"><code class="docutils literal notranslate"><span class="pre">OracleConfigHyperParameter.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.OracleDatasetFactory"><code class="docutils literal notranslate"><span class="pre">OracleDatasetFactory</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.OracleDatasetFactory.__annotations__"><code class="docutils literal notranslate"><span class="pre">OracleDatasetFactory.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.OracleDatasetFactory.__init__"><code class="docutils literal notranslate"><span class="pre">OracleDatasetFactory.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.OracleDatasetFactory.__module__"><code class="docutils literal notranslate"><span class="pre">OracleDatasetFactory.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.SamplingConfigHyperParameter"><code class="docutils literal notranslate"><span class="pre">SamplingConfigHyperParameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.SamplingConfigHyperParameter.__annotations__"><code class="docutils literal notranslate"><span class="pre">SamplingConfigHyperParameter.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.SamplingConfigHyperParameter.__init__"><code class="docutils literal notranslate"><span class="pre">SamplingConfigHyperParameter.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.SamplingConfigHyperParameter.__module__"><code class="docutils literal notranslate"><span class="pre">SamplingConfigHyperParameter.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.SingleBlockDatasetFactory"><code class="docutils literal notranslate"><span class="pre">SingleBlockDatasetFactory</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.SingleBlockDatasetFactory.__annotations__"><code class="docutils literal notranslate"><span class="pre">SingleBlockDatasetFactory.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.SingleBlockDatasetFactory.__init__"><code class="docutils literal notranslate"><span class="pre">SingleBlockDatasetFactory.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.SingleBlockDatasetFactory.__module__"><code class="docutils literal notranslate"><span class="pre">SingleBlockDatasetFactory.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.StrHyperParameter"><code class="docutils literal notranslate"><span class="pre">StrHyperParameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.StrHyperParameter.__annotations__"><code class="docutils literal notranslate"><span class="pre">StrHyperParameter.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.StrHyperParameter.__init__"><code class="docutils literal notranslate"><span class="pre">StrHyperParameter.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.StrHyperParameter.__module__"><code class="docutils literal notranslate"><span class="pre">StrHyperParameter.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.TemporalContext"><code class="docutils literal notranslate"><span class="pre">TemporalContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TemporalContext.__annotations__"><code class="docutils literal notranslate"><span class="pre">TemporalContext.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TemporalContext.__init__"><code class="docutils literal notranslate"><span class="pre">TemporalContext.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TemporalContext.__module__"><code class="docutils literal notranslate"><span class="pre">TemporalContext.__module__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TemporalContext.batch_update_temporal_trackers"><code class="docutils literal notranslate"><span class="pre">TemporalContext.batch_update_temporal_trackers()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TemporalContext.reset"><code class="docutils literal notranslate"><span class="pre">TemporalContext.reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TemporalContext.update_temporal_trackers"><code class="docutils literal notranslate"><span class="pre">TemporalContext.update_temporal_trackers()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.TextBlockConfig"><code class="docutils literal notranslate"><span class="pre">TextBlockConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TextBlockConfig.__annotations__"><code class="docutils literal notranslate"><span class="pre">TextBlockConfig.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TextBlockConfig.__init__"><code class="docutils literal notranslate"><span class="pre">TextBlockConfig.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TextBlockConfig.__module__"><code class="docutils literal notranslate"><span class="pre">TextBlockConfig.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.TrainEvalParameters"><code class="docutils literal notranslate"><span class="pre">TrainEvalParameters</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TrainEvalParameters.__annotations__"><code class="docutils literal notranslate"><span class="pre">TrainEvalParameters.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TrainEvalParameters.__init__"><code class="docutils literal notranslate"><span class="pre">TrainEvalParameters.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.TrainEvalParameters.__module__"><code class="docutils literal notranslate"><span class="pre">TrainEvalParameters.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.UintHyperParameter"><code class="docutils literal notranslate"><span class="pre">UintHyperParameter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.UintHyperParameter.__annotations__"><code class="docutils literal notranslate"><span class="pre">UintHyperParameter.__annotations__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.UintHyperParameter.__init__"><code class="docutils literal notranslate"><span class="pre">UintHyperParameter.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.deployment.UintHyperParameter.__module__"><code class="docutils literal notranslate"><span class="pre">UintHyperParameter.__module__</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.deployment.UserSpecifiedParameter"><code class="docutils literal notranslate"><span class="pre">UserSpecifiedParameter()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaihashing.html">thirdai.hashing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaisearch.html">thirdai.search</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">thirdai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Python API</a> &raquo;</li>
+      <li>thirdai.deployment</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/python_api/thirdaideployment.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-thirdai.deployment">
+<span id="thirdai-deployment"></span><h1>thirdai.deployment<a class="headerlink" href="#module-thirdai.deployment" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.AutotunedSparsityParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">AutotunedSparsityParameter</span></span><a class="headerlink" href="#thirdai.deployment.AutotunedSparsityParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.deployment.FloatHyperParameter" title="thirdai._thirdai.deployment.FloatHyperParameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">FloatHyperParameter</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.AutotunedSparsityParameter.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.AutotunedSparsityParameter.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.AutotunedSparsityParameter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.AutotunedSparsityParameter" title="thirdai._thirdai.deployment.AutotunedSparsityParameter"><span class="pre">thirdai._thirdai.deployment.AutotunedSparsityParameter</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimension_param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.AutotunedSparsityParameter.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs an AutoTunedSparsityParameter, which is a float HyperParameter whose
+value is determined by a user input dimension. This is intended to be used to autotune
+sparsity for a layer whose size is a user input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dimension_parameter_name</strong> (<em>str</em>) – The name of the user specified dimension parameter.
+This name should to an UserSpecifiedParameter of type int.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A hyper parameter which can determine a value of the sparsity based off the
+supplied dimension.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#thirdai.deployment.AutotunedSparsityParameter" title="thirdai.deployment.AutotunedSparsityParameter">AutotunedSparsityParameter</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This HyperParameter is intended to be used for sparsity in the output layer.
+The intended use case is that the output dimension may be user specified, and
+we may want to use sparsity in this layer if the number of neurons is large
+enough, but we don’t want the user to be responsible for inputing a
+reasonable sparsity value. Hence this class allows you to specify that the
+sparsity in a given layer is auto-tuned based off of a user specified
+dimension. Note that using an OptionMappedParameter is not sufficient because
+it would require enumerating the possible dimensions. Also note that it is
+best practice to use OptionMappedParameters for hidden layer dimensions to
+ensure reasonable architectures, and so this should really only be used in
+the output layer.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">AutotunedSparsityParameter</span><span class="p">(</span><span class="n">dimension_parameter_name</span><span class="o">=</span><span class="s2">&quot;n_classes&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;n_classes&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">})</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.AutotunedSparsityParameter.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.AutotunedSparsityParameter.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.BlockConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">BlockConfig</span></span><a class="headerlink" href="#thirdai.deployment.BlockConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<p>This class connot be represented directly. It is the base class for the configs for
+different blocks in the dataset pipeline.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.BlockConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.BlockConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.BlockConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.BlockConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.BlockConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.BlockConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.BoolHyperParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">BoolHyperParameter</span></span><a class="headerlink" href="#thirdai.deployment.BoolHyperParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<p>Represents a boolean parameter in the DeploymentConfig.</p>
+<p class="rubric">Notes</p>
+<p>This class cannot be constructed directly. It should be constructed through
+the functions ConstantParameter, OptionMappedParameter, or UserSepcifiedParameter.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">ConstantParameter</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">OptionMappedParameter</span><span class="p">(</span><span class="n">option_name</span><span class="o">=</span><span class="s2">&quot;use_pairgrams&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;small&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;large&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">UserSpecifiedParameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;use_sparse_inference&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.BoolHyperParameter.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.BoolHyperParameter.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.BoolHyperParameter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.BoolHyperParameter.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.BoolHyperParameter.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.BoolHyperParameter.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="thirdai.deployment.ConstantParameter">
+<span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">ConstantParameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.ConstantParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>ConstantParameter(value: bool) -&gt; thirdai._thirdai.deployment.BoolHyperParameter</p></li>
+</ol>
+<p>Constructs a ConstantHyperParameter which is a HyperParameter with a fixed value
+that cannot be impacted by user inputed parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>bool</em><em>, </em><em>int</em><em>, </em><em>float</em><em>, </em><em>str</em><em>, </em><em>bolt.SamplingConfig</em><em>, or </em><em>deployment.OracleConfig</em>) – The constant value that
+the constant parameter will take.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>This function is overloaded and hence will construct the appropriate hyper
+parameter for the type of the input value.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(<a class="reference internal" href="#thirdai.deployment.BoolHyperParameter" title="thirdai.deployment.BoolHyperParameter">BoolHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai.deployment.UintHyperParameter">UintHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.FloatHyperParameter" title="thirdai.deployment.FloatHyperParameter">FloatHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.StrHyperParameter" title="thirdai.deployment.StrHyperParameter">StrHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.SamplingConfigHyperParameter" title="thirdai.deployment.SamplingConfigHyperParameter">SamplingConfigHyperParameter</a>, or <a class="reference internal" href="#thirdai.deployment.OracleConfigHyperParameter" title="thirdai.deployment.OracleConfigHyperParameter">OracleConfigHyperParameter</a>)</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function will actually return an instance of the ConstantParameter&lt;T&gt; class
+which is a subclass of HyperParameter&lt;T&gt; which is the underlying class for
+UintHyperParameter, FloatHyperParameter, etc.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">ConstantParameter</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">ConstantParameter</span><span class="p">(</span><span class="s2">&quot;relu&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>ConstantParameter(value: int) -&gt; thirdai._thirdai.deployment.UintHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+<ol class="arabic simple" start="3">
+<li><p>ConstantParameter(value: float) -&gt; thirdai._thirdai.deployment.FloatHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+<ol class="arabic simple" start="4">
+<li><p>ConstantParameter(value: str) -&gt; thirdai._thirdai.deployment.StrHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+<ol class="arabic simple" start="5">
+<li><p>ConstantParameter(value: thirdai._thirdai.bolt.nn.SamplingConfig) -&gt; thirdai._thirdai.deployment.SamplingConfigHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+<ol class="arabic simple" start="6">
+<li><p>ConstantParameter(value: thirdai._thirdai.bolt.OracleConfig) -&gt; thirdai._thirdai.deployment.OracleConfigHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.DatasetConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">DatasetConfig</span></span><a class="headerlink" href="#thirdai.deployment.DatasetConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<p>This class cannot be constructed directly, and is the base class for all of the
+dataset loader factory configs which are responsible for constructing the dataset
+factories for the ModelPipeline.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.DatasetConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.DatasetConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.DatasetConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.DatasetConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.DatasetConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.DatasetConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.DatasetLabelDimensionParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">DatasetLabelDimensionParameter</span></span><a class="headerlink" href="#thirdai.deployment.DatasetLabelDimensionParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai._thirdai.deployment.UintHyperParameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">UintHyperParameter</span></code></a></p>
+<p>A hyperparameter that automatically configures the output dimension of the bolt
+neural network used by ModelPipeline according to the dimension of the labels
+produced by the dataset factory.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.DatasetLabelDimensionParameter.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.DatasetLabelDimensionParameter.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.DatasetLabelDimensionParameter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.DatasetLabelDimensionParameter" title="thirdai._thirdai.deployment.DatasetLabelDimensionParameter"><span class="pre">thirdai._thirdai.deployment.DatasetLabelDimensionParameter</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.DatasetLabelDimensionParameter.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.DatasetLabelDimensionParameter.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.DatasetLabelDimensionParameter.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.DatasetLabelDimensionParameter.dimension_param_name">
+<span class="sig-name descname"><span class="pre">dimension_param_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'&lt;__dataset_label_dim__&gt;'</span></em><a class="headerlink" href="#thirdai.deployment.DatasetLabelDimensionParameter.dimension_param_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.DenseArrayBlockConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">DenseArrayBlockConfig</span></span><a class="headerlink" href="#thirdai.deployment.DenseArrayBlockConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.deployment.BlockConfig" title="thirdai._thirdai.deployment.BlockConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.DenseArrayBlockConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.DenseArrayBlockConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.DenseArrayBlockConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.DenseArrayBlockConfig" title="thirdai._thirdai.deployment.DenseArrayBlockConfig"><span class="pre">thirdai._thirdai.deployment.DenseArrayBlockConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai._thirdai.deployment.UintHyperParameter"><span class="pre">thirdai._thirdai.deployment.UintHyperParameter</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.DenseArrayBlockConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs a config representing a DenseArrayBlock in the dataset pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dim</strong> (<a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai.deployment.UintHyperParameter"><em>UintHyperParameter</em></a>) – The number of columns to be used to construct the array.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.DenseArrayBlockConfig" title="thirdai.deployment.DenseArrayBlockConfig">DenseArrayBlockConfig</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The column index will be passed passed to this config to construct the final
+block for the dataset pipeline. The column index will be infered by the dataset
+config which contains this block config.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">array_block</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">DenseArrayBlockConfig</span><span class="p">(</span>
+<span class="go">        dim=deployment.ConstantParameter(8)</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.DenseArrayBlockConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.DenseArrayBlockConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.DeploymentConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">DeploymentConfig</span></span><a class="headerlink" href="#thirdai.deployment.DeploymentConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.DeploymentConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.DeploymentConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.DeploymentConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.DeploymentConfig" title="thirdai._thirdai.deployment.DeploymentConfig"><span class="pre">thirdai._thirdai.deployment.DeploymentConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.DatasetConfig" title="thirdai._thirdai.deployment.DatasetConfig"><span class="pre">thirdai._thirdai.deployment.DatasetConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.ModelConfig" title="thirdai._thirdai.deployment.ModelConfig"><span class="pre">thirdai._thirdai.deployment.ModelConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_eval_parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.TrainEvalParameters" title="thirdai._thirdai.deployment.TrainEvalParameters"><span class="pre">thirdai._thirdai.deployment.TrainEvalParameters</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.DeploymentConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs a DeploymentConfig which specifies a ModelPipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset_config</strong> (<a class="reference internal" href="#thirdai.deployment.DatasetConfig" title="thirdai.deployment.DatasetConfig"><em>DatasetConfig</em></a>) – The config for the dataset loaders.</p></li>
+<li><p><strong>model_config</strong> (<a class="reference internal" href="#thirdai.deployment.ModelConfig" title="thirdai.deployment.ModelConfig"><em>ModelConfig</em></a>) – The config for the model.</p></li>
+<li><p><strong>train_eval_parameters</strong> (<a class="reference internal" href="#thirdai.deployment.TrainEvalParameters" title="thirdai.deployment.TrainEvalParameters"><em>TrainEvalParameters</em></a>) – The additional train and eval
+parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.DeploymentConfig" title="thirdai.deployment.DeploymentConfig">DeploymentConfig</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">DeploymentConfig</span><span class="p">(</span>
+<span class="go">        dataset_config=dataset_config,</span>
+<span class="go">        model_config=model_config,</span>
+<span class="go">        train_eval_parameters=train_eval_params,</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.DeploymentConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.DeploymentConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.DeploymentConfig.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#thirdai.deployment.DeploymentConfig" title="thirdai._thirdai.deployment.DeploymentConfig"><span class="pre">thirdai._thirdai.deployment.DeploymentConfig</span></a></span></span><a class="headerlink" href="#thirdai.deployment.DeploymentConfig.load" title="Permalink to this definition"></a></dt>
+<dd><p>Loads a saved deployment config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – The file which contains the serialized config.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.DeploymentConfig" title="thirdai.deployment.DeploymentConfig">DeploymentConfig</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.DeploymentConfig.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.DeploymentConfig" title="thirdai._thirdai.deployment.DeploymentConfig"><span class="pre">thirdai._thirdai.deployment.DeploymentConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.DeploymentConfig.save" title="Permalink to this definition"></a></dt>
+<dd><p>Saves a serialized version of the deployment config. This can be used to provide
+a ModelPipeline architecture to a customer, as the ModelPipeline has a constructor
+that allows it to be constructed directly from the serialized config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – The file to save the serialized config in.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.FloatHyperParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">FloatHyperParameter</span></span><a class="headerlink" href="#thirdai.deployment.FloatHyperParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<p>Represents a float parameter in the DeploymentConfig.</p>
+<p class="rubric">Notes</p>
+<p>This class cannot be constructed directly. It should be constructed through
+the functions ConstantParameter, OptionMappedParameter, or UserSpecifiedParameter.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">ConstantParameter</span><span class="p">(</span><span class="mf">1.4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">OptionMappedParameter</span><span class="p">(</span><span class="n">option_name</span><span class="o">=</span><span class="s2">&quot;sparsity&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sparse&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;dense&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">UserSpecifiedParameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;sparsity&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.FloatHyperParameter.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.FloatHyperParameter.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.FloatHyperParameter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.FloatHyperParameter.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.FloatHyperParameter.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.FloatHyperParameter.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.FullyConnectedNodeConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">FullyConnectedNodeConfig</span></span><a class="headerlink" href="#thirdai.deployment.FullyConnectedNodeConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.deployment.NodeConfig" title="thirdai._thirdai.deployment.NodeConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">NodeConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.FullyConnectedNodeConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.FullyConnectedNodeConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.FullyConnectedNodeConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.FullyConnectedNodeConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>__init__(self: thirdai._thirdai.deployment.FullyConnectedNodeConfig, name: str, dim: thirdai._thirdai.deployment.UintHyperParameter, sparsity: thirdai._thirdai.deployment.FloatHyperParameter, activation: thirdai._thirdai.deployment.StrHyperParameter, predecessor: str, sampling_config: Optional[thirdai._thirdai.deployment.SamplingConfigHyperParameter] = None) -&gt; None</p></li>
+</ol>
+<p>Constructs a FullyConnectedNodeConfig which represents a FullyConnected node in
+the final bolt dag model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the node. This is used by subsequent nodes to reference
+this node as a predecessor.</p></li>
+<li><p><strong>dim</strong> (<a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai.deployment.UintHyperParameter"><em>UintHyperParameter</em></a>) – The HyperParameter representing the dimension.</p></li>
+<li><p><strong>sparsity</strong> (<a class="reference internal" href="#thirdai.deployment.FloatHyperParameter" title="thirdai.deployment.FloatHyperParameter"><em>FloatHyperParameter</em></a>) – The HyperParameter representing the sparsity.</p></li>
+<li><p><strong>activation</strong> (<a class="reference internal" href="#thirdai.deployment.StrHyperParameter" title="thirdai.deployment.StrHyperParameter"><em>StrHyperParameter</em></a>) – The HyperParameter representing the activation
+function.</p></li>
+<li><p><strong>predecessor</strong> (<em>str</em>) – The name of the node which should be used as this node’s
+predecessor. This must be the name of another node in the config.</p></li>
+<li><p><strong>sampling_config</strong> (<em>Optional</em><em>[</em><em>bolt.SamplingConfig</em><em>]</em>) – This is an optional parameter
+which represents the sampling config to be used. If not specified this is
+autotuned if the sparsity ends up as less than 1.0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.FullyConnectedNodeConfig" title="thirdai.deployment.FullyConnectedNodeConfig">FullyConnectedNodeConfig</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layer_config</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">FullyConnectedNodeConfig</span><span class="p">(</span>
+<span class="go">        name=&quot;hidden&quot;,</span>
+<span class="go">        dim=deployment.OptionMappedParameter(</span>
+<span class="go">            option_name=&quot;size&quot;, values={&quot;small&quot;: 100, &quot;large&quot;: 200}</span>
+<span class="go">        ),</span>
+<span class="go">        sparsity=deployment.UserSpecifiedParameter(&quot;sparsity&quot;),</span>
+<span class="go">        activation=deployment.ConstantParameter(&quot;relu&quot;),</span>
+<span class="go">        predecessor=&quot;input&quot;,</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>__init__(self: thirdai._thirdai.deployment.FullyConnectedNodeConfig, name: str, dim: thirdai._thirdai.deployment.UintHyperParameter, activation: thirdai._thirdai.deployment.StrHyperParameter, predecessor: str) -&gt; None</p></li>
+</ol>
+<p>Constructs a FullyConnectedNodeConfig which represents a dense FullyConnected node
+in the final bolt dag model. This differs from the other constructor as it does
+not take in sparsity or sampling config parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the node. This is used by subsequent nodes to reference
+this node as a predecessor.</p></li>
+<li><p><strong>dim</strong> (<a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai.deployment.UintHyperParameter"><em>UintHyperParameter</em></a>) – The HyperParameter representing the dimension.</p></li>
+<li><p><strong>activation</strong> (<a class="reference internal" href="#thirdai.deployment.StrHyperParameter" title="thirdai.deployment.StrHyperParameter"><em>StrHyperParameter</em></a>) – The HyperParameter representing the activation
+function.</p></li>
+<li><p><strong>predecessor</strong> (<em>str</em>) – The name of the node which should be used as this node’s
+predecessor. This must be the name of another node in the config.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.FullyConnectedNodeConfig" title="thirdai.deployment.FullyConnectedNodeConfig">FullyConnectedNodeConfig</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layer_config</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">FullyConnectedNodeConfig</span><span class="p">(</span>
+<span class="go">        name=&quot;hidden&quot;,</span>
+<span class="go">        dim=deployment.OptionMappedParameter(</span>
+<span class="go">            option_name=&quot;size&quot;, values={&quot;small&quot;: 100, &quot;large&quot;: 200}</span>
+<span class="go">        ),</span>
+<span class="go">        activation=deployment.ConstantParameter(&quot;relu&quot;),</span>
+<span class="go">        predecessor=&quot;input&quot;,</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.FullyConnectedNodeConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.FullyConnectedNodeConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.ModelConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">ModelConfig</span></span><a class="headerlink" href="#thirdai.deployment.ModelConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.ModelConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.ModelConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.ModelConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.ModelConfig" title="thirdai._thirdai.deployment.ModelConfig"><span class="pre">thirdai._thirdai.deployment.ModelConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#thirdai.deployment.NodeConfig" title="thirdai._thirdai.deployment.NodeConfig"><span class="pre">thirdai._thirdai.deployment.NodeConfig</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="thirdaiboltnnlosses.html#thirdai.bolt.nn.losses.LossFunction" title="thirdai._thirdai.bolt.nn.losses.LossFunction"><span class="pre">thirdai._thirdai.bolt.nn.losses.LossFunction</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.ModelConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs a ModelConfig which represents the complete bolt dag model for a ModelPipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – The names of the inputs to the model. The actual input nodes are
+constructed by the DatasetFactory in the ModelPipeline since it will have
+knowledge of the output of the dataset loaders. This list of names is simply
+to refer to those inputs. It must be the same length as the number of inputs
+returned from the dataset loaders.</p></li>
+<li><p><strong>nodes</strong> (<em>List</em><em>[</em><a class="reference internal" href="#thirdai.deployment.NodeConfig" title="thirdai.deployment.NodeConfig"><em>NodeConfig</em></a><em>]</em>) – The list of nodes to be used in the dag model. Note
+that the last node in the list is assumed to be the output node.</p></li>
+<li><p><strong>loss</strong> (<em>bolt.LossFunction</em>) – The loss function to use to compile the model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.ModelConfig" title="thirdai.deployment.ModelConfig">ModelConfig</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model_config</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">ModelConfig</span><span class="p">(</span>
+<span class="go">        input_names=[&quot;input&quot;],</span>
+<span class="go">        nodes=[</span>
+<span class="go">            deployment.FullyConnectedNodeConfig(</span>
+<span class="go">                name=&quot;hidden&quot;,</span>
+<span class="go">                dim=deployment.OptionMappedParameter(</span>
+<span class="go">                    option_name=&quot;size&quot;, values={&quot;small&quot;: 100, &quot;large&quot;: 200}</span>
+<span class="go">                ),</span>
+<span class="go">                activation=deployment.ConstantParameter(&quot;relu&quot;),</span>
+<span class="go">                predecessor=&quot;input&quot;,</span>
+<span class="go">            ),</span>
+<span class="go">            deployment.FullyConnectedNodeConfig(</span>
+<span class="go">                name=&quot;output&quot;,</span>
+<span class="go">                dim=deployment.UserSpecifiedParameter(&quot;output_dim&quot;, type=int),</span>
+<span class="go">                sparsity=deployment.ConstantParameter(1.0),</span>
+<span class="go">                activation=deployment.ConstantParameter(&quot;softmax&quot;),</span>
+<span class="go">                predecessor=&quot;hidden&quot;,</span>
+<span class="go">            ),</span>
+<span class="go">        ],</span>
+<span class="go">        loss=bolt.CategoricalCrossEntropyLoss(),</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.ModelConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.ModelConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.NodeConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">NodeConfig</span></span><a class="headerlink" href="#thirdai.deployment.NodeConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<p>This class connot be represented directly. It is the base class for the configs for
+different nodes/layers in the model of the ModelConfig for the ModelPipeline.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.NodeConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.NodeConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.NodeConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.NodeConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.NodeConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.NodeConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.NumericalCategoricalBlockConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">NumericalCategoricalBlockConfig</span></span><a class="headerlink" href="#thirdai.deployment.NumericalCategoricalBlockConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.deployment.BlockConfig" title="thirdai._thirdai.deployment.BlockConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.NumericalCategoricalBlockConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.NumericalCategoricalBlockConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.NumericalCategoricalBlockConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.NumericalCategoricalBlockConfig" title="thirdai._thirdai.deployment.NumericalCategoricalBlockConfig"><span class="pre">thirdai._thirdai.deployment.NumericalCategoricalBlockConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_classes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai._thirdai.deployment.UintHyperParameter"><span class="pre">thirdai._thirdai.deployment.UintHyperParameter</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">delimiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.StrHyperParameter" title="thirdai._thirdai.deployment.StrHyperParameter"><span class="pre">thirdai._thirdai.deployment.StrHyperParameter</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.NumericalCategoricalBlockConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs a config representing a NumericalCategoricalBlock in the dataset pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_classes</strong> (<a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai.deployment.UintHyperParameter"><em>UintHyperParameter</em></a>) – The number of classes (categories) that could
+occur in the dataset at this column.</p></li>
+<li><p><strong>delimiter</strong> (<a class="reference internal" href="#thirdai.deployment.StrHyperParameter" title="thirdai.deployment.StrHyperParameter"><em>StrHyperParameter</em></a>) – A character which will delineate the different
+labels in the column if it is multi-class.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.NumericalCategoricalBlockConfig" title="thirdai.deployment.NumericalCategoricalBlockConfig">NumericalCategoricalBlockConfig</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The column index will be passed passed to this config to construct the final
+block for the dataset pipeline. The column index will be infered by the dataset
+config which contains this block config.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">label_block</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">NumericalCategoricalBlockConfig</span><span class="p">(</span>
+<span class="go">        n_classes=deployment.UserSpecifiedParameter(&quot;output_dim&quot;, type=int),</span>
+<span class="go">        delimiter=deployment.ConstantParameter(&quot;,&quot;),</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.NumericalCategoricalBlockConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.NumericalCategoricalBlockConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="thirdai.deployment.OptionMappedParameter">
+<span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">OptionMappedParameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.OptionMappedParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>OptionMappedParameter(option_name: str, values: Dict[str, bool]) -&gt; thirdai._thirdai.deployment.BoolHyperParameter</p></li>
+</ol>
+<p>Constructs an OptionMappedHyperParameter which is a HyperParameter which maps
+user specified options (given as strings) to different possible values. Which
+option is specified by the user is determined by parameters mapping passed into
+the ModelPipeline constructor. The option_name argument is used to search this map,
+and the corresponding value is used to query the the values mapping.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>option_name</strong> (<em>str</em>) – The name of the option mapped parameter. This is used to
+search the parameters mapping to find the value of the option the user
+specified.</p></li>
+<li><p><strong>values</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>bool</em><em>]</em><em>, </em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em><em>, </em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>float</em><em>]</em><em>, </em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>, or </em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>bolt.SamplingConfig</em>) – A mapping between the different user specified options and their corresponding
+values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>This function is overloaded and hence will construct the appropriate hyper
+parameter based on the type of the values of the dictionary.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(<a class="reference internal" href="#thirdai.deployment.BoolHyperParameter" title="thirdai.deployment.BoolHyperParameter">BoolHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai.deployment.UintHyperParameter">UintHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.FloatHyperParameter" title="thirdai.deployment.FloatHyperParameter">FloatHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.StrHyperParameter" title="thirdai.deployment.StrHyperParameter">StrHyperParameter</a>, or <a class="reference internal" href="#thirdai.deployment.SamplingConfigHyperParameter" title="thirdai.deployment.SamplingConfigHyperParameter">SamplingConfigHyperParameter</a>)</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function will actually return an instance of the OptionMappedParameter&lt;T&gt;
+class which is a subclass of HyperParameter&lt;T&gt; which is the underlying class
+for UintHyperParameter, FloatHyperParameter, etc.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">OptionMappedParameter</span><span class="p">(</span><span class="n">option_name</span><span class="o">=</span><span class="s2">&quot;size&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;small&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;large&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="s2">&quot;small&quot;</span><span class="p">})</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>OptionMappedParameter(option_name: str, values: Dict[str, int]) -&gt; thirdai._thirdai.deployment.UintHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+<ol class="arabic simple" start="3">
+<li><p>OptionMappedParameter(option_name: str, values: Dict[str, float]) -&gt; thirdai._thirdai.deployment.FloatHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+<ol class="arabic simple" start="4">
+<li><p>OptionMappedParameter(option_name: str, values: Dict[str, str]) -&gt; thirdai._thirdai.deployment.StrHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+<ol class="arabic simple" start="5">
+<li><p>OptionMappedParameter(option_name: str, values: Dict[str, thirdai._thirdai.bolt.nn.SamplingConfig]) -&gt; thirdai._thirdai.deployment.SamplingConfigHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+<ol class="arabic simple" start="6">
+<li><p>OptionMappedParameter(option_name: str, values: Dict[str, thirdai._thirdai.bolt.OracleConfig]) -&gt; thirdai._thirdai.deployment.OracleConfigHyperParameter</p></li>
+</ol>
+<p>See docs above.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.OracleConfigHyperParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">OracleConfigHyperParameter</span></span><a class="headerlink" href="#thirdai.deployment.OracleConfigHyperParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.OracleConfigHyperParameter.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.OracleConfigHyperParameter.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.OracleConfigHyperParameter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.OracleConfigHyperParameter.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.OracleConfigHyperParameter.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.OracleConfigHyperParameter.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.OracleDatasetFactory">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">OracleDatasetFactory</span></span><a class="headerlink" href="#thirdai.deployment.OracleDatasetFactory" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.deployment.DatasetConfig" title="thirdai._thirdai.deployment.DatasetConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.OracleDatasetFactory.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.OracleDatasetFactory.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.OracleDatasetFactory.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.OracleDatasetFactory" title="thirdai._thirdai.deployment.OracleDatasetFactory"><span class="pre">thirdai._thirdai.deployment.OracleDatasetFactory</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.OracleConfigHyperParameter" title="thirdai._thirdai.deployment.OracleConfigHyperParameter"><span class="pre">thirdai._thirdai.deployment.OracleConfigHyperParameter</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.BoolHyperParameter" title="thirdai._thirdai.deployment.BoolHyperParameter"><span class="pre">thirdai._thirdai.deployment.BoolHyperParameter</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_pairgram_word_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai._thirdai.deployment.UintHyperParameter"><span class="pre">thirdai._thirdai.deployment.UintHyperParameter</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_contextualization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.BoolHyperParameter" title="thirdai._thirdai.deployment.BoolHyperParameter"><span class="pre">thirdai._thirdai.deployment.BoolHyperParameter</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.OracleDatasetFactory.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.OracleDatasetFactory.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.OracleDatasetFactory.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.SamplingConfigHyperParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">SamplingConfigHyperParameter</span></span><a class="headerlink" href="#thirdai.deployment.SamplingConfigHyperParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<p>Represents a string parameter in the DeploymentConfig.</p>
+<p class="rubric">Notes</p>
+<p>This class cannot be constructed directly. It should be constructed through
+the functions ConstantParameter, OptionMappedParameter, or UserSepcifiedParameter.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">ConstantParameter</span><span class="p">(</span><span class="s2">&quot;relu&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">OptionMappedParameter</span><span class="p">(</span><span class="n">option_name</span><span class="o">=</span><span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;single_class&quot;</span><span class="p">:</span> <span class="s2">&quot;softmax&quot;</span><span class="p">,</span> <span class="s2">&quot;multi_class&quot;</span><span class="p">:</span> <span class="s2">&quot;sigmoid&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">UserSpecifiedParameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;activation&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.SamplingConfigHyperParameter.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.SamplingConfigHyperParameter.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.SamplingConfigHyperParameter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.SamplingConfigHyperParameter.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.SamplingConfigHyperParameter.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.SamplingConfigHyperParameter.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.SingleBlockDatasetFactory">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">SingleBlockDatasetFactory</span></span><a class="headerlink" href="#thirdai.deployment.SingleBlockDatasetFactory" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.deployment.DatasetConfig" title="thirdai._thirdai.deployment.DatasetConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.SingleBlockDatasetFactory.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.SingleBlockDatasetFactory.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.SingleBlockDatasetFactory.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.SingleBlockDatasetFactory" title="thirdai._thirdai.deployment.SingleBlockDatasetFactory"><span class="pre">thirdai._thirdai.deployment.SingleBlockDatasetFactory</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_block</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.BlockConfig" title="thirdai._thirdai.deployment.BlockConfig"><span class="pre">thirdai._thirdai.deployment.BlockConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_block</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.BlockConfig" title="thirdai._thirdai.deployment.BlockConfig"><span class="pre">thirdai._thirdai.deployment.BlockConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.BoolHyperParameter" title="thirdai._thirdai.deployment.BoolHyperParameter"><span class="pre">thirdai._thirdai.deployment.BoolHyperParameter</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">delimiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.StrHyperParameter" title="thirdai._thirdai.deployment.StrHyperParameter"><span class="pre">thirdai._thirdai.deployment.StrHyperParameter</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.SingleBlockDatasetFactory.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>This is a config for a simple dataset factory which has a single data block and
+a single label block. It expects that the dataset will be a csv with two columns,
+&lt;label&gt;,&lt;data&gt;. In the future we will want to add more complicated dataset factory
+configs, but this should be sufficient for our initial use cases.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_block</strong> (<a class="reference internal" href="#thirdai.deployment.BlockConfig" title="thirdai.deployment.BlockConfig"><em>BlockConfig</em></a>) – The config for the data block.</p></li>
+<li><p><strong>label_block</strong> (<a class="reference internal" href="#thirdai.deployment.BlockConfig" title="thirdai.deployment.BlockConfig"><em>BlockConfig</em></a>) – The config for the label block.</p></li>
+<li><p><strong>shuffle</strong> (<em>bool</em>) – Whether or not to shuffle the data on loading.</p></li>
+<li><p><strong>delimiter</strong> (<em>str</em>) – A character representing the delimiter of the columns.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.SingleBlockDatasetFactory" title="thirdai.deployment.SingleBlockDatasetFactory">SingleBlockDatasetFactory</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dataset_config</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">SingleBlockDatasetFactory</span><span class="p">(</span>
+<span class="go">        data_block=deployment.TextBlockConfig(use_pairgrams=True),</span>
+<span class="go">        label_block=deployment.NumericalCategoricalBlockConfig(</span>
+<span class="go">            n_classes=deployment.UserSpecifiedParameter(&quot;output_dim&quot;, type=int),</span>
+<span class="go">            delimiter=deployment.ConstantParameter(&quot;,&quot;),</span>
+<span class="go">        ),</span>
+<span class="go">        shuffle=deployment.ConstantParameter(False),</span>
+<span class="go">        delimiter=deployment.UserSpecifiedParameter(&quot;delimiter&quot;, type=str),</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.SingleBlockDatasetFactory.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.SingleBlockDatasetFactory.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.StrHyperParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">StrHyperParameter</span></span><a class="headerlink" href="#thirdai.deployment.StrHyperParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<p>Represents a string parameter in the DeploymentConfig.</p>
+<p class="rubric">Notes</p>
+<p>This class cannot be constructed directly. It should be constructed through
+the functions ConstantParameter, OptionMappedParameter, or UserSepcifiedParameter.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">ConstantParameter</span><span class="p">(</span><span class="s2">&quot;relu&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">OptionMappedParameter</span><span class="p">(</span><span class="n">option_name</span><span class="o">=</span><span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;single_class&quot;</span><span class="p">:</span> <span class="s2">&quot;softmax&quot;</span><span class="p">,</span> <span class="s2">&quot;multi_class&quot;</span><span class="p">:</span> <span class="s2">&quot;sigmoid&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">UserSpecifiedParameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;activation&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.StrHyperParameter.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.StrHyperParameter.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.StrHyperParameter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.StrHyperParameter.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.StrHyperParameter.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.StrHyperParameter.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.TemporalContext">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">TemporalContext</span></span><a class="headerlink" href="#thirdai.deployment.TemporalContext" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.TemporalContext.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.TemporalContext.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.TemporalContext.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.TemporalContext.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.TemporalContext.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.TemporalContext.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.TemporalContext.batch_update_temporal_trackers">
+<span class="sig-name descname"><span class="pre">batch_update_temporal_trackers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.TemporalContext" title="thirdai._thirdai.deployment.TemporalContext"><span class="pre">thirdai._thirdai.deployment.TemporalContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltBatch" title="thirdai._thirdai.dataset.BoltBatch"><span class="pre">thirdai._thirdai.dataset.BoltBatch</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#thirdai.deployment.TemporalContext.batch_update_temporal_trackers" title="Permalink to this definition"></a></dt>
+<dd><p>Updates the temporal trackers with batch input.</p>
+<p>If temporal tracking relationships are provided, Oracle can make better predictions
+by taking temporal context into account. For example, Oracle may keep track of
+the last few movies that a user has watched to better recommend the next movie.
+Thus, Oracle is at its best when its internal temporal context gets updated with
+new true samples. Just like <cite>.update_temporal_trackers()</cite>,
+<cite>.batch_update_temporal_trackers()</cite> does exactly this, except with a batch input.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.TemporalContext.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.TemporalContext" title="thirdai._thirdai.deployment.TemporalContext"><span class="pre">thirdai._thirdai.deployment.TemporalContext</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.TemporalContext.reset" title="Permalink to this definition"></a></dt>
+<dd><p>Resets Oracle’s temporal trackers. When temporal relationships are supplied,
+Oracle assumes that we feed it data in chronological order. Thus, if we break
+this assumption, we need to first reset the temporal trackers.
+An example of when you would use this is when you want to repeat the Oracle
+training routine on the same dataset. Since you would be training on data from
+the same time period as before, we need to first reset the temporal trackers so
+that we don’t double count events.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.TemporalContext.update_temporal_trackers">
+<span class="sig-name descname"><span class="pre">update_temporal_trackers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.TemporalContext" title="thirdai._thirdai.deployment.TemporalContext"><span class="pre">thirdai._thirdai.deployment.TemporalContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="thirdaidataset.html#thirdai.dataset.BoltVector" title="thirdai._thirdai.dataset.BoltVector"><span class="pre">thirdai._thirdai.dataset.BoltVector</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#thirdai.deployment.TemporalContext.update_temporal_trackers" title="Permalink to this definition"></a></dt>
+<dd><p>Updates the temporal trackers.</p>
+<p>If temporal tracking relationships are provided, Oracle can make better predictions
+by taking temporal context into account. For example, Oracle may keep track of
+the last few movies that a user has watched to better recommend the next movie.
+Thus, Oracle is at its best when its internal temporal context gets updated with
+new true samples. <cite>.update_temporal_trackers()</cite> does exactly this.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.TextBlockConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">TextBlockConfig</span></span><a class="headerlink" href="#thirdai.deployment.TextBlockConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#thirdai.deployment.BlockConfig" title="thirdai._thirdai.deployment.BlockConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.TextBlockConfig.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.TextBlockConfig.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.TextBlockConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.TextBlockConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>__init__(self: thirdai._thirdai.deployment.TextBlockConfig, use_pairgrams: bool, range: thirdai._thirdai.deployment.UintHyperParameter) -&gt; None</p></li>
+</ol>
+<p>Constructs a config representing a PairGramTextBlock or UniGramTextBlock in the
+dataset pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>use_pairgrams</strong> (<em>bool</em>) – Whether or not to use pairgrams on the text. This is not
+a hyperparameter because we want to abstract this decision away from the
+user.</p></li>
+<li><p><strong>range</strong> (<a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai.deployment.UintHyperParameter"><em>UintHyperParameter</em></a>) – The range of the unigrams or pairgrams.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.TextBlockConfig" title="thirdai.deployment.TextBlockConfig">TextBlockConfig</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The column index will be passed passed to this config to construct the final
+block for the dataset pipeline. The column index will be infered by the dataset
+config which contains this block config.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">text_block</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">TextBlockConfig</span><span class="p">(</span><span class="n">use_pairgrams</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>__init__(self: thirdai._thirdai.deployment.TextBlockConfig, use_pairgrams: bool) -&gt; None</p></li>
+</ol>
+<p>Constructs a config representing a PairGramTextBlock or UniGramTextBlock in the
+dataset pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>use_pairgrams</strong> (<em>bool</em>) – Whether or not to use pairgrams on the text. This is not
+a hyperparameter because we want to abstract this decision away from the
+user.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.TextBlockConfig" title="thirdai.deployment.TextBlockConfig">TextBlockConfig</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The column index will be passed passed to this config to construct the final
+block for the dataset pipeline. The column index will be infered by the dataset
+config which contains this block config.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data_block</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">TextBlockConfig</span><span class="p">(</span><span class="n">use_pairgrams</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.TextBlockConfig.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.TextBlockConfig.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.TrainEvalParameters">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">TrainEvalParameters</span></span><a class="headerlink" href="#thirdai.deployment.TrainEvalParameters" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.TrainEvalParameters.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.TrainEvalParameters.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.TrainEvalParameters.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.deployment.TrainEvalParameters" title="thirdai._thirdai.deployment.TrainEvalParameters"><span class="pre">thirdai._thirdai.deployment.TrainEvalParameters</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rebuild_hash_tables_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconstruct_hash_functions_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freeze_hash_tables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#thirdai.deployment.TrainEvalParameters.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>This class represents additional parameters that are required for training, evaluation,
+or inference, but that we want to abstract away from the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rebuild_hash_tables_interval</strong> (<em>Option</em><em>[</em><em>int</em><em>]</em>) – Interval (in number of samples)
+for rebuilding the hash tabels in sparse layers. This is autotuned if not
+specified.</p></li>
+<li><p><strong>reconstruct_hash_functions_interval</strong> (<em>Option</em><em>[</em><em>int</em><em>]</em>) – Interval (in number of samples)
+for reconstructing the hash functions in sparse layers. This is autotuned
+if not specified.</p></li>
+<li><p><strong>default_batch_size</strong> (<em>int</em>) – The default batch size the ModelPipeline should use
+for training if the user does not specify it.</p></li>
+<li><p><strong>freeze_hash_tables</strong> (<em>bool</em>) – If true the hash tables will be frozen after the first epoch.</p></li>
+<li><p><strong>prediction_threshold</strong> (<em>Option</em><em>[</em><em>float</em><em>]</em>) – Optional parameter, if specified the model
+will ensure that the largest activation is always at least this threshold.
+This is used for multi-class classification tasks that use a theshold to
+determine predictions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#thirdai.deployment.TrainEvalParameters" title="thirdai.deployment.TrainEvalParameters">TrainEvalParameters</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">train_eval_params</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">TrainEvalParameters</span><span class="p">(</span>
+<span class="go">        rebuild_hash_tables_interval=None,</span>
+<span class="go">        reconstruct_hash_functions_interval=None,</span>
+<span class="go">        default_batch_size=256,</span>
+<span class="go">        use_sparse_inference=True,</span>
+<span class="go">        evaluation_metrics=[&quot;categorical_accuracy&quot;],</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.TrainEvalParameters.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.TrainEvalParameters.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.deployment.UintHyperParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">UintHyperParameter</span></span><a class="headerlink" href="#thirdai.deployment.UintHyperParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_object</span></code></p>
+<p>Represents a integer parameter in the DeploymentConfig.</p>
+<p class="rubric">Notes</p>
+<p>This class cannot be constructed directly. It should be constructed through
+the functions ConstantParameter, OptionMappedParameter, or UserSpecifiedParameter.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">ConstantParameter</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">OptionMappedParameter</span><span class="p">(</span><span class="n">option_name</span><span class="o">=</span><span class="s2">&quot;size&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;small&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;large&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">UserSpecifiedParameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;n_classes&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.UintHyperParameter.__annotations__">
+<span class="sig-name descname"><span class="pre">__annotations__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#thirdai.deployment.UintHyperParameter.__annotations__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.deployment.UintHyperParameter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.deployment.UintHyperParameter.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="thirdai.deployment.UintHyperParameter.__module__">
+<span class="sig-name descname"><span class="pre">__module__</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'thirdai._thirdai.deployment'</span></em><a class="headerlink" href="#thirdai.deployment.UintHyperParameter.__module__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="thirdai.deployment.UserSpecifiedParameter">
+<span class="sig-prename descclassname"><span class="pre">thirdai.deployment.</span></span><span class="sig-name descname"><span class="pre">UserSpecifiedParameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">object</span></span></span><a class="headerlink" href="#thirdai.deployment.UserSpecifiedParameter" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs a UserSpecifiedHyperParameter which is a HyperParameter whose value is
+determined by the key in the parameters map (passed to the constructor
+for the ModelPipeline) for the given parameter name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the parameter, this is used to search the parameter map.</p></li>
+<li><p><strong>type</strong> (<em>type</em>) – This should be one of bool, int, float, or str. This is the type</p></li>
+<li><p><strong>parameter</strong> (<em>of the</em>) – </p></li>
+<li><p><strong>to</strong> (<em>this is used to determine which staticly typed C++ class</em>) – </p></li>
+<li><p><strong>instantiate.</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>This function is construct the appropriate hyper parameter based on the
+type argument.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(<a class="reference internal" href="#thirdai.deployment.BoolHyperParameter" title="thirdai.deployment.BoolHyperParameter">BoolHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.UintHyperParameter" title="thirdai.deployment.UintHyperParameter">UintHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.FloatHyperParameter" title="thirdai.deployment.FloatHyperParameter">FloatHyperParameter</a>, <a class="reference internal" href="#thirdai.deployment.StrHyperParameter" title="thirdai.deployment.StrHyperParameter">StrHyperParameter</a>, or <a class="reference internal" href="#thirdai.deployment.SamplingConfigHyperParameter" title="thirdai.deployment.SamplingConfigHyperParameter">SamplingConfigHyperParameter</a>)</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function will actually return an instance of the OptionMappedParameter&lt;T&gt;
+class which is a subclass of HyperParameter&lt;T&gt; which is the underlying class
+for UintHyperParameter, FloatHyperParameter, etc.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">UserSpecifiedParameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;n_classes&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;n_classes&quot;</span><span class="p">:</span> <span class="mi">32</span><span class="p">})</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="thirdailog.html" class="btn btn-neutral float-left" title="thirdai.logging" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="thirdaihashing.html" class="btn btn-neutral float-right" title="thirdai.hashing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, t.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

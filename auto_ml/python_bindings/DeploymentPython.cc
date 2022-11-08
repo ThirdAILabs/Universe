@@ -20,6 +20,7 @@
 #include <auto_ml/src/deployment_config/dataset_configs/udt/TemporalContext.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/prebuilt_pipelines/UDTGenerator.h>
 #include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/cast.h>
@@ -286,11 +287,14 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
                /* learning_rate= */ 0.001, /* epochs= */ 3),
            py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN)
+      .def("train", &UDTGenerator::buildFlashIndex, py::arg("filename"))
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
       .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
            docs::UDT_EVALUATE)
+      .def("evaluate", &UDTGenerator::evaluateOnFile, py::arg("filename"),
+           py::arg("top_k"))
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            docs::UDT_PREDICT)

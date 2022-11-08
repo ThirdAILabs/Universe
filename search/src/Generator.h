@@ -38,9 +38,9 @@ class QueryCandidateGeneratorConfig {
   QueryCandidateGeneratorConfig(std::string hash_function, uint32_t num_tables,
                                 uint32_t hashes_per_table, uint32_t range,
                                 std::vector<uint32_t> n_grams,
+                                bool has_incorrect_queries = false,
                                 uint32_t source_column_index = 0,
                                 uint32_t target_column_index = 0,
-                                bool has_incorrect_queries = false,
                                 uint32_t batch_size = 10000)
       : _hash_function(std::move(hash_function)),
         _num_tables(num_tables),
@@ -57,8 +57,8 @@ class QueryCandidateGeneratorConfig {
     return this->_hash_function == rhs._hash_function &&
            this->_num_tables == rhs._num_tables &&
            this->_hashes_per_table == rhs._hashes_per_table &&
-           this->_source_column_index == rhs._source_column_index && 
-           this->_target_column_index == rhs._target_column_index && 
+           this->_source_column_index == rhs._source_column_index &&
+           this->_target_column_index == rhs._target_column_index &&
            this->_batch_size == rhs._batch_size && this->_range == rhs._range &&
            this->_n_grams == rhs._n_grams &&
            this->_has_incorrect_queries == rhs._has_incorrect_queries;
@@ -187,7 +187,7 @@ class QueryCandidateGenerator {
     auto labels = getQueryLabels(
         file_name, _query_generator_config->hasIncorrectQueries());
 
-    auto data_loader = getDatasetLoader(file_name, /* evaluate = */ false);
+    auto data_loader = getDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
 
     if (!_flash_index) {
@@ -460,7 +460,7 @@ class QueryCandidateGenerator {
         file_name, _query_generator_config->batchSize());
 
     return std::make_unique<dataset::StreamingGenericDatasetLoader>(
-                          file_data_loader, _training_batch_processor);
+        file_data_loader, _training_batch_processor);
   }
 
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;

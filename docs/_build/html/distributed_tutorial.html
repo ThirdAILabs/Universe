@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Distributed training &mdash; thirdai  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Using the DeploymentConfig and ModelPipeline" href="deployment_config_example.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> thirdai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Distributed training</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#starting-a-ray-cluster">Starting a Ray Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installations">Installations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#automatic-cluster-initialization">Automatic Cluster Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#manual-cluster-initialization">Manual Cluster Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#validating-cluster">Validating Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#starting-training">Starting Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#important">IMPORTANT</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deployment_config_example.html">Using the DeploymentConfig and ModelPipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api/index.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">thirdai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Distributed training</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/distributed_tutorial.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="distributed-training">
+<h1>Distributed training<a class="headerlink" href="#distributed-training" title="Permalink to this heading"></a></h1>
+<section id="starting-a-ray-cluster">
+<h2>Starting a Ray Cluster<a class="headerlink" href="#starting-a-ray-cluster" title="Permalink to this heading"></a></h2>
+<p>Below Cluster Initialization would only work for Custom Clusters. For standard clusters like AWS, GCP, Azure and Aliyun, see <a class="reference external" href="https://docs.ray.io/en/latest/cluster/cloud.html">https://docs.ray.io/en/latest/cluster/cloud.html</a>.</p>
+</section>
+<section id="installations">
+<h2>Installations<a class="headerlink" href="#installations" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>First, install all the required modules by running the following command(to be done on all the nodes):</p></li>
+<li><p>Have the Distributed bolt module built on those nodes</p></li>
+<li><p>Run the command: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code></p></li>
+<li><p>Check if ray path is included in system path by printing (run ‘echo $PATH’ on the terminal)</p></li>
+<li><p>Ray’s default path is <code class="docutils literal notranslate"><span class="pre">/home/$USER/.local/bin</span></code></p></li>
+<li><p>If not included, run the command: <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">PATH=$PATH:/home/$USER/.local/bin</span></code></p></li>
+</ul>
+</section>
+<section id="automatic-cluster-initialization">
+<h2>Automatic Cluster Initialization<a class="headerlink" href="#automatic-cluster-initialization" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>Fill in the cluster configuration YAML file(cluster_configuration.YAML in cluster_configuration_files):</p></li>
+<li><p>Edit all the required fields in the cluster_configuration.YAML</p></li>
+<li><p>head_ip: Add the IP for the head node</p></li>
+<li><p>workers_ip: Add the IP for all the worker nodes</p></li>
+<li><p>ssh_private_key: Uncomment if ssh passwordless logging is not there on the nodes</p></li>
+<li><p>min_workers, max_workers: By default make them min_workers == max_workers == len(worker_ips)</p></li>
+<li><p>For starting the ray cluster automatically, run the command: python3 start_cluster.py cluster_configuration.yaml</p></li>
+<li><p>For stopping the ray cluster automatically, run the command: python3 stop_cluster.py cluster_configuration.yaml</p></li>
+</ul>
+</section>
+<section id="manual-cluster-initialization">
+<h2>Manual Cluster Initialization<a class="headerlink" href="#manual-cluster-initialization" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>On the head node, run the command <code class="docutils literal notranslate"><span class="pre">ray</span> <span class="pre">start</span> <span class="pre">--head</span> <span class="pre">--port=6379</span></code></p></li>
+<li><p>On worker nodes, run the command <a href="#id1"><span class="problematic" id="id2">``</span></a>ray start –address=&lt;head_node_ip&gt;:6379    ``</p></li>
+</ul>
+</section>
+<section id="validating-cluster">
+<h2>Validating Cluster<a class="headerlink" href="#validating-cluster" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>Type <code class="docutils literal notranslate"><span class="pre">ray</span> <span class="pre">status</span></code> on terminal</p></li>
+<li><p>See Node Status and Resources</p></li>
+<li><p>If it throws an error, it implies cluster has not started</p></li>
+</ul>
+</section>
+<section id="starting-training">
+<h2>Starting Training<a class="headerlink" href="#starting-training" title="Permalink to this heading"></a></h2>
+<p>Make sure to divide the training data equally(almost) for all nodes. Otherwise, some batches might be dropped as the training will occur only on a minimum of the number of batches across nodes.</p>
+<p>Importing the library:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">thirdai.distributed_bolt</span> <span class="kn">import</span> <span class="n">db</span>
+</pre></div>
+</div>
+<p>The current APIs supported:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">head</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">FullyConnectedNetwork</span><span class="p">(</span>
+<span class="go">        num_workers=num_worker,</span>
+<span class="go">        config_filename=config_filename,</span>
+<span class="go">        num_cpus_per_node=num_cpus,</span>
+<span class="go">        communication_type=&quot;circular&quot;/&quot;linear&quot;,</span>
+<span class="go">    )</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">head</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">head</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span> <span class="c1">#returns predict on the model trained</span>
+</pre></div>
+</div>
+<p>Look at examples folder for sample code.</p>
+</section>
+<section id="important">
+<h2>IMPORTANT<a class="headerlink" href="#important" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Set up passwordless ssh between nodes(for easier usage)</p></li>
+<li><p>If the num_cpus_per_node is not set, DistributedBolt will automatically get the number of CPUs available on the current and initialize the worker node with that count.</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting_started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="deployment_config_example.html" class="btn btn-neutral float-right" title="Using the DeploymentConfig and ModelPipeline" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, t.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

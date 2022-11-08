@@ -1,7 +1,10 @@
 #pragma once
 
 #include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
+#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformerBase.h>
 #include <search/src/Generator.h>
+#include <cereal/access.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::automl::deployment {
 
@@ -27,16 +30,17 @@ class UDTGenerator : public QueryCandidateGenerator,
   static UDTGenerator buildUDT(const uint32_t& target_column_index,
                                const uint32_t& source_column_index,
                                const std::string& dataset_size) {
-    (void)target_column_index;
-    (void)source_column_index;
     (void)dataset_size;
 
     auto generator_config = QueryCandidateGeneratorConfig(
         /* hash_function = */ DEFAULT_HASH_FUNCTION,
         /* num_tables = */ DEFAULT_NUM_TABLES,
-        /* hashes_per_table = */ DEFAULT_HASHES_PER_TABLE, /* top_k = */ 5,
+        /* hashes_per_table = */ DEFAULT_HASHES_PER_TABLE,
+        /* range = */ 100000,
         /* n_grams = */ DEFAULT_N_GRAMS,
-        /* has_incorrect_queries = */ true, /* input_dim = */ 100);
+        /* has_incorrect_queries = */ true,
+        /* source_column_index = */ source_column_index,
+        /* target_column_index = */ target_column_index);
 
     auto generator = QueryCandidateGenerator::make(
         std::make_shared<QueryCandidateGeneratorConfig>(generator_config));
@@ -44,36 +48,40 @@ class UDTGenerator : public QueryCandidateGenerator,
     return UDTGenerator(/* model = */ std::move(generator));
   }
 
-  static void save(const std::string& filename) { (void)filename; }
+  void save(const std::string& filename) override { 
+    std::ofstream file_stream = dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(file_stream);
 
-  static std::unique_ptr<UDTGenerator> load(const std::string& filename) {
-    auto file = filename;
-    (void)file;
-    return nullptr;
+    oarchive(*this);
   }
 
-  static void trainOnFile(const std::string& filename,
-                          bolt::TrainConfig& train_config,
-                          std::optional<uint32_t> batch_size_opt,
-                          std::optional<uint32_t> max_in_memory_batches) {
-    (void)max_in_memory_batches;
-    (void)train_config;
-    (void)filename;
-    (void)batch_size_opt;
+  static std::unique_ptr<UDTGenerator> load(const std::string& filename) final {
+    std::ifstream file_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
 
-    // uint32_t batch_size =
-    //     batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
+    cereal::BinaryInputArchive iarchive(file_stream);
+    std::unique_ptr<UDTGenerator> deserialized_into(new UDTGenerator());
+    iarchive(*deserialized_into);
 
-    // trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename,
-    // batch_size),
-    //                   train_config, max_in_memory_batches);
+    return deserialized_into;
   }
 
  private:
   explicit UDTGenerator(QueryCandidateGenerator&& model)
       : QueryCandidateGenerator(std::move(model)) {}
 
+  // Private constructor for cereal
+  UDTGenerator() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<UniversalDeepTransformerBase>(this));
+  }
+
+
   std::unique_ptr<QueryCandidateGenerator> _generator;
 };
 
 }  // namespace thirdai::automl::deployment
+
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UDTGenerator)
