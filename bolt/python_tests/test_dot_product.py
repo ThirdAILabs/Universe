@@ -8,7 +8,8 @@ pytestmark = [pytest.mark.unit]
 # This generates a dataset of one hot encoded vectors (with random noise added) and
 # binary labels where the label is 1 if the vectors have the same index one-hot-encoded,
 # and the label is 0 if the one-hot-encoded index is different.
-def generate_dataset(n_classes, n_samples, batch_size):
+def generate_dataset(n_classes, n_samples, batch_size, seed):
+    np.random.seed(seed)
     possible_one_hot_encodings = np.eye(n_classes)
 
     lhs_tokens = np.random.choice(n_classes, size=n_samples).astype("uint32")
@@ -66,10 +67,10 @@ def run_dot_product_test(lhs_sparsity, rhs_sparsity, predict_threshold, acc_thre
     batch_size = 100
 
     train_rhs_data, train_lhs_data, train_labels, _ = generate_dataset(
-        n_classes, n_samples, batch_size
+        n_classes, n_samples, batch_size, seed=350924
     )
     test_rhs_data, test_lhs_data, test_labels, test_labels_np = generate_dataset(
-        n_classes, n_samples, batch_size
+        n_classes, n_samples, batch_size, seed=82385
     )
 
     model = create_model(n_classes, lhs_sparsity, rhs_sparsity)
