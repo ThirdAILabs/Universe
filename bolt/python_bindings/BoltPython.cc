@@ -297,7 +297,7 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t,
-                    std::vector<uint32_t>, bool, bool, std::optional<uint32_t>,
+                    std::vector<uint32_t>, bool, std::optional<uint32_t>,
                     uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("range"), py::arg("n_grams"),
