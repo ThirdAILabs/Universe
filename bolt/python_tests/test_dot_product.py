@@ -85,7 +85,6 @@ def run_dot_product_test(lhs_sparsity, rhs_sparsity, predict_threshold, acc_thre
     scores = activations[:, 0]
     acc = compute_acc(labels=test_labels_np, scores=scores, threshold=predict_threshold)
 
-    print(acc)
     assert acc >= acc_threshold
 
 
