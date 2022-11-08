@@ -22,6 +22,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 namespace thirdai::dataset {
@@ -182,9 +183,9 @@ class UserItemHistoryBlock final : public Block {
     auto message = _item_vectors
                        // TODO(Geordie): Make more descriptive.
                        ? "Metadata of previously seen item."
-                       : "Previously seen '" +
-                             _item_id_lookup->getString(index_within_block) +
-                             "'";
+                       : "'" + _item_id_lookup->getString(index_within_block) +
+                             "' is one of last " +
+                             std::to_string(_track_last_n) + " values";
     return {_item_col, message};
   }
 
