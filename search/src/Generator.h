@@ -7,7 +7,6 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/DensifiedMinHash.h>
-#include <hashing/src/HashFunction.h>
 #include <hashing/src/MinHash.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
