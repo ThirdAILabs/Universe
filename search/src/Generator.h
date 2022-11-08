@@ -37,9 +37,8 @@ class QueryCandidateGeneratorConfig {
   QueryCandidateGeneratorConfig(
       const std::string& hash_function, uint32_t num_tables,
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
-      bool has_incorrect_queries = false,
       std::optional<uint32_t> reservoir_size = std::nullopt,
-      uint32_t batch_size = 10000)
+      bool has_incorrect_queries = false, uint32_t batch_size = 10000)
       : _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
         _batch_size(batch_size),
