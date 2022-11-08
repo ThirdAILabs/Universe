@@ -106,7 +106,6 @@ class QueryCandidateGeneratorConfig {
                                                          _num_tables, _range);
     }
 
-    std::cout << hash_function;
     throw exceptions::NotImplemented(
         "Unsupported Hash Function. Supported Hash Functions: "
         "DensifiedMinHash, MinHash.");

@@ -72,9 +72,6 @@ class Flash {
   std::vector<std::vector<LABEL_T>> queryBatch(const BoltBatch& batch,
                                                uint32_t top_k,
                                                bool pad_zeros = false) const;
-  std::shared_ptr<hashing::HashFunction> getHashFunction() const {
-    return _hash_function;
-  }
 
  private:
   /**
