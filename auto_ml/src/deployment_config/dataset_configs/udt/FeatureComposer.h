@@ -83,7 +83,8 @@ class FeatureComposer {
 
       if (data_type.isNumerical()) {
         tabular_col_ranges[col_num] = data_type.asNumerical().range;
-        tabular_col_bins[col_num] = getNumberOfBins(data_type.asNumerical().sampling);
+        tabular_col_bins[col_num] =
+            getNumberOfBins(data_type.asNumerical().sampling);
         tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
       }
 
@@ -106,9 +107,10 @@ class FeatureComposer {
 
     // we always use tabular unigrams but add pairgrams on top of it if the
     // contextual_columns flag is true
-    blocks.push_back(makeTabularHashFeaturesBlock(
-        tabular_datatypes, tabular_col_ranges,
-        column_numbers.getColumnNumToColNameMap(), contextual_columns,tabular_col_bins));
+    blocks.push_back(
+        makeTabularHashFeaturesBlock(tabular_datatypes, tabular_col_ranges,
+                                     column_numbers.getColumnNumToColNameMap(),
+                                     contextual_columns, tabular_col_bins));
 
     return blocks;
   }
@@ -309,10 +311,11 @@ class FeatureComposer {
   static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
       const std::vector<dataset::TabularDataType>& tabular_datatypes,
       const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
-      const std::vector<std::string>& num_to_name, bool contextual_columns,std::unordered_map<uint32_t, uint32_t> col_num_bins) {
+      const std::vector<std::string>& num_to_name, bool contextual_columns,
+      std::unordered_map<uint32_t, uint32_t> col_num_bins) {
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
         tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr,
-        /* column_names= */ num_to_name,col_num_bins);
+        /* column_names= */ num_to_name, col_num_bins);
 
     return std::make_shared<dataset::TabularHashFeatures>(
         tabular_metadata, /* output_range = */ 100000,

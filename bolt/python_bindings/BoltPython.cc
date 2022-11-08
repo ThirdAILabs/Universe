@@ -126,7 +126,7 @@ Args:
             )
                              )pbdoc");
   udt_types_submodule.def("numerical", automl::deployment::DataType::numerical,
-                          py::arg("range"),py::arg("sampling") = "s",
+                          py::arg("range"), py::arg("sampling") = "s",
                           R"pbdoc(
     Numerical column type. Use this object if a column contains numerical 
     data (the value is treated as a quantity). Examples include hours of 
