@@ -311,7 +311,6 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
                         DensifiedMinHash and DWTA.
         num_tables (int): Number of hash tables to construct.
         hashes_per_table (int): Number of hashes per table.
-        top_k (int): The number of closest queries to return
         n_grams (List[int]): List of N-gram blocks to use. 
         has_incorrect_queries(bool): Flag to identify if flash is initialized
             with single queries or tuples of incorrect and correct queries.
@@ -449,7 +448,7 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
 
     Args:
         queries (List[str]): Input queries
-
+        top_k (int): The number of closest queries to return
     Returns:
         List[List[str]]: The generated list of queries by flash. 
 
@@ -457,9 +456,32 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
         >>> generator = bolt.models.Generator(...)
         >>> query_file_name = "/path/to/query/file/name"
         >>> generator.build_index(file_name=query_file_name)
-        >>> candidates = generator.generate(query=["first incorrect query",
-                                                   "second incorrect query"])
+        >>> candidates = generator.generate(
+                    query=["first incorrect query","second incorrect query"]
+            )
 
+           )pbdoc")
+
+      .def("evaluate", &bolt::QueryCandidateGenerator::evaluateOnFile,
+           py::arg("file_name"), py::arg("top_k"),
+           R"pbdoc(
+    Evaluates the query candidate generator using the input from a CSV file. 
+    The input file is expected to have pairs of correct and incorrect queries 
+    in that order. 
+    This function also prints the recall at K.
+
+    Args:
+        file_name (str): Input file
+        top_k (int): The number of closest queries to return
+
+    Returns:
+        List[List[str]]: Generated candidate queries for 
+        each incorrect query in the input file.
+
+    Example:
+        >>> generator = bolt.models.Generator(config_file_name="config_file")
+        >>> generator.train(file_name="train_file")
+        >>> candidate_queries = generator.evaluate(file_name="eval_file")
            )pbdoc");
 }
 
