@@ -2,6 +2,7 @@
 
 #include "HashFunction.h"
 #include "UniversalHash.h"
+#include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::hashing {
 
@@ -28,7 +29,7 @@ class MinHash final : public HashFunction {
  private:
   uint32_t _hashes_per_table;
   uint32_t _total_num_hashes;
-  std::vector<UniversalHash> _hash_functions;
+std::vector<UniversalHash> _hash_functions;
 
   MinHash() : HashFunction(0, 0){};
 
@@ -41,3 +42,5 @@ class MinHash final : public HashFunction {
 };
 
 }  // namespace thirdai::hashing
+
+CEREAL_REGISTER_TYPE(thirdai::hashing::MinHash)
