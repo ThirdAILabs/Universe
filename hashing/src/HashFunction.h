@@ -29,7 +29,6 @@ class HashFunction {
   }
 
   void hashBatchParallel(const BoltBatch& batch, uint32_t* output) const {
-    std::cout << "BATCH SIZE = " << batch.getBatchSize() << std::endl;
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       if (batch[v].isDense()) {

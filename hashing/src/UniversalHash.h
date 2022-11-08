@@ -30,11 +30,9 @@ class UniversalHash {
    */
   uint32_t seed() const;
 
-    // Private constructor for cereal.
-  UniversalHash() {}
-
  private:
-
+  // Private constructor for cereal.
+  UniversalHash() {}
 
   friend class cereal::access;
   template <class Archive>
