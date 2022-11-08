@@ -35,13 +35,12 @@ using thirdai::search::Flash;
 
 class QueryCandidateGeneratorConfig {
  public:
-  QueryCandidateGeneratorConfig(const std::string& hash_function,
-                                uint32_t num_tables, uint32_t hashes_per_table,
-                                uint32_t range, std::vector<uint32_t> n_grams,
-                                bool has_incorrect_queries = false,
-                                bool use_reservoir_sampling = false,
-                                std::optional<uint32_t> reservoir_size = std::nullopt,
-                                uint32_t batch_size = 10000)
+  QueryCandidateGeneratorConfig(
+      const std::string& hash_function, uint32_t num_tables,
+      uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
+      bool has_incorrect_queries = false, bool use_reservoir_sampling = false,
+      std::optional<uint32_t> reservoir_size = std::nullopt,
+      uint32_t batch_size = 10000)
       : _hash_function(getHashFunction(thirdai::utils::lower(hash_function))),
         _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
@@ -54,7 +53,7 @@ class QueryCandidateGeneratorConfig {
 
   // Overloaded operator mainly for testing
   bool operator==(const QueryCandidateGeneratorConfig& rhs) const {
-    return this->_hash_function == rhs._hash_function &&
+    return this->_hash_function->getName() == rhs._hash_function->getName() &&
            this->_num_tables == rhs._num_tables &&
            this->_hashes_per_table == rhs._hashes_per_table &&
            this->_batch_size == rhs._batch_size && this->_range == rhs._range &&
@@ -88,7 +87,7 @@ class QueryCandidateGeneratorConfig {
   constexpr uint32_t batchSize() const { return _batch_size; }
 
   constexpr uint32_t reservoirSize() const {
-    assert(_reservoir_size.hasValue());
+    assert(_reservoir_size.has_value());
     return _reservoir_size.value();
   }
 
@@ -115,7 +114,6 @@ class QueryCandidateGeneratorConfig {
       return std::make_shared<hashing::DensifiedMinHash>(_hashes_per_table,
                                                          _num_tables, _range);
     }
-    std::cout << "hash_function..." << std::endl;
 
     std::cout << hash_function;
     throw exceptions::NotImplemented(
@@ -208,13 +206,11 @@ class QueryCandidateGenerator {
     if (!_flash_index) {
       if (_query_generator_config->useReservoirSampling()) {
         _flash_index = std::make_unique<Flash<uint32_t>>(
-                               _query_generator_config->hashFunction(),
-                               _query_generator_config->reservoirSize());
-      }
-      else {
+            _query_generator_config->hashFunction(),
+            _query_generator_config->reservoirSize());
+      } else {
         _flash_index = std::make_unique<Flash<uint32_t>>(
-          _query_generator_config->hashFunction()
-        );
+            _query_generator_config->hashFunction());
       }
     }
 
