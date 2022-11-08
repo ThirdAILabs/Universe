@@ -45,8 +45,9 @@ void writeInputRowsToFile(const std::string& file_name,
 }
 
 QueryCandidateGeneratorConfig getQueryCandidateGeneratorConfig() {
+  const std::string& hash = "DensifiedMinHash";
   return QueryCandidateGeneratorConfig(
-      /* hash_function = */ "DensifiedMinHash",
+      /* hash_function = */ hash,
       /* num_tables = */ NUM_TABLES,
       /* hashes_per_table = */ HASHES_PER_TABLE,
       /* range= */ 100,
@@ -76,7 +77,7 @@ TEST(QueryCandidateGeneratorTest, QueryCandidateGeneratorConfigSerialization) {
   EXPECT_EQ(std::remove(CONFIG_FILE), 0);
 }
 
-TEST(QueryCandidateGeneratorTest, GeneratorAssignscUniqueLabels) {
+TEST(QueryCandidateGeneratorTest, GeneratorAssignsUniqueLabels) {
   auto config = getQueryCandidateGeneratorConfig();
 
   auto query_candidate_generator = QueryCandidateGenerator::make(

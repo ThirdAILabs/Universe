@@ -6,9 +6,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include <hashing/src/DWTA.h>
 #include <hashing/src/DensifiedMinHash.h>
-#include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
 #include <hashing/src/MinHash.h>
 #include <dataset/src/DataLoader.h>
@@ -23,6 +21,7 @@
 #include <fstream>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -40,9 +39,9 @@ class QueryCandidateGeneratorConfig {
                                 uint32_t range, std::vector<uint32_t> n_grams,
                                 bool has_incorrect_queries = false,
                                 bool use_reservoir_sampling = false,
-                                uint32_t reservoir_size = 10000,
+                                std::optional<uint32_t> reservoir_size = std::nullopt,
                                 uint32_t batch_size = 10000)
-      : _hash_function(getHashFunction(hash_function)),
+      : _hash_function(getHashFunction(thirdai::utils::lower(hash_function))),
         _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
         _batch_size(batch_size),
@@ -88,8 +87,8 @@ class QueryCandidateGeneratorConfig {
   constexpr uint32_t batchSize() const { return _batch_size; }
 
   constexpr uint32_t reservoirSize() const {
-    assert(_use_reservoir_sampling);
-    return _reservoir_size;
+    assert(_reservoir_size.hasValue());
+    return _reservoir_size.value();
   }
 
   constexpr bool hasIncorrectQueries() const { return _has_incorrect_queries; }
@@ -115,6 +114,9 @@ class QueryCandidateGeneratorConfig {
       return std::make_shared<hashing::DensifiedMinHash>(_hashes_per_table,
                                                          _num_tables, _range);
     }
+    std::cout << "hash_function..." << std::endl;
+
+    std::cout << hash_function;
     throw exceptions::NotImplemented(
         "Unsupported Hash Function. Supported Hash Functions: "
         "DensifiedMinHash, MinHash.");
@@ -131,7 +133,7 @@ class QueryCandidateGeneratorConfig {
   // Identifies if the dataset contains pairs of correct and incorrect queries
   bool _has_incorrect_queries;
   bool _use_reservoir_sampling;
-  uint32_t _reservoir_size;
+  std::optional<uint32_t> _reservoir_size;
 
   // Private constructor for cereal
   QueryCandidateGeneratorConfig() {}
@@ -204,12 +206,16 @@ class QueryCandidateGenerator {
     auto [data, _] = data_loader->loadInMemory();
 
     if (!_flash_index) {
-      _flash_index = _query_generator_config->useReservoirSampling()
-                         ? std::make_unique<Flash<uint32_t>>(
+      if (_query_generator_config->useReservoirSampling()) {
+        _flash_index = std::make_unique<Flash<uint32_t>>(
                                _query_generator_config->hashFunction(),
-                               _query_generator_config->reservoirSize())
-                         : std::make_unique<Flash<uint32_t>>(
-                               _query_generator_config->hashFunction());
+                               _query_generator_config->reservoirSize());
+      }
+      else {
+        _flash_index = std::make_unique<Flash<uint32_t>>(
+          _query_generator_config->hashFunction()
+        );
+      }
     }
 
     _flash_index->addDataset(*data, labels);
