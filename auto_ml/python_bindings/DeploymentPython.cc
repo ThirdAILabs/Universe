@@ -270,7 +270,6 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            docs::ORACLE_CONFIG_INIT);
-#endif
 
   py::class_<UniversalDeepTransformer>(
       bolt_submodule, "UniversalDeepTransformer", docs::UDT_CLASS)
