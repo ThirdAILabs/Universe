@@ -79,8 +79,11 @@ class TemporalRelationshipsAutotuner {
     std::vector<uint32_t> window_sizes = {1, 2, 5, 10, 25};
     configs.reserve(configs.size() + window_sizes.size());
     for (uint32_t track_last_n : window_sizes) {
-      configs.push_back(
-          TemporalConfig::categorical(trackable_col, track_last_n));
+      configs.push_back(TemporalConfig::categorical(
+          trackable_col, track_last_n, /* include_current_row= */ false,
+          /* use_metadata= */ track_last_n == window_sizes.at(2)));
+      // Use metadata for the middle window size to avoid excessive bias
+      // towards most recent item and avoid having too many features.
     }
   }
 };

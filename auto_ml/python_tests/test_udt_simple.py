@@ -7,6 +7,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 TRAIN_FILE = "tempTrainFile.csv"
 TEST_FILE = "tempTestFile.csv"
+METADATA_FILE = "tempMetaFile.csv"
 
 
 def write_lines_to_file(file, lines):
@@ -44,11 +45,23 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         ],
     )
 
+    keys = [0, 1, 2] if integer_label else [0, 1, 4]
+    metadata_lines = [str(key) + "," + str(val) for key, val in zip(keys, [1, 2, 3])]
+    write_lines_to_file(METADATA_FILE, ["id,feature"] + metadata_lines)
+
+    metadata = bolt.types.metadata(
+        filename=METADATA_FILE,
+        key_column_name="id",
+        data_types={"feature": bolt.types.categorical(n_unique_classes=3)},
+    )
+
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "userId": bolt.types.categorical(n_unique_classes=3),
+            "userId": bolt.types.categorical(n_unique_classes=3, metadata=metadata),
             "movieId": bolt.types.categorical(
-                n_unique_classes=3, consecutive_integer_ids=integer_label
+                n_unique_classes=3,
+                consecutive_integer_ids=integer_label,
+                metadata=metadata,
             ),
             "timestamp": bolt.types.date(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),

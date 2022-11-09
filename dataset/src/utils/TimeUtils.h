@@ -6,7 +6,9 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string_view>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -112,5 +114,33 @@ class TimeObject {
 
   struct tm _time_object;
 };
+
+inline std::string getDayOfWeek(uint32_t day_number) {
+  if (day_number >= 7) {
+    throw std::invalid_argument(
+        "Day number must be between 0 and 6. Received " +
+        std::to_string(day_number) + ".");
+  }
+
+  std::vector<std::string> day_names = {"Sunday",    "Monday",   "Tuesday",
+                                        "Wednesday", "Thursday", "Friday",
+                                        "Saturday"};
+
+  return day_names[day_number];
+}
+
+inline std::string getMonthOfYear(uint32_t month_number) {
+  if (month_number >= 12) {
+    throw std::invalid_argument(
+        "Month number must be between 0 and 11. Received " +
+        std::to_string(month_number) + ".");
+  }
+
+  std::vector<std::string> month_names = {
+      "January", "February", "March",     "April",   "May",      "June",
+      "July",    "August",   "September", "October", "November", "December"};
+
+  return month_names[month_number];
+}
 
 }  // namespace thirdai::dataset

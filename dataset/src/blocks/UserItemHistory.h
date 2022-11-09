@@ -10,10 +10,12 @@
 #include <cereal/types/vector.hpp>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <algorithm>
 #include <atomic>
+#include <cstdint>
 #include <deque>
 #include <exception>
 #include <iostream>
@@ -85,21 +87,20 @@ using UserItemHistoryBlockPtr = std::shared_ptr<UserItemHistoryBlock>;
  */
 class UserItemHistoryBlock final : public Block {
  public:
-  UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
-                       uint32_t timestamp_col,
-                       ThreadSafeVocabularyPtr user_id_map,
-                       ThreadSafeVocabularyPtr item_id_map,
-                       ItemHistoryCollectionPtr item_history_collection,
-                       uint32_t track_last_n, bool should_update_history = true,
-                       bool include_current_row = false,
-                       std::optional<char> item_col_delimiter = std::nullopt,
-                       int64_t time_lag = 0)
+  UserItemHistoryBlock(
+      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
+      ThreadSafeVocabularyPtr user_id_map, ThreadSafeVocabularyPtr item_id_map,
+      ItemHistoryCollectionPtr item_history_collection, uint32_t track_last_n,
+      bool should_update_history = true, bool include_current_row = false,
+      std::optional<char> item_col_delimiter = std::nullopt,
+      int64_t time_lag = 0, PreprocessedVectorsPtr item_vectors = nullptr)
       : _user_col(user_col),
         _item_col(item_col),
         _timestamp_col(timestamp_col),
         _track_last_n(track_last_n),
         _user_id_lookup(std::move(user_id_map)),
         _item_id_lookup(std::move(item_id_map)),
+        _item_vectors(std::move(item_vectors)),
         _per_user_history(std::move(item_history_collection)),
         _should_update_history(should_update_history),
         _include_current_row(include_current_row),
@@ -136,7 +137,9 @@ class UserItemHistoryBlock final : public Block {
         _item_col_delimiter(item_col_delimiter),
         _time_lag(time_lag) {}
 
-  uint32_t featureDim() const final { return _item_id_lookup->vocabSize(); }
+  uint32_t featureDim() const final {
+    return _item_vectors ? _item_vectors->dim : _item_id_lookup->vocabSize();
+  }
 
   bool isDense() const final { return false; }
 
@@ -152,12 +155,12 @@ class UserItemHistoryBlock final : public Block {
       ItemHistoryCollectionPtr records, uint32_t track_last_n,
       bool should_update_history = true, bool include_current_row = false,
       std::optional<char> item_col_delimiter = std::nullopt,
-      int64_t time_lag = 0) {
+      int64_t time_lag = 0, PreprocessedVectorsPtr item_vectors = nullptr) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, std::move(user_id_map),
         std::move(item_id_map), std::move(records), track_last_n,
         should_update_history, include_current_row, item_col_delimiter,
-        time_lag);
+        time_lag, std::move(item_vectors));
   }
 
   static UserItemHistoryBlockPtr make(
@@ -177,9 +180,13 @@ class UserItemHistoryBlock final : public Block {
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) final {
     (void)input_row;
-    return {_item_col, "'" + _item_id_lookup->getString(index_within_block) +
-                           "' is one of last " + std::to_string(_track_last_n) +
-                           " values"};
+    auto message = _item_vectors
+                       // TODO(Geordie): Make more descriptive.
+                       ? "Metadata of previously seen item."
+                       : "'" + _item_id_lookup->getString(index_within_block) +
+                             "' is one of last " +
+                             std::to_string(_track_last_n) + " values";
+    return {_item_col, message};
   }
 
  protected:
@@ -251,7 +258,11 @@ class UserItemHistoryBlock final : public Block {
     for (auto record = user_history.rbegin(); record != user_history.rend();
          record++) {
       if (record->timestamp <= timestamp_seconds) {
-        vec.addSparseFeatureToSegment(record->item, 1.0);
+        if (_item_vectors) {
+          _item_vectors->appendPreprocessedFeaturesToVector(record->item, vec);
+        } else {
+          vec.addSparseFeatureToSegment(record->item, 1.0);
+        }
         added++;
       }
       seen++;
@@ -291,6 +302,7 @@ class UserItemHistoryBlock final : public Block {
 
   ThreadSafeVocabularyPtr _user_id_lookup;
   ThreadSafeVocabularyPtr _item_id_lookup;
+  PreprocessedVectorsPtr _item_vectors;
 
   std::shared_ptr<ItemHistoryCollection> _per_user_history;
 
@@ -307,8 +319,8 @@ class UserItemHistoryBlock final : public Block {
   void serialize(Archive& archive) {
     archive(cereal::base_class<Block>(this), _user_col, _item_col,
             _timestamp_col, _track_last_n, _user_id_lookup, _item_id_lookup,
-            _per_user_history, _should_update_history, _include_current_row,
-            _item_col_delimiter, _time_lag);
+            _item_vectors, _per_user_history, _should_update_history,
+            _include_current_row, _item_col_delimiter, _time_lag);
   }
 };
 
