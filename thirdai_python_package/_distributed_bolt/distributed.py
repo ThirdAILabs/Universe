@@ -131,6 +131,7 @@ class RayTrainingClusterConfig:
 
 class DataParallelIngest:
     def __init__(self, dataset_type: str, save_location: str = "/tmp/thirdai/"):
+
         """
         This class writes a wrapper on Ray Data for copying and splitting training
         data from single source or multiple sources to files stored locally or remote,
@@ -144,6 +145,31 @@ class DataParallelIngest:
         """
         self.dataset_type = dataset_type
         self.save_location = save_location
+    
+    def ray_read_dataset(
+        self,
+        dataset_type,
+        paths,
+        filesystem,
+        parallelism,
+        num_workers,
+    ):
+        ray_dataset = None
+        if dataset_type == "csv":
+            ray_dataset = ray.data.read_csv(
+                paths=paths, filesystem=filesystem, parallelism=parallelism
+            ).repartition(num_workers)
+        elif dataset_type == "numpy":
+            ray_dataset = ray.data.read_numpy(
+                paths=paths, filesystem=filesystem, parallelism=parallelism
+            ).repartition(num_workers)
+        else:
+            raise ValueError(
+                f"Dataset Type: {dataset_type} is not"
+                "supported. Supported types are csv,"
+                "or numpy"
+            )
+        return ray_dataset
 
     def split_dataset_across_nodes(
         self,
@@ -163,7 +189,7 @@ class DataParallelIngest:
         :param num_workers: Total number of Nodes in Cluster
         :type num_workers: int
         :param remote_file_system: The filesystem implementation to read from,
-                defaults to None, defaults to None
+                defaults to None
         :type remote_file_system: Optional[pyarrow.fs.FileSystem], optional
         :param parallelism: Number of parallel reads, defaults to 1
         :type parallelism: int, optional
@@ -206,12 +232,13 @@ class DataParallelIngest:
                 self.dataset_type = dataset_type
                 self.save_location = save_location
 
-            def consume(self, data_shard):
+            def ray_write_dataset(
+                self,
+                data_shard,
+                dataset_type,
+                file_path_prefix,
+            ):
                 file_path = None
-                file_path_prefix = os.path.join(self.save_location, f"block")
-                dataset_type = self.dataset_type
-                if not os.path.exists(file_path_prefix):
-                    os.mkdir(file_path_prefix)
                 if dataset_type == "csv":
                     data_shard.write_csv(
                         file_path_prefix,
@@ -224,8 +251,18 @@ class DataParallelIngest:
                         block_path_provider=RayBlockWritePathProvider(),
                     )
                     file_path = os.path.join(file_path_prefix, "train_file")
-
+                
                 return file_path
+
+
+            def consume(self, data_shard):
+                file_path = None
+                file_path_prefix = os.path.join(self.save_location, f"block")
+                dataset_type = self.dataset_type
+                if not os.path.exists(file_path_prefix):
+                    os.mkdir(file_path_prefix)
+                return self.ray_write_dataset(data_shard, dataset_type, file_path_prefix)
+
 
         pg = placement_group(
             [{"CPU": 1}] * num_workers,
@@ -241,22 +278,8 @@ class DataParallelIngest:
         ]
 
 
-        ray_dataset = None
-        if self.dataset_type == "csv":
-            ray_dataset = ray.data.read_csv(
-                paths=paths, filesystem=remote_file_system, parallelism=parallelism
-            ).repartition(num_workers)
-        elif self.dataset_type == "numpy":
-            ray_dataset = ray.data.read_numpy(
-                paths=paths, filesystem=remote_file_system, parallelism=parallelism
-            ).repartition(num_workers)
-
-        if ray_dataset == None:
-            raise ValueError(
-                f"Dataset Type: {dataset_type} is not"
-                "supported. Supported types are csv,"
-                "or numpy"
-            )
+        ray_dataset = self.ray_read_dataset(self.dataset_type, paths, remote_file_system, parallelism, num_workers)
+        
 
         ray_data_shards = ray_dataset.split(
             n=num_workers, equal=True, locality_hints=workers
