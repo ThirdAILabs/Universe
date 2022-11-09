@@ -171,6 +171,24 @@ class DataParallelIngest:
             )
         return ray_dataset
 
+    def schedule_on_different_machines(
+        self,
+        num_workers,
+    ):
+        pg = placement_group(
+            [{"CPU": 1}] * num_workers,
+            strategy="STRICT_SPREAD",
+        )
+        ray.get(pg.ready())
+
+        workers = [
+            DataTransferActor.options(
+                scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=pg)
+            ).remote(self.dataset_type, self.save_location)
+            for i in range(num_workers)
+        ]
+        return workers
+
     def split_dataset_across_nodes(
         self,
         paths: Union[str, List[str]],
@@ -235,17 +253,16 @@ class DataParallelIngest:
             def ray_write_dataset(
                 self,
                 data_shard,
-                dataset_type,
                 file_path_prefix,
             ):
                 file_path = None
-                if dataset_type == "csv":
+                if self.dataset_type == "csv":
                     data_shard.write_csv(
                         file_path_prefix,
                         block_path_provider=RayBlockWritePathProvider(),
                     )
                     file_path = os.path.join(file_path_prefix, "train_file")
-                elif dataset_type == "numpy":
+                elif self.dataset_type == "numpy":
                     data_shard.write_numpy(
                         file_path_prefix,
                         block_path_provider=RayBlockWritePathProvider(),
@@ -258,28 +275,17 @@ class DataParallelIngest:
             def consume(self, data_shard):
                 file_path = None
                 file_path_prefix = os.path.join(self.save_location, f"block")
-                dataset_type = self.dataset_type
                 if not os.path.exists(file_path_prefix):
                     os.mkdir(file_path_prefix)
-                return self.ray_write_dataset(data_shard, dataset_type, file_path_prefix)
+                return self.ray_write_dataset(data_shard, file_path_prefix)
 
 
-        pg = placement_group(
-            [{"CPU": 1}] * num_workers,
-            strategy="STRICT_SPREAD",
-        )
-        ray.get(pg.ready())
-
-        workers = [
-            DataTransferActor.options(
-                scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=pg)
-            ).remote(self.dataset_type, self.save_location)
-            for i in range(num_workers)
-        ]
+        
 
 
         ray_dataset = self.ray_read_dataset(self.dataset_type, paths, remote_file_system, parallelism, num_workers)
         
+        workers = schedule_on_different_machines(num_workers)
 
         ray_data_shards = ray_dataset.split(
             n=num_workers, equal=True, locality_hints=workers
