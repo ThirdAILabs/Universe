@@ -39,7 +39,7 @@ def build_and_train_mach(
     num_epochs=5,
 ):
 
-    # Import here to avoid collection error on release tests.
+    # Import here to avoid collection error since experimental is not defined in release mode.
     from thirdai import experimental
 
     train_x_np, train_y_np = generate_random_easy_sparse(
@@ -83,7 +83,7 @@ def get_recall(result, test_y, num_true_labels_per_sample):
 
 @pytest.mark.unit
 def test_mach_save_load():
-    # Import here to avoid collection error on release tests.
+    # Import here to avoid collection error since experimental is not defined in release mode.
     from thirdai import experimental
 
     num_train = 100

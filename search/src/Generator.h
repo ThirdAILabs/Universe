@@ -9,10 +9,12 @@
 #include <hashing/src/DWTA.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
+#include <hashing/src/MinHash.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
@@ -34,17 +36,13 @@ using thirdai::search::Flash;
 class QueryCandidateGeneratorConfig {
  public:
   QueryCandidateGeneratorConfig(std::string hash_function, uint32_t num_tables,
-                                uint32_t hashes_per_table, uint32_t top_k,
+                                uint32_t hashes_per_table, uint32_t range,
                                 std::vector<uint32_t> n_grams,
                                 bool has_incorrect_queries = false,
-                                uint32_t input_dim = 100000,
-                                uint32_t batch_size = 10000,
-                                uint32_t range = 1000000)
+                                uint32_t batch_size = 10000)
       : _hash_function(std::move(hash_function)),
         _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
-        _input_dim(input_dim),
-        _top_k(top_k),
         _batch_size(batch_size),
         _range(range),
         _n_grams(std::move(n_grams)),
@@ -55,7 +53,6 @@ class QueryCandidateGeneratorConfig {
     return this->_hash_function == rhs._hash_function &&
            this->_num_tables == rhs._num_tables &&
            this->_hashes_per_table == rhs._hashes_per_table &&
-           this->_input_dim == rhs._input_dim && this->_top_k == rhs._top_k &&
            this->_batch_size == rhs._batch_size && this->_range == rhs._range &&
            this->_n_grams == rhs._n_grams &&
            this->_has_incorrect_queries == rhs._has_incorrect_queries;
@@ -85,26 +82,23 @@ class QueryCandidateGeneratorConfig {
   std::shared_ptr<hashing::HashFunction> getHashFunction() const {
     auto hash_function = thirdai::utils::lower(_hash_function);
 
+    if (hash_function == "minhash") {
+      return std::make_shared<hashing::MinHash>(_hashes_per_table, _num_tables,
+                                                _range);
+    }
     if (hash_function == "densifiedminhash") {
       return std::make_shared<hashing::DensifiedMinHash>(_hashes_per_table,
                                                          _num_tables, _range);
     }
-    if (hash_function == "dwta") {
-      return std::make_shared<hashing::DWTAHashFunction>(
-          _input_dim, _hashes_per_table, _num_tables, _range);
-    }
-    if (hash_function == "fastsrp") {
-      return std::make_shared<hashing::FastSRP>(_input_dim, _hashes_per_table,
-                                                _num_tables);
-    }
     throw exceptions::NotImplemented(
-        "Unsupported Hash Function. Supported Hash Functions include: "
-        "DensifiedMinHash, DWTA, and FastSRP.");
+        "Unsupported Hash Function. Supported Hash Functions: "
+        "DensifiedMinHash, MinHash.");
   }
 
   constexpr uint32_t batchSize() const { return _batch_size; }
-  constexpr uint32_t topK() const { return _top_k; }
+
   constexpr bool hasIncorrectQueries() const { return _has_incorrect_queries; }
+
   std::vector<uint32_t> nGrams() const { return _n_grams; }
 
  private:
@@ -112,8 +106,6 @@ class QueryCandidateGeneratorConfig {
   uint32_t _num_tables;
   uint32_t _hashes_per_table;
 
-  uint32_t _input_dim;
-  uint32_t _top_k;
   uint32_t _batch_size;
   uint32_t _range;
   std::vector<uint32_t> _n_grams;
@@ -127,8 +119,8 @@ class QueryCandidateGeneratorConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_hash_function, _num_tables, _hashes_per_table, _input_dim, _top_k,
-            _batch_size, _range, _n_grams, _has_incorrect_queries);
+    archive(_hash_function, _num_tables, _hashes_per_table, _batch_size, _range,
+            _n_grams, _has_incorrect_queries);
   }
 };
 
@@ -138,17 +130,16 @@ using QueryCandidateGeneratorConfigPtr =
 class QueryCandidateGenerator {
  public:
   static QueryCandidateGenerator make(
-      QueryCandidateGeneratorConfigPtr flash_QueryCandidateGenerator_config) {
-    return QueryCandidateGenerator(
-        std::move(flash_QueryCandidateGenerator_config));
+      QueryCandidateGeneratorConfigPtr query_candidate_generator_config) {
+    return QueryCandidateGenerator(std::move(query_candidate_generator_config));
   }
 
   static QueryCandidateGenerator buildGeneratorFromSerializedConfig(
       const std::string& config_file_name) {
-    auto flash_QueryCandidateGenerator_config =
+    auto query_candidate_generator_config =
         QueryCandidateGeneratorConfig::load(config_file_name);
 
-    return QueryCandidateGenerator::make(flash_QueryCandidateGenerator_config);
+    return QueryCandidateGenerator::make(query_candidate_generator_config);
   }
 
   void save(const std::string& file_name) {
@@ -205,11 +196,12 @@ class QueryCandidateGenerator {
    * of size n, each of which is also a vector of size at most k.
    *
    * @param queries
+   * @param top_k
    * @return A vector of suggested queries
 
    */
   std::vector<std::vector<std::string>> queryFromList(
-      const std::vector<std::string>& queries) {
+      const std::vector<std::string>& queries, uint32_t top_k) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Generate Candidate Queries without Training the "
@@ -224,7 +216,7 @@ class QueryCandidateGenerator {
     std::vector<std::vector<uint32_t>> candidate_query_labels =
         _flash_index->queryBatch(
             /* batch = */ BoltBatch(std::move(featurized_queries)),
-            /* top_k = */ _query_generator_config->topK(),
+            /* top_k = */ top_k,
             /* pad_zeros = */ false);
 
     std::vector<std::vector<std::string>> outputs;
@@ -237,6 +229,49 @@ class QueryCandidateGenerator {
       outputs.emplace_back(std::move(top_k_candidates));
     }
     return outputs;
+  }
+
+  /**
+   * @brief Returns a list of recommended queries and Computes Recall at K
+   * (R1@K).
+   *
+   * @param file_name: CSV file expected to have correct queries in column 0,
+   * and incorrect queries in column 1.
+   * @return Recommended queries
+   */
+  std::vector<std::vector<std::string>> evaluateOnFile(
+      const std::string& file_name, uint32_t top_k) {
+    if (!_flash_index) {
+      throw exceptions::QueryCandidateGeneratorException(
+          "Attempting to Evaluate the Generator without Training.");
+    }
+    auto data_loader = getDatasetLoader(file_name);
+    auto [data, _] = data_loader->loadInMemory();
+
+    std::vector<std::vector<std::string>> output_queries;
+    for (const auto& batch : *data) {
+      std::vector<std::vector<uint32_t>> candidate_query_labels =
+          _flash_index->queryBatch(
+              /* batch = */ batch,
+              /* top_k = */ top_k,
+              /* pad_zeros = */ false);
+
+      for (auto& candidate_query_label_vector : candidate_query_labels) {
+        auto top_k = getQueryCandidatesAsStrings(candidate_query_label_vector);
+        output_queries.push_back(std::move(top_k));
+      }
+    }
+
+    if (_query_generator_config->hasIncorrectQueries()) {
+      std::vector<std::string> correct_queries =
+          dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
+              file_name, /* column_index = */ 0);
+
+      computeRecallAtK(/* correct_queries = */ correct_queries,
+                       /* generated_queries = */ output_queries,
+                       /* K = */ top_k);
+    }
+    return output_queries;
   }
 
   std::unordered_map<std::string, uint32_t> getQueriesToLabelsMap() const {
@@ -301,6 +336,35 @@ class QueryCandidateGenerator {
       output_strings.push_back(_labels_to_queries_map[query_label]);
     }
     return output_strings;
+  }
+
+  /**
+   * @brief computes recall at K (R1@K)
+   *
+   * @param correct_queries: Vector of correct queries of size n.
+   * @param generated_queries: Vector of generated queries by the flash index.
+   * This is expected to be of size n and each element in the vector is also a
+   * vector of size k.
+   * @return recall
+   */
+  static void computeRecallAtK(
+      const std::vector<std::string>& correct_queries,
+      const std::vector<std::vector<std::string>>& generated_queries, int K) {
+    assert(correct_queries.size() == generated_queries.size());
+    uint64_t correct_results = 0;
+
+    for (uint64_t query_index = 0; query_index < correct_queries.size();
+         query_index++) {
+      const auto& top_k_queries = generated_queries[query_index];
+      const auto& correct_query = correct_queries[query_index];
+      if (std::find(top_k_queries.begin(), top_k_queries.end(),
+                    correct_query) != top_k_queries.end()) {
+        correct_results += 1;
+      }
+    }
+    auto recall = (correct_results * 1.0) / correct_queries.size();
+
+    std::cout << "Recall@" << K << " = " << recall << std::endl;
   }
 
   /**

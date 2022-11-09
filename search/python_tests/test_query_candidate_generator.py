@@ -14,9 +14,6 @@ QUERIES_FILE = "./queries.csv"
 TRANSFORMED_QUERIES = "./transformed_queries.csv"
 CONFIG_FILE = "./flash_index_config"
 
-# The downloaded dataset from HuggingFace consists of 328 samples
-DATASET_SIZE = 328
-
 
 def read_csv_file(file_name):
     with open(file_name, newline="") as file:
@@ -127,24 +124,22 @@ def test_flash_generator():
     write_input_dataset_to_csv(transformed_queries, TRANSFORMED_QUERIES)
 
     generator_config = bolt.models.GeneratorConfig(
-        hash_function="DensifiedMinHash",
-        num_tables=300,
-        hashes_per_table=32,
-        top_k=5,
+        hash_function="MinHash",
+        num_tables=20,
+        hashes_per_table=10,
+        range=100,
         n_grams=[3, 4],
         has_incorrect_queries=True,
-        input_dim=100,
     )
     generator_config.save(CONFIG_FILE)
 
     generator = bolt.models.Generator(config_file_name=CONFIG_FILE)
-
     generator.train(file_name=TRANSFORMED_QUERIES)
 
     query_pairs = read_csv_file(file_name=TRANSFORMED_QUERIES)
 
     generated_candidates = generator.generate(
-        queries=[query_pair[1] for query_pair in query_pairs]
+        queries=[query_pair[1] for query_pair in query_pairs], top_k=5
     )
 
     correct_results = 0
@@ -153,6 +148,7 @@ def test_flash_generator():
             1 if query_pairs[query_index][0] in generated_candidates[query_index] else 0
         )
 
-    assert correct_results / DATASET_SIZE > 0.95
+    recall = correct_results / len(query_pairs)
+    assert recall > 0.95
 
     delete_created_files()

@@ -392,7 +392,6 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
                         py::arg("data"), py::arg("batch_size") = std::nullopt);
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
       .def(py::init<std::shared_ptr<Vocabulary>, uint32_t>(),
            py::arg("vocabulary"), py::arg("pairgram_range"))
@@ -436,9 +435,6 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<FixedVocabulary, Vocabulary, std::shared_ptr<FixedVocabulary>>(
       dataset_submodule, "FixedVocabulary")
       .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
-
-#endif
-}
 
 bool denseBoltDatasetMatchesDenseMatrix(
     BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {

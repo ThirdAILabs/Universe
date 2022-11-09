@@ -235,7 +235,6 @@ def build_train_and_predict_single_hidden_layer(
     labels_np,
     input_output_dim,
     output_sparsity,
-    optimize_sparse_sparse=False,
     enable_sparse_inference=False,
     batch_size=256,
     epochs=3,
@@ -253,8 +252,6 @@ def build_train_and_predict_single_hidden_layer(
             hashes_per_table=3, num_tables=64, reservoir_size=8
         ),
     )(input_layer)
-    if optimize_sparse_sparse:
-        output_layer.enable_sparse_sparse_optimization()
 
     model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
     model.compile(bolt.nn.losses.CategoricalCrossEntropy())
