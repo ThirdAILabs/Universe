@@ -193,7 +193,7 @@ class DataParallelIngest:
 
         Note: 
         1. Make sure parallelism+1 <= num_cpus_on_node, for all nodes in the ray cluster. Ohterwise 
-            the schedulaer would just hang.
+            the scheduler would just hang.
         2. Right now, only CSV and numpy files are supported by Ray Data. 
             See: https://docs.ray.io/en/latest/data/api/dataset.html#i-o-and-conversion
         

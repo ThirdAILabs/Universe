@@ -4,7 +4,9 @@ import os
 from ray.data.datasource.file_based_datasource import BlockWritePathProvider
 from thirdai import data
 
-
+# There is no other way currently to provide the filenames while saving files,
+# apart from defining RayBlockWritePathProvider as per 
+# https://github.com/ray-project/ray/pull/19347
 class RayBlockWritePathProvider(BlockWritePathProvider):
     def _get_write_path_for_block(
         self,
