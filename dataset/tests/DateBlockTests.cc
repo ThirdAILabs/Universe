@@ -241,4 +241,27 @@ TEST_F(DateBlockTests, ExplainMethodGivesCorrectDayName) {
   }
 }
 
+TEST_F(DateBlockTests, ExplainMethodGivesCorrectMonthName) {
+  std::vector<std::string> samples = {
+      "2000-01-17", "2000-02-28", "2000-03-29", "2000-04-01",
+      "2000-05-02", "2000-06-03", "2000-07-04", "2000-08-05",
+      "2000-09-19", "2000-10-24", "2000-11-27", "2000-12-14",
+  };
+  std::vector<std::string> months = {
+      "January", "February", "March",     "April",   "May",      "June",
+      "July",    "August",   "September", "October", "November", "December",
+  };
+  auto block = std::make_shared<DateBlock>(/* col = */ 0);
+  auto batch = featurize(samples);
+
+  uint32_t month_number = 0;
+
+  for (const auto& vec : batch) {
+    auto month_of_year = monthOfYear(vec);
+    ASSERT_TRUE(month_of_year.has_value());
+    auto month = block->explainIndex(*month_of_year + monthOfYearOffset(), {});
+    ASSERT_TRUE(months[month_number++] == month.keyword);
+  }
+}
+
 }  // namespace thirdai::dataset
