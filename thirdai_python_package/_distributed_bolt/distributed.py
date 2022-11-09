@@ -173,7 +173,6 @@ class DataParallelIngest:
         self,
         num_workers,
     ):
-
         @ray.remote(num_cpus=1)
         class DataTransferActor:
             def __init__(self, dataset_type, save_location):
@@ -212,7 +211,7 @@ class DataParallelIngest:
                 if not os.path.exists(file_path_prefix):
                     os.mkdir(file_path_prefix)
                 return self.ray_write_dataset(data_shard, file_path_prefix)
-        
+
         pg = placement_group(
             [{"CPU": 1}] * num_workers,
             strategy="STRICT_SPREAD",
@@ -276,8 +275,6 @@ class DataParallelIngest:
             See: https://docs.ray.io/en/latest/data/api/dataset.html#i-o-and-conversion
 
         """
-
-        
 
         ray_dataset = self.ray_read_dataset(
             self.dataset_type, paths, remote_file_system, parallelism
