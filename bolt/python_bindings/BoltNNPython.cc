@@ -25,7 +25,6 @@ namespace thirdai::bolt::python {
 void createBoltNNSubmodule(py::module_& bolt_submodule) {
   auto nn_submodule = bolt_submodule.def_submodule("nn");
 
-#if THIRDAI_EXPOSE_ALL
   using ParameterArray =
       py::array_t<float, py::array::c_style | py::array::forcecast>;
 
@@ -90,6 +89,12 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           "Note: Only concatenate compressed vectors of the same type with "
           "the same hyperparamters.");
 
+  // Needed so python can know that InferenceOutput objects can own memory
+  py::class_<InferenceOutputTracker>(nn_submodule,  // NOLINT
+                                     "InferenceOutput");
+
+#if THIRDAI_EXPOSE_ALL
+#pragma message("THIRDAI_EXPOSE_ALL is defined")                 // NOLINT
   py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
       nn_submodule, "SamplingConfig");
 
@@ -108,6 +113,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<RandomSamplingConfig, std::shared_ptr<RandomSamplingConfig>,
              SamplingConfig>(nn_submodule, "RandomSamplingConfig")
       .def(py::init<>());
+#endif
 
   py::class_<Node, NodePtr>(nn_submodule, "Node")
       .def_property_readonly("name", [](Node& node) { return node.name(); })
@@ -136,6 +142,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            " * activation: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
+#if THIRDAI_EXPOSE_ALL
       .def(py::init(&FullyConnectedNode::make), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation"),
            py::arg("sampling_config"),
@@ -149,6 +156,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
+#endif
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this fully "
@@ -224,6 +232,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(nn_submodule,
                                                             "Switch")
       .def(py::init(&SwitchNode::makeDense), py::arg("dim"),
@@ -232,6 +241,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("sparsity"), py::arg("activation"), py::arg("n_layers"))
       .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
            py::arg("token_input"));
+#endif
 
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(nn_submodule, "Embedding")
       .def(py::init(&EmbeddingNode::make), py::arg("num_embedding_lookups"),
@@ -298,11 +308,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       .def(py::init())
       .def("__call__", &DlrmAttentionNode::setPredecessors, py::arg("fc_layer"),
            py::arg("embedding_layer"));
-#endif
-
-  // Needed so python can know that InferenceOutput objects can own memory
-  py::class_<InferenceOutputTracker>(nn_submodule,  // NOLINT
-                                     "InferenceOutput");
 
   py::class_<BoltGraph, BoltGraphPtr>(nn_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
@@ -388,6 +393,7 @@ Examples:
 That's all for now, folks! More docs coming soon :)
 
 )pbdoc")
+#if THIRDAI_EXPOSE_ALL
       .def(
           "get_input_gradients_single",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
@@ -417,6 +423,7 @@ That's all for now, folks! More docs coming soon :)
           "corresponding indices for sparse inputs."
           " and (1) list of gradients "
           "corresponds to the input vector.")
+#endif
       .def(
           "explain_prediction",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
@@ -502,6 +509,11 @@ That's all for now, folks! More docs coming soon :)
           "we are returning activations AND the ouptut is sparse.")
       .def("save", &BoltGraph::save, py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
+      .def("__str__",
+           [](const BoltGraph& model) {
+             return model.summarize(/* print = */ false,
+                                    /* detailed = */ false);
+           })
       .def("freeze_hash_tables", &BoltGraph::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true,
            "Prevents updates to hash tables in the model. If you plan to use "
@@ -511,12 +523,6 @@ That's all for now, folks! More docs coming soon :)
            "insert_labels_if_not_found is true then if the output layer is "
            "sparse it will insert the training labels into the hash hash "
            "tables if they are not found for a given input.")
-#if THIRDAI_EXPOSE_ALL
-      .def("__str__",
-           [](const BoltGraph& model) {
-             return model.summarize(/* print = */ false,
-                                    /* detailed = */ false);
-           })
       .def(
           "summary", &BoltGraph::summarize, py::arg("print") = true,
           py::arg("detailed") = false,
@@ -540,7 +546,6 @@ That's all for now, folks! More docs coming soon :)
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
            "compiled.")
-#endif
       .def(getPickleFunction<BoltGraph>());
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,
