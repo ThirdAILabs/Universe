@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include "HashFunction.h"
 #include "UniversalHash.h"
 
@@ -41,3 +42,5 @@ class MinHash final : public HashFunction {
 };
 
 }  // namespace thirdai::hashing
+
+CEREAL_REGISTER_TYPE(thirdai::hashing::MinHash)
