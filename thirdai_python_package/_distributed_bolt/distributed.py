@@ -131,17 +131,16 @@ class RayTrainingClusterConfig:
 
 class DataParallelIngest:
     def __init__(self, dataset_type: str, save_location: str = "/tmp/thirdai/"):
-
         """
         This class writes a wrapper on Ray Data for copying and splitting training
         data from single source or multiple sources to files stored locally or remote,
         to n(num_workers) different file(one on each node of the cluster), being fully
         exclusive and exhaustive.
-        :param dataset_type: different dataset format. Currently Supported: csv, numpy.
-        :type dataset_type: str
-        :param save_prefix: The name of the file, to which dataset file is written
-                to, defaults to 'training_data'
-        :type save_prefix: str, optional
+
+        Args:
+            dataset_type (str): different dataset format. Currently Supported: csv, numpy.
+            save_location (str, optional): The name of the file, to which dataset file is written
+                to, defaults to 'training_data'. Defaults to "/tmp/thirdai/".
         """
         self.dataset_type = dataset_type
         self.save_location = save_location
@@ -201,22 +200,18 @@ class DataParallelIngest:
         Reads the training data, splits it and save the data in the save location 
         under 'block/train_file' for each of the node in the cluster.
 
-        :param paths: A single file/directory path or a list of file/directory paths.
+        Args:
+            paths (Union[str, List[str]]): A single file/directory path or a list of file/directory paths.
             A list of paths can contain both files and directories.
-        :type paths: Union[str, List[str]]
-        :param num_workers: Total number of Nodes in Cluster
-        :type num_workers: int
-        :param remote_file_system: The filesystem implementation to read from,
-                defaults to None
-        :type remote_file_system: Optional[pyarrow.fs.FileSystem], optional
-        :param parallelism: Number of parallel reads, defaults to 1
-        :type parallelism: int, optional
-        :param cluster_address: Address of the cluster to be used, defaults to "auto"
-        :type cluster_address: str, optional
-        :raises ValueError: If dataset format specified not supported.
-        :return: Dataset
-        :rtype: ray.data.Dataset
+            num_workers (int): Total number of Nodes in Cluster
+            remote_file_system (pa.fs.FileSystem, optional): The filesystem implementation to read from. 
+                                    Defaults to None.
+            parallelism (int, optional): Number of parallel reads. Defaults to 1.
+            cluster_address (str, optional): Address of the cluster to be used. Defaults to "auto".
 
+        Returns:
+            ray.data.Dataset: Dataset
+        
         Examples:
 
         Partitioning Local Dataset:
@@ -241,8 +236,8 @@ class DataParallelIngest:
         2. Right now, only CSV and numpy files are supported by Ray Data. 
             See: https://docs.ray.io/en/latest/data/api/dataset.html#i-o-and-conversion
         
-        """
-
+        """        
+        
 
         @ray.remote(num_cpus=1)
         class DataTransferActor:
