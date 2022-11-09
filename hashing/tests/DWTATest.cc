@@ -20,7 +20,6 @@ TEST(DWTATest, TestNoOutOfRangeHashWithNan) {
 
   uint32_t range = 1 << (3 * hashes_per_table);
   for (uint32_t hash : output_hashes) {
-    std::cout << hash << std::endl;
     ASSERT_LT(hash, range);
   }
 }
