@@ -1,5 +1,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Date.h>
 #include <sstream>
@@ -215,6 +216,28 @@ TEST_F(DateBlockTests, WeekOfYearBehavesAsExpected) {
 
   for (auto seen : weeks_of_year_seen) {
     ASSERT_TRUE(seen);
+  }
+}
+
+TEST_F(DateBlockTests, ExplainMethodGivesCorrectDayName) {
+  std::vector<std::string> samples = {
+      "2000-02-28", "2000-02-29", "2000-03-01", "2000-03-02",
+      "2000-03-03", "2000-03-04", "2000-03-05",
+  };
+  std::vector<std::string> days = {
+      "Monday", "Tuesday",  "Wednesday", "Thursday",
+      "Friday", "Saturday", "Sunday",
+  };
+  auto block = std::make_shared<DateBlock>(/* col = */ 0);
+  auto batch = featurize(samples);
+
+  uint32_t day_number = 0;
+
+  for (const auto& vec : batch) {
+    auto day_of_week = dayOfWeek(vec);
+    ASSERT_TRUE(day_of_week.has_value());
+    auto day = block->explainIndex(*day_of_week, {});
+    ASSERT_TRUE(days[day_number++] == day.keyword);
   }
 }
 
