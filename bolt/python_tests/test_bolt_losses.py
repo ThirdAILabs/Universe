@@ -10,8 +10,8 @@ def test_bolt_losses():
         hidden_layer_dim=2000,
         hidden_layer_sparsity=1.0,
         output_dim=N_CLASSES,
-        output_activation="softmax",
-        loss=bolt.nn.losses.CategoricalCrossEntropy(),
+        output_activation="sigmoid",
+        loss=bolt.nn.losses.BinaryCrossEntropy(),
     )
 
     train_data, train_labels = gen_numpy_training_data(

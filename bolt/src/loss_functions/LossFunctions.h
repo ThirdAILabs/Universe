@@ -32,6 +32,8 @@ class LossFunction {
     }
   }
 
+  // Computes the loss for a pair of output and label vectors.
+  // More positive values are worse.
   virtual double lossValue(BoltVector& output, const BoltVector& labels) {
     (void)output;
     (void)labels;
@@ -101,7 +103,7 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
           labels.activations[pos] *
           std::log(output.findActiveNeuronNoTemplate(active_neuron).activation);
     }
-    return loss;
+    return -loss;
   }
 
  private:
@@ -123,6 +125,35 @@ class BinaryCrossEntropyLoss final : public LossFunction {
 
   static std::shared_ptr<BinaryCrossEntropyLoss> makeBinaryCrossEntropyLoss() {
     return std::make_shared<BinaryCrossEntropyLoss>();
+  }
+
+  double lossValue(BoltVector& output, const BoltVector& labels) final {
+    assert(!(output.isDense() && output.active_neurons != nullptr));
+    assert(!labels.isDense() || labels.active_neurons == nullptr);
+    if (output.isDense() && labels.isDense()) {
+      assert(output.len == labels.len);
+    }
+
+    double loss = 0.0;
+
+    for (uint32_t pos = 0; pos < labels.len; pos++) {
+      uint32_t active_neuron =
+          labels.isDense() ? pos : labels.active_neurons[pos];
+      loss +=
+          labels.activations[pos] *
+          std::log(output.findActiveNeuronNoTemplate(active_neuron).activation);
+    }
+
+    for (uint32_t pos = 0; pos < output.len; pos++) {
+      uint32_t active_neuron =
+          output.isDense() ? pos : output.active_neurons[pos];
+      loss +=
+          (1.0 - labels.findActiveNeuronNoTemplate(active_neuron).activation) *
+          std::log(1.0 - output.activations[pos]);
+    }
+
+    // We assume output includes all labels.
+    return -loss / output.len;
   }
 
  private:
