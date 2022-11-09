@@ -212,6 +212,8 @@ class DataParallelIngest:
                     os.mkdir(file_path_prefix)
                 return self.ray_write_dataset(data_shard, file_path_prefix)
 
+        # We here, want to start actors with minimum CPUs possible, so as to
+        # free up most number of CPUs for parallel read if required.
         pg = placement_group(
             [{"CPU": 1}] * num_workers,
             strategy="STRICT_SPREAD",
@@ -270,7 +272,8 @@ class DataParallelIngest:
 
         Note:
         1. Make sure parallelism+num_nodes <= total_cpus_on_cluster. Otherwise
-            the scheduler would just hang.
+            the scheduler would hang, as there would not be enough resource for
+            training.
         2. Right now, only CSV and numpy files are supported by Ray Data.
             See: https://docs.ray.io/en/latest/data/api/dataset.html#i-o-and-conversion
 
