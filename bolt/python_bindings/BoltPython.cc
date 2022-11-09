@@ -214,7 +214,7 @@ Args:
     Example:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
-                    "hours_watched": bolt.types.numerical(range=(0, 25),granularity="xs")
+                    "hours_watched": bolt.types.numerical(range=(0, 25), granularity="xs")
                 }
                 ...
             )
