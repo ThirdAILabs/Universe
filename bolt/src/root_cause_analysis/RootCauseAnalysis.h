@@ -80,8 +80,8 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
 
   if (ratio_sum == 0) {
     throw std::invalid_argument(
-        "Model did not learn enough to give explanations try decreasing "
-        "learning rate!");
+        "The model has not learned enough to give explanations. Try "
+        "decreasing the learning rate.");
   }
 
   std::vector<dataset::Explanation> explanations;

@@ -118,7 +118,8 @@ class TimeObject {
 inline std::string getDayOfWeek(uint32_t day_number) {
   if (day_number >= 7) {
     throw std::invalid_argument(
-        "Week has only 7 days, received greater day number.");
+        "Day number must be between 0 and 6. Received " +
+        std::to_string(day_number) + ".");
   }
 
   std::vector<std::string> day_names = {"Sunday",    "Monday",   "Tuesday",
@@ -131,7 +132,8 @@ inline std::string getDayOfWeek(uint32_t day_number) {
 inline std::string getMonthOfYear(uint32_t month_number) {
   if (month_number >= 12) {
     throw std::invalid_argument(
-        "Year has only 12 months, received greater month number.");
+        "Month number must be between 0 and 11. Received " +
+        std::to_string(month_number) + ".");
   }
 
   std::vector<std::string> month_names = {
