@@ -87,7 +87,9 @@ Args:
       .def("enable_sparse_inference", &EvalConfig::enableSparseInference)
       .def("with_metrics", &EvalConfig::withMetrics, py::arg("metrics"))
       .def("silence", &EvalConfig::silence)
-      .def("return_activations", &EvalConfig::returnActivations);
+      .def("return_activations", &EvalConfig::returnActivations)
+      .def("return_penultimate_activations",
+           &EvalConfig::returnPenultimateActivations);
 
   auto udt_types_submodule = bolt_submodule.def_submodule("types");
 

@@ -24,5 +24,19 @@ def test_bolt_losses():
         res = model.train(train_data, train_labels, train_config)
         print("Loss from epoch", i, res["last_epoch_losses"])
 
+    final_layer_eval_config = bolt.EvalConfig().return_activations()
+    penultimate_layer_eval_config = bolt.EvalConfig().return_penultimate_activations()
+    assert model.evaluate(
+        train_data, train_labels, final_layer_eval_config
+    ) != model.evaluate(train_data, train_labels, penultimate_layer_eval_config)
+
+    [_, penultimate_layer_activations] = model.evaluate(
+        train_data, train_labels, penultimate_layer_eval_config
+    )
+    print(penultimate_layer_activations)
+
+    # get_embeddings_eval_config = bolt.EvalConfig().return_penultimate_activations()
+    # printmodel.evaluate(data, labels, get_embeddings_eval_config)
+
 
 test_bolt_losses()

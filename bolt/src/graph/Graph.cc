@@ -481,6 +481,16 @@ BoltGraph::getInputGradientSingle(
 InferenceResult BoltGraph::evaluate(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const dataset::BoltDatasetPtr& test_labels, const EvalConfig& eval_config) {
+  auto output_node = _output;
+  if (eval_config.shouldReturnPenultimateActivations()) {
+    if (_output->getPredecessors().size() > 1) {
+      throw std::invalid_argument(
+          "Unable to return penultimate activations as there are multiple "
+          "penultimate layers.");
+    }
+    output_node = _output->getPredecessors().front();
+  }
+
   DatasetContext predict_context(test_data, test_labels);
 
   bool has_labels = (test_labels != nullptr);
@@ -489,7 +499,8 @@ InferenceResult BoltGraph::evaluate(
 
   verifyCanPredict(
       predict_context, has_labels,
-      /* returning_activations = */ eval_config.shouldReturnActivations(),
+      /* returning_activations = */ eval_config.shouldReturnActivations() ||
+          eval_config.shouldReturnPenultimateActivations(),
       /* num_metrics_tracked = */ metrics.getNumMetricsTracked());
 
   /*
@@ -502,7 +513,9 @@ InferenceResult BoltGraph::evaluate(
                           eval_config.sparseInferenceEnabled());
 
   InferenceOutputTracker outputTracker(
-      _output, eval_config.shouldReturnActivations(),
+      output_node,
+      eval_config.shouldReturnActivations() ||
+          eval_config.shouldReturnPenultimateActivations(),
       /* total_num_samples = */ predict_context.len());
 
   std::optional<ProgressBar> bar = makeOptionalProgressBar(
@@ -532,7 +545,7 @@ InferenceResult BoltGraph::evaluate(
 
       processOutputCallback(eval_config.outputCallback(), batch_size);
 
-      outputTracker.saveOutputBatch(_output, batch_size);
+      outputTracker.saveOutputBatch(output_node, batch_size);
     }
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();

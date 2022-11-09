@@ -33,6 +33,11 @@ class EvalConfig {
     return *this;
   }
 
+  EvalConfig& returnPenultimateActivations() {
+    _return_penultimate_activations = true;
+    return *this;
+  }
+
   EvalConfig& silence() {
     _verbose = false;
     return *this;
@@ -56,6 +61,10 @@ class EvalConfig {
 
   constexpr bool shouldReturnActivations() const { return _return_activations; }
 
+  constexpr bool shouldReturnPenultimateActivations() const {
+    return _return_penultimate_activations;
+  }
+
   auto outputCallback() const { return _output_callback; }
 
  private:
@@ -64,10 +73,12 @@ class EvalConfig {
         _use_sparse_inference(false),
         _verbose(true),
         _return_activations(false),
+        _return_penultimate_activations(false),
         _output_callback(std::nullopt) {}
 
   std::vector<std::string> _metric_names;
-  bool _use_sparse_inference, _verbose, _return_activations;
+  bool _use_sparse_inference, _verbose, _return_activations,
+      _return_penultimate_activations;
   std::optional<std::function<void(const BoltVector&)>> _output_callback;
 };
 
