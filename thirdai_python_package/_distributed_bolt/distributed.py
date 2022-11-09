@@ -174,6 +174,46 @@ class DataParallelIngest:
         self,
         num_workers,
     ):
+
+        @ray.remote(num_cpus=1)
+        class DataTransferActor:
+            def __init__(self, dataset_type, save_location):
+                self.dataset_type = dataset_type
+                self.save_location = save_location
+
+            def ray_write_dataset(
+                self,
+                data_shard,
+                file_path_prefix,
+            ):
+                # The current design of distributed-bolt doesn't allow a proper
+                # mapping of ray actors to IPs(node_id), due to which we can't directly use
+                # the default file names. It might happen that a file that was supposed
+                # to be on the node with id 1, is on some other id. hence we are making sure
+                # each of the nodes has files with the same filename.
+                file_path = None
+                if self.dataset_type == "csv":
+                    data_shard.write_csv(
+                        file_path_prefix,
+                        block_path_provider=RayBlockWritePathProvider(),
+                    )
+                    file_path = os.path.join(file_path_prefix, "train_file")
+                elif self.dataset_type == "numpy":
+                    data_shard.write_numpy(
+                        file_path_prefix,
+                        block_path_provider=RayBlockWritePathProvider(),
+                    )
+                    file_path = os.path.join(file_path_prefix, "train_file")
+
+                return file_path
+
+            def consume(self, data_shard):
+                file_path = None
+                file_path_prefix = os.path.join(self.save_location, f"block")
+                if not os.path.exists(file_path_prefix):
+                    os.mkdir(file_path_prefix)
+                return self.ray_write_dataset(data_shard, file_path_prefix)
+        
         pg = placement_group(
             [{"CPU": 1}] * num_workers,
             strategy="STRICT_SPREAD",
@@ -238,50 +278,13 @@ class DataParallelIngest:
 
         """
 
-        @ray.remote(num_cpus=1)
-        class DataTransferActor:
-            def __init__(self, dataset_type, save_location):
-                self.dataset_type = dataset_type
-                self.save_location = save_location
-
-            def ray_write_dataset(
-                self,
-                data_shard,
-                file_path_prefix,
-            ):
-                # The current design of distributed-bolt doesn't allow a proper
-                # mapping of ray actors to IPs(node_id), due to which we can't directly use
-                # the default file names. It might happen that a file that was supposed
-                # to be on the node with id 1, is on some other id. hence we are making sure
-                # each of the nodes has files with the same filename.
-                file_path = None
-                if self.dataset_type == "csv":
-                    data_shard.write_csv(
-                        file_path_prefix,
-                        block_path_provider=RayBlockWritePathProvider(),
-                    )
-                    file_path = os.path.join(file_path_prefix, "train_file")
-                elif self.dataset_type == "numpy":
-                    data_shard.write_numpy(
-                        file_path_prefix,
-                        block_path_provider=RayBlockWritePathProvider(),
-                    )
-                    file_path = os.path.join(file_path_prefix, "train_file")
-
-                return file_path
-
-            def consume(self, data_shard):
-                file_path = None
-                file_path_prefix = os.path.join(self.save_location, f"block")
-                if not os.path.exists(file_path_prefix):
-                    os.mkdir(file_path_prefix)
-                return self.ray_write_dataset(data_shard, file_path_prefix)
+        
 
         ray_dataset = self.ray_read_dataset(
             self.dataset_type, paths, remote_file_system, parallelism, num_workers
         )
 
-        workers = schedule_on_different_machines(num_workers)
+        workers = self.schedule_on_different_machines(num_workers)
 
         ray_data_shards = ray_dataset.split(
             n=num_workers, equal=True, locality_hints=workers
