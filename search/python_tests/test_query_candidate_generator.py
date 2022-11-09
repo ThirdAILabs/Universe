@@ -27,7 +27,7 @@ def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
     dataframe.to_csv(file_path, index=False, header=False)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def grammar_correction_dataset() -> pd.DataFrame:
     """
     The grammar correction dataset is retrieved from HuggingFace:
@@ -48,13 +48,11 @@ def transform_queries(dataframe: pd.DataFrame) -> pd.DataFrame:
     removes a random character from the chosen word or applies a
     random permutation to the characters in order to create an incorrect
     version of the queries.
-
     The input is expected to be a Pandas DataFrame with one column
     containing the correct queries. The output is expected to be
     another Pandas DataFrame with two columns. The first column remains
     the same, but the second column consists of queries transformed
     according to the rule detailed above.
-
     """
     transformation_type = ("remove-char", "permute-string")
     transformed_dataframe = []
@@ -162,30 +160,15 @@ def run_generator_test(
 
 
 @pytest.mark.filterwarnings("ignore")
-@pytest.mark.unit
-def test_flash_generator_with_reservoir_sampling(prepared_datasets):
+@pytest.mark.parametrize("use_reservoir_sampling", [False, True])
+def test_flash_generator(prepared_datasets, use_reservoir_sampling):
     run_generator_test(
         hash_function="MinHash",
         num_tables=20,
         hashes_per_table=10,
         hash_table_range=100,
         n_grams=[3, 4],
-        use_reservoir_sampling=True,
-    )
-
-    delete_created_files()
-
-
-@pytest.mark.filterwarnings("ignore")
-@pytest.mark.unit
-def test_flash_generator(prepared_datasets):
-    run_generator_test(
-        hash_function="MinHash",
-        num_tables=20,
-        hashes_per_table=10,
-        hash_table_range=100,
-        n_grams=[3, 4],
-        use_reservoir_sampling=False,
+        use_reservoir_sampling=use_reservoir_sampling,
     )
 
     delete_created_files()
