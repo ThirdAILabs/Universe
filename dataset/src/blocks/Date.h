@@ -50,7 +50,14 @@ class DateBlock : public Block {
       throw std::invalid_argument("index is out of bounds for date block.");
     }
     if (index_within_block < day_of_week_dim) {
-      reason = getDayOfWeek(index_within_block);
+      // The code gets the day number by dividing the unix timestamp by the
+      // number of seconds in a day, then taking the modulo of that number
+      // with 7. this unix timestamp starts from january 1, 1970 which is
+      // thursday so, our day 0 is thursday and day 1 is friday etc..
+      // so as we want getDayOfWeek function to be general that means we
+      // normally assume sunday as 0 and so on.., so added 4 and took the
+      // remainder with 7.
+      reason = getDayOfWeek((index_within_block + 4) % 7);
     } else if (index_within_block < (day_of_week_dim + month_of_year_dim)) {
       reason = getMonthOfYear(index_within_block - day_of_week_dim);
     } else if (index_within_block <
