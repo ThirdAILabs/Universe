@@ -13,8 +13,8 @@
 namespace thirdai::search {
 
 template <typename LABEL_T>
-Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function)
-    : _hash_function(std::move(function)),
+Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function)
+    : _hash_function(std::move(hash_function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, false>>(
@@ -23,9 +23,9 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function)
 }
 
 template <typename LABEL_T>
-Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> function,
+Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
                       uint32_t reservoir_size)
-    : _hash_function(std::move(function)),
+    : _hash_function(std::move(hash_function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(

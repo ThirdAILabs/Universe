@@ -94,10 +94,74 @@ Args:
   py::class_<automl::deployment::DataType>(  // NOLINT
       udt_types_submodule, "ColumnType", "Base class for bolt types.");
 
+  py::class_<automl::deployment::CategoricalMetadataConfig,
+             automl::deployment::CategoricalMetadataConfigPtr>(
+      udt_types_submodule, "metadata")
+      .def(py::init<std::string, std::string,
+                    automl::deployment::ColumnDataTypes, char>(),
+           py::arg("filename"), py::arg("key_column_name"),
+           py::arg("data_types"), py::arg("delimiter") = ',',
+           R"pbdoc(
+    A configuration object for processing a metadata file to enrich categorical
+    features from the main dataset. To illustrate when this is useful, suppose
+    we are building a movie recommendation system. The contents of the training
+    dataset may look something like the following:
+
+    user_id,movie_id,timestamp
+    A526,B894,2022-01-01
+    A339,B801,2022-01-01
+    A293,B801,2022-01-01
+    ...
+
+    If you have additional information about users or movies, such as users' 
+    age groups or movie genres, you can use that information to enrich your 
+    model. Adding these features into the main dataset as new columns is wasteful
+    because the same users and movies ids will be repeated many times throughout
+    the dataset. Instead, we can put them all in a metadata file and UDT will
+    inject these features where appropriate.
+
+    Args:
+        filename (str): Path to metadata file. The file should be in CSV format.
+        key_column_name (str): The name of the column whose values are used as
+            keys to map metadata features back to values in the main dataset. 
+            This column does not need to be passed into the `data_types` argument. 
+        data_types (Dict[str, bolt.types.ColumnType]): A mapping from column name 
+            to column type. Column type is one of:
+            - `bolt.types.categorical`
+            - `bolt.types.numerical`
+            - `bolt.types.text`
+            - `bolt.types.date`
+        delimiter (str): Optional. Defaults to ','. A single character 
+            (length-1 string) that separates the columns of the metadata file.
+    
+    Example:
+        >>> for line in open("user_meta.csv"):
+        >>>     print(line)
+        user_id,age
+        A526,52
+        A531,22
+        A339,29
+        ...
+        >>> deployment.UniversalDeepTransformer(
+                data_types: {
+                    "user_id": bolt.types.categorical(
+                        n_unique_classes=5000, 
+                        delimiter=' ',
+                        metadata=bolt.types.metadata(
+                            filename="user_meta.csv", 
+                            data_types={"age": bolt.types.numerical()}, 
+                            key_column_name="user_id"
+                        )
+                    )
+                }
+                ...
+            )
+                             )pbdoc");
+
   udt_types_submodule.def(
       "categorical", automl::deployment::DataType::categorical,
       py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
-      py::arg("consecutive_integer_ids") = false,
+      py::arg("metadata") = nullptr, py::arg("consecutive_integer_ids") = false,
       R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
@@ -116,11 +180,18 @@ Args:
             from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
             be arbitrary strings (including strings of integral ids that are 
             not within [0, n_unique_classes - 1]).
+        metadata (metadata): Optional. A metadata object to be used when there 
+            is a separate metadata file corresponding to this categorical 
+            column.
     
     Example:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
-                    "user_id": bolt.types.categorical(n_unique_classes=5000)
+                    "user_id": bolt.types.categorical(
+                        n_unique_classes=5000, 
+                        delimiter=' ',
+                        metadata=bolt.types.metadata(filename="user_meta.csv", data_types={"age": bolt.types.numerical()}, key_column_name="user_id")
+                    )
                 }
                 ...
             )
@@ -198,6 +269,7 @@ Args:
                              automl::deployment::TemporalConfig::categorical,
                              py::arg("column_name"), py::arg("track_last_n"),
                              py::arg("column_known_during_inference") = false,
+                             py::arg("use_metadata") = false,
                              R"pbdoc(
     Temporal categorical config. Use this object to configure how a 
     categorical column is tracked over time. 
@@ -209,6 +281,10 @@ Args:
         column_known_during_inference (bool): Optional. Whether the 
             value of the tracked column is known during inference. Defaults 
             to False.
+        use_metadata (bool): Optional. Whether to use the metadata of the N 
+            tracked items, if metadata is provided in the corresponding 
+            categorical column type object. Ignored if no metadata is provided. 
+            Defaults to False.
 
     Example:
         >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend_level", "sales_performance"
@@ -297,9 +373,11 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t,
-                    std::vector<uint32_t>, bool, uint32_t>(),
+                    std::vector<uint32_t>, std::optional<uint32_t>, bool,
+                    uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("range"), py::arg("n_grams"),
+           py::arg("reservoir_size") = std::nullopt,
            py::arg("has_incorrect_queries") = false,
            py::arg("batch_size") = 10000,
            R"pbdoc(
@@ -307,16 +385,17 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
 
      Args:
         hash_function (str): A specific hash function 
-                        to use. Supported hash functions include FastSRP,
-                        DensifiedMinHash and DWTA.
+            to use. Supported hash functions include MinHash
+            and DensifiedMinHash
         num_tables (int): Number of hash tables to construct.
         hashes_per_table (int): Number of hashes per table.
-        n_grams (List[int]): List of N-gram blocks to use. 
-        has_incorrect_queries(bool): Flag to identify if flash is initialized
-            with single queries or tuples of incorrect and correct queries.
-        input_dim (int): Input dimension 
-        batch_size (int): batch size. It is defaulted to 10000. 
         range (int) : The range for the hash function used. 
+        n_grams (List[int]): List of N-gram blocks to use. 
+        reservoir_size (int): Reservoir size to use when the flash index is 
+            constructed with reservoir sampling. 
+        has_incorrect_queries (bool): Flag to identify if flash is initialized
+            with single queries or tuples of incorrect and correct queries.
+        batch_size (int): batch size. It is defaulted to 10000. 
     Returns: 
         QueryCandidateGeneratorConfig
 
