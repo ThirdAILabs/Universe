@@ -23,22 +23,21 @@ def get_notebook_paths(temp_dir):
 def run_demo_notebooks(notebook_paths, temp_dir):
     failed_notebooks = []
     for notebook_path in notebook_paths:
-        if Path(notebook_path).stem == "FraudDetection":
-            with open(notebook_path) as notebook_file:
-                # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
-                nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
-                # The resources argument is needed to execute the notebook in the temporary directory
-                temp_path = os.path.join(temp_dir, "Demos")
-                try:
-                    ep = ExecutePreprocessor(
-                        timeout=None,
-                        kernel_name="python3",
-                        resources={"metadata": {"path": temp_path}},
-                    )
-                    nb_out = ep.preprocess(nb_in)
-                except:
-                    notebook_name = Path(notebook_path).stem
-                    failed_notebooks.append(notebook_name)
+        with open(notebook_path) as notebook_file:
+            # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
+            nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
+            # The resources argument is needed to execute the notebook in the temporary directory
+            temp_path = os.path.join(temp_dir, "Demos")
+            try:
+                ep = ExecutePreprocessor(
+                    timeout=None,
+                    kernel_name="python3",
+                    resources={"metadata": {"path": temp_path}},
+                )
+                nb_out = ep.preprocess(nb_in)
+            except:
+                notebook_name = Path(notebook_path).stem
+                failed_notebooks.append(notebook_name)
 
     if failed_notebooks:
         sys.exit(f"The following notebooks failed due to error: {failed_notebooks}")
