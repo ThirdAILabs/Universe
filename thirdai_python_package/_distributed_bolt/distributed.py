@@ -151,17 +151,16 @@ class DataParallelIngest:
         paths,
         filesystem,
         parallelism,
-        num_workers,
     ):
         ray_dataset = None
         if dataset_type == "csv":
             ray_dataset = ray.data.read_csv(
                 paths=paths, filesystem=filesystem, parallelism=parallelism
-            ).repartition(num_workers)
+            )
         elif dataset_type == "numpy":
             ray_dataset = ray.data.read_numpy(
                 paths=paths, filesystem=filesystem, parallelism=parallelism
-            ).repartition(num_workers)
+            )
         else:
             raise ValueError(
                 f"Dataset Type: {dataset_type} is not"
@@ -271,7 +270,7 @@ class DataParallelIngest:
             ), num_workers=NUM_WORKERS)
 
         Note:
-        1. Make sure parallelism+1 <= num_cpus_on_node, for all nodes in the ray cluster. Otherwise
+        1. Make sure parallelism+num_nodes <= total_cpus_on_cluster. Otherwise
             the scheduler would just hang.
         2. Right now, only CSV and numpy files are supported by Ray Data.
             See: https://docs.ray.io/en/latest/data/api/dataset.html#i-o-and-conversion
@@ -281,7 +280,7 @@ class DataParallelIngest:
         
 
         ray_dataset = self.ray_read_dataset(
-            self.dataset_type, paths, remote_file_system, parallelism, num_workers
+            self.dataset_type, paths, remote_file_system, parallelism
         )
 
         workers = self.schedule_on_different_machines(num_workers)
