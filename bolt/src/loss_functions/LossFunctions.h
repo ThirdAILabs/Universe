@@ -2,8 +2,10 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <stdexcept>
 
@@ -28,6 +30,12 @@ class LossFunction {
         computeLossGradientsImpl<false, false>(output, labels, batch_size);
       }
     }
+  }
+
+  virtual double lossValue(BoltVector& output, const BoltVector& labels) {
+    (void)output;
+    (void)labels;
+    throw std::invalid_argument("Not implemented.");
   }
 
   virtual ~LossFunction() = default;
@@ -76,6 +84,24 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
   static std::shared_ptr<CategoricalCrossEntropyLoss>
   makeCategoricalCrossEntropyLoss() {
     return std::make_shared<CategoricalCrossEntropyLoss>();
+  }
+
+  double lossValue(BoltVector& output, const BoltVector& labels) final {
+    assert(!(output.isDense() && output.active_neurons != nullptr));
+    assert(!labels.isDense() || labels.active_neurons == nullptr);
+    if (output.isDense() && labels.isDense()) {
+      assert(output.len == labels.len);
+    }
+
+    double loss = 0.0;
+    for (uint32_t pos = 0; pos < labels.len; pos++) {
+      uint32_t active_neuron =
+          labels.isDense() ? pos : labels.active_neurons[pos];
+      loss +=
+          labels.activations[pos] *
+          std::log(output.findActiveNeuronNoTemplate(active_neuron).activation);
+    }
+    return loss;
   }
 
  private:

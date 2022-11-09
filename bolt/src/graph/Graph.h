@@ -15,6 +15,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -114,8 +115,10 @@ class BoltGraph {
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
 
-  void processTrainingBatch(const BoltBatch& batch_labels,
-                            MetricAggregator& metrics);
+  std::optional<std::vector<double>> processTrainingBatch(
+      const BoltBatch& batch_labels, MetricAggregator& metrics,
+      std::optional<std::pair<std::vector<double>, uint32_t>>&& loss_struct =
+          std::nullopt);
 
   void logValidateAndSave(uint32_t batch_size, const TrainConfig& train_config,
                           MetricAggregator& train_metrics);

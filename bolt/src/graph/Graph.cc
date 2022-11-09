@@ -13,6 +13,7 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <exceptions/src/Exceptions.h>
 #include <utils/Logging.h>
 #include <algorithm>
@@ -27,6 +28,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -186,7 +188,10 @@ MetricData BoltGraph::train(
   // over the dataset.
   uint32_t num_epochs = _epoch + train_config.epochs();
 
+  std::vector<double> train_losses;
+
   for (/*_epoch = _epoch*/; _epoch < num_epochs; _epoch++) {
+    train_losses = std::vector<double>(dataset_context.len());
     train_state.epoch = _epoch;
     callbacks.onEpochBegin(*this, train_state);
 
@@ -220,7 +225,12 @@ MetricData BoltGraph::train(
         dataset_context.setInputs(batch_idx, _inputs);
 
         const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
-        processTrainingBatch(batch_labels, train_metrics);
+
+        uint32_t train_losses_start_idx =
+            batch_idx * dataset_context.batchSize();
+        train_losses = std::move(*processTrainingBatch(
+            batch_labels, train_metrics,
+            {std::make_pair(std::move(train_losses), train_losses_start_idx)}));
         updateParametersAndSampling(
             train_state.learning_rate, train_state.rebuild_hash_tables_batch,
             train_state.reconstruct_hash_functions_batch);
@@ -287,11 +297,17 @@ MetricData BoltGraph::train(
   auto metric_data = train_metrics.getOutput();
   metric_data["epoch_times"] = std::move(train_state.epoch_times);
 
+  metric_data["last_epoch_losses"] = std::move(train_losses);
+
   return metric_data;
 }
 
-void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
-                                     MetricAggregator& metrics) {
+std::optional<std::vector<double>> BoltGraph::processTrainingBatch(
+    const BoltBatch& batch_labels, MetricAggregator& metrics,
+    std::optional<std::pair<std::vector<double>, uint32_t>>&& loss_struct) {
+  auto& losses = std::get<0>(*loss_struct);
+  auto& start_idx = std::get<1>(*loss_struct);
+
   assert(graphCompiled());
   batch_labels.verifyExpectedDimension(
       /* expected_dimension = */ _output->outputDim(),
@@ -299,12 +315,15 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
       /* origin_string = */
       "Passed in label BoltVector is larger than the output dim");
 
-#pragma omp parallel for default(none) shared(batch_labels, metrics)
+#pragma omp parallel for default(none) \
+    shared(batch_labels, metrics, losses, start_idx)
   for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
     resetOutputGradients(vec_id);
 
+    losses[start_idx + vec_id] = _loss->lossValue(
+        _output->getOutputVector(vec_id), batch_labels[vec_id]);
     _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
                          batch_labels.getBatchSize());
 
@@ -313,6 +332,7 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
     metrics.processSample(_output->getOutputVector(vec_id),
                           batch_labels[vec_id]);
   }
+  return std::move(losses);
 }
 
 void BoltGraph::updateParametersAndSampling(
