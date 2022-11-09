@@ -183,10 +183,11 @@ class FeatureComposer {
     if (lower_size == "xl" || lower_size == "extralarge") {
       return 3000;
     }
-    throw std::invalid_argument(
-        "[sampling] We do not support " + granularity_size +
-        " sampling but supports 'verysmall/vs' or 'small/s' or 'medium/m' or "
-        "'large/l' 'verylarge/vl'.");
+    throw std::invalid_argument("Invalid numerical granularity \"" +
+                                granularity_size +
+                                "\". Choose one of \"extrasmall\"/\"xs\", "
+                                "\"small\"/\"s\", \"medium\"/\"m\", "
+                                "\"large\"/\"l\", or \"extralarge\"/\"xl\".");
   }
   /**
    * A column is encoded in a non-temporal way when it fulfils any

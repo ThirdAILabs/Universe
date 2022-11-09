@@ -137,7 +137,7 @@ Args:
             numeric quantity. The more accurate this range to the test data, the 
             better the model performance.
         granularity (str): Optional. One of "extrasmall"/"xs", "small"/"s", "medium"/"m",
-            , "large"/"l" or "extralarge"/"xl" . Defaults to "m".
+            "large"/"l" or "extralarge"/"xl" . Defaults to "m".
 
 
     Example:
