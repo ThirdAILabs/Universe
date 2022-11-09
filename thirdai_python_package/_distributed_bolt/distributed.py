@@ -231,7 +231,7 @@ class DataParallelIngest:
             ), num_workers=NUM_WORKERS)
 
         Note: 
-        1. Make sure parallelism+1 <= num_cpus_on_node, for all nodes in the ray cluster. Ohterwise 
+        1. Make sure parallelism+1 <= num_cpus_on_node, for all nodes in the ray cluster. Otherwise 
             the scheduler would just hang.
         2. Right now, only CSV and numpy files are supported by Ray Data. 
             See: https://docs.ray.io/en/latest/data/api/dataset.html#i-o-and-conversion
@@ -250,6 +250,11 @@ class DataParallelIngest:
                 data_shard,
                 file_path_prefix,
             ):
+                # The current design of distributed-bolt doesn't allow a proper
+                # mapping of ray actors to IPs(node_id), due to which we can't directly use
+                # the default file names. It might happen that a file that was supposed
+                # to be on the node with id 1, is on some other id. hence we are making sure 
+                # each of the nodes has files with the same filename.
                 file_path = None
                 if self.dataset_type == "csv":
                     data_shard.write_csv(
@@ -275,9 +280,6 @@ class DataParallelIngest:
                 return self.ray_write_dataset(data_shard, file_path_prefix)
 
 
-        
-
-
         ray_dataset = self.ray_read_dataset(self.dataset_type, paths, remote_file_system, parallelism, num_workers)
         
         workers = schedule_on_different_machines(num_workers)
@@ -292,6 +294,7 @@ class DataParallelIngest:
                 for shard, worker in zip(ray_data_shards, workers)
             ]
         )
+        
         ray.shutdown()
         return train_file_names
 
