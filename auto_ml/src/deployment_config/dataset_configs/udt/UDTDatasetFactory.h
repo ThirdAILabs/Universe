@@ -17,10 +17,13 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <dataset/src/DataLoader.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
 #include <cstdint>
@@ -49,6 +52,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         _parallel(_temporal_relationships.empty() || force_parallel),
         _text_pairgram_word_limit(text_pairgram_word_limit),
         _contextual_columns(contextual_columns) {
+    FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
+
+    _vectors_map = processAllMetadata();
+
     ColumnNumberMap mock_column_number_map(_config->data_types);
     auto mock_processor = makeLabeledUpdatingProcessor(mock_column_number_map);
 
@@ -66,14 +73,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
-    auto header = data_loader->nextLine();
-    if (!header) {
-      throw std::invalid_argument(
-          "The dataset must have a header that contains column names.");
-    }
-
     auto current_column_number_map =
-        std::make_shared<ColumnNumberMap>(*header, _config->delimiter);
+        makeColumnNumberMap(*data_loader, _config->delimiter);
+
     if (!_column_number_map) {
       _column_number_map = std::move(current_column_number_map);
       _column_number_to_name = _column_number_map->getColumnNumToColNameMap();
@@ -211,6 +213,114 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   uint32_t getLabelDim() final { return _label_dim; }
 
  private:
+  PreprocessedVectorsMap processAllMetadata() {
+    PreprocessedVectorsMap metadata_vectors;
+    for (const auto& [col_name, col_type] : _config->data_types) {
+      if (col_type.isCategorical()) {
+        auto categorical = col_type.asCategorical();
+        if (categorical.metadata_config) {
+          metadata_vectors[col_name] =
+              makeProcessedVectorsForCategoricalColumn(col_name, categorical);
+        }
+      }
+    }
+    return metadata_vectors;
+  }
+
+  dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
+      const std::string& col_name, const CategoricalDataType& categorical) {
+    if (!categorical.metadata_config) {
+      throw std::invalid_argument(
+          "The given categorical column does not have a metadata config.");
+    }
+
+    auto metadata = categorical.metadata_config;
+
+    auto data_loader =
+        dataset::SimpleFileDataLoader::make(metadata->metadata_file,
+                                            /* target_batch_size= */ 2048);
+
+    auto column_numbers =
+        makeColumnNumberMap(*data_loader, metadata->delimiter);
+
+    auto input_blocks = buildMetadataInputBlocks(*metadata, *column_numbers);
+
+    /*
+      Use _vocabs here because we want to reuse the vocabulary for the key
+      column of the metadata for the corresponding categorical column in the
+      main dataset
+    */
+    _vocabs[col_name] = dataset::ThreadSafeVocabulary::make(
+        /* vocab_size= */ categorical.n_unique_classes);
+    auto label_block = dataset::StringLookupCategoricalBlock::make(
+        column_numbers->at(metadata->key), _vocabs[col_name]);
+
+    dataset::StreamingGenericDatasetLoader metadata_loader(
+        /* loader= */ data_loader,
+        /* processor= */
+        dataset::GenericBatchProcessor::make(
+            /* input_blocks= */ std::move(input_blocks),
+            /* label_blocks= */ {std::move(label_block)},
+            /* has_header= */ false, /* delimiter= */ metadata->delimiter));
+
+    return preprocessedVectorsFromDataset(metadata_loader, col_name,
+                                          categorical.n_unique_classes);
+  }
+
+  static ColumnNumberMapPtr makeColumnNumberMap(
+      dataset::DataLoader& data_loader, char delimiter) {
+    auto header = data_loader.nextLine();
+    if (!header) {
+      throw std::invalid_argument(
+          "The dataset must have a header that contains column names.");
+    }
+
+    return std::make_shared<ColumnNumberMap>(*header, delimiter);
+  }
+
+  std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
+      const CategoricalMetadataConfig& metadata_config,
+      const ColumnNumberMap& column_numbers) const {
+    UDTConfig feature_config(
+        /* data_types= */ metadata_config.column_data_types,
+        /* temporal_tracking_relationships= */ {},
+        /* target= */ metadata_config.key);
+    TemporalRelationships empty_temporal_relationships;
+    ColumnVocabularies metadata_vocabs;  // Cannot use _vocabs because metadata
+                                         // may have same column names;
+
+    PreprocessedVectorsMap empty_vectors_map;
+
+    return FeatureComposer::makeNonTemporalFeatureBlocks(
+        feature_config, empty_temporal_relationships, column_numbers,
+        metadata_vocabs, empty_vectors_map, _text_pairgram_word_limit,
+        _contextual_columns);
+  }
+
+  static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
+      dataset::StreamingGenericDatasetLoader& dataset,
+      const std::string& col_name, uint32_t n_unique_classes) {
+    auto [vectors, ids] = dataset.loadInMemory();
+
+    if (vectors->len() != n_unique_classes) {
+      throw std::invalid_argument(
+          "The number of metadata entries and unique values for column '" +
+          col_name + "' do not match.");
+    }
+
+    std::vector<BoltVector> preprocessed_vectors(n_unique_classes);
+
+    for (uint32_t batch = 0; batch < vectors->numBatches(); batch++) {
+      for (uint32_t vec = 0; vec < vectors->at(batch).getBatchSize(); vec++) {
+        auto id = ids->at(batch)[vec].active_neurons[0];
+        preprocessed_vectors[id] = std::move(vectors->at(batch)[vec]);
+      }
+    }
+
+    return std::make_shared<dataset::PreprocessedVectors>(
+        std::move(preprocessed_vectors), dataset.getInputDim());
+  }
+
   template <typename InputType>
   std::vector<BoltVector> featurizeInputImpl(const InputType& input,
                                              bool should_update_history) {
@@ -343,16 +453,16 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
-            *_config, _temporal_relationships, column_numbers,
-            _text_pairgram_word_limit, _contextual_columns);
+            *_config, _temporal_relationships, column_numbers, _vocabs,
+            _vectors_map, _text_pairgram_word_limit, _contextual_columns);
 
     if (_temporal_relationships.empty()) {
       return blocks;
     }
 
     auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
-        *_config, _temporal_relationships, column_numbers, _vocabs, *_context,
-        should_update_history);
+        *_config, _temporal_relationships, column_numbers, _vocabs,
+        _vectors_map, *_context, should_update_history);
 
     blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                   temporal_feature_blocks.end());
@@ -407,6 +517,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   TemporalContextPtr _context;
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
+  PreprocessedVectorsMap _vectors_map;
 
   ColumnNumberMapPtr _column_number_map;
   std::vector<std::string> _column_number_to_name;
@@ -439,8 +550,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
-            _temporal_relationships, _context, _vocabs, _column_number_map,
-            _column_number_to_name, _labeled_history_updating_processor,
+            _temporal_relationships, _context, _vocabs, _vectors_map,
+            _column_number_map, _column_number_to_name,
+            _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _input_dim, _label_dim,
             _parallel, _text_pairgram_word_limit, _contextual_columns);
   }

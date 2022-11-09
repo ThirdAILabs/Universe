@@ -7,6 +7,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exception>
 #include <memory>
@@ -25,11 +26,10 @@ class CategoricalBlock : public Block {
   // Declaration included from BlockInterface.h
   friend CategoricalBlockTest;
 
-  CategoricalBlock(uint32_t col, uint32_t n_classes,
-                   std::optional<char> delimiter)
-      : _n_classes(n_classes), _col(col), _delimiter(delimiter) {}
+  CategoricalBlock(uint32_t col, uint32_t dim, std::optional<char> delimiter)
+      : _dim(dim), _col(col), _delimiter(delimiter) {}
 
-  uint32_t featureDim() const final { return _n_classes; };
+  uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return false; };
 
@@ -74,7 +74,7 @@ class CategoricalBlock : public Block {
   virtual std::exception_ptr encodeCategory(std::string_view category,
                                             SegmentedFeatureVector& vec) = 0;
 
-  uint32_t _n_classes;
+  uint32_t _dim;
 
   // Constructor for cereal.
   CategoricalBlock() {}
@@ -86,7 +86,7 @@ class CategoricalBlock : public Block {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Block>(this), _n_classes, _col, _delimiter);
+    archive(cereal::base_class<Block>(this), _dim, _col, _delimiter);
   }
 };
 
@@ -116,7 +116,7 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
                                     SegmentedFeatureVector& vec) final {
     char* end;
     uint32_t id = std::strtoul(category.data(), &end, 10);
-    if (id >= _n_classes) {
+    if (id >= _dim) {
       return std::make_exception_ptr(
           std::invalid_argument("Received label " + std::to_string(id) +
                                 " larger than or equal to n_classes"));
@@ -141,9 +141,13 @@ using NumericalCategoricalBlockPtr = std::shared_ptr<NumericalCategoricalBlock>;
 class StringLookupCategoricalBlock final : public CategoricalBlock {
  public:
   StringLookupCategoricalBlock(uint32_t col, ThreadSafeVocabularyPtr vocab,
-                               std::optional<char> delimiter = std::nullopt)
-      : CategoricalBlock(col, vocab->vocabSize(), delimiter),
-        _vocab(std::move(vocab)) {}
+                               std::optional<char> delimiter = std::nullopt,
+                               PreprocessedVectorsPtr vectors = nullptr)
+      : CategoricalBlock(col,
+                         /* dim= */ vectors ? vectors->dim : vocab->vocabSize(),
+                         delimiter),
+        _vocab(std::move(vocab)),
+        _vectors(std::move(vectors)) {}
 
   StringLookupCategoricalBlock(uint32_t col, uint32_t n_classes,
                                std::optional<char> delimiter = std::nullopt)
@@ -151,9 +155,10 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
                                      delimiter) {}
 
   static auto make(uint32_t col, ThreadSafeVocabularyPtr vocab,
-                   std::optional<char> delimiter = std::nullopt) {
-    return std::make_shared<StringLookupCategoricalBlock>(col, std::move(vocab),
-                                                          delimiter);
+                   std::optional<char> delimiter = std::nullopt,
+                   PreprocessedVectorsPtr vectors = nullptr) {
+    return std::make_shared<StringLookupCategoricalBlock>(
+        col, std::move(vocab), delimiter, std::move(vectors));
   }
 
   static auto make(uint32_t col, uint32_t n_classes,
@@ -167,6 +172,10 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
   std::string getResponsibleCategory(
       uint32_t index, const std::string_view& category_value) const final {
     (void)category_value;
+    if (_vectors) {
+      // TODO(Geordie): Make more descriptive.
+      return "Metadata";
+    }
     return _vocab->getString(index);
   }
 
@@ -182,12 +191,17 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
       return std::current_exception();
     }
 
-    vec.addSparseFeatureToSegment(/* index= */ uid, /* value= */ 1.0);
+    if (_vectors) {
+      _vectors->appendPreprocessedFeaturesToVector(uid, vec);
+    } else {
+      vec.addSparseFeatureToSegment(/* index= */ uid, /* value= */ 1.0);
+    }
     return nullptr;
   }
 
  private:
   ThreadSafeVocabularyPtr _vocab;
+  PreprocessedVectorsPtr _vectors;
 
   // Private constructor for cereal.
   StringLookupCategoricalBlock() {}
@@ -195,7 +209,7 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<CategoricalBlock>(this), _vocab);
+    archive(cereal::base_class<CategoricalBlock>(this), _vocab, _vectors);
   }
 };
 
