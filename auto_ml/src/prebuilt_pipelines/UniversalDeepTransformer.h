@@ -195,15 +195,21 @@ class UniversalDeepTransformer : public ModelPipeline {
                            /* expected_option_value= */ "false");
         }
       } else if (option_name == "embedding_dimension") {
+        std::cout << "HERE 1" << std::endl;
         uint32_t int_value = utils::toInteger(option_value.c_str());
+        std::cout << "HERE 2" << std::endl;
         if (int_value != 0) {
+          std::cout << "HERE 3" << std::endl;
           options.embedding_dimension = int_value;
+          std::cout << "HERE 4" << std::endl;
         } else {
+          std::cout << "HERE 5" << std::endl;
           throw std::invalid_argument("Invalid value for option '" +
                                       option_name + "'. Received value '" +
                                       option_value + "'.");
         }
       } else {
+        std::cout << "HERE 6" << std::endl;
         throw std::invalid_argument(
             "Option '" + option_name +
             "' is invalid. Possible options include 'contextual_columns', "
