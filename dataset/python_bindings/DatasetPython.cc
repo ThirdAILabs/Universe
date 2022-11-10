@@ -14,7 +14,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
-#include <dataset/src/blocks/TabularPairGram.h>
+#include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
@@ -35,6 +35,9 @@
 
 namespace thirdai::dataset::python {
 
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
 void createDatasetSubmodule(py::module_& module) {
   // Separate submodule for bindings that we don't want to expose to users.
   auto internal_dataset_submodule = module.def_submodule("dataset_internal");
@@ -46,17 +49,33 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
-      .def("__repr__", &BoltVector::toString);
+      .def("__repr__", &BoltVector::toString)
+      .def("dense", &BoltVector::dense)
+      .def("to_numpy", [](const BoltVector& vector) -> py::object {
+        NumpyArray<float> activations_array(vector.len);
+        std::copy(vector.activations, vector.activations + vector.len,
+                  activations_array.mutable_data());
+
+        if (vector.isDense()) {
+          return py::object(std::move(activations_array));
+        }
+
+        NumpyArray<uint32_t> active_neurons_array(vector.len);
+        std::copy(vector.active_neurons, vector.active_neurons + vector.len,
+                  active_neurons_array.mutable_data());
+
+        return py::make_tuple(active_neurons_array, activations_array);
+      });
 
   py::class_<Explanation>(dataset_submodule, "Explanation",
                           R"pbdoc(
      Represents an input column that is responsible for a predicted
      outcome.
       )pbdoc")
-      .def_readonly("column_number", &Explanation::column_number,
-                    R"pbdoc(
-     Identifies the responsible input column.
-      )pbdoc")
+      .def("__str__", &Explanation::toString)
+      .def("__repr__", &Explanation::toString)
+      // We don't expose column_number because it doesn't always make sense to
+      // provide one column number; e.g. in tabular pairgram case.
       .def_readonly("percentage_significance",
                     &Explanation::percentage_significance,
                     R"pbdoc(
@@ -228,16 +247,17 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("column_names") = std::vector<std::string>(),
            py::arg("col_to_num_bins") = std::nullopt);
 
-  py::class_<TabularPairGram, Block, std::shared_ptr<TabularPairGram>>(
-      block_submodule, "TabularPairGram",
+  py::class_<TabularHashFeatures, Block, std::shared_ptr<TabularHashFeatures>>(
+      block_submodule, "TabularHashFeatures",
       "Given some metadata about a tabular dataset, assign unique "
-      "categories "
-      "to columns and compute pairgrams of the categories.")
-      .def(py::init<std::shared_ptr<TabularMetadata>, uint32_t>(),
-           py::arg("metadata"), py::arg("output_range"))
-      .def("feature_dim", &TabularPairGram::featureDim,
+      "categories to columns and compute either pairgramsor unigrams of the "
+      "categories depending on the 'use_pairgrams' flag.")
+      .def(py::init<std::shared_ptr<TabularMetadata>, uint32_t, bool>(),
+           py::arg("metadata"), py::arg("output_range"),
+           py::arg("use_pairgrams"))
+      .def("feature_dim", &TabularHashFeatures::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &TabularPairGram::isDense,
+      .def("is_dense", &TabularHashFeatures::isDense,
            "Returns false since text blocks always produce sparse "
            "features.");
 #endif
@@ -314,7 +334,16 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("i"), py::return_value_policy::reference)
       .def("__len__", &BoltDataset::numBatches)
       .def("save", &BoltDataset::save, py::arg("filename"))
-      .def_static("load", &BoltDataset::load, py::arg("filename"));
+      .def_static("load", &BoltDataset::load, py::arg("filename"))
+      .def(py::init([](const py::iterable& iterable) {
+             using Batches = std::vector<BoltBatch>;
+             auto batches = iterable.cast<Batches>();
+             std::shared_ptr<BoltDataset> dataset =
+                 std::make_shared<InMemoryDataset<BoltBatch>>(
+                     std::move(batches));
+             return dataset;
+           }),
+           py::arg("batches"));
 
   py::class_<numpy::WrappedNumpyVectors,  // NOLINT
              std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
@@ -334,7 +363,14 @@ void createDatasetSubmodule(py::module_& module) {
            static_cast<BoltVector& (BoltBatch::*)(size_t i)>(
                &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
-      .def("__len__", &BoltBatch::getBatchSize);
+      .def("__len__", &BoltBatch::getBatchSize)
+      .def(py::init([](const py::iterable& iterable) {
+             using Vectors = std::vector<BoltVector>;
+             auto vectors = iterable.cast<Vectors>();
+             BoltBatch batch(std::move(vectors));
+             return batch;
+           }),
+           py::arg("values"));
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", SvmDatasetLoader::loadDatasetFromFile,
@@ -412,6 +448,14 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
+
+  dataset_submodule.def("inferenceBatch", &inferenceBatch, py::arg("vocab"),
+                        py::arg("rows"), py::arg("output_range"),
+                        py::arg("mask_percentage") = 0.0F);
+
+  dataset_submodule.def("inferenceSample", &inferenceSample, py::arg("vocab"),
+                        py::arg("row"), py::arg("mask_indices"),
+                        py::arg("output_range"));
 
   py::class_<Vocabulary, std::shared_ptr<Vocabulary>>(dataset_submodule,
                                                       "Vocabulary")

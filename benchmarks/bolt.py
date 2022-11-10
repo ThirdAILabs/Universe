@@ -82,7 +82,7 @@ def load_and_compile_model(model_config):
         )
 
     output_node = name_to_node[list(nodes_with_no_successor)[0]]
-    model = bolt.graph.Model(inputs=inputs, output=output_node)
+    model = bolt.nn.Model(inputs=inputs, output=output_node)
     model.compile(loss=get_loss(model_config), print_when_done=False)
     model.summary(detailed=True)
     return model
@@ -154,16 +154,14 @@ def load_all_datasets(dataset_config):
 
 def run_experiment(model, datasets, experiment_config, use_mlflow):
     num_epochs, train_config = load_train_config(experiment_config)
-    predict_config = load_predict_config(experiment_config)
+    eval_config = load_eval_config(experiment_config)
     if should_compute_roc_auc(experiment_config):
-        predict_config.return_activations()
+        eval_config.return_activations()
 
     for epoch_num in range(num_epochs):
 
         freeze_hash_table_if_needed(model, experiment_config, epoch_num)
-        switch_to_sparse_inference_if_needed(
-            predict_config, experiment_config, epoch_num
-        )
+        switch_to_sparse_inference_if_needed(eval_config, experiment_config, epoch_num)
 
         train_metrics = model.train(
             train_data=datasets["train_data"],
@@ -173,10 +171,10 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         if use_mlflow:
             log_single_epoch_training_metrics(train_metrics)
 
-        predict_output = model.predict(
+        predict_output = model.evaluate(
             test_data=datasets["test_data"],
             test_labels=datasets["test_labels"],
-            predict_config=predict_config,
+            eval_config=eval_config,
         )
         if use_mlflow:
             log_prediction_metrics(predict_output)
@@ -190,8 +188,8 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
 
 def get_sampling_config(layer_config):
     if layer_config.get("use_random_sampling", False):
-        return bolt.RandomSamplingConfig()
-    return bolt.SamplingConfig(
+        return bolt.nn.RandomSamplingConfig()
+    return bolt.nn.SamplingConfig(
         hashes_per_table=config_get_required(layer_config, "hashes_per_table"),
         num_tables=config_get_required(layer_config, "num_tables"),
         range_pow=config_get_required(layer_config, "range_pow"),
@@ -210,8 +208,8 @@ def construct_input_node(input_config):
             config_get_required(input_config, "min_num_tokens"),
             config_get_required(input_config, "max_num_tokens"),
         )
-        return bolt.graph.TokenInput(dim=dim, num_tokens_range=num_tokens_range)
-    return bolt.graph.Input(dim=dim)
+        return bolt.nn.TokenInput(dim=dim, num_tokens_range=num_tokens_range)
+    return bolt.nn.Input(dim=dim)
 
 
 def construct_fully_connected_node(fc_config):
@@ -219,21 +217,18 @@ def construct_fully_connected_node(fc_config):
     sparsity = fc_config.get("sparsity", 1)
 
     if use_default_sampling or sparsity == 1:
-        layer = bolt.graph.FullyConnected(
+        layer = bolt.nn.FullyConnected(
             dim=config_get_required(fc_config, "dim"),
             sparsity=sparsity,
             activation=config_get_required(fc_config, "activation"),
         )
     else:
-        layer = bolt.graph.FullyConnected(
+        layer = bolt.nn.FullyConnected(
             dim=config_get_required(fc_config, "dim"),
             sparsity=sparsity,
             activation=config_get_required(fc_config, "activation"),
             sampling_config=get_sampling_config(fc_config),
         )
-
-    if fc_config.get("use_sparse_sparse_optimization", False):
-        layer.enable_sparse_sparse_optimization()
 
     return layer
 
@@ -249,7 +244,7 @@ def construct_embedding_node(embedding_config):
     reduction = config_get_required(embedding_config, "reduction")
     num_tokens_per_input = embedding_config.get("num_tokens_per_input", None)
 
-    return bolt.graph.Embedding(
+    return bolt.nn.Embedding(
         num_embedding_lookups=num_embedding_lookups,
         lookup_size=lookup_size,
         log_embedding_block_size=log_embedding_block_size,
@@ -263,14 +258,14 @@ def construct_switch_node(switch_config):
     sparsity = switch_config.get("sparsity", 1)
 
     if use_default_sampling or sparsity == 1:
-        return bolt.graph.Switch(
+        return bolt.nn.Switch(
             dim=config_get_required(switch_config, "dim"),
             sparsity=sparsity,
             activation=config_get_required(switch_config, "activation"),
             n_layers=config_get_required(switch_config, "n_layers"),
         )
 
-    return bolt.graph.Switch(
+    return bolt.nn.Switch(
         dim=config_get_required(switch_config, "dim"),
         sparsity=sparsity,
         activation_function=config_get_required(switch_config, "activation"),
@@ -280,7 +275,7 @@ def construct_switch_node(switch_config):
 
 
 def construct_dlrm_attention_node(node_config):
-    return bolt.graph.DlrmAttention()
+    return bolt.nn.DlrmAttention()
 
 
 def construct_node(node_config):
@@ -288,7 +283,7 @@ def construct_node(node_config):
     if node_type == "Input":
         return construct_input_node(node_config)
     if node_type == "Concatenate":
-        return bolt.graph.Concatenate()
+        return bolt.nn.Concatenate()
     if node_type == "FullyConnected":
         return construct_fully_connected_node(node_config)
     if node_type == "Embedding":
@@ -305,11 +300,11 @@ def get_loss(model_config):
     # TODO(josh/nick): Add an option to pass in the loss function as string to compile
     # TODO(josh): Consider moving to python 3.10 so we have the match pattern
     if loss_string == "categoricalcrossentropyloss" or loss_string == "cce":
-        return bolt.CategoricalCrossEntropyLoss()
+        return bolt.nn.losses.CategoricalCrossEntropy()
     if loss_string == "binarycrossentropyloss" or loss_string == "bce":
-        return bolt.BinaryCrossEntropyLoss()
+        return bolt.nn.losses.BinaryCrossEntropy()
     if loss_string == "meansquarederror" or loss_string == "mse":
-        return bolt.MeanSquaredError()
+        return bolt.nn.losses.MeanSquaredError()
     raise ValueError(f"{loss_string} is not a valid loss function.")
 
 
@@ -396,7 +391,7 @@ def load_mlm_datasets(dataset_config, use_s3, return_tokens):
 # num_epochs as the first element of a 2 item tuple (the second element is
 # the train_config)
 def load_train_config(experiment_config):
-    train_config = bolt.graph.TrainConfig.make(
+    train_config = bolt.TrainConfig(
         epochs=1, learning_rate=config_get_required(experiment_config, "learning_rate")
     ).with_metrics(config_get_required(experiment_config, "train_metrics"))
     if "reconstruct_hash_functions" in experiment_config.keys():
@@ -408,8 +403,8 @@ def load_train_config(experiment_config):
     return config_get_required(experiment_config, "epochs"), train_config
 
 
-def load_predict_config(experiment_config):
-    return bolt.graph.PredictConfig.make().with_metrics(
+def load_eval_config(experiment_config):
+    return bolt.EvalConfig().with_metrics(
         config_get_required(experiment_config, "test_metrics")
     )
 
@@ -424,16 +419,14 @@ def freeze_hash_table_if_needed(model, experiment_config, current_epoch):
         model.freeze_hash_tables()
 
 
-def switch_to_sparse_inference_if_needed(
-    predict_config, experiment_config, current_epoch
-):
+def switch_to_sparse_inference_if_needed(eval_config, experiment_config, current_epoch):
     use_sparse_inference = (
         "sparse_inference_epoch" in experiment_config.keys()
         and current_epoch >= experiment_config["sparse_inference_epoch"]
     )
     if use_sparse_inference:
         print(f"Switching to sparse inference on epoch {current_epoch}")
-        predict_config.enable_sparse_inference()
+        eval_config.enable_sparse_inference()
 
 
 def should_compute_roc_auc(experiment_config):

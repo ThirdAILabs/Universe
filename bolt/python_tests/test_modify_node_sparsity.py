@@ -32,26 +32,26 @@ def test_switch_dense_to_sparse():
         hidden_layer_bottom_sparsity=1,
     )
 
-    dense_predict_config = (
-        bolt.graph.PredictConfig.make()
+    dense_eval_config = (
+        bolt.EvalConfig()
         .with_metrics(["categorical_accuracy"])
         .silence()
         .return_activations()
     )
 
-    dense_metrics = model.predict(
+    dense_metrics = model.evaluate(
         test_data=train_data,
         test_labels=train_labels,
-        predict_config=dense_predict_config,
+        eval_config=dense_eval_config,
     )
 
     model.get_layer("fc_3").set_sparsity(sparsity=0.25)
-    sparse_predict_config = dense_predict_config.enable_sparse_inference()
+    sparse_eval_config = dense_eval_config.enable_sparse_inference()
 
-    sparse_metrics = model.predict(
+    sparse_metrics = model.evaluate(
         test_data=train_data,
         test_labels=train_labels,
-        predict_config=sparse_predict_config,
+        eval_config=sparse_eval_config,
     )
 
     assert len(dense_metrics) == 2

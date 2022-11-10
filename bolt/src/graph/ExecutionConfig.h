@@ -3,7 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
-#include <bolt/src/graph/callbacks/Callback.h>
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Datasets.h>
@@ -14,31 +14,31 @@
 
 namespace thirdai::bolt {
 
-class PredictConfig {
+class EvalConfig {
  public:
-  static PredictConfig makeConfig() { return PredictConfig(); }
+  static EvalConfig makeConfig() { return EvalConfig(); }
 
-  PredictConfig& enableSparseInference() {
+  EvalConfig& enableSparseInference() {
     _use_sparse_inference = true;
     return *this;
   }
 
-  PredictConfig& withMetrics(std::vector<std::string> metric_names) {
+  EvalConfig& withMetrics(std::vector<std::string> metric_names) {
     _metric_names = std::move(metric_names);
     return *this;
   }
 
-  PredictConfig& returnActivations() {
+  EvalConfig& returnActivations() {
     _return_activations = true;
     return *this;
   }
 
-  PredictConfig& silence() {
+  EvalConfig& silence() {
     _verbose = false;
     return *this;
   }
 
-  PredictConfig& withOutputCallback(
+  EvalConfig& withOutputCallback(
       const std::function<void(const BoltVector&)>& output_callback) {
     _output_callback = output_callback;
     return *this;
@@ -59,7 +59,7 @@ class PredictConfig {
   auto outputCallback() const { return _output_callback; }
 
  private:
-  PredictConfig()
+  EvalConfig()
       : _metric_names({}),
         _use_sparse_inference(false),
         _verbose(true),
@@ -87,11 +87,11 @@ class ValidationContext {
  public:
   explicit ValidationContext(
       std::vector<dataset::BoltDatasetPtr> validation_data,
-      dataset::BoltDatasetPtr validation_labels, PredictConfig predict_config,
+      dataset::BoltDatasetPtr validation_labels, EvalConfig eval_config,
       uint32_t frequency, std::string save_best_per_metric = "")
       : _data(std::move(validation_data)),
         _labels(std::move(validation_labels)),
-        _config(std::move(predict_config)),
+        _config(std::move(eval_config)),
         _frequency(frequency),
         _save_best_per_metric(std::move(save_best_per_metric)) {}
 
@@ -99,7 +99,7 @@ class ValidationContext {
 
   const dataset::BoltDatasetPtr& labels() const { return _labels; }
 
-  const PredictConfig& config() const { return _config; }
+  const EvalConfig& config() const { return _config; }
 
   uint32_t frequency() const { return _frequency; }
 
@@ -111,7 +111,7 @@ class ValidationContext {
  private:
   std::vector<dataset::BoltDatasetPtr> _data;
   dataset::BoltDatasetPtr _labels;
-  PredictConfig _config;
+  EvalConfig _config;
   uint32_t _frequency;
 
   std::string _save_best_per_metric;
@@ -159,11 +159,11 @@ class TrainConfig {
   TrainConfig& withValidation(
       const std::vector<dataset::BoltDatasetPtr>& validation_data,
       const dataset::BoltDatasetPtr& validation_labels,
-      const PredictConfig& predict_config, uint32_t validation_frequency = 0,
+      const EvalConfig& eval_config, uint32_t validation_frequency = 0,
       std::string validation_save_best_per_metric = "") {
     _validation_context = ValidationContext(
-        validation_data, validation_labels, predict_config,
-        validation_frequency, std::move(validation_save_best_per_metric));
+        validation_data, validation_labels, eval_config, validation_frequency,
+        std::move(validation_save_best_per_metric));
     return *this;
   }
 
@@ -240,7 +240,8 @@ class TrainConfig {
     }
     if (_validation_context.has_value()) {
       throw std::runtime_error(
-          "Cannot serialize a training config that has a validation context.");
+          "Cannot serialize a training config that has a validation "
+          "context.");
     }
     cereal::BinaryOutputArchive oarchive(output_stream);
     oarchive(*this);
@@ -284,15 +285,15 @@ class TrainConfig {
         _log_loss_frequency(1) {}
 
   friend class cereal::access;
-  // We don't serialize the callbacks because they might be arbitrary functions
-  // from python. Instead, we throw an error in the save method if the callbacks
-  // are nonempty.
-  // For now, we also don't serialize the validation context, and similarly
-  // check this in the save method.
+  // We don't serialize the callbacks because they might be arbitrary
+  // functions from python. Instead, we throw an error in the save method if
+  // the callbacks are nonempty. For now, we also don't serialize the
+  // validation context, and similarly check this in the save method.
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_epochs, _learning_rate, _metric_names, _verbose,
-            _rebuild_hash_tables, _reconstruct_hash_functions, _log_loss_frequency);
+            _rebuild_hash_tables, _reconstruct_hash_functions,
+            _log_loss_frequency);
   }
 
   uint32_t _epochs;

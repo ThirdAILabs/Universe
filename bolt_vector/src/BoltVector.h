@@ -117,6 +117,23 @@ struct BoltVector {
     return active_neurons[second_max_id];
   }
 
+  void sortActiveNeurons() {  // NOLINT: clang-tidy thinks this should be const.
+    assert(!isDense());
+
+    std::vector<std::pair<uint32_t, float>> contents;
+    contents.reserve(len);
+    for (uint32_t i = 0; i < len; i++) {
+      contents.emplace_back(active_neurons[i], activations[i]);
+    }
+
+    std::sort(contents.begin(), contents.end());
+
+    for (uint32_t i = 0; i < len; i++) {
+      active_neurons[i] = contents[i].first;
+      activations[i] = contents[i].second;
+    }
+  }
+
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
                                      const std::vector<float>& values) {
     assert(indices.size() == values.size());
@@ -150,6 +167,50 @@ struct BoltVector {
     return vector;
   }
 
+  std::vector<float> dense(uint64_t projected_dimension) const {
+    if (isDense()) {
+      assert(projected_dimension == len);
+      std::vector<float> _dense(activations, activations + len);
+      return _dense;
+    }
+
+    // Not dense, projecting sparse onto projected_dimension.
+    std::vector<float> _dense(projected_dimension, 0);
+    for (uint64_t sparse_index = 0; sparse_index < len; sparse_index++) {
+      assert(sparse_index < projected_dimension);
+      _dense[active_neurons[sparse_index]] = activations[sparse_index];
+    }
+    return _dense;
+  }
+
+  BoltVector copy() const {
+    BoltVector vec;
+    vec.len = this->len;
+
+    // Since we are copying the data underlying the original vector to create,
+    // this vector, this vector will always own its own data, even if the vector
+    // it is copying from does not.
+    vec._owns_data = true;
+
+    vec.activations = new float[len];
+    std::copy(this->activations, this->activations + len, vec.activations);
+
+    if (this->active_neurons != nullptr) {
+      vec.active_neurons = new uint32_t[len];
+      std::copy(this->active_neurons, this->active_neurons + len,
+                vec.active_neurons);
+    }
+
+    if (this->gradients != nullptr) {
+      vec.gradients = new float[len];
+      std::copy(this->gradients, this->gradients + len, vec.gradients);
+    }
+
+    return vec;
+  }
+
+  // TODO(Josh): Delete copy constructor and copy assignment (will help when
+  // we've moved to new Dataset and removed BoltBatches)
   BoltVector(const BoltVector& other) : len(other.len), _owns_data(true) {
     if (other.active_neurons != nullptr) {
       active_neurons = new uint32_t[len];
@@ -512,13 +573,13 @@ class BoltBatch {
     }
   }
 
-  BoltBatch(const BoltBatch& other) = delete;
+  //  BoltBatch(const BoltBatch& other) = delete;
 
-  BoltBatch(BoltBatch&& other) = default;
+  // BoltBatch(BoltBatch&& other) = default;
 
-  BoltBatch& operator=(const BoltBatch& other) = delete;
+  // BoltBatch& operator=(const BoltBatch& other) = delete;
 
-  BoltBatch& operator=(BoltBatch&& other) = default;
+  // BoltBatch& operator=(BoltBatch&& other) = default;
 };
 
 }  // namespace thirdai

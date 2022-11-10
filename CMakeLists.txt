@@ -30,9 +30,9 @@ message(STATUS "Project version: ${PROJECT_VERSION_STRING_FULL}")
 message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
-message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
-separate_arguments(FEATURE_FLAGS)
-message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
+message("\tBuilding with feature flags: ${THIRDAI_FEATURE_FLAGS}")
+separate_arguments(THIRDAI_FEATURE_FLAGS)
+message("\tFeature flags seperated into CMake List: ${THIRDAI_FEATURE_FLAGS}")
 message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
@@ -42,14 +42,13 @@ message("====================================")
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license
 # (THIRDAI_CHECK_LICENSE). If just the THIRDAI_CHECK_LICENSE flag is set there
 # will be a linker error.
-list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
   set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
-  set(CRYPTOPP_LIB cryptopp::cryptopp)
 endif()
 
 if(MSVC)
@@ -116,7 +115,10 @@ else()
   endif(NOT OpenMP_FOUND)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  add_compile_options(
+
+endif()
+
+set(THIRDAI_COMPILE_OPTIONS
     -Wall
     -Wextra
     -Werror
@@ -148,25 +150,8 @@ else()
     $<$<CONFIG:RelWithAsan>:-g>
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
 
-endif()
-
-# Add feature flags passed in from python
-add_compile_definitions(${FEATURE_FLAGS})
-
-# In debug mode we are using ASan (address sanitizer) to provide better
-# information on errors. We only run with this in debug mode because it carries
-# a performace penalty. See
-# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
-# information.
-
-# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang.
-if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
-  add_compile_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                      $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-
-  add_link_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                   $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-endif()
+set(THIRDAI_ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
+                                 $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
 # Custom command line options
 
@@ -184,18 +169,22 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
-include_directories(deps/pybind11/include)
-include_directories(deps/cereal/include)
 include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
-include_directories(deps/googletest/googletest/include)
-include_directories(deps/googletest/googlemock/include)
-include_directories(deps/spdlog/include)
 
 # Source dependencies
-add_subdirectory(deps/pybind11)
-add_subdirectory(deps/googletest)
-add_subdirectory(deps/spdlog)
+add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
+add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
+
+add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
+
+# PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
+# requires the boost and we dont want to add the boost dependencies, hence
+# skipping the performance comparison. Earlier we use to include only header(so
+# not using any CMakeLists) but now we have used target based hence including
+# CMakelists thats why we need this.
+set(SKIP_PERFORMANCE_COMPARISON ON)
+add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
@@ -233,30 +222,41 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
-file(
-  GLOB
-  BOLT_SOURCES
-  bolt/src/auto_classifiers/*.cc
-  bolt/src/graph/*.cc
-  bolt/src/layers/*.cc
-  bolt/src/networks/*.cc
-  bolt/src/utils/*.cc)
+set(THIRDAI_SOURCES
+    bolt/src/auto_classifiers/AutoClassifierBase.cc
+    bolt/src/graph/Graph.cc
+    bolt/src/layers/EmbeddingLayer.cc
+    bolt/src/layers/FullyConnectedLayer.cc
+    bolt/src/layers/ConvLayer.cc
+    search/src/MaxFlash.cc
+    search/src/MaxFlashArray.cc
+    search/src/Flash.cc
+    hashing/src/DensifiedMinHash.cc
+    hashing/src/DWTA.cc
+    hashing/src/FastSRP.cc
+    hashing/src/MurmurHash.cc
+    hashing/src/MinHash.cc
+    hashing/src/SRP.cc
+    hashing/src/UniversalHash.cc
+    hashtable/src/SampledHashTable.cc
+    hashtable/src/VectorHashTable.cc
+    wrappers/src/LicenseWrapper.cc
+    dataset/src/Vocabulary.cc
+    dataset/src/batch_processors/MaskedSentenceBatchProcessor.cc
+    new_dataset/src/featurization_pipeline/transformations/Binning.cc
+    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+    new_dataset/src/featurization_pipeline/ColumnMap.cc
+    compression/src/CountSketch.cc
+    compression/src/DragonVector.cc
+    utils/Logging.cc)
 
-file(GLOB_RECURSE SEARCH_SOURCES search/src/*.cc)
+add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
-file(GLOB_RECURSE HASHING_SOURCES hashing/src/*.cc)
-
-file(GLOB_RECURSE HASHTABLE_SOURCES hashtable/src/*.cc)
-
-file(GLOB_RECURSE WRAPPER_SOURCES wrappers/src/*.cc)
-
-file(GLOB_RECURSE DATASET_SOURCES dataset/src/*.cc)
-
-file(GLOB_RECURSE COMPRESSION_SOURCES compression/src/*.cc)
-
-file(GLOB_RECURSE UTILS_SOURCES utils/*.cc)
-
-file(GLOB RECURSE AUTOML_SOURCES auto_ml/src/*.cc)
+target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
+                                     cereal::cereal)
+if(${LICENSE_BUILD_FLAG_FOUND})
+  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
@@ -267,25 +267,37 @@ pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
   bolt/python_bindings/BoltPython.cc
-  bolt/python_bindings/BoltGraphPython.cc
+  bolt/python_bindings/BoltNNPython.cc
+  bolt/python_bindings/CallbacksPython.cc
   dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_classifiers/python_bindings/AutoClassifiersPython.cc
-  auto_ml/python_bindings/DeploymentPython.cc
-  ${BOLT_SOURCES}
-  ${SEARCH_SOURCES}
-  ${HASHING_SOURCES}
-  ${HASHTABLE_SOURCES}
-  ${DATASET_SOURCES}
-  ${WRAPPER_SOURCES}
-  ${DATASET_SOURCES}
-  ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES}
-  ${AUTOML_SOURCES})
+  auto_ml/python_bindings/DeploymentPython.cc)
 
-target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(_thirdai PUBLIC thirdai)
 
-if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
+if(NOT MSVC)
+  target_compile_options(thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
+  target_compile_options(_thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
 endif()
+
+# Add feature flags passed in from python
+target_compile_definitions(thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
+target_compile_definitions(_thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
+
+# In debug mode we are using ASan (address sanitizer) to provide better
+# information on errors. We only run with this in debug mode because it carries
+# a performace penalty. See
+# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
+# information.
+
+target_compile_options(thirdai PUBLIC ${THIRDAI_ASAN_COMPILE_OPTIONS})
+
+target_link_options(thirdai PUBLIC ${THIRDAI_ASAN_COMPILE_OPTIONS})
+
+target_compile_options(_thirdai PRIVATE ${THIRDAI_ASAN_COMPILE_OPTIONS})
+
+target_link_options(_thirdai PRIVATE ${THIRDAI_ASAN_COMPILE_OPTIONS})

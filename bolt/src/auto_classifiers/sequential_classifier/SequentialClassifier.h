@@ -44,10 +44,13 @@ class SequentialClassifier {
       uint32_t lookahead = 0) {
     _config.data_types = std::move(data_types),
     _config.target = std::move(target);
-    _config.time_granularity = stringToGranularity(std::move(time_granularity));
+    _config.time_granularity =
+        dataset::stringToGranularity(std::move(time_granularity));
     _config.lookahead = lookahead;
-    autotuneTemporalFeatures(_config,
-                             std::move(temporal_tracking_relationships));
+    if (!temporal_tracking_relationships.empty()) {
+      autotuneTemporalFeatures(_config,
+                               std::move(temporal_tracking_relationships));
+    }
     _single_inference_col_nums = ColumnNumberMap(_config.data_types);
   }
 
@@ -127,11 +130,11 @@ class SequentialClassifier {
 
     auto [test_data, test_labels] = pipeline.loadInMemory();
 
-    PredictConfig config = PredictConfig::makeConfig()
-                               .withMetrics(std::move(metrics))
-                               .withOutputCallback(print_predictions_callback);
+    EvalConfig config = EvalConfig::makeConfig()
+                            .withMetrics(std::move(metrics))
+                            .withOutputCallback(print_predictions_callback);
 
-    auto results = _model->predict({test_data}, test_labels, config);
+    auto results = _model->evaluate({test_data}, test_labels, config);
 
     if (output_file) {
       output_file->close();
@@ -167,9 +170,12 @@ class SequentialClassifier {
       neuron_to_explain = label_vocab->getUid(*target_label);
     }
 
+    auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
+        {makeInputForSingleInference(processor, input_row)}, true,
+        neuron_to_explain);
+
     auto result = getSignificanceSortedExplanations(
-        _model, makeInputForSingleInference(processor, input_row), input_row,
-        processor, neuron_to_explain);
+        gradients_indices, gradients_ratio, input_row, processor);
 
     auto column_num_to_name =
         _single_inference_col_nums.getColumnNumToColNameMap();

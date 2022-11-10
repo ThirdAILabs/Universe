@@ -79,7 +79,6 @@ def test_multiple_explain_returns_same():
         explanations = model.explain(sample)
         assert len(prev_explanations) == len(explanations)
         for prev_explanation, explanation in zip(prev_explanations, explanations):
-            assert prev_explanation.column_number == explanation.column_number
             assert (
                 prev_explanation.percentage_significance
                 == explanation.percentage_significance

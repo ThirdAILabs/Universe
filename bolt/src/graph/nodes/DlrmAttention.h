@@ -237,8 +237,9 @@ class DlrmAttentionNode final
         "DLRMFeatureInteractionNode is in an invalid internal state");
   }
 
-  void enableDistributedTraining() final {
-    // NOOP since the DlrmAttention node doesn't have any paramters
+  bool trainable(bool flag) final {
+    (void)flag;
+    return false;
   }
 
  private:

@@ -122,6 +122,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
+  void setParallelism(bool parallel) { _parallel = parallel; }
+
   void prepareInputBlocksForBatch(std::vector<std::string_view>& sample) {
     for (auto& block : _input_blocks) {
       block->prepareForBatch(sample);

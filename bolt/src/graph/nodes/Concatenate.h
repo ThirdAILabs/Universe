@@ -70,8 +70,9 @@ class ConcatenateNode final
 
   void initOptimizer() final {}
 
-  void enableDistributedTraining() final {
-    // NOOP since the Concatenate node doesn't have any paramters
+  bool trainable(bool flag) final {
+    (void)flag;
+    return false;
   }
 
  private:

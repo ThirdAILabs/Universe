@@ -1,9 +1,10 @@
 enable_testing()
 include(GoogleTest)
 
-add_executable(license_test LicenseTest.cc)
+add_executable(LicenseTest LicenseTest.cc)
 
-target_link_libraries(license_test PRIVATE gtest_main ${CRYPTOPP_LIB})
+target_link_libraries(LicenseTest PRIVATE cereal::cereal gtest_main
+                                          cryptopp::cryptopp)
 
-gtest_discover_tests(license_test DISCOVERY_TIMEOUT
+gtest_discover_tests(LicenseTest DISCOVERY_TIMEOUT
                      ${THIRDAI_GTEST_DISCOVERY_TIMEOUT})

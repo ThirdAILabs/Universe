@@ -29,20 +29,16 @@ def test_dag_get_set_weights():
         output_dim=dataset_dim,
     )
 
-    train_config = bolt.graph.TrainConfig.make(
-        learning_rate=LEARNING_RATE, epochs=5
-    ).silence()
+    train_config = bolt.TrainConfig(learning_rate=LEARNING_RATE, epochs=5).silence()
     model.train(
         train_data=train_data, train_labels=train_labels, train_config=train_config
     )
-    predict_config = (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
-    )
+    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
 
-    metrics = model.predict(
+    metrics = model.evaluate(
         test_data=train_data,
         test_labels=train_labels,
-        predict_config=predict_config,
+        eval_config=eval_config,
     )
 
     untrained_model = get_simple_dag_model(
@@ -66,8 +62,8 @@ def test_dag_get_set_weights():
     untrained_model.get_layer("fc_2").weights.set(output_layer_weights)
     untrained_model.get_layer("fc_2").biases.set(output_layer_biases)
 
-    untrained_model_metrics = untrained_model.predict(
-        test_data=train_data, test_labels=train_labels, predict_config=predict_config
+    untrained_model_metrics = untrained_model.evaluate(
+        test_data=train_data, test_labels=train_labels, eval_config=eval_config
     )
 
     assert math.isclose(

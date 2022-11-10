@@ -48,11 +48,19 @@ class EmbeddingLayer {
     }
   }
 
+  void disableSparseParameterUpdates() {
+    _disable_sparse_parameter_updates = true;
+  }
+
   std::vector<float>& getRawEmbeddingBlock() { return _embedding_block; }
 
   std::vector<float>& getRawEmbeddingBlockGradient() {
     return _optimizer->gradients;
   }
+
+  void setTrainable(bool flag) { _trainable = flag; }
+
+  bool getTrainable() const { return _trainable; }
 
   EmbeddingLayer(const EmbeddingLayer&) = delete;
   EmbeddingLayer(EmbeddingLayer&&) = delete;
@@ -63,6 +71,12 @@ class EmbeddingLayer {
 
  private:
   std::vector<std::pair<uint64_t, uint64_t>> getDisjointUpdateRanges() const;
+
+  void updateParametersSparse(float lr, uint32_t iter, float B1, float B2,
+                              float eps);
+
+  void updateParametersDense(float lr, uint32_t iter, float B1, float B2,
+                             float eps);
 
   inline uint32_t getEmbeddingBlockOffset(uint32_t token,
                                           uint32_t lookup_index) {
@@ -134,11 +148,15 @@ class EmbeddingLayer {
   std::vector<float> _embedding_block;
 
   std::optional<AdamOptimizer> _optimizer = std::nullopt;
+  bool _disable_sparse_parameter_updates;
 
   // This structure stores the embedding block offset for each token in each
   // input. This is used for backpropagation and for update paramters to know
   // what parts of the embedding block were used.
   std::vector<std::vector<uint64_t>> _embedding_block_offsets;
+
+  // Marking trainable or not.
+  bool _trainable;
 };
 
 }  // namespace thirdai::bolt

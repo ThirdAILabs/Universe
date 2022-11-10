@@ -32,7 +32,6 @@ class ReplicaWorker(Worker):
         primary_worker,
         communication_type,
         log_dir: str,
-        batch_size,
     ):
         """
         Calls the constructor for Worker
@@ -59,5 +58,4 @@ class ReplicaWorker(Worker):
             train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
-            batch_size=batch_size,
         )
