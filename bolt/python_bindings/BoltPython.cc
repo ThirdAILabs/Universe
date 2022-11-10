@@ -197,7 +197,7 @@ Args:
             )
                              )pbdoc");
   udt_types_submodule.def("numerical", automl::deployment::DataType::numerical,
-                          py::arg("range"),
+                          py::arg("range"), py::arg("granularity") = "m",
                           R"pbdoc(
     Numerical column type. Use this object if a column contains numerical 
     data (the value is treated as a quantity). Examples include hours of 
@@ -205,13 +205,16 @@ Args:
 
     Args:
         range (tuple(float, float)): The expected range (min to max) of the
-        numeric quantity. The more accurate this range to the test data, the 
-        better the model performance.
+            numeric quantity. The more accurate this range to the test data, the 
+            better the model performance.
+        granularity (str): Optional. One of "extrasmall"/"xs", "small"/"s", "medium"/"m",
+            "large"/"l" or "extralarge"/"xl" . Defaults to "m".
+
 
     Example:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
-                    "hours_watched": bolt.types.numerical(range=(0, 25))
+                    "hours_watched": bolt.types.numerical(range=(0, 25), granularity="xs")
                 }
                 ...
             )
