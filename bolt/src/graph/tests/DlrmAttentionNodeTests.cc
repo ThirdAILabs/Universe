@@ -8,6 +8,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
+#include <cstdio>
 
 namespace thirdai::bolt::tests {
 
@@ -79,6 +80,8 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
   auto loaded_accuracy = model.evaluate({data, tokens}, labels, eval_cfg)
                              .first["categorical_accuracy"];
   ASSERT_EQ(original_accuracy, loaded_accuracy);
+
+  std::remove(save_filename.c_str());
 }
 
 }  // namespace thirdai::bolt::tests
