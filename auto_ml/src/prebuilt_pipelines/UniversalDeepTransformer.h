@@ -133,6 +133,8 @@ class UniversalDeepTransformer : public ModelPipeline {
   static bolt::BoltGraphPtr buildUDTBoltGraph(
       std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
       uint32_t hidden_layer_size) {
+    std::cout << "Hidden layer size is " << hidden_layer_size << std::endl;
+
     auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
                                                       /* activation= */ "relu");
     hidden->addPredecessor(input_nodes[0]);
@@ -199,6 +201,7 @@ class UniversalDeepTransformer : public ModelPipeline {
         uint32_t int_value = utils::toInteger(option_value.c_str());
         std::cout << "HERE 2" << std::endl;
         if (int_value != 0) {
+          std::cout << "embedding dim = " << int_value;
           std::cout << "HERE 3" << std::endl;
           options.embedding_dimension = int_value;
           std::cout << "HERE 4" << std::endl;
