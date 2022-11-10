@@ -30,7 +30,7 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
       - name: Build python package and install test dependencies
-        run: bin/build.py --extras test
+        run: python3 bin/build.py --extras test
 
       - name: Run python unit tests
-        run: bin/python-test.sh -k test_udt_simple
+        run: python3 -m pytest -k test_udt_simple --ignore-glob=./deps
