@@ -163,7 +163,7 @@ def test_index_changes_predict_result():
 
 
 def test_embedding_representation_returns_correct_dimension():
-    for embedding_dim in [256, 512, 1024]:
+    for embedding_dim in [128, 256]:
         model = make_simple_trained_model(embedding_dim=embedding_dim)
         embedding = model.embedding_representation(single_sample())
         assert embedding.shape == (embedding_dim,)
