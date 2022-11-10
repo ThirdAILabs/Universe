@@ -66,6 +66,19 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
   auto [metrics, _] = model.evaluate({data, tokens}, labels, eval_cfg);
 
   ASSERT_GE(metrics["categorical_accuracy"], 0.9);
+
+  // We do a save and load test here, it should ideally be a seperate test
+  // but if we do it here we have access to the trained model and data and
+  // don't need a helper method that returns a tuple.
+  auto original_accuracy = metrics["categorical_accuracy"];
+
+  std::string save_filename = "./tmp_dlrm_attention_model";
+  model.save(save_filename);
+  auto loaded_model = BoltGraph::load(save_filename);
+
+  auto loaded_accuracy = model.evaluate({data, tokens}, labels, eval_cfg)
+                             .first["categorical_accuracy"];
+  ASSERT_EQ(original_accuracy, loaded_accuracy);
 }
 
 }  // namespace thirdai::bolt::tests
