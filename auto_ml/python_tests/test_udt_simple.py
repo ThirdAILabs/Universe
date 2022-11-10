@@ -162,6 +162,10 @@ def test_index_changes_predict_result():
     assert (second != third).any()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception leads to an access violation on windows.",
+)
 def test_embedding_representation_returns_correct_dimension():
     for embedding_dim in [256, 512, 1024]:
         model = make_simple_trained_model(embedding_dim=embedding_dim)
