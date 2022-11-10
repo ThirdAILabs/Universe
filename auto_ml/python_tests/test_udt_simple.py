@@ -163,7 +163,19 @@ def test_index_changes_predict_result():
 
 
 def test_embedding_representation_returns_correct_dimension():
+    # Importing the library
+    import psutil
+
     for embedding_dim in [256, 512, 1024]:
+
+        # Getting % usage of virtual_memory ( 3rd field)
+        print("Total RAM (GB):", psutil.virtual_memory()[0] / 1000000000)
+        # Getting % usage of virtual_memory ( 3rd field)
+        print("Available RAM (GB):", psutil.virtual_memory()[1] / 1000000000)
+        # Getting % usage of virtual_memory ( 3rd field)
+        print("RAM memory % used:", psutil.virtual_memory()[2])
+        # Getting usage of virtual_memory in GB ( 4th field)
+        print("RAM Used (GB):", psutil.virtual_memory()[3] / 1000000000)
         model = make_simple_trained_model(embedding_dim=embedding_dim)
         embedding = model.embedding_representation(single_sample())
         assert embedding.shape == (embedding_dim,)
