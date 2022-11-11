@@ -19,8 +19,6 @@ void createDeploymentSubmodule(py::module_& thirdai_module);
 
 void defineModelPipelineAndUDT(py::module_& bolt_submodule);
 
-void defineUDTGenerator(py::module& bolt_submodule);
-
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs);
 
