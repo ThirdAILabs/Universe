@@ -314,6 +314,9 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
       .def("explain", &UniversalDeepTransformer::explain<MapInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
            docs::UDT_EXPLAIN)
+      .def("load_validation_data",
+           &UniversalDeepTransformer::loadValidationDataFromFile,
+           py::arg("filename"), docs::UDT_LOAD_VALIDATION_DATA)
       .def("save", &UniversalDeepTransformer::save, py::arg("filename"),
            docs::UDT_SAVE)
       .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"),
