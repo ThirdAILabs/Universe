@@ -125,4 +125,13 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
   }
 }
 
+template <class Archive>
+void DWTAHashFunction::serialize(Archive& archive) {
+  archive(cereal::base_class<HashFunction>(this), _hashes_per_table,
+          _num_hashes, _dim, _binsize, _log_binsize, _permute, _bin_map,
+          _positions, _rand_double_hash_seed);
+}
+
 }  // namespace thirdai::hashing
+
+CEREAL_REGISTER_TYPE(thirdai::hashing::DWTAHashFunction)

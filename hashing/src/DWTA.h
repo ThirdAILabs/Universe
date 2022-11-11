@@ -20,11 +20,7 @@ class DWTAHashFunction final : public HashFunction {
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<HashFunction>(this), _hashes_per_table,
-            _num_hashes, _dim, _binsize, _log_binsize, _permute, _bin_map,
-            _positions, _rand_double_hash_seed);
-  }
+  void serialize(Archive& archive);
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   DWTAHashFunction() : HashFunction(0, 0){};
 
@@ -52,5 +48,3 @@ class DWTAHashFunction final : public HashFunction {
 };
 
 }  // namespace thirdai::hashing
-
-CEREAL_REGISTER_TYPE(thirdai::hashing::DWTAHashFunction)
