@@ -8,7 +8,6 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/MinHash.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -39,7 +38,7 @@ class QueryCandidateGeneratorConfig {
       const std::string& hash_function, uint32_t num_tables,
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
       std::optional<uint32_t> reservoir_size = std::nullopt,
-      uint32_t source_column_index, uint32_t target_column_index,
+      uint32_t source_column_index = 1, uint32_t target_column_index = 0,
       bool has_incorrect_queries = false, uint32_t batch_size = 10000)
       : _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
@@ -47,7 +46,9 @@ class QueryCandidateGeneratorConfig {
         _range(range),
         _n_grams(std::move(n_grams)),
         _has_incorrect_queries(has_incorrect_queries),
-        _reservoir_size(reservoir_size) {
+        _reservoir_size(reservoir_size),
+        _source_column_index(source_column_index),
+        _target_column_index(target_column_index) {
     _hash_function = getHashFunction(
         /* hash_function = */ thirdai::utils::lower(hash_function));
   }
@@ -91,6 +92,10 @@ class QueryCandidateGeneratorConfig {
   std::optional<uint32_t> reservoirSize() const { return _reservoir_size; }
 
   constexpr bool hasIncorrectQueries() const { return _has_incorrect_queries; }
+
+  constexpr uint32_t sourceColumnIndex() const { return _source_column_index; }
+
+  constexpr uint32_t targetColumnIndex() const { return _target_column_index; }
 
   std::shared_ptr<hashing::HashFunction> hashFunction() const {
     return _hash_function;
@@ -137,7 +142,8 @@ class QueryCandidateGeneratorConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_hash_function, _num_tables, _hashes_per_table, _batch_size, _range,
-            _n_grams, _has_incorrect_queries, _reservoir_size, _source_column_index, _target_column_index);
+            _n_grams, _has_incorrect_queries, _reservoir_size,
+            _source_column_index, _target_column_index);
   }
 };
 
@@ -494,7 +500,7 @@ class QueryCandidateGenerator {
 
   std::unordered_map<std::string, uint32_t> _queries_to_labels_map;
 
-  // private constructor for cereal
+  // Private constructor for cereal
   QueryCandidateGenerator() {}
 
   friend class cereal::access;

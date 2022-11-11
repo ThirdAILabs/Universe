@@ -12,6 +12,7 @@
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformerBase.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
@@ -30,7 +31,8 @@ using OptionsMap = std::unordered_map<std::string, std::string>;
  * potential clients can tinker with without having to download a serialized
  * deployment config file.
  */
-class UniversalDeepTransformer : public ModelPipeline {
+class UniversalDeepTransformer : public ModelPipeline,
+                                 public UniversalDeepTransformerBase {
   static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
   static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
@@ -49,7 +51,7 @@ class UniversalDeepTransformer : public ModelPipeline {
    *  - contextual_columns: "true" or "false". Decides whether to do tabular
    *    pairgrams or not. Defaults to false and only does tabular unigrams.
    */
-  static UniversalDeepTransformer buildUDT(
+  static std::unique_ptr<UniversalDeepTransformer> buildUDT(
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target_col, std::string time_granularity = "d",
@@ -81,8 +83,10 @@ class UniversalDeepTransformer : public ModelPipeline {
         /* freeze_hash_tables= */ freeze_hash_tables,
         /* prediction_threshold= */ std::nullopt);
 
-    return UniversalDeepTransformer(
-        {std::move(dataset_factory), std::move(model), train_eval_parameters});
+    auto model_pipeline = ModelPipeline(
+        std::move(dataset_factory), std::move(model), train_eval_parameters);
+    auto udt = UniversalDeepTransformer(std::move(model_pipeline));
+    return std::make_unique<UniversalDeepTransformer>(udt);
   }
 
   BoltVector embeddingRepresentation(const MapInput& input) {
@@ -107,19 +111,19 @@ class UniversalDeepTransformer : public ModelPipeline {
     return udtDatasetFactory().className(neuron_id);
   }
 
-  void save(const std::string& filename) {
+  void save(const std::string& filename) final {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*this);
   }
 
-  static std::unique_ptr<UniversalDeepTransformer> load(
+  static std::shared_ptr<UniversalDeepTransformerBase> load(
       const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<UniversalDeepTransformer> deserialize_into(
+    std::shared_ptr<UniversalDeepTransformer> deserialize_into(
         new UniversalDeepTransformer());
     iarchive(*deserialize_into);
 

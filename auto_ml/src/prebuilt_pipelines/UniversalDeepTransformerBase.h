@@ -1,32 +1,29 @@
 #pragma once
 
-#include <memory>
-#include <string>
 #include <cereal/access.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <memory>
+#include <optional>
+#include <string>
 
 namespace thirdai::automl::deployment {
 
 class UniversalDeepTransformerBase {
  public:
-  UniversalDeepTransformerBase() {}
   virtual void save(const std::string& filename) = 0;
-  static std::unique_ptr<UniversalDeepTransformerBase> load(
-      const std::string& filename);
 
   virtual ~UniversalDeepTransformerBase() = default;
 
- protected:
-  //  explicit UniversalDeepTransformerBase()
-  static UniversalDeepTransformerBase buildUDT();
+ private:
+  std::optional<std::string> _name;
 
-private:
-
-friend class cereal::access;
-template <class Archive>
-void serialize(Archive& archive) {
-  archive()
-}
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_name);
+  }
 };
+using UniversalDeepTransformerBasePtr =
+    std::shared_ptr<UniversalDeepTransformerBase>;
 
 }  // namespace thirdai::automl::deployment

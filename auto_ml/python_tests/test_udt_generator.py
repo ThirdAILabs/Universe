@@ -1,32 +1,33 @@
-import platform
-import os
 import csv
-import datasets
-import random 
-import pandas as pd 
+import math
+import os
+import random
+from typing import List
 
+import datasets
+import pandas as pd
 import pytest
 from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
-TRAIN_FILE = "train_file.csv"
-EVAL_FILE = "eval_file.csv"
+TRAIN_FILE_PATH = "./query_reformulation.csv"
+MODEL_PATH = "udt_generator_model.bolt"
 
 
-
-def read_csv_file(file_name):
+def read_csv_file(file_name: str) -> List[List[str]]:
     with open(file_name, newline="") as file:
         data = list(csv.reader(file))
 
     return data
 
 
-def write_input_dataset_to_csv(dataframe, file_path):
+def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
     dataframe.to_csv(file_path, index=False, header=False)
 
 
-def download_grammar_correction_dataset():
+@pytest.fixture(scope="module")
+def grammar_correction_dataset() -> pd.DataFrame:
     """
     The grammar correction dataset is retrieved from HuggingFace:
     https://huggingface.co/datasets/snips_built_in_intents
@@ -40,19 +41,17 @@ def download_grammar_correction_dataset():
     return pd.DataFrame(extracted_text)
 
 
-def transform_queries(dataframe):
+def transform_queries(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Randomly picks 10% of the words in the queries list and either
     removes a random character from the chosen word or applies a
     random permutation to the characters in order to create an incorrect
     version of the queries.
-
     The input is expected to be a Pandas DataFrame with one column
     containing the correct queries. The output is expected to be
     another Pandas DataFrame with two columns. The first column remains
     the same, but the second column consists of queries transformed
     according to the rule detailed above.
-
     """
     transformation_type = ("remove-char", "permute-string")
     transformed_dataframe = []
@@ -97,28 +96,96 @@ def transform_queries(dataframe):
     return pd.DataFrame(transformed_dataframe)
 
 
-def delete_created_files():
-    if os.path.exists(TRAIN_FILE):
-        os.remove(TRAIN_FILE)
-
-    if os.path.exists(EVAL_FILE):
-        os.remove(EVAL_FILE)
+@pytest.fixture
+def prepared_datasets(grammar_correction_dataset) -> None:
+    transformed_queries = transform_queries(dataframe=grammar_correction_dataset)
+    write_input_dataset_to_csv(transformed_queries, TRAIN_FILE_PATH)
 
 
-def create_udt_generator_model():
+def delete_created_files() -> None:
+    if os.path.exists(MODEL_PATH):
+        os.remove(MODEL_PATH)
 
-    dataframe = download_grammar_correction_dataset()
-    write_input_dataset_to_csv(dataframe, TRAIN_FILE)
+    if os.path.exists(TRAIN_FILE_PATH):
+        os.remove(TRAIN_FILE_PATH)
 
-    transformed_queries = transform_queries(dataframe=dataframe)
-    write_input_dataset_to_csv(transformed_queries, EVAL_FILE)
 
+def create_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
     model = bolt.UniversalDeepTransformer(
-        target_column=0, source_column=1, dataset_size="large"
+        target_column_index=0, source_column_index=1, dataset_size="small"
     )
-    model.train(filename=TRAIN_FILE)
+    model.train(filename=TRAIN_FILE_PATH)
+    return model
 
-    model.evaluate(filename=TRAIN_FILE)
 
-def test_udt_generator_load_save():
-    pass 
+@pytest.mark.filterwarnings("ignore")
+def test_udt_generator_load_save(prepared_datasets):
+    model = create_udt_query_reformulation_model()
+    model.save(MODEL_PATH)
+
+    deserialized_model = bolt.UniversalDeepTransformer.load(
+        MODEL_PATH, query_reformulation=True
+    )
+
+    eval_outputs = model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
+    deserialized_model_eval_outputs = deserialized_model.evaluate(
+        filename=TRAIN_FILE_PATH, top_k=5
+    )
+    for index in range(len(eval_outputs)):
+        assert eval_outputs[index] == deserialized_model_eval_outputs[index]
+
+
+@pytest.mark.filterwarnings("ignore")
+def test_udt_generator_raises_attribute_error(prepared_datasets):
+    """
+    This test ensures that certain methods are only available for
+    specific UDT models. For instance, a user should not be able to
+    call model.embedding_representation() when the underlying model
+    is an instance of a query-reformulation-specific UDT.
+    """
+
+    attribute_error_message = "Unsupported Method for the Given Instance of UDT"
+    single_test_sample = {
+        "userId": "0",
+        "movieId": "1",
+        "timestamp": "2022-08-31",
+        "hoursWatched": "1",
+    }
+    model = create_udt_query_reformulation_model()
+    with pytest.raises(
+        AttributeError,
+        match=attribute_error_message,
+    ):
+        model.embedding_representation(input_sample=single_test_sample)
+
+    with pytest.raises(
+        AttributeError,
+        match=attribute_error_message,
+    ):
+        model.class_name(neuron_id=5)
+
+    with pytest.raises(
+        AttributeError,
+        match=attribute_error_message,
+    ):
+        model.index(input_sample=single_test_sample)
+
+    with pytest.raises(
+        AttributeError,
+        match=attribute_error_message,
+    ):
+        model.index_batch(input_samples=[single_test_sample] * 5)
+
+    with pytest.raises(
+        AttributeError,
+        match=attribute_error_message,
+    ):
+        model.reset_temporal_trackers()
+
+    with pytest.raises(
+        AttributeError,
+        match=attribute_error_message,
+    ):
+        model.explain(input_sample=single_test_sample)
+
+    delete_created_files()
