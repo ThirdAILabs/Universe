@@ -556,14 +556,6 @@ class BoltBatch {
       }
     }
   }
-
-  //  BoltBatch(const BoltBatch& other) = delete;
-
-  // BoltBatch(BoltBatch&& other) = default;
-
-  // BoltBatch& operator=(const BoltBatch& other) = delete;
-
-  // BoltBatch& operator=(BoltBatch&& other) = default;
 };
 
 }  // namespace thirdai
