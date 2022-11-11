@@ -551,4 +551,36 @@ Example:
     >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
 )pbdoc";
 
+const char* const UDT_LOAD_VALIDATION_DATA = R"pbdoc(
+Loads a given dataset for validation to the UniversalDeepTransformer (UDT). 
+
+Args:
+    filename (str): The validation dataset file.
+
+Returns:
+    Tuple[List[dataset.BoltDataset], dataset.BoltDataset]:
+    This function returns a tuple of input BoltDatasets and a BoltDataset for the
+    labels.
+
+Examples:
+    >>> eval_config = (
+            bolt.EvalConfig()
+            .with_metrics(["categorical_accuracy"])
+        )
+    >>> val_data, val_labels = model.load_validation_data("./validation_file")
+    >>> train_config = bolt.TrainConfig(
+            epochs=3, learning_rate=0.001
+        ).with_validation(
+            validation_data=val_data,
+            validation_labels=val_labels,
+            eval_config=eval_config,
+        )
+
+    >>> model.train(
+            filename="./train_file",
+            train_config=train_config,
+        )
+
+)pbdoc";
+
 }  // namespace thirdai::automl::deployment::python::docs
