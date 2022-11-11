@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
-import dateutil
 
 TEXT_DELIMETER = ""
 CATEGORICAL_DELIMETERS = [";", ":", "-", "\t", "|"]
@@ -19,11 +18,17 @@ DELIMETER_MAP = {
 # Returns the average number of entries per row there would be if the passed in
 # delimeter was the actual delimeter
 def get_delimeter_ratio(column: pd.Series, delimeter: str) -> float:
-    count = sum(column.apply(lambda entry: entry.strip().count(delimeter))) + len(column)
+    count = sum(column.apply(lambda entry: entry.strip().count(delimeter))) + len(
+        column
+    )
     return count / len(column)
 
+
 def get_categorical_delimeter_ratios(column: pd.Series) -> Dict[str, float]:
-    return {delimeter: get_delimeter_ratio(column, delimeter) for delimeter in CATEGORICAL_DELIMETERS}
+    return {
+        delimeter: get_delimeter_ratio(column, delimeter)
+        for delimeter in CATEGORICAL_DELIMETERS
+    }
 
 
 def most_occuring_categorical_delimeter(column: pd.Series) -> str:
@@ -84,6 +89,13 @@ def semantic_type_inference(
     filename: str, nrows: int = 100, min_rows_allowed: int = 3
 ) -> Dict[str, Dict[str, str]]:
 
+    print(f"Reading first {nrows} lines of file {filename}:")
+    with open(filename) as file:
+        for i, line in enumerate(file):
+            if i == nrows:
+                break
+            print(line, end="")
+
     df = pd.read_csv(filename, nrows=nrows)
     if len(df) < min_rows_allowed:
         raise ValueError(
@@ -111,23 +123,23 @@ def test_basic_type_inference():
     with tempfile.NamedTemporaryFile(mode="w") as tmp:
         tmp.write(
             """col1,col2,col3,col4,col5,col6
-lorem,  2,    3.0,  label1;label2;label3,  How vexingly quick daft zebras jump!,         2021-02-01
-ipsum,  5,    6,    label4,                "Sphinx of black quartz judge my vow.",       2022-02-01
-dolor,  8,    9,    label5;label6,         The quick brown fox jumps over the lazy dog,  2023-02-01
+                lorem,2,3.0,label1;label2;label3,How vexingly quick daft zebras jump!,2021-02-01
+                ipsum,5,6,label4,"Sphinx of black quartz, judge my vow.",2022-02-01
+                dolor,8,9,label5;label6,The quick brown fox jumps over the lazy dog,2023-02-01
             """
         )
         tmp.flush()
-        
+
         inferred_types = semantic_type_inference(tmp.name)
         print(inferred_types)
 
-        assert(inferred_types["col1"]["type"] == "categorical")
-        assert(inferred_types["col2"]["type"] == "categorical")
-        assert(inferred_types["col3"]["type"] == "numerical")
-        assert(inferred_types["col4"]["type"] == "multi-categorical")
-        assert(inferred_types["col4"]["delimeter"] == ";")
-        assert(inferred_types["col5"]["type"] == "text")
-        assert(inferred_types["col6"]["type"] == "datetime")
+        assert inferred_types["col1"]["type"] == "categorical"
+        assert inferred_types["col2"]["type"] == "categorical"
+        assert inferred_types["col3"]["type"] == "numerical"
+        assert inferred_types["col4"]["type"] == "multi-categorical"
+        assert inferred_types["col4"]["delimeter"] == ";"
+        assert inferred_types["col5"]["type"] == "text"
+        assert inferred_types["col6"]["type"] == "datetime"
 
 
 test_basic_type_inference()
