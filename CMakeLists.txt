@@ -231,6 +231,7 @@ endif()
 set(THIRDAI_SOURCES
     bolt_vector/src/BoltVector.cc
     bolt/src/graph/Graph.cc
+    bolt/src/graph/ExecutionConfig.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc
