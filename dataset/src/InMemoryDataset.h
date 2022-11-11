@@ -1,10 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
 #include "utils/SafeFileIO.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <cstdint>
@@ -34,9 +29,7 @@ class DatasetBase {
  private:
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
+  void serialize(Archive& archive);
 };
 
 using DatasetBasePtr = std::shared_ptr<DatasetBase>;
@@ -109,21 +102,9 @@ class InMemoryDataset : public DatasetBase {
   }
 
   static std::shared_ptr<InMemoryDataset<BATCH_T>> load(
-      const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
-    auto deserialize_into = std::make_shared<InMemoryDataset<BATCH_T>>();
-    iarchive(*deserialize_into);
-    return deserialize_into;
-  }
+      const std::string& filename);
 
-  void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
-  }
+  void save(const std::string& filename);
 
   InMemoryDataset() : _len(0), _batch_size(0) {}
 
@@ -132,9 +113,7 @@ class InMemoryDataset : public DatasetBase {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetBase>(this), _batches, _len, _batch_size);
-  }
+  void serialize(Archive& archive);
 
   std::vector<BATCH_T> _batches;
   uint64_t _len;
@@ -142,5 +121,3 @@ class InMemoryDataset : public DatasetBase {
 };
 
 }  // namespace thirdai::dataset
-
-CEREAL_REGISTER_TYPE(thirdai::dataset::InMemoryDataset<thirdai::BoltBatch>)
