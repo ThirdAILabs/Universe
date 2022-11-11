@@ -4,6 +4,7 @@
 #include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformerBase.h>
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
@@ -17,6 +18,8 @@ namespace thirdai::automl::deployment::python {
 void createDeploymentSubmodule(py::module_& thirdai_module);
 
 void defineModelPipelineAndUDT(py::module_& bolt_submodule);
+
+void defineUDTGenerator(py::module& bolt_submodule);
 
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs);
@@ -32,6 +35,9 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
 
 ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
                                             const py::dict& parameters);
+
+template <typename UDT_MODEL_TYPE>
+UDT_MODEL_TYPE& validateUDTModelType(UniversalDeepTransformerBase& base_model);
 
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,

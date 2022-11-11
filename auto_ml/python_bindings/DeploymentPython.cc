@@ -20,13 +20,17 @@
 #include <auto_ml/src/deployment_config/dataset_configs/udt/TemporalContext.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/prebuilt_pipelines/UDTGenerator.h>
 #include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
+#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformerBase.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
+#include <pybind11/attr.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <search/src/Generator.h>
 #include <algorithm>
 #include <cstdint>
 #include <exception>
@@ -37,6 +41,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace py = pybind11;
 
@@ -271,53 +276,176 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            docs::ORACLE_CONFIG_INIT);
 
-  py::class_<UniversalDeepTransformer>(
-      bolt_submodule, "UniversalDeepTransformer", docs::UDT_CLASS)
+  py::class_<UniversalDeepTransformerBase, UniversalDeepTransformerBasePtr>(
+      bolt_submodule, "UniversalDeepTransformer")
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("time_granularity") = "daily",
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            py::arg("options") = OptionsMap(), docs::UDT_INIT)
-      .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
-           py::arg("train_config") = bolt::TrainConfig::makeConfig(
-               /* learning_rate= */ 0.001, /* epochs= */ 3),
-           py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN)
-      .def("class_name", &UniversalDeepTransformer::className,
-           py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
-           py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           docs::UDT_EVALUATE)
-      .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
-           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
-           docs::UDT_PREDICT)
-      .def("predict_batch",
-           &predictBatchWrapper<UniversalDeepTransformer, MapInputBatch>,
-           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           docs::UDT_PREDICT_BATCH)
+      .def(py::init(&UDTQueryCandidateGenerator::buildUDT),
+           py::arg("target_column_index"), py::arg("source_column_index"),
+           py::arg("dataset_size"), docs::UDT_QUERY_REFORMULATION_INIT)
+      .def(
+          "class_name",
+          [](UniversalDeepTransformerBase& model, uint32_t neuron_id) {
+            auto& udt_model =
+                validateUDTModelType<UniversalDeepTransformer>(model);
+            return udt_model.className(neuron_id);
+          },
+          py::arg("neuron_id"), docs::UDT_CLASS_NAME)
+      .def(
+          "train",
+          [](UniversalDeepTransformerBasePtr& model,
+             const std::string& filename, bolt::TrainConfig& train_config,
+             std::optional<uint32_t> batch_size_opt,
+             std::optional<uint32_t> max_in_memor_batches) {
+            if (dynamic_cast<UniversalDeepTransformer*>(model.get())) {
+              return dynamic_cast<UniversalDeepTransformer*>(model.get())
+                  ->trainOnFile(filename, train_config, batch_size_opt,
+                                max_in_memor_batches);
+            }
+            return dynamic_cast<UDTQueryCandidateGenerator*>(model.get())
+                ->generator()
+                ->buildFlashIndex(filename);
+          },
+          py::arg("filename"),
+          py::arg("train_config") = bolt::TrainConfig::makeConfig(
+              /* learning_rate= */ 0.001, /* epochs= */ 3),
+          py::arg("batch_size") = std::nullopt,
+          py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN,
+          docs::UDT_QUERY_REFORMULATION_TRAIN)
+      .def(
+          "evaluate",
+          [](UniversalDeepTransformerBase& model, const std::string& filename,
+             uint32_t top_k) {
+            return dynamic_cast<UDTQueryCandidateGenerator&>(model)
+                .generator()
+                ->evaluateOnFile(filename, top_k);
+          },
+          py::arg("filename"), py::arg("top_k"),
+          docs::UDT_QUERY_REFORMULATION_EVALUATE)
+      .def(
+          "evaluate",
+          [](UniversalDeepTransformerBase& model, const std::string& filename,
+             std::optional<bolt::EvalConfig>& eval_config) {
+            auto& udt_model =
+                validateUDTModelType<UniversalDeepTransformer>(model);
+            return evaluateOnFileWrapper<UniversalDeepTransformer>(
+                udt_model, filename, eval_config);
+          },
+          py::arg("filename"), py::arg("eval_config") = std::nullopt,
+          docs::UDT_EVALUATE)
+
+      .def(
+          "predict",
+          [](UniversalDeepTransformerBase& model, MapInput& input_sample,
+             bool use_sparse_inference) {
+            auto& udt_model =
+                validateUDTModelType<UniversalDeepTransformer>(model);
+            return predictWrapper<UniversalDeepTransformer, MapInput>(
+                udt_model, input_sample, use_sparse_inference);
+          },
+          py::arg("input_sample"), py::arg("use_sparse_inference") = false,
+          docs::UDT_PREDICT)
+
+      .def(
+          "predict",
+          [](UniversalDeepTransformerBase& model, const std::string& sample,
+             uint32_t top_k) {
+            auto& udt_query_generator_model =
+                validateUDTModelType<UDTQueryCandidateGenerator>(model);
+            return udt_query_generator_model.generator()->queryFromList(
+                {sample}, top_k);
+          },
+          py::arg("input_query"), py::arg("top_k") = 5,
+          docs::UDT_QUERY_REFORMULATION_PREDICT)
+
+      .def(
+          "predict_batch",
+          [](UniversalDeepTransformerBase& model, MapInputBatch& input_samples,
+             bool use_sparse_inference) {
+            auto& udt_model =
+                validateUDTModelType<UniversalDeepTransformer>(model);
+            return predictBatchWrapper<UniversalDeepTransformer, MapInputBatch>(
+                udt_model, input_samples, use_sparse_inference);
+          },
+          py::arg("input_samples"), py::arg("use_sparse_inference") = false,
+          docs::UDT_PREDICT_BATCH)
+      .def(
+          "predict_batch",
+          [](UniversalDeepTransformerBase& model,
+             const std::vector<std::string>& queries, uint32_t top_k) {
+            auto& udt_query_generator_model =
+                validateUDTModelType<UDTQueryCandidateGenerator>(model);
+            return udt_query_generator_model.generator()->queryFromList(queries,
+                                                                        top_k);
+          },
+          py::arg("input_queries"), py::arg("top_k") = 5,
+          docs::UDT_PREDICT_BATCH_QUERY_REFORMULATION)
+
       .def(
           "embedding_representation",
-          [](UniversalDeepTransformer& model, const MapInput& input) {
+          [](UniversalDeepTransformerBase& model, MapInput& input) {
+            auto& udt_model =
+                validateUDTModelType<UniversalDeepTransformer>(model);
             return convertBoltVectorToNumpy(
-                model.embeddingRepresentation(input));
+                udt_model.embeddingRepresentation(input));
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
-      .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
-           py::arg("input_sample"), docs::UDT_INDEX)
-      .def("index_batch",
-           &UniversalDeepTransformer::batchUpdateTemporalTrackers,
-           py::arg("input_samples"), docs::UDT_INDEX_BATCH)
-      .def("reset_temporal_trackers",
-           &UniversalDeepTransformer::resetTemporalTrackers,
-           docs::UDT_RESET_TEMPORAL_TRACKERS)
-      .def("explain", &UniversalDeepTransformer::explain<MapInput>,
-           py::arg("input_sample"), py::arg("target_class") = std::nullopt,
-           docs::UDT_EXPLAIN)
-      .def("save", &UniversalDeepTransformer::save, py::arg("filename"),
+
+      .def(
+          "index",
+          [](UniversalDeepTransformerBase& model, const MapInput& input) {
+            auto& udt_model =
+                validateUDTModelType<UniversalDeepTransformer>(model);
+            return udt_model.updateTemporalTrackers(input);
+          },
+          py::arg("input_sample"), docs::UDT_INDEX)
+
+      .def(
+          "index_batch",
+          [](UniversalDeepTransformerBase& model, const MapInputBatch& inputs) {
+            auto& udt_model =
+                validateUDTModelType<UniversalDeepTransformer>(model);
+            return udt_model.batchUpdateTemporalTrackers(inputs);
+          },
+          py::arg("input_samples"), docs::UDT_INDEX_BATCH)
+
+      .def(
+          "reset_temporal_trackers",
+          [](UniversalDeepTransformerBase& model) {
+            auto& udt_model =
+                validateUDTModelType<UniversalDeepTransformer>(model);
+            return udt_model.resetTemporalTrackers();
+          },
+          docs::UDT_RESET_TEMPORAL_TRACKERS)
+
+      .def(
+          "explain",
+          [](UniversalDeepTransformerBase& model, const MapInput& input,
+             std::optional<std::variant<uint32_t, std::string>> target_class) {
+            auto& udt_model =
+                validateUDTModelType<UniversalDeepTransformer>(model);
+            return udt_model.explain<MapInput>(input, std::move(target_class));
+          },
+          py::arg("input_sample"), py::arg("target_class") = std::nullopt,
+          docs::UDT_EXPLAIN)
+      .def("save", &UniversalDeepTransformerBase::save, py::arg("filename"),
            docs::UDT_SAVE)
-      .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"),
-                  docs::UDT_LOAD);
+
+      .def_static(
+          "load",
+          [](const std::string& filename, bool query_reformulation = false)
+              -> std::shared_ptr<UniversalDeepTransformerBase> {
+            if (query_reformulation) {
+              return UDTQueryCandidateGenerator::load(filename);
+            }
+            return UniversalDeepTransformer::load(filename);
+          },
+          py::arg("filename"), py::arg("query_reformulation") = false,
+          docs::UDT_LOAD, docs::UDT_QUERY_REFORMULATION_LOAD);
 }
 
 template <typename T>
@@ -414,6 +542,17 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
   auto config = DeploymentConfig::load(config_path);
 
   return createPipeline(config, parameters);
+}
+
+template <typename UDT_MODEL_TYPE>
+UDT_MODEL_TYPE& validateUDTModelType(UniversalDeepTransformerBase& base_model) {
+  try {
+    auto& derived_model = dynamic_cast<UDT_MODEL_TYPE&>(base_model);
+    return derived_model;
+  } catch (std::bad_cast& error) {
+    throw py::attribute_error(
+        "Unsupported Method for the Given Instance of UDT");
+  }
 }
 
 py::object evaluateOnDataLoaderWrapper(
