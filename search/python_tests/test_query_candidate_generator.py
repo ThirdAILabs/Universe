@@ -2,6 +2,7 @@ import csv
 import math
 import os
 import random
+from typing import List
 
 import datasets
 import pandas as pd
@@ -14,22 +15,20 @@ QUERIES_FILE = "./queries.csv"
 TRANSFORMED_QUERIES = "./transformed_queries.csv"
 CONFIG_FILE = "./flash_index_config"
 
-# The downloaded dataset from HuggingFace consists of 328 samples
-DATASET_SIZE = 328
 
-
-def read_csv_file(file_name):
+def read_csv_file(file_name: str) -> List[List[str]]:
     with open(file_name, newline="") as file:
         data = list(csv.reader(file))
 
     return data
 
 
-def write_input_dataset_to_csv(dataframe, file_path):
+def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
     dataframe.to_csv(file_path, index=False, header=False)
 
 
-def download_grammar_correction_dataset():
+@pytest.fixture(scope="module")
+def grammar_correction_dataset() -> pd.DataFrame:
     """
     The grammar correction dataset is retrieved from HuggingFace:
     https://huggingface.co/datasets/snips_built_in_intents
@@ -43,19 +42,17 @@ def download_grammar_correction_dataset():
     return pd.DataFrame(extracted_text)
 
 
-def transform_queries(dataframe):
+def transform_queries(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Randomly picks 10% of the words in the queries list and either
     removes a random character from the chosen word or applies a
     random permutation to the characters in order to create an incorrect
     version of the queries.
-
     The input is expected to be a Pandas DataFrame with one column
     containing the correct queries. The output is expected to be
     another Pandas DataFrame with two columns. The first column remains
     the same, but the second column consists of queries transformed
     according to the rule detailed above.
-
     """
     transformation_type = ("remove-char", "permute-string")
     transformed_dataframe = []
@@ -100,7 +97,13 @@ def transform_queries(dataframe):
     return pd.DataFrame(transformed_dataframe)
 
 
-def delete_created_files():
+@pytest.fixture
+def prepared_datasets(grammar_correction_dataset) -> None:
+    transformed_queries = transform_queries(dataframe=grammar_correction_dataset)
+    write_input_dataset_to_csv(transformed_queries, TRANSFORMED_QUERIES)
+
+
+def delete_created_files() -> None:
     if os.path.exists(QUERIES_FILE):
         os.remove(QUERIES_FILE)
 
@@ -111,33 +114,33 @@ def delete_created_files():
         os.remove(TRANSFORMED_QUERIES)
 
 
-@pytest.mark.filterwarnings("ignore")
-@pytest.mark.unit
-def test_flash_generator():
+def run_generator_test(
+    hash_function: str,
+    num_tables: int,
+    hashes_per_table: int,
+    hash_table_range: int,
+    n_grams: List[int],
+    use_reservoir_sampling: bool,
+) -> None:
     """
     Tests that the generated candidate queries are reasonable given
     the input dataset.
     By default, the generator recommends top 5 closes queries from
     flash.
     """
-    dataframe = download_grammar_correction_dataset()
-    write_input_dataset_to_csv(dataframe, QUERIES_FILE)
-
-    transformed_queries = transform_queries(dataframe=dataframe)
-    write_input_dataset_to_csv(transformed_queries, TRANSFORMED_QUERIES)
 
     generator_config = bolt.models.GeneratorConfig(
-        hash_function="MinHash",
-        num_tables=20,
-        hashes_per_table=10,
-        range=100,
-        n_grams=[3, 4],
+        hash_function=hash_function,
+        num_tables=num_tables,
+        hashes_per_table=hashes_per_table,
+        range=hash_table_range,
+        n_grams=n_grams,
+        reservoir_size=200 if use_reservoir_sampling else None,
         has_incorrect_queries=True,
     )
     generator_config.save(CONFIG_FILE)
 
     generator = bolt.models.Generator(config_file_name=CONFIG_FILE)
-
     generator.train(file_name=TRANSFORMED_QUERIES)
 
     query_pairs = read_csv_file(file_name=TRANSFORMED_QUERIES)
@@ -152,6 +155,20 @@ def test_flash_generator():
             1 if query_pairs[query_index][0] in generated_candidates[query_index] else 0
         )
 
-    assert correct_results / DATASET_SIZE > 0.95
+    recall = correct_results / len(query_pairs)
+    assert recall > 0.95
+
+
+@pytest.mark.filterwarnings("ignore")
+@pytest.mark.parametrize("use_reservoir_sampling", [False, True])
+def test_flash_generator(prepared_datasets, use_reservoir_sampling):
+    run_generator_test(
+        hash_function="MinHash",
+        num_tables=20,
+        hashes_per_table=10,
+        hash_table_range=100,
+        n_grams=[3, 4],
+        use_reservoir_sampling=use_reservoir_sampling,
+    )
 
     delete_created_files()

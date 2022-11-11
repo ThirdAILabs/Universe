@@ -17,7 +17,6 @@ namespace thirdai::tests {
 
 const uint32_t HASHES_PER_TABLE = 3;
 const uint32_t NUM_TABLES = 32;
-const uint32_t NUM_VECTORS = 100;
 
 constexpr const char* CONFIG_FILE = "flash_config";
 constexpr const char* QUERIES_FILE = "queries.csv";
@@ -51,8 +50,7 @@ QueryCandidateGeneratorConfig getQueryCandidateGeneratorConfig() {
       /* num_tables = */ NUM_TABLES,
       /* hashes_per_table = */ HASHES_PER_TABLE,
       /* range= */ 100,
-      /* n_grams = */ {3, 4},
-      /* has_incorrect_queries = */ false);
+      /* n_grams = */ {3, 4});
 }
 
 void assertQueryingWithoutTrainingThrowsException(
@@ -69,7 +67,8 @@ TEST(QueryCandidateGeneratorTest, QueryCandidateGeneratorConfigSerialization) {
   config.save(/*config_file_name = */ CONFIG_FILE);
 
   auto deserialized_config =
-      QueryCandidateGeneratorConfig::load(/* config_file_name = */ CONFIG_FILE);
+      QueryCandidateGeneratorConfig::load(/* config_file_name = */
+                                          CONFIG_FILE);
 
   ASSERT_EQ(config, *deserialized_config);
 
@@ -77,7 +76,7 @@ TEST(QueryCandidateGeneratorTest, QueryCandidateGeneratorConfigSerialization) {
   EXPECT_EQ(std::remove(CONFIG_FILE), 0);
 }
 
-TEST(QueryCandidateGeneratorTest, GeneratorAssignUniqueLabels) {
+TEST(QueryCandidateGeneratorTest, GeneratorAssignsUniqueLabels) {
   auto config = getQueryCandidateGeneratorConfig();
 
   auto query_candidate_generator = QueryCandidateGenerator::make(
@@ -88,7 +87,6 @@ TEST(QueryCandidateGeneratorTest, GeneratorAssignUniqueLabels) {
   assertQueryingWithoutTrainingThrowsException(query_candidate_generator);
 
   query_candidate_generator.buildFlashIndex(/* file_name = */ QUERIES_FILE);
-
   auto queries_to_labels_map =
       query_candidate_generator.getQueriesToLabelsMap();
 

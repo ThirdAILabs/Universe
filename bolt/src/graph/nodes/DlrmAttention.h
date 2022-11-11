@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "Embedding.h"
 #include "FullyConnected.h"
 #include <bolt/src/graph/Node.h>
@@ -33,7 +38,10 @@ class DlrmAttentionNode final
     : public Node,
       public std::enable_shared_from_this<DlrmAttentionNode> {
  public:
-  DlrmAttentionNode() : _compiled_state(std::nullopt), _compiled(false) {}
+  DlrmAttentionNode()
+      : _compiled_state(std::nullopt),
+        _compiled(false),
+        _outputs(std::nullopt) {}
 
   uint32_t outputDim() const final {
     if (getState() == NodeState::Constructed) {
@@ -289,6 +297,13 @@ class DlrmAttentionNode final
     }
   }
 
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _fully_connected_node,
+            _embedding_node, _compiled_state, _compiled);
+  }
+
   FullyConnectedNodePtr _fully_connected_node;
   EmbeddingNodePtr _embedding_node;
 
@@ -299,9 +314,24 @@ class DlrmAttentionNode final
           _output_dim(output_dim),
           _embedding_chunk_size(embedding_chunk_size) {}
 
+    // This needs to be a public constructor so that when cereal constructs an
+    // optional of CompiledState and calls emplace,
+    // std::allocator<CompiledState> can construct the object. See e.g.
+    // https://stackoverflow.com/questions/17007977/vectoremplace-back-for-objects-with-a-private-constructor
+    // You shouldn't call this function yourself.
+    CompiledState()
+        : _num_embedding_chunks(0), _output_dim(0), _embedding_chunk_size(0) {}
+
     uint32_t _num_embedding_chunks;
     uint32_t _output_dim;
     uint32_t _embedding_chunk_size;
+
+   private:
+    friend class cereal::access;
+    template <class Archive>
+    void serialize(Archive& archive) {
+      archive(_num_embedding_chunks, _output_dim, _embedding_chunk_size);
+    }
   };
   std::optional<CompiledState> _compiled_state;
 
@@ -312,3 +342,5 @@ class DlrmAttentionNode final
 using DlrmAttentionNodePtr = std::shared_ptr<DlrmAttentionNode>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::DlrmAttentionNode)

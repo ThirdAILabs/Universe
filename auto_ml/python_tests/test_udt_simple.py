@@ -1,12 +1,13 @@
-from random import sample
+import platform
 
 import pytest
-from thirdai import bolt, deployment
+from thirdai import bolt
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 TRAIN_FILE = "tempTrainFile.csv"
 TEST_FILE = "tempTestFile.csv"
+METADATA_FILE = "tempMetaFile.csv"
 
 
 def write_lines_to_file(file, lines):
@@ -44,11 +45,23 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         ],
     )
 
+    keys = [0, 1, 2] if integer_label else [0, 1, 4]
+    metadata_lines = [str(key) + "," + str(val) for key, val in zip(keys, [1, 2, 3])]
+    write_lines_to_file(METADATA_FILE, ["id,feature"] + metadata_lines)
+
+    metadata = bolt.types.metadata(
+        filename=METADATA_FILE,
+        key_column_name="id",
+        data_types={"feature": bolt.types.categorical(n_unique_classes=3)},
+    )
+
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "userId": bolt.types.categorical(n_unique_classes=3),
+            "userId": bolt.types.categorical(n_unique_classes=3, metadata=metadata),
             "movieId": bolt.types.categorical(
-                n_unique_classes=3, consecutive_integer_ids=integer_label
+                n_unique_classes=3,
+                consecutive_integer_ids=integer_label,
+                metadata=metadata,
             ),
             "timestamp": bolt.types.date(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
@@ -150,7 +163,7 @@ def test_index_changes_predict_result():
 
 
 def test_embedding_representation_returns_correct_dimension():
-    for embedding_dim in [256, 512, 1024]:
+    for embedding_dim in [128, 256]:
         model = make_simple_trained_model(embedding_dim=embedding_dim)
         embedding = model.embedding_representation(single_sample())
         assert embedding.shape == (embedding_dim,)
@@ -175,6 +188,10 @@ def test_different_explanation_target_returns_different_results():
     compare_explanations(explain_target_1, explain_target_2, assert_mode="not_equal")
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception leads to an access violation on windows.",
+)
 def test_explanations_target_label_format():
     model = make_simple_trained_model(integer_label=False)
     # Call this method to make sure it does not throw an error
