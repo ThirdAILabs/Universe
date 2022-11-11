@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
@@ -42,9 +40,7 @@ class SamplingConfig {
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
+  void serialize(Archive& archive);
 };
 
 using SamplingConfigPtr = std::shared_ptr<SamplingConfig>;
@@ -141,10 +137,7 @@ class DWTASamplingConfig final : public SamplingConfig {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<SamplingConfig>(this), _num_tables,
-            _hashes_per_table, _reservoir_size);
-  }
+  void serialize(Archive& archive);
 };
 
 class FastSRPSamplingConfig final : public SamplingConfig {
@@ -178,10 +171,7 @@ class FastSRPSamplingConfig final : public SamplingConfig {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<SamplingConfig>(this), _num_tables,
-            _hashes_per_table, _reservoir_size);
-  }
+  void serialize(Archive& archive);
 };
 
 class RandomSamplingConfig final : public SamplingConfig {
@@ -204,13 +194,7 @@ class RandomSamplingConfig final : public SamplingConfig {
  private:
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<SamplingConfig>(this));
-  }
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::DWTASamplingConfig)
-CEREAL_REGISTER_TYPE(thirdai::bolt::FastSRPSamplingConfig)
-CEREAL_REGISTER_TYPE(thirdai::bolt::RandomSamplingConfig)
