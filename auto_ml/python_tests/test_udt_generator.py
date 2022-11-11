@@ -132,6 +132,8 @@ def test_udt_generator_load_save(prepared_datasets):
         filename=TRAIN_FILE_PATH, top_k=5
     )
     for index in range(len(eval_outputs)):
+        print(f"eval outputs = {eval_outputs[index]}")
+        print(f"des outputs {deserialized_model_eval_outputs[index]}")
         assert eval_outputs[index] == deserialized_model_eval_outputs[index]
 
 
