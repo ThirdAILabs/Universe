@@ -429,4 +429,7 @@ void BoltVector::load(Archive& archive) {
   }
 }
 
+template uint32_t BoltVector::activeNeuronAtIndex<true>(uint32_t index) const;
+template uint32_t BoltVector::activeNeuronAtIndex<false>(uint32_t index) const;
+
 }  // namespace thirdai
