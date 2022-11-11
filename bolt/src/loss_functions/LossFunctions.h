@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
@@ -64,9 +63,7 @@ class LossFunction {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
+  void serialize(Archive& archive);
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
@@ -86,9 +83,7 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<LossFunction>(this));
-  }
+  void serialize(Archive& archive);
 };
 
 class BinaryCrossEntropyLoss final : public LossFunction {
@@ -132,9 +127,7 @@ class BinaryCrossEntropyLoss final : public LossFunction {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<LossFunction>(this));
-  }
+  void serialize(Archive& archive);
 };
 
 class MeanSquaredError final : public LossFunction {
@@ -153,9 +146,7 @@ class MeanSquaredError final : public LossFunction {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<LossFunction>(this));
-  }
+  void serialize(Archive& archive);
 };
 
 /**
@@ -183,9 +174,7 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<LossFunction>(this));
-  }
+  void serialize(Archive& archive);
 };
 
 class MarginBCE final : public LossFunction {
@@ -216,10 +205,7 @@ class MarginBCE final : public LossFunction {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<LossFunction>(this), _positive_margin,
-            _negative_margin, _bound);
-  }
+  void serialize(Archive& archive);
 };
 
 static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
@@ -247,8 +233,3 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
 }
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::CategoricalCrossEntropyLoss)
-CEREAL_REGISTER_TYPE(thirdai::bolt::BinaryCrossEntropyLoss)
-CEREAL_REGISTER_TYPE(thirdai::bolt::MeanSquaredError)
-CEREAL_REGISTER_TYPE(thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss)
