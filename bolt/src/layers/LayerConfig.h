@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
-#include <cereal/types/optional.hpp>
 #include "LayerUtils.h"
 #include "SamplingConfig.h"
 #include <utils/StringManipulation.h>
@@ -19,25 +17,14 @@ struct SequentialLayerConfig {
 
   virtual ActivationFunction getActFunc() const = 0;
 
-  static void checkSparsity(float sparsity) {
-    if (sparsity > 1 || sparsity <= 0) {
-      throw std::invalid_argument(
-          "sparsity must be between 0 exclusive and 1 inclusive.");
-    }
-    if (0.2 < sparsity && sparsity < 1.0) {
-      std::cout << "WARNING: Using large sparsity value " << sparsity
-                << " in Layer, consider decreasing sparsity" << std::endl;
-    }
-  }
+  static void checkSparsity(float sparsity);
 
   virtual ~SequentialLayerConfig() = default;
 
  private:
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
+  void serialize(Archive& archive);
 };
 
 using SequentialConfigList =
@@ -92,22 +79,11 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   }
 
  private:
-  static uint32_t clip(uint32_t input, uint32_t low, uint32_t high) {
-    if (input < low) {
-      return low;
-    }
-    if (input > high) {
-      return high;
-    }
-    return input;
-  }
+  static uint32_t clip(uint32_t input, uint32_t low, uint32_t high);
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<SequentialLayerConfig>(this), _dim, _sparsity,
-            _activation_fn, _sampling_config);
-  }
+  void serialize(Archive& archive);
 };
 
 struct ConvLayerConfig final : public SequentialLayerConfig {
@@ -216,24 +192,10 @@ class EmbeddingLayerConfig {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_num_embedding_lookups, _lookup_size, _log_embedding_block_size,
-            _reduction, _num_tokens_per_input);
-  }
+  void serialize(Archive& archive);
 
   static EmbeddingReductionType getReductionType(
-      const std::string& reduction_name) {
-    std::string lower_name = utils::lower(reduction_name);
-    if (lower_name == "sum") {
-      return EmbeddingReductionType::SUM;
-    }
-    if (lower_name == "concat" || lower_name == "concatenation") {
-      return EmbeddingReductionType::CONCATENATION;
-    }
-    throw std::invalid_argument(
-        "Invalid embedding reduction time '" + reduction_name +
-        "', supported options are 'sum' or 'concat'/'concatenation'");
-  }
+      const std::string& reduction_name);
 };
 
 class NormalizationLayerConfig {
@@ -280,11 +242,7 @@ class NormalizationLayerConfig {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_beta_regularizer, _gamma_regularizer, _epsilon);
-  }
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayerConfig)
