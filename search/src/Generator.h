@@ -332,7 +332,7 @@ class QueryCandidateGenerator {
 
     } else {
       assert(_query_generator_config->sourceColumnIndex() ==
-             _query_generator_config->_target_column_index());
+             _query_generator_config->targetColumnIndex());
       training_input_blocks = constructInputBlocks(
           _query_generator_config->nGrams(),
           /* column_index = */ _query_generator_config->targetColumnIndex());
