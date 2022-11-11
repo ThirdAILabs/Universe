@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
 #include "HashTable.h"
 #include <iostream>
 #include <sstream>
@@ -41,10 +39,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<HashTable<LABEL_T>>(this), _num_tables,
-            _reservoir_size, _range, _max_rand, _data, _counters, _gen_rand);
-  }
+  void serialize(Archive& archive);
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   SampledHashTable<LABEL_T>(){};
 
@@ -139,7 +134,3 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 };
 
 }  // namespace thirdai::hashtable
-
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint32_t>)
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint64_t>)
