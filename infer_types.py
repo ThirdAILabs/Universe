@@ -1,10 +1,11 @@
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
+import dateutil
 
 TEXT_DELIMETER = ""
 CATEGORICAL_DELIMETERS = [";", ":", "-", "\t", "|"]
-DELIMETER_RATIO_THRESHOLD = 1
+DELIMETER_RATIO_THRESHOLD = 1.5
 DELIMETER_MAP = {
     " ": "text",
     ";": "multi-categorical",
@@ -15,33 +16,28 @@ DELIMETER_MAP = {
 }
 
 
+# Returns the average number of entries per row there would be if the passed in
+# delimeter was the actual delimeter
 def get_delimeter_ratio(column: pd.Series, delimeter: str) -> float:
-    count = sum(column.apply(lambda entry: entry.count(delimeter)))
+    count = sum(column.apply(lambda entry: entry.strip().count(delimeter))) + len(column)
     return count / len(column)
 
-
-def most_occuring_categorical_delimeter_and_count(column: pd.Series) -> Tuple[str, int]:
-    most_occuring_delimeter = CATEGORICAL_DELIMETERS[0]
-    most_occuring_delimeter_count = -1
-    for delimeter in CATEGORICAL_DELIMETERS:
-        count = sum(column.apply(lambda entry: entry.count(delimeter)))
-        if count > most_occuring_categorical_delimeter_and_count:
-            most_occuring_delimeter = delimeter
-            most_occuring_delimeter_count = count
-
-    return most_occuring_delimeter, most_occuring_delimeter_count
+def get_categorical_delimeter_ratios(column: pd.Series) -> Dict[str, float]:
+    return {delimeter: get_delimeter_ratio(column, delimeter) for delimeter in CATEGORICAL_DELIMETERS}
 
 
 def most_occuring_categorical_delimeter(column: pd.Series) -> str:
-    return most_occuring_categorical_delimeter_and_count(column)[0]
+    ratio_map = get_categorical_delimeter_ratios(column)
+    return max(ratio_map, key=lambda entry: ratio_map[entry])
 
 
-def most_occuring_categorical_delimeter_ratio(column: pd.Series) -> float:
-    return most_occuring_categorical_delimeter_and_count(column)[1] / len(column)
+def largest_categorical_delimeter_ratio(column: pd.Series) -> float:
+    ratio_map = get_categorical_delimeter_ratios(column)
+    return max(ratio_map.values())
 
 
 def is_delimeted_categorical_col(column: pd.Series) -> bool:
-    return most_occuring_categorical_delimeter_ratio(column) > DELIMETER_RATIO_THRESHOLD
+    return largest_categorical_delimeter_ratio(column) > DELIMETER_RATIO_THRESHOLD
 
 
 def is_text_col(column: pd.Series) -> bool:
@@ -53,7 +49,7 @@ def is_datetime_col(column: pd.Series) -> bool:
     try:
         pd.to_datetime(column)
         return True
-    except pd.errors.ParserError:
+    except Exception as e:
         return False
 
 
@@ -78,7 +74,7 @@ def get_col_type(column: pd.Series) -> Dict[str, str]:
     if is_delimeted_categorical_col(column):
         return {
             "type": "multi-categorical",
-            "deliemter": most_occuring_categorical_delimeter(column),
+            "delimeter": most_occuring_categorical_delimeter(column),
         }
 
     return {"type": "categorical"}
@@ -111,22 +107,27 @@ def semantic_type_inference(
 import tempfile
 
 
-def test_type_inference():
+def test_basic_type_inference():
     with tempfile.NamedTemporaryFile(mode="w") as tmp:
         tmp.write(
-            """col1,col2,col3
-            1,2,3.0
-            4,5,6
-            7,8,9
+            """col1,col2,col3,col4,col5,col6
+lorem,  2,    3.0,  label1;label2;label3,  How vexingly quick daft zebras jump!,         2021-02-01
+ipsum,  5,    6,    label4,                "Sphinx of black quartz judge my vow.",       2022-02-01
+dolor,  8,    9,    label5;label6,         The quick brown fox jumps over the lazy dog,  2023-02-01
             """
         )
         tmp.flush()
         
         inferred_types = semantic_type_inference(tmp.name)
         print(inferred_types)
+
         assert(inferred_types["col1"]["type"] == "categorical")
         assert(inferred_types["col2"]["type"] == "categorical")
         assert(inferred_types["col3"]["type"] == "numerical")
+        assert(inferred_types["col4"]["type"] == "multi-categorical")
+        assert(inferred_types["col4"]["delimeter"] == ";")
+        assert(inferred_types["col5"]["type"] == "text")
+        assert(inferred_types["col6"]["type"] == "datetime")
 
 
-test_type_inference()
+test_basic_type_inference()
