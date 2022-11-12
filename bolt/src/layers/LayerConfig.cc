@@ -1,5 +1,6 @@
 #include "LayerConfig.h"
 #include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 
 namespace thirdai::bolt {
@@ -61,6 +62,22 @@ template <class Archive>
 void NormalizationLayerConfig::serialize(Archive& archive) {
   archive(_beta_regularizer, _gamma_regularizer, _epsilon);
 }
+
+template void EmbeddingLayerConfig::serialize<cereal::BinaryInputArchive>(
+    cereal::BinaryInputArchive&);
+template void EmbeddingLayerConfig::serialize<cereal::BinaryOutputArchive>(
+    cereal::BinaryOutputArchive&);
+
+template void FullyConnectedLayerConfig::serialize<cereal::BinaryInputArchive>(
+    cereal::BinaryInputArchive&);
+
+template void FullyConnectedLayerConfig::serialize<cereal::BinaryOutputArchive>(
+    cereal::BinaryOutputArchive&);
+
+template void NormalizationLayerConfig::serialize<cereal::BinaryInputArchive>(
+    cereal::BinaryInputArchive&);
+template void NormalizationLayerConfig::serialize<cereal::BinaryOutputArchive>(
+    cereal::BinaryOutputArchive&);
 
 }  // namespace thirdai::bolt
 

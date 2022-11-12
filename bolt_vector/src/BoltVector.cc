@@ -1,6 +1,8 @@
 
 #include "BoltVector.h"
 #include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/cereal.hpp>
 
 namespace thirdai {
@@ -431,5 +433,17 @@ void BoltVector::load(Archive& archive) {
 
 template uint32_t BoltVector::activeNeuronAtIndex<true>(uint32_t index) const;
 template uint32_t BoltVector::activeNeuronAtIndex<false>(uint32_t index) const;
+
+template FoundActiveNeuron thirdai::BoltVector::findActiveNeuron<true>(
+    uint32_t index) const;
+template FoundActiveNeuron thirdai::BoltVector::findActiveNeuron<false>(
+    uint32_t index) const;
+
+template void BoltVector::load(cereal::PortableBinaryInputArchive& archive);
+template void BoltVector::load(cereal::BinaryInputArchive& archive);
+
+template void BoltVector::save(
+    cereal::PortableBinaryOutputArchive& archive) const;
+template void BoltVector::save(cereal::BinaryOutputArchive& archive) const;
 
 }  // namespace thirdai
