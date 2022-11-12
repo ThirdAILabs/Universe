@@ -37,6 +37,13 @@ message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
+option(THIRDAI_REPORT_BUILD_STEP_TIMES "Report time using builtin for make/ninja compile-build steps" OFF)
+
+if(THIRDAI_REPORT_BUILD_STEP_TIMES)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CMAKE_COMMAND} -E time")
+endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
+
 # Check if there is a license flag, and only if so add the cryptopp lib We have
 # two different License flags, one for if to build the license files
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license
