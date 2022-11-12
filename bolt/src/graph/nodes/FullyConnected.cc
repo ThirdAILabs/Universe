@@ -278,6 +278,9 @@ void FullyConnectedNode::serialize(Archive& archive) {
   archive(cereal::base_class<Node>(this), _layer, _config, _predecessor);
 }
 
+template void FullyConnectedNode::serialize(
+    cereal::BinaryOutputArchive& archive);
+
 }  // namespace thirdai::bolt
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedNode)
