@@ -198,5 +198,3 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
 }
 
 }  // namespace thirdai::bolt
-
-CEREAL_FORCE_DYNAMIC_INIT(thirdai)

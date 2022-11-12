@@ -1,4 +1,6 @@
 #include "LossFunctions.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::bolt {
@@ -78,18 +80,39 @@ void MarginBCE::serialize(Archive& archive) {
           _negative_margin, _bound);
 }
 
+template void CategoricalCrossEntropyLoss::serialize(
+    cereal::BinaryOutputArchive&);
+template void BinaryCrossEntropyLoss::serialize(cereal::BinaryOutputArchive&);
+template void MeanSquaredError::serialize(cereal::BinaryOutputArchive&);
+template void WeightedMeanAbsolutePercentageErrorLoss::serialize(
+    cereal::BinaryOutputArchive&);
+
+template void CategoricalCrossEntropyLoss::serialize(
+    cereal::BinaryInputArchive&);
+template void BinaryCrossEntropyLoss::serialize(cereal::BinaryInputArchive&);
+template void MeanSquaredError::serialize(cereal::BinaryInputArchive&);
+template void WeightedMeanAbsolutePercentageErrorLoss::serialize(
+    cereal::BinaryInputArchive&);
+
+template void CategoricalCrossEntropyLoss::serialize(
+    cereal::PortableBinaryInputArchive&);
+template void BinaryCrossEntropyLoss::serialize(
+    cereal::PortableBinaryInputArchive&);
+template void MeanSquaredError::serialize(cereal::PortableBinaryInputArchive&);
+template void WeightedMeanAbsolutePercentageErrorLoss::serialize(
+    cereal::PortableBinaryInputArchive&);
+
+template void CategoricalCrossEntropyLoss::serialize(
+    cereal::PortableBinaryOutputArchive&);
+template void BinaryCrossEntropyLoss::serialize(
+    cereal::PortableBinaryOutputArchive&);
+template void MeanSquaredError::serialize(cereal::PortableBinaryOutputArchive&);
+template void WeightedMeanAbsolutePercentageErrorLoss::serialize(
+    cereal::PortableBinaryOutputArchive&);
+
 }  // namespace thirdai::bolt
+
 CEREAL_REGISTER_TYPE(thirdai::bolt::CategoricalCrossEntropyLoss)
 CEREAL_REGISTER_TYPE(thirdai::bolt::BinaryCrossEntropyLoss)
 CEREAL_REGISTER_TYPE(thirdai::bolt::MeanSquaredError)
 CEREAL_REGISTER_TYPE(thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss)
-
-// Adds a way to force initialization of a translation unit containing calls to
-// CEREAL_REGISTER_TYPE
-//
-// In C++, dynamic initialization of non-local variables of a translation unit
-// may be deferred until "the first odr-use of any function or variable defined
-// in the same translation unit as the variable to be initialized."
-//
-// https://uscilab.github.io/cereal/assets/doxygen/polymorphic_8hpp.html#a01ebe0f840ac20c307f64622384e4dae
-CEREAL_REGISTER_DYNAMIC_INIT(thirdai)
