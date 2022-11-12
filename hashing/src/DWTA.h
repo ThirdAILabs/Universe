@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
 #include "HashFunction.h"
 #include <vector>
 
