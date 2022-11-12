@@ -83,3 +83,13 @@ CEREAL_REGISTER_TYPE(thirdai::bolt::CategoricalCrossEntropyLoss)
 CEREAL_REGISTER_TYPE(thirdai::bolt::BinaryCrossEntropyLoss)
 CEREAL_REGISTER_TYPE(thirdai::bolt::MeanSquaredError)
 CEREAL_REGISTER_TYPE(thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss)
+
+// Adds a way to force initialization of a translation unit containing calls to
+// CEREAL_REGISTER_TYPE
+//
+// In C++, dynamic initialization of non-local variables of a translation unit
+// may be deferred until "the first odr-use of any function or variable defined
+// in the same translation unit as the variable to be initialized."
+//
+// https://uscilab.github.io/cereal/assets/doxygen/polymorphic_8hpp.html#a01ebe0f840ac20c307f64622384e4dae
+CEREAL_REGISTER_DYNAMIC_INIT(thirdai)
