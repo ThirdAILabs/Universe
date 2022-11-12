@@ -26,11 +26,10 @@ class TemporalContext {
     return _numerical_histories[id];
   }
 
-  dataset::ItemHistoryCollectionPtr categoricalHistoryForId(uint32_t id,
-                                                            uint32_t n_users) {
+  dataset::ItemHistoryCollectionPtr categoricalHistoryForId(uint32_t id) {
     if (!_categorical_histories.count(id)) {
       _categorical_histories[id] =
-          dataset::ItemHistoryCollection::make(n_users);
+          dataset::ItemHistoryCollection::make();
     }
     return _categorical_histories[id];
   }

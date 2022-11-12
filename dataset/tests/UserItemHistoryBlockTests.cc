@@ -117,11 +117,10 @@ std::vector<std::vector<uint32_t>> processSamples(
   auto user_id_lookup = ThreadSafeVocabulary::make(n_users);
   auto item_id_lookup = ThreadSafeVocabulary::make(n_users * n_items_per_user);
 
-  auto records = ItemHistoryCollection::make(user_id_lookup->vocabSize());
+  auto records = ItemHistoryCollection::make();
 
   auto user_item_history_block = UserItemHistoryBlock::make(
-      /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2,
-      user_id_lookup, item_id_lookup, records, track_last_n);
+      /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2, records, track_last_n);
 
   GenericBatchProcessor processor(
       /* input_blocks = */ {user_item_history_block},
@@ -187,11 +186,13 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
   std::vector<std::string> samples = {{"user1,item1 item2 item3,2022-02-02"},
                                       {"user1,item4,2022-02-02"}};
 
+
+  auto records = ItemHistoryCollection::make();
+
   GenericBatchProcessor processor(
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
-          /* track_last_n= */ 3, /* n_unique_users= */ 1,
-          /* n_unique_items= */ 4, /* should_update_history= */ true,
+          /* records= */ records, /* track_last_n= */ 3, /* should_update_history= */ true,
           /* include_current_row= */ false,
           /* item_col_delimiter= */ ' ')},
       /* label_blocks= */ {},
@@ -220,11 +221,13 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
       {"user1,item5,2022-02-10"},
   };
 
+  auto records = ItemHistoryCollection::make();
+
+
   GenericBatchProcessor processor(
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
-          /* track_last_n= */ 3, /* n_unique_users= */ 1,
-          /* n_unique_items= */ 5, /* should_update_history= */ true,
+          /* records= */ records, /* track_last_n= */ 3, /* should_update_history= */ true,
           /* include_current_row= */ false,
           /* item_col_delimiter= */ ' ',
           /* time_lag= */ TimeObject::SECONDS_IN_DAY * 3)},
@@ -240,12 +243,11 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
 }
 
 GenericBatchProcessor makeItemHistoryBatchProcessor(
-    ThreadSafeVocabularyPtr user_vocab, ThreadSafeVocabularyPtr item_vocab,
     ItemHistoryCollectionPtr history, uint32_t track_last_n,
     bool should_update_history) {
   return {/* input_blocks= */ {UserItemHistoryBlock::make(
               /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
-              std::move(user_vocab), std::move(item_vocab), std::move(history),
+              std::move(history),
               track_last_n, should_update_history,
               /* include_current_row= */ true)},
           /* label_blocks= */ {},
@@ -266,24 +268,22 @@ TEST(UserItemHistoryBlockTests, HandlesNoUpdateCaseProperly) {
       {"user1,item5,2022-02-10"},
   };
 
-  auto user_vocab = ThreadSafeVocabulary::make(/* vocab_size= */ 1);
-  auto item_vocab = ThreadSafeVocabulary::make(/* vocab_size= */ 5);
-  auto history = ItemHistoryCollection::make(/* n_histories= */ 1);
+  auto history = ItemHistoryCollection::make();
 
   auto updating_processor = makeItemHistoryBatchProcessor(
-      user_vocab, item_vocab, history,
+      history,
       /* track_last_n= */ updating_samples.size() + 1,
       /* should_update_history= */ true);
   updating_processor.createBatch(updating_samples);
 
-  std::vector<uint32_t> items_in_history;
-  for (auto item_struct : history->at(0)) {
+  std::vector<std::string> items_in_history;
+  for (const auto& item_struct : history->at("user1")) {
     items_in_history.push_back(item_struct.item);
   }
   ASSERT_EQ(items_in_history.size(), updating_samples.size());
 
   auto non_updating_processor = makeItemHistoryBatchProcessor(
-      user_vocab, item_vocab, history,
+      history,
       /* track_last_n= */ updating_samples.size() + 1,
       /* should_update_history= */ false);
   auto non_updating_batch =
@@ -294,8 +294,8 @@ TEST(UserItemHistoryBlockTests, HandlesNoUpdateCaseProperly) {
   ASSERT_EQ(std::get<0>(non_updating_batch)[0].len,
             updating_samples.size() + 1);
 
-  std::vector<uint32_t> final_items_in_history;
-  for (auto item_struct : history->at(0)) {
+  std::vector<std::string> final_items_in_history;
+  for (const auto& item_struct : history->at("user1")) {
     final_items_in_history.push_back(item_struct.item);
   }
 

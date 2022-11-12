@@ -65,7 +65,7 @@ class UniversalDeepTransformer : public ModelPipeline {
 
     auto dataset_factory = UDTDatasetFactory::make(
         /* config= */ std::move(dataset_config),
-        /* parallel= */ parallel_data_processing,
+        /* force_parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
         /* contextual_columns= */ contextual_columns);
 

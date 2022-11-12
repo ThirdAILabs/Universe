@@ -230,8 +230,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
       const std::string& col_name, const CategoricalDataType& categorical) {
     if (!categorical.metadata_config) {
-      throw std::invalid_argument(
-          "The given categorical column does not have a metadata config.");
+      throw std::invalid_argument("The given categorical column (" + col_name +
+                                  ") does not have a metadata config.");
     }
 
     auto metadata = categorical.metadata_config;
@@ -245,15 +245,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     auto input_blocks = buildMetadataInputBlocks(*metadata, *column_numbers);
 
-    /*
-      Use _vocabs here because we want to reuse the vocabulary for the key
-      column of the metadata for the corresponding categorical column in the
-      main dataset
-    */
-    _vocabs[col_name] = dataset::ThreadSafeVocabulary::make(
-        /* vocab_size= */ categorical.n_unique_classes);
+    auto key_vocab = dataset::ThreadSafeVocabulary::make(
+        /* vocab_size= */ 0, /* limit_vocab_size= */ false);
     auto label_block = dataset::StringLookupCategoricalBlock::make(
-        column_numbers->at(metadata->key), _vocabs[col_name]);
+        column_numbers->at(metadata->key), key_vocab);
 
     dataset::StreamingGenericDatasetLoader metadata_loader(
         /* loader= */ data_loader,
@@ -263,8 +258,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             /* label_blocks= */ {std::move(label_block)},
             /* has_header= */ false, /* delimiter= */ metadata->delimiter));
 
-    return preprocessedVectorsFromDataset(metadata_loader, col_name,
-                                          categorical.n_unique_classes);
+    return preprocessedVectorsFromDataset(metadata_loader, *key_vocab);
   }
 
   static ColumnNumberMapPtr makeColumnNumberMap(
@@ -286,34 +280,27 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         /* temporal_tracking_relationships= */ {},
         /* target= */ metadata_config.key);
     TemporalRelationships empty_temporal_relationships;
-    ColumnVocabularies metadata_vocabs;  // Cannot use _vocabs because metadata
-                                         // may have same column names;
 
     PreprocessedVectorsMap empty_vectors_map;
 
     return FeatureComposer::makeNonTemporalFeatureBlocks(
         feature_config, empty_temporal_relationships, column_numbers,
-        metadata_vocabs, empty_vectors_map, _text_pairgram_word_limit,
-        _contextual_columns);
+        empty_vectors_map, _text_pairgram_word_limit, _contextual_columns);
   }
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
       dataset::StreamingGenericDatasetLoader& dataset,
-      const std::string& col_name, uint32_t n_unique_classes) {
+      dataset::ThreadSafeVocabulary& key_vocab) {
     auto [vectors, ids] = dataset.loadInMemory();
 
-    if (vectors->len() != n_unique_classes) {
-      throw std::invalid_argument(
-          "The number of metadata entries and unique values for column '" +
-          col_name + "' do not match.");
-    }
-
-    std::vector<BoltVector> preprocessed_vectors(n_unique_classes);
+    std::unordered_map<std::string, BoltVector> preprocessed_vectors(
+        vectors->len());
 
     for (uint32_t batch = 0; batch < vectors->numBatches(); batch++) {
       for (uint32_t vec = 0; vec < vectors->at(batch).getBatchSize(); vec++) {
         auto id = ids->at(batch)[vec].active_neurons[0];
-        preprocessed_vectors[id] = std::move(vectors->at(batch)[vec]);
+        auto key = key_vocab.getString(id);
+        preprocessed_vectors[key] = std::move(vectors->at(batch)[vec]);
       }
     }
 
@@ -453,16 +440,16 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
-            *_config, _temporal_relationships, column_numbers, _vocabs,
-            _vectors_map, _text_pairgram_word_limit, _contextual_columns);
+            *_config, _temporal_relationships, column_numbers, _vectors_map,
+            _text_pairgram_word_limit, _contextual_columns);
 
     if (_temporal_relationships.empty()) {
       return blocks;
     }
 
     auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
-        *_config, _temporal_relationships, column_numbers, _vocabs,
-        _vectors_map, *_context, should_update_history);
+        *_config, _temporal_relationships, column_numbers, _vectors_map,
+        *_context, should_update_history);
 
     blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                   temporal_feature_blocks.end());
