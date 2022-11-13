@@ -199,4 +199,4 @@ def test_metadata(download_census_income):
 
         acc = get_accuracy_on_test_data(model, test_df)
 
-        assert acc > 0.8
+        assert acc > 0.85
