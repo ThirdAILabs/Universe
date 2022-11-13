@@ -256,7 +256,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         dataset::GenericBatchProcessor::make(
             /* input_blocks= */ std::move(input_blocks),
             /* label_blocks= */ {std::move(label_block)},
-            /* has_header= */ false, /* delimiter= */ metadata->delimiter));
+            /* has_header= */ false, /* delimiter= */ metadata->delimiter,
+            /* parallel= */ true, /* hash_range= */ _config->hash_range));
 
     return preprocessedVectorsFromDataset(metadata_loader, *key_vocab);
   }
@@ -399,7 +400,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     auto processor = dataset::GenericBatchProcessor::make(
         std::move(input_blocks), {label_block}, /* has_header= */ true,
-        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
+        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
+        /* hash_range= */ _config->hash_range);
     return processor;
   }
 
@@ -417,7 +419,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         buildInputBlocks(/* column_numbers= */ column_number_map,
                          /* should_update_history= */ false),
         /* label_blocks= */ {}, /* has_header= */ false,
-        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
+        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
+        /* hash_range= */ _config->hash_range);
     return processor;
   }
 

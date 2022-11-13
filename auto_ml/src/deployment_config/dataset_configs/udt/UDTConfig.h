@@ -15,6 +15,8 @@
 namespace thirdai::automl::deployment {
 
 struct UDTConfig {
+  static constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
+
   /**
    * data_types: mapping from column names (strings) to DataType objects,
    *   e.g. {"user_id_column": types.categorical(n_unique_classes=5)}
@@ -64,6 +66,8 @@ struct UDTConfig {
   uint32_t lookahead;
   char delimiter;
 
+  uint32_t hash_range = DEFAULT_HASH_RANGE;
+
  private:
   // Private constructor for Cereal.
   UDTConfig() {}
@@ -73,7 +77,7 @@ struct UDTConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(data_types, provided_relationships, target, time_granularity,
-            lookahead, delimiter);
+            lookahead, delimiter, hash_range);
   }
 };
 

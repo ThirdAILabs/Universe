@@ -17,6 +17,8 @@
 
 namespace thirdai::dataset {
 
+static constexpr uint32_t ITEM_HASH_RANGE = 100000;
+
 class TimeGenerator {
  public:
   std::string nextTimeString() {
@@ -88,87 +90,69 @@ std::vector<std::string> makeSamples(std::vector<uint32_t>& user_id_sequence,
   return samples;
 }
 
-void assertItemHistoryValid(std::vector<std::vector<uint32_t>>& batch,
-                            std::vector<uint32_t>& user_id_sequence,
-                            std::vector<uint32_t>& item_id_sequence,
-                            uint32_t n_items) {
-  for (uint32_t idx = 0; idx < batch.size(); idx++) {
-    for (auto item_id : batch[idx]) {
-      // in user's range; not corrupted
-      ASSERT_GE(item_id, user_id_sequence[idx] * n_items);
-      ASSERT_LT(item_id, (user_id_sequence[idx] + 1) * n_items);
-      // does not contain item IDs from the future.
-      ASSERT_LT(item_id, item_id_sequence[idx]);
-    }
-  }
-}
-
-void assertItemHistoryNotEmpty(std::vector<std::vector<uint32_t>>& batch) {
-  uint32_t total_entries = 0;
-  for (auto& items : batch) {
-    total_entries += items.size();
-  }
-  ASSERT_GT(total_entries, 0);
-}
-
-std::vector<std::vector<uint32_t>> processSamples(
-    std::vector<std::string>& samples, uint32_t n_users,
-    uint32_t n_items_per_user, uint32_t track_last_n) {
-  auto user_id_lookup = ThreadSafeVocabulary::make(n_users);
-  auto item_id_lookup = ThreadSafeVocabulary::make(n_users * n_items_per_user);
-
+auto processSamples(
+    std::vector<std::string>& samples, uint32_t track_last_n, bool parallel) {
+  
   auto records = ItemHistoryCollection::make();
 
   auto user_item_history_block = UserItemHistoryBlock::make(
-      /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2, records, track_last_n);
+      /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2, records,
+      track_last_n, ITEM_HASH_RANGE);
 
   GenericBatchProcessor processor(
       /* input_blocks = */ {user_item_history_block},
-      /* label_blocks = */ {});
+      /* label_blocks = */ {}, /* has_header= */ false, /* delimiter= */ ',', /* parallel= */ parallel);
 
   auto [batch, _] = processor.createBatch(samples);
 
-  std::vector<std::vector<uint32_t>> histories;
-  for (const auto& vec : batch) {
-    std::vector<uint32_t> items;
-    for (uint32_t pos = 0; pos < vec.len; pos++) {
-      auto encoded_item = vec.active_neurons[pos];
-      auto original_item_id_str = item_id_lookup->getString(encoded_item);
-      items.push_back(std::stoull(original_item_id_str));
-    }
-    histories.push_back(items);
-  }
-
-  return histories;
+  return std::move(batch);
 }
 
-void assertItemHistoryGetsUpdated(std::vector<std::vector<uint32_t>>& batch,
-                                  std::vector<uint32_t>& user_id_sequence,
-                                  uint32_t n_users) {
-  std::vector<std::unordered_set<uint32_t>> last_user_item_history(n_users);
-  std::vector<bool> user_history_changes(n_users);
-
-  for (uint32_t idx = 0; idx < batch.size(); idx++) {
-    auto user_id = user_id_sequence[idx];
-    std::unordered_set<uint32_t> current_history;
-
-    current_history.insert(batch[idx].begin(), batch[idx].end());
-
-    if (!last_user_item_history[user_id].empty() &&
-        last_user_item_history[user_id] != current_history) {
-      user_history_changes[user_id] = true;
-    }
-
-    last_user_item_history[user_id] = current_history;
+auto groupVectorsByUser(BoltBatch&& batch, const std::vector<uint32_t>& user_ids) {
+  std::unordered_map<uint32_t, std::vector<BoltVector>> user_to_vectors;
+  for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+    user_to_vectors[user_ids[i]].push_back(std::move(batch[i]));
   }
-
-  for (const auto& changes : user_history_changes) {
-    ASSERT_TRUE(changes);
-  }
+  return user_to_vectors;
 }
 
-TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
-  uint32_t n_users = 120;
+auto vectorAsWeightedSet(const BoltVector& vector) {
+  std::unordered_map<uint32_t, float> set;
+  for (uint32_t pos = 0; pos < vector.len; pos++) {
+    set[vector.active_neurons[pos]] += vector.activations[pos];
+  }
+  return set;
+}
+
+auto countElements(const std::unordered_map<uint32_t, float>& weighted_set) {
+  float sum = 0;
+  for (auto [elem, count] : weighted_set) {
+    sum += count;
+  }
+  return sum;
+}
+
+/**
+ * This test checks the correctness of vectors produced by
+ * UserItemHistoryBlock in sequential execution.
+ * 
+ * Suppose a user A interacts with item 1, then with item 2, 
+ * and finally with item 3. Since UserItemHistoryBlock should 
+ * encode a user's past interactions (up to a certain number of 
+ * them), we expect to get the following output vectors:
+ * 1) a representation of an empty set.
+ * 2) a representation of the set {item 1}
+ * 3) a representation of the set {item 1, item 2}
+ * 
+ * From this example, we can generalize that an output vector is 
+ * correct if:
+ * 1) The number of elements encoded in the vector is equal to 
+ * the number of previous samples for the user.
+ * 2) There is exactly one element from the next vector for the 
+ * user that is missing in the current vector.
+ */
+TEST(UserItemHistoryBlockTests, CorrectSingleThread) {
+  int32_t n_users = 120;
   uint32_t n_items_per_user = 300;
   uint32_t track_last_n = 10;
 
@@ -176,23 +160,81 @@ TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
   auto item_id_seq = makeItemIdSequence(user_id_seq, n_users, n_items_per_user);
   auto samples = makeSamples(user_id_seq, item_id_seq);
 
-  auto batch = processSamples(samples, n_users, n_items_per_user, track_last_n);
-  assertItemHistoryValid(batch, user_id_seq, item_id_seq, n_items_per_user);
-  assertItemHistoryGetsUpdated(batch, user_id_seq, n_users);
-  assertItemHistoryNotEmpty(batch);
+  auto batch = processSamples(samples, track_last_n, /* parallel= */false);
+  auto user_to_vectors = groupVectorsByUser(std::move(batch), user_id_seq);
+
+  for (const auto& [_, vectors] : user_to_vectors) {
+    for (int i = 0; i < static_cast<int>(vectors.size()) - 1; i++) {
+      auto current_elements = vectorAsWeightedSet(vectors[i]);
+      auto next_elements = vectorAsWeightedSet(vectors[i + 1]);
+
+      ASSERT_EQ(countElements(current_elements), std::min<int>(i, track_last_n));
+      ASSERT_EQ(countElements(next_elements), std::min<int>(i + 1, track_last_n));
+      
+      // We consider the weighted set to handle hash collisions.
+      uint32_t n_elems_only_in_b = 0;
+      for (const auto& [elem, count] : next_elements) {
+        n_elems_only_in_b += count - current_elements[elem];
+      }
+      ASSERT_NEAR(n_elems_only_in_b, 1.0, /* abs_error= */ 0.01);
+    }
+  }
+}
+
+/**
+ * This test checks the correctness of vectors produced by
+ * UserItemHistoryBlock in parallel execution.
+ * 
+ * The output vectors will be different than sequential execution
+ * because we can no longer guarantee that samples are processed
+ * in the order that they appear in the dataset. However, 
+ * UserItemHistoryBlock guarantees that output vectors never 
+ * encode interactions that occur in the future; the timestamps
+ * of the encoded interactions do not exceed the current sample's
+ * timestamp.
+ * 
+ * In our mock dataset, the number of items per user equals the maximum
+ * number of tracked items, and the timestamp of each sample strictly 
+ * increases. Thus, we expect that the set of elements encoded in 
+ * each output vector is a subset of the sequential execution 
+ * counterpart.
+ */
+TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
+  uint32_t n_users = 120;
+  uint32_t n_items_per_user = 50;
+  uint32_t track_last_n = 50;
+
+  auto user_id_seq = makeShuffledUserIdSequence(n_users, n_items_per_user);
+  auto item_id_seq = makeItemIdSequence(user_id_seq, n_users, n_items_per_user);
+  auto samples = makeSamples(user_id_seq, item_id_seq);
+
+  auto sequential_batch = processSamples(samples, track_last_n, /* parallel= */false);
+  auto parallel_batch = processSamples(samples, track_last_n, /* parallel= */true);
+
+  ASSERT_EQ(sequential_batch.getBatchSize(), parallel_batch.getBatchSize());
+
+  for (uint32_t i = 0; i < sequential_batch.getBatchSize(); i++) {
+    auto sequential_elements = vectorAsWeightedSet(sequential_batch[i]);
+    auto parallel_elements = vectorAsWeightedSet(parallel_batch[i]);
+
+    for (const auto& [elem, count] : parallel_elements) {
+      ASSERT_LE(count, sequential_elements[elem]);
+    }
+  }
 }
 
 TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
   std::vector<std::string> samples = {{"user1,item1 item2 item3,2022-02-02"},
                                       {"user1,item4,2022-02-02"}};
 
-
   auto records = ItemHistoryCollection::make();
 
   GenericBatchProcessor processor(
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
-          /* records= */ records, /* track_last_n= */ 3, /* should_update_history= */ true,
+          /* records= */ records, /* track_last_n= */ 3,
+          /* item_hash_range= */ ITEM_HASH_RANGE,
+          /* should_update_history= */ true,
           /* include_current_row= */ false,
           /* item_col_delimiter= */ ' ')},
       /* label_blocks= */ {},
@@ -223,11 +265,12 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
 
   auto records = ItemHistoryCollection::make();
 
-
   GenericBatchProcessor processor(
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
-          /* records= */ records, /* track_last_n= */ 3, /* should_update_history= */ true,
+          /* records= */ records, /* track_last_n= */ 3,
+          /* item_hash_range= */ 10000,
+          /* should_update_history= */ true,
           /* include_current_row= */ false,
           /* item_col_delimiter= */ ' ',
           /* time_lag= */ TimeObject::SECONDS_IN_DAY * 3)},
@@ -247,8 +290,8 @@ GenericBatchProcessor makeItemHistoryBatchProcessor(
     bool should_update_history) {
   return {/* input_blocks= */ {UserItemHistoryBlock::make(
               /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
-              std::move(history),
-              track_last_n, should_update_history,
+              std::move(history), track_last_n, ITEM_HASH_RANGE,
+              should_update_history,
               /* include_current_row= */ true)},
           /* label_blocks= */ {},
           /* has_header= */ false,

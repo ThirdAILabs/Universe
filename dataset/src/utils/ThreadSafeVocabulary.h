@@ -36,7 +36,8 @@ class ThreadSafeVocabulary {
                                 bool limit_vocab_size = true)
       : _fixed(false),
         _limit_vocab_size(limit_vocab_size),
-        _vocab_size(limit_vocab_size ? vocab_size : std::numeric_limits<uint32_t>::max()) {
+        _vocab_size(limit_vocab_size ? vocab_size
+                                     : std::numeric_limits<uint32_t>::max()) {
     if (limit_vocab_size) {
       _string_to_uid.reserve(vocab_size);
       _uid_to_string.reserve(vocab_size);
@@ -114,7 +115,10 @@ class ThreadSafeVocabulary {
 
   uint32_t vocabSize() const { return _vocab_size; }
 
-  void fixVocab() { _fixed = true; _vocab_size = _string_to_uid.size(); };
+  void fixVocab() {
+    _fixed = true;
+    _vocab_size = _string_to_uid.size();
+  };
 
   bool isVocabFixed() const { return _fixed; }
 

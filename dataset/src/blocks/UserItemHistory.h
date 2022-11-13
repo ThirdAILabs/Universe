@@ -47,7 +47,7 @@ class ItemHistoryCollection {
 
   uint32_t numHistories() const { return _histories.size(); }
 
-  auto& at(const std::string& history_id) { 
+  auto& at(const std::string& history_id) {
 #pragma omp critical(item_history_collection)
     {
       if (!_histories.count(history_id)) {
@@ -92,13 +92,13 @@ using UserItemHistoryBlockPtr = std::shared_ptr<UserItemHistoryBlock>;
  */
 class UserItemHistoryBlock final : public Block {
   static constexpr uint32_t ITEM_HASH_SEED = 341;
-  static constexpr uint32_t ITEM_HASH_RANGE = 10000;
 
  public:
   UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
                        uint32_t timestamp_col,
                        ItemHistoryCollectionPtr item_history_collection,
-                       uint32_t track_last_n, bool should_update_history = true,
+                       uint32_t track_last_n, uint32_t item_hash_range,
+                       bool should_update_history = true,
                        bool include_current_row = false,
                        std::optional<char> item_col_delimiter = std::nullopt,
                        int64_t time_lag = 0,
@@ -107,7 +107,7 @@ class UserItemHistoryBlock final : public Block {
         _item_col(item_col),
         _timestamp_col(timestamp_col),
         _track_last_n(track_last_n),
-        _item_hash_range(ITEM_HASH_RANGE),
+        _item_hash_range(item_hash_range),
         _item_vectors(std::move(item_vectors)),
         _per_user_history(std::move(item_history_collection)),
         _should_update_history(should_update_history),
@@ -130,13 +130,14 @@ class UserItemHistoryBlock final : public Block {
   static UserItemHistoryBlockPtr make(
       uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
       ItemHistoryCollectionPtr records, uint32_t track_last_n,
-      bool should_update_history = true, bool include_current_row = false,
+      uint32_t item_hash_range, bool should_update_history = true,
+      bool include_current_row = false,
       std::optional<char> item_col_delimiter = std::nullopt,
       int64_t time_lag = 0, PreprocessedVectorsPtr item_vectors = nullptr) {
     return std::make_shared<UserItemHistoryBlock>(
         user_col, item_col, timestamp_col, std::move(records), track_last_n,
-        should_update_history, include_current_row, item_col_delimiter,
-        time_lag, std::move(item_vectors));
+        item_hash_range, should_update_history, include_current_row,
+        item_col_delimiter, time_lag, std::move(item_vectors));
   }
 
   // TODO(YASH): See whether length of history makes sense in explanations.

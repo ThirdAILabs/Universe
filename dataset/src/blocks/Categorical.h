@@ -213,8 +213,8 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
 
   static auto make(uint32_t col, PreprocessedVectorsPtr vectors,
                    std::optional<char> delimiter = std::nullopt) {
-    return std::make_shared<MetadataCategoricalBlock>(
-        col, std::move(vectors), delimiter);
+    return std::make_shared<MetadataCategoricalBlock>(col, std::move(vectors),
+                                                      delimiter);
   }
 
   std::string getResponsibleCategory(
