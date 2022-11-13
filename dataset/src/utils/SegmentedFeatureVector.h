@@ -90,6 +90,11 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
   std::vector<float> _values;
 };
 
+/**
+ * A concrete implementation of SegmentedFeatureVector where features 
+ * are not concatenated but instead hashed to the same range with a
+ * different salt for each segment.
+ */
 class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
  public:
   explicit HashedSegmentedFeatureVector(uint32_t hash_range)
