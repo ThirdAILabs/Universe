@@ -27,7 +27,7 @@ struct CategoricalMetadataConfig;
 using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
 
 struct CategoricalDataType {
-  explicit CategoricalDataType(uint32_t n_unique_classes,
+  explicit CategoricalDataType(std::optional<uint32_t> n_unique_classes,
                                std::optional<char> delimiter,
                                CategoricalMetadataConfigPtr metadata,
                                bool contiguous_numerical_ids)
@@ -36,7 +36,7 @@ struct CategoricalDataType {
         metadata_config(std::move(metadata)),
         contiguous_numerical_ids(contiguous_numerical_ids) {}
 
-  uint32_t n_unique_classes;
+  std::optional<uint32_t> n_unique_classes;
   std::optional<char> delimiter;
   CategoricalMetadataConfigPtr metadata_config;
   bool contiguous_numerical_ids;
@@ -117,7 +117,7 @@ class DataType {
   DataType() : _value(NoneDataType()) {}
 
   static auto categorical(
-      uint32_t n_unique_classes = 0,
+      std::optional<uint32_t> n_unique_classes = std::nullopt,
       std::optional<char> delimiter = std::nullopt,
       CategoricalMetadataConfigPtr metadata = nullptr,
       bool contiguous_numerical_ids = false) {

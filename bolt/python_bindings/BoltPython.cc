@@ -160,7 +160,7 @@ Args:
 
   udt_types_submodule.def(
       "categorical", automl::deployment::DataType::categorical,
-      py::arg("n_unique_classes") = 0,
+      py::arg("n_unique_classes") = std::nullopt,
       py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
       py::arg("consecutive_integer_ids") = false,
       R"pbdoc(

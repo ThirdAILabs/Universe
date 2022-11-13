@@ -378,13 +378,13 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     auto col_num = column_number_map.at(_config->target);
     auto target_config = target_type.asCategorical();
-    if (!_config->n_target_classes && target_config.n_unique_classes == 0) {
+    if (!_config->n_target_classes && !target_config.n_unique_classes) {
       throw std::invalid_argument(
           "Number of target classes must be provided in either the data_types "
           "map or the n_target_classes argument and cannot be 0.");
     }
     uint32_t n_target_classes = _config->n_target_classes.value_or(
-        target_config.n_unique_classes);
+        target_config.n_unique_classes.value_or(0));
 
     dataset::BlockPtr label_block;
     if (target_config.contiguous_numerical_ids) {
