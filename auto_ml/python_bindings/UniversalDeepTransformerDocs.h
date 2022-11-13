@@ -45,6 +45,9 @@ Args:
         See bolt.temporal for details.
     target (str): Name of the column that contains the value to be predicted by
         UDT. The target column has to be a categorical column.
+    n_target_classes (int): Required only if `n_unique_classes` for the target column is not provided in the 
+        `data_types` argument. Number of target classes. If both are provided, `n_target_classes` overrides 
+        the `n_unique_classes` provided in the `data_types` argument.
     time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
         or `"monthly"`/`"m"`. Interval of time that UDT should use for temporal features. Temporal numerical 
         features are clubbed according to this time granularity. E.g. if 

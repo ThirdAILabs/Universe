@@ -116,10 +116,11 @@ class DataType {
  public:
   DataType() : _value(NoneDataType()) {}
 
-  static auto categorical(uint32_t n_unique_classes,
-                          std::optional<char> delimiter = std::nullopt,
-                          CategoricalMetadataConfigPtr metadata = nullptr,
-                          bool contiguous_numerical_ids = false) {
+  static auto categorical(
+      uint32_t n_unique_classes = 0,
+      std::optional<char> delimiter = std::nullopt,
+      CategoricalMetadataConfigPtr metadata = nullptr,
+      bool contiguous_numerical_ids = false) {
     return DataType(CategoricalDataType(n_unique_classes, delimiter,
                                         std::move(metadata),
                                         contiguous_numerical_ids));

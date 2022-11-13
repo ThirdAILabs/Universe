@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
 #include "DataTypes.h"
 #include <dataset/src/utils/QuantityHistoryTracker.h>
@@ -49,11 +50,14 @@ struct UDTConfig {
    */
   UDTConfig(ColumnDataTypes data_types,
             UserProvidedTemporalRelationships temporal_tracking_relationships,
-            std::string target, std::string time_granularity = "d",
-            uint32_t lookahead = 0, char delimiter = ',')
+            std::string target,
+            std::optional<uint32_t> n_target_classes = std::nullopt,
+            std::string time_granularity = "d", uint32_t lookahead = 0,
+            char delimiter = ',')
       : data_types(std::move(data_types)),
         provided_relationships(std::move(temporal_tracking_relationships)),
         target(std::move(target)),
+        n_target_classes(n_target_classes),
         time_granularity(
             dataset::stringToGranularity(std::move(time_granularity))),
         lookahead(lookahead),
@@ -62,6 +66,7 @@ struct UDTConfig {
   ColumnDataTypes data_types;
   UserProvidedTemporalRelationships provided_relationships;
   std::string target;
+  std::optional<uint32_t> n_target_classes;
   dataset::QuantityTrackingGranularity time_granularity;
   uint32_t lookahead;
   char delimiter;
@@ -76,8 +81,8 @@ struct UDTConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(data_types, provided_relationships, target, time_granularity,
-            lookahead, delimiter, hash_range);
+    archive(data_types, provided_relationships, target, n_target_classes,
+            time_granularity, lookahead, delimiter, hash_range);
   }
 };
 

@@ -160,15 +160,16 @@ Args:
 
   udt_types_submodule.def(
       "categorical", automl::deployment::DataType::categorical,
-      py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
-      py::arg("metadata") = nullptr, py::arg("consecutive_integer_ids") = false,
+      py::arg("n_unique_classes") = 0,
+      py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
+      py::arg("consecutive_integer_ids") = false,
       R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
     movie titles, or age groups.
 
     Args:
-        n_unique_classes (int): Number of unique categories in the column.
+        n_unique_classes (int): Optional. Number of unique categories in the column.
             UDT throws an error if the column contains more than the 
             specified number of unique values.
         delimiter (str): Optional. Defaults to None. A single character 
