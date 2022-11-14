@@ -33,13 +33,18 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
-      - name: Build docker
-        run: bin/docker-benchmarking-build.sh
+      # - name: Build docker
+      #   run: bin/docker-benchmarking-build.sh
 
       - name: Run Benchmark
         env:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
+          XYZ: ${{secrets.XYZ}}
+        run: echo $USERNAME
+        run: echo $PASSWORD
+        run: echo "$USERNAME"
+        run: echo "$PASSWORD"
         run: bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_configs/mnist_dense.txt"
 
       - name: Delete Container
