@@ -279,7 +279,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     UDTConfig feature_config(
         /* data_types= */ metadata_config.column_data_types,
         /* temporal_tracking_relationships= */ {},
-        /* target= */ metadata_config.key);
+        /* target= */ metadata_config.key,
+        /* n_target_classes= */ 0);
     TemporalRelationships empty_temporal_relationships;
 
     PreprocessedVectorsMap empty_vectors_map;
@@ -382,12 +383,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     dataset::BlockPtr label_block;
     if (target_config.contiguous_numerical_ids) {
       label_block = dataset::NumericalCategoricalBlock::make(
-          /* col= */ col_num, /* n_classes= */ _config->n_target_classes.value(),
+          /* col= */ col_num, /* n_classes= */ _config->n_target_classes,
           /* delimiter= */ target_config.delimiter);
     } else {
       if (!_vocabs.count(_config->target)) {
         _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
-            /* vocab_size= */ _config->n_target_classes.value());
+            /* vocab_size= */ _config->n_target_classes);
       }
       label_block = dataset::StringLookupCategoricalBlock::make(
           /* col= */ col_num, /* vocab= */ _vocabs.at(_config->target),

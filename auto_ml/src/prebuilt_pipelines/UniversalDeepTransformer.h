@@ -53,7 +53,7 @@ class UniversalDeepTransformer : public ModelPipeline {
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target_col,
-      std::optional<uint32_t> n_target_classes = std::nullopt,
+      uint32_t n_target_classes,
       std::string time_granularity = "d", uint32_t lookahead = 0,
       char delimiter = ',',
       const std::unordered_map<std::string, std::string>& options = {}) {

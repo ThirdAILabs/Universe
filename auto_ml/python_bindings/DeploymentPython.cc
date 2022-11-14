@@ -265,10 +265,10 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
 
   py::class_<UDTConfig, UDTConfigPtr>(bolt_submodule, "UDTConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
-                    std::string, std::optional<uint32_t>, std::string, uint32_t,
+                    std::string, uint32_t, std::string, uint32_t,
                     char>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
-           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
+           py::arg("target"), py::arg("n_target_classes"),
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', docs::ORACLE_CONFIG_INIT);
 
@@ -277,7 +277,7 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
+           py::arg("target"), py::arg("n_target_classes"),
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
            docs::UDT_INIT)
