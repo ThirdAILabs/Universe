@@ -20,7 +20,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
     write_lines_to_file(
         TRAIN_FILE,
         [
-            "userId,movieId,timestamp,hoursWatched",
+            "userId,movieId,timestamp,hoursWatched,genres",
             "0,0,2022-08-29,2,fiction-comedy-drama",
             "1,0,2022-08-30,2,fiction-romance",
             "1,1,2022-08-31,1,romance-comedy",
