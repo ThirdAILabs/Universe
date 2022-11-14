@@ -35,10 +35,12 @@ def main():
     exit_code = 0
     try:
         print(os.environ["MLFLOW_TRACKING_USERNAME"])
+        print("inside try mlflow username")
     except:
         print("username not found")
     try:
         print(os.environ["MLFLOW_TRACKING_PASSWORD"])
+        print("inside try for password")
     except:
         print("password not found")
     for config in args.configs:
