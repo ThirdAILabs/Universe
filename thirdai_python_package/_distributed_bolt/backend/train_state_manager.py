@@ -87,7 +87,7 @@ class TrainStateManager:
             ]
         )
 
-    def run_circular_communication(self):
+    def run_circular_cluster_communication(self):
         """
         This function first call the workers to compute the gradients on their network
         and then implements Baidu's All Ring All Reduce algorithm for communication.
