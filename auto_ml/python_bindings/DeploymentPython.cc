@@ -183,7 +183,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
                                                        "UDTDatasetFactory")
       .def(py::init<HyperParameterPtr<UDTConfigPtr>, HyperParameterPtr<bool>,
                     HyperParameterPtr<uint32_t>, HyperParameterPtr<bool>>(),
-           py::arg("config"), py::arg("parallel"),
+           py::arg("config"), py::arg("force_parallel"),
            py::arg("text_pairgram_word_limit"), py::arg("contextual_columns"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")

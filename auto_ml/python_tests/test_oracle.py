@@ -34,7 +34,7 @@ def make_serialized_udt_config():
 
     dataset_config = deployment.UDTDatasetFactory(
         config=deployment.UserSpecifiedParameter("config", type=bolt.UDTConfig),
-        parallel=deployment.ConstantParameter(False),
+        force_parallel=deployment.ConstantParameter(False),
         text_pairgram_word_limit=deployment.ConstantParameter(15),
         contextual_columns=deployment.ConstantParameter(False),
     )
