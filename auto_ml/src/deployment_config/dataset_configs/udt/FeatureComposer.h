@@ -43,12 +43,21 @@ class FeatureComposer {
       throw std::invalid_argument(
           "The target column cannot be a temporal tracking key.");
     }
-    for (const auto& [name, type] : config.data_types) {
-      if (type.isCategorical()) {
-        if (type.asCategorical().delimiter && (name != config.target)) {
-          throw std::invalid_argument(
-              "Only the target column can have a delimiter.");
-        }
+    for (const auto& [tracking_key_col_name, temporal_configs] :
+         temporal_relationships) {
+      if (!config.data_types.at(tracking_key_col_name).isCategorical()) {
+        throw std::invalid_argument("Tracking keys must be categorical.");
+      }
+      if (config.data_types.at(tracking_key_col_name).isCategorical()) {
+        throw std::invalid_argument("Tracking keys must be categorical.");
+      }
+
+      if (config.data_types.at(tracking_key_col_name)
+              .asCategorical()
+              .delimiter) {
+        throw std::invalid_argument(
+            "Tracking keys cannot have a delimiter; columns containing "
+            "tracking keys must only have one value per row.");
       }
     }
   }
@@ -143,18 +152,6 @@ class FeatureComposer {
     uint32_t temporal_relationship_id = 0;
     for (const auto& [tracking_key_col_name, temporal_configs] :
          temporal_relationships) {
-      if (!config.data_types.at(tracking_key_col_name).isCategorical()) {
-        throw std::invalid_argument("Tracking keys must be categorical.");
-      }
-
-      if (config.data_types.at(tracking_key_col_name)
-              .asCategorical()
-              .delimiter) {
-        throw std::invalid_argument(
-            "Tracking keys cannot have a delimiter; columns containing "
-            "tracking keys must only have one value per row.");
-      }
-
       for (const auto& temporal_config : temporal_configs) {
         if (temporal_config.isCategorical()) {
           blocks.push_back(makeTemporalCategoricalBlock(
