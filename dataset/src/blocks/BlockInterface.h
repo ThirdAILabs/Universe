@@ -60,14 +60,14 @@ struct Explanation {
   std::string column_name;
 };
 
-struct BlockFeature {
-  BlockFeature(uint32_t block_idx, uint32_t feature_idx)
-      : block_idx(block_idx), feature_idx(feature_idx) {}
-  uint32_t block_idx;
+struct SegmentFeature {
+  SegmentFeature(uint32_t segment_idx, uint32_t feature_idx)
+      : segment_idx(segment_idx), feature_idx(feature_idx) {}
+  uint32_t segment_idx;
   uint32_t feature_idx;
 };
 
-using BlockFeatureMap = std::unordered_map<uint32_t, BlockFeature>;
+using SegmentFeatureMap = std::unordered_map<uint32_t, SegmentFeature>;
 
 /**
  * Segmented feature vector abstract class.
@@ -114,13 +114,13 @@ class SegmentedFeatureVector {
    */
   virtual std::unordered_map<uint32_t, float> entries() = 0;
 
-  virtual BlockFeatureMap getBlockFeatureMapImpl() = 0;
+  virtual SegmentFeatureMap getSegmentFeatureMapImpl() = 0;
 
-  const bool _store_block_feature_map;
+  const bool _store_segment_feature_map;
 
  public:
-  explicit SegmentedFeatureVector(bool store_block_feature_map)
-      : _store_block_feature_map(store_block_feature_map) {}
+  explicit SegmentedFeatureVector(bool store_segment_feature_map)
+      : _store_segment_feature_map(store_segment_feature_map) {}
 
   /**
    * Increments the feature at the given index of the current vector segment
@@ -139,11 +139,11 @@ class SegmentedFeatureVector {
    */
   virtual BoltVector toBoltVector() = 0;
 
-  BlockFeatureMap getBlockFeatureMap() {
-    if (!_store_block_feature_map) {
+  SegmentFeatureMap getSegmentFeatureMap() {
+    if (!_store_segment_feature_map) {
       throw std::invalid_argument("Failed to return block feature map.");
     }
-    return getBlockFeatureMapImpl();
+    return getSegmentFeatureMapImpl();
   }
 
   virtual ~SegmentedFeatureVector() = default;

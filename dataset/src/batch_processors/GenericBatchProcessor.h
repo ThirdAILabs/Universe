@@ -159,11 +159,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                                                    parallel, hash_range);
   }
 
-  BlockFeatureMap getBlockFeatureMap(
+  SegmentFeatureMap getIndexToSegmentFeatureMap(
       const std::vector<std::string_view>& input_row) {
     BoltVector vector;
-    auto vec_ptr = makeSegmentedFeatureVector(
-        _input_blocks_dense, _hash_range, /* store_block_feature_map= */ true);
+    auto vec_ptr =
+        makeSegmentedFeatureVector(_input_blocks_dense, _hash_range,
+                                   /* store_segment_feature_map= */ true);
 
     // Let each block encode the input sample and adds a new segment
     // containing this encoding to the vector.
@@ -172,7 +173,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         std::rethrow_exception(err);
       }
     }
-    return vec_ptr->getBlockFeatureMap();
+    return vec_ptr->getSegmentFeatureMap();
   }
 
   /*
@@ -180,10 +181,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   and the exact keyword responsible for it.
   */
   Explanation explainFeature(const std::vector<std::string_view>& input_row,
-                             const BlockFeature& block_feature) {
+                             const SegmentFeature& segment_feature) {
     std::shared_ptr<Block> relevant_block =
-        _input_blocks[block_feature.block_idx];
-    return relevant_block->explainIndex(block_feature.feature_idx, input_row);
+        _input_blocks[segment_feature.segment_idx];
+    return relevant_block->explainIndex(segment_feature.feature_idx, input_row);
   }
 
  private:
@@ -195,7 +196,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
       std::optional<uint32_t> hash_range) {
     auto vec_ptr = makeSegmentedFeatureVector(
-        blocks_dense, hash_range, /* store_block_feature_map= */ false);
+        blocks_dense, hash_range, /* store_segment_feature_map= */ false);
 
     // Let each block encode the input sample and adds a new segment
     // containing this encoding to the vector.
@@ -210,19 +211,19 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
       bool blocks_dense, std::optional<uint32_t> hash_range,
-      bool store_block_feature_map) {
+      bool store_segment_feature_map) {
     if (hash_range) {
       return std::make_shared<HashedSegmentedFeatureVector>(
-          *hash_range, store_block_feature_map);
+          *hash_range, store_segment_feature_map);
     }
     // Dense vector if all blocks produce dense features, sparse vector
     // otherwise.
     if (blocks_dense) {
       return std::make_shared<SegmentedDenseFeatureVector>(
-          store_block_feature_map);
+          store_segment_feature_map);
     }
     return std::make_shared<SegmentedSparseFeatureVector>(
-        store_block_feature_map);
+        store_segment_feature_map);
   }
 
   static uint32_t sumBlockDims(

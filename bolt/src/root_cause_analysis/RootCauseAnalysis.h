@@ -86,14 +86,14 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
 
   std::vector<dataset::Explanation> explanations;
 
-  auto block_feature_map =
-      generic_batch_processor->getBlockFeatureMap(input_row);
+  auto index_to_segment_feature =
+      generic_batch_processor->getIndexToSegmentFeatureMap(input_row);
 
   for (const auto& [ratio, index] : gradients_ratio_with_indices) {
     if (ratio) {
       dataset::Explanation explanation_for_index =
-          generic_batch_processor->explainFeature(input_row,
-                                                  block_feature_map.at(index));
+          generic_batch_processor->explainFeature(
+              input_row, index_to_segment_feature.at(index));
       explanation_for_index.percentage_significance = (ratio / ratio_sum) * 100;
       explanations.push_back(explanation_for_index);
     }
