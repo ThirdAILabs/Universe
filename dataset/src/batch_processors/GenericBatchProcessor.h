@@ -61,7 +61,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       _expected_num_cols =
           std::max(block->expectedNumColumns(), _expected_num_cols);
     }
-    _block_feature_offsets = computeBlockFeatureOffsets();
   }
 
   std::tuple<BoltBatch, BoltBatch> createBatch(
@@ -235,15 +234,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return dim;
   }
 
-  std::vector<uint32_t> computeBlockFeatureOffsets() {
-    std::vector<uint32_t> block_offsets;
-    block_offsets.push_back(0);
-    for (const auto& block : _input_blocks) {
-      block_offsets.push_back(block_offsets.back() + block->featureDim());
-    }
-    return block_offsets;
-  }
-
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
@@ -251,7 +241,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     archive(cereal::base_class<BatchProcessor>(this), _expects_header,
             _delimiter, _parallel, _hash_range, _expected_num_cols,
             _input_blocks_dense, _label_blocks_dense, _input_blocks,
-            _label_blocks, _block_feature_offsets);
+            _label_blocks);
   }
 
   // Private constructor for cereal.
@@ -277,11 +267,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
    */
   std::vector<std::shared_ptr<Block>> _input_blocks;
   std::vector<std::shared_ptr<Block>> _label_blocks;
-  /*
-  The offsets which are essential to fetch the exact block responsible for given
-  index for Root cause analysis.
-  */
-  std::vector<uint32_t> _block_feature_offsets;
 };
 
 using GenericBatchProcessorPtr = std::shared_ptr<GenericBatchProcessor>;
