@@ -165,7 +165,7 @@ class ThreadSafeVocabulary {
     if (_limit_vocab_size) {
       if (uid >= _vocab_size) {
         throw std::invalid_argument("Expected " + std::to_string(_vocab_size) +
-                                    " unique strings but found new string '" +
+                                    " unique classes but found new class '" +
                                     string + "'.");
       }
     }
