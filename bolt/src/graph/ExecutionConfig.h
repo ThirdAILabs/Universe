@@ -116,8 +116,8 @@ class ValidationContext {
   std::optional<std::string> validationFile() const { return _validation_file; }
 
   ValidationContext getModifiedValidationContext(
-      std::vector<dataset::BoltDatasetPtr> data,
-      dataset::BoltDatasetPtr labels) {
+      const std::vector<dataset::BoltDatasetPtr>& data,
+      const dataset::BoltDatasetPtr& labels) {
     _data = data;
     _labels = labels;
     return *this;
@@ -298,7 +298,7 @@ class TrainConfig {
 
   void setEpochs(uint32_t new_epochs) { _epochs = new_epochs; }
 
-  void setValidationContext(ValidationContext validation_context) {
+  void setValidationContext(const ValidationContext& validation_context) {
     _validation_context = validation_context;
   }
 
