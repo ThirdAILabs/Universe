@@ -1,5 +1,5 @@
 #include "BoltNNPython.h"
-#include "ConversionUtils.h"
+#include "PybindUtils.h"
 #include <bolt/src/graph/DistributedTrainingWrapper.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
@@ -316,7 +316,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "Arguments:\n"
            " * inputs (List[Node]) - The input nodes to the graph. Note that "
            "inputs are mapped to input layers by their index.\n"
-           " * output (Node) - The output node of the graph.")
+           " * output (Node) - The output node of the graph.", bolt::python::OutputRedirect())
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"
@@ -327,12 +327,12 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            " * inputs (List[TokenInput]) - The token input nodes to the graph. "
            "Note that "
            "token inputs are mapped to token input layers by their index.\n"
-           " * output (Node) - The output node of the graph.")
+           " * output (Node) - The output node of the graph.", bolt::python::OutputRedirect())
       .def("compile", &BoltGraph::compile, py::arg("loss"),
            py::arg("print_when_done") = true,
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
-           "checks are preformed to ensure the model architecture is correct.")
+           "checks are preformed to ensure the model architecture is correct.", bolt::python::OutputRedirect())
       // Helper method that covers the common case of training based off of a
       // single BoltBatch dataset
       .def(
@@ -343,7 +343,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
             return model.train({data}, labels, train_config);
           },
           py::arg("train_data"), py::arg("train_labels"),
-          py::arg("train_config"))
+          py::arg("train_config"), bolt::python::OutputRedirect())
       .def("train", &BoltGraph::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("train_config"),
            R"pbdoc(  
@@ -439,7 +439,7 @@ That's all for now, folks! More docs coming soon :)
           " Returns a tuple consists of (0) optional, it only returns the "
           "corresponding indices for sparse inputs."
           " and (1) list of values which"
-          "corresponds to the features in input vector.")
+          "corresponds to the features in input vector.", bolt::python::OutputRedirect())
       .def(
           "get_input_confidence",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
@@ -457,7 +457,7 @@ That's all for now, folks! More docs coming soon :)
           " Returns a tuple consists of (0) optional, it only returns the "
           "corresponding indices for sparse inputs."
           " and (1) list of confidence values which "
-          "tells how much important each feature in the input vector.")
+          "tells how much important each feature in the input vector.", bolt::python::OutputRedirect())
       .def(
           "explain_required_label",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
@@ -477,7 +477,8 @@ That's all for now, folks! More docs coming soon :)
           " Returns a tuple consists of (0) optional, it only returns the "
           "corresponding indices for sparse inputs."
           " and (1) list of values which"
-          "tells how each feature should change in the input vector.")
+          "tells how each feature should change in the input vector.",
+          bolt::python::OutputRedirect())
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(
@@ -487,7 +488,8 @@ That's all for now, folks! More docs coming soon :)
              const EvalConfig& eval_config) {
             return dagEvaluatePythonWrapper(model, {data}, labels, eval_config);
           },
-          py::arg("test_data"), py::arg("test_labels"), py::arg("eval_config"))
+          py::arg("test_data"), py::arg("test_labels"), py::arg("eval_config"),
+          bolt::python::OutputRedirect())
       .def(
           "evaluate", &dagEvaluatePythonWrapper, py::arg("test_data"),
           py::arg("test_labels"), py::arg("eval_config"),
@@ -506,14 +508,15 @@ That's all for now, folks! More docs coming soon :)
           "names to their values. The second element, the output activation "
           "matrix, is only present if dont_return_activations was not called. "
           "The third element, the active neuron matrix, is only present if "
-          "we are returning activations AND the ouptut is sparse.")
-      .def("save", &BoltGraph::save, py::arg("filename"))
-      .def_static("load", &BoltGraph::load, py::arg("filename"))
+          "we are returning activations AND the ouptut is sparse.",
+          bolt::python::OutputRedirect())
+      .def("save", &BoltGraph::save, py::arg("filename"), bolt::python::OutputRedirect())
+      .def_static("load", &BoltGraph::load, py::arg("filename"), bolt::python::OutputRedirect())
       .def("__str__",
            [](const BoltGraph& model) {
              return model.summarize(/* print = */ false,
                                     /* detailed = */ false);
-           })
+           }, bolt::python::OutputRedirect())
       .def("freeze_hash_tables", &BoltGraph::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true,
            "Prevents updates to hash tables in the model. If you plan to use "
@@ -522,7 +525,7 @@ That's all for now, folks! More docs coming soon :)
            "training. Otherwise you should not call this method. If "
            "insert_labels_if_not_found is true then if the output layer is "
            "sparse it will insert the training labels into the hash hash "
-           "tables if they are not found for a given input.")
+           "tables if they are not found for a given input.", bolt::python::OutputRedirect())
       .def(
           "summary", &BoltGraph::summarize, py::arg("print") = true,
           py::arg("detailed") = false,
@@ -533,7 +536,7 @@ That's all for now, folks! More docs coming soon :)
           "summary will print the network summary in addition to returning it. "
           "* detailed: boolean. Optional, default False. When specified to "
           "\"True\", summary will additionally return/print sampling config "
-          "details for each layer in the network.")
+          "details for each layer in the network.", bolt::python::OutputRedirect())
       // TODO(josh/nick): These are temporary until we have a better story
       // for converting numpy to BoltGraphs
       .def("get_layer", &BoltGraph::getNodeByName, py::arg("layer_name"),
@@ -541,11 +544,11 @@ That's all for now, folks! More docs coming soon :)
            "assigned name. As such, must be called after compile. You can "
            "determine which layer is which by printing a graph summary. "
            "Possible operations to perform on the returned object include "
-           "setting layer sparsity, freezing weights, or saving to a file")
+           "setting layer sparsity, freezing weights, or saving to a file", bolt::python::OutputRedirect())
       .def("nodes", &BoltGraph::getNodeTraversalOrder,
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
-           "compiled.")
+           "compiled.", bolt::python::OutputRedirect())
       .def(getPickleFunction<BoltGraph>());
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,

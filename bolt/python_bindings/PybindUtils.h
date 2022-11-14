@@ -4,6 +4,7 @@
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>
+#include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <memory>
@@ -253,5 +254,8 @@ pybind11::detail::initimpl::pickle_factory<
         return SERIALIZE_T::load_stream(in);
       });
 }
+
+using OutputRedirect = py::call_guard<py::scoped_ostream_redirect,
+                     py::scoped_estream_redirect>;
 
 }  // namespace thirdai::bolt::python
