@@ -216,7 +216,6 @@ Args:
                              )pbdoc");
   udt_types_submodule.def("text", automl::deployment::DataType::text,
                           py::arg("average_n_words") = std::nullopt,
-                          py::arg("embedding_size") = "m",
                           py::arg("use_attention") = false,
                           R"pbdoc(
     Text column type. Use this object if a column contains text data 
@@ -227,8 +226,6 @@ Args:
         average_n_words (int): Optional. Average number of words in the 
             text column in each row. If provided, UDT may make 
             optimizations as appropriate.
-        embedding_size (str): Optional. One of "small"/"s", "medium"/"m",
-            or "large"/"l". Defaults to "m".
         use_attention (bool): Optional. If true, udt is guaranteed to
             use attention when processing this text column. Otherwise, 
             udt will only use attention when appropriate.
