@@ -3,7 +3,7 @@ import thirdai._thirdai.bolt
 from thirdai_thirdai.data import semantic_type_inference
 
 
-def get_metadata(filename, n_rows=1e6):
+def get_udt_col_types(filename, n_rows=1e6):
     column_types = semantic_type_inference(filename)
 
     df = pd.read_csv(filename, n_rows=n_rows)
