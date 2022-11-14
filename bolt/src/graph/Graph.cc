@@ -97,6 +97,10 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
       train_config.getValidationContext();
   if (validation && validation->frequency() != 0 &&
       (_updates % validation->frequency() == 0)) {
+    if (!validation->data() || !validation->labels()) {
+      throw std::invalid_argument(
+          "Validation file is not yet converted to input data and labels.");
+    }
     // TODO(jerin-thirdai): The implications of doing
     // cleanupAfterBatchProcessing and prepareToProcessBatches is not
     // fully understood here. These two functions should not exist, but
@@ -265,6 +269,10 @@ MetricData BoltGraph::train(
     const std::optional<ValidationContext>& validation =
         train_config.getValidationContext();
     if (validation) {
+      if (!validation->data() || !validation->labels()) {
+        throw std::invalid_argument(
+            "Validation file is not yet converted to input data and labels.");
+      }
       auto [val_metrics, _] = evaluate(
           *validation->data(), *validation->labels(), validation->config());
       train_state.updateValidationMetrics(val_metrics);
