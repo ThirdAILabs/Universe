@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -12,6 +13,7 @@
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/prebuilt_pipelines/UDTBase.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
@@ -30,7 +32,7 @@ using OptionsMap = std::unordered_map<std::string, std::string>;
  * potential clients can tinker with without having to download a serialized
  * deployment config file.
  */
-class UniversalDeepTransformer : public ModelPipeline {
+class UniversalDeepTransformer : public ModelPipeline, public UDTBase {
   static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
   static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
@@ -65,7 +67,7 @@ class UniversalDeepTransformer : public ModelPipeline {
 
     auto dataset_factory = UDTDatasetFactory::make(
         /* config= */ std::move(dataset_config),
-        /* parallel= */ parallel_data_processing,
+        /* force_parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
         /* contextual_columns= */ contextual_columns);
 
@@ -114,12 +116,12 @@ class UniversalDeepTransformer : public ModelPipeline {
     oarchive(*this);
   }
 
-  static std::unique_ptr<UniversalDeepTransformer> load(
+  static std::shared_ptr<UniversalDeepTransformer> load(
       const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<UniversalDeepTransformer> deserialize_into(
+    std::shared_ptr<UniversalDeepTransformer> deserialize_into(
         new UniversalDeepTransformer());
     iarchive(*deserialize_into);
 

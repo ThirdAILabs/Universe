@@ -134,11 +134,17 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
   thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
   thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
-  // TODO(Nicholas, Geordie): Move this to bolt
-  thirdai::automl::deployment::python::defineModelPipelineAndUDT(
-      bolt_submodule);
+  thirdai::automl::deployment::python::defineUDTFactory(bolt_submodule);
 
   thirdai::search::python::createSearchSubmodule(m);
 
+  // Models Submodule
+  auto models_submodule = bolt_submodule.def_submodule("models");
+  thirdai::bolt::python::createModelsSubmodule(bolt_submodule);
+  thirdai::automl::deployment::python::defineModelPipeline(models_submodule);
+  thirdai::automl::deployment::python::defineUDTClassifierAndGenerator(
+      models_submodule);
+
+  // Deployment submodule
   thirdai::automl::deployment::python::createDeploymentSubmodule(m);
 }

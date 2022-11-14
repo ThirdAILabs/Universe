@@ -364,12 +364,13 @@ Args:
         - The same column can be tracked more than once, allowing us to capture both short and
           long term trends.
       )pbdoc");
-
-  createModelsSubmodule(bolt_submodule);
 }
 
 void createModelsSubmodule(py::module_& bolt_submodule) {
   auto models_submodule = bolt_submodule.def_submodule("models");
+
+  //   py::class_<UDT>(UDT)
+  //     .def("__new__", &UDT)
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<bolt::QueryCandidateGeneratorConfig,
