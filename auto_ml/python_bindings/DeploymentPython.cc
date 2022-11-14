@@ -249,25 +249,24 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<ModelPipeline, LineInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
-           docs::MODEL_PIPELINE_PREDICT, bolt::python::OutputRedirect())
+           docs::MODEL_PIPELINE_PREDICT)
       .def("explain", &ModelPipeline::explain<LineInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
-           docs::MODEL_PIPELINE_EXPLAIN, bolt::python::OutputRedirect())
+           docs::MODEL_PIPELINE_EXPLAIN)
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false,
-           docs::MODEL_PIPELINE_PREDICT_TOKENS, bolt::python::OutputRedirect())
+           docs::MODEL_PIPELINE_PREDICT_TOKENS)
       .def("predict_batch", &predictBatchWrapper<ModelPipeline, LineInputBatch>,
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           docs::MODEL_PIPELINE_PREDICT_BATCH, bolt::python::OutputRedirect())
+           docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
            py::arg("filename"), bolt::python::OutputRedirect())
       .def("save", &ModelPipeline::save, py::arg("filename"),
-           docs::MODEL_PIPELINE_SAVE, bolt::python::OutputRedirect())
+           docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
-                  docs::MODEL_PIPELINE_LOAD, bolt::python::OutputRedirect())
+                  docs::MODEL_PIPELINE_LOAD)
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
-           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR,
-           bolt::python::OutputRedirect());
+           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
 
   py::class_<UDTConfig, UDTConfigPtr>(bolt_submodule, "UDTConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
@@ -293,43 +292,40 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
-           py::arg("neuron_id"), docs::UDT_CLASS_NAME,
-           bolt::python::OutputRedirect())
+           py::arg("neuron_id"), docs::UDT_CLASS_NAME)
       .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
            docs::UDT_EVALUATE, bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
-           docs::UDT_PREDICT, bolt::python::OutputRedirect())
+           docs::UDT_PREDICT)
       .def("predict_batch",
            &predictBatchWrapper<UniversalDeepTransformer, MapInputBatch>,
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           docs::UDT_PREDICT_BATCH, bolt::python::OutputRedirect())
+           docs::UDT_PREDICT_BATCH)
       .def(
           "embedding_representation",
           [](UniversalDeepTransformer& model, const MapInput& input) {
             return convertBoltVectorToNumpy(
                 model.embeddingRepresentation(input));
           },
-          py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION,
-          bolt::python::OutputRedirect())
+          py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
       .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
            py::arg("input_sample"), docs::UDT_INDEX,
            bolt::python::OutputRedirect())
       .def("index_batch",
            &UniversalDeepTransformer::batchUpdateTemporalTrackers,
-           py::arg("input_samples"), docs::UDT_INDEX_BATCH,
-           bolt::python::OutputRedirect())
+           py::arg("input_samples"), docs::UDT_INDEX_BATCH)
       .def("reset_temporal_trackers",
            &UniversalDeepTransformer::resetTemporalTrackers,
-           docs::UDT_RESET_TEMPORAL_TRACKERS, bolt::python::OutputRedirect())
+           docs::UDT_RESET_TEMPORAL_TRACKERS)
       .def("explain", &UniversalDeepTransformer::explain<MapInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
-           docs::UDT_EXPLAIN, bolt::python::OutputRedirect())
+           docs::UDT_EXPLAIN)
       .def("save", &UniversalDeepTransformer::save, py::arg("filename"),
-           docs::UDT_SAVE, bolt::python::OutputRedirect())
+           docs::UDT_SAVE)
       .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"),
-                  docs::UDT_LOAD, bolt::python::OutputRedirect());
+                  docs::UDT_LOAD);
 }
 
 template <typename T>
