@@ -111,7 +111,7 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
 
     cleanupAfterBatchProcessing();
     auto [validation_metrics, _] = evaluate(
-        validation->data(), validation->labels(), validation->config());
+        *validation->data(), *validation->labels(), validation->config());
 
     if (save_context && _tracked_metric != nullptr) {
       auto query = validation_metrics.find(_tracked_metric->name());
@@ -265,8 +265,8 @@ MetricData BoltGraph::train(
     const std::optional<ValidationContext>& validation =
         train_config.getValidationContext();
     if (validation) {
-      auto [val_metrics, _] = evaluate(validation->data(), validation->labels(),
-                                       validation->config());
+      auto [val_metrics, _] = evaluate(
+          *validation->data(), *validation->labels(), validation->config());
       train_state.updateValidationMetrics(val_metrics);
     }
 
