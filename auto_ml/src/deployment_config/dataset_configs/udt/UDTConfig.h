@@ -51,9 +51,9 @@ struct UDTConfig {
    */
   UDTConfig(ColumnDataTypes data_types,
             UserProvidedTemporalRelationships temporal_tracking_relationships,
-            std::string target, uint32_t n_target_classes, bool integer_target=false,
-            std::string time_granularity = "d", uint32_t lookahead = 0,
-            char delimiter = ',')
+            std::string target, uint32_t n_target_classes,
+            bool integer_target = false, std::string time_granularity = "d",
+            uint32_t lookahead = 0, char delimiter = ',')
       : data_types(std::move(data_types)),
         provided_relationships(std::move(temporal_tracking_relationships)),
         target(std::move(target)),
@@ -83,8 +83,8 @@ struct UDTConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(data_types, provided_relationships, target, n_target_classes, integer_target,
-            time_granularity, lookahead, delimiter, hash_range);
+    archive(data_types, provided_relationships, target, n_target_classes,
+            integer_target, time_granularity, lookahead, delimiter, hash_range);
   }
 };
 

@@ -29,8 +29,7 @@ using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
 struct CategoricalDataType {
   explicit CategoricalDataType(std::optional<char> delimiter,
                                CategoricalMetadataConfigPtr metadata)
-      : delimiter(delimiter),
-        metadata_config(std::move(metadata)) {}
+      : delimiter(delimiter), metadata_config(std::move(metadata)) {}
 
   std::optional<char> delimiter;
   CategoricalMetadataConfigPtr metadata_config;
