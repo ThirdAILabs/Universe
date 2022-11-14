@@ -17,11 +17,11 @@ namespace thirdai::automl::deployment::python {
 
 void createDeploymentSubmodule(py::module_& thirdai_module);
 
-void defineUDTFactory(py::module_& bolt_submodule);
+void createUDTFactory(py::module_& bolt_submodule);
 
-void defineUDTClassifierAndGenerator(py::module_& models_submodule);
+void createUDTClassifierAndGenerator(py::module_& models_submodule);
 
-void defineModelPipeline(py::module_& models_submodule);
+void createModelPipeline(py::module_& models_submodule);
 
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs);

@@ -40,7 +40,6 @@ class QueryCandidateGeneratorConfig {
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
       std::optional<uint32_t> reservoir_size = std::nullopt,
       uint32_t source_column_index = 0, uint32_t target_column_index = 0,
-      bool has_incorrect_queries = false,
       uint32_t default_text_encoding_dim = std::numeric_limits<uint32_t>::max(),
       uint32_t batch_size = 10000)
       : _num_tables(num_tables),
@@ -48,7 +47,6 @@ class QueryCandidateGeneratorConfig {
         _batch_size(batch_size),
         _range(range),
         _n_grams(std::move(n_grams)),
-        _has_incorrect_queries(has_incorrect_queries),
         _reservoir_size(reservoir_size),
         _source_column_index(source_column_index),
         _target_column_index(target_column_index),
@@ -66,7 +64,6 @@ class QueryCandidateGeneratorConfig {
            this->_target_column_index == rhs._target_column_index &&
            this->_batch_size == rhs._batch_size && this->_range == rhs._range &&
            this->_n_grams == rhs._n_grams &&
-           this->_has_incorrect_queries == rhs._has_incorrect_queries &&
            this->_reservoir_size == rhs._reservoir_size;
   }
 
@@ -95,7 +92,9 @@ class QueryCandidateGeneratorConfig {
 
   std::optional<uint32_t> reservoirSize() const { return _reservoir_size; }
 
-  constexpr bool hasIncorrectQueries() const { return _has_incorrect_queries; }
+  constexpr bool hasIncorrectQueries() const {
+    return _source_column_index != _target_column_index;
+  }
 
   constexpr uint32_t sourceColumnIndex() const { return _source_column_index; }
 
@@ -103,6 +102,22 @@ class QueryCandidateGeneratorConfig {
 
   constexpr uint32_t defaultTextEncodingDim() const {
     return _default_text_encoding_dim;
+  }
+
+  static std::shared_ptr<QueryCandidateGeneratorConfig> fromDefault(
+      const uint32_t& target_column_index,
+      const uint32_t& source_column_index) {
+    auto generator_config = QueryCandidateGeneratorConfig(
+        /* hash_function = */ "minhash",
+        /* num_tables = */ 20,
+        /* hashes_per_table = */ 10,
+        /* range = */ 100,
+        /* n_grams = */ {3, 4},
+        /* reservoir_size */ std::nullopt,
+        /* source_column_index = */ source_column_index,
+        /* target_column_index = */ target_column_index);
+
+    return std::make_shared<QueryCandidateGeneratorConfig>(generator_config);
   }
 
   std::shared_ptr<hashing::HashFunction> hashFunction() const {
@@ -137,7 +152,6 @@ class QueryCandidateGeneratorConfig {
   std::vector<uint32_t> _n_grams;
 
   // Identifies if the dataset contains pairs of correct and incorrect queries
-  bool _has_incorrect_queries;
   std::optional<uint32_t> _reservoir_size;
 
   uint32_t _source_column_index;
@@ -151,8 +165,8 @@ class QueryCandidateGeneratorConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_hash_function, _num_tables, _hashes_per_table, _batch_size, _range,
-            _n_grams, _has_incorrect_queries, _reservoir_size,
-            _source_column_index, _target_column_index);
+            _n_grams, _reservoir_size, _source_column_index,
+            _target_column_index, _default_text_encoding_dim);
   }
 };
 
@@ -164,6 +178,17 @@ class QueryCandidateGenerator {
   static QueryCandidateGenerator make(
       QueryCandidateGeneratorConfigPtr query_candidate_generator_config) {
     return QueryCandidateGenerator(std::move(query_candidate_generator_config));
+  }
+  static QueryCandidateGenerator buildGeneratorFromDefaultConfig(
+      const uint32_t& target_column_index, const uint32_t& source_column_index,
+      const std::string& dataset_size) {
+    (void)dataset_size;
+    auto config = QueryCandidateGeneratorConfig::fromDefault(
+        /* target_column_index = */ target_column_index,
+        /* source_column_index = */ source_column_index);
+    auto generator = QueryCandidateGenerator::make(config);
+
+    return generator;
   }
 
   static QueryCandidateGenerator buildGeneratorFromSerializedConfig(
@@ -318,9 +343,7 @@ class QueryCandidateGenerator {
  private:
   explicit QueryCandidateGenerator(
       QueryCandidateGeneratorConfigPtr query_candidate_generator_config)
-      : _query_generator_config(std::move(query_candidate_generator_config)),
-        _dimension_for_encodings(
-            _query_generator_config->defaultTextEncodingDim()) {
+      : _query_generator_config(std::move(query_candidate_generator_config)) {
     std::vector<dataset::BlockPtr> training_input_blocks;
 
     if (_query_generator_config->hasIncorrectQueries()) {
@@ -363,7 +386,7 @@ class QueryCandidateGenerator {
       input_blocks.emplace_back(dataset::CharKGramTextBlock::make(
           /* col = */ column_index,
           /* k = */ n_gram,
-          /* dim = */ _dimension_for_encodings));
+          /* dim = */ _query_generator_config->defaultTextEncodingDim()));
     }
 
     return input_blocks;
@@ -492,8 +515,6 @@ class QueryCandidateGenerator {
   }
 
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;
-  uint32_t _dimension_for_encodings;
-
   std::unique_ptr<Flash<uint32_t>> _flash_index;
   std::shared_ptr<dataset::GenericBatchProcessor> _training_batch_processor;
   std::shared_ptr<dataset::GenericBatchProcessor> _inference_batch_processor;
@@ -515,9 +536,9 @@ class QueryCandidateGenerator {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_query_generator_config, _dimension_for_encodings, _flash_index,
-            _training_batch_processor, _inference_batch_processor,
-            _labels_to_queries_map, _queries_to_labels_map);
+    archive(_query_generator_config, _flash_index, _training_batch_processor,
+            _inference_batch_processor, _labels_to_queries_map,
+            _queries_to_labels_map);
   }
 };
 

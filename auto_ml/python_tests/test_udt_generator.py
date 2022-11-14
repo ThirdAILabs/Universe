@@ -14,6 +14,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 TRAIN_FILE_PATH = "./query_reformulation.csv"
 MODEL_PATH = "udt_generator_model.bolt"
 
+RECALL_THRESHOLD = 0.95
+
 
 def read_csv_file(file_name: str) -> List[List[str]]:
     with open(file_name, newline="") as file:
@@ -26,7 +28,7 @@ def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
     dataframe.to_csv(file_path, index=False, header=False)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def grammar_correction_dataset() -> pd.DataFrame:
     """
     The grammar correction dataset is retrieved from HuggingFace:
@@ -110,6 +112,30 @@ def delete_created_files() -> None:
         os.remove(TRAIN_FILE_PATH)
 
 
+def run_generator_test(model: bolt.models.UDTGenerator) -> None:
+    """
+    Tests that the generated candidate queries are reasonable given
+    the input dataset.
+    By default, the generator recommends top 5 closes queries from
+    flash.
+    """
+
+    query_pairs = read_csv_file(file_name=TRAIN_FILE_PATH)
+
+    generated_candidates = model.predict_batch(
+        queries=[query_pair[1] for query_pair in query_pairs], top_k=5
+    )
+
+    correct_results = 0
+    for query_index in range(len(query_pairs)):
+        correct_results += (
+            1 if query_pairs[query_index][0] in generated_candidates[query_index] else 0
+        )
+
+    recall = correct_results / len(query_pairs)
+    assert recall > RECALL_THRESHOLD
+
+
 def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
     model = bolt.UniversalDeepTransformer(
         target_column_index=0, source_column_index=1, dataset_size="small"
@@ -119,66 +145,26 @@ def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
 
 
 @pytest.mark.filterwarnings("ignore")
+def test_udt_generator(prepared_datasets):
+    model = train_udt_query_reformulation_model()
+    run_generator_test(model=model)
+
+
+@pytest.mark.filterwarnings("ignore")
 def test_udt_generator_load_save(prepared_datasets):
     model = train_udt_query_reformulation_model()
     model.save(MODEL_PATH)
 
     deserialized_model = bolt.UniversalDeepTransformer.load(
-        MODEL_PATH, model_type="udt_generator"
+        MODEL_PATH, model_type="generator"
     )
 
     eval_outputs = model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
     deserialized_model_eval_outputs = deserialized_model.evaluate(
         filename=TRAIN_FILE_PATH, top_k=5
     )
+
     for index in range(len(eval_outputs)):
         assert eval_outputs[index] == deserialized_model_eval_outputs[index]
-
-
-@pytest.mark.filterwarnings("ignore")
-def test_udt_generator_raises_attribute_error(prepared_datasets):
-    """
-    This test ensures that certain methods are only available for
-    specific UDT models. For instance, a user should not be able to
-    call model.embedding_representation() when the underlying model
-    is an instance of a query-reformulation-specific UDT.
-    """
-
-    single_test_sample = {
-        "userId": "0",
-        "movieId": "1",
-        "timestamp": "2022-08-31",
-        "hoursWatched": "1",
-    }
-    model = train_udt_query_reformulation_model()
-    with pytest.raises(
-        AttributeError,
-    ):
-        model.embedding_representation(input_sample=single_test_sample)
-
-    with pytest.raises(
-        AttributeError,
-    ):
-        model.class_name(neuron_id=5)
-
-    with pytest.raises(
-        AttributeError,
-    ):
-        model.index(input_sample=single_test_sample)
-
-    with pytest.raises(
-        AttributeError,
-    ):
-        model.index_batch(input_samples=[single_test_sample] * 5)
-
-    with pytest.raises(
-        AttributeError,
-    ):
-        model.reset_temporal_trackers()
-
-    with pytest.raises(
-        AttributeError,
-    ):
-        model.explain(input_sample=single_test_sample)
 
     delete_created_files()

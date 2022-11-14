@@ -13,7 +13,6 @@
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
-#include <auto_ml/src/prebuilt_pipelines/UDTBase.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
@@ -32,7 +31,7 @@ using OptionsMap = std::unordered_map<std::string, std::string>;
  * potential clients can tinker with without having to download a serialized
  * deployment config file.
  */
-class UniversalDeepTransformer : public ModelPipeline, public UDTBase {
+class UniversalDeepTransformer : public ModelPipeline {
   static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
   static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;

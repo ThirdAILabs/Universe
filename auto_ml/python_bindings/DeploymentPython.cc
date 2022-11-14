@@ -21,8 +21,6 @@
 #include <auto_ml/src/deployment_config/dataset_configs/udt/TemporalContext.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
-#include <auto_ml/src/prebuilt_pipelines/UDTBase.h>
-#include <auto_ml/src/prebuilt_pipelines/UDTGenerator.h>
 #include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/cast.h>
@@ -225,7 +223,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
 }
 
-void defineModelPipeline(py::module_& models_submodule) {
+void createModelPipeline(py::module_& models_submodule) {
   py::class_<ModelPipeline>(models_submodule, "Pipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
            py::arg("parameters") = py::dict(),
@@ -269,66 +267,81 @@ void defineModelPipeline(py::module_& models_submodule) {
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
 }
 
-void defineUDTFactory(py::module_& bolt_submodule) {
-  py::class_<UDTBase, std::shared_ptr<UDTBase>>(
-      bolt_submodule, "UniversalDeepTransformer", docs::UDT_CLASS)
-      .def(
-          "__new__",
-          [](py::object& obj, ColumnDataTypes data_types,
-             UserProvidedTemporalRelationships temporal_tracking_relationships,
-             std::string target_col, std::string time_granularity = "d",
-             uint32_t lookahead = 0, char delimiter = ',',
-             const std::unordered_map<std::string, std::string>& options = {}) {
-            (void)obj;
-            return UniversalDeepTransformer::buildUDT(
-                /* data_types = */ std::move(data_types),
-                /* temporal_tracking_relationships = */
-                std::move(temporal_tracking_relationships),
-                /* target_col = */ std::move(target_col),
-                /* time_granularity = */ std::move(time_granularity),
-                /* lookahead = */ lookahead, /* delimiter = */ delimiter,
-                /* options = */ options);
-          },
-          py::arg("data_types"),
-          py::arg("temporal_tracking_relationships") =
-              UserProvidedTemporalRelationships(),
-          py::arg("target"), py::arg("time_granularity") = "daily",
-          py::arg("lookahead") = 0, py::arg("delimiter") = ',',
-          py::arg("options") = OptionsMap(), docs::UDT_INIT)
-      .def(
-          "__new__",
-          [](py::object& obj, const uint32_t& target_column_index,
-             const uint32_t& source_column_index,
-             const std::string& dataset_size) {
-            (void)obj;
-            return UDTQueryCandidateGenerator::buildUDT(
-                /* target_column_index = */ target_column_index,
-                /* source_column_index = */ source_column_index,
-                /* dataset_size = */ dataset_size);
-          },
-          py::arg("target_column_index"), py::arg("source_column_index"),
-          py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
+class UDTFactory {
+ public:
+  static auto buildUDTGeneratorWrapper(py::object& obj,
+                                       const uint32_t& target_column_index,
+                                       const uint32_t& source_column_index,
+                                       const std::string& dataset_size) {
+    (void)obj;
+    return bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
+        /* target_column_index = */ target_column_index,
+        /* source_column_index = */ source_column_index,
+        /* dataset_size = */ dataset_size);
+  }
 
-      .def_static(
-          "load",
-          [](const std::string& filename,
-             const std::string& model_type) -> std::shared_ptr<UDTBase> {
-            auto type = thirdai::utils::lower(model_type);
-            if (type == "udt_generator") {
-              return UDTQueryCandidateGenerator::load(filename);
-            }
-            if (type == "udt_classifier") {
-              return UniversalDeepTransformer::load(filename);
-            }
-            throw std::invalid_argument(
-                "Invalid Model Type: Supported Models include udt_generator "
-                "and udt_classifier");
-          },
-          py::arg("filename"), py::arg("model_type"),
-          docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
+  static auto buildUDTClassifierWrapper(
+      py::object& obj, ColumnDataTypes data_types,
+      UserProvidedTemporalRelationships temporal_tracking_relationships,
+      std::string target_col, std::string time_granularity = "d",
+      uint32_t lookahead = 0, char delimiter = ',',
+      const std::unordered_map<std::string, std::string>& options = {}) {
+    (void)obj;
+    return UniversalDeepTransformer::buildUDT(
+        /* data_types = */ std::move(data_types),
+        /* temporal_tracking_relationships = */
+        std::move(temporal_tracking_relationships),
+        /* target_col = */ std::move(target_col),
+        /* time_granularity = */ std::move(time_granularity),
+        /* lookahead = */ lookahead, /* delimiter = */ delimiter,
+        /* options = */ options);
+  }
+
+  static py::object load(const std::string& filename,
+                         const std::string& model_type) {
+    auto type = thirdai::utils::lower(model_type);
+    if (type == "generator") {
+      return py::cast(bolt::QueryCandidateGenerator::load(filename));
+    }
+    if (type == "classifier") {
+      return py::cast(UniversalDeepTransformer::load(filename));
+    }
+    throw std::invalid_argument(
+        "Invalid Model Type: Supported Models include generator "
+        "and classifier");
+  }
+};
+
+void createUDTFactory(py::module_& bolt_submodule) {
+  /**
+   * This class definition overrides the __new__ method because we want to
+   * modify class instantiation such that we can return objects of type
+   * bolt.models.UDTGenerator or bolt.models.UDTClassifier instead of
+   * an object of type bolt.UniversalDeepTransformer. Having this method
+   * return a type other than that of the class on which it is being called
+   * ensures that the __init__ method is never called.
+   * https://stackoverflow.com/questions/26793600/decorate-call-with-staticmethod
+   *
+   */
+  py::class_<UDTFactory>(bolt_submodule, "UniversalDeepTransformer",
+                         docs::UDT_CLASS)
+      .def("__new__", &UDTFactory::buildUDTClassifierWrapper,
+           py::arg("data_types"),
+           py::arg("temporal_tracking_relationships") =
+               UserProvidedTemporalRelationships(),
+           py::arg("target"), py::arg("time_granularity") = "daily",
+           py::arg("lookahead") = 0, py::arg("delimiter") = ',',
+           py::arg("options") = OptionsMap(), docs::UDT_INIT)
+      .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
+           py::arg("target_column_index"), py::arg("source_column_index"),
+           py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
+
+      .def_static("load", &UDTFactory::load, py::arg("filename"),
+                  py::arg("model_type"),
+                  docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
 
-void defineUDTClassifierAndGenerator(py::module_& models_submodule) {
+void createUDTClassifierAndGenerator(py::module_& models_submodule) {
   py::class_<UDTConfig, UDTConfigPtr>(models_submodule, "UDTConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
                     std::string, std::string, uint32_t, char>(),
@@ -338,8 +351,8 @@ void defineUDTClassifierAndGenerator(py::module_& models_submodule) {
            docs::ORACLE_CONFIG_INIT);
 
   py::class_<UniversalDeepTransformer,
-             std::shared_ptr<UniversalDeepTransformer>, UDTBase>(
-      models_submodule, "UDTClassifier")
+             std::shared_ptr<UniversalDeepTransformer>>(models_submodule,
+                                                        "UDTClassifier")
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
@@ -386,59 +399,36 @@ void defineUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"),
                   docs::UDT_LOAD);
 
-  py::class_<UDTQueryCandidateGenerator,
-             std::shared_ptr<UDTQueryCandidateGenerator>, UDTBase>(
-      models_submodule, "UDTGenerator")
-      .def(py::init(&UDTQueryCandidateGenerator::buildUDT),
+  py::class_<bolt::QueryCandidateGenerator,
+             std::shared_ptr<bolt::QueryCandidateGenerator>>(models_submodule,
+                                                             "UDTGenerator")
+      .def(py::init(
+               &bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
            py::arg("target_column_index"), py::arg("source_column_index"),
-           py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
-      .def(
-          "train",
-          [](UDTQueryCandidateGenerator& udt_generator_model,
-             const std::string& file_name) {
-            return udt_generator_model.generator()->buildFlashIndex(file_name);
-          },
-          py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
-
-      .def(
-          "evaluate",
-          [](UDTQueryCandidateGenerator& udt_generator_model,
-             const std::string& filename, uint32_t top_k) {
-            return udt_generator_model.generator()->evaluateOnFile(filename,
-                                                                   top_k);
-          },
-          py::arg("filename"), py::arg("top_k"), docs::UDT_GENERATOR_EVALUATE)
+           py::arg("dataset_size"))
+      .def("train", &bolt::QueryCandidateGenerator::buildFlashIndex,
+           py::arg("filename"))
+      .def("evaluate", &bolt::QueryCandidateGenerator::evaluateOnFile,
+           py::arg("filename"), py::arg("top_k"))
       .def(
           "predict",
-          [](UDTQueryCandidateGenerator& udt_generator_model,
+          [](bolt::QueryCandidateGenerator& udt_generator_model,
              const std::string& sample, uint32_t top_k) {
-            return udt_generator_model.generator()->queryFromList({sample},
-                                                                  top_k);
+            return udt_generator_model.queryFromList({sample}, top_k);
           },
-          py::arg("input_query"), py::arg("top_k") = 5,
-          docs::UDT_GENERATOR_PREDICT)
-
-      .def(
-          "predict_batch",
-          [](UDTQueryCandidateGenerator& udt_generator_model,
-             const std::vector<std::string>& queries, uint32_t top_k) {
-            return udt_generator_model.generator()->queryFromList(queries,
-                                                                  top_k);
-          },
-          py::arg("input_queries"), py::arg("top_k") = 5,
-          docs::UDT_GENERATOR_PREDICT_BATCH)
-      .def_static("load", &UDTQueryCandidateGenerator::load,
-                  py::arg("filename"))
-      .def("save", &UDTQueryCandidateGenerator::save, py::arg("filename"),
-           docs::UDT_GENERATOR_SAVE);
-
+          py::arg("query"), py::arg("top_k"))
+      .def("predict_batch", &bolt::QueryCandidateGenerator::queryFromList,
+           py::arg("queries"), py::arg("top_k"))
+      .def("save", &bolt::QueryCandidateGenerator::save, py::arg("filename"))
+      .def_static("load", &bolt::QueryCandidateGenerator::load,
+                  py::arg("filename"));
 }
 
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs) {
-  // Because this is an overloaded function, the docsstring will be rendered
-  // for each overload. This option is to ensure that it can only be rendered
-  // for the first one.
+  // Because this is an overloaded function, the docsstring will be rendered for
+  // each overload. This option is to ensure that it can only be rendered for
+  // the first one.
   const char* const docstring =
       add_docs ? docs::CONSTANT_PARAMETER : "See docs above.";
 
