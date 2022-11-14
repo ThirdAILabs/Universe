@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy import false
 from thirdai import bolt, deployment
 
 pytestmark = [pytest.mark.unit]
