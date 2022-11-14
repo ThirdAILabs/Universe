@@ -7,7 +7,7 @@ namespace thirdai::dataset {
 
 /**
  * This class represents an Augmentation to be applied to a dataset.
- * Augmentations are applied before featurization when specified. It takes a an
+ * Augmentations are applied before featurization when specified. It takes an
  * immutable reference to a ColumnMap and returns a new column map becuase
  * ColumnMaps must have a consistent number of rows in each column and data
  * augmentation can violate this property if new rows are added to select
