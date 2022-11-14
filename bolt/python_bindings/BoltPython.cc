@@ -1,5 +1,6 @@
 #include "BoltPython.h"
 #include <bolt/python_bindings/ConversionUtils.h>
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -69,6 +70,10 @@ Args:
         tracked metric to be configured via `with_metrics(...)`.
 
 )pbdoc")
+      .def("with_validation_file", &TrainConfig::withValidationFile,
+           py::arg("validation_file"), py::arg("eval_config"),
+           py::arg("validation_frequency") = 0,
+           py::arg("save_best_per_metric") = "")
       .def_property_readonly(
           "num_epochs", [](TrainConfig& config) { return config.epochs(); },
           "Returns the number of epochs a model with this TrainConfig will "
