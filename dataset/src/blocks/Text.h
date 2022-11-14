@@ -117,13 +117,14 @@ using PairGramTextBlockPtr = std::shared_ptr<PairGramTextBlock>;
 class UniGramTextBlock final : public TextBlock {
  public:
   explicit UniGramTextBlock(
-      uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
-      : TextBlock(col, dim) {}
+      uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+      std::optional<char> delimiter = std::nullopt)
+      : TextBlock(col, dim), _delimiter(delimiter) {}
 
-  static auto make(
-      uint32_t col,
-      uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<UniGramTextBlock>(col, dim);
+  static auto make(uint32_t col,
+                   uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+                   std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<UniGramTextBlock>(col, dim, delimiter);
   }
 
   std::string getResponsibleWord(uint32_t index,
@@ -150,6 +151,8 @@ class UniGramTextBlock final : public TextBlock {
  private:
   // Private constructor for cereal.
   UniGramTextBlock() {}
+
+  std::optional<char> _delimiter = std::nullopt;
 
   friend class cereal::access;
   template <typename Archive>

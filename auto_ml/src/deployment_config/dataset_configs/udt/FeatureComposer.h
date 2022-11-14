@@ -43,12 +43,10 @@ class FeatureComposer {
       throw std::invalid_argument(
           "The target column cannot be a temporal tracking key.");
     }
+
     for (const auto& [tracking_key_col_name, temporal_configs] :
          temporal_relationships) {
       if (!config.data_types.at(tracking_key_col_name).isCategorical()) {
-        throw std::invalid_argument("Tracking keys must be categorical.");
-      }
-      if (config.data_types.at(tracking_key_col_name).isCategorical()) {
         throw std::invalid_argument("Tracking keys must be categorical.");
       }
 
@@ -92,11 +90,18 @@ class FeatureComposer {
       uint32_t col_num = column_numbers.at(col_name);
 
       if (data_type.isCategorical()) {
-        tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
         auto categorical = data_type.asCategorical();
+        // if part of metadata
         if (vectors_map.count(col_name) && categorical.metadata_config) {
           blocks.push_back(dataset::MetadataCategoricalBlock::make(
               col_num, vectors_map.at(col_name)));
+        }
+        if (categorical.delimiter) {
+          blocks.push_back(dataset::UniGramTextBlock::make(
+              col_num, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+              categorical.delimiter));
+        } else {
+          tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
         }
       }
 

@@ -42,13 +42,16 @@ class TextEncodingUtils {
    * Unigrams in a vector with possible repeated indices (modded to a range)
    */
   static std::vector<uint32_t> computeRawUnigramsWithRange(
-      const std::string_view sentence, uint32_t output_range) {
+      const std::string_view sentence, uint32_t output_range,
+      char delimiter = ' ') {
     std::vector<uint32_t> unigrams;
-    forEachWordHash(sentence,
-                    [&](uint32_t word_hash, const std::string_view& word) {
-                      (void)word;
-                      unigrams.push_back(word_hash % output_range);
-                    });
+    forEachWordHash(
+        sentence,
+        [&](uint32_t word_hash, const std::string_view& word) {
+          (void)word;
+          unigrams.push_back(word_hash % output_range);
+        },
+        delimiter);
     return unigrams;
   }
 
@@ -182,21 +185,22 @@ class TextEncodingUtils {
    */
   template <typename WORD_PROCESSOR_T>
   inline static void forEachWordHash(const std::string_view sentence,
-                                     WORD_PROCESSOR_T word_processor) {
+                                     WORD_PROCESSOR_T word_processor,
+                                     char delimiter = ' ') {
     static_assert(std::is_convertible<
                   WORD_PROCESSOR_T,
                   std::function<void(uint32_t, std::string_view)>>::value);
 
-    bool prev_is_space = true;
+    bool prev_is_delim = true;
     uint32_t start_of_word_offset;
     for (uint32_t i = 0; i < sentence.size(); i++) {
-      if (prev_is_space && !std::isspace(sentence[i])) {
+      if (prev_is_delim && sentence[i] != delimiter) {
         // If we go from a space to a non-space character then we are at the
         // start of a word.
         start_of_word_offset = i;
-        prev_is_space = false;
+        prev_is_delim = false;
       }
-      if (!prev_is_space && std::isspace(sentence[i])) {
+      if (!prev_is_delim && sentence[i] == delimiter) {
         // If we go from a non-space character to a space then we are at the end
         // of a word.
         uint32_t len = i - start_of_word_offset;
@@ -207,10 +211,10 @@ class TextEncodingUtils {
         uint32_t word_hash =
             computeUnigram(sentence.data() + start_of_word_offset, len);
         word_processor(word_hash, word_view);
-        prev_is_space = true;
+        prev_is_delim = true;
       }
     }
-    if (!prev_is_space) {
+    if (!prev_is_delim) {
       // If we don't find a space at the end of the sentence, then there's a
       // last word we need to hash.
       uint32_t len = sentence.size() - start_of_word_offset;
