@@ -337,7 +337,6 @@ void defineUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            docs::ORACLE_CONFIG_INIT);
 
-#if THIRDAI_EXPOSE_ALL
   py::class_<UniversalDeepTransformer,
              std::shared_ptr<UniversalDeepTransformer>, UDTBase>(
       models_submodule, "UDTClassifier")
@@ -433,7 +432,6 @@ void defineUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def("save", &UDTQueryCandidateGenerator::save, py::arg("filename"),
            docs::UDT_GENERATOR_SAVE);
 
-#endif
 }
 
 template <typename T>
