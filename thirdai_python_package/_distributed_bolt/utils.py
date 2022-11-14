@@ -1,7 +1,10 @@
 import logging
 import os
 
+import ray
+from ray.util.placement_group import placement_group
 from ray.data.datasource.file_based_datasource import BlockWritePathProvider
+
 from thirdai import data
 
 
@@ -24,6 +27,13 @@ class RayBlockWritePathProvider(BlockWritePathProvider):
         file_path = os.path.join(base_path, suffix)
         return file_path
 
+def get_placement_group(num_cpus, num_workers, placement_strategy):
+    pg = placement_group(
+        [{"CPU": num_cpus}] * num_workers,
+        strategy=placement_strategy,
+    )
+    ray.get(pg.ready())
+    return pg
 
 def init_logging(logger_file: str):
     """

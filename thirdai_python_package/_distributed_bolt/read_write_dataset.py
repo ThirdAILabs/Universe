@@ -1,11 +1,10 @@
 import os
 
 import ray
-from ray.util.placement_group import placement_group
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 
 from typing import List, Union
-from .utils import RayBlockWritePathProvider
+from .utils import RayBlockWritePathProvider, get_placement_group
 
 
 def ray_read_dataset(
@@ -31,7 +30,7 @@ def ray_read_dataset(
         )
     return ray_dataset
 
-def schedule_on_different_machines(
+def create_data_transfer_workers(
     dataset_type,
     save_location,
     num_workers,
@@ -76,15 +75,9 @@ def schedule_on_different_machines(
 
     # We here, want to start actors with minimum CPUs possible, so as to
     # free up most number of CPUs for parallel read if required.
-    pg = placement_group(
-        [{"CPU": 1}] * num_workers,
-        strategy="STRICT_SPREAD",
-    )
-    ray.get(pg.ready())
-
     workers = [
         DataTransferActor.options(
-            scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=pg)
+            scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=get_placement_group(1, num_workers, "STRICT_SPREAD"))
         ).remote(dataset_type, save_location)
         for i in range(num_workers)
     ]
@@ -146,7 +139,7 @@ def data_parallel_ingest(
         dataset_type, paths, remote_file_system, parallelism
     )
 
-    workers =  schedule_on_different_machines(dataset_type, save_location, num_workers)
+    workers =  create_data_transfer_workers(dataset_type, save_location, num_workers)
 
     ray_data_shards = ray_dataset.split(
         n=num_workers, equal=True, locality_hints=workers
