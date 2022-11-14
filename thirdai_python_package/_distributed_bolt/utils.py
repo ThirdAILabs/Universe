@@ -83,6 +83,7 @@ class PandasColumnMapGenerator(data.ColumnMapGenerator):
         lines_per_load,
         dense_int_cols=set(),
         int_col_dims={},
+        cols_data_type = {}
     ):
         self.path = path
         self.num_nodes = num_nodes
@@ -91,6 +92,7 @@ class PandasColumnMapGenerator(data.ColumnMapGenerator):
         self.dense_int_cols = dense_int_cols
         self.int_col_dims = int_col_dims
         self.current_iterator = None
+        self.cols_data_type = cols_data_type
 
     def next(self):
         # We do this here instead of the constructor so we don't need to
@@ -102,6 +104,10 @@ class PandasColumnMapGenerator(data.ColumnMapGenerator):
         if load is None:
             return None
 
+        for col_name, col_type in self.cols_data_type.items():
+            load[col_name]=load[col_name].astype(col_type)
+
+        
         return data.pandas_to_columnmap(
             load,
             dense_int_cols=self.dense_int_cols,
@@ -112,3 +118,4 @@ class PandasColumnMapGenerator(data.ColumnMapGenerator):
         self.current_iterator = _pandas_iterator(
             self.path, self.lines_per_load, self.node_index, self.num_nodes
         )
+
