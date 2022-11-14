@@ -12,6 +12,9 @@ namespace thirdai::dataset {
  */
 class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
  public:
+  explicit SegmentedSparseFeatureVector(bool store_block_feature_map)
+      : SegmentedFeatureVector(store_block_feature_map) {}
+
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     if (_n_dense_added > 0) {
       throw std::invalid_argument(
@@ -37,6 +40,11 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
     _indices.push_back(concat_index);
     _values.push_back(value);
     _added_sparse = true;
+
+    if (_store_block_feature_map) {
+      _block_feature_map.emplace(concat_index, BlockFeature(
+          /* block_idx= */ _n_segments_added - 1, /* feature_idx= */ index));
+    }
   }
 
   void addDenseFeatureToSegment(float value) final {
@@ -56,16 +64,27 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
       throw std::invalid_argument(ss.str());
     }
 
-    _indices.push_back(_prev_dim + _n_dense_added);
+    uint32_t index = _n_dense_added;
+    uint32_t concat_index = _prev_dim + index;
+
+    _indices.push_back(concat_index);
     _values.push_back(value);
     _n_dense_added++;
+
+    if (_store_block_feature_map) {
+      _block_feature_map.emplace(concat_index, BlockFeature(
+          /* block_idx= */ _n_segments_added - 1, /* feature_idx= */ index));
+    }
   }
 
   BoltVector toBoltVector() final {
     return BoltVector::makeSparseVector(_indices, _values);
   }
 
+  BlockFeatureMap getBlockFeatureMapImpl() final { return _block_feature_map; }
+
   void addFeatureSegment(uint32_t dim) final {
+    _n_segments_added++;
     _prev_dim = _current_dim;
     _current_dim += dim;
     _added_sparse = false;
@@ -83,11 +102,13 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
 
  private:
   bool _added_sparse = false;
+  uint32_t _n_segments_added = 0;
   uint32_t _n_dense_added = 0;
   uint32_t _current_dim = 0;
   uint32_t _prev_dim = 0;
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
+  BlockFeatureMap _block_feature_map;
 };
 
 /**
@@ -97,8 +118,10 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
  */
 class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
  public:
-  explicit HashedSegmentedFeatureVector(uint32_t hash_range)
-      : _hash_range(hash_range) {}
+  explicit HashedSegmentedFeatureVector(uint32_t hash_range,
+                                        bool store_block_feature_map)
+      : SegmentedFeatureVector(store_block_feature_map),
+        _hash_range(hash_range) {}
 
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     if (_n_dense_added > 0) {
@@ -110,9 +133,17 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
     // We don't check whether we've seen this index before.
     // This is fine because bolt iterates through all index-value pairs of
     // sparse input vectors, so duplicates are effectively summed.
-    _indices.push_back(getHashedIndex(index));
+
+    auto hashed_index = getHashedIndex(index);
+
+    _indices.push_back(hashed_index);
     _values.push_back(value);
     _added_sparse = true;
+
+    if (_store_block_feature_map) {
+      _block_feature_map.emplace(hashed_index, BlockFeature(
+          /* block_idx= */ _block_count - 1, /* feature_idx= */ index));
+    }
   }
 
   void addDenseFeatureToSegment(float value) final {
@@ -122,14 +153,24 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
           "cannot add both dense and sparse features.");
     }
 
-    _indices.push_back(getHashedIndex(_n_dense_added));
+    uint32_t index = _n_dense_added;
+    uint32_t hashed_index = getHashedIndex(_n_dense_added);
+
+    _indices.push_back(hashed_index);
     _values.push_back(value);
     _n_dense_added++;
+
+    if (_store_block_feature_map) {
+      _block_feature_map.emplace(hashed_index, BlockFeature(
+          /* block_idx= */ _block_count - 1, /* feature_idx= */ index));
+    }
   }
 
   BoltVector toBoltVector() final {
     return BoltVector::makeSparseVector(_indices, _values);
   }
+
+  BlockFeatureMap getBlockFeatureMapImpl() final { return _block_feature_map; }
 
   void addFeatureSegment(uint32_t dim) final {
     (void)dim;
@@ -160,6 +201,8 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
 
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
+
+  BlockFeatureMap _block_feature_map;
 };
 
 /**
@@ -167,6 +210,9 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
  */
 class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
  public:
+  explicit SegmentedDenseFeatureVector(bool store_block_feature_map)
+      : SegmentedFeatureVector(store_block_feature_map) {}
+
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     (void)index;
     (void)value;
@@ -185,13 +231,24 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
       throw std::invalid_argument(ss.str());
     }
 
+    uint32_t index = _n_dense_added;
+    uint32_t concat_index = _values.size();
     _values.push_back(value);
     _n_dense_added++;
+
+    if (_store_block_feature_map) {
+      _block_feature_map.emplace(concat_index, BlockFeature(
+          /* block_idx= */ _n_segments_added - 1, /* feature_idx= */ index));
+    }
   }
 
   BoltVector toBoltVector() final {
     return BoltVector::makeDenseVector(_values);
   };
+
+  BlockFeatureMap getBlockFeatureMapImpl() final {
+    return _block_feature_map;
+  }
 
   void addFeatureSegment(uint32_t dim) final {
     if (_latest_segment_dim > _n_dense_added) {
@@ -208,6 +265,8 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
     _latest_segment_dim = dim;
     _n_dense_added = 0;
     _values.reserve(_values.size() + dim);
+
+    _n_segments_added++;
   }
 
  protected:
@@ -220,9 +279,11 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
   }
 
  private:
+  uint32_t _n_segments_added = 0;
   uint32_t _latest_segment_dim = 0;
   uint32_t _n_dense_added = 0;
   std::vector<float> _values;
+  BlockFeatureMap _block_feature_map;
 };
 
 }  // namespace thirdai::dataset

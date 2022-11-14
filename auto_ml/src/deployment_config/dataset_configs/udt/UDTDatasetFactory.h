@@ -554,7 +554,8 @@ using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 class UDTDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
  public:
   explicit UDTDatasetFactoryConfig(
-      HyperParameterPtr<UDTConfigPtr> config, HyperParameterPtr<bool> force_parallel,
+      HyperParameterPtr<UDTConfigPtr> config,
+      HyperParameterPtr<bool> force_parallel,
       HyperParameterPtr<uint32_t> text_pairgram_word_limit,
       HyperParameterPtr<bool> contextual_columns)
       : _config(std::move(config)),
