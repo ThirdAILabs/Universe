@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -51,6 +52,14 @@ class ModelPipeline {
                    std::optional<uint32_t> max_in_memory_batches) {
     uint32_t batch_size =
         batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
+    auto validation = train_config.getValidationContext();
+    if (validation && validation->validationFile()) {
+      auto [input_data, label_data] =
+          loadValidationDataFromFile(*validation->validationFile());
+      bolt::ValidationContext modified_validation_context =
+          validation->getModifiedValidationContext(input_data, label_data);
+      train_config.setValidationContext(modified_validation_context);
+    }
     trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
                       train_config, max_in_memory_batches);
   }
