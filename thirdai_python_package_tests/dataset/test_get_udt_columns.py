@@ -1,5 +1,6 @@
 import tempfile
 
+import pytest
 from thirdai.data import _CATEGORICAL_DELIMITERS, get_udt_col_types
 
 pytestmark = [pytest.mark.unit]
@@ -18,6 +19,8 @@ def test_get_udt_columns(delimiter):
         tmp.flush()
 
         udt_types = get_udt_col_types(tmp.name)
+
+        print(type(udt_types["col1"]))
 
         assert udt_types["col1"] == "categorical"
         assert udt_types["col2"] == "categorical"

@@ -1,12 +1,13 @@
 import pandas as pd
-import thirdai._thirdai.bolt
-from thirdai_thirdai.data import semantic_type_inference
+import thirdai._thirdai.bolt as bolt
+
+from .type_inference import semantic_type_inference
 
 
 def get_udt_col_types(filename, n_rows=1e6):
     column_types = semantic_type_inference(filename)
 
-    df = pd.read_csv(filename, n_rows=n_rows)
+    df = pd.read_csv(filename, nrows=n_rows)
 
     udt_column_types = {}
 
@@ -23,15 +24,15 @@ def get_udt_col_types(filename, n_rows=1e6):
             udt_column_types[col_name] = bolt.types.categorical(
                 delimiter=column_types[col_name]["delimiter"]
             )
-        elif col_type == "numeric":
+        elif col_type == "numerical":
             min_val = df[col_name].min()
             max_val = df[col_name].max()
             udt_column_types[col_name] = bolt.types.numerical(range=(min_val, max_val))
-        elif col_type == "timestamp":
+        elif col_type == "datetime":
             udt_column_types[col_name] = bolt.types.date()
         else:
             raise ValueError(
-                "Received invalid column type. Supports 'text', 'categorical', 'multi-categorical', 'numeric', and 'timestamp'."
+                f"Received invalid column type: {col_type}. Supports 'text', 'categorical', 'multi-categorical', 'numerical', and 'datetime'."
             )
 
     return udt_column_types
