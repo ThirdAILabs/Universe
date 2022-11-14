@@ -89,12 +89,13 @@ def make_simple_udt_model():
         parameters={
             "config": bolt.UDTConfig(
                 data_types={
-                    "userId": bolt.types.categorical(n_unique_classes=3),
-                    "movieId": bolt.types.categorical(n_unique_classes=3),
+                    "userId": bolt.types.categorical(),
+                    "movieId": bolt.types.categorical(),
                     "timestamp": bolt.types.date(),
                 },
                 temporal_tracking_relationships={"userId": ["movieId"]},
                 target="movieId",
+                n_target_classes=3,
             )
         },
     )

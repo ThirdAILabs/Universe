@@ -378,23 +378,16 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     auto col_num = column_number_map.at(_config->target);
     auto target_config = target_type.asCategorical();
-    if (!_config->n_target_classes && !target_config.n_unique_classes) {
-      throw std::invalid_argument(
-          "Number of target classes must be provided in either the data_types "
-          "map or the n_target_classes argument and cannot be 0.");
-    }
-    uint32_t n_target_classes = _config->n_target_classes.value_or(
-        target_config.n_unique_classes.value_or(0));
-
+    
     dataset::BlockPtr label_block;
     if (target_config.contiguous_numerical_ids) {
       label_block = dataset::NumericalCategoricalBlock::make(
-          /* col= */ col_num, /* n_classes= */ n_target_classes,
+          /* col= */ col_num, /* n_classes= */ _config->n_target_classes.value(),
           /* delimiter= */ target_config.delimiter);
     } else {
       if (!_vocabs.count(_config->target)) {
         _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
-            /* vocab_size= */ n_target_classes);
+            /* vocab_size= */ _config->n_target_classes.value());
       }
       label_block = dataset::StringLookupCategoricalBlock::make(
           /* col= */ col_num, /* vocab= */ _vocabs.at(_config->target),

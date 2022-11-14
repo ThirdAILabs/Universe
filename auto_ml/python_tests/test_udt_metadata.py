@@ -86,38 +86,34 @@ def make_trained_model_with_metadata(n_samples, metadata_src):
         key_column_name=KEY_COLUMN_NAME,
         data_types={
             "age": bolt.types.numerical(range=(17, 90)),
-            "workclass": bolt.types.categorical(n_unique_classes=9),
+            "workclass": bolt.types.categorical(),
             "fnlwgt": bolt.types.numerical(range=(12285, 1484705)),
-            "education": bolt.types.categorical(n_unique_classes=16),
-            "education-num": bolt.types.categorical(n_unique_classes=16),
-            "marital-status": bolt.types.categorical(n_unique_classes=7),
-            "occupation": bolt.types.categorical(n_unique_classes=15),
-            "relationship": bolt.types.categorical(n_unique_classes=6),
-            "race": bolt.types.categorical(n_unique_classes=5),
-            "sex": bolt.types.categorical(n_unique_classes=2),
+            "education": bolt.types.categorical(),
+            "education-num": bolt.types.categorical(),
+            "marital-status": bolt.types.categorical(),
+            "occupation": bolt.types.categorical(),
+            "relationship": bolt.types.categorical(),
+            "race": bolt.types.categorical(),
+            "sex": bolt.types.categorical(),
             "capital-gain": bolt.types.numerical(range=(0, 99999)),
             "capital-loss": bolt.types.numerical(range=(0, 4356)),
             "hours-per-week": bolt.types.numerical(range=(1, 99)),
-            "native-country": bolt.types.categorical(n_unique_classes=42),
+            "native-country": bolt.types.categorical(),
         },
         delimiter=DELIMITER,
     )
 
     if metadata_src == "user":
         data_types = {
-            USER_COLUMN_NAME: bolt.types.categorical(
-                n_unique_classes=n_samples, metadata=metadata
-            ),
-            LABEL_COLUMN_NAME: bolt.types.categorical(n_unique_classes=2),
+            USER_COLUMN_NAME: bolt.types.categorical(metadata=metadata),
+            LABEL_COLUMN_NAME: bolt.types.categorical(),
         }
         temporal = {}
     elif metadata_src == "item":
         data_types = {
-            USER_COLUMN_NAME: bolt.types.categorical(n_unique_classes=1),
-            ITEM_COLUMN_NAME: bolt.types.categorical(
-                n_unique_classes=n_samples, metadata=metadata
-            ),
-            LABEL_COLUMN_NAME: bolt.types.categorical(n_unique_classes=2),
+            USER_COLUMN_NAME: bolt.types.categorical(),
+            ITEM_COLUMN_NAME: bolt.types.categorical(metadata=metadata),
+            LABEL_COLUMN_NAME: bolt.types.categorical(),
             TS_COLUMN_NAME: bolt.types.date(),
         }
         temporal = {
@@ -134,7 +130,7 @@ def make_trained_model_with_metadata(n_samples, metadata_src):
         raise ValueError(metadata_src + " is not a valid metadata_src")
 
     model = bolt.UniversalDeepTransformer(
-        data_types, temporal_tracking_relationships=temporal, target="label"
+        data_types, temporal_tracking_relationships=temporal, target="label", n_target_classes=2
     )
 
     train_config = bolt.TrainConfig(epochs=3, learning_rate=0.01).with_metrics(

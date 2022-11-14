@@ -18,11 +18,12 @@ def train_udt_text_classification(download_clinc_dataset):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "category": bolt.types.categorical(
-                n_unique_classes=150, consecutive_integer_ids=True
+                consecutive_integer_ids=True
             ),
             "text": bolt.types.text(),
         },
         target="category",
+        n_target_classes=150,
     )
 
     train_filename, _, _ = download_clinc_dataset

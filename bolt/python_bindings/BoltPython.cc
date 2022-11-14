@@ -145,7 +145,6 @@ Args:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(
-                        n_unique_classes=5000, 
                         delimiter=' ',
                         metadata=bolt.types.metadata(
                             filename="user_meta.csv", 
@@ -160,7 +159,6 @@ Args:
 
   udt_types_submodule.def(
       "categorical", automl::deployment::DataType::categorical,
-      py::arg("n_unique_classes") = std::nullopt,
       py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
       py::arg("consecutive_integer_ids") = false,
       R"pbdoc(
@@ -169,9 +167,6 @@ Args:
     movie titles, or age groups.
 
     Args:
-        n_unique_classes (int): Optional. Number of unique categories in the column.
-            UDT throws an error if the column contains more than the 
-            specified number of unique values.
         delimiter (str): Optional. Defaults to None. A single character 
             (length-1 string) that separates multiple values in the same 
             column. This can only be used for the target column. If not 
@@ -189,7 +184,6 @@ Args:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(
-                        n_unique_classes=5000, 
                         delimiter=' ',
                         metadata=bolt.types.metadata(filename="user_meta.csv", data_types={"age": bolt.types.numerical()}, key_column_name="user_id")
                     )
@@ -297,10 +291,10 @@ Args:
         >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
         >>> model = deployment.UniversalDeepTransformer(
                 data_types={
-                    "product_id": bolt.types.categorical(n_unique_classes=5000),
+                    "product_id": bolt.types.categorical(),
                     "timestamp": bolt.types.date(),
-                    "ad_spend_level": bolt.types.categorical(n_unique_classes=5),
-                    "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                    "ad_spend_level": bolt.types.categorical(),
+                    "sales_performance": bolt.types.categorical(),
                 },
                 temporal_tracking_relationships={
                     "product_id": [
@@ -341,10 +335,10 @@ Args:
         >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
         >>> model = deployment.UniversalDeepTransformer(
                 data_types={
-                    "product_id": bolt.types.categorical(n_unique_classes=5000),
+                    "product_id": bolt.types.categorical(),
                     "timestamp": bolt.types.date(),
                     "ad_spend": bolt.types.numerical(range=(0, 10000)),
-                    "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                    "sales_performance": bolt.types.categorical(),
                 },
                 target="sales_performance"
                 time_granularity="weekly",

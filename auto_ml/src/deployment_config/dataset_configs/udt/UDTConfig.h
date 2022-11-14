@@ -20,7 +20,7 @@ struct UDTConfig {
 
   /**
    * data_types: mapping from column names (strings) to DataType objects,
-   *   e.g. {"user_id_column": types.categorical(n_unique_classes=5)}
+   *   e.g. {"user_id_column": types.categorical()}
    *
    * temporal_tracking_relationships: mapping from column names (strings) to
    *   a list of other columns can be tracked against it (either strings or
@@ -34,6 +34,8 @@ struct UDTConfig {
    *   configuration will be autotuned.
    *
    * target: column name of target variable.
+   * 
+   * n_target_classes: number of target classes.
    *
    * time_granularity: Either "daily"/"d", "weekly"/"w", "biweekly"/"b",
    *   or `"monthly"`/`"m"`. Interval of time that we are interested in.
