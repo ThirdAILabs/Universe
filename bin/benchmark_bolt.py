@@ -33,6 +33,14 @@ def main():
     universe_dir = Path(__file__).resolve().parent.parent
     # Exit code is the number of benchmarking tasks that failed
     exit_code = 0
+    try:
+        print(os.environ["MLFLOW_TRACKING_USERNAME"])
+    except:
+        print("username not found")
+    try:
+        print(os.environ["MLFLOW_TRACKING_PASSWORD"])
+    except:
+        print("password not found")
     for config in args.configs:
         p = Path(config)
         run_name = f"{prefix}_{p.stem}_{cur_date}"
