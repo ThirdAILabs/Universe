@@ -255,7 +255,7 @@ pybind11::detail::initimpl::pickle_factory<
       });
 }
 
-using OutputRedirect = py::call_guard<py::scoped_ostream_redirect,
-                     py::scoped_estream_redirect>;
+using OutputRedirect =
+    py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>;
 
 }  // namespace thirdai::bolt::python
