@@ -25,6 +25,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                         std::vector<std::shared_ptr<Block>> label_blocks,
                         bool has_header = false, char delimiter = ',',
                         bool parallel = true,
+                        /*
+                          If hash_range has a value, then features from different blocks
+                          will be aggregated by hashing them to the same range but with
+                          different hash salts. Otherwise, the features will be treated 
+                          as sparse vectors, which are then concatenated.
+                        */
                         std::optional<uint32_t> hash_range = std::nullopt)
       : _expects_header(has_header),
         _delimiter(delimiter),
