@@ -2,8 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 import thirdai._thirdai.data
 from thirdai._thirdai.data import *
+import thirdai._thirdai.bolt
 
 
 class ColumnMapGenerator(ABC):
@@ -49,6 +51,36 @@ def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
             )
 
     return ColumnMap(column_map)
+
+
+def get_metadata(filename, n_rows=1e6):
+    column_types = infer_types(filename)
+
+    df = pd.read_csv(filename, n_rows=n_rows)
+
+    udt_column_types = {}
+
+    for col_name in df.columns:
+        if col_name not in column_types:
+            raise ValueError("Dataframe contains columns not in column_type map.")
+        col_type = column_types[col_name]
+
+        if col_type == "text":
+            udt_column_types[col_name] = bolt.types.text()
+        elif col_type == "categorical":
+            udt_column_types[col_name] = bolt.types.categorical()
+        elif col_type == "multicategorical":
+            udt_column_types[col_name] = bolt.types.text()
+        elif col_type == "numeric":
+            min_val = df[col_name].min()
+            max_val = df[col_name].max()
+            udt_column_types[col_name] = bolt.types.numerical(range=(min_val, max_val))
+        elif col_type == "timestamp":
+            udt_column_types[col_name] = bolt.types.date()
+        else:
+            raise ValueError("Received invalid column type. Supports 'text', 'categorical', 'multicategorical', 'numeric', and 'timestamp'.")
+    
+    return udt_column_types
 
 
 __all__ = ["ColumnMapGenerator", "pandas_to_columnmap"]
