@@ -379,7 +379,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     auto col_num = column_number_map.at(_config->target);
     auto target_config = target_type.asCategorical();
-    
+
     dataset::BlockPtr label_block;
     if (target_config.contiguous_numerical_ids) {
       label_block = dataset::NumericalCategoricalBlock::make(

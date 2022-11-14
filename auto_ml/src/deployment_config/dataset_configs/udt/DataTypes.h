@@ -44,8 +44,7 @@ struct CategoricalDataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(delimiter, metadata_config,
-            contiguous_numerical_ids);
+    archive(delimiter, metadata_config, contiguous_numerical_ids);
   }
 };
 
@@ -113,12 +112,10 @@ class DataType {
  public:
   DataType() : _value(NoneDataType()) {}
 
-  static auto categorical(
-      std::optional<char> delimiter = std::nullopt,
-      CategoricalMetadataConfigPtr metadata = nullptr,
-      bool contiguous_numerical_ids = false) {
-    return DataType(CategoricalDataType(delimiter,
-                                        std::move(metadata),
+  static auto categorical(std::optional<char> delimiter = std::nullopt,
+                          CategoricalMetadataConfigPtr metadata = nullptr,
+                          bool contiguous_numerical_ids = false) {
+    return DataType(CategoricalDataType(delimiter, std::move(metadata),
                                         contiguous_numerical_ids));
   }
 

@@ -130,7 +130,10 @@ def make_trained_model_with_metadata(n_samples, metadata_src):
         raise ValueError(metadata_src + " is not a valid metadata_src")
 
     model = bolt.UniversalDeepTransformer(
-        data_types, temporal_tracking_relationships=temporal, target="label", n_target_classes=2
+        data_types,
+        temporal_tracking_relationships=temporal,
+        target="label",
+        n_target_classes=2,
     )
 
     train_config = bolt.TrainConfig(epochs=3, learning_rate=0.01).with_metrics(

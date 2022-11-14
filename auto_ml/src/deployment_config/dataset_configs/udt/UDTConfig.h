@@ -33,7 +33,7 @@ struct UDTConfig {
    *   configuration will be autotuned.
    *
    * target: column name of target variable.
-   * 
+   *
    * n_target_classes: number of target classes.
    *
    * time_granularity: Either "daily"/"d", "weekly"/"w", "biweekly"/"b",
@@ -51,8 +51,7 @@ struct UDTConfig {
    */
   UDTConfig(ColumnDataTypes data_types,
             UserProvidedTemporalRelationships temporal_tracking_relationships,
-            std::string target,
-            uint32_t n_target_classes,
+            std::string target, uint32_t n_target_classes,
             std::string time_granularity = "d", uint32_t lookahead = 0,
             char delimiter = ',')
       : data_types(std::move(data_types)),
