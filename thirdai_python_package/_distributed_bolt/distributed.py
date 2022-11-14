@@ -129,9 +129,6 @@ class RayTrainingClusterConfig:
         ]
 
 
-
-
-
 class DistributedDataParallel:
     """
     This class implements the public facing APIs for a distributed data parallel

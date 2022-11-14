@@ -1,9 +1,9 @@
 import os
+from typing import List, Union
 
 import ray
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 
-from typing import List, Union
 from .utils import RayBlockWritePathProvider, get_placement_group
 
 
@@ -29,6 +29,7 @@ def ray_read_dataset(
             "or numpy"
         )
     return ray_dataset
+
 
 def create_data_transfer_workers(
     dataset_type,
@@ -77,11 +78,14 @@ def create_data_transfer_workers(
     # free up most number of CPUs for parallel read if required.
     workers = [
         DataTransferActor.options(
-            scheduling_strategy=PlacementGroupSchedulingStrategy(placement_group=get_placement_group(1, num_workers, "STRICT_SPREAD"))
+            scheduling_strategy=PlacementGroupSchedulingStrategy(
+                placement_group=get_placement_group(1, num_workers, "STRICT_SPREAD")
+            )
         ).remote(dataset_type, save_location)
         for i in range(num_workers)
     ]
     return workers
+
 
 def data_parallel_ingest(
     paths: Union[str, List[str]],
@@ -90,7 +94,6 @@ def data_parallel_ingest(
     save_location: str = "/tmp/thirdai/",
     remote_file_system=None,
     parallelism: int = 1,
-    
 ):
     """
     Reads the training data, splits it and save the data in the save location
@@ -135,11 +138,9 @@ def data_parallel_ingest(
 
     """
 
-    ray_dataset = ray_read_dataset(
-        dataset_type, paths, remote_file_system, parallelism
-    )
+    ray_dataset = ray_read_dataset(dataset_type, paths, remote_file_system, parallelism)
 
-    workers =  create_data_transfer_workers(dataset_type, save_location, num_workers)
+    workers = create_data_transfer_workers(dataset_type, save_location, num_workers)
 
     ray_data_shards = ray_dataset.split(
         n=num_workers, equal=True, locality_hints=workers
