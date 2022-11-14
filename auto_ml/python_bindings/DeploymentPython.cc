@@ -270,8 +270,8 @@ void defineModelPipeline(py::module_& models_submodule) {
 }
 
 void defineUDTFactory(py::module_& bolt_submodule) {
-  py::class_<UDTBase, std::shared_ptr<UDTBase>>(bolt_submodule,
-                                                "UniversalDeepTransformer")
+  py::class_<UDTBase, std::shared_ptr<UDTBase>>(
+      bolt_submodule, "UniversalDeepTransformer", docs::UDT_CLASS)
       .def(
           "__new__",
           [](py::object& obj, ColumnDataTypes data_types,
@@ -324,8 +324,8 @@ void defineUDTFactory(py::module_& bolt_submodule) {
                 "Invalid Model Type: Supported Models include udt_generator "
                 "and udt_classifier");
           },
-          py::arg("filename"), py::arg("model_type"), docs::UDT_LOAD,
-          docs::UDT_GENERATOR_LOAD);
+          py::arg("filename"), py::arg("model_type"),
+          docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
 
 void defineUDTClassifierAndGenerator(py::module_& models_submodule) {
@@ -337,9 +337,10 @@ void defineUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            docs::ORACLE_CONFIG_INIT);
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<UniversalDeepTransformer,
              std::shared_ptr<UniversalDeepTransformer>, UDTBase>(
-      models_submodule, "UDTClassifier", docs::UDT_CLASS)
+      models_submodule, "UDTClassifier")
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
@@ -428,9 +429,11 @@ void defineUDTClassifierAndGenerator(py::module_& models_submodule) {
           py::arg("input_queries"), py::arg("top_k") = 5,
           docs::UDT_GENERATOR_PREDICT_BATCH)
       .def_static("load", &UDTQueryCandidateGenerator::load,
-                  py::arg("filename"), docs::UDT_GENERATOR_LOAD)
+                  py::arg("filename"))
       .def("save", &UDTQueryCandidateGenerator::save, py::arg("filename"),
            docs::UDT_GENERATOR_SAVE);
+
+#endif
 }
 
 template <typename T>

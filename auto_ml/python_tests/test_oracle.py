@@ -84,10 +84,10 @@ def make_simple_udt_model():
         ],
     )
 
-    model = bolt.Pipeline(
+    model = bolt.models.Pipeline(
         config_path=CONFIG_FILE,
         parameters={
-            "config": bolt.UDTConfig(
+            "config": bolt.models.UDTConfig(
                 data_types={
                     "userId": bolt.types.categorical(n_unique_classes=3),
                     "movieId": bolt.types.categorical(n_unique_classes=3),
@@ -109,7 +109,7 @@ def test_udt_save_load():
     model.train(TRAIN_FILE, train_config, batch_size=2048)
     model.save("saveLoc")
     before_load_output = model.evaluate(TEST_FILE)
-    model = bolt.Pipeline.load("saveLoc")
+    model = bolt.models.Pipeline.load("saveLoc")
     after_load_output = model.evaluate(TEST_FILE)
 
     assert (before_load_output == after_load_output).all()
@@ -166,7 +166,7 @@ def test_context_serialization():
     model.train(TRAIN_FILE, train_config, batch_size=2048)
 
     model.save("saveLoc")
-    saved_model = bolt.Pipeline.load("saveLoc")
+    saved_model = bolt.models.Pipeline.load("saveLoc")
     saved_context = saved_model.get_data_processor()
 
     sample = "0,,2022-08-31"

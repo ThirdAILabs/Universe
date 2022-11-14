@@ -3,13 +3,19 @@
 namespace thirdai::automl::deployment::python::docs {
 
 const char* const UDT_CLASS = R"pbdoc(
-UniversalDeepTransformer (UDT) An all-purpose classifier for tabular datasets. 
-In addition to learning from the columns of a single row, UDT can make use of 
-"temporal context". For example, if used to build a movie recommender, UDT may 
-use information about the last 5 movies that a user has watched to recommend the 
-next movie. Similarly, if used to forecast the outcome of marketing campaigns, 
+UniversalDeepTransformer (UDT) An all-purpose classifier for tabular datasets and 
+generator model for performing query reformulation. 
+In addition to learning from the columns of a single row, the UDT classifier can
+make use of "temporal context". For example, if used to build a movie recommender,
+UDT may use information about the last 5 movies that a user has watched to recommend
+the next movie. Similarly, if used to forecast the outcome of marketing campaigns, 
 UDT may use several months' worth of campaign history for each product to make 
 better forecasts.
+
+In addition to exposing a classifier model for tabular data, UDT exposes a generator
+model for query reformulation tasks. For instance, given a dataset with consisting of
+queries that have spelling mistakes, UDT can be used to generate relevant reformulations
+with the correct spelling. 
 )pbdoc";
 
 const char* const UDT_INIT = R"pbdoc(
@@ -690,20 +696,20 @@ Example:
     >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
 )pbdoc";
 
-const char* const UDT_GENERATOR_LOAD = R"pbdoc(
+const char* const UDT_CLASSIFIER_AND_GENERATOR_LOAD = R"pbdoc(
 Loads a serialized instance of a UniversalDeepTransformer (UDT) model from a 
 file on disk. 
 
 Args:
     filename (str): The file on disk from where to load an instance of UDT.
-    query_reformulation (bool): Flag indicating if the serialized model is
-        specific for query reformulation. By default this is set to False.
+    model_type (str): Type of UDT model to load from serialized file. Options
+        include "udt_classifier" and "udt_generator"
 Returns:
     UniversalDeepTransformer:
     The loaded instance of UDT
 
 Note:
-    - If query_reformulation is set to True, the underlying assumption will
+    - If mode_type is set to "udt_generator", the underlying assumption will
     be that the pre-serialized model was query reformulation specific. 
     Otherwise, attempting to load the incorrect model will throw an error.
 
@@ -711,7 +717,7 @@ Example:
     >>> model = bolt.UniversalDeepTransformer(...)
     >>> model = bolt.UniversalDeepTransformer.load(
             "udt_savefile.bolt", 
-            query_reformulation=True
+            model_type="udt_classifier"
         )
 )pbdoc";
 

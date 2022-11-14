@@ -19,6 +19,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <search/src/Flash.h>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -39,7 +40,9 @@ class QueryCandidateGeneratorConfig {
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
       std::optional<uint32_t> reservoir_size = std::nullopt,
       uint32_t source_column_index = 0, uint32_t target_column_index = 0,
-      bool has_incorrect_queries = false, uint32_t batch_size = 10000)
+      bool has_incorrect_queries = false,
+      uint32_t default_text_encoding_dim = std::numeric_limits<uint32_t>::max(),
+      uint32_t batch_size = 10000)
       : _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
         _batch_size(batch_size),
@@ -48,7 +51,8 @@ class QueryCandidateGeneratorConfig {
         _has_incorrect_queries(has_incorrect_queries),
         _reservoir_size(reservoir_size),
         _source_column_index(source_column_index),
-        _target_column_index(target_column_index) {
+        _target_column_index(target_column_index),
+        _default_text_encoding_dim(default_text_encoding_dim) {
     _hash_function = getHashFunction(
         /* hash_function = */ thirdai::utils::lower(hash_function));
   }
@@ -97,6 +101,10 @@ class QueryCandidateGeneratorConfig {
 
   constexpr uint32_t targetColumnIndex() const { return _target_column_index; }
 
+  constexpr uint32_t defaultTextEncodingDim() const {
+    return _default_text_encoding_dim;
+  }
+
   std::shared_ptr<hashing::HashFunction> hashFunction() const {
     return _hash_function;
   }
@@ -134,6 +142,7 @@ class QueryCandidateGeneratorConfig {
 
   uint32_t _source_column_index;
   uint32_t _target_column_index;
+  uint32_t _default_text_encoding_dim;
 
   // Private constructor for cereal
   QueryCandidateGeneratorConfig() {}
@@ -311,7 +320,7 @@ class QueryCandidateGenerator {
       QueryCandidateGeneratorConfigPtr query_candidate_generator_config)
       : _query_generator_config(std::move(query_candidate_generator_config)),
         _dimension_for_encodings(
-            dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
+            _query_generator_config->defaultTextEncodingDim()) {
     std::vector<dataset::BlockPtr> training_input_blocks;
 
     if (_query_generator_config->hasIncorrectQueries()) {

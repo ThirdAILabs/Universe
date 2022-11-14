@@ -128,7 +128,6 @@ def test_udt_generator_load_save(prepared_datasets):
     )
 
     eval_outputs = model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
-    print(f"type of model = {type(deserialized_model)}")
     deserialized_model_eval_outputs = deserialized_model.evaluate(
         filename=TRAIN_FILE_PATH, top_k=5
     )

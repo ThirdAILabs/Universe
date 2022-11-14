@@ -369,9 +369,6 @@ Args:
 void createModelsSubmodule(py::module_& bolt_submodule) {
   auto models_submodule = bolt_submodule.def_submodule("models");
 
-  //   py::class_<UDT>(UDT)
-  //     .def("__new__", &UDT)
-
 #if THIRDAI_EXPOSE_ALL
   py::class_<bolt::QueryCandidateGeneratorConfig,
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
@@ -442,8 +439,6 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
             QueryCandidateGeneratorConfig:
 
             )pbdoc");
-
-#endif
 
   py::class_<bolt::QueryCandidateGenerator,
              std::shared_ptr<bolt::QueryCandidateGenerator>>(models_submodule,
@@ -567,5 +562,7 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
         >>> candidate_queries = generator.evaluate(file_name="eval_file")
            )pbdoc");
 }
+
+#endif
 
 }  // namespace thirdai::bolt::python
