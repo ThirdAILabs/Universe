@@ -21,9 +21,9 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         TRAIN_FILE,
         [
             "userId,movieId,timestamp,hoursWatched",
-            "0,0,2022-08-29,2",
-            "1,0,2022-08-30,2",
-            "1,1,2022-08-31,1",
+            "0,0,2022-08-29,2,fiction-comedy-drama",
+            "1,0,2022-08-30,2,fiction-romance",
+            "1,1,2022-08-31,1,romance-comedy",
             # if integer_label = false, we build a model that accepts
             # arbitrary string labels; the model does not expect integer
             # labels in the range [0, n_labels - 1]. We test this by
@@ -31,17 +31,17 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
             # a label outside of this range. Since n_labels = 3, we set
             # movieId = 4 in the last sample and expect that the model
             # trains just fine.
-            ("1,2,2022-09-01,3" if integer_label else "1,4,2022-09-01,3"),
+            ("1,2,2022-09-01,3,fiction-comedy" if integer_label else "1,4,2022-09-01,3,fiction-comedy"),
         ],
     )
 
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,timestamp,hoursWatched",
-            "0,1,2022-08-31,5",
+            "userId,movieId,timestamp,hoursWatched,genres",
+            "0,1,2022-08-31,5,fiction-drama",
             # See above comment about the last line of the mock train file.
-            ("1,0,2022-09-01,0.5" if integer_label else "4,0,2022-09-01,0.5"),
+            ("1,0,2022-09-01,0.5,fiction-comedy" if integer_label else "4,0,2022-09-01,0.5,fiction-comedy"),
         ],
     )
 
@@ -91,6 +91,7 @@ def single_update():
         "movieId": "1",
         "timestamp": "2022-08-31",
         "hoursWatched": "1",
+        "genres": "fiction-drama",
     }
 
 
@@ -240,18 +241,18 @@ def test_works_without_temporal_relationships():
     write_lines_to_file(
         TRAIN_FILE,
         [
-            "userId,movieId,hoursWatched",
-            "0,0,2",
-            "1,0,3",
+            "userId,movieId,hoursWatched,genres",
+            "0,0,2,fiction-drama",
+            "1,0,3,fiction-comedy",
         ],
     )
 
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,hoursWatched",
-            "0,1,5",
-            "2,0,0.5",
+            "userId,movieId,hoursWatched,genres",
+            "0,1,5,fiction-drama",
+            "2,0,0.5,fiction-comedy",
         ],
     )
 
@@ -260,6 +261,7 @@ def test_works_without_temporal_relationships():
             "userId": bolt.types.categorical(),
             "movieId": bolt.types.categorical(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
+            "genres": bolt.types.categorical(delimiter="-"),
         },
         target="movieId",
         n_target_classes=3,
