@@ -11,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -91,13 +92,36 @@ class ValidationContext {
       uint32_t frequency, std::string save_best_per_metric = "")
       : _data(std::move(validation_data)),
         _labels(std::move(validation_labels)),
+        _validation_file(std::nullopt),
+        _config(std::move(eval_config)),
+        _frequency(frequency),
+        _save_best_per_metric(std::move(save_best_per_metric)) {}
+  ValidationContext(const std::string& validation_file, EvalConfig eval_config,
+                    uint32_t frequency, std::string save_best_per_metric = "")
+      : _data(std::nullopt),
+        _labels(std::nullopt),
+        _validation_file(validation_file),
         _config(std::move(eval_config)),
         _frequency(frequency),
         _save_best_per_metric(std::move(save_best_per_metric)) {}
 
-  const std::vector<dataset::BoltDatasetPtr>& data() const { return _data; }
+  const std::optional<std::vector<dataset::BoltDatasetPtr>>& data() const {
+    return _data;
+  }
 
-  const dataset::BoltDatasetPtr& labels() const { return _labels; }
+  const std::optional<dataset::BoltDatasetPtr>& labels() const {
+    return _labels;
+  }
+
+  std::optional<std::string> validationFile() const { return _validation_file; }
+
+  ValidationContext getModifiedValidationContext(
+      std::vector<dataset::BoltDatasetPtr> data,
+      dataset::BoltDatasetPtr labels) {
+    _data = data;
+    _labels = labels;
+    return *this;
+  }
 
   const EvalConfig& config() const { return _config; }
 
@@ -109,8 +133,9 @@ class ValidationContext {
   }
 
  private:
-  std::vector<dataset::BoltDatasetPtr> _data;
-  dataset::BoltDatasetPtr _labels;
+  std::optional<std::vector<dataset::BoltDatasetPtr>> _data;
+  std::optional<dataset::BoltDatasetPtr> _labels;
+  std::optional<std::string> _validation_file;
   EvalConfig _config;
   uint32_t _frequency;
 
@@ -164,6 +189,16 @@ class TrainConfig {
     _validation_context = ValidationContext(
         validation_data, validation_labels, eval_config, validation_frequency,
         std::move(validation_save_best_per_metric));
+    return *this;
+  }
+
+  TrainConfig& withValidationFile(
+      const std::string& filename, const EvalConfig& eval_config,
+      uint32_t validation_frequency = 0,
+      std::string validation_save_best_per_metric = "") {
+    _validation_context =
+        ValidationContext(filename, eval_config, validation_frequency,
+                          std::move(validation_save_best_per_metric));
     return *this;
   }
 
@@ -262,6 +297,10 @@ class TrainConfig {
   uint32_t logLossFrequency() const { return _log_loss_frequency; }
 
   void setEpochs(uint32_t new_epochs) { _epochs = new_epochs; }
+
+  void setValidationContext(ValidationContext validation_context) {
+    _validation_context = validation_context;
+  }
 
   const std::optional<SaveContext>& saveContext() const {
     return _save_context;
