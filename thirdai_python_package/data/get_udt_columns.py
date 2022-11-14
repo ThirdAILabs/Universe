@@ -20,7 +20,9 @@ def get_udt_col_types(filename, n_rows=1e6):
         elif col_type == "categorical":
             udt_column_types[col_name] = bolt.types.categorical()
         elif col_type == "multi-categorical":
-            udt_column_types[col_name] = bolt.types.categorical(delimiter=column_types[col_name]["delimiter"])
+            udt_column_types[col_name] = bolt.types.categorical(
+                delimiter=column_types[col_name]["delimiter"]
+            )
         elif col_type == "numeric":
             min_val = df[col_name].min()
             max_val = df[col_name].max()
@@ -28,6 +30,8 @@ def get_udt_col_types(filename, n_rows=1e6):
         elif col_type == "timestamp":
             udt_column_types[col_name] = bolt.types.date()
         else:
-            raise ValueError("Received invalid column type. Supports 'text', 'categorical', 'multi-categorical', 'numeric', and 'timestamp'.")
-    
+            raise ValueError(
+                "Received invalid column type. Supports 'text', 'categorical', 'multi-categorical', 'numeric', and 'timestamp'."
+            )
+
     return udt_column_types

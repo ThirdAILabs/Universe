@@ -1,7 +1,9 @@
 import tempfile
+
 from thirdai.data import _CATEGORICAL_DELIMITERS, get_udt_col_types
 
 pytestmark = [pytest.mark.unit]
+
 
 @pytest.mark.parametrize("delimiter", _CATEGORICAL_DELIMITERS)
 def test_get_udt_columns(delimiter):
@@ -20,7 +22,8 @@ def test_get_udt_columns(delimiter):
         assert udt_types["col1"] == "categorical"
         assert udt_types["col2"] == "categorical"
         assert udt_types["col3"] == "numerical"
+        assert udt_types["col3"].range == (3, 9)
         assert udt_types["col4"] == "multi-categorical"
-        assert udt_types["col4"]["delimiter"] == delimiter
+        assert udt_types["col4"].delimiter == delimiter
         assert udt_types["col5"] == "text"
         assert udt_types["col6"] == "datetime"
