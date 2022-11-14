@@ -118,12 +118,12 @@ class UniGramTextBlock final : public TextBlock {
  public:
   explicit UniGramTextBlock(
       uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
-      std::optional<char> delimiter = std::nullopt)
+      char delimiter = ' ')
       : TextBlock(col, dim), _delimiter(delimiter) {}
 
   static auto make(uint32_t col,
                    uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
-                   std::optional<char> delimiter = std::nullopt) {
+                   char delimiter = ' ') {
     return std::make_shared<UniGramTextBlock>(col, dim, delimiter);
   }
 
@@ -138,7 +138,7 @@ class UniGramTextBlock final : public TextBlock {
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigrams =
-        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
+        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim, _delimiter);
 
     TextEncodingUtils::sumRepeatedIndices(
         unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
@@ -152,12 +152,12 @@ class UniGramTextBlock final : public TextBlock {
   // Private constructor for cereal.
   UniGramTextBlock() {}
 
-  std::optional<char> _delimiter = std::nullopt;
+  char _delimiter = ' ';
 
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<TextBlock>(this));
+    archive(cereal::base_class<TextBlock>(this), _delimiter);
   }
 };
 

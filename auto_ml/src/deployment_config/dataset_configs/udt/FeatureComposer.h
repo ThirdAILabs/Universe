@@ -99,7 +99,7 @@ class FeatureComposer {
         if (categorical.delimiter) {
           blocks.push_back(dataset::UniGramTextBlock::make(
               col_num, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
-              categorical.delimiter));
+              *categorical.delimiter));
         } else {
           tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
         }
