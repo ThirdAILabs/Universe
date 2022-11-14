@@ -3,6 +3,8 @@ import tempfile
 import pytest
 from thirdai.data import _CATEGORICAL_DELIMITERS, semantic_type_inference
 
+pytestmark = [pytest.mark.unit]
+
 
 @pytest.mark.parametrize("delimiter", _CATEGORICAL_DELIMITERS)
 def test_basic_type_inference(delimiter):
