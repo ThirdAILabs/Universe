@@ -27,6 +27,7 @@ To get access to our package, refer to `thirdai.com
    thirdaiboltcallbacks
 
    thirdaidataset
+   thirdaidata
 
    thirdailog
    

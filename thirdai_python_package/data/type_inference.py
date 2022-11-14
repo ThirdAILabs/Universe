@@ -78,23 +78,31 @@ def _infer_col_type(column: pd.Series) -> Dict[str, str]:
     return {"type": "categorical"}
 
 
-# Tries to parse the given filename as a csv and then infer the type of each
-# column. The returned dictionary is a map from column name to a metadata
-# dictionary. One of the items in the metadata dictionary will be {"type": X},
-# where X is one of ["categorical", "multi-categorical", "datetime", "numerical", "text"].
-# Types that are "multi-categorical" will have an additional item in the dictionary
-# specifying the estimate delimiter. Refer to the infer_types_test.py files for
-# full examples with expected inputs and outputs.
 def semantic_type_inference(
     filename: str, nrows: int = 100, min_rows_allowed: int = 3
 ) -> Dict[str, Dict[str, str]]:
+    """Tries to parse the given filename as a csv and then infer the type of each
+    column.
 
-    print(f"Reading first {nrows} lines of file {filename}:")
-    with open(filename) as file:
-        for i, line in enumerate(file):
-            if i == nrows:
-                break
-            print(line.strip())
+    Args:
+        filename: The filename to use for type inference. The file should be
+            a CSV with no extra whitespace between items.
+
+        nrows: The number of rows of the file to use to infer column types. If
+            the file has less than nrows number of rows, all rows will be used.
+
+        min_rows_allowed: The minimum number of rows we allow for inferring
+            types. If we find less than min_rows_allowed rows, we will throw a
+            ValueError.
+
+    Returns:
+        A map from column name to a metadata dictionary. One of the items in the
+        metadata dictionary will be {"type": X}, where X is one of ["categorical",
+        "multi-categorical", "datetime", "numerical", "text"]. Types that are
+        "multi-categorical" will have an additional item in the dictionary
+        specifying the estimate delimiter. Refer to the infer_types_test.py files
+        for full examples with expected inputs and outputs.
+    """
 
     df = pd.read_csv(filename, nrows=nrows)
     if len(df) < min_rows_allowed:
