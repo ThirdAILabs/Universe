@@ -86,7 +86,7 @@ class TrainStateManager:
                 for worker in self.workers
             ]
         )
-    
+
     def run_circular_communication(self):
         """
         This function first call the workers to compute the gradients on their network
@@ -95,7 +95,6 @@ class TrainStateManager:
         https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
         """
 
-       
         num_workers = len(self.workers)
 
         # TODO(Pratik): Clean up this function. It is unclear what update_id
@@ -117,7 +116,6 @@ class TrainStateManager:
                     ]
                 )
                 update_id -= 1
-    
 
     def train_batch(self, epoch):
         """
