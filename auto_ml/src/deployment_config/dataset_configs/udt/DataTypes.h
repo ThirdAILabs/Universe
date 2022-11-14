@@ -28,15 +28,12 @@ using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
 
 struct CategoricalDataType {
   explicit CategoricalDataType(std::optional<char> delimiter,
-                               CategoricalMetadataConfigPtr metadata,
-                               bool contiguous_numerical_ids)
+                               CategoricalMetadataConfigPtr metadata)
       : delimiter(delimiter),
-        metadata_config(std::move(metadata)),
-        contiguous_numerical_ids(contiguous_numerical_ids) {}
+        metadata_config(std::move(metadata)) {}
 
   std::optional<char> delimiter;
   CategoricalMetadataConfigPtr metadata_config;
-  bool contiguous_numerical_ids;
 
   CategoricalDataType() {}
 
@@ -44,7 +41,7 @@ struct CategoricalDataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(delimiter, metadata_config, contiguous_numerical_ids);
+    archive(delimiter, metadata_config);
   }
 };
 
@@ -113,10 +110,8 @@ class DataType {
   DataType() : _value(NoneDataType()) {}
 
   static auto categorical(std::optional<char> delimiter = std::nullopt,
-                          CategoricalMetadataConfigPtr metadata = nullptr,
-                          bool contiguous_numerical_ids = false) {
-    return DataType(CategoricalDataType(delimiter, std::move(metadata),
-                                        contiguous_numerical_ids));
+                          CategoricalMetadataConfigPtr metadata = nullptr) {
+    return DataType(CategoricalDataType(delimiter, std::move(metadata)));
   }
 
   static auto text(std::optional<uint32_t> average_n_words = std::nullopt,

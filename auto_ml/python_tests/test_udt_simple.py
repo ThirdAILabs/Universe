@@ -59,7 +59,6 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         data_types={
             "userId": bolt.types.categorical(metadata=metadata),
             "movieId": bolt.types.categorical(
-                consecutive_integer_ids=integer_label,
                 metadata=metadata,
             ),
             "timestamp": bolt.types.date(),
@@ -68,6 +67,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
         n_target_classes=3,
+        integer_target=integer_label,
         options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
     )
 
