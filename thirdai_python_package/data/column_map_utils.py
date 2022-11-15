@@ -37,9 +37,7 @@ def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
             column_map[column_name] = columns.DenseFeatureColumn(array=column_np)
         elif np.issubdtype(column_np.dtype, np.integer):
             dim = int_col_dims[column_name] if column_name in int_col_dims else None
-            column_map[column_name] = columns.TokenColumn(
-                array=column_np, dim=dim
-            )
+            column_map[column_name] = columns.TokenColumn(array=column_np, dim=dim)
         elif _is_string_column(column_np):
             column_map[column_name] = columns.StringColumn(values=column_np)
         else:
