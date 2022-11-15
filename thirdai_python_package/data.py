@@ -42,7 +42,7 @@ def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
                 array=column_np, dim=dim
             )
         elif _is_string_column(column_np):
-            column_map[column_name] = columns.StringColumn(array=column_np)
+            column_map[column_name] = columns.StringColumn(values=column_np)
         else:
             raise ValueError(
                 f"All columns must be either an integer, float, or string type, but column {column_name} was none of these types."
