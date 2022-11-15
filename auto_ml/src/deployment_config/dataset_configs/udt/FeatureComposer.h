@@ -94,7 +94,7 @@ class FeatureComposer {
         // if part of metadata
         if (vectors_map.count(col_name) && categorical.metadata_config) {
           blocks.push_back(dataset::MetadataCategoricalBlock::make(
-              col_num, vectors_map.at(col_name)));
+              col_num, vectors_map.at(col_name), categorical.delimiter));
         }
         if (categorical.delimiter) {
           blocks.push_back(dataset::UniGramTextBlock::make(
