@@ -22,14 +22,6 @@ def read_csv_file(file_name: str) -> List[List[str]]:
         data = list(csv.reader(file))
 
     return data
-    # new_dataset = []
-    # for row in data:
-    #     new_row = []
-    #     for string in row:
-    #         string = string.replace(",", "")
-    #         new_row.append(string)
-    #     new_dataset.append(new_row)
-    # return new_dataset
 
 
 def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
@@ -162,21 +154,16 @@ def test_udt_generator(prepared_datasets):
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
 
 
-# @pytest.mark.filterwarnings("ignore")
-# def test_udt_generator_load_save(prepared_datasets):
-#     model = train_udt_query_reformulation_model()
-#     model.save(MODEL_PATH)
+@pytest.mark.filterwarnings("ignore")
+def test_udt_generator_load_save(prepared_datasets):
+    model = train_udt_query_reformulation_model()
+    model.save(MODEL_PATH)
 
-#     deserialized_model = bolt.UniversalDeepTransformer.load(
-#         MODEL_PATH, model_type="generator"
-#     )
-
-#     eval_outputs = model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
-#     deserialized_model_eval_outputs = deserialized_model.evaluate(
-#         filename=TRAIN_FILE_PATH, top_k=5
-#     )
-
-#     for index in range(len(eval_outputs)):
-#         assert eval_outputs[index] == deserialized_model_eval_outputs[index]
-
-#     delete_created_files()
+    deserialized_model = bolt.UniversalDeepTransformer.load(
+        MODEL_PATH, model_type="generator"
+    )
+    eval_outputs = model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
+    deserialized_model_eval_outputs = deserialized_model.evaluate(
+        filename=TRAIN_FILE_PATH, top_k=5
+    )
+    delete_created_files()

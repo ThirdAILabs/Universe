@@ -114,7 +114,7 @@ class QueryCandidateGeneratorConfig {
         /* hashes_per_table = */ 5,
         /* range = */ 100000,
         /* n_grams = */ {3, 4},
-        /* reservoir_size */ std::nullopt,
+        /* reservoir_size */ 100000,
         /* source_column_index = */ source_column_index,
         /* target_column_index = */ target_column_index);
 
