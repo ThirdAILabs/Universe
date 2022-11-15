@@ -20,8 +20,6 @@ def test_get_udt_columns(delimiter):
 
         udt_types = get_udt_col_types(tmp.name)
 
-        print(type(udt_types["col1"]))
-
         assert str(udt_types["col1"]) == '{"type": "categorical"}'
         assert str(udt_types["col2"]) == '{"type": "categorical"}'
         assert (
