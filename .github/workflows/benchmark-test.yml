@@ -38,10 +38,10 @@ jobs:
 
       - name: Run Benchmark
         env:
-          USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
-          PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
+          MLFLOW_TRACKING_USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
+          MLFLOW_TRACKING_PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
         run: >-
-          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && 
+          bin/docker-benchmarking-run.sh "export $MLFLOW_TRACKING_USERNAME && export $MLFLOW_TRACKING_PASSWORD && 
           python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_configs/mnist_dense.txt --test_run"
 
       - name: Delete Container
