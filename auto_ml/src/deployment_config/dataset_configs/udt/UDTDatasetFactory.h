@@ -242,6 +242,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     auto label_block = dataset::StringLookupCategoricalBlock::make(
         column_numbers->at(metadata->key), key_vocab);
 
+    // Here we set parallel=true because there are no temporal
+    // relationships in the metadata file.
     dataset::StreamingGenericDatasetLoader metadata_loader(
         /* loader= */ data_loader,
         /* processor= */
