@@ -269,7 +269,7 @@ void createModelPipeline(py::module_& models_submodule) {
 
 class UDTFactory {
  public:
-  static auto buildUDTGeneratorWrapper(py::object& obj,
+  static bolt::QueryCandidateGenerator buildUDTGeneratorWrapper(py::object& obj,
                                        const uint32_t& source_column_index,
                                        const uint32_t& target_column_index,
                                        const std::string& dataset_size) {
@@ -280,7 +280,7 @@ class UDTFactory {
         /* dataset_size = */ dataset_size);
   }
 
-  static auto buildUDTClassifierWrapper(
+  static UniversalDeepTransformer buildUDTClassifierWrapper(
       py::object& obj, ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target_col, std::string time_granularity = "d",
