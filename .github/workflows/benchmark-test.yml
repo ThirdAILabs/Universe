@@ -33,8 +33,9 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
-      # - name: Build docker
-      #   run: bin/docker-benchmarking-build.sh
+      - name: Build docker
+        run: bin/docker-benchmarking-build.sh
+        
       - name: Run Benchmark
         env:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
