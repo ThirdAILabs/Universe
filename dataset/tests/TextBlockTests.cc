@@ -16,7 +16,7 @@ class TextBlockTest : public testing::Test {
   using WordMatrix = std::vector<std::vector<std::vector<std::string>>>;
   static std::pair<SentenceMatrix, WordMatrix> generateRandomStringMatrix(
       uint32_t n_rows, uint32_t n_cols, uint32_t word_length,
-      uint32_t words_per_row) {
+      uint32_t words_per_row, char delimiter = ' ') {
     SentenceMatrix sentence_matrix;
     WordMatrix word_matrix;
     for (uint32_t y = 0; y < n_rows; y++) {
@@ -30,9 +30,11 @@ class TextBlockTest : public testing::Test {
         words.push_back(random_word);
         for (uint32_t word = 1; word < words_per_row; word++) {
           auto random_word = random_string_of_len(word_length);
-          sentence += " " + random_word;
+          sentence += delimiter + random_word;
           words.push_back(random_word);
+          std::cout << "Created word " << random_word << std::endl;
         }
+        std::cout << "Created sentence " << sentence << std::endl;
         sentence_row.push_back(sentence);
         word_row.push_back(words);
       }
@@ -266,6 +268,38 @@ TEST_F(TextBlockTest, TestEncodingsDeterministic) {
     for (const auto& [key, val] : vec_1_entries) {
       ASSERT_EQ(val, vec_2_entries[key]);
     }
+  }
+}
+
+/**
+ * Builds a random matrix of sentences with a non space delimiter, constructs
+ * UniGram block, and verifies the results.
+ */
+TEST_F(TextBlockTest, TextUnigramBlockWithDelimiter) {
+  uint32_t num_rows = 100;
+  uint32_t num_columns = 3;
+  uint32_t word_length = 8;
+  uint32_t words_per_row = 5;
+  auto [sentence_matrix, word_matrix] = generateRandomStringMatrix(
+      num_rows, num_columns, word_length, words_per_row, /* delimiter= */ '-');
+
+  std::vector<TextBlockPtr> blocks;
+
+  blocks.push_back(UniGramTextBlock::make(/* col= */ 0, /* dim= */ 100,
+                                          /* delimiter= */ '-'));
+
+  std::vector<SegmentedSparseFeatureVector> vecs =
+      makeSegmentedVecs(sentence_matrix, blocks);
+
+  for (uint32_t i = 0; i < vecs.size(); i++) {
+    auto index_value_pairs = vectorEntries(vecs[i]);
+
+    uint32_t total = 0;
+    for (const auto& [_, value] : index_value_pairs) {
+      total += value;
+    }
+
+    ASSERT_EQ(total, words_per_row);
   }
 }
 
