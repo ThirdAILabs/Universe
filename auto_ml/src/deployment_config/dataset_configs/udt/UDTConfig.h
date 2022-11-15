@@ -36,6 +36,8 @@ struct UDTConfig {
    * 
    * n_target_classes: number of target classes.
    *
+   * n_target_classes: number of target classes.
+   *
    * time_granularity: Either "daily"/"d", "weekly"/"w", "biweekly"/"b",
    *   or `"monthly"`/`"m"`. Interval of time that we are interested in.
    *   Temporal numerical features are grouped according to this time
@@ -51,14 +53,14 @@ struct UDTConfig {
    */
   UDTConfig(ColumnDataTypes data_types,
             UserProvidedTemporalRelationships temporal_tracking_relationships,
-            std::string target,
-            uint32_t n_target_classes,
-            std::string time_granularity = "d", uint32_t lookahead = 0,
-            char delimiter = ',')
+            std::string target, uint32_t n_target_classes,
+            bool integer_target = false, std::string time_granularity = "d",
+            uint32_t lookahead = 0, char delimiter = ',')
       : data_types(std::move(data_types)),
         provided_relationships(std::move(temporal_tracking_relationships)),
         target(std::move(target)),
         n_target_classes(n_target_classes),
+        integer_target(integer_target),
         time_granularity(
             dataset::stringToGranularity(std::move(time_granularity))),
         lookahead(lookahead),
@@ -68,6 +70,7 @@ struct UDTConfig {
   UserProvidedTemporalRelationships provided_relationships;
   std::string target;
   uint32_t n_target_classes;
+  bool integer_target;
   dataset::QuantityTrackingGranularity time_granularity;
   uint32_t lookahead;
   char delimiter;
@@ -83,7 +86,7 @@ struct UDTConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(data_types, provided_relationships, target, n_target_classes,
-            time_granularity, lookahead, delimiter, hash_range);
+            integer_target, time_granularity, lookahead, delimiter, hash_range);
   }
 };
 

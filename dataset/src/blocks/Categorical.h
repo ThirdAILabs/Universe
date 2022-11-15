@@ -220,9 +220,7 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
   std::string getResponsibleCategory(
       uint32_t index, const std::string_view& category_value) const final {
     (void)index;
-    (void)category_value;
-    // TODO(Geordie): Make more descriptive.
-    return "Metadata";
+    return "Metadata for the class '" + std::string(category_value) + "'";
   }
 
  protected:

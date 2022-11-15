@@ -177,7 +177,7 @@ TEST(UserItemHistoryBlockTests, CorrectSingleThread) {
       // We consider the weighted set to handle hash collisions.
       uint32_t n_elems_only_in_b = 0;
       for (const auto& [elem, count] : next_elements) {
-        n_elems_only_in_b += count - current_elements[elem];
+        n_elems_only_in_b += std::max<float>(count - current_elements[elem], 0);
       }
       ASSERT_NEAR(n_elems_only_in_b, 1.0, /* abs_error= */ 0.01);
     }
