@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
@@ -12,6 +13,7 @@
 #include <algorithm>
 #include <exception>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
@@ -19,13 +21,21 @@ namespace thirdai::dataset {
 
 class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
  public:
-  GenericBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
-                        std::vector<std::shared_ptr<Block>> label_blocks,
-                        bool has_header = false, char delimiter = ',',
-                        bool parallel = true)
+  GenericBatchProcessor(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
+      char delimiter = ',', bool parallel = true,
+      /*
+        If hash_range has a value, then features from different blocks
+        will be aggregated by hashing them to the same range but with
+        different hash salts. Otherwise, the features will be treated
+        as sparse vectors, which are then concatenated.
+      */
+      std::optional<uint32_t> hash_range = std::nullopt)
       : _expects_header(has_header),
         _delimiter(delimiter),
         _parallel(parallel),
+        _hash_range(hash_range),
         _expected_num_cols(0),
         _input_blocks_dense(
             std::all_of(input_blocks.begin(), input_blocks.end(),
@@ -118,7 +128,9 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   void processHeader(const std::string& header) final { (void)header; }
 
-  uint32_t getInputDim() const { return sumBlockDims(_input_blocks); }
+  uint32_t getInputDim() const {
+    return _hash_range.value_or(sumBlockDims(_input_blocks));
+  }
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
@@ -132,20 +144,25 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
                                      BoltVector& vector) {
-    return makeVector(sample, vector, _input_blocks, _input_blocks_dense);
+    return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
+                      /* hash_range= */ _hash_range);
   }
 
   std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
                                      BoltVector& vector) {
-    return makeVector(sample, vector, _label_blocks, _label_blocks_dense);
+    // Never hash labels.
+    return makeVector(sample, vector, _label_blocks, _label_blocks_dense,
+                      /* hash_range= */ std::nullopt);
   }
 
   static std::shared_ptr<GenericBatchProcessor> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
-      char delimiter = ',', bool parallel = true) {
-    return std::make_shared<GenericBatchProcessor>(
-        input_blocks, label_blocks, has_header, delimiter, parallel);
+      char delimiter = ',', bool parallel = true,
+      std::optional<uint32_t> hash_range = std::nullopt) {
+    return std::make_shared<GenericBatchProcessor>(input_blocks, label_blocks,
+                                                   has_header, delimiter,
+                                                   parallel, hash_range);
   }
 
   /*
@@ -169,15 +186,21 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
    */
   static std::exception_ptr makeVector(
       std::vector<std::string_view>& sample, BoltVector& vector,
-      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
+      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
+      std::optional<uint32_t> hash_range) {
     std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
-    // Dense vector if all blocks produce dense features, sparse vector
-    // otherwise.
-    if (blocks_dense) {
-      vec_ptr = std::make_shared<SegmentedDenseFeatureVector>();
+    if (hash_range) {
+      vec_ptr = std::make_shared<HashedSegmentedFeatureVector>(
+          /* hash_range= */ *hash_range);
     } else {
-      vec_ptr = std::make_shared<SegmentedSparseFeatureVector>();
+      // Dense vector if all blocks produce dense features, sparse vector
+      // otherwise.
+      if (blocks_dense) {
+        vec_ptr = std::make_shared<SegmentedDenseFeatureVector>();
+      } else {
+        vec_ptr = std::make_shared<SegmentedSparseFeatureVector>();
+      }
     }
 
     // Let each block encode the input sample and adds a new segment
@@ -214,9 +237,9 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<BatchProcessor>(this), _expects_header,
-            _delimiter, _parallel, _expected_num_cols, _input_blocks_dense,
-            _label_blocks_dense, _input_blocks, _label_blocks,
-            _block_feature_offsets);
+            _delimiter, _parallel, _hash_range, _expected_num_cols,
+            _input_blocks_dense, _label_blocks_dense, _input_blocks,
+            _label_blocks, _block_feature_offsets);
   }
 
   // Private constructor for cereal.
@@ -225,6 +248,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   bool _expects_header;
   char _delimiter;
   bool _parallel;
+  std::optional<uint32_t> _hash_range;
 
   uint32_t _expected_num_cols;
   bool _input_blocks_dense;

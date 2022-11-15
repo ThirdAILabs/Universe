@@ -834,7 +834,7 @@ Args:
         not need to include all columns in the dataset.
 
         Column type is one of:
-        - `bolt.types.categorical(n_unique_values: int)`
+        - `bolt.types.categorical()`
         - `bolt.types.numerical(range: tuple(float, float))`
         - `bolt.types.text(average_n_words: int=None)`
         - `bolt.types.date()`
@@ -877,11 +877,11 @@ Examples:
     >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
     >>> config = deployment.UDTConfig(
             data_types={
-                "product_id": bolt.types.categorical(n_unique_classes=5000),
+                "product_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
                 "ad_spend": bolt.types.numerical(range=(0, 10000)),
                 "sales_quantity": bolt.types.numerical(range=(0, 20)),
-                "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                "sales_performance": bolt.types.categorical(),
             },
             temporal_tracking_relationships={
                 "product_id": [
@@ -902,9 +902,9 @@ Examples:
     >>> # Then we may configure UDT as follows:
     >>> config = deployment.UDTConfig(
             data_types={
-                "user_id": bolt.types.categorical(n_unique_classes=5000),
+                "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
-                "movie_id": bolt.types.categorical(n_unique_classes=3000),
+                "movie_id": bolt.types.categorical(),
                 "hours_watched": bolt.types.numerical(range=(0, 25)),
             },
             temporal_tracking_relationships={
@@ -913,7 +913,8 @@ Examples:
                     bolt.temporal.numerical(column_name="hours_watched", history_length="5") # track last 5 days of hours watched.
                 ]
             },
-            target="movie_id"
+            target="movie_id",
+            n_target_classes=3000
         )
 
 Notes:

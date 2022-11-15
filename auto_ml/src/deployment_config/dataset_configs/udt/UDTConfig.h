@@ -15,9 +15,11 @@
 namespace thirdai::automl::deployment {
 
 struct UDTConfig {
+  static constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
+
   /**
    * data_types: mapping from column names (strings) to DataType objects,
-   *   e.g. {"user_id_column": types.categorical(n_unique_classes=5)}
+   *   e.g. {"user_id_column": types.categorical()}
    *
    * temporal_tracking_relationships: mapping from column names (strings) to
    *   a list of other columns can be tracked against it (either strings or
@@ -31,6 +33,8 @@ struct UDTConfig {
    *   configuration will be autotuned.
    *
    * target: column name of target variable.
+   *
+   * n_target_classes: number of target classes.
    *
    * time_granularity: Either "daily"/"d", "weekly"/"w", "biweekly"/"b",
    *   or `"monthly"`/`"m"`. Interval of time that we are interested in.
@@ -47,11 +51,14 @@ struct UDTConfig {
    */
   UDTConfig(ColumnDataTypes data_types,
             UserProvidedTemporalRelationships temporal_tracking_relationships,
-            std::string target, std::string time_granularity = "d",
+            std::string target, uint32_t n_target_classes,
+            bool integer_target = false, std::string time_granularity = "d",
             uint32_t lookahead = 0, char delimiter = ',')
       : data_types(std::move(data_types)),
         provided_relationships(std::move(temporal_tracking_relationships)),
         target(std::move(target)),
+        n_target_classes(n_target_classes),
+        integer_target(integer_target),
         time_granularity(
             dataset::stringToGranularity(std::move(time_granularity))),
         lookahead(lookahead),
@@ -60,9 +67,13 @@ struct UDTConfig {
   ColumnDataTypes data_types;
   UserProvidedTemporalRelationships provided_relationships;
   std::string target;
+  uint32_t n_target_classes;
+  bool integer_target;
   dataset::QuantityTrackingGranularity time_granularity;
   uint32_t lookahead;
   char delimiter;
+
+  uint32_t hash_range = DEFAULT_HASH_RANGE;
 
  private:
   // Private constructor for Cereal.
@@ -72,8 +83,8 @@ struct UDTConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(data_types, provided_relationships, target, time_granularity,
-            lookahead, delimiter);
+    archive(data_types, provided_relationships, target, n_target_classes,
+            integer_target, time_granularity, lookahead, delimiter, hash_range);
   }
 };
 
