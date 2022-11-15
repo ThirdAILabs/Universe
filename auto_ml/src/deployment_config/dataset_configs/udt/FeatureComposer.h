@@ -116,8 +116,8 @@ class FeatureComposer {
     }
 
     // Blocks still need a hash range even though we later hash it into
-    // a range because we still want to support block feature 
-    // concatenations. 
+    // a range because we still want to support block feature
+    // concatenations.
     // TODO(Geordie): This is redundant, remove this later.
     // we always use tabular unigrams but add pairgrams on top of it if the
     // contextual_columns flag is true
