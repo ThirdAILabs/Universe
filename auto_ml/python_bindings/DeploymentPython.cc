@@ -274,10 +274,9 @@ void createModelPipeline(py::module_& models_submodule) {
 
 class UDTFactory {
  public:
-  static bolt::QueryCandidateGenerator buildUDTGeneratorWrapper(py::object& obj,
-                                       const uint32_t& source_column_index,
-                                       const uint32_t& target_column_index,
-                                       const std::string& dataset_size) {
+  static bolt::QueryCandidateGenerator buildUDTGeneratorWrapper(
+      py::object& obj, const uint32_t& source_column_index,
+      const uint32_t& target_column_index, const std::string& dataset_size) {
     (void)obj;
     return bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
         /* source_column_index = */ source_column_index,
@@ -288,7 +287,8 @@ class UDTFactory {
   static UniversalDeepTransformer buildUDTClassifierWrapper(
       py::object& obj, ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target_col, std::string time_granularity = "d",
+      std::string target_col, uint32_t n_target_classes,
+      bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::unordered_map<std::string, std::string>& options = {}) {
     (void)obj;
@@ -297,6 +297,8 @@ class UDTFactory {
         /* temporal_tracking_relationships = */
         std::move(temporal_tracking_relationships),
         /* target_col = */ std::move(target_col),
+        /* n_target_classes = */ n_target_classes,
+        /* integer_target = */ integer_target,
         /* time_granularity = */ std::move(time_granularity),
         /* lookahead = */ lookahead, /* delimiter = */ delimiter,
         /* options = */ options);
@@ -334,9 +336,11 @@ void createUDTFactory(py::module_& bolt_submodule) {
            py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("time_granularity") = "daily",
-           py::arg("lookahead") = 0, py::arg("delimiter") = ',',
-           py::arg("options") = OptionsMap(), docs::UDT_INIT)
+           py::arg("target"), py::arg("n_target_classes"),
+           py::arg("integer_target") = false,
+           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
+           py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
+           docs::UDT_INIT, bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column_index"), py::arg("target_column_index"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
