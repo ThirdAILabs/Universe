@@ -19,6 +19,7 @@
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -117,10 +118,13 @@ class FeatureComposer {
         if (text_meta.force_pairgram ||
             (text_meta.average_n_words &&
              text_meta.average_n_words <= text_pairgrams_word_limit)) {
-          blocks.push_back(dataset::PairGramTextBlock::make(col_num));
+          // text hash range of MAXINT is fine since features are later
+          // hashed into a range. In fact it may reduce hash collisions.
+          blocks.push_back(dataset::PairGramTextBlock::make(
+              col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
         } else {
-          blocks.push_back(
-              dataset::UniGramTextBlock::make(col_num, text_meta.dim));
+          blocks.push_back(dataset::UniGramTextBlock::make(
+              col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
         }
       }
 
@@ -135,10 +139,10 @@ class FeatureComposer {
     // TODO(Geordie): This is redundant, remove this later.
     // we always use tabular unigrams but add pairgrams on top of it if the
     // contextual_columns flag is true
-    blocks.push_back(makeTabularHashFeaturesBlock(
-        tabular_datatypes, tabular_col_ranges,
-        column_numbers.getColumnNumToColNameMap(), contextual_columns,
-        tabular_col_bins, config.hash_range));
+    blocks.push_back(
+        makeTabularHashFeaturesBlock(tabular_datatypes, tabular_col_ranges,
+                                     column_numbers.getColumnNumToColNameMap(),
+                                     contextual_columns, tabular_col_bins));
 
     return blocks;
   }
@@ -301,7 +305,9 @@ class FeatureComposer {
         /* records= */
         context.categoricalHistoryForId(temporal_relationship_id),
         /* track_last_n= */ temporal_meta.track_last_n,
-        /* item_hash_range= */ config.hash_range,
+        // item hash range of MAXINT is fine since features are later
+        // hashed into a range. In fact it may reduce hash collisions.
+        /* item_hash_range= */ std::numeric_limits<uint32_t>::max(),
         /* should_update_history= */ should_update_history,
         /* include_current_row= */ temporal_meta.include_current_row,
         /* item_col_delimiter= */ tracked_meta.delimiter,
@@ -341,14 +347,16 @@ class FeatureComposer {
       const std::vector<dataset::TabularDataType>& tabular_datatypes,
       const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
       const std::vector<std::string>& num_to_name, bool contextual_columns,
-      std::unordered_map<uint32_t, uint32_t> col_num_bins,
-      uint32_t output_range) {
+      std::unordered_map<uint32_t, uint32_t> col_num_bins) {
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
         tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr,
         /* column_names= */ num_to_name, /* col_to_num_bins= */ col_num_bins);
 
+    // output range of MAXINT is fine since features are later
+    // hashed into a range. In fact it may reduce hash collisions.
     return std::make_shared<dataset::TabularHashFeatures>(
-        tabular_metadata, output_range,
+        tabular_metadata,
+        /* output_range= */ std::numeric_limits<uint32_t>::max(),
         /* with_pairgrams= */ contextual_columns);
   }
 
