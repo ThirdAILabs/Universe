@@ -9,6 +9,7 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
 #include <limits>
@@ -27,28 +28,28 @@ struct CategoricalMetadataConfig;
 using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
 
 struct CategoricalDataType {
-  explicit CategoricalDataType(uint32_t n_unique_classes,
-                               std::optional<char> delimiter,
-                               CategoricalMetadataConfigPtr metadata,
-                               bool contiguous_numerical_ids)
-      : n_unique_classes(n_unique_classes),
-        delimiter(delimiter),
-        metadata_config(std::move(metadata)),
-        contiguous_numerical_ids(contiguous_numerical_ids) {}
+  explicit CategoricalDataType(std::optional<char> delimiter,
+                               CategoricalMetadataConfigPtr metadata)
+      : delimiter(delimiter), metadata_config(std::move(metadata)) {}
 
-  uint32_t n_unique_classes;
   std::optional<char> delimiter;
   CategoricalMetadataConfigPtr metadata_config;
-  bool contiguous_numerical_ids;
 
   CategoricalDataType() {}
+
+  std::string toString() const {
+    if (delimiter.has_value()) {
+      return fmt::format(R"({{"type": "categorical", "delimiter": "{}"}})",
+                         delimiter.value());
+    }
+    return fmt::format(R"({{"type": "categorical"}})");
+  }
 
  private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(n_unique_classes, delimiter, metadata_config,
-            contiguous_numerical_ids);
+    archive(delimiter, metadata_config);
   }
 };
 
@@ -77,6 +78,8 @@ struct TextDataType {
 
   TextDataType() {}
 
+  static std::string toString() { return R"({"type": "text"})"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -95,6 +98,12 @@ struct NumericalDataType {
 
   NumericalDataType() {}
 
+  std::string toString() const {
+    return fmt::format(
+        R"({{"type": "numerical", "range": [{}, {}], "granularity": "{}"}})",
+        range.first, range.second, granularity);
+  }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -103,9 +112,13 @@ struct NumericalDataType {
   }
 };
 
-struct DateDataType {};
+struct DateDataType {
+  static std::string toString() { return R"({"type": "date"})"; }
+};
 
-struct NoneDataType {};
+struct NoneDataType {
+  static std::string toString() { return R"({"type": "none"})"; }
+};
 
 using AnyDataType = std::variant<NoneDataType, DateDataType, NumericalDataType,
                                  CategoricalDataType, TextDataType>;
@@ -116,13 +129,9 @@ class DataType {
  public:
   DataType() : _value(NoneDataType()) {}
 
-  static auto categorical(uint32_t n_unique_classes,
-                          std::optional<char> delimiter = std::nullopt,
-                          CategoricalMetadataConfigPtr metadata = nullptr,
-                          bool contiguous_numerical_ids = false) {
-    return DataType(CategoricalDataType(n_unique_classes, delimiter,
-                                        std::move(metadata),
-                                        contiguous_numerical_ids));
+  static auto categorical(std::optional<char> delimiter = std::nullopt,
+                          CategoricalMetadataConfigPtr metadata = nullptr) {
+    return DataType(CategoricalDataType(delimiter, std::move(metadata)));
   }
 
   static auto text(std::optional<uint32_t> average_n_words = std::nullopt,
@@ -147,6 +156,7 @@ class DataType {
   }
   bool isText() const { return std::holds_alternative<TextDataType>(_value); }
   bool isDate() const { return std::holds_alternative<DateDataType>(_value); }
+  bool isNone() const { return std::holds_alternative<NoneDataType>(_value); }
 
   const CategoricalDataType& asCategorical() const {
     if (!isCategorical()) {
@@ -174,6 +184,39 @@ class DataType {
       throwCastError("date");
     }
     return std::get<DateDataType>(_value);
+  }
+
+  const NoneDataType& asNone() const {
+    if (!isNone()) {
+      throwCastError("none");
+    }
+    return std::get<NoneDataType>(_value);
+  }
+
+  std::string toString() const {
+    if (isCategorical()) {
+      return asCategorical().toString();
+    }
+
+    if (isDate()) {
+      return DateDataType::toString();
+    }
+
+    if (isNumerical()) {
+      return asNumerical().toString();
+    }
+
+    if (isText()) {
+      return TextDataType::toString();
+    }
+
+    if (isNone()) {
+      return NoneDataType::toString();
+    }
+
+    throw std::runtime_error(
+        "This DataType object is not of a known concrete type, so we cannot "
+        "print it to string. This should never happen.");
   }
 
  private:

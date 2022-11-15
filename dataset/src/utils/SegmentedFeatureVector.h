@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hashing/src/HashUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <sstream>
 #include <stdexcept>
@@ -85,6 +86,78 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
   uint32_t _n_dense_added = 0;
   uint32_t _current_dim = 0;
   uint32_t _prev_dim = 0;
+  std::vector<uint32_t> _indices;
+  std::vector<float> _values;
+};
+
+/**
+ * A concrete implementation of SegmentedFeatureVector where features
+ * are not concatenated but instead hashed to the same range with a
+ * different salt for each segment.
+ */
+class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
+ public:
+  explicit HashedSegmentedFeatureVector(uint32_t hash_range)
+      : _hash_range(hash_range) {}
+
+  void addSparseFeatureToSegment(uint32_t index, float value) final {
+    if (_n_dense_added > 0) {
+      throw std::invalid_argument(
+          "[HashedSegmentedFeatureVector::addSparseFeatureToSegment] A block "
+          "cannot add both dense and sparse features.");
+    }
+
+    // We don't check whether we've seen this index before.
+    // This is fine because bolt iterates through all index-value pairs of
+    // sparse input vectors, so duplicates are effectively summed.
+    _indices.push_back(getHashedIndex(index));
+    _values.push_back(value);
+    _added_sparse = true;
+  }
+
+  void addDenseFeatureToSegment(float value) final {
+    if (_added_sparse) {
+      throw std::invalid_argument(
+          "[HashedSegmentedFeatureVector::addDenseFeatureToSegment] A block "
+          "cannot add both dense and sparse features.");
+    }
+
+    _indices.push_back(getHashedIndex(_n_dense_added));
+    _values.push_back(value);
+    _n_dense_added++;
+  }
+
+  BoltVector toBoltVector() final {
+    return BoltVector::makeSparseVector(_indices, _values);
+  }
+
+  void addFeatureSegment(uint32_t dim) final {
+    (void)dim;
+    _added_sparse = false;
+    _n_dense_added = 0;
+    _block_count++;
+  }
+
+ protected:
+  std::unordered_map<uint32_t, float> entries() final {
+    std::unordered_map<uint32_t, float> ents;
+    for (uint32_t i = 0; i < _indices.size(); i++) {
+      ents[_indices[i]] += _values[i];
+    }
+    return ents;
+  }
+
+ private:
+  uint32_t getHashedIndex(uint32_t index) const {
+    return hashing::HashUtils::combineHashes(index, _block_count) % _hash_range;
+  }
+
+  uint32_t _hash_range;
+
+  bool _added_sparse = false;
+  uint32_t _n_dense_added = 0;
+  uint32_t _block_count = 0;
+
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
 };

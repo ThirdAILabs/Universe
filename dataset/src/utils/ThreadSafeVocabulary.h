@@ -3,6 +3,8 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <algorithm>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -30,16 +32,24 @@ namespace thirdai::dataset {
  */
 class ThreadSafeVocabulary {
  public:
-  explicit ThreadSafeVocabulary(uint32_t vocab_size)
-      : _fixed(false), _vocab_size(vocab_size) {
-    _string_to_uid.reserve(vocab_size);
-    _uid_to_string.reserve(vocab_size);
+  explicit ThreadSafeVocabulary(uint32_t vocab_size,
+                                bool limit_vocab_size = true)
+      : _fixed(false),
+        _limit_vocab_size(limit_vocab_size),
+        _vocab_size(limit_vocab_size ? vocab_size
+                                     : std::numeric_limits<uint32_t>::max()) {
+    if (limit_vocab_size) {
+      _string_to_uid.reserve(vocab_size);
+      _uid_to_string.reserve(vocab_size);
+    }
   }
 
   explicit ThreadSafeVocabulary(
       std::unordered_map<std::string, uint32_t>&& string_to_uid_map, bool fixed,
       std::optional<uint32_t> max_vocab_size = std::nullopt)
-      : _fixed(fixed), _string_to_uid(std::move(string_to_uid_map)) {
+      : _fixed(fixed),
+        _limit_vocab_size(true),
+        _string_to_uid(std::move(string_to_uid_map)) {
     if (_fixed) {
       _vocab_size = _string_to_uid.size();
     } else {
@@ -105,12 +115,16 @@ class ThreadSafeVocabulary {
 
   uint32_t vocabSize() const { return _vocab_size; }
 
-  void fixVocab() { _fixed = true; };
+  void fixVocab() {
+    _fixed = true;
+    _vocab_size = _string_to_uid.size();
+  };
 
   bool isVocabFixed() const { return _fixed; }
 
-  static std::shared_ptr<ThreadSafeVocabulary> make(uint32_t vocab_size) {
-    return std::make_shared<ThreadSafeVocabulary>(vocab_size);
+  static std::shared_ptr<ThreadSafeVocabulary> make(
+      uint32_t vocab_size, bool limit_vocab_size = true) {
+    return std::make_shared<ThreadSafeVocabulary>(vocab_size, limit_vocab_size);
   }
 
   static std::shared_ptr<ThreadSafeVocabulary> make(
@@ -141,23 +155,26 @@ class ThreadSafeVocabulary {
         uid = _string_to_uid.at(string);
       } else {
         uid = _string_to_uid.size();
-        if (uid < _vocab_size) {
+        if (!_limit_vocab_size || uid < _vocab_size) {
           _string_to_uid[string] = uid;
           _uid_to_string.push_back(string);
         }
       }
     }
 
-    if (uid >= _vocab_size) {
-      throw std::invalid_argument("Expected " + std::to_string(_vocab_size) +
-                                  " unique strings but found new string '" +
-                                  string + "'.");
+    if (_limit_vocab_size) {
+      if (uid >= _vocab_size) {
+        throw std::invalid_argument("Expected " + std::to_string(_vocab_size) +
+                                    " unique classes but found new class '" +
+                                    string + "'.");
+      }
     }
 
     return uid;
   }
 
   bool _fixed;
+  bool _limit_vocab_size;
   uint32_t _vocab_size;
   std::unordered_map<std::string, uint32_t> _string_to_uid;
   std::vector<std::string> _uid_to_string;

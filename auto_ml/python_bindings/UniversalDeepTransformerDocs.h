@@ -51,6 +51,8 @@ Args:
         See bolt.temporal for details.
     target (str): Name of the column that contains the value to be predicted by
         UDT. The target column has to be a categorical column.
+    n_target_classes (int): Number of target classes.
+    integer_target (bool): Whether the target classes are integers in the range 0 to n_target_classes - 1.
     time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
         or `"monthly"`/`"m"`. Interval of time that UDT should use for temporal features. Temporal numerical 
         features are clubbed according to this time granularity. E.g. if 
@@ -71,11 +73,11 @@ Examples:
     >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
     >>> model = bolt.UniversalDeepTransformer(
             data_types={
-                "product_id": bolt.types.categorical(n_unique_classes=5000),
+                "product_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
                 "ad_spend": bolt.types.numerical(range=(0, 10000)),
                 "sales_quantity": bolt.types.numerical(range=(0, 20)),
-                "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                "sales_performance": bolt.types.categorical(),
             },
             temporal_tracking_relationships={
                 "product_id": [
@@ -89,7 +91,8 @@ Examples:
                     bolt.temporal.categorical(column_name="sales_performance", history_length=5),
                 ]
             },
-            target="sales_performance"
+            target="sales_performance",
+            n_target_classes=5,
             time_granularity="weekly",
             lookahead=2 # predict 2 weeks ahead
         )
@@ -98,9 +101,9 @@ Examples:
     >>> # Then we may configure UDT as follows:
     >>> model = bolt.UniversalDeepTransformer(
             data_types={
-                "user_id": bolt.types.categorical(n_unique_classes=5000),
+                "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
-                "movie_id": bolt.types.categorical(n_unique_classes=3000),
+                "movie_id": bolt.types.categorical(),
                 "hours_watched": bolt.types.numerical(range=(0, 25)),
             },
             temporal_tracking_relationships={
@@ -109,7 +112,8 @@ Examples:
                     bolt.temporal.numerical(column_name="hours_watched", history_length="5") # track last 5 days of hours watched.
                 ]
             },
-            target="movie_id"
+            target="movie_id",
+            n_target_classes=3000
         )
 
 Notes:
@@ -304,15 +308,16 @@ Examples:
     >>> # Suppose we configure UDT as follows:
     >>> model = bolt.UniversalDeepTransformer(
             data_types={
-                "user_id": bolt.types.categorical(n_unique_classes=5000),
+                "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
-                "special_event": bolt.types.categorical(n_unique_classes=20),
-                "movie_title": bolt.types.categorical(n_unique_classes=500)
+                "special_event": bolt.types.categorical(),
+                "movie_title": bolt.types.categorical()
             },
             temporal_tracking_relationships={
                 "user_id": ["movie_title"]
             },
-            target="movie_title"
+            target="movie_title",
+            n_target_classes=500
         )
     >>> # Make a single prediction
     >>> activations = model.predict(
@@ -448,15 +453,16 @@ Examples:
     >>> # Suppose we configure UDT as follows:
     >>> model = bolt.UniversalDeepTransformer(
             data_types={
-                "user_id": bolt.types.categorical(n_unique_classes=5000),
+                "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
-                "special_event": bolt.types.categorical(n_unique_classes=20),
-                "movie_title": bolt.types.categorical(n_unique_classes=500)
+                "special_event": bolt.types.categorical(),
+                "movie_title": bolt.types.categorical()
             },
             temporal_tracking_relationships={
                 "user_id": ["movie_title"]
             },
-            target="movie_title"
+            target="movie_title",
+            n_target_classes=500,
         )
     >>> # Get an embedding representation
     >>> embedding = model.embedding_representation(
@@ -500,15 +506,16 @@ Example:
     >>> # Suppose we configure UDT to do movie recommendation as follows:
     >>> model = bolt.UniversalDeepTransformer(
             data_types={
-                "user_id": bolt.types.categorical(n_unique_classes=5000),
+                "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
-                "special_event": bolt.types.categorical(n_unique_classes=20),
-                "movie_title": bolt.types.categorical(n_unique_classes=500)
+                "special_event": bolt.types.categorical(),
+                "movie_title": bolt.types.categorical()
             },
             temporal_tracking_relationships={
                 "user_id": ["movie_title"]
             },
-            target="movie_title"
+            target="movie_title",
+            n_target_classes=500,
         )
     >>> # We then deploy the model for inference. Inference is performed by calling model.predict()
     >>> activations = model.predict(
@@ -540,15 +547,16 @@ Example:
     >>> # Suppose we configure UDT to do movie recommendation as follows:
     >>> model = bolt.UniversalDeepTransformer(
             data_types={
-                "user_id": bolt.types.categorical(n_unique_classes=5000),
+                "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
-                "special_event": bolt.types.categorical(n_unique_classes=20),
-                "movie_title": bolt.types.categorical(n_unique_classes=500)
+                "special_event": bolt.types.categorical(),
+                "movie_title": bolt.types.categorical()
             },
             temporal_tracking_relationships={
                 "user_id": ["movie_title"]
             },
-            target="movie_title"
+            target="movie_title",
+            n_target_classes=500,
         )
     >>> # We then deploy the model for inference. Inference is performed by calling model.predict()
     >>> activations = model.predict(
@@ -616,15 +624,16 @@ Example:
     >>> # Suppose we configure UDT as follows:
     >>> model = bolt.UniversalDeepTransformer(
             data_types={
-                "user_id": bolt.types.categorical(n_unique_classes=5000),
+                "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
-                "special_event": bolt.types.categorical(n_unique_classes=20),
-                "movie_title": bolt.types.categorical(n_unique_classes=500)
+                "special_event": bolt.types.categorical(),
+                "movie_title": bolt.types.categorical()
             },
             temporal_tracking_relationships={
                 "user_id": "movie_title"
             },
-            target="movie_title"
+            target="movie_title",
+            n_target_classes=500,
         )
     >>> # Make a single prediction
     >>> explanations = model.explain(
