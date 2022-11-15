@@ -47,9 +47,9 @@ class ColumnMap {
 
   columns::ColumnPtr getColumn(const std::string& name) const;
 
-  void setColumn(const std::string& name, columns::ColumnPtr column) {
-    _columns[name] = std::move(column);
-  }
+  // Inserts a new column into the ColumnMap. If a column with the supplied name
+  // already exists in the ColumnMap it will be overwritten.
+  void setColumn(const std::string& name, columns::ColumnPtr column);
 
   std::vector<std::string> columns() const;
 
