@@ -11,10 +11,10 @@ def get_udt_col_types(filename, n_rows=1e6):
 
     udt_column_types = {}
 
-    for col_name in df.columns:
-        if col_name not in column_types:
-            raise ValueError("Dataframe contains columns not in column_type map.")
-        col_type = column_types[col_name]["type"]
+    for col_name, type_info in column_types.items():
+        if col_name not in df.columns:
+            raise ValueError(f"column_type map contains column: {col_name} not in dataframe.")
+        col_type = type_info["type"]
 
         if col_type == "text":
             udt_column_types[col_name] = bolt.types.text()
@@ -22,7 +22,7 @@ def get_udt_col_types(filename, n_rows=1e6):
             udt_column_types[col_name] = bolt.types.categorical()
         elif col_type == "multi-categorical":
             udt_column_types[col_name] = bolt.types.categorical(
-                delimiter=column_types[col_name]["delimiter"]
+                delimiter=type_info["delimiter"]
             )
         elif col_type == "numerical":
             min_val = df[col_name].min()
