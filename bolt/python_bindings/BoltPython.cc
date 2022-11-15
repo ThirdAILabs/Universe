@@ -146,7 +146,6 @@ Args:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(
-                        n_unique_classes=5000, 
                         delimiter=' ',
                         metadata=bolt.types.metadata(
                             filename="user_meta.csv", 
@@ -161,26 +160,17 @@ Args:
 
   udt_types_submodule.def(
       "categorical", automl::deployment::DataType::categorical,
-      py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
-      py::arg("metadata") = nullptr, py::arg("consecutive_integer_ids") = false,
+      py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
       R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
     movie titles, or age groups.
 
     Args:
-        n_unique_classes (int): Number of unique categories in the column.
-            UDT throws an error if the column contains more than the 
-            specified number of unique values.
         delimiter (str): Optional. Defaults to None. A single character 
             (length-1 string) that separates multiple values in the same 
             column. This can only be used for the target column. If not 
             provided, UDT assumes that there is only one value in the column.
-        consecutive_integer_ids (bool): Optional. Defaults to None. When set to
-            True, the values of this column are assumed to be integers ranging 
-            from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
-            be arbitrary strings (including strings of integral ids that are 
-            not within [0, n_unique_classes - 1]).
         metadata (metadata): Optional. A metadata object to be used when there 
             is a separate metadata file corresponding to this categorical 
             column.
@@ -189,7 +179,6 @@ Args:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(
-                        n_unique_classes=5000, 
                         delimiter=' ',
                         metadata=bolt.types.metadata(filename="user_meta.csv", data_types={"age": bolt.types.numerical()}, key_column_name="user_id")
                     )
@@ -297,10 +286,10 @@ Args:
         >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
         >>> model = deployment.UniversalDeepTransformer(
                 data_types={
-                    "product_id": bolt.types.categorical(n_unique_classes=5000),
+                    "product_id": bolt.types.categorical(),
                     "timestamp": bolt.types.date(),
-                    "ad_spend_level": bolt.types.categorical(n_unique_classes=5),
-                    "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                    "ad_spend_level": bolt.types.categorical(),
+                    "sales_performance": bolt.types.categorical(),
                 },
                 temporal_tracking_relationships={
                     "product_id": [
@@ -341,10 +330,10 @@ Args:
         >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
         >>> model = deployment.UniversalDeepTransformer(
                 data_types={
-                    "product_id": bolt.types.categorical(n_unique_classes=5000),
+                    "product_id": bolt.types.categorical(),
                     "timestamp": bolt.types.date(),
                     "ad_spend": bolt.types.numerical(range=(0, 10000)),
-                    "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                    "sales_performance": bolt.types.categorical(),
                 },
                 target="sales_performance"
                 time_granularity="weekly",

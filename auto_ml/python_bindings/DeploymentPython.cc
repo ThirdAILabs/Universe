@@ -183,7 +183,7 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
                                                        "UDTDatasetFactory")
       .def(py::init<HyperParameterPtr<UDTConfigPtr>, HyperParameterPtr<bool>,
                     HyperParameterPtr<uint32_t>, HyperParameterPtr<bool>>(),
-           py::arg("config"), py::arg("parallel"),
+           py::arg("config"), py::arg("force_parallel"),
            py::arg("text_pairgram_word_limit"), py::arg("contextual_columns"));
 
   py::class_<TrainEvalParameters>(submodule, "TrainEvalParameters")
@@ -265,20 +265,23 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
 
   py::class_<UDTConfig, UDTConfigPtr>(bolt_submodule, "UDTConfig")
       .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
-                    std::string, std::string, uint32_t, char>(),
+                    std::string, uint32_t, bool, std::string, uint32_t, char>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
-           py::arg("target"), py::arg("time_granularity") = "daily",
-           py::arg("lookahead") = 0, py::arg("delimiter") = ',',
-           docs::ORACLE_CONFIG_INIT);
+           py::arg("target"), py::arg("n_target_classes"),
+           py::arg("integer_target") = false,
+           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
+           py::arg("delimiter") = ',', docs::ORACLE_CONFIG_INIT);
 
   py::class_<UniversalDeepTransformer>(
       bolt_submodule, "UniversalDeepTransformer", docs::UDT_CLASS)
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("time_granularity") = "daily",
-           py::arg("lookahead") = 0, py::arg("delimiter") = ',',
-           py::arg("options") = OptionsMap(), docs::UDT_INIT)
+           py::arg("target"), py::arg("n_target_classes"),
+           py::arg("integer_target") = false,
+           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
+           py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
+           docs::UDT_INIT)
       .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
            py::arg("train_config") = bolt::TrainConfig::makeConfig(
                /* learning_rate= */ 0.001, /* epochs= */ 3),

@@ -28,19 +28,12 @@ struct CategoricalMetadataConfig;
 using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
 
 struct CategoricalDataType {
-  explicit CategoricalDataType(uint32_t n_unique_classes,
-                               std::optional<char> delimiter,
-                               CategoricalMetadataConfigPtr metadata,
-                               bool contiguous_numerical_ids)
-      : n_unique_classes(n_unique_classes),
-        delimiter(delimiter),
-        metadata_config(std::move(metadata)),
-        contiguous_numerical_ids(contiguous_numerical_ids) {}
+  explicit CategoricalDataType(std::optional<char> delimiter,
+                               CategoricalMetadataConfigPtr metadata)
+      : delimiter(delimiter), metadata_config(std::move(metadata)) {}
 
-  uint32_t n_unique_classes;
   std::optional<char> delimiter;
   CategoricalMetadataConfigPtr metadata_config;
-  bool contiguous_numerical_ids;
 
   CategoricalDataType() {}
 
@@ -55,8 +48,7 @@ struct CategoricalDataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(n_unique_classes, delimiter, metadata_config,
-            contiguous_numerical_ids);
+    archive(delimiter, metadata_config);
   }
 };
 
@@ -135,13 +127,9 @@ class DataType {
  public:
   DataType() : _value(NoneDataType()) {}
 
-  static auto categorical(uint32_t n_unique_classes,
-                          std::optional<char> delimiter = std::nullopt,
-                          CategoricalMetadataConfigPtr metadata = nullptr,
-                          bool contiguous_numerical_ids = false) {
-    return DataType(CategoricalDataType(n_unique_classes, delimiter,
-                                        std::move(metadata),
-                                        contiguous_numerical_ids));
+  static auto categorical(std::optional<char> delimiter = std::nullopt,
+                          CategoricalMetadataConfigPtr metadata = nullptr) {
+    return DataType(CategoricalDataType(delimiter, std::move(metadata)));
   }
 
   static auto text(std::optional<uint32_t> average_n_words = std::nullopt,
