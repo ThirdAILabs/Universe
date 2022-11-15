@@ -405,20 +405,21 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def(py::init(
                &bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
            py::arg("source_column_index"), py::arg("target_column_index"),
-           py::arg("dataset_size"))
+           py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
       .def("train", &bolt::QueryCandidateGenerator::buildFlashIndex,
-           py::arg("filename"))
+           py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
       .def("evaluate", &bolt::QueryCandidateGenerator::evaluateOnFile,
-           py::arg("filename"), py::arg("top_k"))
+           py::arg("filename"), py::arg("top_k"), docs::UDT_GENERATOR_EVALUATE)
       .def(
           "predict",
           [](bolt::QueryCandidateGenerator& udt_generator_model,
              const std::string& sample, uint32_t top_k) {
             return udt_generator_model.queryFromList({sample}, top_k);
           },
-          py::arg("query"), py::arg("top_k"))
+          py::arg("query"), py::arg("top_k"), docs::UDT_GENERATOR_PREDICT)
       .def("predict_batch", &bolt::QueryCandidateGenerator::queryFromList,
-           py::arg("queries"), py::arg("top_k"))
+           py::arg("queries"), py::arg("top_k"),
+           docs::UDT_GENERATOR_PREDICT_BATCH)
       .def("save", &bolt::QueryCandidateGenerator::save, py::arg("filename"))
       .def_static("load", &bolt::QueryCandidateGenerator::load,
                   py::arg("filename"));

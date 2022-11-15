@@ -441,8 +441,10 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
             QueryCandidateGeneratorConfig:
 
             )pbdoc");
-}
 
 #endif
+
+}
+
 
 }  // namespace thirdai::bolt::python

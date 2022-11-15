@@ -40,8 +40,7 @@ class QueryCandidateGeneratorConfig {
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
       std::optional<uint32_t> reservoir_size = std::nullopt,
       uint32_t source_column_index = 0, uint32_t target_column_index = 0,
-      uint32_t default_text_encoding_dim =
-          dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+      uint32_t default_text_encoding_dim = std::numeric_limits<uint32_t>::max(),
       uint32_t batch_size = 10000)
       : _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
