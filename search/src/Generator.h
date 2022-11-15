@@ -40,7 +40,8 @@ class QueryCandidateGeneratorConfig {
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
       std::optional<uint32_t> reservoir_size = std::nullopt,
       uint32_t source_column_index = 0, uint32_t target_column_index = 0,
-      uint32_t default_text_encoding_dim = std::numeric_limits<uint32_t>::max(),
+      uint32_t default_text_encoding_dim =
+          dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
       uint32_t batch_size = 10000)
       : _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
@@ -105,13 +106,13 @@ class QueryCandidateGeneratorConfig {
   }
 
   static std::shared_ptr<QueryCandidateGeneratorConfig> fromDefault(
-      const uint32_t& target_column_index,
-      const uint32_t& source_column_index) {
+      const uint32_t& source_column_index,
+      const uint32_t& target_column_index) {
     auto generator_config = QueryCandidateGeneratorConfig(
         /* hash_function = */ "minhash",
-        /* num_tables = */ 20,
-        /* hashes_per_table = */ 10,
-        /* range = */ 100,
+        /* num_tables = */ 128,
+        /* hashes_per_table = */ 5,
+        /* range = */ 100000,
         /* n_grams = */ {3, 4},
         /* reservoir_size */ std::nullopt,
         /* source_column_index = */ source_column_index,
@@ -180,12 +181,12 @@ class QueryCandidateGenerator {
     return QueryCandidateGenerator(std::move(query_candidate_generator_config));
   }
   static QueryCandidateGenerator buildGeneratorFromDefaultConfig(
-      const uint32_t& target_column_index, const uint32_t& source_column_index,
+      const uint32_t& source_column_index, const uint32_t& target_column_index,
       const std::string& dataset_size) {
     (void)dataset_size;
     auto config = QueryCandidateGeneratorConfig::fromDefault(
-        /* target_column_index = */ target_column_index,
-        /* source_column_index = */ source_column_index);
+        /* source_column_index = */ source_column_index,
+        /* target_column_index = */ target_column_index);
     auto generator = QueryCandidateGenerator::make(config);
 
     return generator;
@@ -356,11 +357,15 @@ class QueryCandidateGenerator {
 
       _training_batch_processor =
           std::make_shared<dataset::GenericBatchProcessor>(
-              training_input_blocks, std::vector<dataset::BlockPtr>{});
+              /* input_blocks = */ training_input_blocks,
+              /* label_blocks = */ std::vector<dataset::BlockPtr>{},
+              /* has_header = */ false, /* delimiter = */ ',');
 
       _inference_batch_processor =
           std::make_shared<dataset::GenericBatchProcessor>(
-              inference_input_blocks, std::vector<dataset::BlockPtr>{});
+              /* input_blocks = */ inference_input_blocks,
+              /* labels_blocks = */ std::vector<dataset::BlockPtr>{},
+              /* has_header = */ false, /* delimiter = */ ',');
 
     } else {
       assert(_query_generator_config->sourceColumnIndex() ==
@@ -371,7 +376,9 @@ class QueryCandidateGenerator {
 
       _training_batch_processor =
           std::make_shared<dataset::GenericBatchProcessor>(
-              training_input_blocks, std::vector<dataset::BlockPtr>{});
+              /* input_blocks = */ training_input_blocks,
+              /* label_blocks = */ std::vector<dataset::BlockPtr>{},
+              /* has_header = */ false, /* delimiter = */ ',');
 
       _inference_batch_processor = _training_batch_processor;
     }
@@ -398,7 +405,7 @@ class QueryCandidateGenerator {
     output_strings.reserve(query_labels.size());
 
     for (const auto& query_label : query_labels) {
-      output_strings.push_back(std::move(_labels_to_queries_map[query_label]));
+      output_strings.push_back(_labels_to_queries_map[query_label]);
     }
     return output_strings;
   }

@@ -50,7 +50,10 @@ QueryCandidateGeneratorConfig getQueryCandidateGeneratorConfig() {
       /* num_tables = */ NUM_TABLES,
       /* hashes_per_table = */ HASHES_PER_TABLE,
       /* range= */ 100,
-      /* n_grams = */ {3, 4});
+      /* n_grams = */ {3, 4},
+      /* reservoir_size = */ std::nullopt,
+      /* source_column_index = */ 0,
+      /* target_column_index = */ 0);
 }
 
 void assertQueryingWithoutTrainingThrowsException(

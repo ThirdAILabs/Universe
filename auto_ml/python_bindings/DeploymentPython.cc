@@ -270,13 +270,13 @@ void createModelPipeline(py::module_& models_submodule) {
 class UDTFactory {
  public:
   static auto buildUDTGeneratorWrapper(py::object& obj,
-                                       const uint32_t& target_column_index,
                                        const uint32_t& source_column_index,
+                                       const uint32_t& target_column_index,
                                        const std::string& dataset_size) {
     (void)obj;
     return bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
-        /* target_column_index = */ target_column_index,
         /* source_column_index = */ source_column_index,
+        /* target_column_index = */ target_column_index,
         /* dataset_size = */ dataset_size);
   }
 
@@ -333,7 +333,7 @@ void createUDTFactory(py::module_& bolt_submodule) {
            py::arg("lookahead") = 0, py::arg("delimiter") = ',',
            py::arg("options") = OptionsMap(), docs::UDT_INIT)
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
-           py::arg("target_column_index"), py::arg("source_column_index"),
+           py::arg("source_column_index"), py::arg("target_column_index"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
 
       .def_static("load", &UDTFactory::load, py::arg("filename"),
@@ -404,7 +404,7 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
                                                              "UDTGenerator")
       .def(py::init(
                &bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
-           py::arg("target_column_index"), py::arg("source_column_index"),
+           py::arg("source_column_index"), py::arg("target_column_index"),
            py::arg("dataset_size"))
       .def("train", &bolt::QueryCandidateGenerator::buildFlashIndex,
            py::arg("filename"))
