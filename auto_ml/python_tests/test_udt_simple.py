@@ -42,7 +42,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,timestamp,hoursWatched,genres",
+            "userId,movieId,timestamp,hoursWatched,genres,meta",
             "0,1,2022-08-31,5,fiction-drama,0",
             # See above comment about the last line of the mock train file.
             (
@@ -88,7 +88,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
 
 
 def single_sample():
-    return {"userId": "0", "timestamp": "2022-08-31"}
+    return {"userId": "0", "timestamp": "2022-08-31", "genres": "fiction-drama", "meta": "0"}
 
 
 def batch_sample():
@@ -102,6 +102,7 @@ def single_update():
         "timestamp": "2022-08-31",
         "hoursWatched": "1",
         "genres": "fiction-drama",
+        "meta": "0"
     }
 
 
