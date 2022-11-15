@@ -12,7 +12,7 @@ namespace thirdai::dataset {
  */
 class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
  public:
-  explicit SegmentedSparseFeatureVector(bool store_segment_feature_map=false)
+  explicit SegmentedSparseFeatureVector(bool store_segment_feature_map = false)
       : SegmentedFeatureVector(store_segment_feature_map) {}
 
   void addSparseFeatureToSegment(uint32_t index, float value) final {
@@ -123,7 +123,7 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
 class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
  public:
   explicit HashedSegmentedFeatureVector(uint32_t hash_range,
-                                        bool store_segment_feature_map=false)
+                                        bool store_segment_feature_map = false)
       : SegmentedFeatureVector(store_segment_feature_map),
         _hash_range(hash_range) {}
 
@@ -219,7 +219,7 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
  */
 class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
  public:
-  explicit SegmentedDenseFeatureVector(bool store_segment_feature_map=false)
+  explicit SegmentedDenseFeatureVector(bool store_segment_feature_map = false)
       : SegmentedFeatureVector(store_segment_feature_map) {}
 
   void addSparseFeatureToSegment(uint32_t index, float value) final {
