@@ -1,5 +1,5 @@
 #include "BoltPython.h"
-#include <bolt/python_bindings/ConversionUtils.h>
+#include <bolt/python_bindings/PybindUtils.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -92,7 +92,8 @@ Args:
   auto udt_types_submodule = bolt_submodule.def_submodule("types");
 
   py::class_<automl::deployment::DataType>(  // NOLINT
-      udt_types_submodule, "ColumnType", "Base class for bolt types.");
+      udt_types_submodule, "ColumnType", "Base class for bolt types.")
+      .def("__str__", &automl::deployment::DataType::toString);
 
   py::class_<automl::deployment::CategoricalMetadataConfig,
              automl::deployment::CategoricalMetadataConfigPtr>(
@@ -160,7 +161,6 @@ Args:
   udt_types_submodule.def(
       "categorical", automl::deployment::DataType::categorical,
       py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
-      py::arg("consecutive_integer_ids") = false,
       R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
@@ -171,11 +171,6 @@ Args:
             (length-1 string) that separates multiple values in the same 
             column. This can only be used for the target column. If not 
             provided, UDT assumes that there is only one value in the column.
-        consecutive_integer_ids (bool): Optional. Defaults to None. When set to
-            True, the values of this column are assumed to be integers ranging 
-            from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
-            be arbitrary strings (including strings of integral ids that are 
-            not within [0, n_unique_classes - 1]).
         metadata (metadata): Optional. A metadata object to be used when there 
             is a separate metadata file corresponding to this categorical 
             column.

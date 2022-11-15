@@ -133,13 +133,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
     if (std::holds_alternative<uint32_t>(label)) {
-      if (!_config->data_types.at(_config->target)
-               .asCategorical()
-               .contiguous_numerical_ids) {
+      if (!_config->integer_target) {
         throw std::invalid_argument(
-            "Received an integer label but the target column does not contain "
-            "contiguous numerical IDs (the contiguous_numerical_id option of "
-            "the categorical data type is set to false). Label must be passed "
+            "Received an integer but integer_target is set to False (it is "
+            "False by default). Target must be passed "
             "in as a string.");
       }
       return std::get<uint32_t>(label);
@@ -147,13 +144,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     const std::string& label_str = std::get<std::string>(label);
 
-    if (_config->data_types.at(_config->target)
-            .asCategorical()
-            .contiguous_numerical_ids) {
+    if (_config->integer_target) {
       throw std::invalid_argument(
-          "Received a string label but the target column contains contiguous "
-          "numerical IDs (the contiguous_numerical_id option of the "
-          "categorical data type is set to true). Label must be passed in as "
+          "Received a string but integer_target is set to True. Target must be "
+          "passed in as "
           "an integer.");
     }
 
@@ -169,12 +163,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       throw std::invalid_argument(
           "Attempted to get id to label map before training.");
     }
-    if (_config->data_types.at(_config->target)
-            .asCategorical()
-            .contiguous_numerical_ids) {
+    if (_config->integer_target) {
       throw std::invalid_argument(
           "This model does not provide a mapping from ids to labels since the "
-          "target column has contiguous numerical ids; the ids and labels are "
+          "target column has integer ids; the ids and labels are "
           "equivalent.");
     }
     return _vocabs.at(_config->target)->getString(neuron_id);
@@ -250,6 +242,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     auto label_block = dataset::StringLookupCategoricalBlock::make(
         column_numbers->at(metadata->key), key_vocab);
 
+    // Here we set parallel=true because there are no temporal
+    // relationships in the metadata file.
     dataset::StreamingGenericDatasetLoader metadata_loader(
         /* loader= */ data_loader,
         /* processor= */
@@ -381,7 +375,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     auto target_config = target_type.asCategorical();
 
     dataset::BlockPtr label_block;
-    if (target_config.contiguous_numerical_ids) {
+    if (_config->integer_target) {
       label_block = dataset::NumericalCategoricalBlock::make(
           /* col= */ col_num, /* n_classes= */ _config->n_target_classes,
           /* delimiter= */ target_config.delimiter);

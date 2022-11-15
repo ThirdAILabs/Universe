@@ -119,12 +119,16 @@ class FeatureComposer {
       }
     }
 
+    // Blocks still need a hash range even though we later hash it into
+    // a range because we still want to support block feature
+    // concatenations.
+    // TODO(Geordie): This is redundant, remove this later.
     // we always use tabular unigrams but add pairgrams on top of it if the
     // contextual_columns flag is true
-    blocks.push_back(
-        makeTabularHashFeaturesBlock(tabular_datatypes, tabular_col_ranges,
-                                     column_numbers.getColumnNumToColNameMap(),
-                                     contextual_columns, tabular_col_bins));
+    blocks.push_back(makeTabularHashFeaturesBlock(
+        tabular_datatypes, tabular_col_ranges,
+        column_numbers.getColumnNumToColNameMap(), contextual_columns,
+        tabular_col_bins));
 
     return blocks;
   }
@@ -349,7 +353,7 @@ class FeatureComposer {
     // output range of MAXINT is fine since features are later
     // hashed into a range. In fact it may reduce hash collisions.
     return std::make_shared<dataset::TabularHashFeatures>(
-        tabular_metadata, std::numeric_limits<uint32_t>::max(),
+        tabular_metadata, /* output_range= */ std::numeric_limits<uint32_t>::max(),
         /* with_pairgrams= */ contextual_columns);
   }
 

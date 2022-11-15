@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 import numpy as np
-import thirdai._thirdai.data
-from thirdai._thirdai.data import *
+from thirdai._thirdai.data import ColumnMap, columns
 
 
 class ColumnMapGenerator(ABC):
@@ -49,7 +48,3 @@ def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
             )
 
     return ColumnMap(column_map)
-
-
-__all__ = ["ColumnMapGenerator", "pandas_to_columnmap"]
-__all__.extend(dir(thirdai._thirdai.data))

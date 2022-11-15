@@ -145,7 +145,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
                                      BoltVector& vector) {
     return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
-                      _hash_range);
+                      /* hash_range= */ _hash_range);
   }
 
   std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,

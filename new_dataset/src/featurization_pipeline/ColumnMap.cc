@@ -1,6 +1,7 @@
 #include "ColumnMap.h"
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <exception>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -183,6 +184,17 @@ ColumnPtr ColumnMap::getColumn(const std::string& name) const {
                                 "'.");
   }
   return _columns.at(name);
+}
+
+void ColumnMap::setColumn(const std::string& name, ColumnPtr column) {
+  // _columns.begin() is safe because the constructor to ColumnMap throws if the
+  // supplied set of columns is empty.
+  if (column->numRows() != _columns.begin()->second->numRows()) {
+    throw std::invalid_argument(
+        "Cannot insert a Column with a different number of rows into a "
+        "ColumnMap.");
+  }
+  _columns[name] = std::move(column);
 }
 
 std::vector<std::string> ColumnMap::columns() const {

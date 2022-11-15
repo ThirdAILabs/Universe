@@ -61,7 +61,7 @@ class ItemHistoryCollection {
    * Clears all tracked categories.
    */
   void reset() {
-    for (auto& [id, history] : _histories) {
+    for (auto& [_, history] : _histories) {
       history.clear();
     }
   }
