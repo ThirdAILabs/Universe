@@ -91,10 +91,17 @@ class FeatureComposer {
 
       if (data_type.isCategorical()) {
         auto categorical = data_type.asCategorical();
-        // if has metadata
+        // if part of metadata
         if (vectors_map.count(col_name) && categorical.metadata_config) {
           blocks.push_back(dataset::MetadataCategoricalBlock::make(
               col_num, vectors_map.at(col_name)));
+        }
+        if (categorical.delimiter) {
+          blocks.push_back(dataset::UniGramTextBlock::make(
+              col_num, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+              *categorical.delimiter));
+        } else {
+          tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
         }
       }
 
