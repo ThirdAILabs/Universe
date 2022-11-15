@@ -117,19 +117,20 @@ using PairGramTextBlockPtr = std::shared_ptr<PairGramTextBlock>;
 class UniGramTextBlock final : public TextBlock {
  public:
   explicit UniGramTextBlock(
-      uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
-      : TextBlock(col, dim) {}
+      uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+      char delimiter = ' ')
+      : TextBlock(col, dim), _delimiter(delimiter) {}
 
-  static auto make(
-      uint32_t col,
-      uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<UniGramTextBlock>(col, dim);
+  static auto make(uint32_t col,
+                   uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+                   char delimiter = ' ') {
+    return std::make_shared<UniGramTextBlock>(col, dim, delimiter);
   }
 
   std::string getResponsibleWord(uint32_t index,
                                  const std::string_view& text) const final {
     std::unordered_map<uint32_t, std::string> index_to_word_map =
-        TextEncodingUtils::buildUnigramHashToWordMap(text, _dim);
+        TextEncodingUtils::buildUnigramHashToWordMap(text, _dim, _delimiter);
     return index_to_word_map.at(index);
   }
 
@@ -137,7 +138,7 @@ class UniGramTextBlock final : public TextBlock {
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigrams =
-        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
+        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim, _delimiter);
 
     TextEncodingUtils::sumRepeatedIndices(
         unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
@@ -151,10 +152,12 @@ class UniGramTextBlock final : public TextBlock {
   // Private constructor for cereal.
   UniGramTextBlock() {}
 
+  char _delimiter = ' ';
+
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<TextBlock>(this));
+    archive(cereal::base_class<TextBlock>(this), _delimiter);
   }
 };
 

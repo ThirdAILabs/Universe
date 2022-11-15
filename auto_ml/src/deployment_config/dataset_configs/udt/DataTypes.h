@@ -55,25 +55,9 @@ struct CategoricalDataType {
 
 struct TextDataType {
   explicit TextDataType(std::optional<uint32_t> average_n_words,
-                        const std::string& embedding_size, bool force_pairgram)
-      : average_n_words(average_n_words), force_pairgram(force_pairgram) {
-    auto embedding_size_lower = utils::lower(embedding_size);
-    if (embedding_size_lower == "s" || embedding_size_lower == "small") {
-      this->dim = 30000;
-    } else if (embedding_size_lower == "m" ||
-               embedding_size_lower == "medium") {
-      this->dim = 100000;
-    } else if (embedding_size_lower == "l" || embedding_size_lower == "large") {
-      this->dim = 500000;
-    } else {
-      throw std::invalid_argument(
-          embedding_size +
-          " is not a valid embedding size option. Choose between 'small'/'s', "
-          "'medium'/'m', and 'large'/'l'.");
-    }
-  }
+                        bool force_pairgram)
+      : average_n_words(average_n_words), force_pairgram(force_pairgram) {}
   std::optional<uint32_t> average_n_words;
-  uint32_t dim;
   bool force_pairgram;
 
   TextDataType() {}
@@ -84,7 +68,7 @@ struct TextDataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(average_n_words, dim, force_pairgram);
+    archive(average_n_words, force_pairgram);
   }
 };
 
@@ -135,9 +119,8 @@ class DataType {
   }
 
   static auto text(std::optional<uint32_t> average_n_words = std::nullopt,
-                   const std::string& embedding_size = "m",
                    bool use_attention = false) {
-    return DataType(TextDataType(average_n_words, embedding_size,
+    return DataType(TextDataType(average_n_words,
                                  /* force_pairgram= */ use_attention));
   }
 

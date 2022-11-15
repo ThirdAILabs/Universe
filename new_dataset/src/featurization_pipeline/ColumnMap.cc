@@ -61,7 +61,8 @@ BoltDatasetPtr ColumnMap::convertToDataset(
         if (all_cols_dense) {
           // TODO(Nicholas/Geordie): Refactor this into a unified row builder
           // class.
-          SegmentedDenseFeatureVector vector;
+          SegmentedDenseFeatureVector vector(
+              /* store_segment_feature_map= */ false);
           for (uint32_t i = 0; i < output_columns.size(); i++) {
             auto column = output_columns[i];
             vector.addFeatureSegment(column_dims[i]);
@@ -69,7 +70,8 @@ BoltDatasetPtr ColumnMap::convertToDataset(
           }
           batch[vec_idx] = vector.toBoltVector();
         } else {
-          SegmentedSparseFeatureVector vector;
+          SegmentedSparseFeatureVector vector(
+              /* store_segment_feature_map= */ false);
           for (uint32_t i = 0; i < output_columns.size(); i++) {
             auto column = output_columns[i];
             vector.addFeatureSegment(column_dims[i]);

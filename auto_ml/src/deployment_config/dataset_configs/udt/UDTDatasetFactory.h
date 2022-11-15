@@ -434,8 +434,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<dataset::BlockPtr> buildInputBlocks(
       const ColumnNumberMap& column_numbers, bool should_update_history) {
-    FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
-
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
             *_config, _temporal_relationships, column_numbers, _vectors_map,
