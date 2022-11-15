@@ -91,7 +91,7 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
 };
 
 /**
- * A concrete implementation of SegmentedFeatureVector where features 
+ * A concrete implementation of SegmentedFeatureVector where features
  * are not concatenated but instead hashed to the same range with a
  * different salt for each segment.
  */

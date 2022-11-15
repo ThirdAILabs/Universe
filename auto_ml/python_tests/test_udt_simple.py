@@ -67,7 +67,6 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         data_types={
             "userId": bolt.types.categorical(metadata=metadata),
             "movieId": bolt.types.categorical(
-                consecutive_integer_ids=integer_label,
                 metadata=metadata,
             ),
             "timestamp": bolt.types.date(),
@@ -78,6 +77,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
         n_target_classes=3,
+        integer_target=integer_label,
         options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
     )
 
@@ -207,13 +207,13 @@ def test_explanations_target_label_format():
     model = make_simple_trained_model(integer_label=False)
     # Call this method to make sure it does not throw an error
     model.explain(single_sample(), target_class="1")
-    with pytest.raises(ValueError, match=r"Received an integer label*"):
+    with pytest.raises(ValueError, match=r"Received an integer but*"):
         model.explain(single_sample(), target_class=1)
 
     model = make_simple_trained_model(integer_label=True)
     # Call this method to make sure it does not throw an error
     model.explain(single_sample(), target_class=1)
-    with pytest.raises(ValueError, match=r"Received a string label*"):
+    with pytest.raises(ValueError, match=r"Received a string but*"):
         model.explain(single_sample(), target_class="1")
 
 

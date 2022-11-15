@@ -94,14 +94,7 @@ class FeatureComposer {
         // if has metadata
         if (vectors_map.count(col_name) && categorical.metadata_config) {
           blocks.push_back(dataset::MetadataCategoricalBlock::make(
-              col_num, vectors_map.at(col_name), categorical.delimiter));
-        }
-        if (categorical.delimiter) {
-          blocks.push_back(dataset::UniGramTextBlock::make(
-              col_num, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
-              *categorical.delimiter));
-        } else {
-          tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
+              col_num, vectors_map.at(col_name)));
         }
       }
 
@@ -129,6 +122,10 @@ class FeatureComposer {
       }
     }
 
+    // Blocks still need a hash range even though we later hash it into
+    // a range because we still want to support block feature
+    // concatenations.
+    // TODO(Geordie): This is redundant, remove this later.
     // we always use tabular unigrams but add pairgrams on top of it if the
     // contextual_columns flag is true
     blocks.push_back(makeTabularHashFeaturesBlock(

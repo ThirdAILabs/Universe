@@ -46,6 +46,7 @@ Args:
     target (str): Name of the column that contains the value to be predicted by
         UDT. The target column has to be a categorical column.
     n_target_classes (int): Number of target classes.
+    integer_target (bool): Whether the target classes are integers in the range 0 to n_target_classes - 1.
     time_granularity (str): Optional. Either `"daily"`/`"d"`, `"weekly"`/`"w"`, `"biweekly"`/`"b"`, 
         or `"monthly"`/`"m"`. Interval of time that UDT should use for temporal features. Temporal numerical 
         features are clubbed according to this time granularity. E.g. if 

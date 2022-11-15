@@ -17,13 +17,12 @@ ACCURACY_THRESHOLD = 0.8
 def train_udt_text_classification(download_clinc_dataset):
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "category": bolt.types.categorical(
-                consecutive_integer_ids=True
-            ),
+            "category": bolt.types.categorical(),
             "text": bolt.types.text(),
         },
         target="category",
         n_target_classes=150,
+        integer_target=True,
     )
 
     train_filename, _, _ = download_clinc_dataset
