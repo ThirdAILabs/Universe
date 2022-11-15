@@ -91,7 +91,7 @@ class FeatureComposer {
 
       if (data_type.isCategorical()) {
         auto categorical = data_type.asCategorical();
-        // if part of metadata
+        // if has metadata
         if (vectors_map.count(col_name) && categorical.metadata_config) {
           blocks.push_back(dataset::MetadataCategoricalBlock::make(
               col_num, vectors_map.at(col_name)));
