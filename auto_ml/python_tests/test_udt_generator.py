@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 TRAIN_FILE_PATH = "./query_reformulation.csv"
 MODEL_PATH = "udt_generator_model.bolt"
