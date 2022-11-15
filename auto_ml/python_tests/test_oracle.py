@@ -33,7 +33,7 @@ def make_serialized_udt_config():
 
     dataset_config = deployment.UDTDatasetFactory(
         config=deployment.UserSpecifiedParameter("config", type=bolt.UDTConfig),
-        parallel=deployment.ConstantParameter(False),
+        force_parallel=deployment.ConstantParameter(False),
         text_pairgram_word_limit=deployment.ConstantParameter(15),
         contextual_columns=deployment.ConstantParameter(False),
     )
@@ -88,12 +88,13 @@ def make_simple_udt_model():
         parameters={
             "config": bolt.UDTConfig(
                 data_types={
-                    "userId": bolt.types.categorical(n_unique_classes=3),
-                    "movieId": bolt.types.categorical(n_unique_classes=3),
+                    "userId": bolt.types.categorical(),
+                    "movieId": bolt.types.categorical(),
                     "timestamp": bolt.types.date(),
                 },
                 temporal_tracking_relationships={"userId": ["movieId"]},
                 target="movieId",
+                n_target_classes=3,
             )
         },
     )
