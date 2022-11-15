@@ -78,25 +78,6 @@ def _infer_col_type(column: pd.Series) -> Dict[str, str]:
     return {"type": "categorical"}
 
 
-<<<<<<< HEAD
-# Tries to parse the given filename as a csv and then infer the type of each
-# column. The returned dictionary is a map from column name to a metadata
-# dictionary. One of the items in the metadata dictionary will be {"type": X},
-# where X is one of ["categorical", "multi-categorical", "datetime", "numerical", "text"].
-# Types that are "multi-categorical" will have an additional item in the dictionary
-# specifying the estimate delimiter. Refer to the infer_types_test.py files for
-# full examples with expected inputs and outputs.
-def semantic_type_inference(
-    filename: str, nrows: int = 100, min_rows_allowed: int = 3
-) -> Dict[str, Dict[str, str]]:
-
-    print(f"Reading first {nrows} lines of file {filename}:")
-    with open(filename) as file:
-        for i, line in enumerate(file):
-            if i == nrows:
-                break
-            print(line.strip())
-=======
 def semantic_type_inference(
     filename: str, nrows: int = 100, min_rows_allowed: int = 3
 ) -> Dict[str, Dict[str, str]]:
@@ -122,7 +103,6 @@ def semantic_type_inference(
         specifying the estimate delimiter. Refer to the infer_types_test.py files
         for full examples with expected inputs and outputs.
     """
->>>>>>> main
 
     df = pd.read_csv(filename, nrows=nrows)
     if len(df) < min_rows_allowed:
