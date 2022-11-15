@@ -9,6 +9,7 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
 #include <limits>
@@ -42,6 +43,13 @@ struct CategoricalDataType {
   bool contiguous_numerical_ids;
 
   CategoricalDataType() {}
+
+  std::string toString() const {
+    if (delimiter.has_value()) {
+      return fmt::format(R"({{"type": "categorical", "delimeter": "{}"}})", delimiter.value());
+    }
+    return fmt::format(R"({{"type": "categorical"}})");
+  }
 
  private:
   friend class cereal::access;
@@ -77,6 +85,8 @@ struct TextDataType {
 
   TextDataType() {}
 
+  static std::string toString()  { return "{type: text}"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -95,6 +105,11 @@ struct NumericalDataType {
 
   NumericalDataType() {}
 
+  std::string toString() const {
+    return fmt::format("type: numerical, range: [{}, {}]", range.first,
+                       range.second);
+  }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -103,9 +118,13 @@ struct NumericalDataType {
   }
 };
 
-struct DateDataType {};
+struct DateDataType {
+  static std::string toString()  { return "{type: date}"; }
+};
 
-struct NoneDataType {};
+struct NoneDataType {
+  static std::string toString()  { return "{type: none}"; }
+};
 
 using AnyDataType = std::variant<NoneDataType, DateDataType, NumericalDataType,
                                  CategoricalDataType, TextDataType>;
@@ -147,6 +166,7 @@ class DataType {
   }
   bool isText() const { return std::holds_alternative<TextDataType>(_value); }
   bool isDate() const { return std::holds_alternative<DateDataType>(_value); }
+  bool isNone() const { return std::holds_alternative<NoneDataType>(_value); }
 
   const CategoricalDataType& asCategorical() const {
     if (!isCategorical()) {
@@ -174,6 +194,39 @@ class DataType {
       throwCastError("date");
     }
     return std::get<DateDataType>(_value);
+  }
+
+  const NoneDataType& asNone() const {
+    if (!isNone()) {
+      throwCastError("none");
+    }
+    return std::get<NoneDataType>(_value);
+  }
+
+  std::string toString() const {
+    if (isCategorical()) {
+      return asCategorical().toString();
+    }
+
+    if (isDate()) {
+      return DateDataType::toString();
+    }
+
+    if (isNumerical()) {
+      return asNumerical().toString();
+    }
+
+    if (isText()) {
+      return TextDataType::toString();
+    }
+
+    if (isNone()) {
+      return NoneDataType::toString();
+    }
+
+    throw std::runtime_error(
+        "This DataType object is not of a known concrete type, so we cannot "
+        "print it to string. This should never happen.");
   }
 
  private:
