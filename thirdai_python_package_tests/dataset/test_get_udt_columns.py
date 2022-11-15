@@ -22,11 +22,9 @@ def test_get_udt_columns(delimiter):
 
         print(type(udt_types["col1"]))
 
-        assert udt_types["col1"] == "categorical"
-        assert udt_types["col2"] == "categorical"
-        assert udt_types["col3"] == "numerical"
-        assert udt_types["col3"].range == (3, 9)
-        assert udt_types["col4"] == "multi-categorical"
-        assert udt_types["col4"].delimiter == delimiter
-        assert udt_types["col5"] == "text"
-        assert udt_types["col6"] == "datetime"
+        assert str(udt_types["col1"]) == "categorical"
+        assert str(udt_types["col2"]) == "categorical"
+        assert str(udt_types["col3"]) == "numerical"
+        assert str(udt_types["col4"]) == "multi-categorical"
+        assert str(udt_types["col5"]) == "text"
+        assert str(udt_types["col6"]) == "datetime"
