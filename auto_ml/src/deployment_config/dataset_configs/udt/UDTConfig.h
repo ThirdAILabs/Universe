@@ -36,8 +36,6 @@ struct UDTConfig {
    *
    * n_target_classes: number of target classes.
    *
-   * n_target_classes: number of target classes.
-   *
    * time_granularity: Either "daily"/"d", "weekly"/"w", "biweekly"/"b",
    *   or `"monthly"`/`"m"`. Interval of time that we are interested in.
    *   Temporal numerical features are grouped according to this time
