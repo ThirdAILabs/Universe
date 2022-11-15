@@ -92,10 +92,6 @@ class QueryCandidateGeneratorConfig {
 
   std::optional<uint32_t> reservoirSize() const { return _reservoir_size; }
 
-  constexpr bool hasIncorrectQueries() const {
-    return _source_column_index != _target_column_index;
-  }
-
   constexpr uint32_t sourceColumnIndex() const { return _source_column_index; }
 
   constexpr uint32_t targetColumnIndex() const { return _target_column_index; }
@@ -113,7 +109,7 @@ class QueryCandidateGeneratorConfig {
         /* hashes_per_table = */ 5,
         /* range = */ 100000,
         /* n_grams = */ {3, 4},
-        /* reservoir_size */ 100000,
+        /* reservoir_size */ 512,
         /* source_column_index = */ source_column_index,
         /* target_column_index = */ target_column_index);
 
@@ -232,8 +228,7 @@ class QueryCandidateGenerator {
    * @param file_name
    */
   void buildFlashIndex(const std::string& file_name) {
-    auto labels = getQueryLabels(
-        file_name, _query_generator_config->hasIncorrectQueries());
+    auto labels = getQueryLabels(file_name);
 
     auto data_loader = getDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
@@ -324,7 +319,8 @@ class QueryCandidateGenerator {
       }
     }
 
-    if (_query_generator_config->hasIncorrectQueries()) {
+    if (_query_generator_config->sourceColumnIndex() !=
+        _query_generator_config->targetColumnIndex()) {
       std::vector<std::string> correct_queries =
           dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
               file_name, /* column_index = */ 0);
@@ -346,41 +342,25 @@ class QueryCandidateGenerator {
       : _query_generator_config(std::move(query_candidate_generator_config)) {
     std::vector<dataset::BlockPtr> training_input_blocks;
 
-    if (_query_generator_config->hasIncorrectQueries()) {
-      training_input_blocks = constructInputBlocks(
-          _query_generator_config->nGrams(),
-          /* column_index = */ _query_generator_config->sourceColumnIndex());
-      auto inference_input_blocks = constructInputBlocks(
-          _query_generator_config->nGrams(),
-          /* column_index = */ _query_generator_config->targetColumnIndex());
+    auto inference_input_blocks =
+        constructInputBlocks(_query_generator_config->nGrams(),
+                             /* column_index = */ 0);
 
-      _training_batch_processor =
-          std::make_shared<dataset::GenericBatchProcessor>(
-              /* input_blocks = */ training_input_blocks,
-              /* label_blocks = */ std::vector<dataset::BlockPtr>{},
-              /* has_header = */ false, /* delimiter = */ ',');
+    training_input_blocks = constructInputBlocks(
+        _query_generator_config->nGrams(),
+        /* column_index = */ _query_generator_config->sourceColumnIndex());
 
-      _inference_batch_processor =
-          std::make_shared<dataset::GenericBatchProcessor>(
-              /* input_blocks = */ inference_input_blocks,
-              /* labels_blocks = */ std::vector<dataset::BlockPtr>{},
-              /* has_header = */ false, /* delimiter = */ ',');
+    _training_batch_processor =
+        std::make_shared<dataset::GenericBatchProcessor>(
+            /* input_blocks = */ training_input_blocks,
+            /* label_blocks = */ std::vector<dataset::BlockPtr>{},
+            /* has_header = */ false, /* delimiter = */ ',');
 
-    } else {
-      assert(_query_generator_config->sourceColumnIndex() ==
-             _query_generator_config->targetColumnIndex());
-      training_input_blocks = constructInputBlocks(
-          _query_generator_config->nGrams(),
-          /* column_index = */ _query_generator_config->targetColumnIndex());
-
-      _training_batch_processor =
-          std::make_shared<dataset::GenericBatchProcessor>(
-              /* input_blocks = */ training_input_blocks,
-              /* label_blocks = */ std::vector<dataset::BlockPtr>{},
-              /* has_header = */ false, /* delimiter = */ ',');
-
-      _inference_batch_processor = _training_batch_processor;
-    }
+    _inference_batch_processor =
+        std::make_shared<dataset::GenericBatchProcessor>(
+            /* input_blocks = */ inference_input_blocks,
+            /* labels_blocks = */ std::vector<dataset::BlockPtr>{},
+            /* has_header = */ false, /* delimiter = */ ',');
   }
 
   std::vector<dataset::BlockPtr> constructInputBlocks(
@@ -450,7 +430,7 @@ class QueryCandidateGenerator {
    * @return Labels for each batch
    */
   std::vector<std::vector<uint32_t>> getQueryLabels(
-      const std::string& file_name, bool has_incorrect_queries) {
+      const std::string& file_name) {
     std::vector<std::vector<uint32_t>> labels;
 
     try {
@@ -461,14 +441,9 @@ class QueryCandidateGenerator {
       std::string row;
 
       while (std::getline(input_file_stream, row)) {
-        std::string correct_query;
-
-        if (has_incorrect_queries) {
-          correct_query =
-              std::string(dataset::ProcessorUtils::parseCsvRow(row, ',')[0]);
-        } else {
-          correct_query = row;
-        }
+        std::string correct_query =
+            std::string(dataset::ProcessorUtils::parseCsvRow(
+                row, ',')[_query_generator_config->targetColumnIndex()]);
 
         if (!_queries_to_labels_map.count(correct_query)) {
           _queries_to_labels_map[correct_query] = _labels_to_queries_map.size();

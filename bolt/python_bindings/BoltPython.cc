@@ -443,8 +443,6 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
             )pbdoc");
 
 #endif
-
 }
-
 
 }  // namespace thirdai::bolt::python
