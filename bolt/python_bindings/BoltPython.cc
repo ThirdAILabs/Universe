@@ -1,5 +1,5 @@
 #include "BoltPython.h"
-#include <bolt/python_bindings/ConversionUtils.h>
+#include <bolt/python_bindings/PybindUtils.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>

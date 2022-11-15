@@ -1,6 +1,6 @@
 #include "DeploymentPython.h"
 #include "DeploymentDocs.h"
-#include <bolt/python_bindings/ConversionUtils.h>
+#include <bolt/python_bindings/PybindUtils.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/LayerConfig.h>
@@ -24,6 +24,7 @@
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
+#include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
@@ -224,24 +225,28 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
   py::class_<ModelPipeline>(bolt_submodule, "Pipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
            py::arg("parameters") = py::dict(),
-           docs::MODEL_PIPELINE_INIT_FROM_CONFIG)
+           docs::MODEL_PIPELINE_INIT_FROM_CONFIG,
+           bolt::python::OutputRedirect())
       .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
            py::arg("parameters") = py::dict(),
-           docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG)
+           docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
+           bolt::python::OutputRedirect())
       .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
-           docs::MODEL_PIPELINE_TRAIN_FILE)
+           docs::MODEL_PIPELINE_TRAIN_FILE, bolt::python::OutputRedirect())
       .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
            py::arg("train_config"),
            py::arg("max_in_memory_batches") = std::nullopt,
-           docs::MODEL_PIPELINE_TRAIN_DATA_LOADER)
+           docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
+           bolt::python::OutputRedirect())
       .def("evaluate", &evaluateOnFileWrapper<ModelPipeline>,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           docs::MODEL_PIPELINE_EVALUATE_FILE)
+           docs::MODEL_PIPELINE_EVALUATE_FILE, bolt::python::OutputRedirect())
       .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
            py::arg("eval_config") = std::nullopt,
-           docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER)
+           docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
+           bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<ModelPipeline, LineInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT)
@@ -255,7 +260,7 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
-           py::arg("filename"))
+           py::arg("filename"), bolt::python::OutputRedirect())
       .def("save", &ModelPipeline::save, py::arg("filename"),
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
@@ -270,7 +275,8 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("target"), py::arg("n_target_classes"),
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', docs::ORACLE_CONFIG_INIT);
+           py::arg("delimiter") = ',', docs::ORACLE_CONFIG_INIT,
+           bolt::python::OutputRedirect());
 
   py::class_<UniversalDeepTransformer>(
       bolt_submodule, "UniversalDeepTransformer", docs::UDT_CLASS)
@@ -281,17 +287,18 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
-           docs::UDT_INIT)
+           docs::UDT_INIT, bolt::python::OutputRedirect())
       .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
            py::arg("train_config") = bolt::TrainConfig::makeConfig(
                /* learning_rate= */ 0.001, /* epochs= */ 3),
            py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN)
+           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN,
+           bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
       .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           docs::UDT_EVALUATE)
+           docs::UDT_EVALUATE, bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            docs::UDT_PREDICT)
@@ -307,7 +314,8 @@ void defineModelPipelineAndUDT(py::module_& bolt_submodule) {
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
       .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
-           py::arg("input_sample"), docs::UDT_INDEX)
+           py::arg("input_sample"), docs::UDT_INDEX,
+           bolt::python::OutputRedirect())
       .def("index_batch",
            &UniversalDeepTransformer::batchUpdateTemporalTrackers,
            py::arg("input_samples"), docs::UDT_INDEX_BATCH)
