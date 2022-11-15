@@ -49,17 +49,35 @@ def _is_datetime_col(column: pd.Series) -> bool:
         return False
 
 
+def _is_float_col(column: pd.Series):
+    try:
+        converted_col = pd.to_numeric(column)
+        return converted_col.dtype == "float64"
+    except:
+        return False
+
+
+def _is_int_col(column: pd.Series):
+    try:
+        converted_col = pd.to_numeric(column)
+        return converted_col.dtype == "int64"
+    except:
+        return False
+
+
 def _infer_col_type(column: pd.Series) -> Dict[str, str]:
-    if column.dtype == "float64":
+    column = column.dropna()
+
+    if len(column) < 2:
+        raise ValueError(
+            f"Column {column} has less than less than 2 non-missing values so we cannot do type inference"
+        )
+
+    if _is_float_col(column):
         return {"type": "numerical"}
 
-    if column.dtype == "int64":
+    if _is_int_col(column):
         return {"type": "categorical"}
-
-    if column.dtype != "object":
-        raise ValueError(
-            f"Input columns must be floating point, integers, or text, but found a column of type {column.dtype}"
-        )
 
     if _is_datetime_col(column):
         return {"type": "datetime"}
@@ -104,7 +122,7 @@ def semantic_type_inference(
         for full examples with expected inputs and outputs.
     """
 
-    df = pd.read_csv(filename, nrows=nrows)
+    df = pd.read_csv(filename, nrows=nrows, dtype=object)
     if len(df) < min_rows_allowed:
         raise ValueError(
             f"Parsed csv {filename} must have at least {min_rows_allowed} rows, but we found only {len(df)} rows."
