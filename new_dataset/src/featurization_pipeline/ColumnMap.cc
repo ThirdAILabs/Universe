@@ -191,7 +191,7 @@ columns::ColumnPtr ColumnMap::getColumn(const std::string& name) const {
   return _columns.at(name);
 }
 
-void ColumnMap::setColumn(const std::string& name, ColumnPtr column) {
+void ColumnMap::setColumn(const std::string& name, columns::ColumnPtr column) {
   // _columns.begin() is safe because the constructor to ColumnMap throws if the
   // supplied set of columns is empty.
   if (column->numRows() != _columns.begin()->second->numRows()) {
