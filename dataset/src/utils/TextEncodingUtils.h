@@ -207,8 +207,6 @@ class TextEncodingUtils {
 
         std::string_view word_view(sentence.data() + start_of_word_offset, len);
 
-        std::cout << "HASHING WORD: " << std::string(word_view) << std::endl;
-
         // Hash the word using the recorded start offset and the current index.
         uint32_t word_hash =
             computeUnigram(sentence.data() + start_of_word_offset, len);

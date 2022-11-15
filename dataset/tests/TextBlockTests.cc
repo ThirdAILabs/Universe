@@ -32,9 +32,7 @@ class TextBlockTest : public testing::Test {
           auto random_word = random_string_of_len(word_length);
           sentence += delimiter + random_word;
           words.push_back(random_word);
-          std::cout << "Created word " << random_word << std::endl;
         }
-        std::cout << "Created sentence " << sentence << std::endl;
         sentence_row.push_back(sentence);
         word_row.push_back(words);
       }
