@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 TRAIN_FILE_PATH = "./query_reformulation.csv"
 MODEL_PATH = "udt_generator_model.bolt"
@@ -152,18 +152,3 @@ def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
 def test_udt_generator(prepared_datasets):
     model = train_udt_query_reformulation_model()
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
-
-
-@pytest.mark.filterwarnings("ignore")
-def test_udt_generator_load_save(prepared_datasets):
-    model = train_udt_query_reformulation_model()
-    model.save(MODEL_PATH)
-
-    deserialized_model = bolt.UniversalDeepTransformer.load(
-        MODEL_PATH, model_type="generator"
-    )
-    eval_outputs = model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
-    deserialized_model_eval_outputs = deserialized_model.evaluate(
-        filename=TRAIN_FILE_PATH, top_k=5
-    )
-    delete_created_files()
