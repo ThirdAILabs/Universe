@@ -39,7 +39,7 @@ def main():
         os.path.dirname(os.path.realpath(__file__))
         if (
             subprocess.call(
-                f"python3 benchmarks/bolt.py --disable_upload_artifacts --disable_mlflow  {config} ",
+                f"python3 benchmarks/bolt.py --disable_upload_artifacts --run_name {run_name} {config} ",
                 shell=True,
                 cwd=universe_dir,
             )

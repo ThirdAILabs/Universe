@@ -1,5 +1,5 @@
 #include "BoltPython.h"
-#include <bolt/python_bindings/ConversionUtils.h>
+#include <bolt/python_bindings/PybindUtils.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
@@ -97,7 +97,8 @@ Args:
   auto udt_types_submodule = bolt_submodule.def_submodule("types");
 
   py::class_<automl::deployment::DataType>(  // NOLINT
-      udt_types_submodule, "ColumnType", "Base class for bolt types.");
+      udt_types_submodule, "ColumnType", "Base class for bolt types.")
+      .def("__str__", &automl::deployment::DataType::toString);
 
   py::class_<automl::deployment::CategoricalMetadataConfig,
              automl::deployment::CategoricalMetadataConfigPtr>(
@@ -150,7 +151,6 @@ Args:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(
-                        n_unique_classes=5000, 
                         delimiter=' ',
                         metadata=bolt.types.metadata(
                             filename="user_meta.csv", 
@@ -165,26 +165,17 @@ Args:
 
   udt_types_submodule.def(
       "categorical", automl::deployment::DataType::categorical,
-      py::arg("n_unique_classes"), py::arg("delimiter") = std::nullopt,
-      py::arg("metadata") = nullptr, py::arg("consecutive_integer_ids") = false,
+      py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
       R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
     movie titles, or age groups.
 
     Args:
-        n_unique_classes (int): Number of unique categories in the column.
-            UDT throws an error if the column contains more than the 
-            specified number of unique values.
         delimiter (str): Optional. Defaults to None. A single character 
             (length-1 string) that separates multiple values in the same 
             column. This can only be used for the target column. If not 
             provided, UDT assumes that there is only one value in the column.
-        consecutive_integer_ids (bool): Optional. Defaults to None. When set to
-            True, the values of this column are assumed to be integers ranging 
-            from 0 to n_unique_classes - 1. Otherwise, the values are assumed to 
-            be arbitrary strings (including strings of integral ids that are 
-            not within [0, n_unique_classes - 1]).
         metadata (metadata): Optional. A metadata object to be used when there 
             is a separate metadata file corresponding to this categorical 
             column.
@@ -193,7 +184,6 @@ Args:
         >>> deployment.UniversalDeepTransformer(
                 data_types: {
                     "user_id": bolt.types.categorical(
-                        n_unique_classes=5000, 
                         delimiter=' ',
                         metadata=bolt.types.metadata(filename="user_meta.csv", data_types={"age": bolt.types.numerical()}, key_column_name="user_id")
                     )
@@ -226,7 +216,6 @@ Args:
                              )pbdoc");
   udt_types_submodule.def("text", automl::deployment::DataType::text,
                           py::arg("average_n_words") = std::nullopt,
-                          py::arg("embedding_size") = "m",
                           py::arg("use_attention") = false,
                           R"pbdoc(
     Text column type. Use this object if a column contains text data 
@@ -237,8 +226,6 @@ Args:
         average_n_words (int): Optional. Average number of words in the 
             text column in each row. If provided, UDT may make 
             optimizations as appropriate.
-        embedding_size (str): Optional. One of "small"/"s", "medium"/"m",
-            or "large"/"l". Defaults to "m".
         use_attention (bool): Optional. If true, udt is guaranteed to
             use attention when processing this text column. Otherwise, 
             udt will only use attention when appropriate.
@@ -301,10 +288,10 @@ Args:
         >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
         >>> model = deployment.UniversalDeepTransformer(
                 data_types={
-                    "product_id": bolt.types.categorical(n_unique_classes=5000),
+                    "product_id": bolt.types.categorical(),
                     "timestamp": bolt.types.date(),
-                    "ad_spend_level": bolt.types.categorical(n_unique_classes=5),
-                    "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                    "ad_spend_level": bolt.types.categorical(),
+                    "sales_performance": bolt.types.categorical(),
                 },
                 temporal_tracking_relationships={
                     "product_id": [
@@ -345,10 +332,10 @@ Args:
         >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
         >>> model = deployment.UniversalDeepTransformer(
                 data_types={
-                    "product_id": bolt.types.categorical(n_unique_classes=5000),
+                    "product_id": bolt.types.categorical(),
                     "timestamp": bolt.types.date(),
                     "ad_spend": bolt.types.numerical(range=(0, 10000)),
-                    "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                    "sales_performance": bolt.types.categorical(),
                 },
                 target="sales_performance"
                 time_granularity="weekly",
@@ -369,8 +356,6 @@ Args:
         - The same column can be tracked more than once, allowing us to capture both short and
           long term trends.
       )pbdoc");
-
-  createModelsSubmodule(bolt_submodule);
 }
 
 void createModelsSubmodule(py::module_& bolt_submodule) {
@@ -381,13 +366,13 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t,
-                    std::vector<uint32_t>, std::optional<uint32_t>, bool,
-                    uint32_t>(),
+                    std::vector<uint32_t>, std::optional<uint32_t>, uint32_t,
+                    uint32_t, uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("range"), py::arg("n_grams"),
            py::arg("reservoir_size") = std::nullopt,
-           py::arg("has_incorrect_queries") = false,
-           py::arg("batch_size") = 10000,
+           py::arg("source_column_index") = 0,
+           py::arg("target_column_index") = 0, py::arg("batch_size") = 10000,
            R"pbdoc(
     Initializes a QueryCandidateGeneratorConfig object.
 
@@ -401,8 +386,10 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
         n_grams (List[int]): List of N-gram blocks to use. 
         reservoir_size (int): Reservoir size to use when the flash index is 
             constructed with reservoir sampling. 
-        has_incorrect_queries (bool): Flag to identify if flash is initialized
-            with single queries or tuples of incorrect and correct queries.
+        source_column_index (int): Index of the column in the input CSV
+            that contains incorrect queries.
+        target_column_index (int): Index of the column in the input CSV
+            that contains the target queries for reformulation. 
         batch_size (int): batch size. It is defaulted to 10000. 
     Returns: 
         QueryCandidateGeneratorConfig
@@ -448,128 +435,6 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
             )pbdoc");
 
 #endif
-
-  py::class_<bolt::QueryCandidateGenerator,
-             std::shared_ptr<bolt::QueryCandidateGenerator>>(models_submodule,
-                                                             "Generator")
-      .def(py::init(&bolt::QueryCandidateGenerator::
-                        buildGeneratorFromSerializedConfig),
-           py::arg("config_file_name"),
-           R"pbdoc(
-    Initializes an QueryCandidateGenerator object.
-            
-    The config file should at least contain the following elements:
-        - num_hash_tables: Number of hash tables to construct.
-        - hashes_per_table: Hashes for each hash table.
-    Args:
-        config_file_name (str): The path to the config file
-    Returns:
-        QueryCandidateGenerator
-
-    Example:
-        >>> CONFIG_FILE = "/path/to/config/file"
-        >>> generator = bolt.models.Generator(
-                config_file_name=CONFIG_FILE
-            )
-
-           )pbdoc")
-
-      .def("save", &bolt::QueryCandidateGenerator::save, py::arg("file_name"),
-           R"pbdoc(
-    Saves a query candidate generator object at the specified file path. 
-
-    Args:
-        file_name (str): File path specification for where to save the 
-                generator object. 
-
-    Returns:
-        None
-
-            )pbdoc")
-
-      .def_static("load", &bolt::QueryCandidateGenerator::load,
-                  py::arg("file_name"),
-                  R"pbdoc(
-    Loads a query candidate generator object from a specific file location.
-    Throws an exception if the file does not exist at the specified path.  
-
-    Args:
-        config_file_name (str): Path to the file containing a saved config.
-
-        Returns:
-            QueryCandidateGenerator:
-
-            )pbdoc")
-
-      .def("train", &bolt::QueryCandidateGenerator::buildFlashIndex,
-           py::arg("file_name"),
-           R"pbdoc(
-    Constructs a flash index by reading from a CSV file. 
-    If `has_incorrect_queries` is set in QueryCandidateGeneratorConfig, the input CSV file is 
-    expected to have two columns: the first containing correct queries, and 
-    the second containing the incorrect queries. 
-
-    Otherwise, the input CSV file is expected to have just one column
-    with only correct queries. 
-            
-    Args:
-        config_file_name (str): The path to the file containing the queries
- 
-    Returns:
-        None
-
-    Example:
-        >>> generator = bolt.models.Generator(...)
-        >>> query_file_name = "/path/to/query/file/name"
-        >>> generator.train(file_name=query_file_name)
-
-           )pbdoc")
-
-      .def("generate", &bolt::QueryCandidateGenerator::queryFromList,
-           py::arg("queries"), py::arg("top_k"),
-           R"pbdoc(
-    Generates a list of correct candidate queries for each of the the given 
-    queries in the list. 
-    By default, 5 queries are chosen as output. If less than 5 queries are 
-    found, then the output list is padded with empty strings. 
-
-    Args:
-        queries (List[str]): Input queries
-        top_k (int): The number of closest queries to return
-    Returns:
-        List[List[str]]: The generated list of queries by flash. 
-
-    Example:
-        >>> generator = bolt.models.Generator(...)
-        >>> query_file_name = "/path/to/query/file/name"
-        >>> generator.build_index(file_name=query_file_name)
-        >>> candidates = generator.generate(
-                    query=["first incorrect query","second incorrect query"]
-            )
-
-           )pbdoc")
-
-      .def("evaluate", &bolt::QueryCandidateGenerator::evaluateOnFile,
-           py::arg("file_name"), py::arg("top_k"),
-           R"pbdoc(
-    Evaluates the query candidate generator using the input from a CSV file. 
-    The input file is expected to have pairs of correct and incorrect queries 
-    in that order. 
-    This function also prints the recall at K.
-
-    Args:
-        file_name (str): Input file
-        top_k (int): The number of closest queries to return
-
-    Returns:
-        List[List[str]]: Generated candidate queries for 
-        each incorrect query in the input file.
-
-    Example:
-        >>> generator = bolt.models.Generator(config_file_name="config_file")
-        >>> generator.train(file_name="train_file")
-        >>> candidate_queries = generator.evaluate(file_name="eval_file")
-           )pbdoc");
 }
 
 }  // namespace thirdai::bolt::python

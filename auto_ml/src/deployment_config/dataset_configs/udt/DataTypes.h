@@ -9,6 +9,7 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
 #include <limits>
@@ -27,61 +28,47 @@ struct CategoricalMetadataConfig;
 using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
 
 struct CategoricalDataType {
-  explicit CategoricalDataType(uint32_t n_unique_classes,
-                               std::optional<char> delimiter,
-                               CategoricalMetadataConfigPtr metadata,
-                               bool contiguous_numerical_ids)
-      : n_unique_classes(n_unique_classes),
-        delimiter(delimiter),
-        metadata_config(std::move(metadata)),
-        contiguous_numerical_ids(contiguous_numerical_ids) {}
+  explicit CategoricalDataType(std::optional<char> delimiter,
+                               CategoricalMetadataConfigPtr metadata)
+      : delimiter(delimiter), metadata_config(std::move(metadata)) {}
 
-  uint32_t n_unique_classes;
   std::optional<char> delimiter;
   CategoricalMetadataConfigPtr metadata_config;
-  bool contiguous_numerical_ids;
 
   CategoricalDataType() {}
+
+  std::string toString() const {
+    if (delimiter.has_value()) {
+      return fmt::format(R"({{"type": "categorical", "delimiter": "{}"}})",
+                         delimiter.value());
+    }
+    return fmt::format(R"({{"type": "categorical"}})");
+  }
 
  private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(n_unique_classes, delimiter, metadata_config,
-            contiguous_numerical_ids);
+    archive(delimiter, metadata_config);
   }
 };
 
 struct TextDataType {
   explicit TextDataType(std::optional<uint32_t> average_n_words,
-                        const std::string& embedding_size, bool force_pairgram)
-      : average_n_words(average_n_words), force_pairgram(force_pairgram) {
-    auto embedding_size_lower = utils::lower(embedding_size);
-    if (embedding_size_lower == "s" || embedding_size_lower == "small") {
-      this->dim = 30000;
-    } else if (embedding_size_lower == "m" ||
-               embedding_size_lower == "medium") {
-      this->dim = 100000;
-    } else if (embedding_size_lower == "l" || embedding_size_lower == "large") {
-      this->dim = 500000;
-    } else {
-      throw std::invalid_argument(
-          embedding_size +
-          " is not a valid embedding size option. Choose between 'small'/'s', "
-          "'medium'/'m', and 'large'/'l'.");
-    }
-  }
+                        bool force_pairgram)
+      : average_n_words(average_n_words), force_pairgram(force_pairgram) {}
   std::optional<uint32_t> average_n_words;
-  uint32_t dim;
   bool force_pairgram;
 
   TextDataType() {}
+
+  static std::string toString() { return R"({"type": "text"})"; }
 
  private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(average_n_words, dim, force_pairgram);
+    archive(average_n_words, force_pairgram);
   }
 };
 
@@ -95,6 +82,12 @@ struct NumericalDataType {
 
   NumericalDataType() {}
 
+  std::string toString() const {
+    return fmt::format(
+        R"({{"type": "numerical", "range": [{}, {}], "granularity": "{}"}})",
+        range.first, range.second, granularity);
+  }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -103,9 +96,13 @@ struct NumericalDataType {
   }
 };
 
-struct DateDataType {};
+struct DateDataType {
+  static std::string toString() { return R"({"type": "date"})"; }
+};
 
-struct NoneDataType {};
+struct NoneDataType {
+  static std::string toString() { return R"({"type": "none"})"; }
+};
 
 using AnyDataType = std::variant<NoneDataType, DateDataType, NumericalDataType,
                                  CategoricalDataType, TextDataType>;
@@ -116,19 +113,14 @@ class DataType {
  public:
   DataType() : _value(NoneDataType()) {}
 
-  static auto categorical(uint32_t n_unique_classes,
-                          std::optional<char> delimiter = std::nullopt,
-                          CategoricalMetadataConfigPtr metadata = nullptr,
-                          bool contiguous_numerical_ids = false) {
-    return DataType(CategoricalDataType(n_unique_classes, delimiter,
-                                        std::move(metadata),
-                                        contiguous_numerical_ids));
+  static auto categorical(std::optional<char> delimiter = std::nullopt,
+                          CategoricalMetadataConfigPtr metadata = nullptr) {
+    return DataType(CategoricalDataType(delimiter, std::move(metadata)));
   }
 
   static auto text(std::optional<uint32_t> average_n_words = std::nullopt,
-                   const std::string& embedding_size = "m",
                    bool use_attention = false) {
-    return DataType(TextDataType(average_n_words, embedding_size,
+    return DataType(TextDataType(average_n_words,
                                  /* force_pairgram= */ use_attention));
   }
 
@@ -147,6 +139,7 @@ class DataType {
   }
   bool isText() const { return std::holds_alternative<TextDataType>(_value); }
   bool isDate() const { return std::holds_alternative<DateDataType>(_value); }
+  bool isNone() const { return std::holds_alternative<NoneDataType>(_value); }
 
   const CategoricalDataType& asCategorical() const {
     if (!isCategorical()) {
@@ -174,6 +167,39 @@ class DataType {
       throwCastError("date");
     }
     return std::get<DateDataType>(_value);
+  }
+
+  const NoneDataType& asNone() const {
+    if (!isNone()) {
+      throwCastError("none");
+    }
+    return std::get<NoneDataType>(_value);
+  }
+
+  std::string toString() const {
+    if (isCategorical()) {
+      return asCategorical().toString();
+    }
+
+    if (isDate()) {
+      return DateDataType::toString();
+    }
+
+    if (isNumerical()) {
+      return asNumerical().toString();
+    }
+
+    if (isText()) {
+      return TextDataType::toString();
+    }
+
+    if (isNone()) {
+      return NoneDataType::toString();
+    }
+
+    throw std::runtime_error(
+        "This DataType object is not of a known concrete type, so we cannot "
+        "print it to string. This should never happen.");
   }
 
  private:
