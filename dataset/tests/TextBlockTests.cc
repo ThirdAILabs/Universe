@@ -289,8 +289,8 @@ TEST_F(TextBlockTest, TextUnigramBlockWithDelimiter) {
   std::vector<SegmentedSparseFeatureVector> vecs =
       makeSegmentedVecs(sentence_matrix, blocks);
 
-  for (uint32_t i = 0; i < vecs.size(); i++) {
-    auto index_value_pairs = vectorEntries(vecs[i]);
+  for (auto& vec : vecs) {
+    auto index_value_pairs = vectorEntries(vec);
 
     uint32_t total = 0;
     for (const auto& [_, value] : index_value_pairs) {
