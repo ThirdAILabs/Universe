@@ -40,11 +40,11 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
     _values.push_back(value);
     _added_sparse = true;
 
-    if (_store_segment_feature_map) {
-      _segment_feature_map.emplace(concat_index,
-                                   SegmentFeature(
-                                       /* segment_idx= */ _n_segments_added - 1,
-                                       /* feature_idx= */ index));
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          concat_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ index));
     }
   }
 
@@ -65,18 +65,18 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
       throw std::invalid_argument(ss.str());
     }
 
-    uint32_t index = _n_dense_added;
-    uint32_t concat_index = _current_starting_dim + index;
+    uint32_t orig_index = _n_dense_added;
+    uint32_t concat_index = _current_starting_dim + orig_index;
 
     _indices.push_back(concat_index);
     _values.push_back(value);
     _n_dense_added++;
 
-    if (_store_segment_feature_map) {
-      _segment_feature_map.emplace(concat_index,
-                                   SegmentFeature(
-                                       /* segment_idx= */ _n_segments_added - 1,
-                                       /* feature_idx= */ index));
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          concat_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ orig_index));
     }
   }
 
@@ -84,8 +84,8 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
     return BoltVector::makeSparseVector(_indices, _values);
   }
 
-  SegmentFeatureMap getSegmentFeatureMapImpl() final {
-    return _segment_feature_map;
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() final {
+    return _index_to_segment_feature;
   }
 
   void addFeatureSegment(uint32_t dim) final {
@@ -113,7 +113,6 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
   uint32_t _current_starting_dim = 0;
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
-  SegmentFeatureMap _segment_feature_map;
 };
 
 /**
@@ -145,11 +144,11 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
     _values.push_back(value);
     _added_sparse = true;
 
-    if (_store_segment_feature_map) {
-      _segment_feature_map.emplace(hashed_index,
-                                   SegmentFeature(
-                                       /* segment_idx= */ _n_segments_added - 1,
-                                       /* feature_idx= */ index));
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          hashed_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ index));
     }
   }
 
@@ -167,11 +166,11 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
     _values.push_back(value);
     _n_dense_added++;
 
-    if (_store_segment_feature_map) {
-      _segment_feature_map.emplace(hashed_index,
-                                   SegmentFeature(
-                                       /* segment_idx= */ _n_segments_added - 1,
-                                       /* feature_idx= */ index));
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          hashed_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ index));
     }
   }
 
@@ -179,8 +178,8 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
     return BoltVector::makeSparseVector(_indices, _values);
   }
 
-  SegmentFeatureMap getSegmentFeatureMapImpl() final {
-    return _segment_feature_map;
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() final {
+    return _index_to_segment_feature;
   }
 
   void addFeatureSegment(uint32_t dim) final {
@@ -213,8 +212,6 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
 
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
-
-  SegmentFeatureMap _segment_feature_map;
 };
 
 /**
@@ -248,11 +245,11 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
     _values.push_back(value);
     _n_dense_added++;
 
-    if (_store_segment_feature_map) {
-      _segment_feature_map.emplace(concat_index,
-                                   SegmentFeature(
-                                       /* segment_idx= */ _n_segments_added - 1,
-                                       /* feature_idx= */ index));
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          concat_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ index));
     }
   }
 
@@ -260,8 +257,8 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
     return BoltVector::makeDenseVector(_values);
   };
 
-  SegmentFeatureMap getSegmentFeatureMapImpl() final {
-    return _segment_feature_map;
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() final {
+    return _index_to_segment_feature;
   }
 
   void addFeatureSegment(uint32_t dim) final {
@@ -297,7 +294,6 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
   uint32_t _latest_segment_dim = 0;
   uint32_t _n_dense_added = 0;
   std::vector<float> _values;
-  SegmentFeatureMap _segment_feature_map;
 };
 
 }  // namespace thirdai::dataset

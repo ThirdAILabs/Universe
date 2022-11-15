@@ -86,6 +86,8 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
 
   std::vector<dataset::Explanation> explanations;
 
+  // We rebuild the vector to get the index to segment feature map.
+  // TODO(Geordie): Reuse information from the forward pass.
   auto index_to_segment_feature =
       generic_batch_processor->getIndexToSegmentFeatureMap(input_row);
 

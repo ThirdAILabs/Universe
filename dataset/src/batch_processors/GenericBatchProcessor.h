@@ -145,7 +145,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
                                      BoltVector& vector) {
     return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
-                      /* hash_range= */ _hash_range);
+                      _hash_range);
   }
 
   std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
@@ -153,6 +153,42 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     // Never hash labels.
     return makeVector(sample, vector, _label_blocks, _label_blocks_dense,
                       /* hash_range= */ std::nullopt);
+  }
+
+  static std::exception_ptr makeVector(std::vector<std::string_view>& sample,
+                                       BoltVector& vector,
+                                       std::vector<BlockPtr>& blocks,
+                                       bool blocks_dense,
+                                       std::optional<uint32_t> hash_range) {
+    auto segmented_vector =
+        makeSegmentedFeatureVector(blocks_dense, hash_range,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err =
+            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
+      return err;
+    }
+    vector = segmented_vector->toBoltVector();
+    return nullptr;
+  }
+
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(
+      const std::vector<std::string_view>& input_row) {
+    BoltVector vector;
+    auto segmented_vector =
+        makeSegmentedFeatureVector(_input_blocks_dense, _hash_range,
+                                   /* store_segment_feature_map= */ true);
+    if (auto err = addFeaturesToSegmentedVector(input_row, *segmented_vector,
+                                                _input_blocks)) {
+      std::rethrow_exception(err);
+    }
+    return segmented_vector->getIndexToSegmentFeatureMap();
+  }
+
+  Explanation explainFeature(const std::vector<std::string_view>& input_row,
+                             const SegmentFeature& segment_feature) {
+    std::shared_ptr<Block> relevant_block =
+        _input_blocks[segment_feature.segment_idx];
+    return relevant_block->explainIndex(segment_feature.feature_idx, input_row);
   }
 
   static std::shared_ptr<GenericBatchProcessor> make(
@@ -165,51 +201,19 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                                                    parallel, hash_range);
   }
 
-  SegmentFeatureMap getIndexToSegmentFeatureMap(
-      const std::vector<std::string_view>& input_row) {
-    BoltVector vector;
-    auto vec_ptr =
-        makeSegmentedFeatureVector(_input_blocks_dense, _hash_range,
-                                   /* store_segment_feature_map= */ true);
-
-    // Let each block encode the input sample and adds a new segment
-    // containing this encoding to the vector.
-    for (auto& block : _input_blocks) {
-      if (auto err = block->addVectorSegment(input_row, *vec_ptr)) {
-        std::rethrow_exception(err);
-      }
-    }
-    return vec_ptr->getSegmentFeatureMap();
-  }
-
-  /*
-  For given index in input fetch the block responsible and get the column number
-  and the exact keyword responsible for it.
-  */
-  Explanation explainFeature(const std::vector<std::string_view>& input_row,
-                             const SegmentFeature& segment_feature) {
-    std::shared_ptr<Block> relevant_block =
-        _input_blocks[segment_feature.segment_idx];
-    return relevant_block->explainIndex(segment_feature.feature_idx, input_row);
-  }
-
  private:
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */
-  static std::exception_ptr makeVector(
-      const std::vector<std::string_view>& sample, BoltVector& vector,
-      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
-      std::optional<uint32_t> hash_range) {
-    auto vec_ptr = makeSegmentedFeatureVector(
-        blocks_dense, hash_range, /* store_segment_feature_map= */ false);
-
+  static std::exception_ptr addFeaturesToSegmentedVector(
+      const std::vector<std::string_view>& sample,
+      SegmentedFeatureVector& segmented_vector,
+      std::vector<std::shared_ptr<Block>>& blocks) {
     for (auto& block : blocks) {
-      if (auto err = block->addVectorSegment(sample, *vec_ptr)) {
+      if (auto err = block->addVectorSegment(sample, segmented_vector)) {
         return err;
       }
     }
-    vector = vec_ptr->toBoltVector();
     return nullptr;
   }
 

@@ -67,7 +67,7 @@ struct SegmentFeature {
   uint32_t feature_idx;
 };
 
-using SegmentFeatureMap = std::unordered_map<uint32_t, SegmentFeature>;
+using IndexToSegmentFeatureMap = std::unordered_map<uint32_t, SegmentFeature>;
 
 /**
  * Segmented feature vector abstract class.
@@ -114,13 +114,15 @@ class SegmentedFeatureVector {
    */
   virtual std::unordered_map<uint32_t, float> entries() = 0;
 
-  virtual SegmentFeatureMap getSegmentFeatureMapImpl() = 0;
+  virtual IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() = 0;
 
-  const bool _store_segment_feature_map;
+  const bool _store_index_to_segment_feature_map;
+
+  IndexToSegmentFeatureMap _index_to_segment_feature;
 
  public:
   explicit SegmentedFeatureVector(bool store_segment_feature_map)
-      : _store_segment_feature_map(store_segment_feature_map) {}
+      : _store_index_to_segment_feature_map(store_segment_feature_map) {}
 
   /**
    * Increments the feature at the given index of the current vector segment
@@ -139,13 +141,13 @@ class SegmentedFeatureVector {
    */
   virtual BoltVector toBoltVector() = 0;
 
-  SegmentFeatureMap getSegmentFeatureMap() {
-    if (!_store_segment_feature_map) {
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap() {
+    if (!_store_index_to_segment_feature_map) {
       throw std::invalid_argument(
           "[SegmentedFeatureVector::getSegmentFeatureMap] Attempted to get "
           "segment feature map when store_segment_feature_map is false.");
     }
-    return getSegmentFeatureMapImpl();
+    return getIndexToSegmentFeatureMapImpl();
   }
 
   virtual ~SegmentedFeatureVector() = default;
