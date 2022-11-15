@@ -170,7 +170,7 @@ setup(
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    install_requires=["numpy", "typing_extensions"],
+    install_requires=["numpy", "typing_extensions", "pandas"],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
         # The tokenizers requirement ensures that all of the [test] depedencies are
@@ -180,7 +180,7 @@ setup(
             "pytest-mock",
             "boto3",
             "moto",
-            "mlflow",
+            "mlflow==1.30.0",
             "datasets",
             "torch",
             "toml",
@@ -194,7 +194,7 @@ setup(
             "toml",
             "psutil",
             "scikit-learn",
-            "mlflow",
+            "mlflow==1.30.0",
             "boto3",
         ],
         "distributed": ["ray", "toml"],

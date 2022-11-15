@@ -136,6 +136,7 @@ class Worker:
         """
         return self.comm.receive_array_partitions(update_id)
 
+    @timed
     def compute_and_store_next_batch_gradients(self) -> bool:
         """
         Computes and stores the gradients on all nodes. After this returns,
@@ -162,6 +163,7 @@ class Worker:
         else:
             return True
 
+    @timed
     def move_to_next_epoch(self):
         self.train_source.restart()
         self._try_load_new_datasets_into_model()

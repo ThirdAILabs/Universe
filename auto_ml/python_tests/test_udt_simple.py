@@ -20,10 +20,10 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
     write_lines_to_file(
         TRAIN_FILE,
         [
-            "userId,movieId,timestamp,hoursWatched",
-            "0,0,2022-08-29,2",
-            "1,0,2022-08-30,2",
-            "1,1,2022-08-31,1",
+            "userId,movieId,timestamp,hoursWatched,genres,meta",
+            "0,0,2022-08-29,2,fiction-comedy-drama,0-1",
+            "1,0,2022-08-30,2,fiction-romance,1",
+            "1,1,2022-08-31,1,romance-comedy,0",
             # if integer_label = false, we build a model that accepts
             # arbitrary string labels; the model does not expect integer
             # labels in the range [0, n_labels - 1]. We test this by
@@ -31,17 +31,25 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
             # a label outside of this range. Since n_labels = 3, we set
             # movieId = 4 in the last sample and expect that the model
             # trains just fine.
-            ("1,2,2022-09-01,3" if integer_label else "1,4,2022-09-01,3"),
+            (
+                "1,2,2022-09-01,3,fiction-comedy,1-2"
+                if integer_label
+                else "1,4,2022-09-01,3,fiction-comedy,1-4"
+            ),
         ],
     )
 
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,timestamp,hoursWatched",
-            "0,1,2022-08-31,5",
+            "userId,movieId,timestamp,hoursWatched,genres,meta",
+            "0,1,2022-08-31,5,fiction-drama,0",
             # See above comment about the last line of the mock train file.
-            ("1,0,2022-09-01,0.5" if integer_label else "4,0,2022-09-01,0.5"),
+            (
+                "1,0,2022-09-01,0.5,fiction-comedy,2-0"
+                if integer_label
+                else "4,0,2022-09-01,0.5,fiction-comedy,4-0"
+            ),
         ],
     )
 
@@ -52,22 +60,24 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
     metadata = bolt.types.metadata(
         filename=METADATA_FILE,
         key_column_name="id",
-        data_types={"feature": bolt.types.categorical(n_unique_classes=3)},
+        data_types={"feature": bolt.types.categorical()},
     )
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "userId": bolt.types.categorical(n_unique_classes=3, metadata=metadata),
+            "userId": bolt.types.categorical(metadata=metadata),
             "movieId": bolt.types.categorical(
-                n_unique_classes=3,
-                consecutive_integer_ids=integer_label,
                 metadata=metadata,
             ),
             "timestamp": bolt.types.date(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
+            "genres": bolt.types.categorical(delimiter="-"),
+            "meta": bolt.types.categorical(metadata=metadata, delimiter="-"),
         },
         temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
+        n_target_classes=3,
+        integer_target=integer_label,
         options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
     )
 
@@ -78,7 +88,12 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
 
 
 def single_sample():
-    return {"userId": "0", "timestamp": "2022-08-31"}
+    return {
+        "userId": "0",
+        "timestamp": "2022-08-31",
+        "genres": "fiction-drama",
+        "meta": "0",
+    }
 
 
 def batch_sample():
@@ -91,6 +106,8 @@ def single_update():
         "movieId": "1",
         "timestamp": "2022-08-31",
         "hoursWatched": "1",
+        "genres": "fiction-drama",
+        "meta": "0",
     }
 
 
@@ -117,7 +134,9 @@ def test_save_load():
     save_file = "savefile.bolt"
     model = make_simple_trained_model(integer_label=False)
     model.save(save_file)
-    saved_model = bolt.UniversalDeepTransformer.load(save_file)
+    saved_model = bolt.UniversalDeepTransformer.load(
+        filename=save_file, model_type="classifier"
+    )
 
     eval_res = model.evaluate(TEST_FILE)
     saved_eval_res = saved_model.evaluate(TEST_FILE)
@@ -196,13 +215,13 @@ def test_explanations_target_label_format():
     model = make_simple_trained_model(integer_label=False)
     # Call this method to make sure it does not throw an error
     model.explain(single_sample(), target_class="1")
-    with pytest.raises(ValueError, match=r"Received an integer label*"):
+    with pytest.raises(ValueError, match=r"Received an integer but*"):
         model.explain(single_sample(), target_class=1)
 
     model = make_simple_trained_model(integer_label=True)
     # Call this method to make sure it does not throw an error
     model.explain(single_sample(), target_class=1)
-    with pytest.raises(ValueError, match=r"Received a string label*"):
+    with pytest.raises(ValueError, match=r"Received a string but*"):
         model.explain(single_sample(), target_class="1")
 
 
@@ -240,28 +259,30 @@ def test_works_without_temporal_relationships():
     write_lines_to_file(
         TRAIN_FILE,
         [
-            "userId,movieId,hoursWatched",
-            "0,0,2",
-            "1,0,3",
+            "userId,movieId,hoursWatched,genres",
+            "0,0,2,fiction-drama",
+            "1,0,3,fiction-comedy",
         ],
     )
 
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,hoursWatched",
-            "0,1,5",
-            "2,0,0.5",
+            "userId,movieId,hoursWatched,genres",
+            "0,1,5,fiction-drama",
+            "2,0,0.5,fiction-comedy",
         ],
     )
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "userId": bolt.types.categorical(n_unique_classes=3),
-            "movieId": bolt.types.categorical(n_unique_classes=3),
+            "userId": bolt.types.categorical(),
+            "movieId": bolt.types.categorical(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
+            "genres": bolt.types.categorical(delimiter="-"),
         },
         target="movieId",
+        n_target_classes=3,
     )
 
     train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)

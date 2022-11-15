@@ -18,6 +18,7 @@ This is the *complete* API documentation for the ``thirdai`` python package.
 
    thirdaidataset
    thirdaidatasetblocks
+   thirdaidata
 
    thirdaidistributed
    thirdailog
