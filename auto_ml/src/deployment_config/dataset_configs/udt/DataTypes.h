@@ -39,7 +39,8 @@ struct CategoricalDataType {
 
   std::string toString() const {
     if (delimiter.has_value()) {
-      return fmt::format(R"({{"type": "categorical", "delimeter": "{}"}})", delimiter.value());
+      return fmt::format(R"({{"type": "categorical", "delimiter": "{}"}})",
+                         delimiter.value());
     }
     return fmt::format(R"({{"type": "categorical"}})");
   }
@@ -77,7 +78,7 @@ struct TextDataType {
 
   TextDataType() {}
 
-  static std::string toString()  { return "{type: text}"; }
+  static std::string toString() { return R"({"type": "text"})"; }
 
  private:
   friend class cereal::access;
@@ -98,8 +99,9 @@ struct NumericalDataType {
   NumericalDataType() {}
 
   std::string toString() const {
-    return fmt::format("type: numerical, range: [{}, {}]", range.first,
-                       range.second);
+    return fmt::format(
+        R"({{"type": "numerical", "range": [{}, {}], "granularity": "{}"}})",
+        range.first, range.second, granularity);
   }
 
  private:
@@ -111,11 +113,11 @@ struct NumericalDataType {
 };
 
 struct DateDataType {
-  static std::string toString()  { return "{type: date}"; }
+  static std::string toString() { return R"({"type": "date"})"; }
 };
 
 struct NoneDataType {
-  static std::string toString()  { return "{type: none}"; }
+  static std::string toString() { return R"({"type": "none"})"; }
 };
 
 using AnyDataType = std::variant<NoneDataType, DateDataType, NumericalDataType,
