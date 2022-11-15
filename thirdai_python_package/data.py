@@ -35,10 +35,10 @@ def pandas_to_columnmap(df, dense_int_cols=set(), int_col_dims={}):
     for column_name in df:
         column_np = df[column_name].to_numpy()
         if np.issubdtype(column_np.dtype, np.floating) or column_name in dense_int_cols:
-            column_map[column_name] = columns.NumpyDenseValueColumn(array=column_np)
+            column_map[column_name] = columns.DenseFeatureColumn(array=column_np)
         elif np.issubdtype(column_np.dtype, np.integer):
             dim = int_col_dims[column_name] if column_name in int_col_dims else None
-            column_map[column_name] = columns.NumpySparseValueColumn(
+            column_map[column_name] = columns.TokenColumn(
                 array=column_np, dim=dim
             )
         elif _is_string_column(column_np):

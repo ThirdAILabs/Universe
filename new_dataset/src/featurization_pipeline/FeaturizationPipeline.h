@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <memory>
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
 class FeaturizationPipeline;
 using FeaturizationPipelinePtr = std::shared_ptr<FeaturizationPipeline>;
@@ -65,4 +65,4 @@ class FeaturizationPipeline {
   }
 };
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data

@@ -2,9 +2,10 @@
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <exception>
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
-ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
+ColumnMap::ColumnMap(
+    std::unordered_map<std::string, columns::ColumnPtr> columns)
     : _columns(std::move(columns)) {
   if (_columns.empty()) {
     throw std::invalid_argument(
@@ -22,7 +23,7 @@ ColumnMap::ColumnMap(std::unordered_map<std::string, ColumnPtr> columns)
   _num_rows = num_rows.value();
 }
 
-BoltDatasetPtr ColumnMap::convertToDataset(
+dataset::BoltDatasetPtr ColumnMap::convertToDataset(
     const std::vector<std::string>& column_names, uint32_t batch_size) const {
   auto output_columns = selectColumns(column_names);
 
@@ -60,7 +61,7 @@ BoltDatasetPtr ColumnMap::convertToDataset(
         if (all_cols_dense) {
           // TODO(Nicholas/Geordie): Refactor this into a unified row builder
           // class.
-          SegmentedDenseFeatureVector vector;
+          dataset::SegmentedDenseFeatureVector vector;
           for (uint32_t i = 0; i < output_columns.size(); i++) {
             auto column = output_columns[i];
             vector.addFeatureSegment(column_dims[i]);
@@ -68,7 +69,7 @@ BoltDatasetPtr ColumnMap::convertToDataset(
           }
           batch[vec_idx] = vector.toBoltVector();
         } else {
-          SegmentedSparseFeatureVector vector;
+          dataset::SegmentedSparseFeatureVector vector;
           for (uint32_t i = 0; i < output_columns.size(); i++) {
             auto column = output_columns[i];
             vector.addFeatureSegment(column_dims[i]);
@@ -89,12 +90,12 @@ BoltDatasetPtr ColumnMap::convertToDataset(
     output_batches.emplace_back(std::move(batch));
   }
 
-  return std::make_shared<BoltDataset>(std::move(output_batches));
+  return std::make_shared<dataset::BoltDataset>(std::move(output_batches));
 }
 
-std::vector<ColumnPtr> ColumnMap::selectColumns(
+std::vector<columns::ColumnPtr> ColumnMap::selectColumns(
     const std::vector<std::string>& column_names) const {
-  std::vector<ColumnPtr> output_columns;
+  std::vector<columns::ColumnPtr> output_columns;
   output_columns.reserve(column_names.size());
 
   for (const auto& name : column_names) {
@@ -104,9 +105,10 @@ std::vector<ColumnPtr> ColumnMap::selectColumns(
   return output_columns;
 }
 
-std::shared_ptr<SparseValueColumn> ColumnMap::getSparseValueColumn(
+columns::TokenColumnPtr ColumnMap::getTokenColumn(
     const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<SparseValueColumn>(getColumn(name));
+  auto column =
+      std::dynamic_pointer_cast<columns::TokenColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to SparseValueColumn.");
@@ -114,9 +116,10 @@ std::shared_ptr<SparseValueColumn> ColumnMap::getSparseValueColumn(
   return column;
 }
 
-std::shared_ptr<DenseValueColumn> ColumnMap::getDenseValueColumn(
+columns::DenseFeatureColumnPtr ColumnMap::getDenseFeatureColumn(
     const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<DenseValueColumn>(getColumn(name));
+  auto column =
+      std::dynamic_pointer_cast<columns::DenseFeatureColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to DenseValueColumn.");
@@ -124,9 +127,10 @@ std::shared_ptr<DenseValueColumn> ColumnMap::getDenseValueColumn(
   return column;
 }
 
-std::shared_ptr<IndexValueColumn> ColumnMap::getIndexValueColumn(
+columns::SparseFeatureColumnPtr ColumnMap::getSparseFeatureColumn(
     const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<IndexValueColumn>(getColumn(name));
+  auto column =
+      std::dynamic_pointer_cast<columns::SparseFeatureColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to IndexValueColumn.");
@@ -134,9 +138,10 @@ std::shared_ptr<IndexValueColumn> ColumnMap::getIndexValueColumn(
   return column;
 }
 
-std::shared_ptr<StringColumn> ColumnMap::getStringColumn(
+columns::StringColumnPtr ColumnMap::getStringColumn(
     const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<StringColumn>(getColumn(name));
+  auto column =
+      std::dynamic_pointer_cast<columns::StringColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to StringColumn.");
@@ -144,9 +149,10 @@ std::shared_ptr<StringColumn> ColumnMap::getStringColumn(
   return column;
 }
 
-std::shared_ptr<SparseArrayColumn> ColumnMap::getSparseArrayColumn(
+columns::TokenArrayColumnPtr ColumnMap::getTokenArrayColumn(
     const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<SparseArrayColumn>(getColumn(name));
+  auto column =
+      std::dynamic_pointer_cast<columns::TokenArrayColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to SparseArrayColumn.");
@@ -154,9 +160,10 @@ std::shared_ptr<SparseArrayColumn> ColumnMap::getSparseArrayColumn(
   return column;
 }
 
-std::shared_ptr<DenseArrayColumn> ColumnMap::getDenseArrayColumn(
+columns::DenseArrayColumnPtr ColumnMap::getDenseArrayColumn(
     const std::string& name) const {
-  auto column = std::dynamic_pointer_cast<DenseArrayColumn>(getColumn(name));
+  auto column =
+      std::dynamic_pointer_cast<columns::DenseArrayColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument("Column '" + name +
                                 "' cannot be converted to DenseArrayColumn.");
@@ -164,10 +171,10 @@ std::shared_ptr<DenseArrayColumn> ColumnMap::getDenseArrayColumn(
   return column;
 }
 
-std::shared_ptr<IndexValueArrayColumn> ColumnMap::getIndexValueArrayColumn(
+columns::SparseArrayColumnPtr ColumnMap::getSparseArrayColumn(
     const std::string& name) const {
   auto column =
-      std::dynamic_pointer_cast<IndexValueArrayColumn>(getColumn(name));
+      std::dynamic_pointer_cast<columns::SparseArrayColumn>(getColumn(name));
   if (!column) {
     throw std::invalid_argument(
         "Column '" + name + "' cannot be converted to IndexValueArrayColumn.");
@@ -175,7 +182,7 @@ std::shared_ptr<IndexValueArrayColumn> ColumnMap::getIndexValueArrayColumn(
   return column;
 }
 
-ColumnPtr ColumnMap::getColumn(const std::string& name) const {
+columns::ColumnPtr ColumnMap::getColumn(const std::string& name) const {
   if (!_columns.count(name)) {
     throw std::invalid_argument("Unable to find column with name '" + name +
                                 "'.");
@@ -191,4 +198,4 @@ std::vector<std::string> ColumnMap::columns() const {
   return columns;
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data

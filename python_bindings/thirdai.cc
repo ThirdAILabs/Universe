@@ -124,7 +124,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Data Submodule
   auto data_submodule = m.def_submodule("data");
   thirdai::dataset::python::createDataSubmodule(data_submodule);
-  thirdai::dataset::python::createFeaturizationSubmodule(data_submodule);
+  thirdai::data::python::createFeaturizationSubmodule(data_submodule);
 
   // Hashing Submodule
   thirdai::hashing::python::createHashingSubmodule(m);
