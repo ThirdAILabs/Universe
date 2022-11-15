@@ -7,7 +7,7 @@ from .type_inference import semantic_type_inference
 def get_udt_col_types(filename, n_rows=1e6):
     column_types = semantic_type_inference(filename)
 
-    df = pd.read_csv(filename, nrows=n_rows)
+    df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
 
     udt_column_types = {}
 
