@@ -36,10 +36,10 @@ jobs:
 
       - name: Build Package and Run Benchmark
         env:
-          MLFLOW_TRACKING_USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
-          MLFLOW_TRACKING_PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
+          USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
+          PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
         run: >- 
-          bin/docker-benchmarking-run.sh "export $MLFLOW_TRACKING_USERNAME && export $MLFLOW_TRACKING_PASSWORD && 
+          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && 
           python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_configs/amazon_polarity.txt /Universe/benchmarks/bolt_configs/amzn670k.txt /Universe/benchmarks/bolt_configs/criteo_dlrm.txt"
 
       - name: Delete Container
