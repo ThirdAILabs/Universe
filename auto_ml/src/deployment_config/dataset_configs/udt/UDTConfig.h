@@ -33,7 +33,7 @@ struct UDTConfig {
    *   configuration will be autotuned.
    *
    * target: column name of target variable.
-   * 
+   *
    * n_target_classes: number of target classes.
    *
    * n_target_classes: number of target classes.
