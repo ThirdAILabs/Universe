@@ -66,7 +66,7 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
       throw std::invalid_argument(ss.str());
     }
 
-    uint32_t index = _n_dense_added;
+    uint32_t orig_index = _n_dense_added;
     uint32_t concat_index = _prev_dim + index;
 
     _indices.push_back(concat_index);
