@@ -13,7 +13,9 @@ def get_udt_col_types(filename, n_rows=1e6):
 
     for col_name, type_info in column_types.items():
         if col_name not in df.columns:
-            raise ValueError(f"column_type map contains column: {col_name} not in dataframe.")
+            raise ValueError(
+                f"column_type map contains column: {col_name} not in dataframe."
+            )
         col_type = type_info["type"]
 
         if col_type == "text":
