@@ -130,7 +130,7 @@ class UniGramTextBlock final : public TextBlock {
   std::string getResponsibleWord(uint32_t index,
                                  const std::string_view& text) const final {
     std::unordered_map<uint32_t, std::string> index_to_word_map =
-        TextEncodingUtils::buildUnigramHashToWordMap(text, _dim);
+        TextEncodingUtils::buildUnigramHashToWordMap(text, _dim, _delimiter);
     return index_to_word_map.at(index);
   }
 

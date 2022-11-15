@@ -60,13 +60,16 @@ class TextEncodingUtils {
    * write seperate function than to overload the already existing function.
    */
   static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-      const std::string_view sentence, uint32_t output_range) {
+      const std::string_view sentence, uint32_t output_range,
+      char delimiter = ' ') {
     std::unordered_map<uint32_t, std::string> index_to_word;
-    forEachWordHash(sentence,
-                    [&](uint32_t word_hash, const std::string_view& word) {
-                      (void)word_hash;
-                      index_to_word[word_hash % output_range] = word;
-                    });
+    forEachWordHash(
+        sentence,
+        [&](uint32_t word_hash, const std::string_view& word) {
+          (void)word_hash;
+          index_to_word[word_hash % output_range] = word;
+        },
+        delimiter);
     return index_to_word;
   }
 
