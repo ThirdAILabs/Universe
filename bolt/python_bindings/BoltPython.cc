@@ -92,7 +92,8 @@ Args:
   auto udt_types_submodule = bolt_submodule.def_submodule("types");
 
   py::class_<automl::deployment::DataType>(  // NOLINT
-      udt_types_submodule, "ColumnType", "Base class for bolt types.");
+      udt_types_submodule, "ColumnType", "Base class for bolt types.")
+      .def("__str__", &automl::deployment::DataType::toString);
 
   py::class_<automl::deployment::CategoricalMetadataConfig,
              automl::deployment::CategoricalMetadataConfigPtr>(
