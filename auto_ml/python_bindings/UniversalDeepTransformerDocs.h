@@ -3,13 +3,19 @@
 namespace thirdai::automl::deployment::python::docs {
 
 const char* const UDT_CLASS = R"pbdoc(
-UniversalDeepTransformer (UDT) An all-purpose classifier for tabular datasets. 
-In addition to learning from the columns of a single row, UDT can make use of 
-"temporal context". For example, if used to build a movie recommender, UDT may 
-use information about the last 5 movies that a user has watched to recommend the 
-next movie. Similarly, if used to forecast the outcome of marketing campaigns, 
+UniversalDeepTransformer (UDT) An all-purpose classifier for tabular datasets and 
+generator model for performing query reformulation. 
+In addition to learning from the columns of a single row, the UDT classifier can
+make use of "temporal context". For example, if used to build a movie recommender,
+UDT may use information about the last 5 movies that a user has watched to recommend
+the next movie. Similarly, if used to forecast the outcome of marketing campaigns, 
 UDT may use several months' worth of campaign history for each product to make 
 better forecasts.
+
+In addition to exposing a classifier model for tabular data, UDT exposes a generator
+model for query reformulation tasks. For instance, given a dataset with consisting of
+queries that have spelling mistakes, UDT can be used to generate relevant reformulations
+with the correct spelling. 
 )pbdoc";
 
 const char* const UDT_INIT = R"pbdoc(
@@ -115,6 +121,57 @@ Notes:
       and temporal tracking configurations.
 )pbdoc";
 
+const char* const UDT_GENERATOR_INIT = R"pbdoc(
+UniversalDeepTransformer (UDT) Constructor. 
+
+Args:
+    target_column_index (int): Index specifying the target queries in the input dataset. 
+        Queries in this column are the target that the UDT model learns to predict. 
+    source_column_index (int): Index specifying the source queries in the input dataset. 
+        The UDT model uses is trained based on these queries. 
+    dataset_size (str): The size of the input dataset. This size factor informs what
+        UDT model to create. 
+
+        The dataset size can be one of the following:
+        - small
+        - medium
+        -large
+
+Example:
+    >>> # Suppose we have an input CSV dataset consisting of grammatically or syntactically
+    >>> # incorrect queries that we want to reformulate. We will assume that the dataset also
+    >>> # has a target correct query for each incorrect query. We can initialize a UDT model
+    >>> # for query reformulation as follows:
+    >>> model = bolt.UniversalDeepTransformer(
+            target_column_index=0, 
+            source_column_index=1,
+            dataset_size="medium"
+        )
+)pbdoc";
+
+const char* const UDT_GENERATOR_TRAIN = R"pbdoc(
+Trains a UniversalDeepTransformer (UDT) model for query reformulation on a given dataset 
+using a file on disk.
+
+Args:
+    filename (str): Path to the dataset file.
+
+Returns:
+    None
+
+Examples:
+    >>> model = bolt.UniversalDeepTransformer(
+            target_column_index=0, 
+            source_column_index=1,
+            dataset_size="medium"
+        )
+    >>> model.train(filename="./train_file")
+
+Note:
+    - The UDT model expects different training inputs for query reformulation versus
+        other machine learning tasks. 
+)pbdoc";
+
 const char* const UDT_TRAIN = R"pbdoc(
 Trains a UniversalDeepTransformer (UDT) on a given dataset using a file on disk.
 
@@ -201,6 +258,34 @@ Notes:
       `model.evaluate()` automatically updates UDT's temporal context.
 )pbdoc";
 
+const char* const UDT_GENERATOR_EVALUATE = R"pbdoc(
+Evaluates the UniversalDeepTransformer (UDT) model on the given dataset and returns
+a list of generated queries as reformulations of the incorrect queries. 
+
+Args:
+    filename (str): Path to the dataset file 
+    top_k (int): The number of candidate query reformulations suggested by the UDT model.
+        The default value for k is 5.
+
+Returns:
+    List[List[str]]
+    Returns a list of k reformulations for each incorrect query to be reformulated in the 
+    input dataset. 
+
+Notes:
+    - If the input dataset file contains pairs of correct and incorrect queries, this 
+     method will also print out the recall value at k. 
+
+Examples:
+    >>> model = bolt.UniversalDeepTransformer(
+            target_column_index=0, 
+            source_column_index=1,
+            dataset_size="medium"
+        )
+    >>> model.train(filename="./train_file")
+    >>> reformulated_queries = model.evaluate(filename="./test_file", top_k=5)
+)pbdoc";
+
 const char* const UDT_PREDICT = R"pbdoc(
 Performs inference on a single sample.
 
@@ -256,8 +341,32 @@ Notes:
 
 )pbdoc";
 
+const char* const UDT_GENERATOR_PREDICT = R"pbdoc(
+Performs inference on a single sample.
+
+Args:
+    input_query (str): The input query as a string. 
+    top_k (int): The number of candidate query reformulations suggested by the UDT model
+        for this input. The default value for k is 5. 
+
+Returns:
+    List[str]
+    Returns a list of k reformulations suggested by the UDT model for the given input
+    sample.
+
+Example:
+    >>> model = bolt.UniversalDeepTransformer(
+            target_column_index=0, 
+            source_column_index=1,
+            dataset_size="medium"
+        )
+    >>> model.train(filename="./train_file")
+    >>> udt_refomulation_suggestions = model.predict(input_query="sample query", top_k=5)
+    
+)pbdoc";
+
 const char* const UDT_PREDICT_BATCH = R"pbdoc(
-Performs inference on a batch of samples samples in parallel.
+Performs inference on a batch of samples in parallel.
 
 Args:
     input_samples (List[Dict[str, str]]): A list of input sample as dictionaries 
@@ -298,6 +407,31 @@ Notes:
       `model.index_batch()`. Read about `model.index()` and `model.index_batch()` 
       for details.
 
+)pbdoc";
+
+const char* const UDT_GENERATOR_PREDICT_BATCH = R"pbdoc(
+Performs inference on a batch of sammples in parallel.
+
+Args:
+    input_queries (List[str]): A list of target queries to be reformulated. 
+    top_k (int): The number of candidate query reformulations suggested by the UDT model
+        for this input batch. The default value for k is 5. 
+
+Returns:
+    List[List[str]]
+    Returns a list of k reformulations suggested by the UDT model for each of the given 
+    input samples.
+
+Example:
+    >>> input_queries = # An arbitrary list of incorrect queries. 
+    >>> model = bolt.UniversalDeepTransformer(
+            target_column_index=0, 
+            source_column_index=1,
+            dataset_size="medium"
+        )
+    >>> model.train(filename="./train_file")
+    >>> udt_refomulation_suggestions = model.predict(input_queries=input_queries, top_k=5)
+    
 )pbdoc";
 
 const char* const UDT_EMBEDDING_REPRESENTATION = R"pbdoc(
@@ -544,6 +678,17 @@ Example:
     >>> model.save("udt_savefile.bolt")
 )pbdoc";
 
+const char* const UDT_GENERATOR_SAVE = R"pbdoc(
+Serializes an instance of UDTGenerator to a file on disk. 
+
+Args:
+    filename (str): The file on disk to serialize in which the instance of 
+        UDTGenerator is to be serialized. 
+
+Example:
+    >>> model.save("udt_savefile.bolt")
+)pbdoc";
+
 const char* const UDT_LOAD = R"pbdoc(
 Loads a serialized instance of UniversalDeepTransformer (UDT) from a file on 
 disk. The loaded UDT includes the temporal context from before serialization.
@@ -558,6 +703,31 @@ Returns:
 Example:
     >>> model = bolt.UniversalDeepTransformer(...)
     >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
+)pbdoc";
+
+const char* const UDT_CLASSIFIER_AND_GENERATOR_LOAD = R"pbdoc(
+Loads a serialized instance of a UniversalDeepTransformer (UDT) model from a 
+file on disk. 
+
+Args:
+    filename (str): The file on disk from where to load an instance of UDT.
+    model_type (str): Type of UDT model to load from serialized file. Options
+        include "udt_classifier" and "udt_generator"
+Returns:
+    UniversalDeepTransformer:
+    The loaded instance of UDT
+
+Note:
+    - If mode_type is set to "udt_generator", the underlying assumption will
+    be that the pre-serialized model was query reformulation specific. 
+    Otherwise, attempting to load the incorrect model will throw an error.
+
+Example:
+    >>> model = bolt.UniversalDeepTransformer(...)
+    >>> model = bolt.UniversalDeepTransformer.load(
+            "udt_savefile.bolt", 
+            model_type="udt_classifier"
+        )
 )pbdoc";
 
 }  // namespace thirdai::automl::deployment::python::docs

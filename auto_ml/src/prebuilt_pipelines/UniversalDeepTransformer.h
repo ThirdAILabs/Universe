@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -115,12 +116,12 @@ class UniversalDeepTransformer : public ModelPipeline {
     oarchive(*this);
   }
 
-  static std::unique_ptr<UniversalDeepTransformer> load(
+  static std::shared_ptr<UniversalDeepTransformer> load(
       const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<UniversalDeepTransformer> deserialize_into(
+    std::shared_ptr<UniversalDeepTransformer> deserialize_into(
         new UniversalDeepTransformer());
     iarchive(*deserialize_into);
 

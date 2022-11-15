@@ -222,6 +222,15 @@ class CharKGramTextBlock final : public TextBlock {
 
  private:
   uint32_t _k;
+
+  // Private constructor for cereal.
+  CharKGramTextBlock() {}
+
+  friend class cereal::access;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<TextBlock>(this));
+  }
 };
 
 using CharKGramTextBlockPtr = std::shared_ptr<CharKGramTextBlock>;
@@ -231,3 +240,4 @@ using CharKGramTextBlockPtr = std::shared_ptr<CharKGramTextBlock>;
 CEREAL_REGISTER_TYPE(thirdai::dataset::TextBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::PairGramTextBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::UniGramTextBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::CharKGramTextBlock)
