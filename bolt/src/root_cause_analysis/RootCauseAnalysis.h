@@ -93,7 +93,8 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
     if (ratio) {
       dataset::Explanation explanation_for_index =
           generic_batch_processor->explainFeature(
-              input_row, index_to_segment_feature.at(index));
+              input_row,
+              /* segment_feature= */ index_to_segment_feature.at(index));
       explanation_for_index.percentage_significance = (ratio / ratio_sum) * 100;
       explanations.push_back(explanation_for_index);
     }

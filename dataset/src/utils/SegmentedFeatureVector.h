@@ -23,14 +23,13 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
           "add both dense and sparse features.");
     }
 
-    uint32_t concat_index = _prev_dim + index;
-    if (concat_index >= _current_dim) {
+    uint32_t concat_index = _current_starting_dim + index;
+    if (concat_index >= _current_ending_dim) {
       std::stringstream ss;
       ss << "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] Setting "
-            "value "
-            "at index = "
-         << index
-         << " of vector segment with dim = " << _current_dim - _prev_dim;
+            "value at index = "
+         << index << " of vector segment with dim = "
+         << _current_ending_dim - _current_starting_dim;
       throw std::invalid_argument(ss.str());
     }
 
@@ -57,17 +56,17 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
           "add both dense and sparse features.");
     }
 
-    if (_n_dense_added >= (_current_dim - _prev_dim)) {
+    if (_n_dense_added >= (_current_ending_dim - _current_starting_dim)) {
       std::stringstream ss;
       ss << "[SegmentedSparseFeatureVector::addDenseFeatureToSegment] Adding "
          << _n_dense_added + 1
          << "-th dense feature to vector segment with dim = "
-         << _current_dim - _prev_dim;
+         << _current_ending_dim - _current_starting_dim;
       throw std::invalid_argument(ss.str());
     }
 
     uint32_t index = _n_dense_added;
-    uint32_t concat_index = _prev_dim + index;
+    uint32_t concat_index = _current_starting_dim + index;
 
     _indices.push_back(concat_index);
     _values.push_back(value);
@@ -91,8 +90,8 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
 
   void addFeatureSegment(uint32_t dim) final {
     _n_segments_added++;
-    _prev_dim = _current_dim;
-    _current_dim += dim;
+    _current_starting_dim = _current_ending_dim;
+    _current_ending_dim += dim;
     _added_sparse = false;
     _n_dense_added = 0;
   }
@@ -110,8 +109,8 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
   bool _added_sparse = false;
   uint32_t _n_segments_added = 0;
   uint32_t _n_dense_added = 0;
-  uint32_t _current_dim = 0;
-  uint32_t _prev_dim = 0;
+  uint32_t _current_ending_dim = 0;
+  uint32_t _current_starting_dim = 0;
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
   SegmentFeatureMap _segment_feature_map;

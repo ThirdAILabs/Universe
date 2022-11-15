@@ -204,8 +204,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     auto vec_ptr = makeSegmentedFeatureVector(
         blocks_dense, hash_range, /* store_segment_feature_map= */ false);
 
-    // Let each block encode the input sample and adds a new segment
-    // containing this encoding to the vector.
     for (auto& block : blocks) {
       if (auto err = block->addVectorSegment(sample, *vec_ptr)) {
         return err;

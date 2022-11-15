@@ -141,7 +141,9 @@ class SegmentedFeatureVector {
 
   SegmentFeatureMap getSegmentFeatureMap() {
     if (!_store_segment_feature_map) {
-      throw std::invalid_argument("Failed to return block feature map.");
+      throw std::invalid_argument(
+          "[SegmentedFeatureVector::getSegmentFeatureMap] Attempted to get "
+          "segment feature map when store_segment_feature_map is false.");
     }
     return getSegmentFeatureMapImpl();
   }

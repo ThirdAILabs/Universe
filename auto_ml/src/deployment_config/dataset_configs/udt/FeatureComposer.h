@@ -107,10 +107,10 @@ class FeatureComposer {
           // text hash range of MAXINT is fine since features are later
           // hashed into a range. In fact it may reduce hash collisions.
           blocks.push_back(dataset::PairGramTextBlock::make(
-              col_num, std::numeric_limits<uint32_t>::max()));
+              col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
         } else {
           blocks.push_back(dataset::UniGramTextBlock::make(
-              col_num, std::numeric_limits<uint32_t>::max()));
+              col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
         }
       }
 
