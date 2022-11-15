@@ -255,6 +255,10 @@ pybind11::detail::initimpl::pickle_factory<
       });
 }
 
+// This redirects std::out and std::err to pythons output and error streams,
+// respectively, so that prints followed by a flush are immediately visible,
+// even in notebooks. See the following link for more details:
+// https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
 using OutputRedirect =
     py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>;
 
