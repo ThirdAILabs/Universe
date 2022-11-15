@@ -484,7 +484,7 @@ py::object makeUserSpecifiedParameter(const std::string& name,
   }
 
   if (py::str(type).cast<std::string>() ==
-      "<class 'thirdai._thirdai.bolt.UDTConfig'>") {
+      "<class 'thirdai._thirdai.bolt.models.UDTConfig'>") {
     return py::cast(UserSpecifiedParameter<UDTConfigPtr>::make(name));
   }
 
