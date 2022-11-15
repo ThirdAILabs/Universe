@@ -53,7 +53,8 @@ QueryCandidateGeneratorConfig getQueryCandidateGeneratorConfig() {
       /* n_grams = */ {3, 4},
       /* reservoir_size = */ std::nullopt,
       /* source_column_index = */ 0,
-      /* target_column_index = */ 0);
+      /* target_column_index = */ 0,
+      /* file_name = */ QUERIES_FILE);
 }
 
 void assertQueryingWithoutTrainingThrowsException(
@@ -89,7 +90,7 @@ TEST(QueryCandidateGeneratorTest, GeneratorAssignsUniqueLabels) {
 
   assertQueryingWithoutTrainingThrowsException(query_candidate_generator);
 
-  query_candidate_generator.buildFlashIndex(/* file_name = */ QUERIES_FILE);
+  query_candidate_generator.buildFlashIndex();
   auto queries_to_labels_map =
       query_candidate_generator.getQueriesToLabelsMap();
 

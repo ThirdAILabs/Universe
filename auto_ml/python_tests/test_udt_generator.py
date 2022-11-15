@@ -20,12 +20,13 @@ RECALL_THRESHOLD = 0.95
 def read_csv_file(file_name: str) -> List[List[str]]:
     with open(file_name, newline="") as file:
         data = list(csv.reader(file))
-
+    data = data[1:]
     return data
 
 
 def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
-    dataframe.to_csv(file_path, index=False, header=False)
+    dataframe.columns = ["target_column", "source_column"]
+    dataframe.to_csv(file_path, index=False)
 
 
 @pytest.fixture(scope="session")
@@ -142,9 +143,12 @@ def run_generator_test(
 
 def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
     model = bolt.UniversalDeepTransformer(
-        source_column_index=1, target_column_index=0, dataset_size="small"
+        filename=TRAIN_FILE_PATH,
+        source_column="source_column",
+        target_column="target_column",
+        dataset_size="small",
     )
-    model.train(filename=TRAIN_FILE_PATH)
+    model.train()
     return model
 
 
