@@ -25,16 +25,18 @@ namespace thirdai::dataset {
 class TabularHashFeatures : public Transformation {
  public:
   TabularHashFeatures(std::vector<std::string> input_column_names,
-                      std::string output_column_name, uint32_t output_range)
+                      std::string output_column_name, uint32_t output_range,
+                      bool pairgram = false)
       : _input_column_names(std::move(input_column_names)),
         _output_column_name(std::move(output_column_name)),
-        _output_range(output_range) {}
+        _output_range(output_range),
+        _pairgram(pairgram) {}
 
   void apply(ColumnMap& column_map) final {
     std::vector<SparseValueColumnPtr> columns;
     // we hash the name of each column here so we can combine hashes later on
     // and have unique values across columns
-    std::vector<uint32_t> column_name_hashes(_input_column_names.size());
+    std::vector<uint32_t> column_name_hashes;
     for (const auto& col_name : _input_column_names) {
       columns.push_back(column_map.getSparseValueColumn(col_name));
       column_name_hashes.push_back(TextEncodingUtils::computeUnigram(
@@ -42,9 +44,9 @@ class TabularHashFeatures : public Transformation {
     }
 
     uint32_t num_rows = column_map.numRows();
-    std::vector<std::vector<uint32_t>> pairgrams(num_rows);
+    std::vector<std::vector<uint32_t>> tabular_hash_values(num_rows);
 #pragma omp parallel for default(none) \
-    shared(num_rows, columns, column_name_hashes, pairgrams)
+    shared(num_rows, columns, column_name_hashes, tabular_hash_values)
     for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
       std::vector<uint32_t> salted_unigrams;
       uint32_t col_num = 0;
@@ -64,34 +66,45 @@ class TabularHashFeatures : public Transformation {
         col_num++;
       }
 
-      // we don't deduplicate pairgrams since we ensure unique hash values
-      // above, thus reducing the chance of duplicates.
-      std::vector<uint32_t> row_pairgrams =
-          TextEncodingUtils::computeRawPairgramsFromUnigrams(salted_unigrams,
-                                                             _output_range);
-      pairgrams[row_idx] = row_pairgrams;
+      if (_pairgrams_) {
+        // we don't deduplicate pairgrams since we ensure unique hash values
+        // above, thus reducing the chance of duplicates.
+        std::vector<uint32_t> row_pairgrams =
+            TextEncodingUtils::computeRawPairgramsFromUnigrams(salted_unigrams,
+                                                               _output_range);
+        tabular_hash_values[row_idx] = row_pairgrams;
+      } else {
+        for (uint32_t i = 0; i < salted_unigrams.size(); i++) {
+          salted_unigrams[i] = salted_unigrams[i] % _output_range;
+        }
+        tabular_hash_values[row_idx] = salted_unigrams;
+      }
     }
 
     auto output_column = std::make_shared<VectorSparseArrayColumn>(
-        std::move(pairgrams), _output_range);
+        std::move(tabular_hash_values), _output_range);
     column_map.setColumn(_output_column_name, output_column);
   }
 
  private:
   // Private constructor for cereal.
   TabularHashFeatures()
-      : _input_column_names(), _output_column_name(), _output_range(0) {}
+      : _input_column_names(),
+        _output_column_name(),
+        _output_range(0),
+        _pairgram(false) {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Transformation>(this), _input_column_names,
-            _output_column_name, _output_range);
+            _output_column_name, _output_range, _pairgram);
   }
 
   std::vector<std::string> _input_column_names;
   std::string _output_column_name;
   uint32_t _output_range;
+  bool _pairgram;
 };
 
 }  // namespace thirdai::dataset
