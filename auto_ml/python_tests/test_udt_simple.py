@@ -134,9 +134,7 @@ def test_save_load():
     save_file = "savefile.bolt"
     model = make_simple_trained_model(integer_label=False)
     model.save(save_file)
-    saved_model = bolt.UniversalDeepTransformer.load(
-        filename=save_file, model_type="classifier"
-    )
+    saved_model = bolt.UniversalDeepTransformer.load(filename=save_file)
 
     eval_res = model.evaluate(TEST_FILE)
     saved_eval_res = saved_model.evaluate(TEST_FILE)
