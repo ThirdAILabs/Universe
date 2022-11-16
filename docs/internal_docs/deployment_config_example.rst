@@ -80,7 +80,7 @@ config or by passing in the DeploymentConfig directly.
 2. To construct the `ModelPipeline` we need to pass in the saved config as well as
    the values needed for any `UserSpecifiedParameter` or `OptionMappedParameter`.
 
->>> model = bolt.Pipeline(
+>>> model = bolt.models.Pipeline(
         config_path="./saved_config",
         parameters={"size": "large", "output_dim": num_classes, "delimiter": ","},
     ) 
@@ -157,4 +157,4 @@ Saving & Loading the ModelPipeline
 The model pipeline supports save/load functions just like most of our library. 
 
 >>> model.save("./saved_model_pipeline")
->>> new_model = bolt.Pipeline.load("./saved_model_pipeline")
+>>> new_model = bolt.models.Pipeline.load("./saved_model_pipeline")

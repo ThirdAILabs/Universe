@@ -71,7 +71,7 @@ def train_model_pipeline_text_classifier(download_clinc_dataset_model_pipeline):
     CONFIG_FILE = "./serialized_model_config"
     config.save(CONFIG_FILE)
 
-    model = bolt.Pipeline(
+    model = bolt.models.Pipeline(
         config_path=CONFIG_FILE,
         parameters={"size": "large", "output_dim": 150, "delimiter": ","},
     )

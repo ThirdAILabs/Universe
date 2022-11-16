@@ -141,13 +141,10 @@ using NumericalCategoricalBlockPtr = std::shared_ptr<NumericalCategoricalBlock>;
 class StringLookupCategoricalBlock final : public CategoricalBlock {
  public:
   StringLookupCategoricalBlock(uint32_t col, ThreadSafeVocabularyPtr vocab,
-                               std::optional<char> delimiter = std::nullopt,
-                               PreprocessedVectorsPtr vectors = nullptr)
+                               std::optional<char> delimiter = std::nullopt)
       : CategoricalBlock(col,
-                         /* dim= */ vectors ? vectors->dim : vocab->vocabSize(),
-                         delimiter),
-        _vocab(std::move(vocab)),
-        _vectors(std::move(vectors)) {}
+                         /* dim= */ vocab->vocabSize(), delimiter),
+        _vocab(std::move(vocab)) {}
 
   StringLookupCategoricalBlock(uint32_t col, uint32_t n_classes,
                                std::optional<char> delimiter = std::nullopt)
@@ -155,10 +152,9 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
                                      delimiter) {}
 
   static auto make(uint32_t col, ThreadSafeVocabularyPtr vocab,
-                   std::optional<char> delimiter = std::nullopt,
-                   PreprocessedVectorsPtr vectors = nullptr) {
-    return std::make_shared<StringLookupCategoricalBlock>(
-        col, std::move(vocab), delimiter, std::move(vectors));
+                   std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<StringLookupCategoricalBlock>(col, std::move(vocab),
+                                                          delimiter);
   }
 
   static auto make(uint32_t col, uint32_t n_classes,
@@ -172,10 +168,6 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
   std::string getResponsibleCategory(
       uint32_t index, const std::string_view& category_value) const final {
     (void)category_value;
-    if (_vectors) {
-      // TODO(Geordie): Make more descriptive.
-      return "Metadata";
-    }
     return _vocab->getString(index);
   }
 
@@ -190,18 +182,13 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
     } catch (...) {
       return std::current_exception();
     }
+    vec.addSparseFeatureToSegment(/* index= */ uid, /* value= */ 1.0);
 
-    if (_vectors) {
-      _vectors->appendPreprocessedFeaturesToVector(uid, vec);
-    } else {
-      vec.addSparseFeatureToSegment(/* index= */ uid, /* value= */ 1.0);
-    }
     return nullptr;
   }
 
  private:
   ThreadSafeVocabularyPtr _vocab;
-  PreprocessedVectorsPtr _vectors;
 
   // Private constructor for cereal.
   StringLookupCategoricalBlock() {}
@@ -209,15 +196,58 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<CategoricalBlock>(this), _vocab, _vectors);
+    archive(cereal::base_class<CategoricalBlock>(this), _vocab);
   }
 };
 
 using StringLookupCategoricalBlockPtr =
     std::shared_ptr<StringLookupCategoricalBlock>;
 
+class MetadataCategoricalBlock final : public CategoricalBlock {
+ public:
+  MetadataCategoricalBlock(uint32_t col, PreprocessedVectorsPtr vectors,
+                           std::optional<char> delimiter = std::nullopt)
+      : CategoricalBlock(col,
+                         /* dim= */ vectors->dim, delimiter),
+        _vectors(std::move(vectors)) {}
+
+  static auto make(uint32_t col, PreprocessedVectorsPtr vectors,
+                   std::optional<char> delimiter = std::nullopt) {
+    return std::make_shared<MetadataCategoricalBlock>(col, std::move(vectors),
+                                                      delimiter);
+  }
+
+  std::string getResponsibleCategory(
+      uint32_t index, const std::string_view& category_value) const final {
+    (void)index;
+    return "Metadata for the class '" + std::string(category_value) + "'";
+  }
+
+ protected:
+  std::exception_ptr encodeCategory(std::string_view category,
+                                    SegmentedFeatureVector& vec) final {
+    _vectors->appendPreprocessedFeaturesToVector(std::string(category), vec);
+    return nullptr;
+  }
+
+ private:
+  PreprocessedVectorsPtr _vectors;
+
+  // Private constructor for cereal.
+  MetadataCategoricalBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<CategoricalBlock>(this), _vectors);
+  }
+};
+
+using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
+
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::CategoricalBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::NumericalCategoricalBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::StringLookupCategoricalBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::MetadataCategoricalBlock)

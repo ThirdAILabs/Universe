@@ -2,31 +2,34 @@ import csv
 import math
 import os
 import random
+from typing import List
 
 import datasets
 import pandas as pd
 import pytest
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
-QUERIES_FILE = "./queries.csv"
-TRANSFORMED_QUERIES = "./transformed_queries.csv"
-CONFIG_FILE = "./flash_index_config"
+TRAIN_FILE_PATH = "./query_reformulation.csv"
+MODEL_PATH = "udt_generator_model.bolt"
+
+RECALL_THRESHOLD = 0.95
 
 
-def read_csv_file(file_name):
+def read_csv_file(file_name: str) -> List[List[str]]:
     with open(file_name, newline="") as file:
         data = list(csv.reader(file))
 
     return data
 
 
-def write_input_dataset_to_csv(dataframe, file_path):
+def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
     dataframe.to_csv(file_path, index=False, header=False)
 
 
-def download_grammar_correction_dataset():
+@pytest.fixture(scope="session")
+def grammar_correction_dataset() -> pd.DataFrame:
     """
     The grammar correction dataset is retrieved from HuggingFace:
     https://huggingface.co/datasets/snips_built_in_intents
@@ -40,19 +43,17 @@ def download_grammar_correction_dataset():
     return pd.DataFrame(extracted_text)
 
 
-def transform_queries(dataframe):
+def transform_queries(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Randomly picks 10% of the words in the queries list and either
     removes a random character from the chosen word or applies a
     random permutation to the characters in order to create an incorrect
     version of the queries.
-
     The input is expected to be a Pandas DataFrame with one column
     containing the correct queries. The output is expected to be
     another Pandas DataFrame with two columns. The first column remains
     the same, but the second column consists of queries transformed
     according to the rule detailed above.
-
     """
     transformation_type = ("remove-char", "permute-string")
     transformed_dataframe = []
@@ -97,58 +98,57 @@ def transform_queries(dataframe):
     return pd.DataFrame(transformed_dataframe)
 
 
-def delete_created_files():
-    if os.path.exists(QUERIES_FILE):
-        os.remove(QUERIES_FILE)
-
-    if os.path.exists(CONFIG_FILE):
-        os.remove(CONFIG_FILE)
-
-    if os.path.exists(TRANSFORMED_QUERIES):
-        os.remove(TRANSFORMED_QUERIES)
+@pytest.fixture
+def prepared_datasets(grammar_correction_dataset) -> None:
+    transformed_queries = transform_queries(dataframe=grammar_correction_dataset)
+    write_input_dataset_to_csv(transformed_queries, TRAIN_FILE_PATH)
 
 
-@pytest.mark.filterwarnings("ignore")
-@pytest.mark.unit
-def test_flash_generator():
+def delete_created_files() -> None:
+    if os.path.exists(MODEL_PATH):
+        os.remove(MODEL_PATH)
+
+    if os.path.exists(TRAIN_FILE_PATH):
+        os.remove(TRAIN_FILE_PATH)
+
+
+def run_generator_test(
+    model: bolt.models.UDTGenerator, source_col_index: int, target_col_index: int
+) -> None:
     """
     Tests that the generated candidate queries are reasonable given
     the input dataset.
     By default, the generator recommends top 5 closes queries from
     flash.
     """
-    dataframe = download_grammar_correction_dataset()
-    write_input_dataset_to_csv(dataframe, QUERIES_FILE)
 
-    transformed_queries = transform_queries(dataframe=dataframe)
-    write_input_dataset_to_csv(transformed_queries, TRANSFORMED_QUERIES)
+    query_pairs = read_csv_file(file_name=TRAIN_FILE_PATH)
 
-    generator_config = bolt.models.GeneratorConfig(
-        hash_function="MinHash",
-        num_tables=20,
-        hashes_per_table=10,
-        range=100,
-        n_grams=[3, 4],
-        has_incorrect_queries=True,
-    )
-    generator_config.save(CONFIG_FILE)
-
-    generator = bolt.models.Generator(config_file_name=CONFIG_FILE)
-    generator.train(file_name=TRANSFORMED_QUERIES)
-
-    query_pairs = read_csv_file(file_name=TRANSFORMED_QUERIES)
-
-    generated_candidates = generator.generate(
-        queries=[query_pair[1] for query_pair in query_pairs], top_k=5
-    )
+    queries = [query_pair[source_col_index] for query_pair in query_pairs]
+    generated_candidates = model.predict_batch(queries=queries, top_k=5)
 
     correct_results = 0
     for query_index in range(len(query_pairs)):
         correct_results += (
-            1 if query_pairs[query_index][0] in generated_candidates[query_index] else 0
+            1
+            if query_pairs[query_index][target_col_index]
+            in generated_candidates[query_index]
+            else 0
         )
 
     recall = correct_results / len(query_pairs)
-    assert recall > 0.95
+    assert recall > RECALL_THRESHOLD
 
-    delete_created_files()
+
+def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
+    model = bolt.UniversalDeepTransformer(
+        source_column_index=1, target_column_index=0, dataset_size="small"
+    )
+    model.train(filename=TRAIN_FILE_PATH)
+    return model
+
+
+@pytest.mark.filterwarnings("ignore")
+def test_udt_generator(prepared_datasets):
+    model = train_udt_query_reformulation_model()
+    run_generator_test(model=model, source_col_index=1, target_col_index=0)
