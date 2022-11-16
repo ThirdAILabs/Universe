@@ -37,7 +37,8 @@ message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
-option(THIRDAI_REPORT_BUILD_STEP_TIMES "Report time using builtin for make/ninja compile-build steps" OFF)
+option(THIRDAI_REPORT_BUILD_STEP_TIMES
+       "Report time using builtin for make/ninja compile-build steps" OFF)
 
 if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
@@ -156,12 +157,12 @@ set(THIRDAI_COMPILE_OPTIONS
     $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
     $<$<CONFIG:RelWithAsan>:-g>
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
-    $<$<CONFIG:CompileTrace>:-DNDEBUG>
-    $<$<CONFIG:CompileTrace>:-Ofast>
-    $<$<CONFIG:CompileTrace>:-fno-finite-math-only>
-    $<$<CONFIG:CompileTrace>:-funroll-loops>
-    $<$<CONFIG:CompileTrace>:-ftree-vectorize>
-    $<$<CONFIG:CompileTrace>:-ftime-trace>)
+    $<$<CONFIG:CompileAnalysis>:-DNDEBUG>
+    $<$<CONFIG:CompileAnalysis>:-Ofast>
+    $<$<CONFIG:CompileAnalysis>:-fno-finite-math-only>
+    $<$<CONFIG:CompileAnalysis>:-funroll-loops>
+    $<$<CONFIG:CompileAnalysis>:-ftree-vectorize>
+    $<$<CONFIG:CompileAnalysis>:-ftime-trace>)
 
 set(THIRDAI_ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
                                  $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
