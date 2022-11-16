@@ -1,7 +1,8 @@
+import random
+
+import numpy as np
 import pytest
 from thirdai import dataset
-import random
-import numpy as np
 
 
 @pytest.mark.unit
