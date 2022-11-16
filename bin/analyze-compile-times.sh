@@ -11,7 +11,7 @@
 
 CLANG_BUILD_ANALYSER=$1
 ARTIFACTS_FOLDER=$2
-BUILD_MODE="CompileTrace"
+BUILD_MODE="CompileAnalysis"
 BASEDIR=$(dirname -- $0)
 THIRDAI_SOURCE_DIR=$(realpath $BASEDIR/..)
 
