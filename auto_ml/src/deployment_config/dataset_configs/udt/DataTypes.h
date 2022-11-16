@@ -24,12 +24,19 @@
 namespace thirdai::automl::deployment {
 
 struct CategoricalMetadataConfig;
-
 using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
 
-struct CategoricalDataType {
-  explicit CategoricalDataType(std::optional<char> delimiter,
-                               CategoricalMetadataConfigPtr metadata)
+struct DataType {
+  virtual std::string toString() const = 0;
+
+  virtual ~DataType() = default;
+};
+
+using DataTypePtr = std::shared_ptr<DataType>;
+
+struct CategoricalDataType : DataType {
+  explicit CategoricalDataType(std::optional<char> delimiter = std::nullopt,
+                               CategoricalMetadataConfigPtr metadata = nullptr)
       : delimiter(delimiter), metadata_config(std::move(metadata)) {}
 
   std::optional<char> delimiter;
@@ -37,7 +44,7 @@ struct CategoricalDataType {
 
   CategoricalDataType() {}
 
-  std::string toString() const {
+  std::string toString() const final {
     if (delimiter.has_value()) {
       return fmt::format(R"({{"type": "categorical", "delimiter": "{}"}})",
                          delimiter.value());
@@ -53,16 +60,19 @@ struct CategoricalDataType {
   }
 };
 
-struct TextDataType {
-  explicit TextDataType(std::optional<uint32_t> average_n_words,
-                        bool force_pairgram)
+using CategoricalDataTypePtr = std::shared_ptr<CategoricalDataType>;
+
+struct TextDataType : DataType {
+  explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
+                        bool force_pairgram = false)
       : average_n_words(average_n_words), force_pairgram(force_pairgram) {}
-  std::optional<uint32_t> average_n_words;
+
+  std::optional<double> average_n_words;
   bool force_pairgram;
 
   TextDataType() {}
 
-  static std::string toString() { return R"({"type": "text"})"; }
+  std::string toString() const final { return R"({"type": "text"})"; }
 
  private:
   friend class cereal::access;
@@ -72,9 +82,11 @@ struct TextDataType {
   }
 };
 
-struct NumericalDataType {
+using TextDataTypePtr = std::shared_ptr<TextDataType>;
+
+struct NumericalDataType : DataType {
   explicit NumericalDataType(std::pair<double, double> _range,
-                             std::string _granularity)
+                             std::string _granularity = "m")
       : range(std::move(_range)), granularity(std::move(_granularity)) {}
 
   std::pair<double, double> range;
@@ -82,7 +94,7 @@ struct NumericalDataType {
 
   NumericalDataType() {}
 
-  std::string toString() const {
+  std::string toString() const final {
     return fmt::format(
         R"({{"type": "numerical", "range": [{}, {}], "granularity": "{}"}})",
         range.first, range.second, granularity);
@@ -96,131 +108,31 @@ struct NumericalDataType {
   }
 };
 
-struct DateDataType {
-  static std::string toString() { return R"({"type": "date"})"; }
+using NumericalDataTypePtr = std::shared_ptr<NumericalDataType>;
+
+struct DateDataType : DataType {
+  std::string toString() const final { return R"({"type": "date"})"; }
 };
 
-struct NoneDataType {
-  static std::string toString() { return R"({"type": "none"})"; }
-};
+using DateDataTypePtr = std::shared_ptr<DateDataType>;
 
-using AnyDataType = std::variant<NoneDataType, DateDataType, NumericalDataType,
-                                 CategoricalDataType, TextDataType>;
+static CategoricalDataTypePtr asCategorical(const DataTypePtr& data_type) {
+  return std::dynamic_pointer_cast<CategoricalDataType>(data_type);
+}
 
-// TODO(Geordie): Instead of having this all-knowing method class
-// we should just use interface + dynamic casting.
-class DataType {
- public:
-  DataType() : _value(NoneDataType()) {}
+static NumericalDataTypePtr asNumerical(const DataTypePtr& data_type) {
+  return std::dynamic_pointer_cast<NumericalDataType>(data_type);
+}
 
-  static auto categorical(std::optional<char> delimiter = std::nullopt,
-                          CategoricalMetadataConfigPtr metadata = nullptr) {
-    return DataType(CategoricalDataType(delimiter, std::move(metadata)));
-  }
+static TextDataTypePtr asText(const DataTypePtr& data_type) {
+  return std::dynamic_pointer_cast<TextDataType>(data_type);
+}
 
-  static auto text(std::optional<uint32_t> average_n_words = std::nullopt,
-                   bool use_attention = false) {
-    return DataType(TextDataType(average_n_words,
-                                 /* force_pairgram= */ use_attention));
-  }
+static DateDataTypePtr asDate(const DataTypePtr& data_type) {
+  return std::dynamic_pointer_cast<DateDataType>(data_type);
+}
 
-  static auto numerical(std::pair<double, double> range,
-                        std::string granularity = "m") {
-    return DataType(NumericalDataType(range, std::move(granularity)));
-  }
-
-  static auto date() { return DataType(DateDataType()); }
-
-  bool isCategorical() const {
-    return std::holds_alternative<CategoricalDataType>(_value);
-  }
-  bool isNumerical() const {
-    return std::holds_alternative<NumericalDataType>(_value);
-  }
-  bool isText() const { return std::holds_alternative<TextDataType>(_value); }
-  bool isDate() const { return std::holds_alternative<DateDataType>(_value); }
-  bool isNone() const { return std::holds_alternative<NoneDataType>(_value); }
-
-  const CategoricalDataType& asCategorical() const {
-    if (!isCategorical()) {
-      throwCastError("categorical");
-    }
-    return std::get<CategoricalDataType>(_value);
-  }
-
-  const TextDataType& asText() const {
-    if (!isText()) {
-      throwCastError("text");
-    }
-    return std::get<TextDataType>(_value);
-  }
-
-  const NumericalDataType& asNumerical() const {
-    if (!isNumerical()) {
-      throwCastError("numerical");
-    }
-    return std::get<NumericalDataType>(_value);
-  }
-
-  const DateDataType& asDate() const {
-    if (!isDate()) {
-      throwCastError("date");
-    }
-    return std::get<DateDataType>(_value);
-  }
-
-  const NoneDataType& asNone() const {
-    if (!isNone()) {
-      throwCastError("none");
-    }
-    return std::get<NoneDataType>(_value);
-  }
-
-  std::string toString() const {
-    if (isCategorical()) {
-      return asCategorical().toString();
-    }
-
-    if (isDate()) {
-      return DateDataType::toString();
-    }
-
-    if (isNumerical()) {
-      return asNumerical().toString();
-    }
-
-    if (isText()) {
-      return TextDataType::toString();
-    }
-
-    if (isNone()) {
-      return NoneDataType::toString();
-    }
-
-    throw std::runtime_error(
-        "This DataType object is not of a known concrete type, so we cannot "
-        "print it to string. This should never happen.");
-  }
-
- private:
-  static void throwCastError(std::string&& type_name) {
-    throw std::invalid_argument("[DataType] Tried to cast non-" + type_name +
-                                " datatype as a " + type_name + " datatype.");
-  }
-
-  explicit DataType(AnyDataType value) : _value(std::move(value)) {}
-
-  AnyDataType _value;
-
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_value);
-  }
-};
-
-using ColumnDataTypes = std::map<std::string, DataType>;
+using ColumnDataTypes = std::map<std::string, DataTypePtr>;
 
 struct CategoricalMetadataConfig {
   std::string metadata_file;

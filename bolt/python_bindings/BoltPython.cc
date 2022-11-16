@@ -157,11 +157,12 @@ Args:
                 ...
             )
                              )pbdoc");
-
-  udt_types_submodule.def(
-      "categorical", automl::deployment::DataType::categorical,
-      py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
-      R"pbdoc(
+  py::class_<automl::deployment::CategoricalDataType,
+             automl::deployment::DataType>(udt_types_submodule, "categorical")
+      .def(py::init<std::optional<char>,
+                    automl::deployment::CategoricalMetadataConfigPtr>(),
+           py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
+           R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
     movie titles, or age groups.
@@ -186,9 +187,11 @@ Args:
                 ...
             )
                              )pbdoc");
-  udt_types_submodule.def("numerical", automl::deployment::DataType::numerical,
-                          py::arg("range"), py::arg("granularity") = "m",
-                          R"pbdoc(
+  py::class_<automl::deployment::NumericalDataType,
+             automl::deployment::DataType>(udt_types_submodule, "categorical")
+      .def(py::init<std::pair<double, double>, std::string>(), py::arg("range"),
+           py::arg("granularity") = "m",
+           R"pbdoc(
     Numerical column type. Use this object if a column contains numerical 
     data (the value is treated as a quantity). Examples include hours of 
     a movie watched, sale quantity, or population size.
@@ -209,16 +212,18 @@ Args:
                 ...
             )
                              )pbdoc");
-  udt_types_submodule.def("text", automl::deployment::DataType::text,
-                          py::arg("average_n_words") = std::nullopt,
-                          py::arg("use_attention") = false,
-                          R"pbdoc(
+  py::class_<automl::deployment::TextDataType, automl::deployment::DataType>(
+      udt_types_submodule, "text")
+      .def(py::init<std::optional<double>, bool>(),
+           py::arg("average_n_words") = std::nullopt,
+           py::arg("use_attention") = false,
+           R"pbdoc(
     Text column type. Use this object if a column contains text data 
     (the meaning of the text matters). Examples include descriptions, 
     search queries, and user bios.
 
     Args:
-        average_n_words (int): Optional. Average number of words in the 
+        average_n_words (float): Optional. Average number of words in the 
             text column in each row. If provided, UDT may make 
             optimizations as appropriate.
         use_attention (bool): Optional. If true, udt is guaranteed to
@@ -235,8 +240,10 @@ Args:
             )
 
                              )pbdoc");
-  udt_types_submodule.def("date", automl::deployment::DataType::date,
-                          R"pbdoc(
+  py::class_<automl::deployment::DateDataType, automl::deployment::DataType>(
+      udt_types_submodule, "date")
+      .def(py::init<>(),
+           R"pbdoc(
     Date column type. Use this object if a column contains date strings. 
     Date strings must be in YYYY-MM-DD format.
  
