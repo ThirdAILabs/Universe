@@ -1,9 +1,12 @@
 #!/bin/bash
 
 # This script runs clang-build-analyser on thirdai package's python builds.
-# Usage: bash <path-to-this-script> <path-to-clang-build-analyzer> <build-folder-where-artifacts-present>
+# Usage: bash <path-to-this-script> <path-to-clang-build-analyzer-executable> <build-folder-where-artifacts-present>
 
 # The script requires ClangBuildAnalyzer, clang to enable the CompileTrace builds.
+
+# You may build ClangBuildAnalyzer locally from the instructions at
+# https://github.com/aras-p/ClangBuildAnalyzer#building-it 
 
 # Outputs are written in a compile-analysis folder.
 # analysis.txt holds the summary, while capture.txt is not human-readable and stores the raw data.
