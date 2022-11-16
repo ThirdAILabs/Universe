@@ -3,6 +3,9 @@
 # This script runs clang-build-analyser on thirdai package's python builds.
 # Usage: bash <path-to-this-script> <path-to-clang-build-analyzer-executable> <build-folder-where-artifacts-present>
 
+# For most configurations, the build-folder where artifacts are present is
+# $THIRDAI_SOURCE_DIR/build (including setup.py runs).
+
 # The script requires ClangBuildAnalyzer, clang to enable the CompileTrace builds.
 
 # You may build ClangBuildAnalyzer locally from the instructions at
