@@ -21,6 +21,7 @@ $CLANG_BUILD_ANALYSER --start $ARTIFACTS_FOLDER
 
 (cd $THIRDAI_SOURCE_DIR && \
     (
+        THIRDAI_FEATURE_FLAGS="THIRDAI_EXPOSE_ALL"
         THIRDAI_BUILD_IDENTIFIER=$(git rev-parse --short HEAD) 
         THIRDAI_BUILD_MODE=$BUILD_MODE CC=clang CXX=clang++ python3 setup.py bdist_wheel 2>&1 \
             | tee compile-verbose.log))
