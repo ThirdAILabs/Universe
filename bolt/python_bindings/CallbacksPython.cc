@@ -12,9 +12,13 @@ namespace thirdai::bolt::python {
 void createCallbacksSubmodule(py::module_& module) {
   auto callbacks_submodule = module.def_submodule("callbacks");
 
+  py::class_<Callback, PyCallback, CallbackPtr> py_callback(callbacks_submodule,
+                                                            "Callback");
+  // We don't expose custom callbacks to external users of our python package
+  // because we don't want them messing with the internal BoltGraph. We also
+  // consequently hide TrainState since it's only used in callbacks.
 #if THIRDAI_EXPOSE_ALL
-  py::class_<Callback, PyCallback, CallbackPtr>(callbacks_submodule, "Callback")
-      .def(py::init<>())
+  py_callback.def(py::init<>())
       .def("on_train_begin", &Callback::onTrainBegin)
       .def("on_train_end", &Callback::onTrainEnd)
       .def("on_epoch_begin", &Callback::onEpochBegin)
@@ -38,8 +42,7 @@ void createCallbacksSubmodule(py::module_& module) {
            py::arg("metric_name"))
       .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
 #else
-  py::class_<Callback, PyCallback, CallbackPtr>(callbacks_submodule,  // NOLINT
-                                                "Callback");          // NOLINT
+  (void)py_callback;
 #endif
 
   py::class_<LRSchedule, LRSchedulePtr>(callbacks_submodule,  // NOLINT
@@ -92,7 +95,8 @@ void createCallbacksSubmodule(py::module_& module) {
            py::arg("monitored_metric"), py::arg("model_save_path"),
            py::arg("patience"), py::arg("min_delta"), R"pbdoc(
 This callback is intended to stop training early based on prediction results 
-from a given validation set. Saves the best model to model_save_path.
+from a given validation set. Requires withValidation(..) in TrainConfig. 
+Saves the best model to model_save_path.
 Args:
      monitored_metric (string): The metric to monitor for early stopping. The 
           metric is assumed to be associated with validation data.
