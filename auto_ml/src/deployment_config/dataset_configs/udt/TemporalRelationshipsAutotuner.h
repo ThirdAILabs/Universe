@@ -40,10 +40,10 @@ class TemporalRelationshipsAutotuner {
         if (std::holds_alternative<std::string>(tracked_item)) {
           auto tracked_col_name = std::get<std::string>(tracked_item);
 
-          if (data_types.at(tracked_col_name).isNumerical()) {
+          if (asNumerical(data_types.at(tracked_col_name))) {
             makeNumericalConfigs(configs[key], tracked_col_name, lookahead);
 
-          } else if (data_types.at(tracked_col_name).isCategorical()) {
+          } else if (asCategorical(data_types.at(tracked_col_name))) {
             makeCategoricalConfigs(configs[key], tracked_col_name);
 
           } else {

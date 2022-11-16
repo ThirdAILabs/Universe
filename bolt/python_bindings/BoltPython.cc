@@ -91,7 +91,8 @@ Args:
 
   auto udt_types_submodule = bolt_submodule.def_submodule("types");
 
-  py::class_<automl::deployment::DataType>(  // NOLINT
+  py::class_<automl::deployment::DataType,
+             automl::deployment::DataTypePtr>(  // NOLINT
       udt_types_submodule, "ColumnType", "Base class for bolt types.")
       .def("__str__", &automl::deployment::DataType::toString);
 
@@ -158,7 +159,9 @@ Args:
             )
                              )pbdoc");
   py::class_<automl::deployment::CategoricalDataType,
-             automl::deployment::DataType>(udt_types_submodule, "categorical")
+             automl::deployment::DataType,
+             automl::deployment::CategoricalDataTypePtr>(udt_types_submodule,
+                                                         "categorical")
       .def(py::init<std::optional<char>,
                     automl::deployment::CategoricalMetadataConfigPtr>(),
            py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
@@ -188,7 +191,9 @@ Args:
             )
                              )pbdoc");
   py::class_<automl::deployment::NumericalDataType,
-             automl::deployment::DataType>(udt_types_submodule, "categorical")
+             automl::deployment::DataType,
+             automl::deployment::NumericalDataTypePtr>(udt_types_submodule,
+                                                       "categorical")
       .def(py::init<std::pair<double, double>, std::string>(), py::arg("range"),
            py::arg("granularity") = "m",
            R"pbdoc(
@@ -212,8 +217,8 @@ Args:
                 ...
             )
                              )pbdoc");
-  py::class_<automl::deployment::TextDataType, automl::deployment::DataType>(
-      udt_types_submodule, "text")
+  py::class_<automl::deployment::TextDataType, automl::deployment::DataType,
+             automl::deployment::TextDataTypePtr>(udt_types_submodule, "text")
       .def(py::init<std::optional<double>, bool>(),
            py::arg("average_n_words") = std::nullopt,
            py::arg("use_attention") = false,
@@ -240,8 +245,8 @@ Args:
             )
 
                              )pbdoc");
-  py::class_<automl::deployment::DateDataType, automl::deployment::DataType>(
-      udt_types_submodule, "date")
+  py::class_<automl::deployment::DateDataType, automl::deployment::DataType,
+             automl::deployment::DateDataTypePtr>(udt_types_submodule, "date")
       .def(py::init<>(),
            R"pbdoc(
     Date column type. Use this object if a column contains date strings. 
