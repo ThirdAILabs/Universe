@@ -100,7 +100,7 @@ Args:
           best on the validation set
      patience (int): The nuber of epochs with no improvement in validation score
           after which training will be stopped.
-     min_delta (float): The minimum change in the monitored quantity to qualify 
+     min_delta (float): The minimum change in the monitored metric to qualify 
           as an improvement, i.e. an absolute change of less than min_delta will
           count as no improvement.
 )pbdoc");
