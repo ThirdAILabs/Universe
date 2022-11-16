@@ -66,6 +66,8 @@ def _is_int_col(column: pd.Series):
 
 
 def _infer_col_type(column: pd.Series) -> Dict[str, str]:
+    # Since Pandas reads blank values as NA in read_csv, this will drop missing
+    # values, thus allowing us to do type inference correctly.
     column = column.dropna()
 
     if len(column) < 2:
@@ -122,6 +124,10 @@ def semantic_type_inference(
         for full examples with expected inputs and outputs.
     """
 
+    # We force dtype=object so that int and string columns are treated correctly
+    # even with missing values (we will later drop the missing values, which
+    # get converted to NAs during read_csv, and then convert to the correct
+    # more specific type).
     df = pd.read_csv(filename, nrows=nrows, dtype=object)
     if len(df) < min_rows_allowed:
         raise ValueError(
