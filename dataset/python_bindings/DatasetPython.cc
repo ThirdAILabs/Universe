@@ -336,7 +336,15 @@ void createDatasetSubmodule(py::module_& module) {
       .def_static("load", &BoltDataset::load, py::arg("filename"))
       .def(py::init([](py::iterable iterable) {
              using Batches = std::vector<BoltBatch>;
-             auto batches = iterable.cast<Batches>();
+             // auto batches = iterable.cast<Batches>();
+             Batches batches;
+             auto iter = py::iter(iterable);
+             while (iter != py::iterator::sentinel()) {
+               BoltBatch* batch = iter.cast<BoltBatch*>();
+               batches.push_back(*batch);
+               py::print("got value: ", *iter);
+               ++iter;
+             }
              std::shared_ptr<BoltDataset> dataset =
                  std::make_shared<InMemoryDataset<BoltBatch>>(
                      std::move(batches));
@@ -365,7 +373,15 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__len__", &BoltBatch::getBatchSize)
       .def(py::init([](py::iterable iterable) {
              using Vectors = std::vector<BoltVector>;
-             auto vectors = iterable.cast<Vectors>();
+             Vectors vectors;
+             // auto vectors = iterable.cast<Vectors>();
+             auto iter = py::iter(iterable);
+             while (iter != py::iterator::sentinel()) {
+               BoltVector* vector = iter.cast<BoltVector*>();
+               vectors.push_back(*vector);
+               // py::print("got value: ", *iter);
+               ++iter;
+             }
              BoltBatch batch(std::move(vectors));
              return batch;
            }),
