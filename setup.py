@@ -175,9 +175,9 @@ setup(
         # The cryptography requirement is necessary to avoid ssl errors
         # The tokenizers requirement ensures that all of the [test] depedencies are
         # installable from a wheel on an m1.
-        # The latest version of MLFLOW available while building wheels is 1.23.1 
-        # For MLFLOW to work, the alembic version of the backend databases for local 
-        # MLFLOW and server MLFLOW should be the same. Hence, we are fixing the 
+        # The latest version of MLFLOW available while building wheels is 1.23.1
+        # For MLFLOW to work, the alembic version of the backend databases for local
+        # MLFLOW and server MLFLOW should be the same. Hence, we are fixing the
         # version of MLFLOW here. The version of protobuf that works with this
         # MLFLOW is also being fixed.
         "test": [
