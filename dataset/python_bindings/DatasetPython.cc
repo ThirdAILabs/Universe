@@ -334,7 +334,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__len__", &BoltDataset::numBatches)
       .def("save", &BoltDataset::save, py::arg("filename"))
       .def_static("load", &BoltDataset::load, py::arg("filename"))
-      .def(py::init([](py::iterable iterable) {
+      .def(py::init([](const py::iterable& iterable) {
              using Batches = std::vector<BoltBatch>;
              auto batches = iterable.cast<Batches>();
              std::shared_ptr<BoltDataset> dataset =
@@ -363,7 +363,7 @@ void createDatasetSubmodule(py::module_& module) {
                &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
       .def("__len__", &BoltBatch::getBatchSize)
-      .def(py::init([](py::iterable iterable) {
+      .def(py::init([](const py::iterable& iterable) {
              using Vectors = std::vector<BoltVector>;
              auto vectors = iterable.cast<Vectors>();
              BoltBatch batch(std::move(vectors));
