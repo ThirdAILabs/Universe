@@ -37,7 +37,8 @@ message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
-option(THIRDAI_REPORT_BUILD_STEP_TIMES "Report time using builtin for make/ninja compile-build steps" OFF)
+option(THIRDAI_REPORT_BUILD_STEP_TIMES
+       "Report time using builtin for make/ninja compile-build steps" OFF)
 
 if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
