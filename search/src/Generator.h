@@ -195,24 +195,17 @@ class QueryCandidateGenerator {
     return QueryCandidateGenerator::make(query_candidate_generator_config);
   }
 
-  void save(const std::string& file_name) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(file_name, std::ios::binary);
-
+  void save_stream(std::ostream& filestream) const {
     cereal::BinaryOutputArchive output_archive(filestream);
     output_archive(*this);
   }
 
-  static std::shared_ptr<QueryCandidateGenerator> load(
-      const std::string& file_name) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(file_name, std::ios::binary);
-
+  static std::shared_ptr<QueryCandidateGenerator> load_stream(
+      std::istream& filestream) {
     cereal::BinaryInputArchive input_archive(filestream);
     std::shared_ptr<QueryCandidateGenerator> deserialized_generator(
         new QueryCandidateGenerator());
     input_archive(*deserialized_generator);
-
     return deserialized_generator;
   }
 

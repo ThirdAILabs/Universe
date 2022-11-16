@@ -109,17 +109,13 @@ class UniversalDeepTransformer : public ModelPipeline {
     return udtDatasetFactory().className(neuron_id);
   }
 
-  void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  void save_stream(std::ostream& filestream) const {
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*this);
   }
 
-  static std::shared_ptr<UniversalDeepTransformer> load(
-      const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  static std::shared_ptr<UniversalDeepTransformer> load_stream(
+      std::ifstream& filestream) {
     cereal::BinaryInputArchive iarchive(filestream);
     std::shared_ptr<UniversalDeepTransformer> deserialize_into(
         new UniversalDeepTransformer());
