@@ -25,3 +25,6 @@
 [submodule "deps/cryptopp-cmake"]
 	path = deps/cryptopp-cmake
 	url = https://github.com/abdes/cryptopp-cmake.git
+[submodule "deps/prometheus-cpp"]
+	path = deps/prometheus-cpp
+	url = https://github.com/ThirdAILabs/PrometheusCppFork

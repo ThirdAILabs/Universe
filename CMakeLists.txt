@@ -175,8 +175,11 @@ include_directories(deps/eigen)
 # Source dependencies
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
-
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
+# Turn off prometheus-cpp's testing build so that we don't try to build two
+# copies of gmock
+option(ENABLE_TESTING "" OFF) 
+add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
 # requires the boost and we dont want to add the boost dependencies, hence
@@ -216,6 +219,7 @@ add_subdirectory(hashtable)
 add_subdirectory(utils)
 add_subdirectory(wrappers)
 add_subdirectory(compression)
+add_subdirectory(metrics)
 
 # Only add the licensing subdirectory if the corresponding flag is set
 if(${LICENSE_BUILD_FLAG_FOUND})
