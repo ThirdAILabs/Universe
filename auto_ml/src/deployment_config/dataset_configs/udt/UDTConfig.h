@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
 #include "DataTypes.h"
 #include <dataset/src/utils/QuantityHistoryTracker.h>
@@ -16,6 +17,8 @@ namespace thirdai::automl::deployment {
 
 struct UDTConfig {
   static constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
+  static constexpr uint32_t REGRESSION_CORRECT_LABEL_RADIUS = 3;
+  static constexpr uint32_t REGRESSION_DEFAULT_NUM_BINS = 100;
 
   /**
    * data_types: mapping from column names (strings) to DataType objects,
@@ -51,7 +54,7 @@ struct UDTConfig {
    */
   UDTConfig(ColumnDataTypes data_types,
             UserProvidedTemporalRelationships temporal_tracking_relationships,
-            std::string target, uint32_t n_target_classes,
+            std::string target, std::optional<uint32_t> n_target_classes,
             bool integer_target = false, std::string time_granularity = "d",
             uint32_t lookahead = 0, char delimiter = ',')
       : data_types(std::move(data_types)),
@@ -67,7 +70,7 @@ struct UDTConfig {
   ColumnDataTypes data_types;
   UserProvidedTemporalRelationships provided_relationships;
   std::string target;
-  uint32_t n_target_classes;
+  std::optional<uint32_t> n_target_classes;
   bool integer_target;
   dataset::QuantityTrackingGranularity time_granularity;
   uint32_t lookahead;
