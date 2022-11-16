@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -52,20 +53,21 @@ class UniversalDeepTransformer : public ModelPipeline {
   static UniversalDeepTransformer buildUDT(
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target_col, std::string time_granularity = "d",
+      std::string target_col, uint32_t n_target_classes,
+      bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::unordered_map<std::string, std::string>& options = {}) {
     auto dataset_config = std::make_shared<UDTConfig>(
         std::move(data_types), std::move(temporal_tracking_relationships),
-        std::move(target_col), std::move(time_granularity), lookahead,
-        delimiter);
+        std::move(target_col), n_target_classes, integer_target,
+        std::move(time_granularity), lookahead, delimiter);
 
     auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
           embedding_dimension] = processUDTOptions(options);
 
     auto dataset_factory = UDTDatasetFactory::make(
         /* config= */ std::move(dataset_config),
-        /* parallel= */ parallel_data_processing,
+        /* force_parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
         /* contextual_columns= */ contextual_columns);
 
@@ -114,12 +116,12 @@ class UniversalDeepTransformer : public ModelPipeline {
     oarchive(*this);
   }
 
-  static std::unique_ptr<UniversalDeepTransformer> load(
+  static std::shared_ptr<UniversalDeepTransformer> load(
       const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<UniversalDeepTransformer> deserialize_into(
+    std::shared_ptr<UniversalDeepTransformer> deserialize_into(
         new UniversalDeepTransformer());
     iarchive(*deserialize_into);
 

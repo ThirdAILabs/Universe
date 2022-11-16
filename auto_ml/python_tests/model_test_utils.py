@@ -64,7 +64,9 @@ def check_saved_and_retrained_accuarcy(
     SAVE_FILE = "./saved_model_file.bolt"
 
     model.save(SAVE_FILE)
-    loaded_model = bolt.UniversalDeepTransformer.load(SAVE_FILE)
+    loaded_model = bolt.UniversalDeepTransformer.load(
+        SAVE_FILE, model_type="classifier"
+    )
 
     acc = compute_evaluate_accuracy(
         model, test_filename, inference_samples, use_class_name
