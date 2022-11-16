@@ -23,13 +23,8 @@ def test_dataset():
             candidate_indices = list(range(0, MAX_LENGTH - 1))
             generator.shuffle(candidate_indices)
             indices = candidate_indices[:length]
-            values = [generator.random() for _ in candidate_indices]
-            values = np.array(values, dtype=np.float32)
-            print(indices, values)
-            # indices = [1]
-            # values = [2.0]
+            values = [generator.random() for _ in indices]
             sample = dataset.make_sparse_vector(indices=indices, values=values)
-            print(indices, values)
             samples.append(sample)
 
         # Create batch from samples
@@ -38,7 +33,3 @@ def test_dataset():
 
     # Create dataset
     _dataset = dataset.BoltDataset(batches)
-
-
-if __name__ == "__main__":
-    test_dataset()
