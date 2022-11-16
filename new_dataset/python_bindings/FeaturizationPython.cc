@@ -5,7 +5,7 @@
 #include <new_dataset/src/featurization_pipeline/columns/NumpyColumns.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <new_dataset/src/featurization_pipeline/transformations/Binning.h>
-#include <new_dataset/src/featurization_pipeline/transformations/CrossColumnPairgram.h>
+#include <new_dataset/src/featurization_pipeline/transformations/TabularHashFeatures.h>
 #include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
 #include <new_dataset/src/featurization_pipeline/transformations/StringHash.h>
 #include <new_dataset/src/featurization_pipeline/transformations/TokenPairgram.h>
@@ -77,9 +77,9 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"),
            py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
 
-  py::class_<CrossColumnPairgram, Transformation,
-             std::shared_ptr<CrossColumnPairgram>>(transformations_submodule,
-                                                   "CrossColumnPairgram")
+  py::class_<TabularHashFeatures, Transformation,
+             std::shared_ptr<TabularHashFeatures>>(transformations_submodule,
+                                                   "TabularHashFeatures")
       .def(py::init<std::vector<std::string>, std::string, uint32_t>(),
            py::arg("input_columns"), py::arg("output_column"),
            py::arg("output_range"));

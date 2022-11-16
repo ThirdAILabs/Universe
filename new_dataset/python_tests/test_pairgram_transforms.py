@@ -45,7 +45,7 @@ def cross_column_pairgram_dataset():
             for column_name in column_name_list
         ]
         + [
-            data.transformations.CrossColumnPairgram(
+            data.transformations.TabularHashFeatures(
                 input_columns=[f"{col_name}_hashes" for col_name in column_name_list],
                 output_column="pairgrams",
                 output_range=OUTPUT_RANGE,

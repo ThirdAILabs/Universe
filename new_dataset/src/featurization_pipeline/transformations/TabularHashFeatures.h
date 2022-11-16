@@ -22,9 +22,9 @@ namespace thirdai::dataset {
  * IndexValueArrayColumn. Each input value will be salted according to its
  * column of origin to limit duplicate values all hashing to the same location.
  */
-class CrossColumnPairgram : public Transformation {
+class TabularHashFeatures : public Transformation {
  public:
-  CrossColumnPairgram(std::vector<std::string> input_column_names,
+  TabularHashFeatures(std::vector<std::string> input_column_names,
                       std::string output_column_name, uint32_t output_range)
       : _input_column_names(std::move(input_column_names)),
         _output_column_name(std::move(output_column_name)),
@@ -79,7 +79,7 @@ class CrossColumnPairgram : public Transformation {
 
  private:
   // Private constructor for cereal.
-  CrossColumnPairgram()
+  TabularHashFeatures()
       : _input_column_names(), _output_column_name(), _output_range(0) {}
 
   friend class cereal::access;
@@ -96,4 +96,4 @@ class CrossColumnPairgram : public Transformation {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::CrossColumnPairgram)
+CEREAL_REGISTER_TYPE(thirdai::dataset::TabularHashFeatures)
