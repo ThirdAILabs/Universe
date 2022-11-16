@@ -26,11 +26,11 @@ class TabularHashFeatures : public Transformation {
  public:
   TabularHashFeatures(std::vector<std::string> input_column_names,
                       std::string output_column_name, uint32_t output_range,
-                      bool pairgram = false)
+                      bool use_pairgrams = false)
       : _input_column_names(std::move(input_column_names)),
         _output_column_name(std::move(output_column_name)),
         _output_range(output_range),
-        _pairgram(pairgram) {}
+        _use_pairgrams(use_pairgrams) {}
 
   void apply(ColumnMap& column_map) final {
     std::vector<SparseValueColumnPtr> columns;
@@ -66,7 +66,7 @@ class TabularHashFeatures : public Transformation {
         col_num++;
       }
 
-      if (_pairgrams_) {
+      if (_use_pairgrams) {
         // we don't deduplicate pairgrams since we ensure unique hash values
         // above, thus reducing the chance of duplicates.
         std::vector<uint32_t> row_pairgrams =
@@ -92,19 +92,19 @@ class TabularHashFeatures : public Transformation {
       : _input_column_names(),
         _output_column_name(),
         _output_range(0),
-        _pairgram(false) {}
+        _use_pairgrams(false) {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Transformation>(this), _input_column_names,
-            _output_column_name, _output_range, _pairgram);
+            _output_column_name, _output_range, _use_pairgrams);
   }
 
   std::vector<std::string> _input_column_names;
   std::string _output_column_name;
   uint32_t _output_range;
-  bool _pairgram;
+  bool _use_pairgrams;
 };
 
 }  // namespace thirdai::dataset
