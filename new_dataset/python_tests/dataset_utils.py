@@ -66,7 +66,7 @@ def verify_pairgrams(pairgram_dataset, output_range, num_unigrams):
             hash_counts[index] += value
 
     pairgrams_per_row = (num_unigrams * (num_unigrams + 1)) / 2
-    expected_count = (num_unigrams / output_range) * pairgrams_per_row
+    expected_count = (len(indices) / output_range) * pairgrams_per_row
     for count in hash_counts:
         assert count / expected_count < 2 and count / expected_count > 0.5
 
@@ -74,12 +74,13 @@ def verify_pairgrams(pairgram_dataset, output_range, num_unigrams):
 # Given a sparse numpy dataset of featurized unigrams (not deduplicated), count
 # to make sure the number of unigrams for each index across the whole dataset
 # is close to the expected number.
-def verify_unigrams(pairgram_dataset, output_range, expected_num_unigrams):
+def verify_unigrams(pairgram_dataset, output_range, expected_unigrams_per_row):
     indices, values = pairgram_dataset
     hash_counts = [0 for _ in range(output_range)]
     for row_indices, row_values in zip(indices, values):
         for index, value in zip(row_indices, row_values):
             hash_counts[index] += value
 
+    expected_num_unigrams = expected_unigrams_per_row * len(indices) / output_range
     for count in hash_counts:
         assert count / expected_num_unigrams < 2 and count / expected_num_unigrams > 0.5
