@@ -7,7 +7,7 @@
 #include <new_dataset/src/featurization_pipeline/transformations/Binning.h>
 #include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
 #include <new_dataset/src/featurization_pipeline/transformations/StringHash.h>
-#include <new_dataset/src/featurization_pipeline/transformations/TabularHashFeatures.h>
+#include <new_dataset/src/featurization_pipeline/transformations/TabularHashedFeatures.h>
 #include <new_dataset/src/featurization_pipeline/transformations/TokenPairgram.h>
 #include <pybind11/stl.h>
 #include <optional>
@@ -77,9 +77,9 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
            py::arg("input_column"), py::arg("output_column"),
            py::arg("output_range") = std::nullopt, py::arg("seed") = 42);
 
-  py::class_<TabularHashFeatures, Transformation,
-             std::shared_ptr<TabularHashFeatures>>(transformations_submodule,
-                                                   "TabularHashFeatures")
+  py::class_<TabularHashedFeatures, Transformation,
+             std::shared_ptr<TabularHashedFeatures>>(transformations_submodule,
+                                                     "TabularHashedFeatures")
       .def(py::init<std::vector<std::string>, std::string, uint32_t, bool>(),
            py::arg("input_columns"), py::arg("output_column"),
            py::arg("output_range"), py::arg("use_pairgrams") = false);

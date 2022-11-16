@@ -17,16 +17,16 @@
 namespace thirdai::dataset {
 
 /**
- * @brief This column assumes as input N SparseValueColumns, computes pairgrams
- * across all the indices and returns the results as a new
+ * @brief This column assumes as input N SparseValueColumns, computes either
+ * unigrams or pairgrams across all the indices and returns the results as a new
  * IndexValueArrayColumn. Each input value will be salted according to its
  * column of origin to limit duplicate values all hashing to the same location.
  */
-class TabularHashFeatures : public Transformation {
+class TabularHashedFeatures : public Transformation {
  public:
-  TabularHashFeatures(std::vector<std::string> input_column_names,
-                      std::string output_column_name, uint32_t output_range,
-                      bool use_pairgrams = false)
+  TabularHashedFeatures(std::vector<std::string> input_column_names,
+                        std::string output_column_name, uint32_t output_range,
+                        bool use_pairgrams = false)
       : _input_column_names(std::move(input_column_names)),
         _output_column_name(std::move(output_column_name)),
         _output_range(output_range),
@@ -88,7 +88,7 @@ class TabularHashFeatures : public Transformation {
 
  private:
   // Private constructor for cereal.
-  TabularHashFeatures()
+  TabularHashedFeatures()
       : _input_column_names(),
         _output_column_name(),
         _output_range(0),
@@ -109,4 +109,4 @@ class TabularHashFeatures : public Transformation {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::TabularHashFeatures)
+CEREAL_REGISTER_TYPE(thirdai::dataset::TabularHashedFeatures)

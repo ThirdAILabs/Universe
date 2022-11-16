@@ -13,9 +13,8 @@ OUTPUT_RANGE = 1000
 NUM_WORDS = 5
 
 
-
 def sentence_pairgram_dataset():
-    sentence_column = get_sentence_str_column(NUM_ROWS)
+    sentence_column = get_sentence_str_column(NUM_ROWS, NUM_WORDS)
 
     columns = data.ColumnMap({"sentence": sentence_column})
 
@@ -39,4 +38,4 @@ def sentence_pairgram_dataset():
 
 def test_sentence_pairgrams():
     pairgram_dataset = sparse_bolt_dataset_to_numpy(sentence_pairgram_dataset())
-    verify_pairgrams(pairgram_dataset)
+    verify_pairgrams(pairgram_dataset, OUTPUT_RANGE, NUM_WORDS)

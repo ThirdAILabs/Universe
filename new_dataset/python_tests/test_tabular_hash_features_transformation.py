@@ -1,5 +1,10 @@
 import pytest
-from dataset_utils import get_str_col, sparse_bolt_dataset_to_numpy, verify_pairgrams
+from dataset_utils import (
+    get_str_col,
+    sparse_bolt_dataset_to_numpy,
+    verify_pairgrams,
+    verify_unigrams,
+)
 from thirdai import data
 
 pytestmark = [pytest.mark.unit]
@@ -26,7 +31,7 @@ def tabular_hash_feature_dataset(use_pairgrams):
             for column_name in column_name_list
         ]
         + [
-            data.transformations.TabularHashFeatures(
+            data.transformations.TabularHashedFeatures(
                 input_columns=[f"{col_name}_hashes" for col_name in column_name_list],
                 output_column="tabular_hash_features",
                 output_range=OUTPUT_RANGE,
