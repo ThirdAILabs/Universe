@@ -82,7 +82,7 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
                                                    "TabularHashFeatures")
       .def(py::init<std::vector<std::string>, std::string, uint32_t, bool>(),
            py::arg("input_columns"), py::arg("output_column"),
-           py::arg("output_range"), py::arg("pairgram") = false);
+           py::arg("output_range"), py::arg("use_pairgrams") = false);
 
   py::class_<SentenceUnigram, Transformation, std::shared_ptr<SentenceUnigram>>(
       transformations_submodule, "SentenceUnigram")

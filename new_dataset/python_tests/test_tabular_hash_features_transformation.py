@@ -9,7 +9,7 @@ OUTPUT_RANGE = 1000
 NUM_WORDS = 5
 
 
-def tabular_hash_feature_dataset(use_pairgram):
+def tabular_hash_feature_dataset(use_pairgrams):
     num_cols = NUM_WORDS
     string_columns = [get_str_col(NUM_ROWS) for _ in range(num_cols)]
 
@@ -30,7 +30,7 @@ def tabular_hash_feature_dataset(use_pairgram):
                 input_columns=[f"{col_name}_hashes" for col_name in column_name_list],
                 output_column="tabular_hash_features",
                 output_range=OUTPUT_RANGE,
-                pairgram=use_pairgram,
+                use_pairgrams=use_pairgrams,
             )
         ]
     )
@@ -42,13 +42,13 @@ def tabular_hash_feature_dataset(use_pairgram):
 
 def test_cross_column_pairgrams():
     pairgram_dataset = sparse_bolt_dataset_to_numpy(
-        tabular_hash_feature_dataset(use_pairgram=True)
+        tabular_hash_feature_dataset(use_pairgrams=True)
     )
     verify_pairgrams(pairgram_dataset, OUTPUT_RANGE, NUM_WORDS)
 
 
 def test_cross_column_unigrams():
     unigram_dataset = sparse_bolt_dataset_to_numpy(
-        tabular_hash_feature_dataset(use_pairgram=False)
+        tabular_hash_feature_dataset(use_pairgrams=False)
     )
     verify_unigrams(unigram_dataset, OUTPUT_RANGE, NUM_WORDS)
