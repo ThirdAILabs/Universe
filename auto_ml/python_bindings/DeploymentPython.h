@@ -39,12 +39,11 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
                                             const py::dict& parameters);
 
 template <typename Model>
-void trainOnFile(Model& model,
-                 const std::string& filename, const py::kwargs& kwargs);
+void trainOnFile(Model& model, const std::string& filename,
+                 const py::kwargs& kwargs);
 
 template <typename Model>
-void trainOnDataLoader(Model& model,
-                       const dataset::DataLoaderPtr& data_source,
+void trainOnDataLoader(Model& model, const dataset::DataLoaderPtr& data_source,
                        const py::kwargs& kwargs);
 
 py::object evaluateOnDataLoaderWrapper(
