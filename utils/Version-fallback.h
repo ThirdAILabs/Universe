@@ -1,0 +1,17 @@
+#pragma once
+
+/*
+ * File Version.h is generated using CMake. Do not modify
+ * Version.h manually! Edit Version.h.in file instead.
+ */
+
+#include <string>
+
+namespace thirdai {
+
+inline std::string version() {
+  // e.g. v1.2.3-alpha.1.1+abc123d
+  return "undefined";
+}
+
+}  // namespace thirdai
