@@ -576,24 +576,22 @@ template <typename Model>
 void trainOnDataLoader(Model& model, const dataset::DataLoaderPtr& data_source,
                        const py::kwargs& kwargs) {
   TrainOptions train_options(data_source);
-
+  (void)kwargs;
   // Parse kwargs
-
-  for (const auto& [key, value] : kwargs) {
-    std::string name = key.cast<std::string>();
+  for (const auto& arg : kwargs) {
+    std::string name = arg.first.cast<std::string>();
+    (void)(name);
     if (name == "learning_rate") {
-      train_options.setLearningRate(value.cast<float>());
+      train_options.setLearningRate(arg.second.cast<float>());
     } else if (name == "epochs") {
-      train_options.setEpochs(kwargs["epochs"].cast<uint32_t>());
+      train_options.setEpochs(arg.second.cast<uint32_t>());
     } else if (name == "validation") {
-      train_options.setValidation(
-          kwargs["validation"].cast<ValidationOptions>());
+      train_options.setValidation(arg.second.cast<ValidationOptions>());
     } else if (name == "callbacks") {
       train_options.setCallbacks(
-          kwargs["callbacks"].cast<std::vector<bolt::CallbackPtr>>());
+          arg.second.cast<std::vector<bolt::CallbackPtr>>());
     } else if (name == "max_in_memory_batches") {
-      train_options.setMaxInMemoryBatches(
-          kwargs["max_in_memory_batches"].cast<uint32_t>());
+      train_options.setMaxInMemoryBatches(arg.second.cast<uint32_t>());
     } else if (name != "batch_size") {
       // batch_size is a valid arg just not used here so we don't throw if it's
       // present.
