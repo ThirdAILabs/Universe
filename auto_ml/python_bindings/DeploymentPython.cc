@@ -1,6 +1,7 @@
 #include "DeploymentPython.h"
 #include "DeploymentDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/layers/LayerConfig.h>
@@ -234,13 +235,9 @@ void createModelPipeline(py::module_& models_submodule) {
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
            bolt::python::OutputRedirect())
-      .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
-           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt,
+      .def("train", &trainOnFile<ModelPipeline>, py::arg("filename"),
            docs::MODEL_PIPELINE_TRAIN_FILE, bolt::python::OutputRedirect())
-      .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
-           py::arg("train_config"),
-           py::arg("max_in_memory_batches") = std::nullopt,
+      .def("train", &trainOnDataLoader<ModelPipeline>, py::arg("data_source"),
            docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
            bolt::python::OutputRedirect())
       .def("evaluate", &evaluateOnFileWrapper<ModelPipeline>,
@@ -262,8 +259,6 @@ void createModelPipeline(py::module_& models_submodule) {
       .def("predict_batch", &predictBatchWrapper<ModelPipeline, LineInputBatch>,
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
-      .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
-           py::arg("filename"), bolt::python::OutputRedirect())
       .def("save", &ModelPipeline::save, py::arg("filename"),
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
@@ -348,6 +343,13 @@ void createUDTFactory(py::module_& bolt_submodule) {
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   py::arg("model_type"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
+
+  py::class_<ValidationOptions>(bolt_submodule, "Validation")
+      .def(py::init<std::string, std::vector<std::string>,
+                    std::optional<uint32_t>, bool>(),
+           py::arg("filename"), py::arg("metrics"),
+           py::arg("interval") = std::nullopt,
+           py::arg("use_sparse_inference") = false);
 }
 
 void createUDTClassifierAndGenerator(py::module_& models_submodule) {
@@ -372,12 +374,8 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
            docs::UDT_INIT, bolt::python::OutputRedirect())
-      .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
-           py::arg("train_config") = bolt::TrainConfig::makeConfig(
-               /* learning_rate= */ 0.001, /* epochs= */ 3),
-           py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN,
-           bolt::python::OutputRedirect())
+      .def("train", &trainOnFile<UniversalDeepTransformer>, py::arg("filename"),
+           docs::UDT_TRAIN, bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
       .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
@@ -440,11 +438,58 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
                   py::arg("filename"));
 }
 
+template <typename Model>
+void trainOnFile(Model& model,  // NOLINT
+                 const std::string& filename, const py::kwargs& kwargs) {
+  uint32_t batch_size;
+  if (kwargs.contains("batch_size")) {
+    batch_size = kwargs["batch_size"].cast<uint32_t>();
+  } else {
+    batch_size = model.defaultBatchSize();
+  }
+  auto data_source = dataset::SimpleFileDataLoader::make(
+      filename, /* target_batch_size= */ batch_size);
+
+  trainOnDataLoader(model, data_source, kwargs);
+}
+
+template <typename Model>
+void trainOnDataLoader(Model& model,  // NOLINT
+                       const dataset::DataLoaderPtr& data_source,
+                       const py::kwargs& kwargs) {
+  TrainOptions train_options(data_source);
+
+  // Parse kwargs
+  if (kwargs.contains("learning_rate")) {
+    train_options.setLearningRate(kwargs["learning_rate"].cast<float>());
+  }
+
+  if (kwargs.contains("epochs")) {
+    train_options.setEpochs(kwargs["epochs"].cast<uint32_t>());
+  }
+
+  if (kwargs.contains("validation")) {
+    train_options.setValidation(kwargs["validation"].cast<ValidationOptions>());
+  }
+
+  if (kwargs.contains("callbacks")) {
+    train_options.setCallbacks(
+        kwargs["callbacks"].cast<std::vector<bolt::CallbackPtr>>());
+  }
+
+  if (kwargs.contains("max_in_memory_batches")) {
+    train_options.setMaxInMemoryBatches(
+        kwargs["max_in_memory_batches"].cast<uint32_t>());
+  }
+
+  model.train(train_options);
+}
+
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs) {
-  // Because this is an overloaded function, the docsstring will be rendered for
-  // each overload. This option is to ensure that it can only be rendered for
-  // the first one.
+  // Because this is an overloaded function, the docsstring will be rendered
+  // for each overload. This option is to ensure that it can only be rendered
+  // for the first one.
   const char* const docstring =
       add_docs ? docs::CONSTANT_PARAMETER : "See docs above.";
 

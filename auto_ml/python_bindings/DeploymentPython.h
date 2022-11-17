@@ -38,6 +38,15 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
 ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
                                             const py::dict& parameters);
 
+template <typename Model>
+void trainOnFile(Model& model,
+                 const std::string& filename, const py::kwargs& kwargs);
+
+template <typename Model>
+void trainOnDataLoader(Model& model,
+                       const dataset::DataLoaderPtr& data_source,
+                       const py::kwargs& kwargs);
+
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
     const std::shared_ptr<dataset::DataLoader>& data_source,

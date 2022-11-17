@@ -78,10 +78,10 @@ def train_model_pipeline_text_classifier(download_clinc_dataset_model_pipeline):
 
     train_filename, _, _ = download_clinc_dataset_model_pipeline
 
-    train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     model.train(
         filename=train_filename,
-        train_config=train_config,
+        learning_rate=0.01,
+        epochs=5,
         max_in_memory_batches=12,
     )
 
@@ -148,22 +148,15 @@ def test_model_pipeline_text_classification_train_with_validation(
     model = train_model_pipeline_text_classifier
     train_filename, test_filename, _ = download_clinc_dataset_model_pipeline
 
-    eval_config = (
-        bolt.EvalConfig()
-        .with_metrics(["categorical_accuracy"])
-        .enable_sparse_inference()
-    )
-
-    val_data, val_labels = model.load_validation_data(test_filename)
-
-    train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001).with_validation(
-        validation_data=val_data,
-        validation_labels=val_labels,
-        eval_config=eval_config,
-        validation_frequency=10,
+    validation = bolt.Validation(
+        filename=test_filename,
+        interval=4,
+        metrics=["categorical_accuracy"]
     )
 
     model.train(
         filename=train_filename,
-        train_config=train_config,
+        epochs=1,
+        learning_rate=0.001,
+        validation=validation,
     )

@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
+#include "TrainOptions.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -46,31 +47,18 @@ class ModelPipeline {
                          config->train_eval_parameters());
   }
 
-  void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
-                   std::optional<uint32_t> batch_size_opt,
-                   std::optional<uint32_t> max_in_memory_batches) {
-    uint32_t batch_size =
-        batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
-    trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
-                      train_config, max_in_memory_batches);
-  }
-
-  void trainOnDataLoader(
-      const std::shared_ptr<dataset::DataLoader>& data_source,
-      bolt::TrainConfig& train_config,
-      std::optional<uint32_t> max_in_memory_batches) {
-    _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
-    data_source->restart();
+  void train(const TrainOptions& train_options) {
+    _dataset_factory->preprocessDataset(train_options.trainData(),
+                                        train_options.maxInMemoryBatches());
+    train_options.trainData()->restart();
 
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
-        data_source, /* training= */ true);
+        train_options.trainData(), /* training= */ true);
 
-    updateRehashRebuildInTrainConfig(train_config);
-
-    if (max_in_memory_batches) {
-      trainOnStream(dataset, train_config, max_in_memory_batches.value());
+    if (train_options.streaming()) {
+      trainOnStream(train_options);
     } else {
-      trainInMemory(dataset, train_config);
+      trainInMemory(train_options);
     }
   }
 
@@ -186,16 +174,8 @@ class ModelPipeline {
     return deserialize_into;
   }
 
-  std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(
-      const std::string& filename) {
-    auto file_loader = dataset::SimpleFileDataLoader::make(
-        filename, DEFAULT_EVALUATE_BATCH_SIZE);
-
-    auto dataset_loader =
-        _dataset_factory->getLabeledDatasetLoader(std::move(file_loader),
-                                                  /* training= */ false);
-    return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
-        .value();
+  uint32_t defaultBatchSize() const {
+    return _train_eval_config.defaultBatchSize();
   }
 
   DatasetLoaderFactoryPtr getDataProcessor() const { return _dataset_factory; }
@@ -208,10 +188,22 @@ class ModelPipeline {
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
-  void trainInMemory(DatasetLoaderPtr& dataset,
-                     bolt::TrainConfig train_config) {
+  void trainInMemory(const TrainOptions& train_options) {
+    auto dataset = _dataset_factory->getLabeledDatasetLoader(
+        train_options.trainData(), /* training= */ true);
+
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
+
+    // We construct the train config after loading the data so that if
+    // validation data is provided and we are using temporal relationships data
+    // is loaded in the correct order.
+    bolt::TrainConfig train_config =
+        train_options.getTrainConfig(_dataset_factory);
+
+    // These options are stored in the TrainEvalParameters in the ModelPipeline
+    // in order to abstract them from the user so we must update them here.
+    updateRehashRebuildInTrainConfig(train_config);
 
     uint32_t epochs = train_config.epochs();
 
@@ -228,10 +220,19 @@ class ModelPipeline {
     _model->train(train_data, train_labels, train_config);
   }
 
-  // We take in the TrainConfig by value to copy it so we can modify the number
-  // epochs.
-  void trainOnStream(DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
-                     uint32_t max_in_memory_batches) {
+  void trainOnStream(const TrainOptions& train_options) {
+    // The dataset factory is to load the validation data if provided.
+    auto train_config = train_options.getTrainConfig(_dataset_factory);
+
+    // These options are stored in the TrainEvalParameters in the ModelPipeline
+    // in order to abstract them from the user so we must update them here.
+    updateRehashRebuildInTrainConfig(train_config);
+
+    auto dataset = _dataset_factory->getLabeledDatasetLoader(
+        train_options.trainData(), /* training= */ true);
+
+    uint32_t max_in_memory_batches = train_options.maxInMemoryBatches().value();
+
     uint32_t epochs = train_config.epochs();
     // We want a single epoch in the train config in order to train for a single
     // epoch for each pass over the dataset.
