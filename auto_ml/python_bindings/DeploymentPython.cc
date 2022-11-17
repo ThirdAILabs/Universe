@@ -399,26 +399,36 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
            docs::UDT_INIT, bolt::python::OutputRedirect())
-      .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
+      // Currently these two train methods are not exposed directly in python.
+      // This will be fixed when we move to the new dataset pipeline and add a
+      // proper UDT python wrapper.
+      // TODO(Josh): Add a proper UDT python wrapper.
+      .def("train_with_file", &UniversalDeepTransformer::trainOnFile,
+           py::arg("filename"),
            py::arg("train_config") = bolt::TrainConfig::makeConfig(
                /* learning_rate= */ 0.001, /* epochs= */ 3),
            py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN,
+           py::arg("max_in_memory_batches") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("train_with_loader", &UniversalDeepTransformer::trainOnDataLoader,
            py::arg("data_source"),
            py::arg("train_config") = bolt::TrainConfig::makeConfig(
                /* learning_rate= */ 0.001, /* epochs= */ 3),
-           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN,
+           py::arg("max_in_memory_batches") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
+      // Currently these two evaluate methods are not exposed directly in
+      // python. This will be fixed when we move to the new dataset pipeline and
+      // add a proper UDT python wrapper.
+      // TODO(Josh): Add a proper UDT python wrapper.
+      .def("evaluate_with_file",
+           &evaluateOnFileWrapper<UniversalDeepTransformer>,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           docs::UDT_EVALUATE, bolt::python::OutputRedirect())
+           bolt::python::OutputRedirect())
       .def("evaluate_with_loader", &evaluateOnDataLoaderWrapper,
            py::arg("data_source"), py::arg("eval_config") = std::nullopt,
-           docs::UDT_EVALUATE, bolt::python::OutputRedirect())
+           bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            docs::UDT_PREDICT)
