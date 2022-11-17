@@ -308,7 +308,8 @@ class UDTFactory {
                               const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    filestream.write(reinterpret_cast<char*>(&UDT_CLASSIFIER_IDENTIFIER), 1);
+    filestream.write(reinterpret_cast<const char*>(&UDT_CLASSIFIER_IDENTIFIER),
+                     1);
     classifier.save_stream(filestream);
   }
 
@@ -316,7 +317,8 @@ class UDTFactory {
                              const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    filestream.write(reinterpret_cast<char*>(&UDT_GENERATOR_IDENTIFIER), 1);
+    filestream.write(reinterpret_cast<const char*>(&UDT_GENERATOR_IDENTIFIER),
+                     1);
     generator.save_stream(filestream);
   }
 
