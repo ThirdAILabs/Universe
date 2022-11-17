@@ -143,12 +143,11 @@ def run_generator_test(
 
 def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
     model = bolt.UniversalDeepTransformer(
-        filename=TRAIN_FILE_PATH,
         source_column="source_column",
         target_column="target_column",
         dataset_size="small",
     )
-    model.train()
+    model.train(filename=TRAIN_FILE_PATH)
     return model
 
 
@@ -156,3 +155,24 @@ def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
 def test_udt_generator(prepared_datasets):
     model = train_udt_query_reformulation_model()
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
+
+
+@pytest.mark.filterwarnings("ignore")
+def test_udt_generator_load_and_save(prepared_datasets):
+    trained_model = train_udt_query_reformulation_model()
+    run_generator_test(model=trained_model, source_col_index=1, target_col_index=0)
+
+    trained_model.save(filename=MODEL_PATH)
+
+    deserialized_model = bolt.UniversalDeepTransformer.load(
+        filename=MODEL_PATH, model_type="generator"
+    )
+    model_eval_outputs = trained_model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
+    deserialized_model_outputs = deserialized_model.evaluate(
+        filename=TRAIN_FILE_PATH, top_k=5
+    )
+
+    for index in range(len(model_eval_outputs)):
+        assert model_eval_outputs[index] == deserialized_model_outputs[index]
+
+    delete_created_files()

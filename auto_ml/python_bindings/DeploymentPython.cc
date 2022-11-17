@@ -275,14 +275,12 @@ void createModelPipeline(py::module_& models_submodule) {
 class UDTFactory {
  public:
   static bolt::QueryCandidateGenerator buildUDTGeneratorWrapper(
-      py::object& obj, const std::string& file_name,
-      const std::string& source_column, const std::string& target_column,
-      const std::string& dataset_size) {
+      py::object& obj, const std::string& source_column,
+      const std::string& target_column, const std::string& dataset_size) {
     (void)obj;
     return bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
-        /* file_name = */ file_name,
-        /* source_column = */ source_column,
-        /* target_column = */ target_column,
+        /* source_column_name = */ source_column,
+        /* target_column_name = */ target_column,
         /* dataset_size = */ dataset_size);
   }
 
@@ -344,9 +342,8 @@ void createUDTFactory(py::module_& bolt_submodule) {
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
            docs::UDT_INIT, bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
-           py::arg("filename"), py::arg("source_column"),
-           py::arg("target_column"), py::arg("dataset_size"),
-           docs::UDT_GENERATOR_INIT)
+           py::arg("source_column"), py::arg("target_column"),
+           py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
 
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   py::arg("model_type"),
@@ -422,11 +419,10 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
                                                              "UDTGenerator")
       .def(py::init(
                &bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
-           py::arg("filename"), py::arg("source_column"),
-           py::arg("target_column"), py::arg("dataset_size"),
-           docs::UDT_GENERATOR_INIT)
+           py::arg("source_column"), py::arg("target_column"),
+           py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
       .def("train", &bolt::QueryCandidateGenerator::buildFlashIndex,
-           docs::UDT_GENERATOR_TRAIN)
+           py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
       .def("evaluate", &bolt::QueryCandidateGenerator::evaluateOnFile,
            py::arg("filename"), py::arg("top_k"), docs::UDT_GENERATOR_EVALUATE)
       .def(

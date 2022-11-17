@@ -39,19 +39,18 @@ using thirdai::search::Flash;
 
 class QueryCandidateGeneratorConfig {
   static inline const uint32_t DEFAULT_BATCH_SIZE = 1000;
-  static inline const char* DEFAULT_HASH_FUNCTION = "minhash";
+  static inline const char* DEFAULT_HASH_FUNCTION = "DensifiedMinHash";
   static inline const uint32_t DEFAULT_NUM_TABLES = 128;
   static inline const uint32_t DEFAULT_HASHES_PER_TABLE = 3;
   static inline const uint32_t DEFAULT_RESERVOIR_SIZE = 512;
-  static inline const uint32_t DEFAULT_RANGE = 100000;
+  static inline const uint32_t DEFAULT_HASH_TABLE_RANGE = 100000;
 
  public:
   QueryCandidateGeneratorConfig(
       const std::string& hash_function, uint32_t num_tables,
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
-      std::optional<uint32_t> reservoir_size, uint32_t source_column_index,
-      uint32_t target_column_index, std::string file_name,
-      uint32_t batch_size = 10000,
+      std::optional<uint32_t> reservoir_size, std::string source_column_name,
+      std::string target_column_name, uint32_t batch_size = 10000,
       uint32_t default_text_encoding_dim = std::numeric_limits<uint32_t>::max())
       : _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
@@ -59,10 +58,10 @@ class QueryCandidateGeneratorConfig {
         _range(range),
         _n_grams(std::move(n_grams)),
         _reservoir_size(reservoir_size),
-        _source_column_index(source_column_index),
-        _target_column_index(target_column_index),
+        _source_column_name(std::move(source_column_name)),
+        _target_column_name(std::move(target_column_name)),
         _default_text_encoding_dim(default_text_encoding_dim),
-        _queries_file_name(std::move(file_name)) {
+        _column_number_map(std::nullopt) {
     _hash_function = getHashFunction(
         /* hash_function = */ thirdai::utils::lower(hash_function));
   }
@@ -72,8 +71,8 @@ class QueryCandidateGeneratorConfig {
     return this->_hash_function->getName() == rhs._hash_function->getName() &&
            this->_num_tables == rhs._num_tables &&
            this->_hashes_per_table == rhs._hashes_per_table &&
-           this->_source_column_index == rhs._source_column_index &&
-           this->_target_column_index == rhs._target_column_index &&
+           this->_source_column_name == rhs._source_column_name &&
+           this->_target_column_name == rhs._target_column_name &&
            this->_batch_size == rhs._batch_size && this->_range == rhs._range &&
            this->_n_grams == rhs._n_grams &&
            this->_reservoir_size == rhs._reservoir_size;
@@ -102,78 +101,57 @@ class QueryCandidateGeneratorConfig {
 
   constexpr uint32_t batchSize() const { return _batch_size; }
 
-  std::optional<uint32_t> reservoirSize() const { return _reservoir_size; }
-
-  constexpr uint32_t sourceColumnIndex() const { return _source_column_index; }
-
-  constexpr uint32_t targetColumnIndex() const { return _target_column_index; }
-
   constexpr uint32_t defaultTextEncodingDim() const {
     return _default_text_encoding_dim;
   }
 
-  std::string queriesFileName() const { return _queries_file_name; }
+  std::optional<uint32_t> reservoirSize() const { return _reservoir_size; }
 
-  static std::shared_ptr<QueryCandidateGeneratorConfig> fromDefault(
-      const std::string& file_name, const std::string& source_column,
-      const std::string& target_column) {
-    auto column_number_map =
-        getColumnNumberMap(/* file_name = */ file_name, /* delimiter = */ ',');
-    uint32_t source_column_index =
-        column_number_map->at(/* col_name = */ source_column);
-    uint32_t target_column_index =
-        column_number_map->at(/* col_name = */ target_column);
+  std::string sourceColumnName() const { return _source_column_name; }
 
-    auto generator_config = QueryCandidateGeneratorConfig(
-        /* hash_function = */ "minhash",
-        /* num_tables = */ DEFAULT_NUM_TABLES,
-        /* hashes_per_table = */ DEFAULT_HASHES_PER_TABLE,
-        /* range = */ DEFAULT_RANGE,
-        /* n_grams = */ {3, 4},
-        /* reservoir_size */ DEFAULT_RESERVOIR_SIZE,
-        /* source_column_index = */ source_column_index,
-        /* target_column_index = */ target_column_index,
-        /* file_name = */ file_name);
-
-    return std::make_shared<QueryCandidateGeneratorConfig>(generator_config);
-  }
-
-  // static std::shared_ptr<QueryCandidateGeneratorConfig> fromDefault(
-  //     const uint32_t& source_column_index,
-  //     const uint32_t& target_column_index) {
-  //   auto generator_config = QueryCandidateGeneratorConfig(
-  //       /* hash_function = */ "minhash",
-  //       /* num_tables = */ DEFAULT_NUM_TABLES,
-  //       /* hashes_per_table = */ DEFAULT_HASHES_PER_TABLE,
-  //       /* range = */ DEFAULT_RANGE,
-  //       /* n_grams = */ {3, 4},
-  //       /* reservoir_size */ DEFAULT_RESERVOIR_SIZE,
-  //       /* source_column_index = */ source_column_index,
-  //       /* target_column_index = */ target_column_index);
-
-  //   return std::make_shared<QueryCandidateGeneratorConfig>(generator_config);
-  // }
+  std::string targetColumnName() const { return _target_column_name; }
 
   std::shared_ptr<hashing::HashFunction> hashFunction() const {
     return _hash_function;
   }
 
+  std::optional<std::shared_ptr<ColumnNumberMap>> columnNumberMap() const {
+    return _column_number_map;
+  }
+
   std::vector<uint32_t> nGrams() const { return _n_grams; }
 
- private:
-  static ColumnNumberMapPtr getColumnNumberMap(const std::string& file_name,
-                                               char delimiter) {
+  static std::shared_ptr<QueryCandidateGeneratorConfig> fromDefault(
+      const std::string& source_column_name,
+      const std::string& target_column_name) {
+    auto generator_config = QueryCandidateGeneratorConfig(
+        /* hash_function = */ "minhash",
+        /* num_tables = */ DEFAULT_NUM_TABLES,
+        /* hashes_per_table = */ DEFAULT_HASHES_PER_TABLE,
+        /* range = */ DEFAULT_HASH_TABLE_RANGE,
+        /* n_grams = */ {3, 4},
+        /* reservoir_size */ DEFAULT_RESERVOIR_SIZE,
+        /* source_column_name = */ source_column_name,
+        /* target_column_name = */ target_column_name);
+
+    return std::make_shared<QueryCandidateGeneratorConfig>(generator_config);
+  }
+
+  void setColumnNumberMap(const std::string& file_name, char delimiter) {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
         /* filename = */ file_name,
         /* target_batch_size = */ DEFAULT_BATCH_SIZE);
     auto file_header = file_data_loader->nextLine();
+
     if (!file_header) {
       throw std::invalid_argument(
-          "The input dataset file must have a valid header with column names.");
+          "The Input Dataset File must have a Valid Header with Column Names.");
     }
-    return std::make_shared<ColumnNumberMap>(*file_header, delimiter);
+    _column_number_map =
+        std::make_shared<ColumnNumberMap>(*file_header, delimiter);
   }
 
+ private:
   std::shared_ptr<hashing::HashFunction> getHashFunction(
       const std::string& hash_function) {
     if (hash_function == "minhash") {
@@ -201,10 +179,11 @@ class QueryCandidateGeneratorConfig {
   // Identifies if the dataset contains pairs of correct and incorrect queries
   std::optional<uint32_t> _reservoir_size;
 
-  uint32_t _source_column_index;
-  uint32_t _target_column_index;
+  std::string _source_column_name;
+  std::string _target_column_name;
   uint32_t _default_text_encoding_dim;
   std::string _queries_file_name;
+  std::optional<std::shared_ptr<ColumnNumberMap>> _column_number_map;
 
   // Private constructor for cereal
   QueryCandidateGeneratorConfig() {}
@@ -213,9 +192,8 @@ class QueryCandidateGeneratorConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_hash_function, _num_tables, _hashes_per_table, _batch_size, _range,
-            _n_grams, _reservoir_size, _source_column_index,
-            _target_column_index, _default_text_encoding_dim,
-            _queries_file_name);
+            _n_grams, _reservoir_size, _source_column_name, _target_column_name,
+            _default_text_encoding_dim, _queries_file_name, _column_number_map);
   }
 };
 
@@ -230,28 +208,16 @@ class QueryCandidateGenerator {
   }
 
   static QueryCandidateGenerator buildGeneratorFromDefaultConfig(
-      const std::string& file_name, const std::string& source_column,
-      const std::string& target_column, const std::string& dataset_size) {
+      const std::string& source_column_name,
+      const std::string& target_column_name, const std::string& dataset_size) {
     (void)dataset_size;
     auto config = QueryCandidateGeneratorConfig::fromDefault(
-        /* file_name = */ file_name, /* source_column = */ source_column,
-        /* target_column = */ target_column);
+        /* source_column_name = */ source_column_name,
+        /* target_column_name = */ target_column_name);
 
     auto generator = QueryCandidateGenerator::make(config);
     return generator;
   }
-
-  // static QueryCandidateGenerator buildGeneratorFromDefaultConfig(
-  //     const uint32_t& source_column_index, const uint32_t&
-  //     target_column_index, const std::string& dataset_size) {
-  //   (void)dataset_size;
-  //   auto config = QueryCandidateGeneratorConfig::fromDefault(
-  //       /* source_column_index = */ source_column_index,
-  //       /* target_column_index = */ target_column_index);
-  //   auto generator = QueryCandidateGenerator::make(config);
-
-  //   return generator;
-  // }
 
   static QueryCandidateGenerator buildGeneratorFromSerializedConfig(
       const std::string& config_file_name) {
@@ -293,9 +259,24 @@ class QueryCandidateGenerator {
    *
    * @param file_name
    */
-  void buildFlashIndex() {
-    auto file_name = _query_generator_config->queriesFileName();
-    auto labels = getQueryLabels(file_name);
+  void buildFlashIndex(const std::string& file_name) {
+    if (!_query_generator_config->columnNumberMap().has_value()) {
+      _query_generator_config->setColumnNumberMap(/*file_name = */ file_name,
+                                                  /* delimiter = */ ',');
+    }
+    auto column_number_map = _query_generator_config->columnNumberMap();
+    uint32_t source_column_index = column_number_map.value()->at(
+        /* col_name = */ _query_generator_config->sourceColumnName());
+    uint32_t target_column_index = column_number_map.value()->at(
+        /* col_name = */ _query_generator_config->targetColumnName());
+
+    if (!_initialized_batch_processors) {
+      setTrainingAndInferenceBatchProcessors(
+          /* source_column_index = */ source_column_index);
+      _initialized_batch_processors = true;
+    }
+    auto labels = getQueryLabels(
+        file_name, /* target_column_index = */ target_column_index);
 
     auto data_loader = getDatasetLoader(file_name);
     auto [data, _] = data_loader->loadInMemory();
@@ -386,12 +367,16 @@ class QueryCandidateGenerator {
       }
     }
 
-    if (_query_generator_config->sourceColumnIndex() !=
-        _query_generator_config->targetColumnIndex()) {
+    auto column_number_map = _query_generator_config->columnNumberMap();
+    uint32_t source_column_index = column_number_map.value()->at(
+        /* col_name = */ _query_generator_config->sourceColumnName());
+    uint32_t target_column_index = column_number_map.value()->at(
+        /* col_name = */ _query_generator_config->targetColumnName());
+
+    if (source_column_index != target_column_index) {
       std::vector<std::string> correct_queries =
           dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
-              file_name, /* column_index = */ _query_generator_config
-                             ->targetColumnIndex());
+              file_name, /* column_index = */ target_column_index);
 
       computeRecallAtK(/* correct_queries = */ correct_queries,
                        /* generated_queries = */ output_queries,
@@ -407,22 +392,27 @@ class QueryCandidateGenerator {
  private:
   explicit QueryCandidateGenerator(
       QueryCandidateGeneratorConfigPtr query_candidate_generator_config)
-      : _query_generator_config(std::move(query_candidate_generator_config)) {
+      : _initialized_batch_processors(false),
+        _query_generator_config(std::move(query_candidate_generator_config)) {}
+
+  void setTrainingAndInferenceBatchProcessors(
+      const uint32_t& source_column_index) {
+    assert(!_initialized_batch_processors);
     std::vector<dataset::BlockPtr> training_input_blocks;
 
     auto inference_input_blocks =
         constructInputBlocks(_query_generator_config->nGrams(),
                              /* column_index = */ 0);
 
-    training_input_blocks = constructInputBlocks(
-        _query_generator_config->nGrams(),
-        /* column_index = */ _query_generator_config->sourceColumnIndex());
+    training_input_blocks =
+        constructInputBlocks(_query_generator_config->nGrams(),
+                             /* column_index = */ source_column_index);
 
     _training_batch_processor =
         std::make_shared<dataset::GenericBatchProcessor>(
             /* input_blocks = */ training_input_blocks,
             /* label_blocks = */ std::vector<dataset::BlockPtr>{},
-            /* has_header = */ false, /* delimiter = */ ',');
+            /* has_header = */ true, /* delimiter = */ ',');
 
     _inference_batch_processor =
         std::make_shared<dataset::GenericBatchProcessor>(
@@ -498,7 +488,7 @@ class QueryCandidateGenerator {
    * @return Labels for each batch
    */
   std::vector<std::vector<uint32_t>> getQueryLabels(
-      const std::string& file_name) {
+      const std::string& file_name, const uint32_t& target_column_index) {
     std::vector<std::vector<uint32_t>> labels;
 
     try {
@@ -508,10 +498,13 @@ class QueryCandidateGenerator {
       std::vector<uint32_t> current_batch_labels;
       std::string row;
 
+      // Get the header of the file
+      std::getline(input_file_stream, row);
+
       while (std::getline(input_file_stream, row)) {
         std::string correct_query =
             std::string(dataset::ProcessorUtils::parseCsvRow(
-                row, ',')[_query_generator_config->targetColumnIndex()]);
+                row, ',')[target_column_index]);
 
         if (!_queries_to_labels_map.count(correct_query)) {
           _queries_to_labels_map[correct_query] = _labels_to_queries_map.size();
@@ -563,6 +556,7 @@ class QueryCandidateGenerator {
         file_data_loader, _training_batch_processor);
   }
 
+  bool _initialized_batch_processors;
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;
   std::unique_ptr<Flash<uint32_t>> _flash_index;
   std::shared_ptr<dataset::GenericBatchProcessor> _training_batch_processor;
@@ -585,9 +579,9 @@ class QueryCandidateGenerator {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_query_generator_config, _flash_index, _training_batch_processor,
-            _inference_batch_processor, _labels_to_queries_map,
-            _queries_to_labels_map);
+    archive(_initialized_batch_processors, _query_generator_config,
+            _flash_index, _training_batch_processor, _inference_batch_processor,
+            _labels_to_queries_map, _queries_to_labels_map);
   }
 };
 

@@ -361,13 +361,12 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t,
-                    std::vector<uint32_t>, std::optional<uint32_t>, uint32_t,
-                    uint32_t, std::string, uint32_t>(),
+                    std::vector<uint32_t>, std::optional<uint32_t>, std::string,
+                    std::string, uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("range"), py::arg("n_grams"),
            py::arg("reservoir_size") = std::nullopt,
-           py::arg("source_column_index") = 0,
-           py::arg("target_column_index") = 0, py::arg("file_name"),
+           py::arg("source_column_name"), py::arg("target_column_name"),
            py::arg("batch_size") = 10000,
            R"pbdoc(
     Initializes a QueryCandidateGeneratorConfig object.
@@ -382,9 +381,9 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
         n_grams (List[int]): List of N-gram blocks to use. 
         reservoir_size (int): Reservoir size to use when the flash index is 
             constructed with reservoir sampling. 
-        source_column_index (int): Index of the column in the input CSV
+        source_column_name (int): Name of the column in the input CSV
             that contains incorrect queries.
-        target_column_index (int): Index of the column in the input CSV
+        target_column_name (int): Name of the column in the input CSV
             that contains the target queries for reformulation. 
         batch_size (int): batch size. It is defaulted to 10000. 
     Returns: 
