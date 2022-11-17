@@ -193,7 +193,7 @@ Args:
   py::class_<automl::deployment::NumericalDataType,
              automl::deployment::DataType,
              automl::deployment::NumericalDataTypePtr>(udt_types_submodule,
-                                                       "categorical")
+                                                       "numerical")
       .def(py::init<std::pair<double, double>, std::string>(), py::arg("range"),
            py::arg("granularity") = "m",
            R"pbdoc(
