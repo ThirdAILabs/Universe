@@ -16,6 +16,7 @@
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 
 namespace thirdai::dataset {
 
@@ -66,7 +67,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       _expected_num_cols =
           std::max(block->expectedNumColumns(), _expected_num_cols);
     }
-    _block_feature_offsets = computeBlockFeatureOffsets();
   }
 
   std::tuple<BoltBatch, BoltBatch> createBatch(
@@ -155,6 +155,42 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                       /* hash_range= */ std::nullopt);
   }
 
+  static std::exception_ptr makeVector(std::vector<std::string_view>& sample,
+                                       BoltVector& vector,
+                                       std::vector<BlockPtr>& blocks,
+                                       bool blocks_dense,
+                                       std::optional<uint32_t> hash_range) {
+    auto segmented_vector =
+        makeSegmentedFeatureVector(blocks_dense, hash_range,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err =
+            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
+      return err;
+    }
+    vector = segmented_vector->toBoltVector();
+    return nullptr;
+  }
+
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(
+      const std::vector<std::string_view>& input_row) {
+    BoltVector vector;
+    auto segmented_vector =
+        makeSegmentedFeatureVector(_input_blocks_dense, _hash_range,
+                                   /* store_segment_feature_map= */ true);
+    if (auto err = addFeaturesToSegmentedVector(input_row, *segmented_vector,
+                                                _input_blocks)) {
+      std::rethrow_exception(err);
+    }
+    return segmented_vector->getIndexToSegmentFeatureMap();
+  }
+
+  Explanation explainFeature(const std::vector<std::string_view>& input_row,
+                             const SegmentFeature& segment_feature) {
+    std::shared_ptr<Block> relevant_block =
+        _input_blocks[segment_feature.segment_idx];
+    return relevant_block->explainIndex(segment_feature.feature_idx, input_row);
+  }
+
   static std::shared_ptr<GenericBatchProcessor> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
@@ -165,53 +201,37 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                                                    parallel, hash_range);
   }
 
-  /*
-  For given index in input fetch the block responsible and get the column number
-  and the exact keyword responsible for it.
-  */
-  Explanation explainIndex(uint32_t feature_index,
-                           const std::vector<std::string_view>& input_row) {
-    auto iter = std::upper_bound(_block_feature_offsets.begin(),
-                                 _block_feature_offsets.end(), feature_index);
-    auto relevant_block_idx = iter - _block_feature_offsets.begin() - 1;
-    std::shared_ptr<Block> relevant_block = _input_blocks[relevant_block_idx];
-    uint32_t index_within_block =
-        feature_index - _block_feature_offsets[relevant_block_idx];
-    return relevant_block->explainIndex(index_within_block, input_row);
-  }
-
  private:
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */
-  static std::exception_ptr makeVector(
-      std::vector<std::string_view>& sample, BoltVector& vector,
-      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
-      std::optional<uint32_t> hash_range) {
-    std::shared_ptr<SegmentedFeatureVector> vec_ptr;
-
-    if (hash_range) {
-      vec_ptr = std::make_shared<HashedSegmentedFeatureVector>(
-          /* hash_range= */ *hash_range);
-    } else {
-      // Dense vector if all blocks produce dense features, sparse vector
-      // otherwise.
-      if (blocks_dense) {
-        vec_ptr = std::make_shared<SegmentedDenseFeatureVector>();
-      } else {
-        vec_ptr = std::make_shared<SegmentedSparseFeatureVector>();
-      }
-    }
-
-    // Let each block encode the input sample and adds a new segment
-    // containing this encoding to the vector.
+  static std::exception_ptr addFeaturesToSegmentedVector(
+      const std::vector<std::string_view>& sample,
+      SegmentedFeatureVector& segmented_vector,
+      std::vector<std::shared_ptr<Block>>& blocks) {
     for (auto& block : blocks) {
-      if (auto err = block->addVectorSegment(sample, *vec_ptr)) {
+      if (auto err = block->addVectorSegment(sample, segmented_vector)) {
         return err;
       }
     }
-    vector = vec_ptr->toBoltVector();
     return nullptr;
+  }
+
+  static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
+      bool blocks_dense, std::optional<uint32_t> hash_range,
+      bool store_segment_feature_map) {
+    if (hash_range) {
+      return std::make_shared<HashedSegmentedFeatureVector>(
+          *hash_range, store_segment_feature_map);
+    }
+    // Dense vector if all blocks produce dense features, sparse vector
+    // otherwise.
+    if (blocks_dense) {
+      return std::make_shared<SegmentedDenseFeatureVector>(
+          store_segment_feature_map);
+    }
+    return std::make_shared<SegmentedSparseFeatureVector>(
+        store_segment_feature_map);
   }
 
   static uint32_t sumBlockDims(
@@ -223,15 +243,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return dim;
   }
 
-  std::vector<uint32_t> computeBlockFeatureOffsets() {
-    std::vector<uint32_t> block_offsets;
-    block_offsets.push_back(0);
-    for (const auto& block : _input_blocks) {
-      block_offsets.push_back(block_offsets.back() + block->featureDim());
-    }
-    return block_offsets;
-  }
-
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
@@ -239,7 +250,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     archive(cereal::base_class<BatchProcessor>(this), _expects_header,
             _delimiter, _parallel, _hash_range, _expected_num_cols,
             _input_blocks_dense, _label_blocks_dense, _input_blocks,
-            _label_blocks, _block_feature_offsets);
+            _label_blocks);
   }
 
   // Private constructor for cereal.
@@ -265,11 +276,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
    */
   std::vector<std::shared_ptr<Block>> _input_blocks;
   std::vector<std::shared_ptr<Block>> _label_blocks;
-  /*
-  The offsets which are essential to fetch the exact block responsible for given
-  index for Root cause analysis.
-  */
-  std::vector<uint32_t> _block_feature_offsets;
 };
 
 using GenericBatchProcessorPtr = std::shared_ptr<GenericBatchProcessor>;

@@ -12,6 +12,9 @@ namespace thirdai::dataset {
  */
 class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
  public:
+  explicit SegmentedSparseFeatureVector(bool store_segment_feature_map = false)
+      : SegmentedFeatureVector(store_segment_feature_map) {}
+
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     if (_n_dense_added > 0) {
       throw std::invalid_argument(
@@ -20,14 +23,13 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
           "add both dense and sparse features.");
     }
 
-    uint32_t concat_index = _prev_dim + index;
-    if (concat_index >= _current_dim) {
+    uint32_t concat_index = _current_starting_dim + index;
+    if (concat_index >= _current_ending_dim) {
       std::stringstream ss;
       ss << "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] Setting "
-            "value "
-            "at index = "
-         << index
-         << " of vector segment with dim = " << _current_dim - _prev_dim;
+            "value at index = "
+         << index << " of vector segment with dim = "
+         << _current_ending_dim - _current_starting_dim;
       throw std::invalid_argument(ss.str());
     }
 
@@ -37,6 +39,13 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
     _indices.push_back(concat_index);
     _values.push_back(value);
     _added_sparse = true;
+
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          concat_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ index));
+    }
   }
 
   void addDenseFeatureToSegment(float value) final {
@@ -47,27 +56,42 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
           "add both dense and sparse features.");
     }
 
-    if (_n_dense_added >= (_current_dim - _prev_dim)) {
+    if (_n_dense_added >= (_current_ending_dim - _current_starting_dim)) {
       std::stringstream ss;
       ss << "[SegmentedSparseFeatureVector::addDenseFeatureToSegment] Adding "
          << _n_dense_added + 1
          << "-th dense feature to vector segment with dim = "
-         << _current_dim - _prev_dim;
+         << _current_ending_dim - _current_starting_dim;
       throw std::invalid_argument(ss.str());
     }
 
-    _indices.push_back(_prev_dim + _n_dense_added);
+    uint32_t orig_index = _n_dense_added;
+    uint32_t concat_index = _current_starting_dim + orig_index;
+
+    _indices.push_back(concat_index);
     _values.push_back(value);
     _n_dense_added++;
+
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          concat_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ orig_index));
+    }
   }
 
   BoltVector toBoltVector() final {
     return BoltVector::makeSparseVector(_indices, _values);
   }
 
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() final {
+    return _index_to_segment_feature;
+  }
+
   void addFeatureSegment(uint32_t dim) final {
-    _prev_dim = _current_dim;
-    _current_dim += dim;
+    _n_segments_added++;
+    _current_starting_dim = _current_ending_dim;
+    _current_ending_dim += dim;
     _added_sparse = false;
     _n_dense_added = 0;
   }
@@ -83,9 +107,10 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
 
  private:
   bool _added_sparse = false;
+  uint32_t _n_segments_added = 0;
   uint32_t _n_dense_added = 0;
-  uint32_t _current_dim = 0;
-  uint32_t _prev_dim = 0;
+  uint32_t _current_ending_dim = 0;
+  uint32_t _current_starting_dim = 0;
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
 };
@@ -97,8 +122,10 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
  */
 class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
  public:
-  explicit HashedSegmentedFeatureVector(uint32_t hash_range)
-      : _hash_range(hash_range) {}
+  explicit HashedSegmentedFeatureVector(uint32_t hash_range,
+                                        bool store_segment_feature_map = false)
+      : SegmentedFeatureVector(store_segment_feature_map),
+        _hash_range(hash_range) {}
 
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     if (_n_dense_added > 0) {
@@ -110,9 +137,19 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
     // We don't check whether we've seen this index before.
     // This is fine because bolt iterates through all index-value pairs of
     // sparse input vectors, so duplicates are effectively summed.
-    _indices.push_back(getHashedIndex(index));
+
+    auto hashed_index = getHashedIndex(index);
+
+    _indices.push_back(hashed_index);
     _values.push_back(value);
     _added_sparse = true;
+
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          hashed_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ index));
+    }
   }
 
   void addDenseFeatureToSegment(float value) final {
@@ -122,20 +159,34 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
           "cannot add both dense and sparse features.");
     }
 
-    _indices.push_back(getHashedIndex(_n_dense_added));
+    uint32_t index = _n_dense_added;
+    uint32_t hashed_index = getHashedIndex(_n_dense_added);
+
+    _indices.push_back(hashed_index);
     _values.push_back(value);
     _n_dense_added++;
+
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          hashed_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ index));
+    }
   }
 
   BoltVector toBoltVector() final {
     return BoltVector::makeSparseVector(_indices, _values);
   }
 
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() final {
+    return _index_to_segment_feature;
+  }
+
   void addFeatureSegment(uint32_t dim) final {
     (void)dim;
     _added_sparse = false;
     _n_dense_added = 0;
-    _block_count++;
+    _n_segments_added++;
   }
 
  protected:
@@ -149,14 +200,15 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
 
  private:
   uint32_t getHashedIndex(uint32_t index) const {
-    return hashing::HashUtils::combineHashes(index, _block_count) % _hash_range;
+    return hashing::HashUtils::combineHashes(index, _n_segments_added) %
+           _hash_range;
   }
 
   uint32_t _hash_range;
 
   bool _added_sparse = false;
   uint32_t _n_dense_added = 0;
-  uint32_t _block_count = 0;
+  uint32_t _n_segments_added = 0;
 
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
@@ -167,6 +219,9 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
  */
 class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
  public:
+  explicit SegmentedDenseFeatureVector(bool store_segment_feature_map = false)
+      : SegmentedFeatureVector(store_segment_feature_map) {}
+
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     (void)index;
     (void)value;
@@ -185,13 +240,26 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
       throw std::invalid_argument(ss.str());
     }
 
+    uint32_t index = _n_dense_added;
+    uint32_t concat_index = _values.size();
     _values.push_back(value);
     _n_dense_added++;
+
+    if (_store_index_to_segment_feature_map) {
+      _index_to_segment_feature.emplace(
+          concat_index, SegmentFeature(
+                            /* segment_idx= */ _n_segments_added - 1,
+                            /* feature_idx= */ index));
+    }
   }
 
   BoltVector toBoltVector() final {
     return BoltVector::makeDenseVector(_values);
   };
+
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() final {
+    return _index_to_segment_feature;
+  }
 
   void addFeatureSegment(uint32_t dim) final {
     if (_latest_segment_dim > _n_dense_added) {
@@ -208,6 +276,8 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
     _latest_segment_dim = dim;
     _n_dense_added = 0;
     _values.reserve(_values.size() + dim);
+
+    _n_segments_added++;
   }
 
  protected:
@@ -220,6 +290,7 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
   }
 
  private:
+  uint32_t _n_segments_added = 0;
   uint32_t _latest_segment_dim = 0;
   uint32_t _n_dense_added = 0;
   std::vector<float> _values;
