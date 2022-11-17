@@ -208,9 +208,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   PreprocessedVectorsMap processAllMetadata() {
     PreprocessedVectorsMap metadata_vectors;
     for (const auto& [col_name, col_type] : _config->data_types) {
-      if (col_type.isCategorical()) {
-        auto categorical = col_type.asCategorical();
-        if (categorical.metadata_config) {
+      if (auto categorical = asCategorical(col_type)) {
+        if (categorical->metadata_config) {
           metadata_vectors[col_name] =
               makeProcessedVectorsForCategoricalColumn(col_name, categorical);
         }
@@ -220,13 +219,13 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
-      const std::string& col_name, const CategoricalDataType& categorical) {
-    if (!categorical.metadata_config) {
+      const std::string& col_name, const CategoricalDataTypePtr& categorical) {
+    if (!categorical->metadata_config) {
       throw std::invalid_argument("The given categorical column (" + col_name +
                                   ") does not have a metadata config.");
     }
 
-    auto metadata = categorical.metadata_config;
+    auto metadata = categorical->metadata_config;
 
     auto data_loader =
         dataset::SimpleFileDataLoader::make(metadata->metadata_file,
@@ -366,19 +365,19 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     }
 
     auto target_type = _config->data_types.at(_config->target);
-    if (!target_type.isCategorical()) {
+    if (!asCategorical(target_type)) {
       throw std::invalid_argument(
           "Target column must be a categorical column.");
     }
 
     auto col_num = column_number_map.at(_config->target);
-    auto target_config = target_type.asCategorical();
+    auto target_config = asCategorical(target_type);
 
     dataset::BlockPtr label_block;
     if (_config->integer_target) {
       label_block = dataset::NumericalCategoricalBlock::make(
           /* col= */ col_num, /* n_classes= */ _config->n_target_classes,
-          /* delimiter= */ target_config.delimiter);
+          /* delimiter= */ target_config->delimiter);
     } else {
       if (!_vocabs.count(_config->target)) {
         _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
@@ -386,7 +385,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       }
       label_block = dataset::StringLookupCategoricalBlock::make(
           /* col= */ col_num, /* vocab= */ _vocabs.at(_config->target),
-          /* delimiter= */ target_config.delimiter);
+          /* delimiter= */ target_config->delimiter);
     }
 
     auto input_blocks =
