@@ -20,10 +20,10 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
     write_lines_to_file(
         TRAIN_FILE,
         [
-            "userId,movieId,timestamp,hoursWatched,genres,meta",
-            "0,0,2022-08-29,2,fiction-comedy-drama,0-1",
-            "1,0,2022-08-30,2,fiction-romance,1",
-            "1,1,2022-08-31,1,romance-comedy,0",
+            "userId,movieId,timestamp,hoursWatched,genres,meta,description",
+            "0,0,2022-08-29,2,fiction-comedy-drama,0-1,a movie",
+            "1,0,2022-08-30,2,fiction-romance,1,a movie",
+            "1,1,2022-08-31,1,romance-comedy,0,a movie",
             # if integer_label = false, we build a model that accepts
             # arbitrary string labels; the model does not expect integer
             # labels in the range [0, n_labels - 1]. We test this by
@@ -32,9 +32,9 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
             # movieId = 4 in the last sample and expect that the model
             # trains just fine.
             (
-                "1,2,2022-09-01,3,fiction-comedy,1-2"
+                "1,2,2022-09-01,3,fiction-comedy,1-2,a movie"
                 if integer_label
-                else "1,4,2022-09-01,3,fiction-comedy,1-4"
+                else "1,4,2022-09-01,3,fiction-comedy,1-4,a movie"
             ),
         ],
     )
@@ -42,13 +42,13 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,timestamp,hoursWatched,genres,meta",
-            "0,1,2022-08-31,5,fiction-drama,0",
+            "userId,movieId,timestamp,hoursWatched,genres,meta,description",
+            "0,1,2022-08-31,5,fiction-drama,0,a movie",
             # See above comment about the last line of the mock train file.
             (
-                "1,0,2022-09-01,0.5,fiction-comedy,2-0"
+                "1,0,2022-09-01,0.5,fiction-comedy,2-0,a movie"
                 if integer_label
-                else "4,0,2022-09-01,0.5,fiction-comedy,4-0"
+                else "4,0,2022-09-01,0.5,fiction-comedy,4-0,a movie"
             ),
         ],
     )
@@ -73,6 +73,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
             "genres": bolt.types.categorical(delimiter="-"),
             "meta": bolt.types.categorical(metadata=metadata, delimiter="-"),
+            "description": bolt.types.text(),
         },
         temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
