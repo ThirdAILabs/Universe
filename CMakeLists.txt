@@ -183,7 +183,6 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
-include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 
 # Source dependencies

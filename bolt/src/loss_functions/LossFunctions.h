@@ -150,6 +150,8 @@ class MarginBCE final : public LossFunction {
         _bound(bound) {}
 
  private:
+  // Private constructor for cereal
+  MarginBCE() {}
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
     if (label == 0.0) {

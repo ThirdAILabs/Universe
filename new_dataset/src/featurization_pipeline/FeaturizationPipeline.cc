@@ -3,7 +3,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/vector.hpp>
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
 void FeaturizationPipeline::save(const std::string& filename) const {
   std::ofstream filestream =
@@ -37,4 +37,4 @@ void FeaturizationPipeline::serialize(Archive& archive) {
   archive(_transformations);
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data

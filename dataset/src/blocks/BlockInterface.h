@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -59,6 +60,15 @@ struct Explanation {
   std::string column_name;
 };
 
+struct SegmentFeature {
+  SegmentFeature(uint32_t segment_idx, uint32_t feature_idx)
+      : segment_idx(segment_idx), feature_idx(feature_idx) {}
+  uint32_t segment_idx;
+  uint32_t feature_idx;
+};
+
+using IndexToSegmentFeatureMap = std::unordered_map<uint32_t, SegmentFeature>;
+
 /**
  * Segmented feature vector abstract class.
  * A vector representation that can be extended with
@@ -104,7 +114,16 @@ class SegmentedFeatureVector {
    */
   virtual std::unordered_map<uint32_t, float> entries() = 0;
 
+  virtual IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() = 0;
+
+  const bool _store_index_to_segment_feature_map;
+
+  IndexToSegmentFeatureMap _index_to_segment_feature;
+
  public:
+  explicit SegmentedFeatureVector(bool store_segment_feature_map)
+      : _store_index_to_segment_feature_map(store_segment_feature_map) {}
+
   /**
    * Increments the feature at the given index of the current vector segment
    * by a value.
@@ -121,6 +140,15 @@ class SegmentedFeatureVector {
    * Converts this vector to a BoltVector.
    */
   virtual BoltVector toBoltVector() = 0;
+
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap() {
+    if (!_store_index_to_segment_feature_map) {
+      throw std::invalid_argument(
+          "[SegmentedFeatureVector::getSegmentFeatureMap] Attempted to get "
+          "segment feature map when store_segment_feature_map is false.");
+    }
+    return getIndexToSegmentFeatureMapImpl();
+  }
 
   virtual ~SegmentedFeatureVector() = default;
 };

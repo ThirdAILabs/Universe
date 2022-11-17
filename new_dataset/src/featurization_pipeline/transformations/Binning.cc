@@ -1,9 +1,9 @@
 #include "Binning.h"
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
 void BinningTransformation::apply(ColumnMap& columns) {
-  auto column = columns.getDenseValueColumn(_input_column_name);
+  auto column = columns.getDenseFeatureColumn(_input_column_name);
 
   std::vector<uint32_t> binned_values(column->numRows());
 
@@ -26,7 +26,7 @@ void BinningTransformation::apply(ColumnMap& columns) {
         ", " + std::to_string(_exclusive_max_value) + ").");
   }
 
-  auto output_column = std::make_shared<VectorSparseValueColumn>(
+  auto output_column = std::make_shared<columns::CppTokenColumn>(
       std::move(binned_values), _num_bins);
 
   columns.setColumn(_output_column_name, output_column);
@@ -39,4 +39,4 @@ std::optional<uint32_t> BinningTransformation::getBin(float value) const {
   return (value - _inclusive_min_value) / _binsize;
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data

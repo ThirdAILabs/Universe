@@ -170,17 +170,23 @@ setup(
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    install_requires=["numpy", "typing_extensions"],
+    install_requires=["numpy", "typing_extensions", "pandas"],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
         # The tokenizers requirement ensures that all of the [test] depedencies are
-        # installable from a wheel on an m1
+        # installable from a wheel on an m1.
+        # The latest version of MLFLOW available while building wheels is 1.23.1
+        # For MLFLOW to work, the alembic version of the backend databases for local
+        # MLFLOW and server MLFLOW should be the same. Hence, we are fixing the
+        # version of MLFLOW here. The version of protobuf that works with this
+        # MLFLOW is also being fixed.
         "test": [
             "pytest",
             "pytest-mock",
             "boto3",
             "moto",
-            "mlflow",
+            "mlflow==1.23.1",
+            "protobuf==3.19.6",
             "datasets",
             "torch",
             "toml",
@@ -194,10 +200,11 @@ setup(
             "toml",
             "psutil",
             "scikit-learn",
-            "mlflow",
+            "mlflow==1.23.1",
+            "protobuf==3.19.6",
             "boto3",
         ],
-        "distributed": ["ray", "toml"],
+        "distributed": ["ray", "toml", "protobuf==3.19.6"],
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
     },
