@@ -125,7 +125,7 @@ class QueryCandidateGeneratorConfig {
       const std::string& source_column_name,
       const std::string& target_column_name) {
     auto generator_config = QueryCandidateGeneratorConfig(
-        /* hash_function = */ "minhash",
+        /* hash_function = */ DEFAULT_HASH_FUNCTION,
         /* num_tables = */ DEFAULT_NUM_TABLES,
         /* hashes_per_table = */ DEFAULT_HASHES_PER_TABLE,
         /* range = */ DEFAULT_HASH_TABLE_RANGE,
@@ -376,7 +376,8 @@ class QueryCandidateGenerator {
     if (source_column_index != target_column_index) {
       std::vector<std::string> correct_queries =
           dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
-              file_name, /* column_index = */ target_column_index);
+              file_name, /* column_index = */ target_column_index,
+              /* has_header = */ true);
 
       computeRecallAtK(/* correct_queries = */ correct_queries,
                        /* generated_queries = */ output_queries,
