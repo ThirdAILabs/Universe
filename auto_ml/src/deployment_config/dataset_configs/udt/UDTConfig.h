@@ -17,7 +17,7 @@ namespace thirdai::automl::deployment {
 
 struct UDTConfig {
   static constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
-  static constexpr uint32_t REGRESSION_CORRECT_LABEL_RADIUS = 3;
+  static constexpr uint32_t REGRESSION_CORRECT_LABEL_RADIUS = 2;
   static constexpr uint32_t REGRESSION_DEFAULT_NUM_BINS = 100;
 
   /**
