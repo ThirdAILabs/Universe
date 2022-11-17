@@ -272,6 +272,11 @@ void createModelPipeline(py::module_& models_submodule) {
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
 }
 
+// These need to be here instead of inside UDTFactory because otherwise I was
+// getting weird linking errors
+static uint8_t const UDT_GENERATOR_IDENTIFIER = 0;
+static uint8_t const UDT_CLASSIFIER_IDENTIFIER = 1;
+
 class UDTFactory {
  public:
   static bolt::QueryCandidateGenerator buildUDTGeneratorWrapper(
@@ -304,18 +309,40 @@ class UDTFactory {
         /* options = */ options);
   }
 
-  static py::object load(const std::string& filename,
-                         const std::string& model_type) {
-    auto type = thirdai::utils::lower(model_type);
-    if (type == "generator") {
-      return py::cast(bolt::QueryCandidateGenerator::load(filename));
+  static void save_classifier(const UniversalDeepTransformer& classifier,
+                              const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    filestream.write(reinterpret_cast<const char*>(&UDT_CLASSIFIER_IDENTIFIER),
+                     1);
+    classifier.save_stream(filestream);
+  }
+
+  static void save_generator(const bolt::QueryCandidateGenerator& generator,
+                             const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    filestream.write(reinterpret_cast<const char*>(&UDT_GENERATOR_IDENTIFIER),
+                     1);
+    generator.save_stream(filestream);
+  }
+
+  static py::object load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    uint8_t first_byte;
+    filestream.read(reinterpret_cast<char*>(&first_byte), 1);
+
+    if (first_byte == UDT_GENERATOR_IDENTIFIER) {
+      return py::cast(bolt::QueryCandidateGenerator::load_stream(filestream));
     }
-    if (type == "classifier") {
-      return py::cast(UniversalDeepTransformer::load(filename));
+
+    if (first_byte == UDT_CLASSIFIER_IDENTIFIER) {
+      return py::cast(UniversalDeepTransformer::load_stream(filestream));
     }
+
     throw std::invalid_argument(
-        "Invalid Model Type: Supported Models include generator "
-        "and classifier");
+        "Found an invalid header byte in the saved file");
   }
 };
 
@@ -346,7 +373,6 @@ void createUDTFactory(py::module_& bolt_submodule) {
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
 
       .def_static("load", &UDTFactory::load, py::arg("filename"),
-                  py::arg("model_type"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
 
@@ -409,10 +435,8 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def("explain", &UniversalDeepTransformer::explain<MapInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
            docs::UDT_EXPLAIN)
-      .def("save", &UniversalDeepTransformer::save, py::arg("filename"),
-           docs::UDT_SAVE)
-      .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"),
-                  docs::UDT_LOAD);
+      .def("save", &UDTFactory::save_classifier, py::arg("filename"),
+           docs::UDT_SAVE);
 
   py::class_<bolt::QueryCandidateGenerator,
              std::shared_ptr<bolt::QueryCandidateGenerator>>(models_submodule,
@@ -435,9 +459,8 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def("predict_batch", &bolt::QueryCandidateGenerator::queryFromList,
            py::arg("queries"), py::arg("top_k"),
            docs::UDT_GENERATOR_PREDICT_BATCH)
-      .def("save", &bolt::QueryCandidateGenerator::save, py::arg("filename"))
-      .def_static("load", &bolt::QueryCandidateGenerator::load,
-                  py::arg("filename"));
+      .def("save", &UDTFactory::save_generator, py::arg("filename"),
+           docs::UDT_GENERATOR_SAVE);
 }
 
 template <typename T>

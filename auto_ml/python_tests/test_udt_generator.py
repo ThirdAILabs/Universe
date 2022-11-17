@@ -152,3 +152,15 @@ def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
 def test_udt_generator(prepared_datasets):
     model = train_udt_query_reformulation_model()
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
+
+
+def test_udt_generator_load_save(prepared_datasets):
+    model = train_udt_query_reformulation_model()
+
+    SAVE_FILE = "./saved_model_file.bolt"
+    model.save(SAVE_FILE)
+
+    loaded_model = bolt.UniversalDeepTransformer.load(SAVE_FILE)
+    run_generator_test(model=loaded_model, source_col_index=1, target_col_index=0)
+
+    os.remove(SAVE_FILE)
