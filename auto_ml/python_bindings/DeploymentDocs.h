@@ -520,8 +520,11 @@ Constructs a ModelPipeline from a deployment config and a set of input parameter
 Args:
     deployment_config (DeploymentConfig): A config for the ModelPipeline.
     parameters (Dict[str, Union[bool, int, float, str]]): A mapping from parameter 
-        names to values. This is used to pass in values to UserSpecifiedParameters, 
-        or provide the name of the option to use for OptionMappedParameters.
+        names to values. This is used to pass in any additional parameters required
+        to construct the desired model. The keys should be the names of the parameters
+        as strings and the values can be integers, floats, strings, or bools depending
+        on what the type of the parameter is. An exception will be thrown if a required
+        parameter is not specified or if the the parameter is not the right type.
 
 Returns
     ModelPipeline:
@@ -541,8 +544,11 @@ parameters.
 Args:
     config_path (str): A path to a serialized deployment config for the ModelPipeline.
     parameters (Dict[str, Union[bool, int, float, str]]): A mapping from parameter 
-        names to values. This is used to pass in values to UserSpecifiedParameters, 
-        or provide the name of the option to use for OptionMappedParameters.
+        names to values. This is used to pass in any additional parameters required
+        to construct the desired model. The keys should be the names of the parameters
+        as strings and the values can be integers, floats, strings, or bools depending
+        on what the type of the parameter is. An exception will be thrown if a required
+        parameter is not specified or if the the parameter is not the right type.
 
 Returns
     ModelPipeline:
@@ -828,7 +834,7 @@ Args:
         not need to include all columns in the dataset.
 
         Column type is one of:
-        - `bolt.types.categorical(n_unique_values: int)`
+        - `bolt.types.categorical()`
         - `bolt.types.numerical(range: tuple(float, float))`
         - `bolt.types.text(average_n_words: int=None)`
         - `bolt.types.date()`
@@ -871,11 +877,11 @@ Examples:
     >>> # For each product ID, we would like to track both their ad spend and sales quantity over time.
     >>> config = deployment.UDTConfig(
             data_types={
-                "product_id": bolt.types.categorical(n_unique_classes=5000),
+                "product_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
                 "ad_spend": bolt.types.numerical(range=(0, 10000)),
                 "sales_quantity": bolt.types.numerical(range=(0, 20)),
-                "sales_performance": bolt.types.categorical(n_unique_classes=5),
+                "sales_performance": bolt.types.categorical(),
             },
             temporal_tracking_relationships={
                 "product_id": [
@@ -896,9 +902,9 @@ Examples:
     >>> # Then we may configure UDT as follows:
     >>> config = deployment.UDTConfig(
             data_types={
-                "user_id": bolt.types.categorical(n_unique_classes=5000),
+                "user_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
-                "movie_id": bolt.types.categorical(n_unique_classes=3000),
+                "movie_id": bolt.types.categorical(),
                 "hours_watched": bolt.types.numerical(range=(0, 25)),
             },
             temporal_tracking_relationships={
@@ -907,7 +913,8 @@ Examples:
                     bolt.temporal.numerical(column_name="hours_watched", history_length="5") # track last 5 days of hours watched.
                 ]
             },
-            target="movie_id"
+            target="movie_id",
+            n_target_classes=3000
         )
 
 Notes:

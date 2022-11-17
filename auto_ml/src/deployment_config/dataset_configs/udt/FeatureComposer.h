@@ -16,8 +16,11 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdint>
+#include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -27,6 +30,8 @@
 
 namespace thirdai::automl::deployment {
 
+using PreprocessedVectorsMap =
+    std::unordered_map<std::string, dataset::PreprocessedVectorsPtr>;
 using ColumnVocabularies =
     std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr>;
 
@@ -39,12 +44,19 @@ class FeatureComposer {
       throw std::invalid_argument(
           "The target column cannot be a temporal tracking key.");
     }
-    for (const auto& [name, type] : config.data_types) {
-      if (type.isCategorical()) {
-        if (type.asCategorical().delimiter && (name != config.target)) {
-          throw std::invalid_argument(
-              "Only the target column can have a delimiter.");
-        }
+
+    for (const auto& [tracking_key_col_name, temporal_configs] :
+         temporal_relationships) {
+      if (!config.data_types.at(tracking_key_col_name).isCategorical()) {
+        throw std::invalid_argument("Tracking keys must be categorical.");
+      }
+
+      if (config.data_types.at(tracking_key_col_name)
+              .asCategorical()
+              .delimiter) {
+        throw std::invalid_argument(
+            "Tracking keys cannot have a delimiter; columns containing "
+            "tracking keys must only have one value per row.");
       }
     }
   }
@@ -52,8 +64,9 @@ class FeatureComposer {
   static std::vector<dataset::BlockPtr> makeNonTemporalFeatureBlocks(
       const UDTConfig& config,
       const TemporalRelationships& temporal_relationships,
-      const ColumnNumberMap& column_numbers, uint32_t text_pairgrams_word_limit,
-      bool contextual_columns) {
+      const ColumnNumberMap& column_numbers,
+      const PreprocessedVectorsMap& vectors_map,
+      uint32_t text_pairgrams_word_limit, bool contextual_columns) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto non_temporal_columns =
@@ -63,6 +76,7 @@ class FeatureComposer {
         column_numbers.numCols(), dataset::TabularDataType::Ignore);
 
     std::unordered_map<uint32_t, std::pair<double, double>> tabular_col_ranges;
+    std::unordered_map<uint32_t, uint32_t> tabular_col_bins;
 
     /*
       Order of column names and data types is always consistent because
@@ -77,11 +91,29 @@ class FeatureComposer {
       uint32_t col_num = column_numbers.at(col_name);
 
       if (data_type.isCategorical()) {
-        tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
+        auto categorical = data_type.asCategorical();
+        // if part of metadata
+        if (vectors_map.count(col_name) && categorical.metadata_config) {
+          blocks.push_back(dataset::MetadataCategoricalBlock::make(
+              col_num, vectors_map.at(col_name), categorical.delimiter));
+        }
+        if (categorical.delimiter) {
+          // 1. we treat multicategorical as a text block since all we really
+          // want is unigrams of the "words" separated by some delimiter
+          // 2. text hash range of MAXINT is fine since features are later
+          // hashed into a range. In fact it may reduce hash collisions.
+          blocks.push_back(dataset::UniGramTextBlock::make(
+              col_num, /* dim= */ std::numeric_limits<uint32_t>::max(),
+              *categorical.delimiter));
+        } else {
+          tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
+        }
       }
 
       if (data_type.isNumerical()) {
         tabular_col_ranges[col_num] = data_type.asNumerical().range;
+        tabular_col_bins[col_num] =
+            getNumberOfBins(data_type.asNumerical().granularity);
         tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
       }
 
@@ -90,10 +122,13 @@ class FeatureComposer {
         if (text_meta.force_pairgram ||
             (text_meta.average_n_words &&
              text_meta.average_n_words <= text_pairgrams_word_limit)) {
-          blocks.push_back(dataset::PairGramTextBlock::make(col_num));
+          // text hash range of MAXINT is fine since features are later
+          // hashed into a range. In fact it may reduce hash collisions.
+          blocks.push_back(dataset::PairGramTextBlock::make(
+              col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
         } else {
-          blocks.push_back(
-              dataset::UniGramTextBlock::make(col_num, text_meta.dim));
+          blocks.push_back(dataset::UniGramTextBlock::make(
+              col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
         }
       }
 
@@ -102,11 +137,16 @@ class FeatureComposer {
       }
     }
 
+    // Blocks still need a hash range even though we later hash it into
+    // a range because we still want to support block feature
+    // concatenations.
+    // TODO(Geordie): This is redundant, remove this later.
     // we always use tabular unigrams but add pairgrams on top of it if the
     // contextual_columns flag is true
-    blocks.push_back(makeTabularHashFeaturesBlock(
-        tabular_datatypes, tabular_col_ranges,
-        column_numbers.getColumnNumToColNameMap(), contextual_columns));
+    blocks.push_back(
+        makeTabularHashFeaturesBlock(tabular_datatypes, tabular_col_ranges,
+                                     column_numbers.getColumnNumToColNameMap(),
+                                     contextual_columns, tabular_col_bins));
 
     return blocks;
   }
@@ -114,8 +154,9 @@ class FeatureComposer {
   static std::vector<dataset::BlockPtr> makeTemporalFeatureBlocks(
       const UDTConfig& config,
       const TemporalRelationships& temporal_relationships,
-      const ColumnNumberMap& column_numbers, ColumnVocabularies& vocabularies,
-      TemporalContext& context, bool should_update_history) {
+      const ColumnNumberMap& column_numbers,
+      const PreprocessedVectorsMap& vectors_map, TemporalContext& context,
+      bool should_update_history) {
     std::vector<dataset::BlockPtr> blocks;
 
     auto timestamp_col_name = getTimestampColumnName(config);
@@ -128,24 +169,21 @@ class FeatureComposer {
     uint32_t temporal_relationship_id = 0;
     for (const auto& [tracking_key_col_name, temporal_configs] :
          temporal_relationships) {
-      if (!config.data_types.at(tracking_key_col_name).isCategorical()) {
-        throw std::invalid_argument("Tracking keys must be categorical.");
-      }
-
-      if (config.data_types.at(tracking_key_col_name)
-              .asCategorical()
-              .delimiter) {
-        throw std::invalid_argument(
-            "Tracking keys cannot have a delimiter; columns containing "
-            "tracking keys must only have one value per row.");
-      }
-
       for (const auto& temporal_config : temporal_configs) {
         if (temporal_config.isCategorical()) {
           blocks.push_back(makeTemporalCategoricalBlock(
               temporal_relationship_id, config, context, column_numbers,
-              vocabularies, temporal_config, tracking_key_col_name,
-              timestamp_col_name, should_update_history));
+              temporal_config, tracking_key_col_name, timestamp_col_name,
+              should_update_history,
+              /* vectors= */ nullptr));
+          if (vectors_map.count(temporal_config.columnName()) &&
+              temporal_config.asCategorical().use_metadata) {
+            blocks.push_back(makeTemporalCategoricalBlock(
+                temporal_relationship_id, config, context, column_numbers,
+                temporal_config, tracking_key_col_name, timestamp_col_name,
+                should_update_history,
+                vectors_map.at(temporal_config.columnName())));
+          }
         }
 
         if (temporal_config.isNumerical()) {
@@ -162,6 +200,29 @@ class FeatureComposer {
   }
 
  private:
+  static uint32_t getNumberOfBins(const std::string& granularity_size) {
+    auto lower_size = utils::lower(granularity_size);
+    if (lower_size == "xs" || lower_size == "extrasmall") {
+      return 10;
+    }
+    if (lower_size == "s" || lower_size == "small") {
+      return 75;
+    }
+    if (lower_size == "m" || lower_size == "medium") {
+      return 300;
+    }
+    if (lower_size == "l" || lower_size == "large") {
+      return 1000;
+    }
+    if (lower_size == "xl" || lower_size == "extralarge") {
+      return 3000;
+    }
+    throw std::invalid_argument("Invalid numerical granularity \"" +
+                                granularity_size +
+                                "\". Choose one of \"extrasmall\"/\"xs\", "
+                                "\"small\"/\"s\", \"medium\"/\"m\", "
+                                "\"large\"/\"l\", or \"extralarge\"/\"xl\".");
+  }
   /**
    * A column is encoded in a non-temporal way when it fulfils any
    * of the following:
@@ -223,9 +284,9 @@ class FeatureComposer {
   static dataset::BlockPtr makeTemporalCategoricalBlock(
       uint32_t temporal_relationship_id, const UDTConfig& config,
       TemporalContext& context, const ColumnNumberMap& column_numbers,
-      ColumnVocabularies& vocabs, const TemporalConfig& temporal_config,
-      const std::string& key_column, const std::string& timestamp_column,
-      bool should_update_history) {
+      const TemporalConfig& temporal_config, const std::string& key_column,
+      const std::string& timestamp_column, bool should_update_history,
+      dataset::PreprocessedVectorsPtr vectors) {
     const auto& tracked_column = temporal_config.columnName();
 
     if (!config.data_types.at(tracked_column).isCategorical()) {
@@ -234,8 +295,6 @@ class FeatureComposer {
           "columns.");
     }
 
-    auto key_vocab_size =
-        config.data_types.at(key_column).asCategorical().n_unique_classes;
     auto tracked_meta = config.data_types.at(tracked_column).asCategorical();
     auto temporal_meta = temporal_config.asCategorical();
 
@@ -247,17 +306,16 @@ class FeatureComposer {
         /* user_col= */ column_numbers.at(key_column),
         /* item_col= */ column_numbers.at(tracked_column),
         /* timestamp_col= */ column_numbers.at(timestamp_column),
-        /* user_id_map= */ vocabForColumn(vocabs, key_column, key_vocab_size),
-        /* item_id_map= */
-        vocabForColumn(vocabs, tracked_column, tracked_meta.n_unique_classes),
         /* records= */
-        context.categoricalHistoryForId(temporal_relationship_id,
-                                        /* n_users= */ key_vocab_size),
+        context.categoricalHistoryForId(temporal_relationship_id),
         /* track_last_n= */ temporal_meta.track_last_n,
+        // item hash range of MAXINT is fine since features are later
+        // hashed into a range. In fact it may reduce hash collisions.
+        /* item_hash_range= */ std::numeric_limits<uint32_t>::max(),
         /* should_update_history= */ should_update_history,
         /* include_current_row= */ temporal_meta.include_current_row,
         /* item_col_delimiter= */ tracked_meta.delimiter,
-        /* time_lag= */ time_lag);
+        /* time_lag= */ time_lag, /* item_vectors= */ std::move(vectors));
   }
 
   static dataset::BlockPtr makeTemporalNumericalBlock(
@@ -292,13 +350,17 @@ class FeatureComposer {
   static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
       const std::vector<dataset::TabularDataType>& tabular_datatypes,
       const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
-      const std::vector<std::string>& num_to_name, bool contextual_columns) {
+      const std::vector<std::string>& num_to_name, bool contextual_columns,
+      std::unordered_map<uint32_t, uint32_t> col_num_bins) {
     auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
         tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr,
-        /* column_names= */ num_to_name);
+        /* column_names= */ num_to_name, /* col_to_num_bins= */ col_num_bins);
 
+    // output range of MAXINT is fine since features are later
+    // hashed into a range. In fact it may reduce hash collisions.
     return std::make_shared<dataset::TabularHashFeatures>(
-        tabular_metadata, /* output_range = */ 100000,
+        tabular_metadata,
+        /* output_range= */ std::numeric_limits<uint32_t>::max(),
         /* with_pairgrams= */ contextual_columns);
   }
 

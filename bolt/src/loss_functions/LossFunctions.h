@@ -196,6 +196,8 @@ class MarginBCE final : public LossFunction {
         _bound(bound) {}
 
  private:
+  // Private constructor for cereal
+  MarginBCE() {}
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
     if (label == 0.0) {
@@ -252,3 +254,4 @@ CEREAL_REGISTER_TYPE(thirdai::bolt::CategoricalCrossEntropyLoss)
 CEREAL_REGISTER_TYPE(thirdai::bolt::BinaryCrossEntropyLoss)
 CEREAL_REGISTER_TYPE(thirdai::bolt::MeanSquaredError)
 CEREAL_REGISTER_TYPE(thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss)
+CEREAL_REGISTER_TYPE(thirdai::bolt::MarginBCE)

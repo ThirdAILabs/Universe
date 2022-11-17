@@ -93,6 +93,12 @@ class EmbeddingNode final : public Node,
   }
 
   void disableSparseParameterUpdates() final {
+    if (getState() != NodeState::Compiled &&
+        getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call disable_sparse_parameter_updates until the model "
+          "containing the node is compiled.");
+    }
     _embedding_layer->disableSparseParameterUpdates();
   }
 
