@@ -836,7 +836,7 @@ Args:
         Column type is one of:
         - `bolt.types.categorical()`
         - `bolt.types.numerical(range: tuple(float, float))`
-        - `bolt.types.text(average_n_words: int=None)`
+        - `bolt.types.text(average_n_words: float=None)`
         - `bolt.types.date()`
         See bolt.types for details.
 
