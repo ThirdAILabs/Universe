@@ -461,53 +461,6 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            docs::UDT_GENERATOR_SAVE);
 }
 
-template <typename Model>
-void trainOnFile(Model& model,  // NOLINT
-                 const std::string& filename, const py::kwargs& kwargs) {
-  uint32_t batch_size;
-  if (kwargs.contains("batch_size")) {
-    batch_size = kwargs["batch_size"].cast<uint32_t>();
-  } else {
-    batch_size = model.defaultBatchSize();
-  }
-  auto data_source = dataset::SimpleFileDataLoader::make(
-      filename, /* target_batch_size= */ batch_size);
-
-  trainOnDataLoader(model, data_source, kwargs);
-}
-
-template <typename Model>
-void trainOnDataLoader(Model& model,  // NOLINT
-                       const dataset::DataLoaderPtr& data_source,
-                       const py::kwargs& kwargs) {
-  TrainOptions train_options(data_source);
-
-  // Parse kwargs
-  if (kwargs.contains("learning_rate")) {
-    train_options.setLearningRate(kwargs["learning_rate"].cast<float>());
-  }
-
-  if (kwargs.contains("epochs")) {
-    train_options.setEpochs(kwargs["epochs"].cast<uint32_t>());
-  }
-
-  if (kwargs.contains("validation")) {
-    train_options.setValidation(kwargs["validation"].cast<ValidationOptions>());
-  }
-
-  if (kwargs.contains("callbacks")) {
-    train_options.setCallbacks(
-        kwargs["callbacks"].cast<std::vector<bolt::CallbackPtr>>());
-  }
-
-  if (kwargs.contains("max_in_memory_batches")) {
-    train_options.setMaxInMemoryBatches(
-        kwargs["max_in_memory_batches"].cast<uint32_t>());
-  }
-
-  model.train(train_options);
-}
-
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs) {
   // Because this is an overloaded function, the docsstring will be rendered
@@ -602,6 +555,54 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
   auto config = DeploymentConfig::load(config_path);
 
   return createPipeline(config, parameters);
+}
+
+template <typename Model>
+void trainOnFile(Model& model, const std::string& filename,
+                 const py::kwargs& kwargs) {
+  uint32_t batch_size;
+  if (kwargs.contains("batch_size")) {
+    batch_size = kwargs["batch_size"].cast<uint32_t>();
+  } else {
+    batch_size = model.defaultBatchSize();
+  }
+  auto data_source = dataset::SimpleFileDataLoader::make(
+      filename, /* target_batch_size= */ batch_size);
+
+  trainOnDataLoader(model, data_source, kwargs);
+}
+
+template <typename Model>
+void trainOnDataLoader(Model& model, const dataset::DataLoaderPtr& data_source,
+                       const py::kwargs& kwargs) {
+  TrainOptions train_options(data_source);
+
+  // Parse kwargs
+
+  for (const auto& [key, value] : kwargs) {
+    std::string name = key.cast<std::string>();
+    if (name == "learning_rate") {
+      train_options.setLearningRate(value.cast<float>());
+    } else if (name == "epochs") {
+      train_options.setEpochs(kwargs["epochs"].cast<uint32_t>());
+    } else if (name == "validation") {
+      train_options.setValidation(
+          kwargs["validation"].cast<ValidationOptions>());
+    } else if (name == "callbacks") {
+      train_options.setCallbacks(
+          kwargs["callbacks"].cast<std::vector<bolt::CallbackPtr>>());
+    } else if (name == "max_in_memory_batches") {
+      train_options.setMaxInMemoryBatches(
+          kwargs["max_in_memory_batches"].cast<uint32_t>());
+    } else if (name != "batch_size") {
+      // batch_size is a valid arg just not used here so we don't throw if it's
+      // present.
+      throw py::value_error("Unexpected argument '" + name +
+                            "' passed to train.");
+    }
+  }
+
+  model.train(train_options);
 }
 
 py::object evaluateOnDataLoaderWrapper(
