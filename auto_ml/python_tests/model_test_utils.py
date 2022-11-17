@@ -94,3 +94,32 @@ def check_saved_and_retrained_accuarcy(
     os.remove(SAVE_FILE)
 
     assert acc >= accuracy
+
+
+def train_udt_census_income(filename):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "age": bolt.types.numerical(range=(17, 90)),
+            "workclass": bolt.types.categorical(),
+            "fnlwgt": bolt.types.numerical(range=(12285, 1484705)),
+            "education": bolt.types.categorical(),
+            "education-num": bolt.types.categorical(),
+            "marital-status": bolt.types.categorical(),
+            "occupation": bolt.types.categorical(),
+            "relationship": bolt.types.categorical(),
+            "race": bolt.types.categorical(),
+            "sex": bolt.types.categorical(),
+            "capital-gain": bolt.types.numerical(range=(0, 99999)),
+            "capital-loss": bolt.types.numerical(range=(0, 4356)),
+            "hours-per-week": bolt.types.numerical(range=(1, 99)),
+            "native-country": bolt.types.categorical(),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=2,
+    )
+
+    train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
+    model.train(filename, train_config)
+
+    return model

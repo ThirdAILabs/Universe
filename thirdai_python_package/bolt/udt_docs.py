@@ -64,7 +64,7 @@ classifier_eval_doc = """
 
     Notes: 
         - If temporal tracking relationships are provided, UDT can make better predictions 
-        by taking temporal context into account. For example, UDT may keep track of 
-        the last few movies that a user has watched to better recommend the next movie.
-        `model.evaluate()` automatically updates UDT's temporal context.
+            by taking temporal context into account. For example, UDT may keep track of 
+            the last few movies that a user has watched to better recommend the next movie.
+        `   model.evaluate()` automatically updates UDT's temporal context.
     """

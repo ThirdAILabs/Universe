@@ -1,3 +1,4 @@
+from typing import Optional
 from urllib.parse import urlparse
 
 import thirdai._thirdai.bolt as bolt
@@ -23,10 +24,12 @@ def modify_udt_classifier():
 
     def wrapped_train(
         self,
-        filename,
-        train_config=bolt.TrainConfig(learning_rate=0.001, epochs=3),
-        batch_size=None,
-        max_in_memory_batches=None,
+        filename: str,
+        train_config: bolt.TrainConfig = bolt.TrainConfig(
+            learning_rate=0.001, epochs=3
+        ),
+        batch_size: Optional[int] = None,
+        max_in_memory_batches: Optional[int] = None,
     ):
         if batch_size == None:
             batch_size = self.default_train_batch_size
@@ -45,7 +48,7 @@ def modify_udt_classifier():
 
     wrapped_train.__doc__ = classifier_train_doc
 
-    def wrapped_evaluate(self, filename, eval_config=None):
+    def wrapped_evaluate(self, filename: str, eval_config: bolt.EvalConfig = None):
         if filename.startswith("s3://"):
             return original_eval_with_loader_method(
                 self,
@@ -57,6 +60,8 @@ def modify_udt_classifier():
             )
 
         return original_eval_method(self, filename, eval_config)
+
+    wrapped_evaluate.__doc__ = classifier_eval_doc
 
     delattr(bolt.models.UDTClassifier, "train_with_file")
     delattr(bolt.models.UDTClassifier, "train_with_loader")
