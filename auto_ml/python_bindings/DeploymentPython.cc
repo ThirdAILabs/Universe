@@ -337,6 +337,10 @@ class UDTFactory {
     throw std::invalid_argument(
         "Found an invalid header byte in the saved file");
   }
+
+ private:
+  static const uint8_t UDT_GENERATOR_IDENTIFIER = 0;
+  static const uint8_t UDT_CLASSIFIER_IDENTIFIER = 1;
 };
 
 void createUDTFactory(py::module_& bolt_submodule) {
