@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
 /**
  * @brief This transformation assumes as input a StringValueColumn with
@@ -44,7 +44,7 @@ class SentenceUnigram : public Transformation {
     auto input_column = column_map.getStringColumn(_input_column_name);
     uint32_t num_rows = column_map.numRows();
 
-    ColumnPtr output_column;
+    columns::ColumnPtr output_column;
     if (_deduplicate) {
       output_column = deduplicatedUnigramColumn(input_column, num_rows);
     } else {
@@ -54,8 +54,8 @@ class SentenceUnigram : public Transformation {
   }
 
  private:
-  IndexValueArrayColumnPtr deduplicatedUnigramColumn(
-      const StringColumnPtr& input_column, uint32_t num_rows) {
+  columns::SparseArrayColumnPtr deduplicatedUnigramColumn(
+      const columns::StringColumnPtr& input_column, uint32_t num_rows) {
     std::vector<std::vector<std::pair<uint32_t, float>>> column_values(
         num_rows);
 #pragma omp parallel for default(none) \
@@ -66,19 +66,19 @@ class SentenceUnigram : public Transformation {
 
       std::vector<std::pair<uint32_t, float>> deduplicated_unigrams;
       // TODO(any): make TextEncodingUtils more usable
-      TextEncodingUtils::sumRepeatedIndices(
+      dataset::TextEncodingUtils::sumRepeatedIndices(
           unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
             deduplicated_unigrams.push_back(std::make_pair(unigram, value));
           });
       column_values[row_idx] = deduplicated_unigrams;
     }
 
-    return std::make_shared<VectorIndexValueArrayColumn>(
+    return std::make_shared<columns::CppSparseArrayColumn>(
         std::move(column_values), _output_range);
   }
 
-  SparseArrayColumnPtr rawUnigramColumn(const StringColumnPtr& input_column,
-                                        uint32_t num_rows) {
+  columns::TokenArrayColumnPtr rawUnigramColumn(
+      const columns::StringColumnPtr& input_column, uint32_t num_rows) {
     std::vector<std::vector<uint32_t>> column_values(num_rows);
 #pragma omp parallel for default(none) \
     shared(num_rows, column_values, input_column)
@@ -88,17 +88,17 @@ class SentenceUnigram : public Transformation {
       column_values[row_idx] = unigrams;
     }
 
-    return std::make_shared<VectorSparseArrayColumn>(std::move(column_values),
-                                                     _output_range);
+    return std::make_shared<columns::CppTokenArrayColumn>(
+        std::move(column_values), _output_range);
   }
 
   std::vector<uint32_t> computeUnigrams(const std::string& text) {
     std::vector<uint32_t> unigrams;
     if (_output_range) {
-      unigrams =
-          TextEncodingUtils::computeRawUnigramsWithRange(text, *_output_range);
+      unigrams = dataset::TextEncodingUtils::computeRawUnigramsWithRange(
+          text, *_output_range);
     } else {
-      unigrams = TextEncodingUtils::computeRawUnigrams(text);
+      unigrams = dataset::TextEncodingUtils::computeRawUnigrams(text);
     }
     return unigrams;
   }
@@ -123,6 +123,6 @@ class SentenceUnigram : public Transformation {
   std::optional<uint32_t> _output_range;
 };
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::SentenceUnigram)
+CEREAL_REGISTER_TYPE(thirdai::data::SentenceUnigram)

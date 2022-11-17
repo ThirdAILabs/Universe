@@ -51,7 +51,9 @@ def get_str_col(col_length):
 
 
 def get_sentence_str_column(col_length, num_words):
-    return data.columns.StringColumn([random_sentence(num_words) for _ in range(col_length)])
+    return data.columns.StringColumn(
+        [random_sentence(num_words) for _ in range(col_length)]
+    )
 
 
 # Given a sparse numpy dataset of featurized pairgrams (not deduplicated), count
