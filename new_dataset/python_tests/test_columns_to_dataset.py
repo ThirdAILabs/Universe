@@ -8,25 +8,25 @@ pytestmark = [pytest.mark.unit]
 
 def get_sparse_value_column(n_rows, dim):
     column_np = np.random.randint(low=0, high=dim, size=(n_rows, 1))
-    column = data.columns.NumpySparseValueColumn(array=column_np, dim=dim)
+    column = data.columns.TokenColumn(array=column_np, dim=dim)
     return column, column_np
 
 
 def get_dense_value_column(n_rows):
     column_np = np.random.rand(n_rows, 1)
-    column = data.columns.NumpyDenseValueColumn(array=column_np)
+    column = data.columns.DenseFeatureColumn(array=column_np)
     return column, column_np
 
 
 def get_sparse_array_column(n_rows, dim, num_nonzeros):
     column_np = np.random.randint(low=0, high=dim, size=(n_rows, num_nonzeros))
-    column = data.columns.NumpySparseArrayColumn(array=column_np, dim=dim)
+    column = data.columns.TokenArrayColumn(array=column_np, dim=dim)
     return column, column_np
 
 
 def get_dense_array_column(n_rows, dim):
     column_np = np.random.rand(n_rows, dim)
-    column = data.columns.NumpyDenseArrayColumn(array=column_np)
+    column = data.columns.DenseArrayColumn(array=column_np)
     return column, column_np
 
 

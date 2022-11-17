@@ -19,8 +19,8 @@ def test_basic_pandas_to_columnmap():
     column_map = data.pandas_to_columnmap(df)
 
     assert isinstance(column_map["col1"], data.columns.StringColumn)
-    assert isinstance(column_map["col2"], data.columns.NumpyDenseValueColumn)
-    assert isinstance(column_map["col3"], data.columns.NumpySparseValueColumn)
+    assert isinstance(column_map["col2"], data.columns.DenseFeatureColumn)
+    assert isinstance(column_map["col3"], data.columns.TokenColumn)
 
     assert column_map["col1"].dimension_info() == None
     assert column_map["col2"].dimension_info().dim == 1
@@ -40,9 +40,9 @@ def test_pandas_to_columnmap_int_cols():
         df, dense_int_cols={"col2"}, int_col_dims={"col3": 20}
     )
 
-    assert isinstance(column_map["col1"], data.columns.NumpySparseValueColumn)
-    assert isinstance(column_map["col2"], data.columns.NumpyDenseValueColumn)
-    assert isinstance(column_map["col3"], data.columns.NumpySparseValueColumn)
+    assert isinstance(column_map["col1"], data.columns.TokenColumn)
+    assert isinstance(column_map["col2"], data.columns.DenseFeatureColumn)
+    assert isinstance(column_map["col3"], data.columns.TokenColumn)
 
     assert column_map["col1"].dimension_info() == None
     assert column_map["col2"].dimension_info().dim == 1
