@@ -3,13 +3,15 @@
 namespace thirdai::data::python::docs {
 
 const char* const COLUMN_BASE = R"pbdoc(
-Base class for columns which represent columns of data in a dataset.
+Base class representing a column of data in a dataset. Instances of this class are 
+immutable, i.e. you cannot modify a column once you create it. This makes it easy 
+for multiple ColumnMaps to share a Column safely.
 )pbdoc";
 
 const char* const DIMENSION_INFO = R"pbdoc(
-Represents the dimension and density of a column. If the column is dense then this 
-is the number of elements in the column. If the column is sparse then the dimension
-is the exclusive maximum index in the column.
+Represents the dimension and density of a column. If the column is dense then dim 
+is the number of elements in the column. If the column is sparse then dim is the 
+exclusive maximum index in the column.
 )pbdoc";
 
 const char* const TOKEN_COLUMN = R"pbdoc(
@@ -137,7 +139,7 @@ Returns:
 
 const char* const COLUMN_PAIRGRAM = R"pbdoc(
 Constructs a ColumnPairgram transformation. This transformation applies pairgrams 
-to combinations of the specified input columns. 
+to the specified input columns. 
 
 Args:
     input_columns (List[str]): The columns to combine with pairgrams. All of these 
@@ -148,7 +150,7 @@ Args:
 )pbdoc";
 
 const char* const SENTENCE_UNIGRAM = R"pbdoc(
-Constructs a ColumnPairgram transformation. This transformation applies unigram 
+Constructs a SentenceUnigram transformation. This transformation applies unigram 
 hashes to each word in a sentence to map it to an integer value. 
 
 Args:
@@ -161,8 +163,8 @@ Args:
         hash values that occur. This means that if you had the output hashes [1, 2, 3, 2]
         rather than returning that as a set of tokens in a TokenArrayColumn it will 
         return a SparseArrayColumn (index+value pairs) in the form [(1,1), (2,2), (3,1)].
-    output_range (int): Optional. The output range of the hashes, if not specified 
-        no mod will be performed on the hashes. If not specified then the resulting 
+    output_range (int): Optional. The output range of the hashes, if specified a
+        mod will be performed on the hashes. If not specified then the resulting 
         unigrams cannot be concatenated into the final output dataset.  
 )pbdoc";
 
@@ -205,8 +207,9 @@ This method outputs a BoltDataset formed by concatenating the values of the spec
 columns rowwise. If any of the columns are sparse then the output will be sparse 
 vectors, otherwise the returned vectors are dense. The vectors are concatenated in
 the order supplied to this method, and not all of the columns must be supplied. 
-Any Token columns that are being concatenated must have a dimension, otherwise their
-contribution to the output range cannot be known. StringColumns cannot be concatenated.
+Any Token or Sparse columns that are being concatenated must have a dimension, 
+otherwise their contribution to the output range cannot be known. StringColumns 
+cannot be concatenated.
 
 Args:
     columns (List[str]): The names of the columns to output.
@@ -225,9 +228,9 @@ Examples:
 
 const char* const FEATURIZATION_PIPELINE_CLASS = R"pbdoc(
 This class represents a collection of transformations that are applied to a ColumnMap.
-Transformations are applied to the ColumnMap in the order they are specified to __init__
-and this means that transformations can use the output columns of previous transformations
-as their input(s) columns. 
+Transformations are applied to the ColumnMap in the order they are specified to __init__.
+This means that transformations can use the output columns of previous transformations
+as their input(s) columns.
 )pbdoc";
 
 const char* const FEATURIZATION_PIPELINE_INIT = R"pbdoc(
