@@ -110,12 +110,11 @@ class FeatureComposer {
 
       if (auto numerical = asNumerical(data_type)) {
         tabular_col_ranges[col_num] = numerical->range;
-        tabular_col_bins[col_num] =
-            getNumberOfBins(numerical->granularity);
+        tabular_col_bins[col_num] = getNumberOfBins(numerical->granularity);
         tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
       }
 
-      if ( auto text_meta = asText(data_type)) {
+      if (auto text_meta = asText(data_type)) {
         if (text_meta->force_pairgram ||
             (text_meta->average_n_words &&
              text_meta->average_n_words <= text_pairgrams_word_limit)) {
