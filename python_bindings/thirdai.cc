@@ -9,7 +9,12 @@
 #include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
 #include <utils/Logging.h>
+
+#ifdef THIRDAI_BAKE_VERSION
 #include <utils/Version.h>
+#else
+#include <utils/Version-fallback.h>
+#endif  // THIRDAI_BAKE_VERSION
 
 // Pybind11 library
 #include <pybind11/cast.h>
