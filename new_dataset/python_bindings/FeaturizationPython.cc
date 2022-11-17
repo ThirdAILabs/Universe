@@ -1,4 +1,5 @@
 #include "FeaturizationPython.h"
+#include "FeaturizationDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
