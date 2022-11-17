@@ -98,8 +98,12 @@ class FeatureComposer {
               col_num, vectors_map.at(col_name), categorical.delimiter));
         }
         if (categorical.delimiter) {
+          // 1. we treat multicategorical as a text block since all we really
+          // want is unigrams of the "words" separated by some delimiter
+          // 2. text hash range of MAXINT is fine since features are later
+          // hashed into a range. In fact it may reduce hash collisions.
           blocks.push_back(dataset::UniGramTextBlock::make(
-              col_num, dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+              col_num, /* dim= */ std::numeric_limits<uint32_t>::max(),
               *categorical.delimiter));
         } else {
           tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;

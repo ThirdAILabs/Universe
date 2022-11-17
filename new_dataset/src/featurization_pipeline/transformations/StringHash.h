@@ -6,7 +6,7 @@
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
 // Hashes a string columnm into a given output range using MurmurHash. Uses a
 // default seed so our data pipeline is reproducible.
@@ -45,6 +45,6 @@ class StringHash final : public Transformation {
   uint32_t _seed;
 };
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::StringHash)
+CEREAL_REGISTER_TYPE(thirdai::data::StringHash)
