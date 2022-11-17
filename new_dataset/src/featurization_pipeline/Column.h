@@ -6,7 +6,7 @@
 #include <string>
 #include <type_traits>
 
-namespace thirdai::dataset {
+namespace thirdai::data::columns {
 
 struct DimensionInfo {
   uint32_t dim;
@@ -25,7 +25,7 @@ class Column {
    */
   virtual std::optional<DimensionInfo> dimension() const = 0;
 
-  virtual void appendRowToVector(SegmentedFeatureVector& vector,
+  virtual void appendRowToVector(dataset::SegmentedFeatureVector& vector,
                                  uint64_t row_idx) const = 0;
 
   virtual ~Column() = default;
@@ -41,7 +41,7 @@ class ValueColumn : public Column {
  public:
   virtual const T& operator[](uint64_t n) const = 0;
 
-  void appendRowToVector(SegmentedFeatureVector& vector,
+  void appendRowToVector(dataset::SegmentedFeatureVector& vector,
                          uint64_t row_idx) const final {
     if constexpr (std::is_same<T, uint32_t>::value) {
       vector.addSparseFeatureToSegment(this->operator[](row_idx), 1.0);
@@ -71,16 +71,15 @@ class ValueColumn : public Column {
   virtual ~ValueColumn() = default;
 };
 
-using SparseValueColumn = ValueColumn<uint32_t>;
-using DenseValueColumn = ValueColumn<float>;
-using IndexValueColumn = ValueColumn<std::pair<uint32_t, float>>;
+using TokenColumn = ValueColumn<uint32_t>;
+using DenseFeatureColumn = ValueColumn<float>;
+using SparseFeatureColumn = ValueColumn<std::pair<uint32_t, float>>;
 using StringColumn = ValueColumn<std::string>;
 
-using SparseValueColumnPtr = std::shared_ptr<ValueColumn<uint32_t>>;
-using DenseValueColumnPtr = std::shared_ptr<ValueColumn<float>>;
-using IndexValueColumnPtr =
-    std::shared_ptr<ValueColumn<std::pair<uint32_t, float>>>;
-using StringColumnPtr = std::shared_ptr<ValueColumn<std::string>>;
+using TokenColumnPtr = std::shared_ptr<TokenColumn>;
+using DenseFeatureColumnPtr = std::shared_ptr<DenseFeatureColumn>;
+using SparseFeatureColumnPtr = std::shared_ptr<SparseFeatureColumn>;
+using StringColumnPtr = std::shared_ptr<StringColumn>;
 
 // We use templates to create columns with different types because there are
 // very few types which we will need to support and almost all of the code for
@@ -114,7 +113,7 @@ class ArrayColumn : public Column {
 
   virtual RowReference operator[](uint64_t n) const = 0;
 
-  void appendRowToVector(SegmentedFeatureVector& vector,
+  void appendRowToVector(dataset::SegmentedFeatureVector& vector,
                          uint64_t row_idx) const final {
     static_assert(std::is_same<T, uint32_t>::value ||
                       std::is_same<T, float>::value ||
@@ -144,13 +143,12 @@ class ArrayColumn : public Column {
   virtual ~ArrayColumn() = default;
 };
 
-using SparseArrayColumn = ArrayColumn<uint32_t>;
+using TokenArrayColumn = ArrayColumn<uint32_t>;
 using DenseArrayColumn = ArrayColumn<float>;
-using IndexValueArrayColumn = ArrayColumn<std::pair<uint32_t, float>>;
+using SparseArrayColumn = ArrayColumn<std::pair<uint32_t, float>>;
 
-using SparseArrayColumnPtr = std::shared_ptr<ArrayColumn<uint32_t>>;
-using DenseArrayColumnPtr = std::shared_ptr<ArrayColumn<float>>;
-using IndexValueArrayColumnPtr =
-    std::shared_ptr<ArrayColumn<std::pair<uint32_t, float>>>;
+using TokenArrayColumnPtr = std::shared_ptr<TokenArrayColumn>;
+using DenseArrayColumnPtr = std::shared_ptr<DenseArrayColumn>;
+using SparseArrayColumnPtr = std::shared_ptr<SparseArrayColumn>;
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data::columns

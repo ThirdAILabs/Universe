@@ -3,7 +3,7 @@
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
 /**
  * This class represents modifications to a ColumnMap. It can use any of the
@@ -34,4 +34,4 @@ class Transformation {
 
 using TransformationPtr = std::shared_ptr<Transformation>;
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data
