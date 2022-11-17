@@ -2,9 +2,11 @@
 
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
@@ -30,6 +32,13 @@ struct DataType {
   virtual std::string toString() const = 0;
 
   virtual ~DataType() = default;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using DataTypePtr = std::shared_ptr<DataType>;
@@ -41,8 +50,6 @@ struct CategoricalDataType : DataType {
 
   std::optional<char> delimiter;
   CategoricalMetadataConfigPtr metadata_config;
-
-  CategoricalDataType() {}
 
   std::string toString() const final {
     if (delimiter.has_value()) {
@@ -56,7 +63,7 @@ struct CategoricalDataType : DataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(delimiter, metadata_config);
+    archive(cereal::base_class<DataType>(this), delimiter, metadata_config);
   }
 };
 
@@ -70,15 +77,14 @@ struct TextDataType : DataType {
   std::optional<double> average_n_words;
   bool force_pairgram;
 
-  TextDataType() {}
-
   std::string toString() const final { return R"({"type": "text"})"; }
 
  private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(average_n_words, force_pairgram);
+    archive(cereal::base_class<DataType>(this), average_n_words,
+            force_pairgram);
   }
 };
 
@@ -104,7 +110,7 @@ struct NumericalDataType : DataType {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(range, granularity);
+    archive(cereal::base_class<DataType>(this), range, granularity);
   }
 };
 
@@ -112,6 +118,13 @@ using NumericalDataTypePtr = std::shared_ptr<NumericalDataType>;
 
 struct DateDataType : DataType {
   std::string toString() const final { return R"({"type": "date"})"; }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DataType>(this));
+  }
 };
 
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
@@ -248,3 +261,8 @@ using TemporalRelationships =
     std::map<std::string, std::vector<TemporalConfig>>;
 
 }  // namespace thirdai::automl::deployment
+
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::CategoricalDataType)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::NumericalDataType)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::DateDataType)
+CEREAL_REGISTER_TYPE(thirdai::automl::deployment::TextDataType)
