@@ -243,6 +243,7 @@ set(THIRDAI_SOURCES
     dataset/src/Vocabulary.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+    new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc

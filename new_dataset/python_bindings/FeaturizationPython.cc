@@ -1,7 +1,9 @@
 #include "FeaturizationPython.h"
 #include <bolt/python_bindings/ConversionUtils.h>
+#include <new_dataset/src/featurization_pipeline/Augmentation.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
+#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/columns/NumpyColumns.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <new_dataset/src/featurization_pipeline/transformations/Binning.h>
@@ -55,6 +57,33 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<NumpyDenseArrayColumn>>(columns_submodule,
                                                      "NumpyDenseArrayColumn")
       .def(py::init<const NumpyArray<float>&>(), py::arg("array"));
+
+  auto augmentations_submodule =
+      dataset_submodule.def_submodule("augmentations");
+
+  py::class_<Augmentation, std::shared_ptr<Augmentation>>(  // NOLINT
+      augmentations_submodule, "Augmentation");
+
+  py::class_<ColdStartTextAugmentation, Augmentation,
+             std::shared_ptr<ColdStartTextAugmentation>>(augmentations_submodule,
+                                                     "ColdStartText")
+      .def(py::init<std::vector<std::string>, std::vector<std::string>,
+                    std::string, std::string, std::optional<uint32_t>,
+                    std::optional<uint32_t>, std::optional<uint32_t>,
+                    std::optional<uint32_t>, uint32_t, std::optional<uint32_t>,
+                    std::optional<uint32_t>, uint32_t>(),
+           py::arg("strong_columns"), py::arg("weak_columns"),
+           py::arg("label_column"),
+           py::arg("output_column"),
+           py::arg("weak_min_len") = std::nullopt,
+           py::arg("weak_max_len") = std::nullopt,
+           py::arg("weak_chunk_len") = std::nullopt,
+           py::arg("weak_downsample_num") = std::nullopt,
+           py::arg("weak_downsample_reps") = 1,
+           py::arg("strong_max_len") = std::nullopt,
+           py::arg("strong_downsample_num") = std::nullopt,
+           py::arg("seed") = 42803)
+      .def(("apply"), &ColdStartTextAugmentation::apply);
 
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
