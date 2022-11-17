@@ -84,8 +84,7 @@ def check_saved_and_retrained_accuarcy(
     )
     assert acc >= accuracy
 
-    train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001)
-    loaded_model.train(train_filename, train_config)
+    loaded_model.train(train_filename, epochs=1, learning_rate=0.001)
 
     acc = compute_evaluate_accuracy(
         loaded_model, test_filename, inference_samples, use_class_name

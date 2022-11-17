@@ -52,9 +52,6 @@ class ModelPipeline {
                                         train_options.maxInMemoryBatches());
     train_options.trainData()->restart();
 
-    auto dataset = _dataset_factory->getLabeledDatasetLoader(
-        train_options.trainData(), /* training= */ true);
-
     if (train_options.streaming()) {
       trainOnStream(train_options);
     } else {

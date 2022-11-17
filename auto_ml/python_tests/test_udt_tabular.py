@@ -39,8 +39,7 @@ def train_udt_tabular(download_census_income):
 
     train_filename, _, _ = download_census_income
 
-    train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
-    model.train(train_filename, train_config)
+    model.train(train_filename, epochs=5, learning_rate=0.01)
 
     return model
 

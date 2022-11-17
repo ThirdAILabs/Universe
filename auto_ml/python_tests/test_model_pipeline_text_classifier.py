@@ -150,9 +150,7 @@ def test_model_pipeline_text_classification_train_with_validation(
     train_filename, test_filename, _ = download_clinc_dataset_model_pipeline
 
     validation = bolt.Validation(
-        filename=test_filename,
-        interval=4,
-        metrics=["categorical_accuracy"]
+        filename=test_filename, interval=4, metrics=["categorical_accuracy"]
     )
 
     model.train(
