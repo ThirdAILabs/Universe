@@ -94,7 +94,8 @@ Args:
   py::class_<automl::deployment::DataType,
              automl::deployment::DataTypePtr>(  // NOLINT
       udt_types_submodule, "ColumnType", "Base class for bolt types.")
-      .def("__str__", &automl::deployment::DataType::toString);
+      .def("__str__", &automl::deployment::DataType::toString)
+      .def("__repr__", &automl::deployment::DataType::toString);
 
   py::class_<automl::deployment::CategoricalMetadataConfig,
              automl::deployment::CategoricalMetadataConfigPtr>(
