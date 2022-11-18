@@ -393,9 +393,9 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
         n_grams (List[int]): List of N-gram blocks to use. 
         reservoir_size (int): Reservoir size to use when the flash index is 
             constructed with reservoir sampling. 
-        source_column (int): Name of the column in the input CSV
+        source_column (str): Name of the column in the input CSV
             that contains incorrect queries.
-        target_column (int): Name of the column in the input CSV
+        target_column (str): Name of the column in the input CSV
             that contains the target queries for reformulation. 
         batch_size (int): batch size. It is defaulted to 10000. 
     Returns: 
