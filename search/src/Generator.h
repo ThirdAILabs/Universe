@@ -356,8 +356,7 @@ class QueryCandidateGenerator {
  private:
   explicit QueryCandidateGenerator(
       QueryCandidateGeneratorConfigPtr query_candidate_generator_config)
-      : _initialized_batch_processors(false),
-        _query_generator_config(std::move(query_candidate_generator_config)) {
+      : _query_generator_config(std::move(query_candidate_generator_config)) {
     auto inference_input_blocks =
         constructInputBlocks(_query_generator_config->nGrams(),
                              /* column_index = */ 0);
@@ -541,7 +540,6 @@ class QueryCandidateGenerator {
     return {source_column_index, target_column_index};
   }
 
-  bool _initialized_batch_processors;
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;
   std::unique_ptr<Flash<uint32_t>> _flash_index;
   std::shared_ptr<dataset::GenericBatchProcessor> _inference_batch_processor;
@@ -563,9 +561,8 @@ class QueryCandidateGenerator {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_initialized_batch_processors, _query_generator_config,
-            _flash_index, _inference_batch_processor, _labels_to_queries_map,
-            _queries_to_labels_map);
+    archive(_query_generator_config, _flash_index, _inference_batch_processor,
+            _labels_to_queries_map, _queries_to_labels_map);
   }
 };
 
