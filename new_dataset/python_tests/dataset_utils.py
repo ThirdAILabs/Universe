@@ -57,10 +57,10 @@ def get_random_sentence_str_column(col_length, num_words):
 
 
 # Given a sparse numpy dataset of featurized pairgrams (not deduplicated), count
-# to make sure the number of pairgrams for each index across the whole dataset
-# is close to the expected number based on the number of unigrams.
-# If there are N unigrams, pairgrams should have (N * (N + 1)) / 2 values.
-def verify_pairgrams(pairgram_dataset, output_range, num_unigrams):
+# to make sure the number of pairgrams for each possible pairgram value across the whole dataset
+# is close to the expected number.
+# We use the fact that if there are N unigrams per row, there are N * (N + 1)) / 2 pairgrams per row.
+def verify_pairgrams_distribution(pairgram_dataset, output_range, num_unigrams):
     indices, values = pairgram_dataset
     hash_counts = [0 for _ in range(output_range)]
     for row_indices, row_values in zip(indices, values):
@@ -74,9 +74,9 @@ def verify_pairgrams(pairgram_dataset, output_range, num_unigrams):
 
 
 # Given a sparse numpy dataset of featurized unigrams (not deduplicated), count
-# to make sure the number of unigrams for each index across the whole dataset
+# to make sure the number of unigrams for each possible unigram value across the whole dataset
 # is close to the expected number.
-def verify_unigrams(pairgram_dataset, output_range, expected_unigrams_per_row):
+def verify_unigrams_distribution(pairgram_dataset, output_range, expected_unigrams_per_row):
     indices, values = pairgram_dataset
     hash_counts = [0 for _ in range(output_range)]
     for row_indices, row_values in zip(indices, values):
