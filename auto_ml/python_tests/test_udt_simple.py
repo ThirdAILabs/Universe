@@ -156,7 +156,6 @@ def test_temporal_not_in_data_type_throws():
                 "date": bolt.types.date(),
                 "user": bolt.types.categorical(),
                 "item": bolt.types.categorical(),
-                "other_item": bolt.types.categorical(),
             },
             temporal_tracking_relationships={"user": ["other_item"]},
             target="item",
