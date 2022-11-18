@@ -238,7 +238,9 @@ class Worker:
         self.model.set_datasets(self.train_data, self.train_labels)
         self.batch_id_within_dataset = 0
 
-        logging.info(f"func _try_load_new_datasets_into_model | total batches: {self.model.num_batches()}")
+        logging.info(
+            f"func _try_load_new_datasets_into_model | total batches: {self.model.num_batches()}"
+        )
 
         # This case should not be true since we currently require datasets
         # to be nonempty, but this is a good hedge against future data
