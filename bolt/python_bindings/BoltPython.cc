@@ -91,9 +91,11 @@ Args:
 
   auto udt_types_submodule = bolt_submodule.def_submodule("types");
 
-  py::class_<automl::deployment::DataType>(  // NOLINT
+  py::class_<automl::deployment::DataType,
+             automl::deployment::DataTypePtr>(  // NOLINT
       udt_types_submodule, "ColumnType", "Base class for bolt types.")
-      .def("__str__", &automl::deployment::DataType::toString);
+      .def("__str__", &automl::deployment::DataType::toString)
+      .def("__repr__", &automl::deployment::DataType::toString);
 
   py::class_<automl::deployment::CategoricalMetadataConfig,
              automl::deployment::CategoricalMetadataConfigPtr>(
@@ -157,11 +159,14 @@ Args:
                 ...
             )
                              )pbdoc");
-
-  udt_types_submodule.def(
-      "categorical", automl::deployment::DataType::categorical,
-      py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
-      R"pbdoc(
+  py::class_<automl::deployment::CategoricalDataType,
+             automl::deployment::DataType,
+             automl::deployment::CategoricalDataTypePtr>(udt_types_submodule,
+                                                         "categorical")
+      .def(py::init<std::optional<char>,
+                    automl::deployment::CategoricalMetadataConfigPtr>(),
+           py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
+           R"pbdoc(
     Categorical column type. Use this object if a column contains categorical 
     data (each unique value is treated as a class). Examples include user IDs, 
     movie titles, or age groups.
@@ -186,9 +191,13 @@ Args:
                 ...
             )
                              )pbdoc");
-  udt_types_submodule.def("numerical", automl::deployment::DataType::numerical,
-                          py::arg("range"), py::arg("granularity") = "m",
-                          R"pbdoc(
+  py::class_<automl::deployment::NumericalDataType,
+             automl::deployment::DataType,
+             automl::deployment::NumericalDataTypePtr>(udt_types_submodule,
+                                                       "numerical")
+      .def(py::init<std::pair<double, double>, std::string>(), py::arg("range"),
+           py::arg("granularity") = "m",
+           R"pbdoc(
     Numerical column type. Use this object if a column contains numerical 
     data (the value is treated as a quantity). Examples include hours of 
     a movie watched, sale quantity, or population size.
@@ -209,16 +218,18 @@ Args:
                 ...
             )
                              )pbdoc");
-  udt_types_submodule.def("text", automl::deployment::DataType::text,
-                          py::arg("average_n_words") = std::nullopt,
-                          py::arg("use_attention") = false,
-                          R"pbdoc(
+  py::class_<automl::deployment::TextDataType, automl::deployment::DataType,
+             automl::deployment::TextDataTypePtr>(udt_types_submodule, "text")
+      .def(py::init<std::optional<double>, bool>(),
+           py::arg("average_n_words") = std::nullopt,
+           py::arg("use_attention") = false,
+           R"pbdoc(
     Text column type. Use this object if a column contains text data 
     (the meaning of the text matters). Examples include descriptions, 
     search queries, and user bios.
 
     Args:
-        average_n_words (int): Optional. Average number of words in the 
+        average_n_words (float): Optional. Average number of words in the 
             text column in each row. If provided, UDT may make 
             optimizations as appropriate.
         use_attention (bool): Optional. If true, udt is guaranteed to
@@ -235,8 +246,10 @@ Args:
             )
 
                              )pbdoc");
-  udt_types_submodule.def("date", automl::deployment::DataType::date,
-                          R"pbdoc(
+  py::class_<automl::deployment::DateDataType, automl::deployment::DataType,
+             automl::deployment::DateDataTypePtr>(udt_types_submodule, "date")
+      .def(py::init<>(),
+           R"pbdoc(
     Date column type. Use this object if a column contains date strings. 
     Date strings must be in YYYY-MM-DD format.
  
@@ -361,13 +374,12 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
              bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
                                                      "GeneratorConfig")
       .def(py::init<std::string, uint32_t, uint32_t, uint32_t,
-                    std::vector<uint32_t>, std::optional<uint32_t>, uint32_t,
-                    uint32_t, uint32_t>(),
+                    std::vector<uint32_t>, std::optional<uint32_t>, std::string,
+                    std::string, uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("range"), py::arg("n_grams"),
-           py::arg("reservoir_size") = std::nullopt,
-           py::arg("source_column_index") = 0,
-           py::arg("target_column_index") = 0, py::arg("batch_size") = 10000,
+           py::arg("reservoir_size") = std::nullopt, py::arg("source_column"),
+           py::arg("target_column"), py::arg("batch_size") = 10000,
            R"pbdoc(
     Initializes a QueryCandidateGeneratorConfig object.
 
@@ -381,9 +393,9 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
         n_grams (List[int]): List of N-gram blocks to use. 
         reservoir_size (int): Reservoir size to use when the flash index is 
             constructed with reservoir sampling. 
-        source_column_index (int): Index of the column in the input CSV
+        source_column (str): Name of the column in the input CSV
             that contains incorrect queries.
-        target_column_index (int): Index of the column in the input CSV
+        target_column (str): Name of the column in the input CSV
             that contains the target queries for reformulation. 
         batch_size (int): batch size. It is defaulted to 10000. 
     Returns: 

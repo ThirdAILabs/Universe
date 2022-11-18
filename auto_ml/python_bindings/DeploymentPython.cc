@@ -225,7 +225,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 }
 
 void createModelPipeline(py::module_& models_submodule) {
-  py::class_<ModelPipeline>(models_submodule, "Pipeline")
+  py::class_<ModelPipeline, std::shared_ptr<ModelPipeline>>(models_submodule,
+                                                            "Pipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_CONFIG,
@@ -272,15 +273,20 @@ void createModelPipeline(py::module_& models_submodule) {
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
 }
 
+// These need to be here instead of inside UDTFactory because otherwise I was
+// getting weird linking errors
+static uint8_t const UDT_GENERATOR_IDENTIFIER = 0;
+static uint8_t const UDT_CLASSIFIER_IDENTIFIER = 1;
+
 class UDTFactory {
  public:
   static bolt::QueryCandidateGenerator buildUDTGeneratorWrapper(
-      py::object& obj, const uint32_t& source_column_index,
-      const uint32_t& target_column_index, const std::string& dataset_size) {
+      py::object& obj, const std::string& source_column,
+      const std::string& target_column, const std::string& dataset_size) {
     (void)obj;
     return bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
-        /* source_column_index = */ source_column_index,
-        /* target_column_index = */ target_column_index,
+        /* source_column_name = */ source_column,
+        /* target_column_name = */ target_column,
         /* dataset_size = */ dataset_size);
   }
 
@@ -304,18 +310,40 @@ class UDTFactory {
         /* options = */ options);
   }
 
-  static py::object load(const std::string& filename,
-                         const std::string& model_type) {
-    auto type = thirdai::utils::lower(model_type);
-    if (type == "generator") {
-      return py::cast(bolt::QueryCandidateGenerator::load(filename));
+  static void save_classifier(const UniversalDeepTransformer& classifier,
+                              const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    filestream.write(reinterpret_cast<const char*>(&UDT_CLASSIFIER_IDENTIFIER),
+                     1);
+    classifier.save_stream(filestream);
+  }
+
+  static void save_generator(const bolt::QueryCandidateGenerator& generator,
+                             const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    filestream.write(reinterpret_cast<const char*>(&UDT_GENERATOR_IDENTIFIER),
+                     1);
+    generator.save_stream(filestream);
+  }
+
+  static py::object load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    uint8_t first_byte;
+    filestream.read(reinterpret_cast<char*>(&first_byte), 1);
+
+    if (first_byte == UDT_GENERATOR_IDENTIFIER) {
+      return py::cast(bolt::QueryCandidateGenerator::load_stream(filestream));
     }
-    if (type == "classifier") {
-      return py::cast(UniversalDeepTransformer::load(filename));
+
+    if (first_byte == UDT_CLASSIFIER_IDENTIFIER) {
+      return py::cast(UniversalDeepTransformer::load_stream(filestream));
     }
+
     throw std::invalid_argument(
-        "Invalid Model Type: Supported Models include generator "
-        "and classifier");
+        "Found an invalid header byte in the saved file");
   }
 };
 
@@ -342,11 +370,10 @@ void createUDTFactory(py::module_& bolt_submodule) {
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
            docs::UDT_INIT, bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
-           py::arg("source_column_index"), py::arg("target_column_index"),
+           py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
 
       .def_static("load", &UDTFactory::load, py::arg("filename"),
-                  py::arg("model_type"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
 
@@ -361,7 +388,7 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("delimiter") = ',', docs::ORACLE_CONFIG_INIT,
            bolt::python::OutputRedirect());
 
-  py::class_<UniversalDeepTransformer,
+  py::class_<UniversalDeepTransformer, ModelPipeline,
              std::shared_ptr<UniversalDeepTransformer>>(models_submodule,
                                                         "UDTClassifier")
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
@@ -372,17 +399,36 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
            docs::UDT_INIT, bolt::python::OutputRedirect())
-      .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
+      // Currently these two train methods are not exposed directly in python.
+      // This will be fixed when we move to the new dataset pipeline and add a
+      // proper UDT python wrapper.
+      // TODO(Josh): Add a proper UDT python wrapper.
+      .def("train_with_file", &UniversalDeepTransformer::trainOnFile,
+           py::arg("filename"),
            py::arg("train_config") = bolt::TrainConfig::makeConfig(
                /* learning_rate= */ 0.001, /* epochs= */ 3),
            py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN,
+           py::arg("max_in_memory_batches") = std::nullopt,
+           bolt::python::OutputRedirect())
+      .def("train_with_loader", &UniversalDeepTransformer::trainOnDataLoader,
+           py::arg("data_source"),
+           py::arg("train_config") = bolt::TrainConfig::makeConfig(
+               /* learning_rate= */ 0.001, /* epochs= */ 3),
+           py::arg("max_in_memory_batches") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
+      // Currently these two evaluate methods are not exposed directly in
+      // python. This will be fixed when we move to the new dataset pipeline and
+      // add a proper UDT python wrapper.
+      // TODO(Josh): Add a proper UDT python wrapper.
+      .def("evaluate_with_file",
+           &evaluateOnFileWrapper<UniversalDeepTransformer>,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           docs::UDT_EVALUATE, bolt::python::OutputRedirect())
+           bolt::python::OutputRedirect())
+      .def("evaluate_with_loader", &evaluateOnDataLoaderWrapper,
+           py::arg("data_source"), py::arg("eval_config") = std::nullopt,
+           bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            docs::UDT_PREDICT)
@@ -409,17 +455,21 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def("explain", &UniversalDeepTransformer::explain<MapInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
            docs::UDT_EXPLAIN)
-      .def("save", &UniversalDeepTransformer::save, py::arg("filename"),
-           docs::UDT_SAVE)
-      .def_static("load", &UniversalDeepTransformer::load, py::arg("filename"),
-                  docs::UDT_LOAD);
+      .def_property_readonly("default_train_batch_size",
+                             &UniversalDeepTransformer::defaultBatchSize)
+      .def_property_readonly_static("default_evaluate_batch_size",
+                                    [](const py::object& /* self */) {
+                                      return DEFAULT_EVALUATE_BATCH_SIZE;
+                                    })
+      .def("save", &UDTFactory::save_classifier, py::arg("filename"),
+           docs::UDT_SAVE);
 
   py::class_<bolt::QueryCandidateGenerator,
              std::shared_ptr<bolt::QueryCandidateGenerator>>(models_submodule,
                                                              "UDTGenerator")
       .def(py::init(
                &bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
-           py::arg("source_column_index"), py::arg("target_column_index"),
+           py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
       .def("train", &bolt::QueryCandidateGenerator::buildFlashIndex,
            py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
@@ -435,9 +485,8 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def("predict_batch", &bolt::QueryCandidateGenerator::queryFromList,
            py::arg("queries"), py::arg("top_k"),
            docs::UDT_GENERATOR_PREDICT_BATCH)
-      .def("save", &bolt::QueryCandidateGenerator::save, py::arg("filename"))
-      .def_static("load", &bolt::QueryCandidateGenerator::load,
-                  py::arg("filename"));
+      .def("save", &UDTFactory::save_generator, py::arg("filename"),
+           docs::UDT_GENERATOR_SAVE);
 }
 
 template <typename T>

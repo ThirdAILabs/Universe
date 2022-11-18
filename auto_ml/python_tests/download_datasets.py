@@ -42,7 +42,8 @@ def download_census_income():
             # Write header
             file.write(",".join(COLUMN_NAMES) + "\n")
             # Convert ", " delimiters to ",".
-            file.writelines([line.replace(", ", ",") for line in data[1:]])
+            lines = [line.replace(", ", ",") for line in data[1:]]
+            file.writelines([line for line in lines if line.strip() != ""])
 
     if not os.path.exists(TEST_FILE):
         os.system(
@@ -57,9 +58,8 @@ def download_census_income():
             # Convert ", " delimiters to ",".
             # Additionally, for some reason each of the labels end with a "." in the test set
             # loop through data[1:] since the first line is bogus
-            file.writelines(
-                [line.replace(".", "").replace(", ", ",") for line in data[1:]]
-            )
+            lines = [line.replace(".", "").replace(", ", ",") for line in data[1:]]
+            file.writelines([line for line in lines if line.strip() != ""])
 
     inference_samples = []
     with open(TEST_FILE, "r") as test_file:

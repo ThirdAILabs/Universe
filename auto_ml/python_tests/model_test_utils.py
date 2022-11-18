@@ -59,14 +59,25 @@ def compute_predict_batch_accuracy(
 
 
 def check_saved_and_retrained_accuarcy(
-    model, train_filename, test_filename, inference_samples, use_class_name, accuracy
+    model,
+    train_filename,
+    test_filename,
+    inference_samples,
+    use_class_name,
+    accuracy,
+    model_type="UDT",
 ):
     SAVE_FILE = "./saved_model_file.bolt"
 
     model.save(SAVE_FILE)
-    loaded_model = bolt.UniversalDeepTransformer.load(
-        SAVE_FILE, model_type="classifier"
-    )
+    if model_type == "UDT":
+        loaded_model = bolt.UniversalDeepTransformer.load(SAVE_FILE)
+    elif model_type == "Pipeline":
+        loaded_model = bolt.models.Pipeline.load(SAVE_FILE)
+    else:
+        raise ValueError(
+            "Input model type must be one of UDT or Pipeline, but found " + model_type
+        )
 
     acc = compute_evaluate_accuracy(
         model, test_filename, inference_samples, use_class_name
@@ -83,3 +94,27 @@ def check_saved_and_retrained_accuarcy(
     os.remove(SAVE_FILE)
 
     assert acc >= accuracy
+
+
+def get_udt_census_income_model():
+    return bolt.UniversalDeepTransformer(
+        data_types={
+            "age": bolt.types.numerical(range=(17, 90)),
+            "workclass": bolt.types.categorical(),
+            "fnlwgt": bolt.types.numerical(range=(12285, 1484705)),
+            "education": bolt.types.categorical(),
+            "education-num": bolt.types.categorical(),
+            "marital-status": bolt.types.categorical(),
+            "occupation": bolt.types.categorical(),
+            "relationship": bolt.types.categorical(),
+            "race": bolt.types.categorical(),
+            "sex": bolt.types.categorical(),
+            "capital-gain": bolt.types.numerical(range=(0, 99999)),
+            "capital-loss": bolt.types.numerical(range=(0, 4356)),
+            "hours-per-week": bolt.types.numerical(range=(1, 99)),
+            "native-country": bolt.types.categorical(),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=2,
+    )

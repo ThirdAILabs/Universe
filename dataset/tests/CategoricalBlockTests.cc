@@ -182,15 +182,17 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
 
 TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
   std::vector<BlockPtr> blocks = {RegressionCategoricalBlock::make(
-      /* col= */ 0, /* min= */ 1.0, /* max= */ 11.0, /* num_bins= */ 20,
+      /* col= */ 0,
+      BinningStrategy::make(/* min= */ 1.0, /* max= */ 11.0,
+                            /* num_bins= */ 20),
       /* correct_label_radius= */ 1, /* labels_sum_to_one= */ false)};
 
   GenericBatchProcessor batch_processor(
       /* input_blocks= */ {}, /* label_blocks= */ blocks,
       /* has_header= */ false, /* delimiter= */ ',');
 
-  std::vector<std::string> rows = {"3.7", "2.8",  "9.2",    "5.9",
-                                   "1.3", "10.8", {"12.1"}, {"-3.2"}};
+  std::vector<std::string> rows = {"3.7", "2.8",  "9.2",  "5.9",
+                                   "1.3", "10.8", "12.1", "-3.2"};
 
   auto [_, labels] = batch_processor.createBatch(rows);
 

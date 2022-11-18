@@ -1,7 +1,7 @@
 #include "StringHash.h"
 #include <hashing/src/MurmurHash.h>
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
 void StringHash::apply(ColumnMap& columns) {
   auto column = columns.getStringColumn(_input_column_name);
@@ -13,7 +13,7 @@ void StringHash::apply(ColumnMap& columns) {
     hashed_values[i] = hash((*column)[i]);
   }
 
-  auto output_column = std::make_shared<VectorSparseValueColumn>(
+  auto output_column = std::make_shared<columns::CppTokenColumn>(
       std::move(hashed_values), _output_range);
 
   columns.setColumn(_output_column_name, output_column);
@@ -27,4 +27,4 @@ uint32_t StringHash::hash(const std::string& str) const {
   return hash;
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data

@@ -137,6 +137,7 @@ def test_model_pipeline_text_classification_save_load(
         inference_samples,
         use_class_name=False,
         accuracy=ACCURACY_THRESHOLD,
+        model_type="Pipeline",
     )
 
 

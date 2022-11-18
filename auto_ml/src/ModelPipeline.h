@@ -173,6 +173,10 @@ class ModelPipeline {
                                      sample);
   }
 
+  uint32_t defaultBatchSize() const {
+    return _train_eval_config.defaultBatchSize();
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -180,11 +184,11 @@ class ModelPipeline {
     oarchive(*this);
   }
 
-  static std::unique_ptr<ModelPipeline> load(const std::string& filename) {
+  static std::shared_ptr<ModelPipeline> load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<ModelPipeline> deserialize_into(new ModelPipeline());
+    std::shared_ptr<ModelPipeline> deserialize_into(new ModelPipeline());
     iarchive(*deserialize_into);
 
     return deserialize_into;

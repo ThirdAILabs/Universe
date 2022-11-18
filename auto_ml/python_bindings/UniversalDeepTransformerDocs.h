@@ -125,9 +125,9 @@ const char* const UDT_GENERATOR_INIT = R"pbdoc(
 UniversalDeepTransformer (UDT) Constructor. 
 
 Args:
-    target_column_index (int): Index specifying the target queries in the input dataset. 
+    target_column (str): Column name specifying the target queries in the input dataset. 
         Queries in this column are the target that the UDT model learns to predict. 
-    source_column_index (int): Index specifying the source queries in the input dataset. 
+    source_column (str): Column name specifying the source queries in the input dataset. 
         The UDT model uses is trained based on these queries. 
     dataset_size (str): The size of the input dataset. This size factor informs what
         UDT model to create. 
@@ -135,7 +135,7 @@ Args:
         The dataset size can be one of the following:
         - small
         - medium
-        -large
+        - large
 
 Example:
     >>> # Suppose we have an input CSV dataset consisting of grammatically or syntactically
@@ -143,8 +143,8 @@ Example:
     >>> # has a target correct query for each incorrect query. We can initialize a UDT model
     >>> # for query reformulation as follows:
     >>> model = bolt.UniversalDeepTransformer(
-            target_column_index=0, 
-            source_column_index=1,
+            target_column="queries_for_prediction", 
+            source_column="incorrect_queries",
             dataset_size="medium"
         )
 )pbdoc";
@@ -172,40 +172,6 @@ Note:
         other machine learning tasks. 
 )pbdoc";
 
-const char* const UDT_TRAIN = R"pbdoc(
-Trains a UniversalDeepTransformer (UDT) on a given dataset using a file on disk.
-
-Args:
-    filename (str): Path to the dataset file.
-    train_config (bolt.TrainConfig): The training config specifies the number
-        of epochs and learning_rate, and optionally allows for specification of a
-        validation dataset, metrics, callbacks, and how frequently to log metrics 
-        during training. 
-    batch_size (Option[int]): This is an optional parameter indicating which batch
-        size to use for training. If not specified, the batch size will be autotuned.
-    max_in_memory_batches (Option[int]): The maximum number of batches to load in
-        memory at a given time. If this is specified then the dataset will be processed
-        in a streaming fashion.
-
-Returns:
-    None
-
-Examples:
-    >>> train_config = bolt.TrainConfig(
-            epochs=5, learning_rate=0.01
-        ).with_metrics(["mean_squared_error"])
-    >>> model.train(
-            filename="./train_file", train_config=train_config , max_in_memory_batches=12
-        )
-
-Notes:
-    - If temporal tracking relationships are provided, UDT can make better 
-      predictions by taking temporal context into account. For example, UDT may 
-      keep track of the last few movies that a user has watched to better 
-      recommend the next movie. `model.train()` automatically updates UDT's 
-      temporal context.
-)pbdoc";
-
 const char* const UDT_CLASS_NAME = R"pbdoc(
 Returns the target class name associated with an output neuron ID.
 
@@ -225,37 +191,6 @@ Example:
     >>> top_recommendation = np.argmax(activations)
     >>> model.class_name(top_recommendation)
     "Die Hard"
-)pbdoc";
-
-const char* const UDT_EVALUATE = R"pbdoc(
-Evaluates the UniversalDeepTransformer (UDT) on the given dataset and returns a 
-numpy array of the activations.
-
-Args:
-    filename (str): Path to the dataset file.
-    eval_config (Option[bolt.EvalConfig]): The predict config is optional.
-        It specifies metrics to compute and whether to use sparse
-        inference.
-
-Returns:
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
-    Returns a numpy array of the activations if the output is dense, or a tuple 
-    of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (dataset_length, num_nonzeros_in_output). When the 
-    `consecutive_integer_ids` argument of target column's categorical ColumnType
-    object is set to False (as it is by default), UDT creates an internal 
-    mapping between target class names and neuron ids. You can map neuron ids back to
-    target class names by calling the `class_names()` method.
-
-Examples:
-    >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
-    >>> activations = model.evaluate(filename="./test_file", eval_config=eval_config)
-
-Notes: 
-    - If temporal tracking relationships are provided, UDT can make better predictions 
-      by taking temporal context into account. For example, UDT may keep track of 
-      the last few movies that a user has watched to better recommend the next movie.
-      `model.evaluate()` automatically updates UDT's temporal context.
 )pbdoc";
 
 const char* const UDT_GENERATOR_EVALUATE = R"pbdoc(
@@ -689,45 +624,20 @@ Example:
     >>> model.save("udt_savefile.bolt")
 )pbdoc";
 
-const char* const UDT_LOAD = R"pbdoc(
-Loads a serialized instance of UniversalDeepTransformer (UDT) from a file on 
-disk. The loaded UDT includes the temporal context from before serialization.
-
-Args:
-    filename (str): The file on disk to load the instance of UDT from.
-
-Returns:
-    UniversalDeepTransformer: 
-    The loaded instance of UDT.
-
-Example:
-    >>> model = bolt.UniversalDeepTransformer(...)
-    >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
-)pbdoc";
-
 const char* const UDT_CLASSIFIER_AND_GENERATOR_LOAD = R"pbdoc(
 Loads a serialized instance of a UniversalDeepTransformer (UDT) model from a 
 file on disk. 
 
 Args:
     filename (str): The file on disk from where to load an instance of UDT.
-    model_type (str): Type of UDT model to load from serialized file. Options
-        include "udt_classifier" and "udt_generator"
+
 Returns:
     UniversalDeepTransformer:
     The loaded instance of UDT
 
-Note:
-    - If mode_type is set to "udt_generator", the underlying assumption will
-    be that the pre-serialized model was query reformulation specific. 
-    Otherwise, attempting to load the incorrect model will throw an error.
-
 Example:
     >>> model = bolt.UniversalDeepTransformer(...)
-    >>> model = bolt.UniversalDeepTransformer.load(
-            "udt_savefile.bolt", 
-            model_type="udt_classifier"
-        )
+    >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
 )pbdoc";
 
 }  // namespace thirdai::automl::deployment::python::docs
