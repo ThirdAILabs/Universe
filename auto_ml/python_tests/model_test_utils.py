@@ -59,14 +59,25 @@ def compute_predict_batch_accuracy(
 
 
 def check_saved_and_retrained_accuarcy(
-    model, train_filename, test_filename, inference_samples, use_class_name, accuracy
+    model,
+    train_filename,
+    test_filename,
+    inference_samples,
+    use_class_name,
+    accuracy,
+    model_type="UDT",
 ):
     SAVE_FILE = "./saved_model_file.bolt"
 
     model.save(SAVE_FILE)
-    loaded_model = bolt.UniversalDeepTransformer.load(
-        SAVE_FILE, model_type="classifier"
-    )
+    if model_type == "UDT":
+        loaded_model = bolt.UniversalDeepTransformer.load(SAVE_FILE)
+    elif model_type == "Pipeline":
+        loaded_model = bolt.models.Pipeline.load(SAVE_FILE)
+    else:
+        raise ValueError(
+            "Input model type must be one of UDT or Pipeline, but found " + model_type
+        )
 
     acc = compute_evaluate_accuracy(
         model, test_filename, inference_samples, use_class_name

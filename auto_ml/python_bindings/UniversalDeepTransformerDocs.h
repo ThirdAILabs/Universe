@@ -689,45 +689,20 @@ Example:
     >>> model.save("udt_savefile.bolt")
 )pbdoc";
 
-const char* const UDT_LOAD = R"pbdoc(
-Loads a serialized instance of UniversalDeepTransformer (UDT) from a file on 
-disk. The loaded UDT includes the temporal context from before serialization.
-
-Args:
-    filename (str): The file on disk to load the instance of UDT from.
-
-Returns:
-    UniversalDeepTransformer: 
-    The loaded instance of UDT.
-
-Example:
-    >>> model = bolt.UniversalDeepTransformer(...)
-    >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
-)pbdoc";
-
 const char* const UDT_CLASSIFIER_AND_GENERATOR_LOAD = R"pbdoc(
 Loads a serialized instance of a UniversalDeepTransformer (UDT) model from a 
 file on disk. 
 
 Args:
     filename (str): The file on disk from where to load an instance of UDT.
-    model_type (str): Type of UDT model to load from serialized file. Options
-        include "udt_classifier" and "udt_generator"
+
 Returns:
     UniversalDeepTransformer:
     The loaded instance of UDT
 
-Note:
-    - If mode_type is set to "udt_generator", the underlying assumption will
-    be that the pre-serialized model was query reformulation specific. 
-    Otherwise, attempting to load the incorrect model will throw an error.
-
 Example:
     >>> model = bolt.UniversalDeepTransformer(...)
-    >>> model = bolt.UniversalDeepTransformer.load(
-            "udt_savefile.bolt", 
-            model_type="udt_classifier"
-        )
+    >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
 )pbdoc";
 
 }  // namespace thirdai::automl::deployment::python::docs

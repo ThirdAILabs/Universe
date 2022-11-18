@@ -164,9 +164,7 @@ def test_udt_generator_load_and_save(prepared_datasets):
 
     trained_model.save(filename=MODEL_PATH)
 
-    deserialized_model = bolt.UniversalDeepTransformer.load(
-        filename=MODEL_PATH, model_type="generator"
-    )
+    deserialized_model = bolt.UniversalDeepTransformer.load(filename=MODEL_PATH)
     model_eval_outputs = trained_model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
     deserialized_model_outputs = deserialized_model.evaluate(
         filename=TRAIN_FILE_PATH, top_k=5
