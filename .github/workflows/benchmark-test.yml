@@ -24,10 +24,12 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
-
       - name: Open Permissions
         run: sudo chmod -R 777 ${{ github.workspace }}
-        
+
+      - name: Delete Existing Copy of Repository
+        run: sudo rm -rf ${{ github.workspace }}
+
       - uses: actions/checkout@v2
         with:           
           submodules: 'recursive'
