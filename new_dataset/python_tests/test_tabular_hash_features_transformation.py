@@ -1,9 +1,9 @@
 import pytest
 from dataset_utils import (
-    get_str_col,
+    get_random_str_column,
     sparse_bolt_dataset_to_numpy,
-    verify_pairgrams,
-    verify_unigrams,
+    verify_pairgrams_distribution,
+    verify_unigrams_distribution,
 )
 from thirdai import data
 
@@ -16,7 +16,7 @@ NUM_WORDS = 5
 
 def create_and_tabular_hash_random_dataset(use_pairgrams):
     num_cols = NUM_WORDS
-    string_columns = [get_str_col(NUM_ROWS) for _ in range(num_cols)]
+    string_columns = [get_random_str_column(NUM_ROWS) for _ in range(num_cols)]
 
     columns = data.ColumnMap({f"column{i}": string_columns[i] for i in range(num_cols)})
 
@@ -47,13 +47,13 @@ def create_and_tabular_hash_random_dataset(use_pairgrams):
 
 def test_cross_column_pairgrams():
     pairgram_dataset = sparse_bolt_dataset_to_numpy(
-        tabular_hash_feature_dataset(use_pairgrams=True)
+        create_and_tabular_hash_random_dataset(use_pairgrams=True)
     )
-    verify_pairgrams(pairgram_dataset, OUTPUT_RANGE, NUM_WORDS)
+    verify_pairgrams_distribution(pairgram_dataset, OUTPUT_RANGE, NUM_WORDS)
 
 
 def test_cross_column_unigrams():
     unigram_dataset = sparse_bolt_dataset_to_numpy(
-        tabular_hash_feature_dataset(use_pairgrams=False)
+        create_and_tabular_hash_random_dataset(use_pairgrams=False)
     )
-    verify_unigrams(unigram_dataset, OUTPUT_RANGE, NUM_WORDS)
+    verify_unigrams_distribution(unigram_dataset, OUTPUT_RANGE, NUM_WORDS)
