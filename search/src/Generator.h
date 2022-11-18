@@ -569,8 +569,8 @@ class QueryCandidateGenerator {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_initialized_batch_processors, _query_generator_config,
-            _flash_index, _inference_batch_processor,
-            _labels_to_queries_map, _queries_to_labels_map);
+            _flash_index, _inference_batch_processor, _labels_to_queries_map,
+            _queries_to_labels_map);
   }
 };
 
