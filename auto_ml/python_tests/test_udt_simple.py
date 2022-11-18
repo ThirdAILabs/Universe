@@ -131,6 +131,38 @@ def compare_explanations(explanations_1, explanations_2, assert_mode):
     assert assert_equal == all_equal
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception leads to an access violation on windows.",
+)
+def test_temporal_not_in_data_type_throws():
+    with pytest.raises(
+        ValueError,
+        match=r"The tracking key 'user' is not found in data_types.",
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={"date": bolt.types.date(), "item": bolt.types.categorical()},
+            temporal_tracking_relationships={"user": ["item"]},
+            target="item",
+            n_target_classes=3,
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=r"The tracked column 'other_item' is not found in data_types.",
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                "date": bolt.types.date(),
+                "user": bolt.types.categorical(),
+                "item": bolt.types.categorical(),
+            },
+            temporal_tracking_relationships={"user": ["other_item"]},
+            target="item",
+            n_target_classes=3,
+        )
+
+
 def test_save_load():
     save_file = "savefile.bolt"
     model = make_simple_trained_model(integer_label=False)
@@ -206,10 +238,6 @@ def test_different_explanation_target_returns_different_results():
     compare_explanations(explain_target_1, explain_target_2, assert_mode="not_equal")
 
 
-@pytest.mark.skipif(
-    platform.system() == "Windows",
-    reason="Throwing an exception leads to an access violation on windows.",
-)
 def test_explanations_target_label_format():
     model = make_simple_trained_model(integer_label=False)
     # Call this method to make sure it does not throw an error
