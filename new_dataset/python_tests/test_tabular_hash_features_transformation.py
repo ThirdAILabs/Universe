@@ -14,7 +14,7 @@ OUTPUT_RANGE = 1000
 NUM_WORDS = 5
 
 
-def tabular_hash_feature_dataset(use_pairgrams):
+def create_and_tabular_hash_random_dataset(use_pairgrams):
     num_cols = NUM_WORDS
     string_columns = [get_str_col(NUM_ROWS) for _ in range(num_cols)]
 
