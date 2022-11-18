@@ -175,8 +175,49 @@ class CategoricalCrossEntropy final : public Metric {
         }
       }
     } else {
-      std::cerr << "Not implemented yet" << std::endl;
-      std::abort();
+      // output is sparse.
+      if (labels.isDense()) {
+        // (Sparse Output, Dense Label)
+        for (uint32_t i = 0; i < labels.len; i++) {
+          const uint32_t* output_start = output.active_neurons;
+          const uint32_t* output_end = output.active_neurons + output.len;
+
+          // Find the position of the active neuron if it exists in the labels.
+          const uint32_t* output_query = std::find(output_start, output_end, i);
+
+          if (output_query != output_end) {
+            // In this case, we have found the output. Other output activations
+            // are 0, so we can ignore (0*log(whatever)).
+            //
+            // Compute output_index to lookup the value from output
+            // sparse-vector.
+            size_t output_index = std::distance(output_start, output_query);
+
+            sample_loss += labels.activations[i] *
+                           std::log(output.activations[output_index] + EPS);
+          }
+        }
+      } else {
+        for (uint32_t i = 0; i < output.len; i++) {
+          const uint32_t* label_start = labels.active_neurons;
+          const uint32_t* label_end = labels.active_neurons + labels.len;
+
+          // Find the position of the active neuron if it exists in the labels.
+          const uint32_t* label_query =
+              std::find(label_start, label_end, output.active_neurons[i]);
+          if (label_query != label_end) {
+            // In this case, we have found the labels. Other label activations
+            // are 0, so we can ignore (0*log(whatever)).
+            //
+            // Compute label_index to lookup the value from labels
+            // sparse-vector.
+            size_t label_index = std::distance(label_start, label_query);
+
+            sample_loss += labels.activations[label_index] *
+                           std::log(output.activations[i] + EPS);
+          }
+        }
+      }
     }
 
     MetricUtilities::incrementAtomicFloat(_sum, -1 * sample_loss);
