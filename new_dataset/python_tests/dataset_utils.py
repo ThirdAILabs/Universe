@@ -74,7 +74,7 @@ def verify_pairgrams_distribution(pairgram_dataset, output_range, num_unigrams):
 
 
 # Given a sparse numpy dataset of featurized unigrams (not deduplicated), count
-# to make sure the number of unigrams for each index across the whole dataset
+# to make sure the number of unigrams for each possible unigram value across the whole dataset
 # is close to the expected number.
 def verify_unigrams(pairgram_dataset, output_range, expected_unigrams_per_row):
     indices, values = pairgram_dataset
