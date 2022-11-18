@@ -37,7 +37,7 @@ def modify_udt_classifier():
         batch_size: Optional[int] = None,
         max_in_memory_batches: Optional[int] = None,
     ):
-        if batch_size == None:
+        if batch_size is None:
             batch_size = self.default_train_batch_size
 
         if filename.startswith("s3://"):

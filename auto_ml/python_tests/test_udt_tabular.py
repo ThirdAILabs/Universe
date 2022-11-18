@@ -5,8 +5,9 @@ from model_test_utils import (
     compute_evaluate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
-    train_udt_census_income,
+    get_udt_census_income_model,
 )
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -16,7 +17,12 @@ ACCURACY_THRESHOLD = 0.8
 @pytest.fixture(scope="module")
 def train_udt_tabular(download_census_income):
     train_filename, _, _ = download_census_income
-    return train_udt_census_income(train_filename)
+    model = get_udt_census_income_model()
+
+    train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
+    model.train(train_filename, train_config)
+
+    return model
 
 
 def test_utd_tabular_accuracy(train_udt_tabular, download_census_income):
