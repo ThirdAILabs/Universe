@@ -27,7 +27,7 @@ jobs:
 
       - name: Open Permissions
         run: sudo chmod -R 777 ${{ github.workspace }}
-
+        
       - uses: actions/checkout@v2
         with:           
           submodules: 'recursive'

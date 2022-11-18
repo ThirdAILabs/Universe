@@ -1,4 +1,4 @@
-name: Upload to Test Pypi
+name: Build Wheels & PyPi Upload
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
@@ -99,7 +99,7 @@ jobs:
           path: ./wheelhouse/*.whl
 
 
-  upload_all:
+  upload_to_test_pypi:
     name: Upload to test pypi
     needs: [build_wheels]
     runs-on: ubuntu-latest
@@ -118,3 +118,22 @@ jobs:
         user: __token__
         password: ${{ secrets.TEST_PYPI_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
+
+  upload_to_real_pypi:
+    name: Upload to real pypi
+    needs: [upload_to_test_pypi]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+
+    steps:
+    - uses: actions/setup-python@v2
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: dist
+
+    - uses: pypa/gh-action-pypi-publish@v1.5.0
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_TOKEN }}

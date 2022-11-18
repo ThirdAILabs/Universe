@@ -35,3 +35,18 @@ def test_numerical_datatype_to_string():
         str(types.numerical(range=(-10, 50), granularity="w"))
         == '{"type": "numerical", "range": [-10, 50], "granularity": "w"}'
     )
+
+
+# If a list of datatypes to string works, then so will a map. We test a list
+# because the order of the items in the str() representation is deterministic.
+def test_datatype_list_to_string():
+    test_list = [
+        types.numerical(range=(0, 1)),
+        types.text(),
+        types.categorical(),
+        types.date(),
+    ]
+    assert (
+        str(test_list)
+        == '[{"type": "numerical", "range": [0, 1], "granularity": "m"}, {"type": "text"}, {"type": "categorical"}, {"type": "date"}]'
+    )
