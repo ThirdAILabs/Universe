@@ -46,11 +46,11 @@ def random_sentence(num_words):
     return " ".join(random_word() for _ in range(num_words))
 
 
-def get_str_col(col_length):
+def get_random_str_column(col_length):
     return data.columns.StringColumn([random_word() for _ in range(col_length)])
 
 
-def get_sentence_str_column(col_length, num_words):
+def get_random_sentence_str_column(col_length, num_words):
     return data.columns.StringColumn(
         [random_sentence(num_words) for _ in range(col_length)]
     )
