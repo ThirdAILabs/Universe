@@ -3,10 +3,8 @@ from thirdai import bolt
 
 from utils import gen_numpy_training_data, get_simple_concat_model
 
-pytestmark = [pytest.mark.unit]
 
-
-@pytest.mark.release
+@pytest.mark.unit
 def test_switch_dense_to_sparse():
     """
     Tests that we can do both training and inference when switching from a
@@ -58,7 +56,7 @@ def test_switch_dense_to_sparse():
     assert len(sparse_metrics) == 3
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_decrease_and_increase_sparsity():
     """
     Tests that changing the sparsity of an already sparse node(layer) changes the

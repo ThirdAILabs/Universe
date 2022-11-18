@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <stdexcept>
 #include <utility>
 
 namespace thirdai::bolt {
@@ -77,13 +78,28 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
     ratio_sum += std::abs(gradient_ratio);
   }
 
+  if (ratio_sum == 0) {
+    throw std::invalid_argument(
+        "The model has not learned enough to give explanations. Try "
+        "decreasing the learning rate.");
+  }
+
   std::vector<dataset::Explanation> explanations;
 
+  // We rebuild the vector to get the index to segment feature map.
+  // TODO(Geordie): Reuse information from the forward pass.
+  auto index_to_segment_feature =
+      generic_batch_processor->getIndexToSegmentFeatureMap(input_row);
+
   for (const auto& [ratio, index] : gradients_ratio_with_indices) {
-    dataset::Explanation explanation_for_index =
-        generic_batch_processor->explainIndex(index, input_row);
-    explanation_for_index.percentage_significance = (ratio / ratio_sum) * 100;
-    explanations.push_back(explanation_for_index);
+    if (ratio) {
+      dataset::Explanation explanation_for_index =
+          generic_batch_processor->explainFeature(
+              input_row,
+              /* segment_feature= */ index_to_segment_feature.at(index));
+      explanation_for_index.percentage_significance = (ratio / ratio_sum) * 100;
+      explanations.push_back(explanation_for_index);
+    }
   }
 
   return explanations;

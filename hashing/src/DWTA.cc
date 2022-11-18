@@ -107,6 +107,18 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
     uint32_t index = 0;
     for (uint32_t j = 0; j < _hashes_per_table; j++) {
       uint32_t h = hashes[i * _hashes_per_table + j];
+
+      /**
+       * This is to fix a suble bug caused by NaNs. When hashing vector of NaNs
+       * the value of a NaN does not exceed the lowest float value and so the
+       * hashes are never overwritten from 2^32-1. This bit shift clears all but
+       * the lower order log(binsize) bits so that each hash is in the range
+       * [0, binsize) and only has log(binsize) bits. Then when these hashes are
+       * concatenated the output hash index has the correct number of bits for
+       * the output range: num_hashes_per_table * log(binsize).
+       */
+      h = h & (_binsize - 1);
+
       index += h << ((_hashes_per_table - 1 - j) * _log_binsize);
     }
     final_hashes[i] = index;

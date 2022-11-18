@@ -37,6 +37,14 @@ message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
+option(THIRDAI_REPORT_BUILD_STEP_TIMES
+       "Report time using builtin for make/ninja compile-build steps" OFF)
+
+if(THIRDAI_REPORT_BUILD_STEP_TIMES)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CMAKE_COMMAND} -E time")
+endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
+
 # Check if there is a license flag, and only if so add the cryptopp lib We have
 # two different License flags, one for if to build the license files
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license
@@ -148,7 +156,13 @@ set(THIRDAI_COMPILE_OPTIONS
     $<$<CONFIG:RelWithAsan>:-funroll-loops>
     $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
     $<$<CONFIG:RelWithAsan>:-g>
-    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
+    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
+    $<$<CONFIG:CompileAnalysis>:-DNDEBUG>
+    $<$<CONFIG:CompileAnalysis>:-Ofast>
+    $<$<CONFIG:CompileAnalysis>:-fno-finite-math-only>
+    $<$<CONFIG:CompileAnalysis>:-funroll-loops>
+    $<$<CONFIG:CompileAnalysis>:-ftree-vectorize>
+    $<$<CONFIG:CompileAnalysis>:-ftime-trace>)
 
 set(THIRDAI_ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
                                  $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
@@ -169,7 +183,6 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
-include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 
 # Source dependencies
@@ -223,7 +236,6 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 endif()
 
 set(THIRDAI_SOURCES
-    bolt/src/auto_classifiers/AutoClassifierBase.cc
     bolt/src/graph/Graph.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
@@ -273,7 +285,6 @@ pybind11_add_module(
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
-  auto_classifiers/python_bindings/AutoClassifiersPython.cc
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)

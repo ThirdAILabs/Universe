@@ -71,7 +71,7 @@ def test_missing_parameter_throws():
         ValueError,
         match=r"UserSpecifiedParameter 'output_dim' not specified by user but is required to construct ModelPipeline.",
     ):
-        bolt.Pipeline(
+        bolt.models.Pipeline(
             deployment_config=get_config(),
             parameters={"sparsity_level": "sparse", "delimiter": ","},
         )
@@ -81,7 +81,7 @@ def test_wrong_type_parameter_throws():
     with pytest.raises(
         ValueError, match=r"Expected parameter 'output_dim'to be of type int."
     ):
-        bolt.Pipeline(
+        bolt.models.Pipeline(
             deployment_config=get_config(),
             parameters={
                 "output_dim": 4.2,
@@ -96,7 +96,7 @@ def test_missing_option_parameter_throws():
         ValueError,
         match=r"UserSpecifiedParameter 'sparsity_level' not specified by user but is required to construct ModelPipeline.",
     ):
-        bolt.Pipeline(
+        bolt.models.Pipeline(
             deployment_config=get_config(),
             parameters={"output_dim": 100, "delimiter": ","},
         )
@@ -107,7 +107,7 @@ def test_invalid_option_parameter_option():
         ValueError,
         match=r"Invalid option 'sort-of-sparse' for 'sparsity_level'. Supported options are: \[ 'dense' 'sparse' \].",
     ):
-        bolt.Pipeline(
+        bolt.models.Pipeline(
             deployment_config=get_config(),
             parameters={
                 "output_dim": 100,
@@ -120,9 +120,9 @@ def test_invalid_option_parameter_option():
 def test_invalid_parameter_type_throws():
     with pytest.raises(
         ValueError,
-        match=r"Invalid type '<class 'list'>'. Values of parameters dictionary must be bool, int, float, str, OracleConfig, or TemporalContext.",
+        match=r"Invalid type '<class 'list'>'. Values of parameters dictionary must be bool, int, float, str, or UDTConfig.",
     ):
-        bolt.Pipeline(
+        bolt.models.Pipeline(
             deployment_config=get_config(),
             parameters={"output_dim": [], "sparsity_level": "sparse", "delimiter": ","},
         )
@@ -133,7 +133,7 @@ def test_input_mismatch_throws():
         ValueError,
         match=r"Number of inputs in model config does not match number of inputs returned from data loader.",
     ):
-        bolt.Pipeline(
+        bolt.models.Pipeline(
             deployment_config=get_config(add_extra_input=True),
             parameters={
                 "output_dim": 100,
@@ -148,7 +148,7 @@ def test_duplicate_node_name_throws():
         ValueError,
         match=r"Cannot have multiple nodes with the name 'output' in the model config.",
     ):
-        bolt.Pipeline(
+        bolt.models.Pipeline(
             deployment_config=get_config(duplicate_node_name=True),
             parameters={
                 "output_dim": 100,
@@ -163,7 +163,7 @@ def test_missing_predecessor_throws():
         ValueError,
         match=r"Cannot find node with name 'missing_node' in already discovered nodes.",
     ):
-        bolt.Pipeline(
+        bolt.models.Pipeline(
             deployment_config=get_config(missing_predecessor=True),
             parameters={
                 "output_dim": 100,
@@ -178,7 +178,7 @@ def test_invalid_delimiter_throws():
         ValueError,
         match=r"Expected delimiter to be a single character but recieved: ',,'.",
     ):
-        bolt.Pipeline(
+        bolt.models.Pipeline(
             deployment_config=get_config(),
             parameters={
                 "output_dim": 100,
