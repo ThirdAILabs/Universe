@@ -140,6 +140,7 @@ class CategoricalCrossEntropy final : public Metric {
 
   void record(const BoltVector& output, const BoltVector& labels) final {
     float sample_loss = 0;
+    const float EPS = 1e-7;
     if (output.isDense()) {
       if (labels.isDense()) {
         // (Dense Output, Dense Labels)
@@ -149,7 +150,7 @@ class CategoricalCrossEntropy final : public Metric {
         assert(output.len == labels.len);
         for (uint32_t i = 0; i < output.len; i++) {
           sample_loss +=
-              labels.activations[i] * std::log(output.activations[i]);
+              labels.activations[i] * std::log(output.activations[i] + EPS);
         }
       } else {
         // (Dense Output, Sparse Labels)
@@ -169,7 +170,7 @@ class CategoricalCrossEntropy final : public Metric {
             size_t label_index = std::distance(label_start, label_query);
 
             sample_loss += labels.activations[label_index] *
-                           std::log(output.activations[i]);
+                           std::log(output.activations[i] + EPS);
           }
         }
       }
