@@ -189,12 +189,14 @@ TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
       /* input_blocks= */ {}, /* label_blocks= */ blocks,
       /* has_header= */ false, /* delimiter= */ ',');
 
-  std::vector<std::string> rows = {"3.7", "2.8", "9.2", "5.9", "1.3", "10.8"};
+  std::vector<std::string> rows = {"3.7", "2.8",  "9.2",    "5.9",
+                                   "1.3", "10.8", {"12.1"}, {"-3.2"}};
 
   auto [_, labels] = batch_processor.createBatch(rows);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
-      {4, 5, 6}, {2, 3, 4}, {15, 16, 17}, {8, 9, 10}, {0, 1}, {18, 19}};
+      {4, 5, 6}, {2, 3, 4}, {15, 16, 17}, {8, 9, 10},
+      {0, 1},    {18, 19},  {18, 19},     {0, 1}};
 
   verifyExpectedLabels(labels, expected_labels);
 }

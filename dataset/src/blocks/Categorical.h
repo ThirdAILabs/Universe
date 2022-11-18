@@ -255,7 +255,8 @@ using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
  */
 class RegressionCategoricalBlock final : public CategoricalBlock {
  public:
-  // Note: min is inclusive and max is exclusive.
+  // Note: min and max are soft thresholds and values outside the range will be
+  // truncated to within the range.
   RegressionCategoricalBlock(uint32_t col, float min, float max,
                              uint32_t num_bins, uint32_t correct_label_radius,
                              bool labels_sum_to_one)
@@ -291,8 +292,7 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
 
  protected:
   // Bins the float value by subracting the min and dividing by the binsize.
-  // Throws if the value of the column is not a float or if it is outside the
-  // range [_min, _max).
+  // Values outside the range [min, max] are truncated to this range.
   std::exception_ptr encodeCategory(std::string_view category,
                                     SegmentedFeatureVector& vec) final {
     char* end;
@@ -302,12 +302,11 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
           "Missing float data in regression target column."));
     }
 
-    if (value < _min || _max <= value) {
-      return std::make_exception_ptr(std::invalid_argument(
-          "Regression target not in the expected range."));
-    }
+    uint32_t bin = (std::clamp(value, _min, _max) - _min) / _binsize;
 
-    uint32_t bin = (value - _min) / _binsize;
+    // Because we clamp to range [min, max], we could theorically reach the
+    // value of dim since max = dim * binsize + min.
+    bin = std::min(bin, _dim - 1);
 
     // We can't use max(0, bin - _correct_label_radius) becuase of underflow.
     uint32_t label_start =
