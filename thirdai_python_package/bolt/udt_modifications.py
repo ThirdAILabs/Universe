@@ -1,6 +1,7 @@
 from typing import Optional
 from urllib.parse import urlparse
 
+import thirdai
 import thirdai._thirdai.bolt as bolt
 
 from .udt_docs import *

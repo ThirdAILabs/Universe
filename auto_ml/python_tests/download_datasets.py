@@ -41,7 +41,8 @@ def download_census_income():
             # Write header
             file.write(",".join(COLUMN_NAMES) + "\n")
             # Convert ", " delimiters to ",".
-            file.writelines([line.replace(", ", ",") for line in data[1:]])
+            lines = [line.replace(", ", ",") for line in data[1:]]
+            file.writelines([line for line in lines if line.strip() != ""])
 
     if not os.path.exists(TEST_FILE):
         os.system(

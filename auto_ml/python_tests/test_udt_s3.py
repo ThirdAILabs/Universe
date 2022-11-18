@@ -2,13 +2,8 @@ import os
 
 import boto3
 import pytest
-from model_test_utils import (
-    check_saved_and_retrained_accuarcy,
-    compute_evaluate_accuracy,
-    compute_predict_accuracy,
-    compute_predict_batch_accuracy,
-    train_udt_census_income,
-)
+from download_datasets import download_census_income
+from model_test_utils import compute_evaluate_accuracy, train_udt_census_income
 from moto import mock_s3
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -37,19 +32,24 @@ def setup_census_on_s3(
     s3, local_census_file_path, target_census_bucket, target_census_key
 ):
     s3.create_bucket(Bucket=target_census_bucket)
-    with open(local_census_file_path, "rb") as data:
-        s3.upload_fileobj(data, target_census_bucket, target_census_key)
+    s3.upload_file(local_census_file_path, target_census_bucket, target_census_key)
 
 
 @mock_s3
 def test_utd_census_income_s3(download_census_income, s3):
     s3_bucket = "test_bucket"
     s3_key = "path/to/census/data.csv"
-    setup_census_on_s3(s3, download_census_income[0], s3_bucket, s3_key)
+    local_train_file, local_test_file, inference_samples = download_census_income
+    setup_census_on_s3(
+        s3,
+        local_census_file_path=local_train_file,
+        target_census_bucket=s3_bucket,
+        target_census_key=s3_key,
+    )
     s3_path = f"s3://{s3_bucket}/{s3_key}"
-    model = train_udt_census_income()
+    model = train_udt_census_income(s3_path)
 
     acc = compute_evaluate_accuracy(
-        model, test_filename, inference_samples, use_class_name=True
+        model, local_test_file, inference_samples, use_class_name=True
     )
-    assert acc >= ACCURACY_THRESHOLD
+    assert acc >= 0.8
