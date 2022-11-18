@@ -378,9 +378,8 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
                     std::string, uint32_t>(),
            py::arg("hash_function"), py::arg("num_tables"),
            py::arg("hashes_per_table"), py::arg("range"), py::arg("n_grams"),
-           py::arg("reservoir_size") = std::nullopt,
-           py::arg("source_column_name"), py::arg("target_column_name"),
-           py::arg("batch_size") = 10000,
+           py::arg("reservoir_size") = std::nullopt, py::arg("source_column"),
+           py::arg("target_column"), py::arg("batch_size") = 10000,
            R"pbdoc(
     Initializes a QueryCandidateGeneratorConfig object.
 

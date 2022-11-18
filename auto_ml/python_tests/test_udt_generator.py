@@ -20,6 +20,8 @@ RECALL_THRESHOLD = 0.95
 def read_csv_file(file_name: str) -> List[List[str]]:
     with open(file_name, newline="") as file:
         data = list(csv.reader(file))
+
+    # Remove the file header
     data = data[1:]
     return data
 
