@@ -59,7 +59,7 @@ def get_sentence_str_column(col_length, num_words):
 # Given a sparse numpy dataset of featurized pairgrams (not deduplicated), count
 # to make sure the number of pairgrams for each possible pairgram value across the whole dataset
 # is close to the expected number.
-# If there are N unigrams, pairgrams should have (N * (N + 1)) / 2 values.
+# We use the fact that if there are N unigrams per row, there are N * (N + 1)) / 2 pairgrams per row.
 def verify_pairgrams(pairgram_dataset, output_range, num_unigrams):
     indices, values = pairgram_dataset
     hash_counts = [0 for _ in range(output_range)]
