@@ -4,6 +4,7 @@ import zipfile
 
 import pandas as pd
 import pytest
+import datasets
 
 
 @pytest.fixture(scope="session")
@@ -117,3 +118,31 @@ def download_clinc_dataset():
         inference_samples.append(({"text": row["text"]}, row["category"]))
 
     return TRAIN_FILE, TEST_FILE, inference_samples
+
+
+@pytest.fixture(scope="session")
+def download_brazilian_houses_dataset():
+    TRAIN_FILE = "./brazilian_houses_train.csv"
+    TEST_FILE = "./brazilian_houses_test.csv"
+
+    dataset = datasets.load_dataset("inria-soda/tabular-benchmark", data_files="reg_num/Brazilian_houses.csv")
+
+    df = pd.DataFrame(dataset["train"].shuffle())
+    
+    # Split in to train/test, there are about 10,000 rows in entire dataset.
+    train_df = df.iloc[:8000,:]
+    test_df = df.iloc[8000:,:]
+
+    train_df = train_df.drop("Unnamed: 0", axis=1)
+    test_df = test_df.drop("Unnamed: 0", axis=1)
+
+    train_df.to_csv(TRAIN_FILE, index=False)
+    test_df.to_csv(TEST_FILE, index=False)
+
+    for _, row in test_df.iterrows():
+        print(row)
+        print(type(row))
+        break
+    
+
+    return TRAIN_FILE, TEST_FILE
