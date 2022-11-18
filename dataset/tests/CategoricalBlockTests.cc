@@ -189,8 +189,8 @@ TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
       /* input_blocks= */ {}, /* label_blocks= */ blocks,
       /* has_header= */ false, /* delimiter= */ ',');
 
-  std::vector<std::string> rows = {"3.7", "2.8",  "9.2",    "5.9",
-                                   "1.3", "10.8", {"12.1"}, {"-3.2"}};
+  std::vector<std::string> rows = {"3.7", "2.8",  "9.2",  "5.9",
+                                   "1.3", "10.8", "12.1", "-3.2"};
 
   auto [_, labels] = batch_processor.createBatch(rows);
 

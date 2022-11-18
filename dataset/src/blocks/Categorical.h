@@ -291,7 +291,7 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
   }
 
  protected:
-  // Bins the float value by subracting the min and dividing by the binsize.
+  // Bins the float value by subtracting the min and dividing by the binsize.
   // Values outside the range [min, max] are truncated to this range.
   std::exception_ptr encodeCategory(std::string_view category,
                                     SegmentedFeatureVector& vec) final {
@@ -308,7 +308,7 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
     // value of dim since max = dim * binsize + min.
     bin = std::min(bin, _dim - 1);
 
-    // We can't use max(0, bin - _correct_label_radius) becuase of underflow.
+    // We can't use max(0, bin - _correct_label_radius) because of underflow.
     uint32_t label_start =
         bin < _correct_label_radius ? 0 : bin - _correct_label_radius;
     uint32_t label_end = std::min(_dim - 1, bin + _correct_label_radius);
