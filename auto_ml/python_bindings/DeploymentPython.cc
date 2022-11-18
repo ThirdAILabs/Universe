@@ -225,7 +225,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
 }
 
 void createModelPipeline(py::module_& models_submodule) {
-  py::class_<ModelPipeline>(models_submodule, "Pipeline")
+  py::class_<ModelPipeline, std::shared_ptr<ModelPipeline>>(models_submodule,
+                                                            "Pipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_CONFIG,
@@ -387,7 +388,7 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("delimiter") = ',', docs::ORACLE_CONFIG_INIT,
            bolt::python::OutputRedirect());
 
-  py::class_<UniversalDeepTransformer,
+  py::class_<UniversalDeepTransformer, ModelPipeline,
              std::shared_ptr<UniversalDeepTransformer>>(models_submodule,
                                                         "UDTClassifier")
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
@@ -398,17 +399,36 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
            docs::UDT_INIT, bolt::python::OutputRedirect())
-      .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
+      // Currently these two train methods are not exposed directly in python.
+      // This will be fixed when we move to the new dataset pipeline and add a
+      // proper UDT python wrapper.
+      // TODO(Josh): Add a proper UDT python wrapper.
+      .def("train_with_file", &UniversalDeepTransformer::trainOnFile,
+           py::arg("filename"),
            py::arg("train_config") = bolt::TrainConfig::makeConfig(
                /* learning_rate= */ 0.001, /* epochs= */ 3),
            py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN,
+           py::arg("max_in_memory_batches") = std::nullopt,
+           bolt::python::OutputRedirect())
+      .def("train_with_loader", &UniversalDeepTransformer::trainOnDataLoader,
+           py::arg("data_source"),
+           py::arg("train_config") = bolt::TrainConfig::makeConfig(
+               /* learning_rate= */ 0.001, /* epochs= */ 3),
+           py::arg("max_in_memory_batches") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
+      // Currently these two evaluate methods are not exposed directly in
+      // python. This will be fixed when we move to the new dataset pipeline and
+      // add a proper UDT python wrapper.
+      // TODO(Josh): Add a proper UDT python wrapper.
+      .def("evaluate_with_file",
+           &evaluateOnFileWrapper<UniversalDeepTransformer>,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           docs::UDT_EVALUATE, bolt::python::OutputRedirect())
+           bolt::python::OutputRedirect())
+      .def("evaluate_with_loader", &evaluateOnDataLoaderWrapper,
+           py::arg("data_source"), py::arg("eval_config") = std::nullopt,
+           bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            docs::UDT_PREDICT)
@@ -435,6 +455,12 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def("explain", &UniversalDeepTransformer::explain<MapInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
            docs::UDT_EXPLAIN)
+      .def_property_readonly("default_train_batch_size",
+                             &UniversalDeepTransformer::defaultBatchSize)
+      .def_property_readonly_static("default_evaluate_batch_size",
+                                    [](const py::object& /* self */) {
+                                      return DEFAULT_EVALUATE_BATCH_SIZE;
+                                    })
       .def("save", &UDTFactory::save_classifier, py::arg("filename"),
            docs::UDT_SAVE);
 
