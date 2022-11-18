@@ -27,6 +27,8 @@ def read_csv_file(file_name: str) -> List[List[str]]:
 
 
 def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
+    # Add file header since the "train" and "evaluate" methods assume the 
+    # input CSV file has a header. 
     dataframe.columns = ["target_column", "source_column"]
     dataframe.to_csv(file_path, index=False)
 

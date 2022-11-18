@@ -233,21 +233,13 @@ class QueryCandidateGenerator {
    * @param file_name
    */
   void buildFlashIndex(const std::string& file_name) {
-    auto column_number_map =
-        getColumnNumberMap(/* file_name = */ file_name, /* delimiter = */ ',');
-
-    uint32_t source_column_index = column_number_map->at(
-        /* col_name = */ _query_generator_config->sourceColumnName());
-    uint32_t target_column_index = column_number_map->at(
-        /* col_name = */ _query_generator_config->targetColumnName());
-
+    auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
+        /* file_name = */ file_name, /* delimiter = */ ',');
     auto training_batch_processor = constructGenericBatchProcessor(
         /* column_index = */ source_column_index);
-
-    auto data_loader =
-        getDatasetLoader(/* file_name = */ file_name,
-                         /* batch_processor = */ training_batch_processor);
-    auto [data, _] = data_loader->loadInMemory();
+    auto data =
+        loadDatasetInMemory(/* file_name = */ file_name,
+                            /* batch_processor = */ training_batch_processor);
 
     auto labels = getQueryLabels(
         file_name, /* target_column_index = */ target_column_index);
@@ -322,21 +314,13 @@ class QueryCandidateGenerator {
           "Attempting to Evaluate the Generator without Training.");
     }
 
-    auto column_number_map =
-        getColumnNumberMap(/* file_name = */ file_name, /* delimiter = */ ',');
-
-    uint32_t source_column_index = column_number_map->at(
-        /* col_name = */ _query_generator_config->sourceColumnName());
-    uint32_t target_column_index = column_number_map->at(
-        /* col_name = */ _query_generator_config->targetColumnName());
-
+    auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
+        /* file_name = */ file_name, /* delimiter = */ ',');
     auto eval_batch_processor = constructGenericBatchProcessor(
         /* column_index = */ source_column_index);
-
-    auto data_loader =
-        getDatasetLoader(/* file_name = */ file_name,
-                         /* batch_processor = */ eval_batch_processor);
-    auto [data, _] = data_loader->loadInMemory();
+    auto data =
+        loadDatasetInMemory(/* file_name = */ file_name,
+                            /* batch_processor = */ eval_batch_processor);
 
     std::vector<std::vector<std::string>> output_queries;
     for (const auto& batch : *data) {
@@ -522,18 +506,21 @@ class QueryCandidateGenerator {
     return output_vector;
   }
 
-  std::unique_ptr<dataset::StreamingGenericDatasetLoader> getDatasetLoader(
+  std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
       const std::string& file_name,
       const std::shared_ptr<dataset::GenericBatchProcessor>& batch_processor) {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
         file_name, _query_generator_config->batchSize());
 
-    return std::make_unique<dataset::StreamingGenericDatasetLoader>(
+    auto data_loader = std::make_unique<dataset::StreamingGenericDatasetLoader>(
         file_data_loader, batch_processor);
+
+    auto [data, _] = data_loader->loadInMemory();
+    return data;
   }
 
-  ColumnNumberMapPtr getColumnNumberMap(const std::string& file_name,
-                                        char delimiter) {
+  std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(
+      const std::string& file_name, char delimiter) {
     auto file_data_loader = dataset::SimpleFileDataLoader::make(
         /* filename = */ file_name,
         /* target_batch_size = */ _query_generator_config->batchSize());
@@ -543,7 +530,15 @@ class QueryCandidateGenerator {
       throw std::invalid_argument(
           "The Input Dataset File must have a Valid Header with Column Names.");
     }
-    return std::make_shared<ColumnNumberMap>(*file_header, delimiter);
+    auto column_number_map =
+        std::make_shared<ColumnNumberMap>(*file_header, delimiter);
+
+    uint32_t source_column_index =
+        column_number_map->at(_query_generator_config->sourceColumnName());
+    uint32_t target_column_index =
+        column_number_map->at(_query_generator_config->targetColumnName());
+
+    return {source_column_index, target_column_index};
   }
 
   bool _initialized_batch_processors;
