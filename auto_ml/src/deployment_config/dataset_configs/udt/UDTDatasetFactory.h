@@ -61,6 +61,15 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     _input_dim = mock_processor->getInputDim();
     _label_dim = mock_processor->getLabelDim();
+
+    auto target_type = _config->data_types.at(_config->target);
+    if (target_type.isNumerical()) {
+      auto range = target_type.asNumerical().range;
+      uint32_t num_bins = _config->n_target_classes.value_or(
+          UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
+      _regression_binning_strategy =
+          dataset::BinningStrategy::make(range.first, range.second, num_bins);
+    }
   }
 
   static std::shared_ptr<UDTDatasetFactory> make(
@@ -203,6 +212,43 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   uint32_t getLabelDim() final { return _label_dim; }
+
+  bolt::InferenceOutputTracker processEvaluateOutput(
+      bolt::InferenceOutputTracker& output) final {
+    if (!_regression_binning_strategy) {
+      return std::move(output);
+    }
+    std::vector<float> predicted_values(output.numSamples());
+
+    for (uint32_t i = 0; i < output.numSamples(); i++) {
+      uint32_t predicted_bin =
+          dataset::RegressionCategoricalBlock::getPredictedBin(
+              output.activeNeuronsForSample(i), output.activationsForSample(i),
+              output.numNonzerosInOutput());
+      predicted_values[i] = _regression_binning_strategy->unbin(predicted_bin);
+    }
+
+    return bolt::InferenceOutputTracker(
+        /* active_neurons= */ std::nullopt,
+        /* activations= */ std::move(predicted_values),
+        /* num_nonzeros_per_sample= */ output.numNonzerosInOutput());
+  }
+
+  BoltVector processOutputVector(BoltVector& output) final {
+    if (!_regression_binning_strategy) {
+      return std::move(output);
+    }
+
+    uint32_t predicted_bin =
+        dataset::RegressionCategoricalBlock::getPredictedBin(
+            output.active_neurons, output.activations, output.len);
+
+    BoltVector value(/* l= */ 1, /* is_dense= */ true,
+                     /* has_gradient= */ false);
+    value.activations[0] = _regression_binning_strategy->unbin(predicted_bin);
+
+    return value;
+  }
 
  private:
   PreprocessedVectorsMap processAllMetadata() {
@@ -403,13 +449,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
           /* delimiter= */ target_config.delimiter);
     }
     if (target_type.isNumerical()) {
-      auto target_config = target_type.asNumerical();
-      uint32_t num_bins = _config->n_target_classes.value_or(
-          UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
       return dataset::RegressionCategoricalBlock::make(
-          /* col= */ target_col_num, /* min= */ target_config.range.first,
-          /* max= */ target_config.range.second, /* num_bins= */ num_bins,
-          /* correct_label_radius= */
+          /* col= */ target_col_num,
+          /*binning_strategy*/ _regression_binning_strategy,
           UDTConfig::REGRESSION_CORRECT_LABEL_RADIUS,
           /* labels_sum_to_one= */ true);
     }
@@ -543,6 +585,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   uint32_t _text_pairgram_word_limit;
   bool _contextual_columns;
 
+  dataset::BinningStrategyPtr _regression_binning_strategy;
+
   // Private constructor for cereal.
   UDTDatasetFactory() {}
 
@@ -554,7 +598,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _column_number_map, _column_number_to_name,
             _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _input_dim, _label_dim,
-            _parallel, _text_pairgram_word_limit, _contextual_columns);
+            _parallel, _text_pairgram_word_limit, _contextual_columns,
+            _regression_binning_strategy);
   }
 };
 
