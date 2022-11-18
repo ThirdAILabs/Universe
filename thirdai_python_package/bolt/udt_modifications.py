@@ -16,6 +16,11 @@ def create_s3_loader(path, batch_size):
     )
 
 
+# This function defines train and eval methods that wrap the UDT train and
+# eval methods, allowing users to pass just a single filepath to refer both to
+# s3 and to local files. It also monkeypatches these functions onto the UDT
+# object and deletes the existing evaluate and train functions so that the user
+# interface is clean.
 def modify_udt_classifier():
 
     original_train_method = bolt.models.UDTClassifier.train_with_file

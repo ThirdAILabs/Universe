@@ -7,7 +7,8 @@ classifier_train_doc = """
         filename (str): Path to the dataset file. Can be a path to a file on
             disk or an S3 resource identifier. If the filename is on S3 this
             function will use boto3 internally to load the file (normal boto3
-            credential options apply).
+            credential options apply). If multiple files match the bucket and
+            prefix, then this will train on all of them.
         train_config (bolt.TrainConfig): The training config specifies the number
             of epochs and learning_rate, and optionally allows for specification of a
             validation dataset, metrics, callbacks, and how frequently to log metrics 
@@ -27,6 +28,9 @@ classifier_train_doc = """
             ).with_metrics(["mean_squared_error"])
         >>> model.train(
                 filename="./train_file", train_config=train_config , max_in_memory_batches=12
+            )
+        >>> model.train(
+                filename="s3://bucket/path/to/key", train_config=train_config
             )
 
     Notes:
