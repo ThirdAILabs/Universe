@@ -14,10 +14,12 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <metrics/src/PrometheusClient.h>
 #include <utils/Logging.h>
 #include <algorithm>
 #include <chrono>
 #include <csignal>
+#include <cstddef>
 #include <exception>
 #include <optional>
 #include <ostream>
@@ -587,6 +589,8 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
 
   uint32_t batch_size = single_predict_context.batchSize();
 
+  auto start_time = std::chrono::system_clock::now();
+
   prepareToProcessBatches(batch_size, use_sparse_inference);
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
@@ -609,6 +613,11 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
     cleanupAfterBatchProcessing();
     throw;
   }
+
+  std::chrono::duration<double> elapsed_time =
+      std::chrono::system_clock::now() - start_time;
+
+  thirdai::metrics::client.track_inferences(elapsed_time.count(), batch_size);
 }
 
 void BoltGraph::processInferenceBatch(uint64_t batch_size,

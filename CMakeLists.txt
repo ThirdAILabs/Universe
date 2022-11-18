@@ -179,6 +179,7 @@ add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 # Turn off prometheus-cpp's testing build so that we don't try to build two
 # copies of gmock
 option(ENABLE_TESTING "" OFF) 
+option(ENABLE_PUSH "" OFF) 
 add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
@@ -255,7 +256,7 @@ set(THIRDAI_SOURCES
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-                                     cereal::cereal)
+                                     cereal::cereal prometheus-cpp::pull)
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
 endif()

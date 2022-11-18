@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cryptopp/config_cxx.h>
 #include <prometheus/counter.h>
 #include <prometheus/exposer.h>
@@ -8,16 +10,16 @@
 
 namespace thirdai::metrics {
 
-class BoltMetrics {
+class BoltMetricsServer {
  public:
-  static BoltMetrics createMetrics() {
+  static BoltMetricsServer startMetricsFromEnvVars() {
     // TODO(Josh): Add metrics info to public docs
 
     // I think it is safe to use std::getenv in static functions, see
     // https://stackoverflow.com/questions/437279/is-it-safe-to-use-getenv-in-static-initializers-that-is-before-main
     const char* env_dont_use_metrics = std::getenv("THIRDAI_DONT_USE_METRICS");
     if (env_dont_use_metrics != NULL) {
-      return BoltMetrics();
+      return BoltMetricsServer();
     }
 
     uint32_t port = DEFAULT_METRICS_PORT;
@@ -26,46 +28,67 @@ class BoltMetrics {
       port = std::stoi(env_license_port);
     }
 
-    prometheus::Exposer exposer{"127.0.0.1:" + std::to_string(port)};
+    auto exposer = std::make_shared<prometheus::Exposer>(
+        /* bind_address = */ "127.0.0.1:" + std::to_string(port));
+    auto registry = std::make_shared<prometheus::Registry>();
+    exposer->RegisterCollectable(registry);
+    return BoltMetricsServer(exposer, registry);
   }
 
-  void track_inferences(float inference_time_seconds, uint32_t num_inferences) {
+  void track_inferences(double inference_time_seconds,
+                        uint32_t num_inferences) {
     if (_registry == nullptr) {
       return;
     }
-  }
-
-  void track_training(float training_time_seconds,
-                      uint32_t num_training_samples) {
-    if (_registry == nullptr) {
-      return;
+    for (uint32_t i = 0; i < num_inferences; i++) {
+      _inference_histogram->Observe(inference_time_seconds);
     }
   }
 
-  void track_evaluate(float evaluate_time_seconds,
-                      uint32_t num_evaluate_samples) {
-    if (_registry == nullptr) {
-      return;
-    }
-  }
-
-  void track_explanations(float explain_time_seconds,
+  void track_explanations(double explain_time_seconds,
                           uint32_t num_explanations) {
     if (_registry == nullptr) {
       return;
     }
+    for (uint32_t i = 0; i < num_explanations; i++) {
+      _inference_histogram->Observe(explain_time_seconds);
+    }
   }
 
+  void track_training(double training_time_seconds) {
+    if (_registry == nullptr) {
+      return;
+    }
+    _train_histogram->Observe(training_time_seconds);
+  }
+
+  void track_evaluate(double evaluate_time_seconds) {
+    if (_registry == nullptr) {
+      return;
+    }
+    _train_histogram->Observe(evaluate_time_seconds);
+  }
+
+  // Delete copy and move constructors and assignment operators so that
+  // we cannot set bolt::metrics::client to be anything else after it is
+  // constructed
+  BoltMetricsServer& operator=(const BoltMetricsServer&) = delete;
+  BoltMetricsServer(const BoltMetricsServer&) = delete;
+  BoltMetricsServer(BoltMetricsServer&&) = delete;
+  BoltMetricsServer& operator=(BoltMetricsServer&&) = delete;
+
  private:
-  BoltMetrics()
+  BoltMetricsServer()
       : _registry(nullptr),
         _inference_histogram(nullptr),
         _explanation_histogram(nullptr),
         _evaluation_histogram(nullptr),
         _train_histogram(nullptr) {}
 
-  explicit BoltMetrics(std::shared_ptr<prometheus::Registry> registry) {
+  explicit BoltMetricsServer(std::shared_ptr<prometheus::Exposer> exposer,
+                             std::shared_ptr<prometheus::Registry> registry) {
     _registry = std::move(registry);
+    _exposer = std::move(exposer);
 
     // See https://prometheus.io/docs/practices/histograms/ for metric naming
     // conventions
@@ -81,7 +104,7 @@ class BoltMetrics {
                  "Inference end to end latency. All inferences in a batch will "
                  "have "
                  "latency equal to the call to predict_batch.")
-             .Register(*registry)
+             .Register(*_registry)
              .Add(/* labels = */ {},
                   /* buckets = */ slow_running_boundaries_seconds);
     _explanation_histogram =
@@ -92,7 +115,7 @@ class BoltMetrics {
                  "batch "
                  "will have "
                  "latency equal to the call to explain_batch.")
-             .Register(*registry)
+             .Register(*_registry)
              .Add(/* labels = */ {},
                   /* buckets = */ slow_running_boundaries_seconds);
 
@@ -104,14 +127,14 @@ class BoltMetrics {
         &prometheus::BuildHistogram()
              .Name("thirdai_evaluation_duration_seconds")
              .Help("Evaluation end to end latency.")
-             .Register(*registry)
+             .Register(*_registry)
              .Add(/* labels = */ {},
                   /* buckets = */ slow_running_boundaries_seconds);
     _explanation_histogram =
         &prometheus::BuildHistogram()
              .Name("thirdai_explanation_duration_seconds")
              .Help("Training end to end latency.")
-             .Register(*registry)
+             .Register(*_registry)
              .Add(/* labels = */ {},
                   /* buckets = */ slow_running_boundaries_seconds);
   }
@@ -121,6 +144,9 @@ class BoltMetrics {
   // See https://github.com/prometheus/prometheus/wiki/Default-port-allocations
   const static inline uint32_t DEFAULT_METRICS_PORT = 9929;
 
+  // These variables are stored in this class to ensure the web server and
+  // registry exist as long as this object exists.
+  std::shared_ptr<prometheus::Exposer> _exposer;
   std::shared_ptr<prometheus::Registry> _registry;
 
   // This will track # inferences, total inference time, and bin counts from
@@ -142,7 +168,6 @@ class BoltMetrics {
   prometheus::Histogram* _train_histogram;
 };
 
-const static BoltMetrics global_prometheus_client =
-    BoltMetrics::createMetrics();
+inline BoltMetricsServer client = BoltMetricsServer::startMetricsFromEnvVars();
 
 }  // namespace thirdai::metrics
