@@ -369,7 +369,7 @@ class QueryCandidateGenerator {
   }
 
   std::shared_ptr<dataset::GenericBatchProcessor>
-  constructGenericBatchProcessor(const uint32_t& column_index) {
+  constructGenericBatchProcessor(uint32_t column_index) {
     auto input_blocks = constructInputBlocks(_query_generator_config->nGrams(),
                                              /* column_index = */ column_index);
 
@@ -446,7 +446,7 @@ class QueryCandidateGenerator {
    * @return Labels for each batch
    */
   std::vector<std::vector<uint32_t>> getQueryLabels(
-      const std::string& file_name, const uint32_t& target_column_index) {
+      const std::string& file_name, uint32_t target_column_index) {
     std::vector<std::vector<uint32_t>> labels;
 
     try {
