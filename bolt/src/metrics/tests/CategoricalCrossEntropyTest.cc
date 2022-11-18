@@ -17,7 +17,7 @@ float cross_entropy(const std::vector<float>& dense_output,
   return -1 * error;
 }
 
-TEST(LossFunctionMetrics, MeanSquaredErrorMetric) {
+TEST(LossFunctionMetrics, CategoricalCrossEntropyMetric) {
   std::vector<float> dense_output_vec = {0.2, 0.2, 0.0, 0.3,
                                          0.0, 0.0, 0.0, 0.3};
   BoltVector dense_output = BoltVector::makeDenseVector(dense_output_vec);
