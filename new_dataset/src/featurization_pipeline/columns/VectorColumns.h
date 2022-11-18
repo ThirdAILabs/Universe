@@ -4,12 +4,11 @@
 #include <optional>
 #include <stdexcept>
 
-namespace thirdai::dataset {
+namespace thirdai::data::columns {
 
-class VectorSparseValueColumn final : public ValueColumn<uint32_t> {
+class CppTokenColumn final : public TokenColumn {
  public:
-  VectorSparseValueColumn(std::vector<uint32_t> data,
-                          std::optional<uint32_t> dim)
+  CppTokenColumn(std::vector<uint32_t> data, std::optional<uint32_t> dim)
       : _data(std::move(data)), _dim(dim) {
     checkSparseIndices();
   }
@@ -43,9 +42,9 @@ class VectorSparseValueColumn final : public ValueColumn<uint32_t> {
   std::optional<uint32_t> _dim;
 };
 
-class VectorDenseValueColumn final : public ValueColumn<float> {
+class CppDenseFeatureColumn final : public DenseFeatureColumn {
  public:
-  explicit VectorDenseValueColumn(std::vector<float> data)
+  explicit CppDenseFeatureColumn(std::vector<float> data)
       : _data(std::move(data)) {}
 
   uint64_t numRows() const final { return _data.size(); }
@@ -60,9 +59,9 @@ class VectorDenseValueColumn final : public ValueColumn<float> {
   std::vector<float> _data;
 };
 
-class VectorStringValueColumn final : public ValueColumn<std::string> {
+class CppStringColumn final : public StringColumn {
  public:
-  explicit VectorStringValueColumn(std::vector<std::string> data)
+  explicit CppStringColumn(std::vector<std::string> data)
       : _data(std::move(data)) {}
 
   uint64_t numRows() const final { return _data.size(); }
@@ -86,10 +85,10 @@ static void check2DArrayNonEmpty(const std::vector<std::vector<T>>& data) {
   }
 }
 
-class VectorSparseArrayColumn final : public ArrayColumn<uint32_t> {
+class CppTokenArrayColumn final : public TokenArrayColumn {
  public:
-  VectorSparseArrayColumn(std::vector<std::vector<uint32_t>> data,
-                          std::optional<uint32_t> dim = std::nullopt)
+  explicit CppTokenArrayColumn(std::vector<std::vector<uint32_t>> data,
+                               std::optional<uint32_t> dim = std::nullopt)
       : _data(std::move(data)), _dim(dim) {
     check2DArrayNonEmpty<uint32_t>(_data);
 
@@ -137,10 +136,10 @@ class VectorSparseArrayColumn final : public ArrayColumn<uint32_t> {
   std::optional<uint32_t> _dim;
 };
 
-class VectorIndexValueArrayColumn final
+class CppSparseArrayColumn final
     : public ArrayColumn<std::pair<uint32_t, float>> {
  public:
-  VectorIndexValueArrayColumn(
+  explicit CppSparseArrayColumn(
       std::vector<std::vector<std::pair<uint32_t, float>>> data,
       std::optional<uint32_t> dim = std::nullopt)
       : _data(std::move(data)), _dim(dim) {
@@ -191,15 +190,16 @@ class VectorIndexValueArrayColumn final
   std::optional<uint32_t> _dim;
 };
 
-class VectorDenseArrayColumn final : public ArrayColumn<float> {
+class CppDenseArrayColumn final : public ArrayColumn<float> {
  public:
-  explicit VectorDenseArrayColumn(std::vector<std::vector<float>> data)
+  explicit CppDenseArrayColumn(std::vector<std::vector<float>> data)
       : _data(std::move(data)) {
     check2DArrayNonEmpty<float>(_data);
   }
 
   std::optional<DimensionInfo> dimension() const final {
-    return {{(uint32_t)_data[0].size(), /* is_dense= */ true}};
+    uint32_t dim = _data[0].size();
+    return {{dim, /* is_dense= */ true}};
   }
 
   uint64_t numRows() const final { return _data.size(); }
@@ -219,4 +219,4 @@ class VectorDenseArrayColumn final : public ArrayColumn<float> {
   std::vector<std::vector<float>> _data;
 };
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data::columns

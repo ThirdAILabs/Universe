@@ -1,10 +1,25 @@
+from typing import Dict
+
 import pandas as pd
 import thirdai._thirdai.bolt as bolt
 
 from .type_inference import semantic_type_inference
 
 
-def get_udt_col_types(filename, n_rows=1e6):
+def get_udt_col_types(
+    filename: str, n_rows: int = 1e6
+) -> Dict[str, bolt.types.ColumnType]:
+    """Returns a best guess for the types and metadata of the columns of the
+            input file.
+
+    Args:
+        filename (str): Path to a csv stored locally or on aws/gcp/etc (anything
+            that can be read by pandas.read_csv).
+
+    Returns:
+        (Dict[str, bolt.types.ColumnType]):
+        A map from column name to our best guess for ColumnType.
+    """
     column_types = semantic_type_inference(filename)
 
     df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
