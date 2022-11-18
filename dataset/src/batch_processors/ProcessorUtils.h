@@ -25,13 +25,17 @@ class ProcessorUtils {
   }
 
   static std::vector<std::string> aggregateSingleColumnCsvRows(
-      const std::string& file_name, uint32_t column_index) {
+      const std::string& file_name, uint32_t column_index,
+      bool has_header = false) {
     std::vector<std::string> aggregated_rows;
 
     std::ifstream input_file_stream =
         dataset::SafeFileIO::ifstream(file_name, std::ios::in);
 
     std::string row;
+    if (has_header) {
+      std::getline(input_file_stream, row);
+    }
     while (std::getline(input_file_stream, row)) {
       std::string target_column =
           std::string(parseCsvRow(row, ',')[column_index]);
