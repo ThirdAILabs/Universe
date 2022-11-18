@@ -60,7 +60,7 @@ def get_sentence_str_column(col_length, num_words):
 # to make sure the number of pairgrams for each possible pairgram value across the whole dataset
 # is close to the expected number.
 # We use the fact that if there are N unigrams per row, there are N * (N + 1)) / 2 pairgrams per row.
-def verify_pairgrams(pairgram_dataset, output_range, num_unigrams):
+def verify_pairgrams_distribution(pairgram_dataset, output_range, num_unigrams):
     indices, values = pairgram_dataset
     hash_counts = [0 for _ in range(output_range)]
     for row_indices, row_values in zip(indices, values):
