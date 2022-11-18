@@ -42,7 +42,8 @@ message("====================================")
 option(THIRDAI_REPORT_BUILD_STEP_TIMES
        "Report time using builtin for make/ninja compile-build steps" OFF)
 
-option(THIRDAI_BAKE_VERSION "Bake version (including commit-sha) into executable" OFF)
+option(THIRDAI_BAKE_VERSION "Bake version (including commit-sha) into library"
+       OFF)
 
 if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
@@ -267,8 +268,7 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/ColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    utils/Logging.cc
-)
+    utils/Logging.cc)
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
@@ -304,8 +304,10 @@ if(NOT MSVC)
 endif()
 
 # Add feature flags passed in from python
-target_compile_definitions(thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS} ${THIRDAI_DEFINITIONS})
-target_compile_definitions(_thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS} ${THIRDAI_DEFINITIONS})
+target_compile_definitions(thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS}
+                                           ${THIRDAI_DEFINITIONS})
+target_compile_definitions(_thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS}
+                                            ${THIRDAI_DEFINITIONS})
 
 # In debug mode we are using ASan (address sanitizer) to provide better
 # information on errors. We only run with this in debug mode because it carries
