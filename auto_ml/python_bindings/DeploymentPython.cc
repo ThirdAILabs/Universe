@@ -293,10 +293,10 @@ class UDTFactory {
   static UniversalDeepTransformer buildUDTClassifierWrapper(
       py::object& obj, ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target_col, uint32_t n_target_classes,
-      bool integer_target = false, std::string time_granularity = "d",
-      uint32_t lookahead = 0, char delimiter = ',',
-      const std::unordered_map<std::string, std::string>& options = {}) {
+      std::string target_col, std::optional<uint32_t> n_target_classes,
+      bool integer_target, std::string time_granularity, uint32_t lookahead,
+      char delimiter,
+      const std::unordered_map<std::string, std::string>& options) {
     (void)obj;
     return UniversalDeepTransformer::buildUDT(
         /* data_types = */ std::move(data_types),
@@ -364,7 +364,7 @@ void createUDTFactory(py::module_& bolt_submodule) {
            py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes"),
+           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
@@ -394,7 +394,7 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes"),
+           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
