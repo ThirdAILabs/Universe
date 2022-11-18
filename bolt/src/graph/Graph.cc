@@ -593,13 +593,13 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
 
   prepareToProcessBatches(batch_size, use_sparse_inference);
 
+  std::vector<BoltVector> outputs(batch_size);
+
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
   try {
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
-
-    std::vector<BoltVector> outputs(batch_size);
 
 #pragma omp parallel for default(none) shared(batch_size, outputs)
     for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
@@ -608,7 +608,6 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
     }
 
     cleanupAfterBatchProcessing();
-    return BoltBatch(std::move(outputs));
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
@@ -617,7 +616,9 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
   std::chrono::duration<double> elapsed_time =
       std::chrono::system_clock::now() - start_time;
 
-  thirdai::metrics::client.track_inferences(elapsed_time.count(), batch_size);
+  thirdai::metrics::client.track_predictions(elapsed_time.count(), batch_size);
+
+  return BoltBatch(std::move(outputs));
 }
 
 void BoltGraph::processInferenceBatch(uint64_t batch_size,

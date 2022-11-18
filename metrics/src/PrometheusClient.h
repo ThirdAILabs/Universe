@@ -1,10 +1,13 @@
 #pragma once
 
 #include <cryptopp/config_cxx.h>
+#include <deps/prometheus-cpp/3rdparty/civetweb/include/CivetServer.h>
 #include <prometheus/counter.h>
 #include <prometheus/exposer.h>
 #include <prometheus/histogram.h>
 #include <prometheus/registry.h>
+#include <utils/Logging.h>
+#include <iostream>
 #include <memory>
 #include <thread>
 
@@ -28,20 +31,30 @@ class BoltMetricsServer {
       port = std::stoi(env_license_port);
     }
 
-    auto exposer = std::make_shared<prometheus::Exposer>(
-        /* bind_address = */ "127.0.0.1:" + std::to_string(port));
+    std::shared_ptr<prometheus::Exposer> exposer;
+    try {
+      exposer = std::make_shared<prometheus::Exposer>(
+          /* bind_address = */ "127.0.0.1:" + std::to_string(port));
+    } catch (const CivetException& e) {
+      logging::error(
+          "Cannot start metrics server on port " + std::to_string(port) +
+          ", possibly there is already a metrics instance on this port. Please "
+          "choose a different port if you want to use metrics. Continuing "
+          "without metrics");
+      return BoltMetricsServer();
+    }
     auto registry = std::make_shared<prometheus::Registry>();
     exposer->RegisterCollectable(registry);
     return BoltMetricsServer(exposer, registry);
   }
 
-  void track_inferences(double inference_time_seconds,
-                        uint32_t num_inferences) {
+  void track_predictions(double inference_time_seconds,
+                         uint32_t num_inferences) {
     if (_registry == nullptr) {
       return;
     }
     for (uint32_t i = 0; i < num_inferences; i++) {
-      _inference_histogram->Observe(inference_time_seconds);
+      _prediction_histogram->Observe(inference_time_seconds);
     }
   }
 
@@ -51,7 +64,7 @@ class BoltMetricsServer {
       return;
     }
     for (uint32_t i = 0; i < num_explanations; i++) {
-      _inference_histogram->Observe(explain_time_seconds);
+      _prediction_histogram->Observe(explain_time_seconds);
     }
   }
 
@@ -80,7 +93,7 @@ class BoltMetricsServer {
  private:
   BoltMetricsServer()
       : _registry(nullptr),
-        _inference_histogram(nullptr),
+        _prediction_histogram(nullptr),
         _explanation_histogram(nullptr),
         _evaluation_histogram(nullptr),
         _train_histogram(nullptr) {}
@@ -95,18 +108,18 @@ class BoltMetricsServer {
 
     // Approximate geometric distribution with factor sqrt(10). Bins go from
     // <0.1 ms to >=1 second. Used for inference and explanations.
-    prometheus::Histogram::BucketBoundaries slow_running_boundaries_seconds = {
+    prometheus::Histogram::BucketBoundaries fast_running_boundaries_seconds = {
         0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1};
-    _inference_histogram =
+    _prediction_histogram =
         &prometheus::BuildHistogram()
-             .Name("thirdai_inference_duration_seconds")
+             .Name("thirdai_prediction_duration_seconds")
              .Help(
                  "Inference end to end latency. All inferences in a batch will "
                  "have "
                  "latency equal to the call to predict_batch.")
              .Register(*_registry)
              .Add(/* labels = */ {},
-                  /* buckets = */ slow_running_boundaries_seconds);
+                  /* buckets = */ fast_running_boundaries_seconds);
     _explanation_histogram =
         &prometheus::BuildHistogram()
              .Name("thirdai_explanation_duration_seconds")
@@ -117,11 +130,11 @@ class BoltMetricsServer {
                  "latency equal to the call to explain_batch.")
              .Register(*_registry)
              .Add(/* labels = */ {},
-                  /* buckets = */ slow_running_boundaries_seconds);
+                  /* buckets = */ fast_running_boundaries_seconds);
 
     // Approximate geometric distribution with factor sqrt(10). Bins go from
     // <10 s to >=100,000 second (~30 hours)
-    prometheus::Histogram::BucketBoundaries fast_running_boundaries_seconds = {
+    prometheus::Histogram::BucketBoundaries slow_running_boundaries_seconds = {
         10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000};
     _evaluation_histogram =
         &prometheus::BuildHistogram()
@@ -130,7 +143,7 @@ class BoltMetricsServer {
              .Register(*_registry)
              .Add(/* labels = */ {},
                   /* buckets = */ slow_running_boundaries_seconds);
-    _explanation_histogram =
+    _train_histogram =
         &prometheus::BuildHistogram()
              .Name("thirdai_explanation_duration_seconds")
              .Help("Training end to end latency.")
@@ -153,18 +166,18 @@ class BoltMetricsServer {
   // _inference_bins. This is a nonowning raw pointer because it points to a
   // reference owned by _registry (this is safe because the lifetime of
   // _registry is the lifetime of this class, since it is stored as a field.
-  prometheus::Histogram* _inference_histogram;
+  prometheus::Histogram* _prediction_histogram;
 
   // This will track # explanations, total explanation time, and bin counts from
-  // _inference_bins. Same safety argument as for _inference_histogram.
+  // _inference_bins. Same safety argument as for _prediction_histogram.
   prometheus::Histogram* _explanation_histogram;
 
   // This will track # explanations, total explanation time, and bin counts from
-  // _inference_bins. Same safety argument as for _inference_histogram.
+  // _inference_bins. Same safety argument as for _prediction_histogram.
   prometheus::Histogram* _evaluation_histogram;
 
   // This will track # train calls, total train time, and bin counts from
-  // _train_bins. Same safety argument as for _inference_histogram.
+  // _train_bins. Same safety argument as for _prediction_histogram.
   prometheus::Histogram* _train_histogram;
 };
 
