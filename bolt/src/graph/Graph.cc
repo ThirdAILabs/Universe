@@ -24,6 +24,7 @@
 #include <optional>
 #include <ostream>
 #include <queue>
+#include <ratio>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -238,16 +239,19 @@ MetricData BoltGraph::train(
       }
 
       auto train_end = std::chrono::high_resolution_clock::now();
-      int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
-                               train_end - train_start)
-                               .count();
+      double epoch_duration_s =
+          std::chrono::duration<double>(train_end - train_start).count();
+      int64_t epoch_duration_ms =
+          std::chrono::duration<double, std::milli>(train_end - train_start)
+              .count();
+
+      metrics::client.track_training(epoch_duration_s);
 
       std::string logline = fmt::format(
           "train | epoch {} | updates {} | {} | batches {} | time {}s | "
           "complete",
           _epoch, _updates, train_metrics.summary(),
-          dataset_context.numBatches(), epoch_time);
-
+          dataset_context.numBatches(), epoch_duration_ms);
       logging::info(logline);
 
       if (bar) {
@@ -256,7 +260,7 @@ MetricData BoltGraph::train(
 
       train_metrics.logAndReset();
 
-      train_state.epoch_times.push_back(static_cast<double>(epoch_time));
+      train_state.epoch_times.push_back(static_cast<double>(epoch_duration_ms));
     } catch (const std::exception& e) {
       cleanupAfterBatchProcessing();
       throw;
@@ -524,13 +528,16 @@ InferenceResult BoltGraph::evaluate(
   cleanupAfterBatchProcessing();
 
   auto test_end = std::chrono::high_resolution_clock::now();
-  int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          test_end - test_start)
-                          .count();
+  double duration_s =
+      std::chrono::duration<double>(test_end - test_start).count();
+  int64_t duration_ms =
+      std::chrono::duration<double, std::milli>(test_end - test_start).count();
+  thirdai::metrics::client.track_training(
+      /* training_time_seconds = */ duration_s);
 
   std::string logline = fmt::format(
       "predict | epoch {} | updates {} | {} | batches {} | time {}ms", _epoch,
-      _updates, metrics.summary(), predict_context.numBatches(), test_time);
+      _updates, metrics.summary(), predict_context.numBatches(), duration_ms);
 
   logging::info(logline);
   if (bar) {
@@ -539,8 +546,7 @@ InferenceResult BoltGraph::evaluate(
 
   metrics.logAndReset();
   auto metric_vals = metrics.getOutputFromInference();
-  metric_vals["test_time"] = test_time;
-
+  metric_vals["test_time"] = duration_ms;
   return {std::move(metric_vals), std::move(outputTracker)};
 }
 
@@ -549,6 +555,8 @@ InferenceResult BoltGraph::evaluate(
 BoltVector BoltGraph::predictSingle(
     std::vector<BoltVector>&& test_data, bool use_sparse_inference,
     std::optional<std::string> output_node_name) {
+  auto start_time = std::chrono::system_clock::now();
+
   SingleBatchDatasetContext single_predict_context(std::move(test_data));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
@@ -556,6 +564,7 @@ BoltVector BoltGraph::predictSingle(
                    /* num_metrics_tracked = */ 0);
 
   prepareToProcessBatches(/* batch_size = */ 1, use_sparse_inference);
+  BoltVector output_vec;
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
@@ -563,20 +572,25 @@ BoltVector BoltGraph::predictSingle(
   try {
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
     forward(/* vec_index = */ 0, nullptr);
-    BoltVector output_copy;
     if (output_node_name) {
-      output_copy = getNodeByName(*output_node_name)
-                        ->getOutputVector(/* vec_index = */ 0);
+      output_vec = getNodeByName(*output_node_name)
+                       ->getOutputVector(/* vec_index = */ 0);
     } else {
-      output_copy = _output->getOutputVector(
+      output_vec = _output->getOutputVector(
           /* vec_index = */ 0);
     }
     cleanupAfterBatchProcessing();
-    return output_copy;
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
   }
+
+  std::chrono::duration<double> elapsed_time =
+      std::chrono::system_clock::now() - start_time;
+  thirdai::metrics::client.track_predictions(elapsed_time.count(),
+                                             /* num_inferences = */ 1);
+
+  return output_vec;
 }
 
 BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
@@ -615,7 +629,6 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
 
   std::chrono::duration<double> elapsed_time =
       std::chrono::system_clock::now() - start_time;
-
   thirdai::metrics::client.track_predictions(elapsed_time.count(), batch_size);
 
   return BoltBatch(std::move(outputs));
