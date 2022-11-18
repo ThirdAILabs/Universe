@@ -366,7 +366,7 @@ class RecallAtK : public Metric {
     return stream.str();
   }
 
-  double worst() const final { return 0.0f; }
+  double worst() const final { return 0.0F; }
 
   bool betterThan(double x, double y) const final { return x >= y; }
 
@@ -497,7 +497,7 @@ class FMeasure final : public Metric {
     return stream.str();
   }
 
-  double worst() const final { return 0.0f; }
+  double worst() const final { return 0.0F; }
 
   bool betterThan(double x, double y) const final { return x >= y; }
 

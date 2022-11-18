@@ -11,7 +11,7 @@ float cross_entropy(const std::vector<float>& dense_output,
   float error = 0.0;
   const float EPS = 1e-7;
   for (uint32_t i = 0; i < dense_labels.size(); i++) {
-    error += dense_labels[i] * log(dense_output[i] + EPS);
+    error += dense_labels[i] * std::log(dense_output[i] + EPS);
   }
 
   return -1 * error;
