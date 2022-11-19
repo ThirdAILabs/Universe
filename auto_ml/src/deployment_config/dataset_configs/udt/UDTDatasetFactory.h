@@ -364,29 +364,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
           "data_types parameter must include the target column.");
     }
 
-    auto target_type = _config->data_types.at(_config->target);
-    if (!asCategorical(target_type)) {
-      throw std::invalid_argument(
-          "Target column must be a categorical column.");
-    }
-
-    auto col_num = column_number_map.at(_config->target);
-    auto target_config = asCategorical(target_type);
-
-    dataset::BlockPtr label_block;
-    if (_config->integer_target) {
-      label_block = dataset::NumericalCategoricalBlock::make(
-          /* col= */ col_num, /* n_classes= */ _config->n_target_classes,
-          /* delimiter= */ target_config->delimiter);
-    } else {
-      if (!_vocabs.count(_config->target)) {
-        _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
-            /* vocab_size= */ _config->n_target_classes);
-      }
-      label_block = dataset::StringLookupCategoricalBlock::make(
-          /* col= */ col_num, /* vocab= */ _vocabs.at(_config->target),
-          /* delimiter= */ target_config->delimiter);
-    }
+    dataset::BlockPtr label_block = getLabelBlock(column_number_map);
 
     auto input_blocks =
         buildInputBlocks(/* column_numbers= */ column_number_map,
@@ -397,6 +375,45 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
         /* hash_range= */ _config->hash_range);
     return processor;
+  }
+
+  dataset::BlockPtr getLabelBlock(const ColumnNumberMap& column_number_map) {
+    auto target_type = _config->data_types.at(_config->target);
+    auto target_col_num = column_number_map.at(_config->target);
+
+    if (asCategorical(target_type)) {
+      auto target_config = asCategorical(target_type);
+      if (!_config->n_target_classes) {
+        throw std::invalid_argument(
+            "n_target_classes must be specified for a classification task.");
+      }
+      if (_config->integer_target) {
+        return dataset::NumericalCategoricalBlock::make(
+            /* col= */ target_col_num,
+            /* n_classes= */ _config->n_target_classes.value(),
+            /* delimiter= */ target_config->delimiter);
+      }
+      if (!_vocabs.count(_config->target)) {
+        _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
+            /* vocab_size= */ _config->n_target_classes.value());
+      }
+      return dataset::StringLookupCategoricalBlock::make(
+          /* col= */ target_col_num, /* vocab= */ _vocabs.at(_config->target),
+          /* delimiter= */ target_config->delimiter);
+    }
+    if (asNumerical(target_type)) {
+      auto target_config = asNumerical(target_type);
+      uint32_t num_bins = _config->n_target_classes.value_or(
+          UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
+      return dataset::RegressionCategoricalBlock::make(
+          /* col= */ target_col_num, /* min= */ target_config->range.first,
+          /* max= */ target_config->range.second, /* num_bins= */ num_bins,
+          /* correct_label_radius= */
+          UDTConfig::REGRESSION_CORRECT_LABEL_RADIUS,
+          /* labels_sum_to_one= */ true);
+    }
+    throw std::invalid_argument(
+        "Target column must have type numerical or categorical.");
   }
 
   /**

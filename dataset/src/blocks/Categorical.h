@@ -9,6 +9,7 @@
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <optional>
@@ -245,9 +246,97 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
 
 using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
 
+/**
+ * This block is designed to convert a regression problem into a classification
+ * problem by binning the continuous values in a range. The distinction between
+ * this block and a standard binning operation is that the neighboring bins to
+ * the target bins are also given as positive labels so that the model is
+ * rewarded for nearby predictions up to some tolerance.
+ */
+class RegressionCategoricalBlock final : public CategoricalBlock {
+ public:
+  // Note: min and max are soft thresholds and values outside the range will be
+  // truncated to within the range.
+  RegressionCategoricalBlock(uint32_t col, float min, float max,
+                             uint32_t num_bins, uint32_t correct_label_radius,
+                             bool labels_sum_to_one)
+      : CategoricalBlock(/* col= */ col, /* dim= */ num_bins,
+                         /* delimiter= */ std::nullopt),
+        _min(min),
+        _max(max),
+        _binsize((max - min) / num_bins),
+        _correct_label_radius(correct_label_radius) {
+    if (labels_sum_to_one) {
+      _label_value = 1.0 / (2 * _correct_label_radius + 1);
+    } else {
+      _label_value = 1.0;
+    }
+  }
+
+  static auto make(uint32_t col, float min, float max, uint32_t num_bins,
+                   uint32_t correct_label_radius, bool labels_sum_to_one) {
+    return std::make_shared<RegressionCategoricalBlock>(
+        col, min, max, num_bins, correct_label_radius, labels_sum_to_one);
+  }
+
+  float getDecimalValueForCategory(uint32_t category) const {
+    return _min + category * _binsize + (_binsize / 2);
+  }
+
+  std::string getResponsibleCategory(
+      uint32_t index_within_block,
+      const std::string_view& category_value) const final {
+    (void)category_value;
+    return std::to_string(getDecimalValueForCategory(index_within_block));
+  }
+
+ protected:
+  // Bins the float value by subtracting the min and dividing by the binsize.
+  // Values outside the range [min, max] are truncated to this range.
+  std::exception_ptr encodeCategory(std::string_view category,
+                                    SegmentedFeatureVector& vec) final {
+    char* end;
+    float value = std::strtof(category.data(), &end);
+    if (category.data() == end) {
+      return std::make_exception_ptr(std::invalid_argument(
+          "Missing float data in regression target column."));
+    }
+
+    uint32_t bin = (std::clamp(value, _min, _max) - _min) / _binsize;
+
+    // Because we clamp to range [min, max], we could theorically reach the
+    // value of dim since max = dim * binsize + min.
+    bin = std::min(bin, _dim - 1);
+
+    // We can't use max(0, bin - _correct_label_radius) because of underflow.
+    uint32_t label_start =
+        bin < _correct_label_radius ? 0 : bin - _correct_label_radius;
+    uint32_t label_end = std::min(_dim - 1, bin + _correct_label_radius);
+    for (uint32_t i = label_start; i <= label_end; i++) {
+      vec.addSparseFeatureToSegment(i, _label_value);
+    }
+
+    return nullptr;
+  }
+
+ private:
+  float _min, _max, _binsize, _label_value;
+  uint32_t _correct_label_radius;
+
+  // Private constructor for cereal.
+  RegressionCategoricalBlock() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_min, _max, _binsize, _label_value, _correct_label_radius);
+  }
+};
+
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::CategoricalBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::NumericalCategoricalBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::StringLookupCategoricalBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::MetadataCategoricalBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::RegressionCategoricalBlock)
