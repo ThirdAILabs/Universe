@@ -1,9 +1,9 @@
-import pytest
-from thirdai import bolt
-from download_datasets import download_brazilian_houses_dataset
 import os
-import numpy as np
 
+import numpy as np
+import pytest
+from download_datasets import download_brazilian_houses_dataset
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -12,7 +12,7 @@ MAE_THRESHOLD = 0.3
 
 def _compute_mae(predictions, inference_samples):
     labels = [y for _, y in inference_samples]
-    return np.mean(np.abs(predictions[:,0] - labels))
+    return np.mean(np.abs(predictions[:, 0] - labels))
 
 
 @pytest.fixture(scope="module")
@@ -31,7 +31,7 @@ def train_udt_regression(download_brazilian_houses_dataset):
             "totalBRL": bolt.types.numerical(range=(6, 14)),
         },
         target="totalBRL",
-        options={"embedding_dimension": "100"}
+        options={"embedding_dimension": "100"},
     )
 
     train_config = bolt.TrainConfig(epochs=20, learning_rate=0.01)
@@ -43,18 +43,22 @@ def train_udt_regression(download_brazilian_houses_dataset):
 def _compute_regression_evaluate_accuracy(model, test_filename, inference_samples):
     activations = model.evaluate(test_filename)
 
-    return _compute_mae(activations, inference_samples) 
+    return _compute_mae(activations, inference_samples)
 
 
-def test_udt_regression_accuracy(train_udt_regression, download_brazilian_houses_dataset):
+def test_udt_regression_accuracy(
+    train_udt_regression, download_brazilian_houses_dataset
+):
     model = train_udt_regression
     _, test_filename, inference_samples = download_brazilian_houses_dataset
 
-    acc = _compute_regression_evaluate_accuracy(model, test_filename, inference_samples) 
+    acc = _compute_regression_evaluate_accuracy(model, test_filename, inference_samples)
     assert acc <= MAE_THRESHOLD
 
 
-def test_udt_regression_save_load(train_udt_regression, download_brazilian_houses_dataset):
+def test_udt_regression_save_load(
+    train_udt_regression, download_brazilian_houses_dataset
+):
     model = train_udt_regression
     train_filename, test_filename, inference_samples = download_brazilian_houses_dataset
 
@@ -63,9 +67,7 @@ def test_udt_regression_save_load(train_udt_regression, download_brazilian_house
     model.save(SAVE_FILE)
     loaded_model = bolt.UniversalDeepTransformer.load(SAVE_FILE)
 
-    acc = _compute_regression_evaluate_accuracy(
-        model, test_filename, inference_samples
-    )
+    acc = _compute_regression_evaluate_accuracy(model, test_filename, inference_samples)
     assert acc <= MAE_THRESHOLD
 
     train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001)
@@ -80,7 +82,9 @@ def test_udt_regression_save_load(train_udt_regression, download_brazilian_house
     assert acc <= MAE_THRESHOLD
 
 
-def test_udt_regression_predict_single(train_udt_regression, download_brazilian_houses_dataset):
+def test_udt_regression_predict_single(
+    train_udt_regression, download_brazilian_houses_dataset
+):
     model = train_udt_regression
     _, _, inference_samples = download_brazilian_houses_dataset
 
@@ -92,7 +96,9 @@ def test_udt_regression_predict_single(train_udt_regression, download_brazilian_
     assert _compute_mae(np.array(predictions), inference_samples) <= MAE_THRESHOLD
 
 
-def test_udt_regression_predict_batch(train_udt_regression, download_brazilian_houses_dataset):
+def test_udt_regression_predict_batch(
+    train_udt_regression, download_brazilian_houses_dataset
+):
     model = train_udt_regression
     _, _, inference_samples = download_brazilian_houses_dataset
 
