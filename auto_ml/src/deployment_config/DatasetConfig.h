@@ -2,7 +2,7 @@
 
 #include <cereal/access.hpp>
 #include "BlockConfig.h"
-#include "OutputProcessor.h"
+#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>

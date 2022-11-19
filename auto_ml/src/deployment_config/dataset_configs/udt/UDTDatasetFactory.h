@@ -56,12 +56,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     _vectors_map = processAllMetadata();
 
-    ColumnNumberMap mock_column_number_map(_config->data_types);
-    auto mock_processor = makeLabeledUpdatingProcessor(mock_column_number_map);
-
-    _input_dim = mock_processor->getInputDim();
-    _label_dim = mock_processor->getLabelDim();
-
     auto target_type = _config->data_types.at(_config->target);
     if (asNumerical(target_type)) {
       auto range = asNumerical(target_type)->range;
@@ -70,6 +64,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       _regression_binning_strategy =
           dataset::BinningStrategy::make(range.first, range.second, num_bins);
     }
+
+    ColumnNumberMap mock_column_number_map(_config->data_types);
+    auto mock_processor = makeLabeledUpdatingProcessor(mock_column_number_map);
+
+    _input_dim = mock_processor->getInputDim();
+    _label_dim = mock_processor->getLabelDim();
   }
 
   static std::shared_ptr<UDTDatasetFactory> make(
@@ -231,7 +231,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     return bolt::InferenceOutputTracker(
         /* active_neurons= */ std::nullopt,
         /* activations= */ std::move(predicted_values),
-        /* num_nonzeros_per_sample= */ output.numNonzerosInOutput());
+        /* num_nonzeros_per_sample= */ 1);
   }
 
   BoltVector processOutputVector(BoltVector& output) final {
@@ -448,6 +448,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
           /* delimiter= */ target_config->delimiter);
     }
     if (asNumerical(target_type)) {
+      if (!_regression_binning_strategy) {
+        throw std::runtime_error("Regression binning strategy must be set.");
+      }
       return dataset::RegressionCategoricalBlock::make(
           /* col= */ target_col_num,
           /*binning_strategy*/ _regression_binning_strategy,

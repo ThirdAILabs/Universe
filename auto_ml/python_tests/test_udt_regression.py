@@ -1,10 +1,10 @@
 import pytest
 from thirdai import bolt
 from download_datasets import download_brazilian_houses_dataset
+import numpy as np
 
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
-
 
 
 @pytest.fixture(scope="module")
@@ -23,12 +23,22 @@ def train_udt_regression(download_brazilian_houses_dataset):
             "totalBRL": bolt.types.numerical(range=(6, 14)),
         },
         target="totalBRL",
+        # n_target_classes=10,
     )
 
-    train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
+    train_config = bolt.TrainConfig(epochs=25, learning_rate=0.01)
     model.train(train_filename, train_config)
 
+    return model
 
 
-def test_udt_regression_accuracy(train_udt_regression):
-    pass
+def test_udt_regression_accuracy(train_udt_regression, download_brazilian_houses_dataset):
+    model = train_udt_regression
+    _, test_filename, inference_samples = download_brazilian_houses_dataset
+
+    activations = model.evaluate(test_filename)
+
+    labels = np.array([y for _, y in inference_samples])
+
+    print(np.sqrt(np.sum(np.square(activations[:,0] - labels))))
+    print(np.mean(np.abs(activations[:,0] - labels)))

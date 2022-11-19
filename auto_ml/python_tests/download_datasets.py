@@ -139,10 +139,11 @@ def download_brazilian_houses_dataset():
     train_df.to_csv(TRAIN_FILE, index=False)
     test_df.to_csv(TEST_FILE, index=False)
 
+    inference_samples = []
     for _, row in test_df.iterrows():
-        print(row)
-        print(type(row))
-        break
-    
+        sample = dict(row)
+        label = sample["totalBRL"]
+        del sample["totalBRL"]
+        inference_samples.append((sample, label))
 
-    return TRAIN_FILE, TEST_FILE
+    return TRAIN_FILE, TEST_FILE, inference_samples
