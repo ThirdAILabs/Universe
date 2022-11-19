@@ -393,7 +393,8 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_binning_strategy, _label_value, _correct_label_radius);
+    archive(cereal::base_class<CategoricalBlock>(this), _binning_strategy,
+            _label_value, _correct_label_radius);
   }
 };
 

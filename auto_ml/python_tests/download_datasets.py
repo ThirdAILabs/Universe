@@ -144,6 +144,7 @@ def download_brazilian_houses_dataset():
         sample = dict(row)
         label = sample["totalBRL"]
         del sample["totalBRL"]
+        sample = {x: str(y) for x,y in sample.items()}
         inference_samples.append((sample, label))
 
     return TRAIN_FILE, TEST_FILE, inference_samples
