@@ -304,7 +304,6 @@ class ModelPipeline {
  protected:
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
-
   TrainEvalParameters _train_eval_config;
 };
 
