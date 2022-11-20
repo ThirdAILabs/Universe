@@ -247,56 +247,6 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
 using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
 
 /**
- * This class separates the binning logic from the RegressionCategoricalBlock.
- * This is because we need to use the unbin logic to process the outputs from
- * the model in UDT before returning to the user. Separating the logic in this
- * way allows us to store the binning information in UDT to process output
- * vectors back into single float values and also keep the binning mechanism
- * consistent with the featurization.
- */
-class BinningStrategy {
- public:
-  BinningStrategy(float min, float max, uint32_t num_bins)
-      : _min(min),
-        _max(max),
-        _binsize((max - min) / num_bins),
-        _num_bins(num_bins) {}
-
-  static auto make(float min, float max, uint32_t num_bins) {
-    return std::make_shared<BinningStrategy>(min, max, num_bins);
-  }
-
-  uint32_t bin(float value) const {
-    uint32_t bin = (std::clamp(value, _min, _max) - _min) / _binsize;
-
-    // Because we clamp to range [min, max], we could theorically reach the
-    // value of dim since max = dim * binsize + min.
-    return std::min(bin, _num_bins - 1);
-  }
-
-  float unbin(uint32_t bin) const {
-    return _min + bin * _binsize + (_binsize / 2);
-  }
-
-  uint32_t numBins() const { return _num_bins; }
-
- private:
-  float _min, _max, _binsize;
-  uint32_t _num_bins;
-
-  // Private constructor for cereal.
-  BinningStrategy() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_min, _max, _binsize, _num_bins);
-  }
-};
-
-using BinningStrategyPtr = std::shared_ptr<BinningStrategy>;
-
-/**
  * This block is designed to convert a regression problem into a classification
  * problem by binning the continuous values in a range. The distinction between
  * this block and a standard binning operation is that the neighboring bins to
@@ -307,13 +257,14 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
  public:
   // Note: min and max are soft thresholds and values outside the range will be
   // truncated to within the range.
-  RegressionCategoricalBlock(uint32_t col,
-                             const BinningStrategyPtr& binning_strategy,
-                             uint32_t correct_label_radius,
+  RegressionCategoricalBlock(uint32_t col, float min, float max,
+                             uint32_t num_bins, uint32_t correct_label_radius,
                              bool labels_sum_to_one)
-      : CategoricalBlock(/* col= */ col, /* dim= */ binning_strategy->numBins(),
+      : CategoricalBlock(/* col= */ col, /* dim= */ num_bins,
                          /* delimiter= */ std::nullopt),
-        _binning_strategy(binning_strategy),
+        _min(min),
+        _max(max),
+        _binsize((max - min) / num_bins),
         _correct_label_radius(correct_label_radius) {
     if (labels_sum_to_one) {
       _label_value = 1.0 / (2 * _correct_label_radius + 1);
@@ -322,25 +273,14 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
     }
   }
 
-  static auto make(uint32_t col, const BinningStrategyPtr& binning_strategy,
+  static auto make(uint32_t col, float min, float max, uint32_t num_bins,
                    uint32_t correct_label_radius, bool labels_sum_to_one) {
     return std::make_shared<RegressionCategoricalBlock>(
-        col, binning_strategy, correct_label_radius, labels_sum_to_one);
+        col, min, max, num_bins, correct_label_radius, labels_sum_to_one);
   }
 
-  float getDecimalValueForCategory(uint32_t category) const {
-    return _binning_strategy->unbin(category);
-  }
-
-  std::string getResponsibleCategory(
-      uint32_t index_within_block,
-      const std::string_view& category_value) const final {
-    (void)category_value;
-    return std::to_string(getDecimalValueForCategory(index_within_block));
-  }
-
-  static uint32_t getPredictedBin(const uint32_t* active_neurons,
-                                  const float* activations, uint32_t len) {
+  float getPredictedNumericalValue(const uint32_t* active_neurons,
+                                   const float* activations, uint32_t len) {
     uint32_t predicted_bin_index = 0;
     float max_activation = activations[0];
 
@@ -352,13 +292,20 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
     }
 
     if (active_neurons != nullptr) {
-      return active_neurons[predicted_bin_index];
+      return getDecimalValueForCategory(active_neurons[predicted_bin_index]);
     }
-    return predicted_bin_index;
+    return getDecimalValueForCategory(predicted_bin_index);
+  }
+
+  std::string getResponsibleCategory(
+      uint32_t index_within_block,
+      const std::string_view& category_value) const final {
+    (void)category_value;
+    return std::to_string(getDecimalValueForCategory(index_within_block));
   }
 
  protected:
-  // Bins the float value by subracting the min and dividing by the binsize.
+  // Bins the float value by subtracting the min and dividing by the binsize.
   // Values outside the range [min, max] are truncated to this range.
   std::exception_ptr encodeCategory(std::string_view category,
                                     SegmentedFeatureVector& vec) final {
@@ -369,9 +316,13 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
           "Missing float data in regression target column."));
     }
 
-    uint32_t bin = _binning_strategy->bin(value);
+    uint32_t bin = (std::clamp(value, _min, _max) - _min) / _binsize;
 
-    // We can't use max(0, bin - _correct_label_radius) becuase of underflow.
+    // Because we clamp to range [min, max], we could theorically reach the
+    // value of dim since max = dim * binsize + min.
+    bin = std::min(bin, _dim - 1);
+
+    // We can't use max(0, bin - _correct_label_radius) because of underflow.
     uint32_t label_start =
         bin < _correct_label_radius ? 0 : bin - _correct_label_radius;
     uint32_t label_end = std::min(_dim - 1, bin + _correct_label_radius);
@@ -383,8 +334,11 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
   }
 
  private:
-  BinningStrategyPtr _binning_strategy;
-  float _label_value;
+  float getDecimalValueForCategory(uint32_t category) const {
+    return _min + category * _binsize + (_binsize / 2);
+  }
+
+  float _min, _max, _binsize, _label_value;
   uint32_t _correct_label_radius;
 
   // Private constructor for cereal.
@@ -393,7 +347,7 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<CategoricalBlock>(this), _binning_strategy,
+    archive(cereal::base_class<CategoricalBlock>(this), _min, _max, _binsize,
             _label_value, _correct_label_radius);
   }
 };

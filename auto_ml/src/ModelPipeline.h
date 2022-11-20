@@ -213,20 +213,6 @@ class ModelPipeline {
   // Protected so derived classes can also use it for serialization purposes.
   ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
 
-  static uint32_t argmax(const float* const array, uint32_t len) {
-    assert(len > 0);
-
-    uint32_t max_index = 0;
-    float max_value = array[0];
-    for (uint32_t i = 1; i < len; i++) {
-      if (array[i] > max_value) {
-        max_index = i;
-        max_value = array[i];
-      }
-    }
-    return max_index;
-  }
-
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
@@ -293,6 +279,20 @@ class ModelPipeline {
             _train_eval_config.reconstructHashFunctionsInterval()) {
       train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
     }
+  }
+
+  static uint32_t argmax(const float* const array, uint32_t len) {
+    assert(len > 0);
+
+    uint32_t max_index = 0;
+    float max_value = array[0];
+    for (uint32_t i = 1; i < len; i++) {
+      if (array[i] > max_value) {
+        max_index = i;
+        max_value = array[i];
+      }
+    }
+    return max_index;
   }
 
   friend class cereal::access;
