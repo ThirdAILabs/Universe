@@ -110,3 +110,4 @@ class TabularHashedFeatures : public Transformation {
 }  // namespace thirdai::data
 
 CEREAL_REGISTER_TYPE(thirdai::data::TabularHashedFeatures)
+CEREAL_FORCE_DYNAMIC_INIT(thirdai::data::TabularHashedFeatures)
