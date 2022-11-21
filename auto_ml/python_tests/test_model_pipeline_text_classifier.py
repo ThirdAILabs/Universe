@@ -81,7 +81,8 @@ def train_model_pipeline_text_classifier(download_clinc_dataset_model_pipeline):
     # train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     model.train(
         filename=train_filename,
-        epochs=5, learning_rate=0.01,
+        epochs=5,
+        learning_rate=0.01,
         max_in_memory_batches=12,
     )
 
@@ -150,11 +151,9 @@ def test_model_pipeline_text_classification_train_with_validation(
     train_filename, test_filename, _ = download_clinc_dataset_model_pipeline
 
     validation = bolt.Validation(
-         filename=test_filename, interval=4, metrics=["categorical_accuracy"]
+        filename=test_filename, interval=4, metrics=["categorical_accuracy"]
     )
 
     model.train(
-        filename=train_filename,
-        epochs=1, learning_rate=0.001,
-        validation=validation
+        filename=train_filename, epochs=1, learning_rate=0.001, validation=validation
     )
