@@ -12,38 +12,18 @@
 
 namespace thirdai::bolt {
 
-struct SequentialLayerConfig {
-  virtual uint64_t getDim() const = 0;
-
-  virtual float getSparsity() const = 0;
-
-  virtual ActivationFunction getActFunc() const = 0;
-
-  static void checkSparsity(float sparsity) {
-    if (sparsity > 1 || sparsity <= 0) {
-      throw std::invalid_argument(
-          "sparsity must be between 0 exclusive and 1 inclusive.");
-    }
-    if (0.2 < sparsity && sparsity < 1.0) {
-      std::cout << "WARNING: Using large sparsity value " << sparsity
-                << " in Layer, consider decreasing sparsity" << std::endl;
-    }
+static void checkSparsity(float sparsity) {
+  if (sparsity > 1 || sparsity <= 0) {
+    throw std::invalid_argument(
+        "sparsity must be between 0 exclusive and 1 inclusive.");
   }
-
-  virtual ~SequentialLayerConfig() = default;
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
+  if (0.2 < sparsity && sparsity < 1.0) {
+    std::cout << "WARNING: Using large sparsity value " << sparsity
+              << " in Layer, consider decreasing sparsity" << std::endl;
   }
-};
+}
 
-using SequentialConfigList =
-    std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>;
-
-class FullyConnectedLayerConfig final : public SequentialLayerConfig {
+class FullyConnectedLayerConfig final {
  private:
   uint64_t _dim;
   float _sparsity;
@@ -81,11 +61,11 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
     }
   }
 
-  uint64_t getDim() const final { return _dim; }
+  uint64_t getDim() const { return _dim; }
 
-  float getSparsity() const final { return _sparsity; }
+  float getSparsity() const { return _sparsity; }
 
-  ActivationFunction getActFunc() const final { return _activation_fn; }
+  ActivationFunction getActFunc() const { return _activation_fn; }
 
   const SamplingConfigPtr& getSamplingConfig() const {
     return _sampling_config;
@@ -105,60 +85,55 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<SequentialLayerConfig>(this), _dim, _sparsity,
-            _activation_fn, _sampling_config);
+    archive(_dim, _sparsity, _activation_fn, _sampling_config);
   }
 };
 
-struct ConvLayerConfig final : public SequentialLayerConfig {
-  uint64_t num_filters;
-  float sparsity;
-  ActivationFunction act_func;
-  SamplingConfigPtr sampling_config;
-  std::pair<uint32_t, uint32_t> kernel_size;
-  uint32_t num_patches;
+class ConvLayerConfig final {
+ public:
+  ConvLayerConfig(uint64_t num_filters, const std::string& activation,
+                  std::pair<uint32_t, uint32_t> kernel_size)
+      : ConvLayerConfig(num_filters, /* sparsity= */ 1.0, activation,
+                        kernel_size) {}
 
-  ConvLayerConfig(uint64_t _num_filters, float _sparsity,
-                  ActivationFunction _act_func, SamplingConfigPtr _config,
-                  std::pair<uint32_t, uint32_t> _kernel_size,
-                  uint32_t _num_patches)
-      : num_filters(_num_filters),
-        sparsity(_sparsity),
-        act_func(_act_func),
-        sampling_config(std::move(_config)),
-        kernel_size(std::move(_kernel_size)),
-        num_patches(_num_patches) {
+  ConvLayerConfig(uint64_t num_filters, float sparsity,
+                  const std::string& activation,
+                  std::pair<uint32_t, uint32_t> kernel_size)
+      : ConvLayerConfig(num_filters, sparsity, activation, kernel_size,
+                        DWTASamplingConfig::autotune(num_filters, sparsity)) {}
+
+  ConvLayerConfig(uint64_t num_filters, float sparsity,
+                  const std::string& activation,
+                  std::pair<uint32_t, uint32_t> kernel_size,
+                  SamplingConfigPtr config)
+      : _num_filters(num_filters),
+        _sparsity(sparsity),
+        _activation_fn(getActivationFunction(activation)),
+        _kernel_size(std::move(kernel_size)),
+        _sampling_config(std::move(config)) {
     checkSparsity(sparsity);
   }
 
-  ConvLayerConfig(uint64_t _num_filters, float _sparsity,
-                  ActivationFunction _act_func,
-                  std::pair<uint32_t, uint32_t> _kernel_size,
-                  uint32_t _num_patches)
-      : num_filters(_num_filters),
-        sparsity(_sparsity),
-        act_func(_act_func),
-        kernel_size(std::move(_kernel_size)),
-        num_patches(_num_patches) {
-    checkSparsity(sparsity);
-    if (sparsity < 1.0) {
-      uint32_t rp = (static_cast<uint32_t>(log2(num_filters)) / 3) * 3;
-      uint32_t k = rp / 3;
-      uint32_t rs = (num_filters * 4) / (1 << rp);
-      uint32_t l = sparsity < 0.1 ? 256 : 64;
-      sampling_config = std::make_unique<DWTASamplingConfig>(
-          /*num_tables= */ l,
-          /* hashes_per_table= */ k, rs);
-    } else {
-      sampling_config = nullptr;
-    }
+  float getSparsity() const { return _sparsity; }
+
+  ActivationFunction getActFunc() const { return _activation_fn; }
+
+ private:
+  // Private constructor for cereal
+  ConvLayerConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_num_filters, _sparsity, _activation_fn, _sampling_config,
+            _kernel_size);
   }
 
-  uint64_t getDim() const final { return num_filters * num_patches; }
-
-  float getSparsity() const final { return sparsity; }
-
-  ActivationFunction getActFunc() const final { return act_func; }
+  uint64_t _num_filters;
+  float _sparsity;
+  ActivationFunction _activation_fn;
+  std::pair<uint32_t, uint32_t> _kernel_size;
+  SamplingConfigPtr _sampling_config;
 };
 
 enum class EmbeddingReductionType {
