@@ -84,7 +84,7 @@ class PandasColumnMapGenerator(data.ColumnMapGenerator):
         dense_int_cols=set(),
         int_col_dims={},
         col_dtype_overrides={},
-        load_whole_file_per_node=False
+        load_whole_file_per_node=False,
     ):
         self.path = path
         self.num_nodes = num_nodes
@@ -120,8 +120,8 @@ class PandasColumnMapGenerator(data.ColumnMapGenerator):
             self.current_iterator = _pandas_iterator(
                 self.path, self.lines_per_load, self.node_index, self.num_nodes
             )
-        else: 
-            # Passing in 0 as node index and 1 as num_nodes, make sure that 
+        else:
+            # Passing in 0 as node index and 1 as num_nodes, make sure that
             # we iterate over all the data source
             self.current_iterator = _pandas_iterator(
                 self.path, self.lines_per_load, 0, 1
