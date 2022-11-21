@@ -53,7 +53,8 @@ class UniversalDeepTransformer : public ModelPipeline {
   static UniversalDeepTransformer buildUDT(
       ColumnDataTypes data_types,
       UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target_col, uint32_t n_target_classes,
+      std::string target_col,
+      std::optional<uint32_t> n_target_classes = std::nullopt,
       bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::unordered_map<std::string, std::string>& options = {}) {
@@ -109,18 +110,14 @@ class UniversalDeepTransformer : public ModelPipeline {
     return udtDatasetFactory().className(neuron_id);
   }
 
-  void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
+  void save_stream(std::ostream& output_stream) const {
+    cereal::BinaryOutputArchive oarchive(output_stream);
     oarchive(*this);
   }
 
-  static std::shared_ptr<UniversalDeepTransformer> load(
-      const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
+  static std::shared_ptr<UniversalDeepTransformer> load_stream(
+      std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
     std::shared_ptr<UniversalDeepTransformer> deserialize_into(
         new UniversalDeepTransformer());
     iarchive(*deserialize_into);

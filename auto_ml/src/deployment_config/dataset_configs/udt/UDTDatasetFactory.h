@@ -204,13 +204,46 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final { return _label_dim; }
 
+  bolt::InferenceOutputTracker processEvaluateOutput(
+      bolt::InferenceOutputTracker& output) final {
+    if (!_regression_categorical_block) {
+      return std::move(output);
+    }
+    std::vector<float> predicted_values(output.numSamples());
+
+    for (uint32_t i = 0; i < output.numSamples(); i++) {
+      predicted_values[i] =
+          _regression_categorical_block->getPredictedNumericalValue(
+              output.activeNeuronsForSample(i), output.activationsForSample(i),
+              output.numNonzerosInOutput());
+    }
+
+    return bolt::InferenceOutputTracker(
+        /* active_neurons= */ std::nullopt,
+        /* activations= */ std::move(predicted_values),
+        /* num_nonzeros_per_sample= */ 1);
+  }
+
+  BoltVector processOutputVector(BoltVector& output) final {
+    if (!_regression_categorical_block) {
+      return std::move(output);
+    }
+
+    BoltVector value(/* l= */ 1, /* is_dense= */ true,
+                     /* has_gradient= */ false);
+    value.activations[0] =
+        _regression_categorical_block->getPredictedNumericalValue(
+            output.active_neurons, output.activations, output.len);
+
+    return value;
+  }
+
  private:
   PreprocessedVectorsMap processAllMetadata() {
     PreprocessedVectorsMap metadata_vectors;
     for (const auto& [col_name, col_type] : _config->data_types) {
-      if (col_type.isCategorical()) {
-        auto categorical = col_type.asCategorical();
-        if (categorical.metadata_config) {
+      if (auto categorical = asCategorical(col_type)) {
+        if (categorical->metadata_config) {
           metadata_vectors[col_name] =
               makeProcessedVectorsForCategoricalColumn(col_name, categorical);
         }
@@ -220,13 +253,13 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
-      const std::string& col_name, const CategoricalDataType& categorical) {
-    if (!categorical.metadata_config) {
+      const std::string& col_name, const CategoricalDataTypePtr& categorical) {
+    if (!categorical->metadata_config) {
       throw std::invalid_argument("The given categorical column (" + col_name +
                                   ") does not have a metadata config.");
     }
 
-    auto metadata = categorical.metadata_config;
+    auto metadata = categorical->metadata_config;
 
     auto data_loader =
         dataset::SimpleFileDataLoader::make(metadata->metadata_file,
@@ -365,29 +398,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
           "data_types parameter must include the target column.");
     }
 
-    auto target_type = _config->data_types.at(_config->target);
-    if (!target_type.isCategorical()) {
-      throw std::invalid_argument(
-          "Target column must be a categorical column.");
-    }
-
-    auto col_num = column_number_map.at(_config->target);
-    auto target_config = target_type.asCategorical();
-
-    dataset::BlockPtr label_block;
-    if (_config->integer_target) {
-      label_block = dataset::NumericalCategoricalBlock::make(
-          /* col= */ col_num, /* n_classes= */ _config->n_target_classes,
-          /* delimiter= */ target_config.delimiter);
-    } else {
-      if (!_vocabs.count(_config->target)) {
-        _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
-            /* vocab_size= */ _config->n_target_classes);
-      }
-      label_block = dataset::StringLookupCategoricalBlock::make(
-          /* col= */ col_num, /* vocab= */ _vocabs.at(_config->target),
-          /* delimiter= */ target_config.delimiter);
-    }
+    dataset::BlockPtr label_block = getLabelBlock(column_number_map);
 
     auto input_blocks =
         buildInputBlocks(/* column_numbers= */ column_number_map,
@@ -398,6 +409,48 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
         /* hash_range= */ _config->hash_range);
     return processor;
+  }
+
+  dataset::BlockPtr getLabelBlock(const ColumnNumberMap& column_number_map) {
+    auto target_type = _config->data_types.at(_config->target);
+    auto target_col_num = column_number_map.at(_config->target);
+
+    if (asCategorical(target_type)) {
+      auto target_config = asCategorical(target_type);
+      if (!_config->n_target_classes) {
+        throw std::invalid_argument(
+            "n_target_classes must be specified for a classification task.");
+      }
+      if (_config->integer_target) {
+        return dataset::NumericalCategoricalBlock::make(
+            /* col= */ target_col_num,
+            /* n_classes= */ _config->n_target_classes.value(),
+            /* delimiter= */ target_config->delimiter);
+      }
+      if (!_vocabs.count(_config->target)) {
+        _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
+            /* vocab_size= */ _config->n_target_classes.value());
+      }
+      return dataset::StringLookupCategoricalBlock::make(
+          /* col= */ target_col_num, /* vocab= */ _vocabs.at(_config->target),
+          /* delimiter= */ target_config->delimiter);
+    }
+    if (asNumerical(target_type)) {
+      auto target_config = asNumerical(target_type);
+      uint32_t num_bins = _config->n_target_classes.value_or(
+          UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
+
+      _regression_categorical_block = dataset::RegressionCategoricalBlock::make(
+          /* col= */ target_col_num, /* min= */ target_config->range.first,
+          /* max= */ target_config->range.second, /* num_bins= */ num_bins,
+          /* correct_label_radius= */
+          UDTConfig::REGRESSION_CORRECT_LABEL_RADIUS,
+          /* labels_sum_to_one= */ true);
+
+      return _regression_categorical_block;
+    }
+    throw std::invalid_argument(
+        "Target column must have type numerical or categorical.");
   }
 
   /**
@@ -526,6 +579,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   uint32_t _text_pairgram_word_limit;
   bool _contextual_columns;
 
+  dataset::RegressionCategoricalBlockPtr _regression_categorical_block;
+
   // Private constructor for cereal.
   UDTDatasetFactory() {}
 
@@ -537,7 +592,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _column_number_map, _column_number_to_name,
             _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _input_dim, _label_dim,
-            _parallel, _text_pairgram_word_limit, _contextual_columns);
+            _parallel, _text_pairgram_word_limit, _contextual_columns,
+            _regression_categorical_block);
   }
 };
 

@@ -1,3 +1,4 @@
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -136,6 +137,21 @@ TEST_F(CategoricalBlockTest, ProducesCorrectVectorsDifferentColumns) {
   }
 }
 
+void verifyExpectedLabels(
+    const BoltBatch& labels,
+    const std::vector<std::vector<uint32_t>>& expected_labels) {
+  EXPECT_EQ(labels.getBatchSize(), expected_labels.size());
+
+  for (uint32_t vec_index = 0; vec_index < labels.getBatchSize(); vec_index++) {
+    ASSERT_EQ(labels[vec_index].len, expected_labels.at(vec_index).size());
+    for (uint32_t i = 0; i < labels[vec_index].len; i++) {
+      ASSERT_EQ(labels[vec_index].active_neurons[i],
+                expected_labels.at(vec_index).at(i));
+      ASSERT_EQ(labels[vec_index].activations[i], 1.0);
+    }
+  }
+}
+
 TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
   std::vector<std::shared_ptr<Block>> multi_label_blocks = {
       NumericalCategoricalBlock::make(/* col= */ 0,
@@ -161,16 +177,28 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
       {55, 67, 82, 149, 102},
       {36, 184, 159, 106}};
 
-  EXPECT_EQ(labels.getBatchSize(), expected_labels.size());
+  verifyExpectedLabels(labels, expected_labels);
+}
 
-  for (uint32_t vec_index = 0; vec_index < labels.getBatchSize(); vec_index++) {
-    ASSERT_EQ(labels[vec_index].len, expected_labels.at(vec_index).size());
-    for (uint32_t i = 0; i < labels[vec_index].len; i++) {
-      ASSERT_EQ(labels[vec_index].active_neurons[i],
-                expected_labels.at(vec_index).at(i));
-      ASSERT_EQ(labels[vec_index].activations[i], 1.0);
-    }
-  }
+TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
+  std::vector<BlockPtr> blocks = {RegressionCategoricalBlock::make(
+      /* col= */ 0, /* min= */ 1.0, /* max= */ 11.0, /* num_bins= */ 20,
+      /* correct_label_radius= */ 1, /* labels_sum_to_one= */ false)};
+
+  GenericBatchProcessor batch_processor(
+      /* input_blocks= */ {}, /* label_blocks= */ blocks,
+      /* has_header= */ false, /* delimiter= */ ',');
+
+  std::vector<std::string> rows = {"3.7", "2.8",  "9.2",  "5.9",
+                                   "1.3", "10.8", "12.1", "-3.2"};
+
+  auto [_, labels] = batch_processor.createBatch(rows);
+
+  std::vector<std::vector<uint32_t>> expected_labels = {
+      {4, 5, 6}, {2, 3, 4}, {15, 16, 17}, {8, 9, 10},
+      {0, 1},    {18, 19},  {18, 19},     {0, 1}};
+
+  verifyExpectedLabels(labels, expected_labels);
 }
 
 }  // namespace thirdai::dataset

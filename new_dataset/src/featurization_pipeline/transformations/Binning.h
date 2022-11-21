@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
 // Bins a dense float column into categorical sparse values. If the input column
 // is the same as the output column then that column will be replaced in the
@@ -60,6 +60,6 @@ class BinningTransformation final : public Transformation {
   uint32_t _num_bins;
 };
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::BinningTransformation)
+CEREAL_REGISTER_TYPE(thirdai::data::BinningTransformation)

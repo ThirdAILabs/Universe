@@ -15,8 +15,8 @@ def test_binning_transformation():
     column2_np = np.arange(start=10, stop=n_rows + 10, dtype=np.float32)
     np.random.shuffle(column2_np)
 
-    column1 = data.columns.NumpyDenseValueColumn(column1_np)
-    column2 = data.columns.NumpyDenseValueColumn(column2_np)
+    column1 = data.columns.DenseFeatureColumn(column1_np)
+    column2 = data.columns.DenseFeatureColumn(column2_np)
 
     columns = data.ColumnMap({"column1": column1, "column2": column2})
 

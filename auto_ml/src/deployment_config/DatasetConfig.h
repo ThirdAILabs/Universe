@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include "BlockConfig.h"
+#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
@@ -145,6 +146,15 @@ class DatasetLoaderFactory {
     throw std::runtime_error(
         "This model cannot map ids to string labels since it assumes integer "
         "labels; the ids and labels are equivalent.");
+  }
+
+  virtual bolt::InferenceOutputTracker processEvaluateOutput(
+      bolt::InferenceOutputTracker& output) {
+    return std::move(output);
+  }
+
+  virtual BoltVector processOutputVector(BoltVector& output) {
+    return std::move(output);
   }
 
   virtual ~DatasetLoaderFactory() = default;
