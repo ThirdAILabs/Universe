@@ -389,7 +389,7 @@ void createUDTFactory(py::module_& bolt_submodule) {
                     std::optional<uint32_t>, bool>(),
            py::arg("filename"), py::arg("metrics"),
            py::arg("interval") = std::nullopt,
-           py::arg("use_sparse_inference") = false);
+           py::arg("use_sparse_inference") = false, docs::VALIDATION);
 }
 
 void createUDTClassifierAndGenerator(py::module_& models_submodule) {

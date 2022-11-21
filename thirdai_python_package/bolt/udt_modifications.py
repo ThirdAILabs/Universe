@@ -37,9 +37,9 @@ def modify_udt_classifier():
         batch_size: Optional[int] = None,
         max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
-        callbacks: List[bolt.callbacks.Callback] = None,
-        metrics: List[str] = None,
-        logging_interval: int = None,
+        callbacks: List[bolt.callbacks.Callback] = [],
+        metrics: List[str] = [],
+        logging_interval: Optional[int] = None,
     ):
         if batch_size is None:
             batch_size = self.default_train_batch_size
@@ -74,7 +74,21 @@ def modify_udt_classifier():
 
     wrapped_train.__doc__ = classifier_train_doc
 
-    def wrapped_evaluate(self, filename: str, eval_config: bolt.EvalConfig = None):
+    def wrapped_evaluate(
+        self,
+        filename: str,
+        metrics: List[str] = [],
+        use_sparse_inference: bool = False,
+        verbose: bool = True,
+    ):
+        eval_config = bolt.EvalConfig()
+        if not verbose:
+            eval_config.silence()
+        if metrics:
+            eval_config.with_metrics(metrics)
+        if use_sparse_inference:
+            eval_config.enable_sparse_inference()
+
         if filename.startswith("s3://"):
             return original_eval_with_loader_method(
                 self,
@@ -82,7 +96,7 @@ def modify_udt_classifier():
                     filename,
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
                 ),
-                eval_config,
+                eval_config=bolt.EvalConfig(),
             )
 
         return original_eval_method(self, filename, eval_config)
