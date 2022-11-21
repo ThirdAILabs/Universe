@@ -342,7 +342,16 @@ void createDatasetSubmodule(py::module_& module) {
                      std::move(batches));
              return dataset;
            }),
-           py::arg("batches"));
+           py::arg("batches"), R"pbdoc(
+            Construct a BoltDataset from an iterable of BoltBatches. Makes
+            copies in the process which can potentially be costly, use judiciously.
+            
+            Args: 
+                batches (Iterable[BoltBatch]): Batches
+
+            Returns:
+                BoltDataset: The constructed dataset.
+           )pbdoc");
 
   py::class_<numpy::WrappedNumpyVectors,  // NOLINT
              std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
@@ -369,7 +378,16 @@ void createDatasetSubmodule(py::module_& module) {
              BoltBatch batch(std::move(vectors));
              return batch;
            }),
-           py::arg("values"));
+           py::arg("vectors"), R"pbdoc(
+            Construct a BoltBatch from an iterable of BoltVectors. Makes copies
+            in the process which can be costly, use judiciously.
+
+            Args: 
+                vectors (Iterable[BoltVector]): BoltVectors constituting the Batch.
+
+            Returns:
+                BoltBatch: The constructed Batch.
+           )pbdoc");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", SvmDatasetLoader::loadDatasetFromFile,
