@@ -235,21 +235,22 @@ void createModelPipeline(py::module_& models_submodule) {
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
            bolt::python::OutputRedirect())
-      .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
+      .def("train_with_file", &ModelPipeline::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
            py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_FILE, bolt::python::OutputRedirect())
-      .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
-           py::arg("train_config"), py::arg("validation") = std::nullopt,
+      .def("train_with_loader", &ModelPipeline::trainOnDataLoader,
+           py::arg("data_source"), py::arg("train_config"),
+           py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
            bolt::python::OutputRedirect())
-      .def("evaluate", &evaluateOnFileWrapper<ModelPipeline>,
+      .def("evaluate_with_file", &evaluateOnFileWrapper<ModelPipeline>,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
            docs::MODEL_PIPELINE_EVALUATE_FILE, bolt::python::OutputRedirect())
-      .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
-           py::arg("eval_config") = std::nullopt,
+      .def("evaluate_with_loader", &evaluateOnDataLoaderWrapper,
+           py::arg("data_source"), py::arg("eval_config") = std::nullopt,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
            bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<ModelPipeline, LineInput>,
@@ -271,7 +272,13 @@ void createModelPipeline(py::module_& models_submodule) {
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
                   docs::MODEL_PIPELINE_LOAD)
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
-           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
+           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR)
+      .def_property_readonly("default_train_batch_size",
+                             &ModelPipeline::defaultBatchSize)
+      .def_property_readonly_static("default_evaluate_batch_size",
+                                    [](const py::object& /* self */) {
+                                      return DEFAULT_EVALUATE_BATCH_SIZE;
+                                    });
 }
 
 // These need to be here instead of inside UDTFactory because otherwise I was
@@ -407,34 +414,8 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
            docs::UDT_INIT, bolt::python::OutputRedirect())
-      // Currently these two train methods are not exposed directly in python.
-      // This will be fixed when we move to the new dataset pipeline and add a
-      // proper UDT python wrapper.
-      // TODO(Josh): Add a proper UDT python wrapper.
-      .def("train_with_file", &UniversalDeepTransformer::trainOnFile,
-           py::arg("filename"), py::arg("train_config"),
-           py::arg("batch_size") = std::nullopt,
-           py::arg("validation") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt,
-           bolt::python::OutputRedirect())
-      .def("train_with_loader", &UniversalDeepTransformer::trainOnDataLoader,
-           py::arg("data_source"), py::arg("train_config"),
-           py::arg("validation") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt,
-           bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      // Currently these two evaluate methods are not exposed directly in
-      // python. This will be fixed when we move to the new dataset pipeline and
-      // add a proper UDT python wrapper.
-      // TODO(Josh): Add a proper UDT python wrapper.
-      .def("evaluate_with_file",
-           &evaluateOnFileWrapper<UniversalDeepTransformer>,
-           py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           bolt::python::OutputRedirect())
-      .def("evaluate_with_loader", &evaluateOnDataLoaderWrapper,
-           py::arg("data_source"), py::arg("eval_config") = std::nullopt,
-           bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            docs::UDT_PREDICT)
@@ -461,12 +442,6 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
       .def("explain", &UniversalDeepTransformer::explain<MapInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
            docs::UDT_EXPLAIN)
-      .def_property_readonly("default_train_batch_size",
-                             &UniversalDeepTransformer::defaultBatchSize)
-      .def_property_readonly_static("default_evaluate_batch_size",
-                                    [](const py::object& /* self */) {
-                                      return DEFAULT_EVALUATE_BATCH_SIZE;
-                                    })
       .def("save", &UDTFactory::save_classifier, py::arg("filename"),
            docs::UDT_SAVE);
 

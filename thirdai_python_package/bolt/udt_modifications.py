@@ -23,10 +23,10 @@ def create_s3_loader(path, batch_size):
 # interface is clean.
 def modify_udt_classifier():
 
-    original_train_method = bolt.models.UDTClassifier.train_with_file
-    original_train_with_loader_method = bolt.models.UDTClassifier.train_with_loader
-    original_eval_method = bolt.models.UDTClassifier.evaluate_with_file
-    original_eval_with_loader_method = bolt.models.UDTClassifier.evaluate_with_loader
+    original_train_method = bolt.models.Pipeline.train_with_file
+    original_train_with_loader_method = bolt.models.Pipeline.train_with_loader
+    original_eval_method = bolt.models.Pipeline.evaluate_with_file
+    original_eval_with_loader_method = bolt.models.Pipeline.evaluate_with_loader
 
     def wrapped_train(
         self,
@@ -89,10 +89,10 @@ def modify_udt_classifier():
 
     wrapped_evaluate.__doc__ = classifier_eval_doc
 
-    delattr(bolt.models.UDTClassifier, "train_with_file")
-    delattr(bolt.models.UDTClassifier, "train_with_loader")
-    delattr(bolt.models.UDTClassifier, "evaluate_with_file")
-    delattr(bolt.models.UDTClassifier, "evaluate_with_loader")
+    delattr(bolt.models.Pipeline, "train_with_file")
+    delattr(bolt.models.Pipeline, "train_with_loader")
+    delattr(bolt.models.Pipeline, "evaluate_with_file")
+    delattr(bolt.models.Pipeline, "evaluate_with_loader")
 
-    bolt.models.UDTClassifier.train = wrapped_train
-    bolt.models.UDTClassifier.evaluate = wrapped_evaluate
+    bolt.models.Pipeline.train = wrapped_train
+    bolt.models.Pipeline.evaluate = wrapped_evaluate
