@@ -21,6 +21,39 @@ namespace thirdai::automl::deployment {
 
 const uint32_t DEFAULT_EVALUATE_BATCH_SIZE = 2048;
 
+class ValidationOptions {
+ public:
+  ValidationOptions(std::string filename, std::vector<std::string> metrics,
+                    std::optional<uint32_t> interval, bool use_sparse_inference)
+      : _filename(std::move(filename)),
+        _metrics(std::move(metrics)),
+        _interval(interval),
+        _use_sparse_inference(use_sparse_inference) {}
+
+  const std::string& filename() const { return _filename; }
+
+  // TODO(Nicholas): Refactor ValidationContext to use an optional to indicate
+  // validation batch frequency instead of having 0 be a special value.
+  uint32_t interval() const { return _interval.value_or(0); }
+
+  bolt::EvalConfig validationConfig() const {
+    bolt::EvalConfig val_config =
+        bolt::EvalConfig::makeConfig().withMetrics(_metrics);
+
+    if (_use_sparse_inference) {
+      val_config.enableSparseInference();
+    }
+
+    return val_config;
+  }
+
+ private:
+  std::string _filename;
+  std::vector<std::string> _metrics;
+  std::optional<uint32_t> _interval;
+  bool _use_sparse_inference;
+};
+
 /**
  * This class represents an end-to-end data processing + model pipeline. It
  * handles all functionality from loading data to training, evaulation, and
@@ -48,16 +81,18 @@ class ModelPipeline {
 
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
                    std::optional<uint32_t> batch_size_opt,
+                   const std::optional<ValidationOptions>& validation,
                    std::optional<uint32_t> max_in_memory_batches) {
     uint32_t batch_size =
         batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
     trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
-                      train_config, max_in_memory_batches);
+                      train_config, validation, max_in_memory_batches);
   }
 
   void trainOnDataLoader(
       const std::shared_ptr<dataset::DataLoader>& data_source,
       bolt::TrainConfig& train_config,
+      const std::optional<ValidationOptions>& validation,
       std::optional<uint32_t> max_in_memory_batches) {
     _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
     data_source->restart();
@@ -70,7 +105,7 @@ class ModelPipeline {
     if (max_in_memory_batches) {
       trainOnStream(dataset, train_config, max_in_memory_batches.value());
     } else {
-      trainInMemory(dataset, train_config);
+      trainInMemory(dataset, train_config, validation);
     }
   }
 
@@ -216,10 +251,24 @@ class ModelPipeline {
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
-  void trainInMemory(DatasetLoaderPtr& dataset,
-                     bolt::TrainConfig train_config) {
+  void trainInMemory(DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+                     const std::optional<ValidationOptions>& validation) {
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
+
+    if (validation) {
+      auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
+          dataset::SimpleFileDataLoader::make(validation->filename(),
+                                              DEFAULT_EVALUATE_BATCH_SIZE),
+          /* training= */ false);
+
+      auto [val_data, val_labels] =
+          validation_dataset->loadInMemory(std::numeric_limits<uint32_t>::max())
+              .value();
+
+      train_config.withValidation(val_data, val_labels,
+                                  validation->validationConfig());
+    }
 
     uint32_t epochs = train_config.epochs();
 

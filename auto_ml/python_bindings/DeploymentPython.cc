@@ -237,10 +237,11 @@ void createModelPipeline(py::module_& models_submodule) {
            bolt::python::OutputRedirect())
       .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
+           py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_FILE, bolt::python::OutputRedirect())
       .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
-           py::arg("train_config"),
+           py::arg("train_config"), py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
            bolt::python::OutputRedirect())
@@ -375,6 +376,13 @@ void createUDTFactory(py::module_& bolt_submodule) {
 
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
+
+  py::class_<ValidationOptions>(bolt_submodule, "Validation")
+      .def(py::init<std::string, std::vector<std::string>,
+                    std::optional<uint32_t>, bool>(),
+           py::arg("filename"), py::arg("metrics"),
+           py::arg("interval") = std::nullopt,
+           py::arg("use_sparse_inference") = false);
 }
 
 void createUDTClassifierAndGenerator(py::module_& models_submodule) {
@@ -404,16 +412,14 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
       // proper UDT python wrapper.
       // TODO(Josh): Add a proper UDT python wrapper.
       .def("train_with_file", &UniversalDeepTransformer::trainOnFile,
-           py::arg("filename"),
-           py::arg("train_config") = bolt::TrainConfig::makeConfig(
-               /* learning_rate= */ 0.001, /* epochs= */ 3),
+           py::arg("filename"), py::arg("train_config"),
            py::arg("batch_size") = std::nullopt,
+           py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("train_with_loader", &UniversalDeepTransformer::trainOnDataLoader,
-           py::arg("data_source"),
-           py::arg("train_config") = bolt::TrainConfig::makeConfig(
-               /* learning_rate= */ 0.001, /* epochs= */ 3),
+           py::arg("data_source"), py::arg("train_config"),
+           py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,

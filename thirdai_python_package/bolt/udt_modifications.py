@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from urllib.parse import urlparse
 
 import thirdai
@@ -31,14 +31,29 @@ def modify_udt_classifier():
     def wrapped_train(
         self,
         filename: str,
-        train_config: bolt.TrainConfig = bolt.TrainConfig(
-            learning_rate=0.001, epochs=3
-        ),
+        learning_rate: float = 0.001,
+        epochs: int = 3,
+        validation: Optional[bolt.Validation] = None,
         batch_size: Optional[int] = None,
         max_in_memory_batches: Optional[int] = None,
+        verbose: bool = True,
+        callbacks: List[bolt.callbacks.Callback] = None,
+        metrics: List[str] = None,
+        logging_interval: int = None,
     ):
         if batch_size is None:
             batch_size = self.default_train_batch_size
+
+        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+
+        if not verbose:
+            train_config.silence()
+        if callbacks:
+            train_config.with_callbacks(callbacks)
+        if metrics:
+            train_config.with_metrics(metrics)
+        if logging_interval:
+            train_config.with_log_loss_frequency(logging_interval)
 
         if filename.startswith("s3://"):
             return original_train_with_loader_method(
@@ -49,7 +64,12 @@ def modify_udt_classifier():
             )
 
         return original_train_method(
-            self, filename, train_config, batch_size, max_in_memory_batches
+            self,
+            filename=filename,
+            train_config=train_config,
+            batch_size=batch_size,
+            validation=validation,
+            max_in_memory_batches=max_in_memory_batches,
         )
 
     wrapped_train.__doc__ = classifier_train_doc
