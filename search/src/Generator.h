@@ -157,13 +157,11 @@ class QueryCandidateGeneratorConfig {
   uint32_t _range;
   std::vector<uint32_t> _n_grams;
 
-  // Identifies if the dataset contains pairs of correct and incorrect queries
   std::optional<uint32_t> _reservoir_size;
 
   std::string _source_column_name;
   std::string _target_column_name;
   uint32_t _default_text_encoding_dim;
-  std::string _queries_file_name;
 
   // Private constructor for cereal
   QueryCandidateGeneratorConfig() {}
@@ -173,7 +171,7 @@ class QueryCandidateGeneratorConfig {
   void serialize(Archive& archive) {
     archive(_hash_function, _num_tables, _hashes_per_table, _batch_size, _range,
             _n_grams, _reservoir_size, _source_column_name, _target_column_name,
-            _default_text_encoding_dim, _queries_file_name);
+            _default_text_encoding_dim);
   }
 };
 

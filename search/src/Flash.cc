@@ -1,4 +1,5 @@
 #include <wrappers/src/LicenseWrapper.h>
+#include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
@@ -6,6 +7,7 @@
 #include <search/src/Flash.h>
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <stdexcept>
 #include <vector>
@@ -33,10 +35,18 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
   thirdai::licensing::LicenseWrapper::checkLicense();
 }
 
+template <typename... Args>
+std::optional<ProgressBar> createProgressBar(bool make, Args... args) {
+  if (!make) {
+    return std::nullopt;
+  }
+  return std::make_optional<ProgressBar>(args...);
+}
+
 template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
     const dataset::InMemoryDataset<BoltBatch>& dataset,
-    const std::vector<std::vector<LABEL_T>>& labels) {
+    const std::vector<std::vector<LABEL_T>>& labels, bool progress_bar) {
   if (dataset.numBatches() != labels.size()) {
     throw std::invalid_argument(
         "Number of data and label batches must be same.");
@@ -44,8 +54,19 @@ void Flash<LABEL_T>::addDataset(
   for (uint64_t batch_index = 0; batch_index < dataset.numBatches();
        batch_index++) {
     const auto& batch = dataset[batch_index];
+    std::optional<ProgressBar> bar = createProgressBar(
+        /* make = */ progress_bar,
+        /* description = */ fmt::format("Processing batch {}", batch_index + 1),
+        /* max_steps = */ dataset.numBatches());
 
     addBatch(batch, labels[batch_index]);
+    if (bar) {
+      bar->increment();
+    }
+    if (bar && batch_index == dataset.numBatches() - 1) {
+      bar->close(/* comment = */ fmt::format(
+          "Finished processing {} datapoints", batch.getBatchSize()));
+    }
   }
 }
 

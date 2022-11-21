@@ -53,7 +53,8 @@ class Flash {
    * will run through the entire dataset.
    */
   void addDataset(const dataset::InMemoryDataset<BoltBatch>& dataset,
-                  const std::vector<std::vector<LABEL_T>>& labels);
+                  const std::vector<std::vector<LABEL_T>>& labels,
+                  bool progress_bar);
 
   void addDataset(dataset::StreamingDataset<BoltBatch>& dataset,
                   const std::vector<std::vector<LABEL_T>>& labels);
