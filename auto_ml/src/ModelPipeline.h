@@ -110,7 +110,7 @@ class ModelPipeline {
       }
     }
 
-    return output;
+    return _dataset_factory->processEvaluateOutput(output);
   }
 
   template <typename InputType>
@@ -127,7 +127,7 @@ class ModelPipeline {
       }
     }
 
-    return output;
+    return _dataset_factory->processOutputVector(output);
   }
 
   template <typename InputBatchType>
@@ -146,6 +146,10 @@ class ModelPipeline {
           output.activations[prediction_index] = threshold.value() + 0.0001;
         }
       }
+    }
+
+    for (auto& vector : outputs) {
+      vector = _dataset_factory->processOutputVector(vector);
     }
 
     return outputs;
