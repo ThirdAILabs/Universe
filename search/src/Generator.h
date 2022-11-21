@@ -252,7 +252,8 @@ class QueryCandidateGenerator {
       }
     }
 
-    _flash_index->addDataset(*data, labels);
+    _flash_index->addDataset(/* dataset = */ *data, /* labels = */ labels,
+                             /* progress_bar = */ true);
   }
 
   /**
