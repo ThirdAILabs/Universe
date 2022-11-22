@@ -9,10 +9,10 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
+#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>

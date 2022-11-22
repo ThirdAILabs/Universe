@@ -6,7 +6,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/variant.hpp>
 #include <bolt/src/layers/LayerConfig.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
+#include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <cstdint>
 #include <optional>
 #include <sstream>

@@ -1,10 +1,10 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
+#include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>

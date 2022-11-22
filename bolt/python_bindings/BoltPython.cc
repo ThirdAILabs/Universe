@@ -7,7 +7,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/DataTypes.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <pybind11/cast.h>
