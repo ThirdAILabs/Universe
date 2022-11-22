@@ -75,7 +75,7 @@ class DatasetContext final : public DatasetContextBase {
   const dataset::BoltDatasetPtr& labels() const { return _labels; }
 
  private:
-  static void verifyBatchSizes(const dataset::DatasetBaseList& datasets) {
+  static void verifyBatchSizes(const dataset::BoltDatasetList& datasets) {
     uint64_t first_batch_size = datasets.front()->batchSize();
     for (const auto& dataset : datasets) {
       if (dataset->batchSize() != first_batch_size) {
@@ -89,7 +89,7 @@ class DatasetContext final : public DatasetContextBase {
     }
   }
 
-  static void verifyDatasetLens(const dataset::DatasetBaseList& datasets) {
+  static void verifyDatasetLens(const dataset::BoltDatasetList& datasets) {
     uint64_t first_dataset_len = datasets.front()->len();
     for (const auto& dataset : datasets) {
       if (dataset->len() != first_dataset_len) {
@@ -105,7 +105,7 @@ class DatasetContext final : public DatasetContextBase {
 
   std::vector<dataset::BoltDatasetPtr> _data;
   dataset::BoltDatasetPtr _labels;
-  std::vector<dataset::DatasetBasePtr> _all_dag_datasets;
+  std::vector<dataset::BoltDatasetPtr> _all_dag_datasets;
 };
 
 /**

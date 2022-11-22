@@ -39,9 +39,6 @@ class DatasetBase {
   }
 };
 
-using DatasetBasePtr = std::shared_ptr<DatasetBase>;
-using DatasetBaseList = std::vector<DatasetBasePtr>;
-
 template <typename BATCH_T>
 class InMemoryDataset : public DatasetBase {
  public:
