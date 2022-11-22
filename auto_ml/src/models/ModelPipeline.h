@@ -63,7 +63,7 @@ class ValidationOptions {
  */
 class ModelPipeline {
  public:
-  ModelPipeline(DatasetLoaderFactoryPtr dataset_factory,
+  ModelPipeline(data::DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,
                 deployment::TrainEvalParameters train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
@@ -230,19 +230,9 @@ class ModelPipeline {
     return deserialize_into;
   }
 
-  std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(
-      const std::string& filename) {
-    auto file_loader = dataset::SimpleFileDataLoader::make(
-        filename, DEFAULT_EVALUATE_BATCH_SIZE);
-
-    auto dataset_loader =
-        _dataset_factory->getLabeledDatasetLoader(std::move(file_loader),
-                                                  /* training= */ false);
-    return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
-        .value();
+  data::DatasetLoaderFactoryPtr getDataProcessor() const {
+    return _dataset_factory;
   }
-
-  DatasetLoaderFactoryPtr getDataProcessor() const { return _dataset_factory; }
 
  protected:
   // Protected constructor for cereal.
@@ -252,7 +242,8 @@ class ModelPipeline {
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
-  void trainInMemory(DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+  void trainInMemory(data::DatasetLoaderPtr& dataset,
+                     bolt::TrainConfig train_config,
                      const std::optional<ValidationOptions>& validation) {
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
@@ -288,7 +279,8 @@ class ModelPipeline {
 
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
-  void trainOnStream(DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+  void trainOnStream(data::DatasetLoaderPtr& dataset,
+                     bolt::TrainConfig train_config,
                      uint32_t max_in_memory_batches) {
     uint32_t epochs = train_config.epochs();
     // We want a single epoch in the train config in order to train for a single
@@ -307,7 +299,7 @@ class ModelPipeline {
     }
   }
 
-  void trainSingleEpochOnStream(DatasetLoaderPtr& dataset,
+  void trainSingleEpochOnStream(data::DatasetLoaderPtr& dataset,
                                 const bolt::TrainConfig& train_config,
                                 uint32_t max_in_memory_batches) {
     while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
@@ -352,7 +344,7 @@ class ModelPipeline {
   }
 
  protected:
-  DatasetLoaderFactoryPtr _dataset_factory;
+  data::DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   deployment::TrainEvalParameters _train_eval_config;
 };

@@ -14,7 +14,7 @@ namespace thirdai::automl::deployment {
 class UDTDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
  public:
   explicit UDTDatasetFactoryConfig(
-      HyperParameterPtr<UDTConfigPtr> config,
+      HyperParameterPtr<data::UDTConfigPtr> config,
       HyperParameterPtr<bool> force_parallel,
       HyperParameterPtr<uint32_t> text_pairgram_word_limit,
       HyperParameterPtr<bool> contextual_columns)
@@ -23,18 +23,19 @@ class UDTDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
         _text_pairgram_word_limit(std::move(text_pairgram_word_limit)),
         _contextual_columns(std::move(contextual_columns)) {}
 
-  DatasetLoaderFactoryPtr createDatasetState(
+  data::DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const final {
     auto config = _config->resolve(user_specified_parameters);
     auto parallel = _force_parallel->resolve(user_specified_parameters);
     auto text_pairgram_word_limit =
         _text_pairgram_word_limit->resolve(user_specified_parameters);
 
-    return UDTDatasetFactory::make(config, parallel, text_pairgram_word_limit);
+    return data::UDTDatasetFactory::make(config, parallel,
+                                         text_pairgram_word_limit);
   }
 
  private:
-  HyperParameterPtr<UDTConfigPtr> _config;
+  HyperParameterPtr<data::UDTConfigPtr> _config;
   HyperParameterPtr<bool> _force_parallel;
   HyperParameterPtr<uint32_t> _text_pairgram_word_limit;
   HyperParameterPtr<bool> _contextual_columns;

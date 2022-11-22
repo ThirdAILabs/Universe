@@ -11,7 +11,7 @@ namespace thirdai::automl::deployment {
  */
 class DatasetLoaderFactoryConfig {
  public:
-  virtual DatasetLoaderFactoryPtr createDatasetState(
+  virtual data::DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const = 0;
 
   virtual ~DatasetLoaderFactoryConfig() = default;

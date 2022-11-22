@@ -11,7 +11,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::automl {
+namespace thirdai::automl::data {
 
 class ColumnNumberMap {
  public:
@@ -76,4 +76,4 @@ class ColumnNumberMap {
 
 using ColumnNumberMapPtr = std::shared_ptr<ColumnNumberMap>;
 
-}  // namespace thirdai::automl
+}  // namespace thirdai::automl::data

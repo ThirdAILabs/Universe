@@ -13,7 +13,7 @@
 #include <memory>
 #include <optional>
 
-namespace thirdai::automl {
+namespace thirdai::automl::data {
 
 struct UDTConfig {
   static constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
@@ -93,4 +93,4 @@ struct UDTConfig {
 
 using UDTConfigPtr = std::shared_ptr<UDTConfig>;
 
-}  // namespace thirdai::automl
+}  // namespace thirdai::automl::data

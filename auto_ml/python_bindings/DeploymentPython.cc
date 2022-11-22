@@ -66,9 +66,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
       submodule, "SamplingConfigHyperParameter", docs::STR_HYPERPARAMETER);
 
-  py::class_<HyperParameter<UDTConfigPtr>,  // NOLINT
-             HyperParameterPtr<UDTConfigPtr>>(submodule,
-                                              "UDTConfigHyperParameter");
+  py::class_<HyperParameter<data::UDTConfigPtr>,  // NOLINT
+             HyperParameterPtr<data::UDTConfigPtr>>(submodule,
+                                                    "UDTConfigHyperParameter");
 
   /**
    * Do not change the order of these overloads. Because bool is a sublclass of
@@ -83,8 +83,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defConstantParameter<std::string>(submodule, /* add_docs= */ false);
   defConstantParameter<bolt::SamplingConfigPtr>(submodule,
                                                 /* add_docs= */ false);
-  defConstantParameter<UDTConfigPtr>(submodule,
-                                     /* add_docs= */ false);
+  defConstantParameter<data::UDTConfigPtr>(submodule,
+                                           /* add_docs= */ false);
 
   defOptionMappedParameter<bool>(submodule, /* add_docs= */ true);
   defOptionMappedParameter<uint32_t>(submodule, /* add_docs= */ false);
@@ -92,8 +92,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defOptionMappedParameter<std::string>(submodule, /* add_docs= */ false);
   defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule,
                                                     /* add_docs= */ false);
-  defOptionMappedParameter<UDTConfigPtr>(submodule,
-                                         /* add_docs= */ false);
+  defOptionMappedParameter<data::UDTConfigPtr>(submodule,
+                                               /* add_docs= */ false);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"),
@@ -186,8 +186,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<UDTDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<UDTDatasetFactoryConfig>>(submodule,
                                                        "UDTDatasetFactory")
-      .def(py::init<HyperParameterPtr<UDTConfigPtr>, HyperParameterPtr<bool>,
-                    HyperParameterPtr<uint32_t>, HyperParameterPtr<bool>>(),
+      .def(py::init<HyperParameterPtr<data::UDTConfigPtr>,
+                    HyperParameterPtr<bool>, HyperParameterPtr<uint32_t>,
+                    HyperParameterPtr<bool>>(),
            py::arg("config"), py::arg("force_parallel"),
            py::arg("text_pairgram_word_limit"), py::arg("contextual_columns"));
 
@@ -211,17 +212,17 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def_static("load", &DeploymentConfig::load, py::arg("filename"),
                   docs::DEPLOYMENT_CONFIG_LOAD);
 
-  py::class_<UDTDatasetFactory, UDTDatasetFactoryPtr>(submodule,
-                                                      "TemporalContext")
-      .def("reset", &UDTDatasetFactory::resetTemporalTrackers,
+  py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
+      submodule, "TemporalContext")
+      .def("reset", &data::UDTDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
            py::overload_cast<const LineInput&>(
-               &UDTDatasetFactory::updateTemporalTrackers),
+               &data::UDTDatasetFactory::updateTemporalTrackers),
            py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
       .def("batch_update_temporal_trackers",
            py::overload_cast<const LineInputBatch&>(
-               &UDTDatasetFactory::batchUpdateTemporalTrackers),
+               &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
 }
 
@@ -266,8 +267,6 @@ void createModelPipeline(py::module_& models_submodule) {
       .def("predict_batch", &predictBatchWrapper<ModelPipeline, LineInputBatch>,
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
-      .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
-           py::arg("filename"), bolt::python::OutputRedirect())
       .def("save", &ModelPipeline::save, py::arg("filename"),
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
@@ -300,8 +299,8 @@ class UDTFactory {
   }
 
   static UniversalDeepTransformer buildUDTClassifierWrapper(
-      py::object& obj, ColumnDataTypes data_types,
-      UserProvidedTemporalRelationships temporal_tracking_relationships,
+      py::object& obj, data::ColumnDataTypes data_types,
+      data::UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
@@ -373,7 +372,7 @@ void createUDTFactory(py::module_& bolt_submodule) {
       .def("__new__", &UDTFactory::buildUDTClassifierWrapper,
            py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
-               UserProvidedTemporalRelationships(),
+               data::UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
@@ -396,9 +395,10 @@ void createUDTFactory(py::module_& bolt_submodule) {
 }
 
 void createUDTClassifierAndGenerator(py::module_& models_submodule) {
-  py::class_<UDTConfig, UDTConfigPtr>(models_submodule, "UDTConfig")
-      .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
-                    std::string, uint32_t, bool, std::string, uint32_t, char>(),
+  py::class_<data::UDTConfig, data::UDTConfigPtr>(models_submodule, "UDTConfig")
+      .def(py::init<data::ColumnDataTypes,
+                    data::UserProvidedTemporalRelationships, std::string,
+                    uint32_t, bool, std::string, uint32_t, char>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
            py::arg("target"), py::arg("n_target_classes"),
            py::arg("integer_target") = false,
@@ -411,7 +411,7 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
                                                         "UDTClassifier")
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
-               UserProvidedTemporalRelationships(),
+               data::UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
@@ -519,7 +519,7 @@ py::object makeUserSpecifiedParameter(const std::string& name,
 
   if (py::str(type).cast<std::string>() ==
       "<class 'thirdai._thirdai.bolt.models.UDTConfig'>") {
-    return py::cast(UserSpecifiedParameter<UDTConfigPtr>::make(name));
+    return py::cast(UserSpecifiedParameter<data::UDTConfigPtr>::make(name));
   }
 
   throw std::invalid_argument("Invalid type '" +
@@ -549,8 +549,8 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
       cpp_parameters.emplace(name, UserParameterInput(value));
-    } else if (py::isinstance<UDTConfig>(v)) {
-      UDTConfigPtr value = v.cast<UDTConfigPtr>();
+    } else if (py::isinstance<data::UDTConfig>(v)) {
+      data::UDTConfigPtr value = v.cast<data::UDTConfigPtr>();
       cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
       throw std::invalid_argument("Invalid type '" +

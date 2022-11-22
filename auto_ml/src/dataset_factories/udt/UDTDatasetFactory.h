@@ -37,7 +37,7 @@
 #include <variant>
 #include <vector>
 
-namespace thirdai::automl {
+namespace thirdai::automl::data {
 
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
@@ -599,6 +599,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
 using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
-}  // namespace thirdai::automl
+}  // namespace thirdai::automl::data
 
-CEREAL_REGISTER_TYPE(thirdai::automl::UDTDatasetFactory)
+CEREAL_REGISTER_TYPE(thirdai::automl::data::UDTDatasetFactory)

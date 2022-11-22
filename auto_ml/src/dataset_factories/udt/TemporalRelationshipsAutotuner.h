@@ -11,7 +11,7 @@
 #include <optional>
 #include <string>
 
-namespace thirdai::automl {
+namespace thirdai::automl::data {
 
 class TemporalRelationshipsAutotuner {
  public:
@@ -94,4 +94,4 @@ class TemporalRelationshipsAutotuner {
   }
 };
 
-}  // namespace thirdai::automl
+}  // namespace thirdai::automl::data

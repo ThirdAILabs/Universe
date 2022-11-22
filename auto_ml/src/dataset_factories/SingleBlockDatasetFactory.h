@@ -17,7 +17,7 @@
 #include <string_view>
 #include <unordered_map>
 
-namespace thirdai::automl {
+namespace thirdai::automl::data {
 
 class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
  public:
@@ -113,6 +113,6 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
   }
 };
 
-}  // namespace thirdai::automl
+}  // namespace thirdai::automl::data
 
-CEREAL_REGISTER_TYPE(thirdai::automl::SingleBlockDatasetFactory)
+CEREAL_REGISTER_TYPE(thirdai::automl::data::SingleBlockDatasetFactory)

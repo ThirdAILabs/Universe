@@ -23,7 +23,7 @@
 #include <utility>
 #include <variant>
 
-namespace thirdai::automl {
+namespace thirdai::automl::data {
 
 struct CategoricalMetadataConfig;
 using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
@@ -260,9 +260,9 @@ using UserProvidedTemporalRelationships =
 using TemporalRelationships =
     std::map<std::string, std::vector<TemporalConfig>>;
 
-}  // namespace thirdai::automl
+}  // namespace thirdai::automl::data
 
-CEREAL_REGISTER_TYPE(thirdai::automl::CategoricalDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::NumericalDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::DateDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::TextDataType)
+CEREAL_REGISTER_TYPE(thirdai::automl::data::CategoricalDataType)
+CEREAL_REGISTER_TYPE(thirdai::automl::data::NumericalDataType)
+CEREAL_REGISTER_TYPE(thirdai::automl::data::DateDataType)
+CEREAL_REGISTER_TYPE(thirdai::automl::data::TextDataType)

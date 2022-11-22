@@ -51,15 +51,15 @@ class UniversalDeepTransformer : public ModelPipeline {
    *    pairgrams or not. Defaults to false and only does tabular unigrams.
    */
   static UniversalDeepTransformer buildUDT(
-      ColumnDataTypes data_types,
-      UserProvidedTemporalRelationships temporal_tracking_relationships,
+      data::ColumnDataTypes data_types,
+      data::UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target_col,
       std::optional<uint32_t> n_target_classes = std::nullopt,
       bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
       const std::unordered_map<std::string, std::string>& options = {}) {
-    auto dataset_config = std::make_shared<UDTConfig>(
+    auto dataset_config = std::make_shared<data::UDTConfig>(
         std::move(data_types), std::move(temporal_tracking_relationships),
         std::move(target_col), n_target_classes, integer_target,
         std::move(time_granularity), lookahead, delimiter);
@@ -67,7 +67,7 @@ class UniversalDeepTransformer : public ModelPipeline {
     auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
           embedding_dimension] = processUDTOptions(options);
 
-    auto dataset_factory = UDTDatasetFactory::make(
+    auto dataset_factory = data::UDTDatasetFactory::make(
         /* config= */ std::move(dataset_config),
         /* force_parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
@@ -174,13 +174,14 @@ class UniversalDeepTransformer : public ModelPipeline {
     return graph;
   }
 
-  UDTDatasetFactory& udtDatasetFactory() const {
+  data::UDTDatasetFactory& udtDatasetFactory() const {
     /*
       It is safe to return an l-reference because the parent class stores a
       smart pointer. This ensures that the object is always in scope for as
       long as the model.
     */
-    return *std::dynamic_pointer_cast<UDTDatasetFactory>(_dataset_factory);
+    return *std::dynamic_pointer_cast<data::UDTDatasetFactory>(
+        _dataset_factory);
   }
 
   struct UDTOptions {

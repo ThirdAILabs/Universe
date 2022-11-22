@@ -23,7 +23,7 @@ class SingleBlockDatasetFactoryConfig final
         _delimiter(std::move(delimiter)),
         _has_header(has_header) {}
 
-  DatasetLoaderFactoryPtr createDatasetState(
+  data::DatasetLoaderFactoryPtr createDatasetState(
       const UserInputMap& user_specified_parameters) const final {
     dataset::BlockPtr label_block = _label_block->getBlock(
         /* column= */ 0, user_specified_parameters);
@@ -44,7 +44,7 @@ class SingleBlockDatasetFactoryConfig final
           delimiter + "'.");
     }
 
-    return std::make_shared<SingleBlockDatasetFactory>(
+    return std::make_shared<data::SingleBlockDatasetFactory>(
         /* data_block= */ data_block,
         /* unlabeled_data_block= */ unlabeled_data_block,
         /* label_block=*/label_block, /* shuffle= */ shuffle,
