@@ -78,7 +78,6 @@ def train_model_pipeline_text_classifier(download_clinc_dataset_model_pipeline):
 
     train_filename, _, _ = download_clinc_dataset_model_pipeline
 
-    # train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     model.train(
         filename=train_filename,
         epochs=5,
