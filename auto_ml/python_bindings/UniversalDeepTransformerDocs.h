@@ -66,6 +66,9 @@ Args:
         (predict the current value of the target).
     delimiter (str): Optional. Defaults to ','. A single character 
         (length-1 string) that separates the columns of the CSV training / validation dataset.
+    model_config (Optional[str]): This allows for specification of a custom model 
+        configuration file that overrides the autotuned model UDT will create by 
+        default. 
 
 Examples:
     >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
