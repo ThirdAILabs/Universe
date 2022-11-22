@@ -352,9 +352,9 @@ void createDatasetSubmodule(py::module_& module) {
                 BoltDataset: The constructed dataset.
            )pbdoc");
 
-  py::class_<numpy::WrappedNumpyVectors,  // NOLINT
-             std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
-      dataset_submodule, "WrappedNumpyVectors");
+  // py::class_<numpy::WrappedNumpyVectors,  // NOLINT
+  //            std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
+  //     dataset_submodule, "WrappedNumpyVectors");
 
   // TODO(josh): Add __iter__ method so we can do foreach loops in pthon and c++
   // TODO(josh): This segfaults if the user passes in an index that is too large
