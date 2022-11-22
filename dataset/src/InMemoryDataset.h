@@ -2,8 +2,6 @@
 
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "utils/SafeFileIO.h"
 #include <bolt_vector/src/BoltVector.h>
@@ -17,30 +15,8 @@
 
 namespace thirdai::dataset {
 
-class DatasetBase {
- public:
-  DatasetBase() {}
-
-  virtual uint64_t len() const = 0;
-
-  virtual uint64_t batchSize() const = 0;
-
-  virtual uint64_t batchSize(uint64_t batch_idx) const = 0;
-
-  virtual uint64_t numBatches() const = 0;
-
-  virtual ~DatasetBase() = default;
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    (void)archive;
-  }
-};
-
 template <typename BATCH_T>
-class InMemoryDataset : public DatasetBase {
+class InMemoryDataset {
  public:
   // Take r-value reference for batches to force a move. len is the total number
   // of elements in the dataset. We move into _batches to make sure that once
@@ -93,15 +69,15 @@ class InMemoryDataset : public DatasetBase {
 
   auto end() const { return _batches.end(); }
 
-  uint64_t numBatches() const final { return _batches.size(); }
+  uint64_t numBatches() const { return _batches.size(); }
 
-  uint64_t len() const final { return _len; }
+  uint64_t len() const { return _len; }
 
   // The last batch size can be less than this (but only if there is more than
   // 1 batch)
-  uint64_t batchSize() const final { return _batch_size; }
+  uint64_t batchSize() const { return _batch_size; }
 
-  uint64_t batchSize(uint64_t batch_idx) const final {
+  uint64_t batchSize(uint64_t batch_idx) const {
     return _batches[batch_idx].getBatchSize();
   }
 
@@ -130,7 +106,7 @@ class InMemoryDataset : public DatasetBase {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetBase>(this), _batches, _len, _batch_size);
+    archive(_batches, _len, _batch_size);
   }
 
   std::vector<BATCH_T> _batches;
@@ -139,5 +115,3 @@ class InMemoryDataset : public DatasetBase {
 };
 
 }  // namespace thirdai::dataset
-
-CEREAL_REGISTER_TYPE(thirdai::dataset::InMemoryDataset<thirdai::BoltBatch>)
