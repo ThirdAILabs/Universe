@@ -278,7 +278,7 @@ void createModelPipeline(py::module_& models_submodule) {
                              &ModelPipeline::defaultBatchSize)
       .def_property_readonly_static("default_evaluate_batch_size",
                                     [](const py::object& /* self */) {
-                                      return DEFAULT_EVALUATE_BATCH_SIZE;
+                                      return models::DEFAULT_EVALUATE_BATCH_SIZE;
                                     });
 }
 
@@ -378,7 +378,7 @@ void createUDTFactory(py::module_& bolt_submodule) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("options") = OptionsMap(), docs::UDT_INIT,
+           py::arg("options") = models::OptionsMap(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
@@ -387,7 +387,7 @@ void createUDTFactory(py::module_& bolt_submodule) {
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 
-  py::class_<ValidationOptions>(bolt_submodule, "Validation")
+  py::class_<models::ValidationOptions>(bolt_submodule, "Validation")
       .def(py::init<std::string, std::vector<std::string>,
                     std::optional<uint32_t>, bool>(),
            py::arg("filename"), py::arg("metrics"),
@@ -416,7 +416,7 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("options") = OptionsMap(), docs::UDT_INIT,
+           py::arg("options") = models::OptionsMap(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
@@ -584,7 +584,7 @@ py::object evaluateOnFileWrapper(Model& model, const std::string& filename,
                                  std::optional<bolt::EvalConfig>& eval_config) {
   return evaluateOnDataLoaderWrapper(model,
                                      dataset::SimpleFileDataLoader::make(
-                                         filename, DEFAULT_EVALUATE_BATCH_SIZE),
+                                         filename, models::DEFAULT_EVALUATE_BATCH_SIZE),
                                      eval_config);
 }
 

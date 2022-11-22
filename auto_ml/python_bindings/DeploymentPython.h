@@ -15,6 +15,9 @@ namespace py = pybind11;
 
 namespace thirdai::automl::deployment::python {
 
+using ModelPipeline = models::ModelPipeline;
+using UniversalDeepTransformer = models::UniversalDeepTransformer;
+
 void createDeploymentSubmodule(py::module_& thirdai_module);
 
 void createUDTFactory(py::module_& bolt_submodule);

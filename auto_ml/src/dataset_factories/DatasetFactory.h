@@ -19,7 +19,7 @@
 #include <unordered_set>
 #include <variant>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl {
 
 /**
  * Structure of Dataset Loading:
@@ -165,4 +165,4 @@ class DatasetLoaderFactory {
 
 using DatasetLoaderFactoryPtr = std::shared_ptr<DatasetLoaderFactory>;
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl

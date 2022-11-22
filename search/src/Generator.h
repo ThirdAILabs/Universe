@@ -33,8 +33,8 @@
 
 namespace thirdai::bolt {
 
-using thirdai::automl::deployment::ColumnNumberMap;
-using thirdai::automl::deployment::ColumnNumberMapPtr;
+using thirdai::automl::ColumnNumberMap;
+using thirdai::automl::ColumnNumberMapPtr;
 using thirdai::search::Flash;
 
 class QueryCandidateGeneratorConfig {

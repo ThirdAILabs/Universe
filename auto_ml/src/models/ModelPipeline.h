@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::models {
 
 const uint32_t DEFAULT_EVALUATE_BATCH_SIZE = 2048;
 
@@ -65,13 +65,13 @@ class ModelPipeline {
  public:
   ModelPipeline(DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,
-                TrainEvalParameters train_eval_parameters)
+                deployment::TrainEvalParameters train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
         _train_eval_config(train_eval_parameters) {}
 
-  static auto make(const DeploymentConfigPtr& config,
-                   const std::unordered_map<std::string, UserParameterInput>&
+  static auto make(const deployment::DeploymentConfigPtr& config,
+                   const std::unordered_map<std::string, deployment::UserParameterInput>&
                        user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
@@ -353,7 +353,7 @@ class ModelPipeline {
  protected:
   DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
-  TrainEvalParameters _train_eval_config;
+  deployment::TrainEvalParameters _train_eval_config;
 };
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl::models

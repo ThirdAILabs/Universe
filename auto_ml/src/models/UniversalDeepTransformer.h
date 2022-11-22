@@ -19,7 +19,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::models {
 
 using OptionsMap = std::unordered_map<std::string, std::string>;
 
@@ -85,7 +85,7 @@ class UniversalDeepTransformer : public ModelPipeline {
           /* output_dim= */ dataset_factory->getLabelDim(),
           /* hidden_layer_size= */ embedding_dimension);
     }
-    TrainEvalParameters train_eval_parameters(
+    deployment::TrainEvalParameters train_eval_parameters(
         /* rebuild_hash_tables_interval= */ std::nullopt,
         /* reconstruct_hash_functions_interval= */ std::nullopt,
         /* default_batch_size= */ DEFAULT_INFERENCE_BATCH_SIZE,
@@ -140,12 +140,12 @@ class UniversalDeepTransformer : public ModelPipeline {
   static bolt::BoltGraphPtr loadUDTBoltGraph(
       const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
       const std::string& saved_model_config) {
-    auto model_config = ModelConfig::load(saved_model_config);
+    auto model_config = deployment::ModelConfig::load(saved_model_config);
 
     // This will pass the output (label) dimension of the model into the model
     // config so that it can be used to determine the model architecture.
-    UserInputMap parameters = {{DatasetLabelDimensionParameter::PARAM_NAME,
-                                UserParameterInput(output_dim)}};
+    deployment::UserInputMap parameters = {{deployment::DatasetLabelDimensionParameter::PARAM_NAME,
+                                deployment::UserParameterInput(output_dim)}};
 
     return model_config->createModel(input_nodes, parameters);
   }
@@ -157,7 +157,7 @@ class UniversalDeepTransformer : public ModelPipeline {
                                                       /* activation= */ "relu");
     hidden->addPredecessor(input_nodes[0]);
 
-    auto sparsity = AutotunedSparsityParameter::autotuneSparsity(output_dim);
+    auto sparsity = deployment::AutotunedSparsityParameter::autotuneSparsity(output_dim);
     const auto* activation = "softmax";
     auto output = bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity,
                                                           activation);
@@ -253,4 +253,4 @@ class UniversalDeepTransformer : public ModelPipeline {
   }
 };
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl::models
