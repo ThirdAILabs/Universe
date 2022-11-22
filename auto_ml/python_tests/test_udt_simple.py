@@ -342,13 +342,13 @@ def test_model_config_override():
         nodes=[
             deployment.FullyConnectedNodeConfig(
                 name="hidden",
-                dim=deployment.UserSpecifiedParameter("output_dim", type=int),
+                dim=deployment.DatasetLabelDimensionParameter(),
                 activation=deployment.ConstantParameter("relu"),
                 predecessor="input",
             ),
             deployment.FullyConnectedNodeConfig(
                 name="output",
-                dim=deployment.UserSpecifiedParameter("output_dim", type=int),
+                dim=deployment.DatasetLabelDimensionParameter(),
                 sparsity=deployment.ConstantParameter(1.0),
                 activation=deployment.ConstantParameter("softmax"),
                 predecessor="hidden",

@@ -142,9 +142,10 @@ class UniversalDeepTransformer : public ModelPipeline {
       const std::string& saved_model_config) {
     auto model_config = ModelConfig::load(saved_model_config);
 
-    // We pass in output_dim as a parameter so that the model config can be
-    // parameterized on that variable.
-    UserInputMap parameters = {{"output_dim", UserParameterInput(output_dim)}};
+    // This will pass the output (label) dimension of the model into the model
+    // config so that it can be used to determine the model architecture.
+    UserInputMap parameters = {{DatasetLabelDimensionParameter::PARAM_NAME,
+                                UserParameterInput(output_dim)}};
 
     return model_config->createModel(input_nodes, parameters);
   }
