@@ -57,6 +57,7 @@ class UniversalDeepTransformer : public ModelPipeline {
       std::optional<uint32_t> n_target_classes = std::nullopt,
       bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
+      const std::optional<std::string>& model_config = std::nullopt,
       const std::unordered_map<std::string, std::string>& options = {}) {
     auto dataset_config = std::make_shared<UDTConfig>(
         std::move(data_types), std::move(temporal_tracking_relationships),
@@ -72,11 +73,18 @@ class UniversalDeepTransformer : public ModelPipeline {
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
         /* contextual_columns= */ contextual_columns);
 
-    auto model = buildUDTBoltGraph(
-        /* input_nodes= */ dataset_factory->getInputNodes(),
-        /* output_dim= */ dataset_factory->getLabelDim(),
-        /* hidden_layer_size= */ embedding_dimension);
-
+    bolt::BoltGraphPtr model;
+    if (model_config) {
+      model =
+          loadUDTBoltGraph(/* input_nodes= */ dataset_factory->getInputNodes(),
+                           /* output_dim= */ dataset_factory->getLabelDim(),
+                           /* saved_model_config= */ model_config.value());
+    } else {
+      model = buildUDTBoltGraph(
+          /* input_nodes= */ dataset_factory->getInputNodes(),
+          /* output_dim= */ dataset_factory->getLabelDim(),
+          /* hidden_layer_size= */ embedding_dimension);
+    }
     TrainEvalParameters train_eval_parameters(
         /* rebuild_hash_tables_interval= */ std::nullopt,
         /* reconstruct_hash_functions_interval= */ std::nullopt,
@@ -128,6 +136,18 @@ class UniversalDeepTransformer : public ModelPipeline {
  private:
   explicit UniversalDeepTransformer(ModelPipeline&& model)
       : ModelPipeline(model) {}
+
+  static bolt::BoltGraphPtr loadUDTBoltGraph(
+      const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
+      const std::string& saved_model_config) {
+    auto model_config = ModelConfig::load(saved_model_config);
+
+    // We pass in output_dim as a parameter so that the model config can be
+    // parameterized on that variable.
+    UserInputMap parameters = {{"output_dim", UserParameterInput(output_dim)}};
+
+    return model_config->createModel(input_nodes, parameters);
+  }
 
   static bolt::BoltGraphPtr buildUDTBoltGraph(
       std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
