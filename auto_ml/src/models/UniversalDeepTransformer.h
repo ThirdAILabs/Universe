@@ -9,10 +9,10 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/models/ModelPipeline.h>
-#include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <auto_ml/src/models/ModelPipeline.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
@@ -144,8 +144,9 @@ class UniversalDeepTransformer : public ModelPipeline {
 
     // This will pass the output (label) dimension of the model into the model
     // config so that it can be used to determine the model architecture.
-    deployment::UserInputMap parameters = {{deployment::DatasetLabelDimensionParameter::PARAM_NAME,
-                                deployment::UserParameterInput(output_dim)}};
+    deployment::UserInputMap parameters = {
+        {deployment::DatasetLabelDimensionParameter::PARAM_NAME,
+         deployment::UserParameterInput(output_dim)}};
 
     return model_config->createModel(input_nodes, parameters);
   }
@@ -157,7 +158,8 @@ class UniversalDeepTransformer : public ModelPipeline {
                                                       /* activation= */ "relu");
     hidden->addPredecessor(input_nodes[0]);
 
-    auto sparsity = deployment::AutotunedSparsityParameter::autotuneSparsity(output_dim);
+    auto sparsity =
+        deployment::AutotunedSparsityParameter::autotuneSparsity(output_dim);
     const auto* activation = "softmax";
     auto output = bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity,
                                                           activation);

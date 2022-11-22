@@ -9,7 +9,9 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/python_bindings/UniversalDeepTransformerDocs.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/models/ModelPipeline.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
+#include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -17,10 +19,8 @@
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
 #include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.h>
-#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
-#include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
-#include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.h>
+#include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/cast.h>
@@ -276,10 +276,10 @@ void createModelPipeline(py::module_& models_submodule) {
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR)
       .def_property_readonly("default_train_batch_size",
                              &ModelPipeline::defaultBatchSize)
-      .def_property_readonly_static("default_evaluate_batch_size",
-                                    [](const py::object& /* self */) {
-                                      return models::DEFAULT_EVALUATE_BATCH_SIZE;
-                                    });
+      .def_property_readonly_static(
+          "default_evaluate_batch_size", [](const py::object& /* self */) {
+            return models::DEFAULT_EVALUATE_BATCH_SIZE;
+          });
 }
 
 // These need to be here instead of inside UDTFactory because otherwise I was
@@ -582,10 +582,11 @@ py::object evaluateOnDataLoaderWrapper(
 template <typename Model>
 py::object evaluateOnFileWrapper(Model& model, const std::string& filename,
                                  std::optional<bolt::EvalConfig>& eval_config) {
-  return evaluateOnDataLoaderWrapper(model,
-                                     dataset::SimpleFileDataLoader::make(
-                                         filename, models::DEFAULT_EVALUATE_BATCH_SIZE),
-                                     eval_config);
+  return evaluateOnDataLoaderWrapper(
+      model,
+      dataset::SimpleFileDataLoader::make(filename,
+                                          models::DEFAULT_EVALUATE_BATCH_SIZE),
+      eval_config);
 }
 
 template <typename Model, typename InputType>

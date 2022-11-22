@@ -4,8 +4,8 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/dataset_factories/SingleBlockDatasetFactory.h>
+#include <auto_ml/src/deployment_config/DatasetConfig.h>
 
 namespace thirdai::automl::deployment {
 

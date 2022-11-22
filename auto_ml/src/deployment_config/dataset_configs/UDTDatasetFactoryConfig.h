@@ -5,9 +5,9 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 
 namespace thirdai::automl::deployment {
 

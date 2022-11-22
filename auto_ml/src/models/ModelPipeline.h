@@ -70,9 +70,10 @@ class ModelPipeline {
         _model(std::move(model)),
         _train_eval_config(train_eval_parameters) {}
 
-  static auto make(const deployment::DeploymentConfigPtr& config,
-                   const std::unordered_map<std::string, deployment::UserParameterInput>&
-                       user_specified_parameters) {
+  static auto make(
+      const deployment::DeploymentConfigPtr& config,
+      const std::unordered_map<std::string, deployment::UserParameterInput>&
+          user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
     return ModelPipeline(std::move(dataset_factory), std::move(model),
