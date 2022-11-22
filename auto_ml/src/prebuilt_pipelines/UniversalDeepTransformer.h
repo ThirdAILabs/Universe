@@ -174,23 +174,29 @@ class UniversalDeepTransformer : public ModelPipeline {
       if (option_name == "contextual_columns") {
         if (option_value == "true") {
           options.contextual_columns = true;
+        } else if (option_value == "false") {
+          options.contextual_columns = false;
         } else {
           throwOptionError(option_name, option_value,
-                           /* expected_option_value= */ "true");
+                           /* expected_option_values= */ "'true' or 'false'");
         }
       } else if (option_name == "force_parallel") {
         if (option_value == "true") {
           options.force_parallel = true;
+        } else if (option_value == "false") {
+          options.force_parallel = false;
         } else {
           throwOptionError(option_name, option_value,
-                           /* expected_option_value= */ "true");
+                           /* expected_option_values= */ "'true' or 'false'");
         }
       } else if (option_name == "freeze_hash_tables") {
-        if (option_value == "false") {
+        if (option_value == "true") {
+          options.freeze_hash_tables = true;
+        } else if (option_value == "false") {
           options.freeze_hash_tables = false;
         } else {
           throwOptionError(option_name, option_value,
-                           /* expected_option_value= */ "false");
+                           /* expected_option_values= */ "'true' or 'false'");
         }
       } else if (option_name == "embedding_dimension") {
         uint32_t int_value = utils::toInteger(option_value.c_str());
@@ -214,11 +220,11 @@ class UniversalDeepTransformer : public ModelPipeline {
 
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,
-                               const std::string& expected_option_value) {
+                               const std::string& expected_option_values) {
     throw std::invalid_argument(
         "Given invalid value for option '" + option_name +
-        "'. Expected value '" + expected_option_value +
-        "' but received value '" + given_option_value + "'.");
+        "'. Expected one of " + expected_option_values +
+        " but received value '" + given_option_value + "'.");
   }
 
   // Private constructor for cereal.
