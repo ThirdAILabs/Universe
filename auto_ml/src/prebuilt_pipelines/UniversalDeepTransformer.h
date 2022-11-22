@@ -171,32 +171,33 @@ class UniversalDeepTransformer : public ModelPipeline {
     auto options = UDTOptions();
 
     for (const auto& [option_name, option_value] : options_map) {
+      auto option_value_lower = utils::lower(option_value);
       if (option_name == "contextual_columns") {
-        if (option_value == "true") {
+        if (option_value_lower == "true") {
           options.contextual_columns = true;
-        } else if (option_value == "false") {
+        } else if (option_value_lower == "false") {
           options.contextual_columns = false;
         } else {
           throwOptionError(option_name, option_value,
-                           /* expected_option_values= */ "'true' or 'false'");
+                           /* expected_option_values= */ "'True' or 'False'");
         }
       } else if (option_name == "force_parallel") {
-        if (option_value == "true") {
+        if (option_value_lower == "true") {
           options.force_parallel = true;
-        } else if (option_value == "false") {
+        } else if (option_value_lower == "false") {
           options.force_parallel = false;
         } else {
           throwOptionError(option_name, option_value,
-                           /* expected_option_values= */ "'true' or 'false'");
+                           /* expected_option_values= */ "'True' or 'False'");
         }
       } else if (option_name == "freeze_hash_tables") {
-        if (option_value == "true") {
+        if (option_value_lower == "true") {
           options.freeze_hash_tables = true;
-        } else if (option_value == "false") {
+        } else if (option_value_lower == "false") {
           options.freeze_hash_tables = false;
         } else {
           throwOptionError(option_name, option_value,
-                           /* expected_option_values= */ "'true' or 'false'");
+                           /* expected_option_values= */ "'True' or 'False'");
         }
       } else if (option_name == "embedding_dimension") {
         uint32_t int_value = utils::toInteger(option_value.c_str());
