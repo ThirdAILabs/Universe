@@ -136,11 +136,7 @@ def make_trained_model_with_metadata(n_samples, metadata_src):
         n_target_classes=2,
     )
 
-    train_config = bolt.TrainConfig(epochs=3, learning_rate=0.01).with_metrics(
-        ["categorical_accuracy"]
-    )
-
-    model.train(TRAIN_FILE, train_config)
+    model.train(TRAIN_FILE, epochs=3, learning_rate=0.01)
 
     return model
 

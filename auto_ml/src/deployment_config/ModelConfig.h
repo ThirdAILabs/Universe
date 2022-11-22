@@ -1,12 +1,14 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/vector.hpp>
 #include "NodeConfig.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -64,6 +66,22 @@ class ModelConfig {
     model->compile(_loss);
 
     return model;
+  }
+
+  void save(const std::string& filename) {
+    auto output = dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::PortableBinaryOutputArchive oarchive(output);
+    oarchive(*this);
+  }
+
+  static std::shared_ptr<ModelConfig> load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::PortableBinaryInputArchive iarchive(filestream);
+    std::shared_ptr<ModelConfig> deserialize_into(new ModelConfig());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
   }
 
  private:

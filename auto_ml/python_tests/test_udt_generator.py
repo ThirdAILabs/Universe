@@ -21,14 +21,19 @@ def read_csv_file(file_name: str) -> List[List[str]]:
     with open(file_name, newline="") as file:
         data = list(csv.reader(file))
 
+    # Remove the file header
+    data = data[1:]
     return data
 
 
 def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
-    dataframe.to_csv(file_path, index=False, header=False)
+    # Add file header since the "train" and "evaluate" methods assume the
+    # input CSV file has a header.
+    dataframe.columns = ["target_column", "source_column"]
+    dataframe.to_csv(file_path, index=False)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def grammar_correction_dataset() -> pd.DataFrame:
     """
     The grammar correction dataset is retrieved from HuggingFace:
@@ -142,7 +147,9 @@ def run_generator_test(
 
 def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
     model = bolt.UniversalDeepTransformer(
-        source_column_index=1, target_column_index=0, dataset_size="small"
+        source_column="source_column",
+        target_column="target_column",
+        dataset_size="small",
     )
     model.train(filename=TRAIN_FILE_PATH)
     return model
@@ -154,13 +161,20 @@ def test_udt_generator(prepared_datasets):
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
 
 
-def test_udt_generator_load_save(prepared_datasets):
-    model = train_udt_query_reformulation_model()
+@pytest.mark.filterwarnings("ignore")
+def test_udt_generator_load_and_save(prepared_datasets):
+    trained_model = train_udt_query_reformulation_model()
+    run_generator_test(model=trained_model, source_col_index=1, target_col_index=0)
 
-    SAVE_FILE = "./saved_model_file.bolt"
-    model.save(SAVE_FILE)
+    trained_model.save(filename=MODEL_PATH)
 
-    loaded_model = bolt.UniversalDeepTransformer.load(SAVE_FILE)
-    run_generator_test(model=loaded_model, source_col_index=1, target_col_index=0)
+    deserialized_model = bolt.UniversalDeepTransformer.load(filename=MODEL_PATH)
+    model_eval_outputs = trained_model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
+    deserialized_model_outputs = deserialized_model.evaluate(
+        filename=TRAIN_FILE_PATH, top_k=5
+    )
 
-    os.remove(SAVE_FILE)
+    for index in range(len(model_eval_outputs)):
+        assert model_eval_outputs[index] == deserialized_model_outputs[index]
+
+    delete_created_files()
