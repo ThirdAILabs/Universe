@@ -15,14 +15,13 @@
 
 namespace thirdai::dataset {
 
-template <typename BATCH_T>
 class InMemoryDataset {
  public:
   // Take r-value reference for batches to force a move. len is the total number
   // of elements in the dataset. We move into _batches to make sure that once
   // the batches are moved into the constructor they get moved into the field in
   // the class. Otherwise c++ will copy this.
-  explicit InMemoryDataset(std::vector<BATCH_T>&& batches)
+  explicit InMemoryDataset(std::vector<BoltBatch>&& batches)
       : _batches(std::move(batches)) {
     if (_batches.empty()) {
       throw std::invalid_argument(
@@ -57,13 +56,13 @@ class InMemoryDataset {
     _len = _batch_size * (_batches.size() - 1) + last_batch_size;
   }
 
-  const BATCH_T& operator[](uint64_t i) const { return _batches[i]; }
+  const BoltBatch& operator[](uint64_t i) const { return _batches[i]; }
 
-  BATCH_T& operator[](uint64_t i) { return _batches[i]; }
+  BoltBatch& operator[](uint64_t i) { return _batches[i]; }
 
-  const BATCH_T& at(uint64_t i) const { return _batches.at(i); }
+  const BoltBatch& at(uint64_t i) const { return _batches.at(i); }
 
-  BATCH_T& at(uint64_t i) { return _batches.at(i); }
+  BoltBatch& at(uint64_t i) { return _batches.at(i); }
 
   auto begin() const { return _batches.begin(); }
 
@@ -81,12 +80,11 @@ class InMemoryDataset {
     return _batches[batch_idx].getBatchSize();
   }
 
-  static std::shared_ptr<InMemoryDataset<BATCH_T>> load(
-      const std::string& filename) {
+  static std::shared_ptr<InMemoryDataset> load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    auto deserialize_into = std::make_shared<InMemoryDataset<BATCH_T>>();
+    auto deserialize_into = std::make_shared<InMemoryDataset>();
     iarchive(*deserialize_into);
     return deserialize_into;
   }
@@ -109,7 +107,7 @@ class InMemoryDataset {
     archive(_batches, _len, _batch_size);
   }
 
-  std::vector<BATCH_T> _batches;
+  std::vector<BoltBatch> _batches;
   uint64_t _len;
   uint64_t _batch_size;
 };

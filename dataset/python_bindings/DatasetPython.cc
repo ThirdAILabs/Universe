@@ -338,8 +338,7 @@ void createDatasetSubmodule(py::module_& module) {
              using Batches = std::vector<BoltBatch>;
              auto batches = iterable.cast<Batches>();
              std::shared_ptr<BoltDataset> dataset =
-                 std::make_shared<InMemoryDataset<BoltBatch>>(
-                     std::move(batches));
+                 std::make_shared<InMemoryDataset>(std::move(batches));
              return dataset;
            }),
            py::arg("batches"), R"pbdoc(

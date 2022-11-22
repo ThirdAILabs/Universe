@@ -17,10 +17,9 @@ namespace thirdai::dataset::numpy {
 
 namespace py = pybind11;
 
-template <typename BATCH_T>
 class NumpyDataset;
 
-using WrappedNumpyVectors = NumpyDataset<BoltBatch>;
+using WrappedNumpyVectors = NumpyDataset;
 
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
@@ -38,12 +37,11 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
  * increments the reference counter and prevents python from deleting those
  * objects until this object is deleted.
  */
-template <typename BATCH_T>
-class NumpyDataset final : public InMemoryDataset<BATCH_T> {
+class NumpyDataset final : public InMemoryDataset {
  public:
-  NumpyDataset(std::vector<BATCH_T>&& batches,
+  NumpyDataset(std::vector<BoltBatch>&& batches,
                std::vector<py::object>&& objects_to_keep_alive)
-      : InMemoryDataset<BATCH_T>(std::move(batches)),
+      : InMemoryDataset(std::move(batches)),
         _objects_to_keep_alive(std::move(objects_to_keep_alive)) {}
 
  private:

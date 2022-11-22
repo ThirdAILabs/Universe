@@ -35,7 +35,7 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
 
 template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
-    const dataset::InMemoryDataset<BoltBatch>& dataset,
+    const dataset::InMemoryDataset& dataset,
     const std::vector<std::vector<LABEL_T>>& labels) {
   if (dataset.numBatches() != labels.size()) {
     throw std::invalid_argument(
