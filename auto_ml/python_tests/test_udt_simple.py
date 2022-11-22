@@ -1,9 +1,9 @@
 import platform
 
 import pytest
-from thirdai import bolt
+from thirdai import bolt, deployment
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 TRAIN_FILE = "tempTrainFile.csv"
 TEST_FILE = "tempTestFile.csv"
@@ -16,7 +16,9 @@ def write_lines_to_file(file, lines):
             f.writelines(line + "\n")
 
 
-def make_simple_trained_model(embedding_dim=None, integer_label=False):
+def make_simple_trained_model(
+    embedding_dim=None, integer_label=False, model_config=None
+):
     write_lines_to_file(
         TRAIN_FILE,
         [
@@ -79,6 +81,7 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
         target="movieId",
         n_target_classes=3,
         integer_target=integer_label,
+        model_config=model_config,
         options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
     )
 
@@ -134,6 +137,7 @@ def compare_explanations(explanations_1, explanations_2, assert_mode):
     platform.system() == "Windows",
     reason="Throwing an exception leads to an access violation on windows.",
 )
+@pytest.mark.release
 def test_temporal_not_in_data_type_throws():
     with pytest.raises(
         ValueError,
@@ -162,6 +166,7 @@ def test_temporal_not_in_data_type_throws():
         )
 
 
+@pytest.mark.release
 def test_save_load():
     save_file = "savefile.bolt"
     model = make_simple_trained_model(integer_label=False)
@@ -188,6 +193,7 @@ def test_save_load():
     compare_explanations(explain_res, saved_explain_res, assert_mode="equal")
 
 
+@pytest.mark.release
 def test_multiple_predict_returns_same_results():
     model = make_simple_trained_model(integer_label=False)
     first = model.predict(single_sample())
@@ -199,6 +205,7 @@ def test_multiple_predict_returns_same_results():
     assert (first_batch == second_batch).all()
 
 
+@pytest.mark.release
 def test_index_changes_predict_result():
     model = make_simple_trained_model(integer_label=False)
     first = model.predict(single_sample())
@@ -211,6 +218,7 @@ def test_index_changes_predict_result():
     assert (second != third).any()
 
 
+@pytest.mark.release
 def test_embedding_representation_returns_correct_dimension():
     for embedding_dim in [128, 256]:
         model = make_simple_trained_model(embedding_dim=embedding_dim)
@@ -219,6 +227,7 @@ def test_embedding_representation_returns_correct_dimension():
         assert (embedding != 0).any()
 
 
+@pytest.mark.release
 def test_explanations_total_percentage():
     model = make_simple_trained_model(integer_label=False)
     explanations = model.explain(single_sample())
@@ -229,6 +238,7 @@ def test_explanations_total_percentage():
     assert total_percentage > 99.99 and total_percentage < 100.01
 
 
+@pytest.mark.release
 def test_different_explanation_target_returns_different_results():
     model = make_simple_trained_model(integer_label=False)
 
@@ -251,6 +261,7 @@ def test_explanations_target_label_format():
         model.explain(single_sample(), target_class="1")
 
 
+@pytest.mark.release
 def test_neuron_id_to_target_class_map():
     model = make_simple_trained_model(integer_label=False)
     prediction = model.predict(single_sample())
@@ -267,6 +278,7 @@ def test_neuron_id_to_target_class_map():
     assert all([seen for seen in labels_seen.values()])
 
 
+@pytest.mark.release
 def test_reset_clears_history():
     model = make_simple_trained_model(integer_label=False)
     model.reset_temporal_trackers()
@@ -281,6 +293,7 @@ def test_reset_clears_history():
     assert (first == after_reset).all()
 
 
+@pytest.mark.release
 def test_works_without_temporal_relationships():
     write_lines_to_file(
         TRAIN_FILE,
@@ -315,3 +328,40 @@ def test_works_without_temporal_relationships():
     model.evaluate(TEST_FILE)
 
     # No assertion as we just want to know that there is no error.
+
+
+def test_model_config_override():
+    # This test creates a model config with the property that the hidden layer
+    # dimension is the same as the regular dimension and checks that UDT correctly
+    # loads and uses the model config in place of its default model architecture.
+
+    model_config = deployment.ModelConfig(
+        input_names=["input"],
+        nodes=[
+            deployment.FullyConnectedNodeConfig(
+                name="hidden",
+                dim=deployment.DatasetLabelDimensionParameter(),
+                activation=deployment.ConstantParameter("relu"),
+                predecessor="input",
+            ),
+            deployment.FullyConnectedNodeConfig(
+                name="output",
+                dim=deployment.DatasetLabelDimensionParameter(),
+                sparsity=deployment.ConstantParameter(1.0),
+                activation=deployment.ConstantParameter("softmax"),
+                predecessor="hidden",
+            ),
+        ],
+        loss=bolt.nn.losses.CategoricalCrossEntropy(),
+    )
+
+    MODEL_CONFIG_PATH = "./model_config_override"
+    model_config.save(MODEL_CONFIG_PATH)
+
+    model = make_simple_trained_model(model_config=MODEL_CONFIG_PATH)
+
+    # We made the dimension of the hidden layer dimension the same as the number
+    # of output classes in the model. Since the number of target classes is 3, the
+    # embedding dimension should be 3 as well. This will not happen with the default
+    # udt model architecture.
+    assert model.embedding_representation(single_sample()).shape == (3,)

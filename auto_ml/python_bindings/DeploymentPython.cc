@@ -142,7 +142,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def(py::init<std::vector<std::string>, std::vector<NodeConfigPtr>,
                     std::shared_ptr<bolt::LossFunction>>(),
            py::arg("input_names"), py::arg("nodes"), py::arg("loss"),
-           docs::MODEL_CONFIG_INIT);
+           docs::MODEL_CONFIG_INIT)
+      .def("save", &ModelConfig::save, py::arg("filename"));
 
   py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig",  // NOLINT
                                           docs::BLOCK_CONFIG);
@@ -303,7 +304,7 @@ class UDTFactory {
       UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
-      char delimiter,
+      char delimiter, const std::optional<std::string>& model_config,
       const std::unordered_map<std::string, std::string>& options) {
     (void)obj;
     return UniversalDeepTransformer::buildUDT(
@@ -315,6 +316,7 @@ class UDTFactory {
         /* integer_target = */ integer_target,
         /* time_granularity = */ std::move(time_granularity),
         /* lookahead = */ lookahead, /* delimiter = */ delimiter,
+        /* model_config= */ model_config,
         /* options = */ options);
   }
 
@@ -375,8 +377,9 @@ void createUDTFactory(py::module_& bolt_submodule) {
            py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
-           docs::UDT_INIT, bolt::python::OutputRedirect())
+           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("options") = OptionsMap(), docs::UDT_INIT,
+           bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
@@ -412,8 +415,9 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
-           docs::UDT_INIT, bolt::python::OutputRedirect())
+           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("options") = OptionsMap(), docs::UDT_INIT,
+           bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
