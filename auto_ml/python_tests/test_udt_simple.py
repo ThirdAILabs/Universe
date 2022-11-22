@@ -85,8 +85,7 @@ def make_simple_trained_model(
         options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
     )
 
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     return model
 
@@ -325,8 +324,7 @@ def test_works_without_temporal_relationships():
         n_target_classes=3,
     )
 
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
     model.evaluate(TEST_FILE)
 
     # No assertion as we just want to know that there is no error.
