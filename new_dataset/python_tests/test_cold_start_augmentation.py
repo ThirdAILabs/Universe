@@ -47,14 +47,14 @@ def create_test_column_map(text_columns, labels):
     """
     Creates a column map from input dictionaries of strings and lists of
     integers. The text_column dictionary entries become StringColumns with
-    the name equal to their key, while the labels become a NumpySparseArrayColumn
+    the name equal to their key, while the labels become a TokenArrayColumn
     named "labels." Note: text_columns should not contain "labels" as a key.
     Arguments:
         strong: Dictionary from string name to list of strings for strong text.
         weak: Dictionary from string name to list of strings for weak text.
     """
     label_list = np.array(labels, dtype=np.uint32).reshape([-1, 1])
-    label_column = data.columns.NumpySparseArrayColumn(
+    label_column = data.columns.TokenArrayColumn(
         array=label_list, dim=np.max(label_list) + 1
     )
     column_dict = {"labels": label_column}

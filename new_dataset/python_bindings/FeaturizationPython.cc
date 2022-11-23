@@ -1,6 +1,5 @@
 #include "FeaturizationPython.h"
 #include "FeaturizationDocs.h"
-#include <bolt/python_bindings/ConversionUtils.h>
 #include <bolt/python_bindings/PybindUtils.h>
 #include <new_dataset/src/featurization_pipeline/Augmentation.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
@@ -74,16 +73,15 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       .def(("apply"), &Augmentation::apply);
 
   py::class_<ColdStartTextAugmentation, Augmentation,
-             std::shared_ptr<ColdStartTextAugmentation>>(augmentations_submodule,
-                                                     "ColdStartText")
+             std::shared_ptr<ColdStartTextAugmentation>>(
+      augmentations_submodule, "ColdStartText")
       .def(py::init<std::vector<std::string>, std::vector<std::string>,
                     std::string, std::string, std::optional<uint32_t>,
                     std::optional<uint32_t>, std::optional<uint32_t>,
                     std::optional<uint32_t>, uint32_t, std::optional<uint32_t>,
                     std::optional<uint32_t>, uint32_t>(),
            py::arg("strong_columns"), py::arg("weak_columns"),
-           py::arg("label_column"),
-           py::arg("output_column"),
+           py::arg("label_column"), py::arg("output_column"),
            py::arg("weak_min_len") = std::nullopt,
            py::arg("weak_max_len") = std::nullopt,
            py::arg("weak_chunk_len") = std::nullopt,
