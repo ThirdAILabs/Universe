@@ -10,7 +10,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::data {
 
 class TemporalContext {
  public:
@@ -26,11 +26,9 @@ class TemporalContext {
     return _numerical_histories[id];
   }
 
-  dataset::ItemHistoryCollectionPtr categoricalHistoryForId(uint32_t id,
-                                                            uint32_t n_users) {
+  dataset::ItemHistoryCollectionPtr categoricalHistoryForId(uint32_t id) {
     if (!_categorical_histories.count(id)) {
-      _categorical_histories[id] =
-          dataset::ItemHistoryCollection::make(n_users);
+      _categorical_histories[id] = dataset::ItemHistoryCollection::make();
     }
     return _categorical_histories[id];
   }
@@ -60,4 +58,4 @@ class TemporalContext {
 
 using TemporalContextPtr = std::shared_ptr<TemporalContext>;
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl::data

@@ -15,7 +15,7 @@
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/deployment_config/DatasetConfig.h>
+#include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -37,7 +37,7 @@
 #include <variant>
 #include <vector>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::data {
 
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
@@ -133,13 +133,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
     if (std::holds_alternative<uint32_t>(label)) {
-      if (!_config->data_types.at(_config->target)
-               .asCategorical()
-               .contiguous_numerical_ids) {
+      if (!_config->integer_target) {
         throw std::invalid_argument(
-            "Received an integer label but the target column does not contain "
-            "contiguous numerical IDs (the contiguous_numerical_id option of "
-            "the categorical data type is set to false). Label must be passed "
+            "Received an integer but integer_target is set to False (it is "
+            "False by default). Target must be passed "
             "in as a string.");
       }
       return std::get<uint32_t>(label);
@@ -147,13 +144,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     const std::string& label_str = std::get<std::string>(label);
 
-    if (_config->data_types.at(_config->target)
-            .asCategorical()
-            .contiguous_numerical_ids) {
+    if (_config->integer_target) {
       throw std::invalid_argument(
-          "Received a string label but the target column contains contiguous "
-          "numerical IDs (the contiguous_numerical_id option of the "
-          "categorical data type is set to true). Label must be passed in as "
+          "Received a string but integer_target is set to True. Target must be "
+          "passed in as "
           "an integer.");
     }
 
@@ -169,12 +163,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       throw std::invalid_argument(
           "Attempted to get id to label map before training.");
     }
-    if (_config->data_types.at(_config->target)
-            .asCategorical()
-            .contiguous_numerical_ids) {
+    if (_config->integer_target) {
       throw std::invalid_argument(
           "This model does not provide a mapping from ids to labels since the "
-          "target column has contiguous numerical ids; the ids and labels are "
+          "target column has integer ids; the ids and labels are "
           "equivalent.");
     }
     return _vocabs.at(_config->target)->getString(neuron_id);
@@ -212,13 +204,46 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final { return _label_dim; }
 
+  bolt::InferenceOutputTracker processEvaluateOutput(
+      bolt::InferenceOutputTracker& output) final {
+    if (!_regression_categorical_block) {
+      return std::move(output);
+    }
+    std::vector<float> predicted_values(output.numSamples());
+
+    for (uint32_t i = 0; i < output.numSamples(); i++) {
+      predicted_values[i] =
+          _regression_categorical_block->getPredictedNumericalValue(
+              output.activeNeuronsForSample(i), output.activationsForSample(i),
+              output.numNonzerosInOutput());
+    }
+
+    return bolt::InferenceOutputTracker(
+        /* active_neurons= */ std::nullopt,
+        /* activations= */ std::move(predicted_values),
+        /* num_nonzeros_per_sample= */ 1);
+  }
+
+  BoltVector processOutputVector(BoltVector& output) final {
+    if (!_regression_categorical_block) {
+      return std::move(output);
+    }
+
+    BoltVector value(/* l= */ 1, /* is_dense= */ true,
+                     /* has_gradient= */ false);
+    value.activations[0] =
+        _regression_categorical_block->getPredictedNumericalValue(
+            output.active_neurons, output.activations, output.len);
+
+    return value;
+  }
+
  private:
   PreprocessedVectorsMap processAllMetadata() {
     PreprocessedVectorsMap metadata_vectors;
     for (const auto& [col_name, col_type] : _config->data_types) {
-      if (col_type.isCategorical()) {
-        auto categorical = col_type.asCategorical();
-        if (categorical.metadata_config) {
+      if (auto categorical = asCategorical(col_type)) {
+        if (categorical->metadata_config) {
           metadata_vectors[col_name] =
               makeProcessedVectorsForCategoricalColumn(col_name, categorical);
         }
@@ -228,13 +253,13 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
-      const std::string& col_name, const CategoricalDataType& categorical) {
-    if (!categorical.metadata_config) {
-      throw std::invalid_argument(
-          "The given categorical column does not have a metadata config.");
+      const std::string& col_name, const CategoricalDataTypePtr& categorical) {
+    if (!categorical->metadata_config) {
+      throw std::invalid_argument("The given categorical column (" + col_name +
+                                  ") does not have a metadata config.");
     }
 
-    auto metadata = categorical.metadata_config;
+    auto metadata = categorical->metadata_config;
 
     auto data_loader =
         dataset::SimpleFileDataLoader::make(metadata->metadata_file,
@@ -245,26 +270,23 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     auto input_blocks = buildMetadataInputBlocks(*metadata, *column_numbers);
 
-    /*
-      Use _vocabs here because we want to reuse the vocabulary for the key
-      column of the metadata for the corresponding categorical column in the
-      main dataset
-    */
-    _vocabs[col_name] = dataset::ThreadSafeVocabulary::make(
-        /* vocab_size= */ categorical.n_unique_classes);
+    auto key_vocab = dataset::ThreadSafeVocabulary::make(
+        /* vocab_size= */ 0, /* limit_vocab_size= */ false);
     auto label_block = dataset::StringLookupCategoricalBlock::make(
-        column_numbers->at(metadata->key), _vocabs[col_name]);
+        column_numbers->at(metadata->key), key_vocab);
 
+    // Here we set parallel=true because there are no temporal
+    // relationships in the metadata file.
     dataset::StreamingGenericDatasetLoader metadata_loader(
         /* loader= */ data_loader,
         /* processor= */
         dataset::GenericBatchProcessor::make(
             /* input_blocks= */ std::move(input_blocks),
             /* label_blocks= */ {std::move(label_block)},
-            /* has_header= */ false, /* delimiter= */ metadata->delimiter));
+            /* has_header= */ false, /* delimiter= */ metadata->delimiter,
+            /* parallel= */ true, /* hash_range= */ _config->hash_range));
 
-    return preprocessedVectorsFromDataset(metadata_loader, col_name,
-                                          categorical.n_unique_classes);
+    return preprocessedVectorsFromDataset(metadata_loader, *key_vocab);
   }
 
   static ColumnNumberMapPtr makeColumnNumberMap(
@@ -284,36 +306,30 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     UDTConfig feature_config(
         /* data_types= */ metadata_config.column_data_types,
         /* temporal_tracking_relationships= */ {},
-        /* target= */ metadata_config.key);
+        /* target= */ metadata_config.key,
+        /* n_target_classes= */ 0);
     TemporalRelationships empty_temporal_relationships;
-    ColumnVocabularies metadata_vocabs;  // Cannot use _vocabs because metadata
-                                         // may have same column names;
 
     PreprocessedVectorsMap empty_vectors_map;
 
     return FeatureComposer::makeNonTemporalFeatureBlocks(
         feature_config, empty_temporal_relationships, column_numbers,
-        metadata_vocabs, empty_vectors_map, _text_pairgram_word_limit,
-        _contextual_columns);
+        empty_vectors_map, _text_pairgram_word_limit, _contextual_columns);
   }
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
       dataset::StreamingGenericDatasetLoader& dataset,
-      const std::string& col_name, uint32_t n_unique_classes) {
+      dataset::ThreadSafeVocabulary& key_vocab) {
     auto [vectors, ids] = dataset.loadInMemory();
 
-    if (vectors->len() != n_unique_classes) {
-      throw std::invalid_argument(
-          "The number of metadata entries and unique values for column '" +
-          col_name + "' do not match.");
-    }
-
-    std::vector<BoltVector> preprocessed_vectors(n_unique_classes);
+    std::unordered_map<std::string, BoltVector> preprocessed_vectors(
+        vectors->len());
 
     for (uint32_t batch = 0; batch < vectors->numBatches(); batch++) {
       for (uint32_t vec = 0; vec < vectors->at(batch).getBatchSize(); vec++) {
         auto id = ids->at(batch)[vec].active_neurons[0];
-        preprocessed_vectors[id] = std::move(vectors->at(batch)[vec]);
+        auto key = key_vocab.getString(id);
+        preprocessed_vectors[key] = std::move(vectors->at(batch)[vec]);
       }
     }
 
@@ -382,29 +398,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
           "data_types parameter must include the target column.");
     }
 
-    auto target_type = _config->data_types.at(_config->target);
-    if (!target_type.isCategorical()) {
-      throw std::invalid_argument(
-          "Target column must be a categorical column.");
-    }
-
-    auto col_num = column_number_map.at(_config->target);
-    auto target_config = target_type.asCategorical();
-
-    dataset::BlockPtr label_block;
-    if (target_config.contiguous_numerical_ids) {
-      label_block = dataset::NumericalCategoricalBlock::make(
-          /* col= */ col_num, /* n_classes= */ target_config.n_unique_classes,
-          /* delimiter= */ target_config.delimiter);
-    } else {
-      if (!_vocabs.count(_config->target)) {
-        _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
-            /* vocab_size= */ target_config.n_unique_classes);
-      }
-      label_block = dataset::StringLookupCategoricalBlock::make(
-          /* col= */ col_num, /* vocab= */ _vocabs.at(_config->target),
-          /* delimiter= */ target_config.delimiter);
-    }
+    dataset::BlockPtr label_block = getLabelBlock(column_number_map);
 
     auto input_blocks =
         buildInputBlocks(/* column_numbers= */ column_number_map,
@@ -412,8 +406,51 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     auto processor = dataset::GenericBatchProcessor::make(
         std::move(input_blocks), {label_block}, /* has_header= */ true,
-        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
+        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
+        /* hash_range= */ _config->hash_range);
     return processor;
+  }
+
+  dataset::BlockPtr getLabelBlock(const ColumnNumberMap& column_number_map) {
+    auto target_type = _config->data_types.at(_config->target);
+    auto target_col_num = column_number_map.at(_config->target);
+
+    if (asCategorical(target_type)) {
+      auto target_config = asCategorical(target_type);
+      if (!_config->n_target_classes) {
+        throw std::invalid_argument(
+            "n_target_classes must be specified for a classification task.");
+      }
+      if (_config->integer_target) {
+        return dataset::NumericalCategoricalBlock::make(
+            /* col= */ target_col_num,
+            /* n_classes= */ _config->n_target_classes.value(),
+            /* delimiter= */ target_config->delimiter);
+      }
+      if (!_vocabs.count(_config->target)) {
+        _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
+            /* vocab_size= */ _config->n_target_classes.value());
+      }
+      return dataset::StringLookupCategoricalBlock::make(
+          /* col= */ target_col_num, /* vocab= */ _vocabs.at(_config->target),
+          /* delimiter= */ target_config->delimiter);
+    }
+    if (asNumerical(target_type)) {
+      auto target_config = asNumerical(target_type);
+      uint32_t num_bins = _config->n_target_classes.value_or(
+          UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
+
+      _regression_categorical_block = dataset::RegressionCategoricalBlock::make(
+          /* col= */ target_col_num, /* min= */ target_config->range.first,
+          /* max= */ target_config->range.second, /* num_bins= */ num_bins,
+          /* correct_label_radius= */
+          UDTConfig::REGRESSION_CORRECT_LABEL_RADIUS,
+          /* labels_sum_to_one= */ true);
+
+      return _regression_categorical_block;
+    }
+    throw std::invalid_argument(
+        "Target column must have type numerical or categorical.");
   }
 
   /**
@@ -430,7 +467,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         buildInputBlocks(/* column_numbers= */ column_number_map,
                          /* should_update_history= */ false),
         /* label_blocks= */ {}, /* has_header= */ false,
-        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
+        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
+        /* hash_range= */ _config->hash_range);
     return processor;
   }
 
@@ -449,20 +487,18 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<dataset::BlockPtr> buildInputBlocks(
       const ColumnNumberMap& column_numbers, bool should_update_history) {
-    FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
-
     std::vector<dataset::BlockPtr> blocks =
         FeatureComposer::makeNonTemporalFeatureBlocks(
-            *_config, _temporal_relationships, column_numbers, _vocabs,
-            _vectors_map, _text_pairgram_word_limit, _contextual_columns);
+            *_config, _temporal_relationships, column_numbers, _vectors_map,
+            _text_pairgram_word_limit, _contextual_columns);
 
     if (_temporal_relationships.empty()) {
       return blocks;
     }
 
     auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
-        *_config, _temporal_relationships, column_numbers, _vocabs,
-        _vectors_map, *_context, should_update_history);
+        *_config, _temporal_relationships, column_numbers, _vectors_map,
+        *_context, should_update_history);
 
     blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                   temporal_feature_blocks.end());
@@ -543,6 +579,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   uint32_t _text_pairgram_word_limit;
   bool _contextual_columns;
 
+  dataset::RegressionCategoricalBlockPtr _regression_categorical_block;
+
   // Private constructor for cereal.
   UDTDatasetFactory() {}
 
@@ -554,52 +592,13 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _column_number_map, _column_number_to_name,
             _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _input_dim, _label_dim,
-            _parallel, _text_pairgram_word_limit, _contextual_columns);
+            _parallel, _text_pairgram_word_limit, _contextual_columns,
+            _regression_categorical_block);
   }
 };
 
 using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
-class UDTDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
- public:
-  explicit UDTDatasetFactoryConfig(
-      HyperParameterPtr<UDTConfigPtr> config, HyperParameterPtr<bool> parallel,
-      HyperParameterPtr<uint32_t> text_pairgram_word_limit,
-      HyperParameterPtr<bool> contextual_columns)
-      : _config(std::move(config)),
-        _parallel(std::move(parallel)),
-        _text_pairgram_word_limit(std::move(text_pairgram_word_limit)),
-        _contextual_columns(std::move(contextual_columns)) {}
+}  // namespace thirdai::automl::data
 
-  DatasetLoaderFactoryPtr createDatasetState(
-      const UserInputMap& user_specified_parameters) const final {
-    auto config = _config->resolve(user_specified_parameters);
-    auto parallel = _parallel->resolve(user_specified_parameters);
-    auto text_pairgram_word_limit =
-        _text_pairgram_word_limit->resolve(user_specified_parameters);
-
-    return UDTDatasetFactory::make(config, parallel, text_pairgram_word_limit);
-  }
-
- private:
-  HyperParameterPtr<UDTConfigPtr> _config;
-  HyperParameterPtr<bool> _parallel;
-  HyperParameterPtr<uint32_t> _text_pairgram_word_limit;
-  HyperParameterPtr<bool> _contextual_columns;
-
-  // Private constructor for cereal.
-  UDTDatasetFactoryConfig() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _config,
-            _parallel, _text_pairgram_word_limit, _contextual_columns);
-  }
-};
-
-}  // namespace thirdai::automl::deployment
-
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UDTDatasetFactoryConfig)
-
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UDTDatasetFactory)
+CEREAL_REGISTER_TYPE(thirdai::automl::data::UDTDatasetFactory)

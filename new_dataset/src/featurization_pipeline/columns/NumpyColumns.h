@@ -10,7 +10,7 @@
 
 namespace py = pybind11;
 
-namespace thirdai::dataset {
+namespace thirdai::data::columns {
 
 // py::array::forcecast is safe because we want everything in terms of
 // uint32_t/float.
@@ -32,10 +32,9 @@ template <typename T>
 static typename ArrayColumn<T>::RowReference getRowHelper(
     const py::buffer_info& buffer, uint64_t n);
 
-class NumpySparseValueColumn final : public ValueColumn<uint32_t> {
+class PyTokenColumn final : public TokenColumn {
  public:
-  NumpySparseValueColumn(const NumpyArray<uint32_t>& array,
-                         std::optional<uint32_t> dim)
+  PyTokenColumn(const NumpyArray<uint32_t>& array, std::optional<uint32_t> dim)
       : _dim(dim) {
     checkArrayis1D(array);
 
@@ -64,9 +63,9 @@ class NumpySparseValueColumn final : public ValueColumn<uint32_t> {
   std::optional<uint32_t> _dim;
 };
 
-class NumpyDenseValueColumn final : public ValueColumn<float> {
+class PyDenseFeatureColumn final : public DenseFeatureColumn {
  public:
-  explicit NumpyDenseValueColumn(const NumpyArray<float>& array) {
+  explicit PyDenseFeatureColumn(const NumpyArray<float>& array) {
     checkArrayis1D(array);
 
     _buffer_info = array.request();
@@ -86,10 +85,10 @@ class NumpyDenseValueColumn final : public ValueColumn<float> {
   py::buffer_info _buffer_info;
 };
 
-class NumpySparseArrayColumn final : public ArrayColumn<uint32_t> {
+class PyTokenArrayColumn final : public TokenArrayColumn {
  public:
-  NumpySparseArrayColumn(const NumpyArray<uint32_t>& array,
-                         std::optional<uint32_t> dim)
+  PyTokenArrayColumn(const NumpyArray<uint32_t>& array,
+                     std::optional<uint32_t> dim)
       : _dim(dim) {
     checkArrayIs2D(array);
 
@@ -126,9 +125,9 @@ class NumpySparseArrayColumn final : public ArrayColumn<uint32_t> {
   std::optional<uint32_t> _dim;
 };
 
-class NumpyDenseArrayColumn final : public ArrayColumn<float> {
+class PyDenseArrayColumn final : public DenseArrayColumn {
  public:
-  explicit NumpyDenseArrayColumn(const NumpyArray<float>& array) {
+  explicit PyDenseArrayColumn(const NumpyArray<float>& array) {
     checkArrayIs2D(array);
 
     _buffer_info = array.request();
@@ -197,4 +196,4 @@ static typename ArrayColumn<T>::RowReference getRowHelper(
   return {ptr, len};
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data::columns

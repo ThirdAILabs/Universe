@@ -46,7 +46,7 @@ def create_test_column_map(text_columns, labels):
     '''
     Creates a column map from input dictionaries of strings and lists of
     integers. The text_column dictionary entries become StringColumns with
-    the name equal to their key, while the labels become a TokenArrayColumn
+    the name equal to their key, while the labels become a NumpySparseArrayColumn
     named "labels." Note: text_columns should not contain "labels" as a key.
     Arguments:
         strong: Dictionary from string name to list of strings for strong text.
@@ -371,3 +371,13 @@ def test_real_input():
     # problem as it results in a very big pre-training task (100x larger).
     assert 6 <= num_data <= 300
     assert num_valid_data / num_data > 0.95
+
+test_duplicated_natural_separators()
+test_long_input()
+test_sample_strong_words()
+test_shuffle_correct()
+test_sample_weak_words()
+test_long_strong_phrase()
+test_multiple_weak_columns()
+test_multiple_strong_columns()
+test_real_input()

@@ -1,9 +1,9 @@
 import platform
 
 import pytest
-from thirdai import bolt
+from thirdai import bolt, deployment
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 TRAIN_FILE = "tempTrainFile.csv"
 TEST_FILE = "tempTestFile.csv"
@@ -16,14 +16,16 @@ def write_lines_to_file(file, lines):
             f.writelines(line + "\n")
 
 
-def make_simple_trained_model(embedding_dim=None, integer_label=False):
+def make_simple_trained_model(
+    embedding_dim=None, integer_label=False, model_config=None
+):
     write_lines_to_file(
         TRAIN_FILE,
         [
-            "userId,movieId,timestamp,hoursWatched",
-            "0,0,2022-08-29,2",
-            "1,0,2022-08-30,2",
-            "1,1,2022-08-31,1",
+            "userId,movieId,timestamp,hoursWatched,genres,meta,description",
+            "0,0,2022-08-29,2,fiction-comedy-drama,0-1,a movie",
+            "1,0,2022-08-30,2,fiction-romance,1,a movie",
+            "1,1,2022-08-31,1,romance-comedy,0,a movie",
             # if integer_label = false, we build a model that accepts
             # arbitrary string labels; the model does not expect integer
             # labels in the range [0, n_labels - 1]. We test this by
@@ -31,17 +33,25 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
             # a label outside of this range. Since n_labels = 3, we set
             # movieId = 4 in the last sample and expect that the model
             # trains just fine.
-            ("1,2,2022-09-01,3" if integer_label else "1,4,2022-09-01,3"),
+            (
+                "1,2,2022-09-01,3,fiction-comedy,1-2,a movie"
+                if integer_label
+                else "1,4,2022-09-01,3,fiction-comedy,1-4,a movie"
+            ),
         ],
     )
 
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,timestamp,hoursWatched",
-            "0,1,2022-08-31,5",
+            "userId,movieId,timestamp,hoursWatched,genres,meta,description",
+            "0,1,2022-08-31,5,fiction-drama,0,a movie",
             # See above comment about the last line of the mock train file.
-            ("1,0,2022-09-01,0.5" if integer_label else "4,0,2022-09-01,0.5"),
+            (
+                "1,0,2022-09-01,0.5,fiction-comedy,2-0,a movie"
+                if integer_label
+                else "4,0,2022-09-01,0.5,fiction-comedy,4-0,a movie"
+            ),
         ],
     )
 
@@ -52,33 +62,41 @@ def make_simple_trained_model(embedding_dim=None, integer_label=False):
     metadata = bolt.types.metadata(
         filename=METADATA_FILE,
         key_column_name="id",
-        data_types={"feature": bolt.types.categorical(n_unique_classes=3)},
+        data_types={"feature": bolt.types.categorical()},
     )
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "userId": bolt.types.categorical(n_unique_classes=3, metadata=metadata),
+            "userId": bolt.types.categorical(metadata=metadata),
             "movieId": bolt.types.categorical(
-                n_unique_classes=3,
-                consecutive_integer_ids=integer_label,
                 metadata=metadata,
             ),
             "timestamp": bolt.types.date(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
+            "genres": bolt.types.categorical(delimiter="-"),
+            "meta": bolt.types.categorical(metadata=metadata, delimiter="-"),
+            "description": bolt.types.text(),
         },
         temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
+        n_target_classes=3,
+        integer_target=integer_label,
+        model_config=model_config,
         options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
     )
 
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     return model
 
 
 def single_sample():
-    return {"userId": "0", "timestamp": "2022-08-31"}
+    return {
+        "userId": "0",
+        "timestamp": "2022-08-31",
+        "genres": "fiction-drama",
+        "meta": "0",
+    }
 
 
 def batch_sample():
@@ -91,6 +109,8 @@ def single_update():
         "movieId": "1",
         "timestamp": "2022-08-31",
         "hoursWatched": "1",
+        "genres": "fiction-drama",
+        "meta": "0",
     }
 
 
@@ -113,11 +133,45 @@ def compare_explanations(explanations_1, explanations_2, assert_mode):
     assert assert_equal == all_equal
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception leads to an access violation on windows.",
+)
+@pytest.mark.release
+def test_temporal_not_in_data_type_throws():
+    with pytest.raises(
+        ValueError,
+        match=r"The tracking key 'user' is not found in data_types.",
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={"date": bolt.types.date(), "item": bolt.types.categorical()},
+            temporal_tracking_relationships={"user": ["item"]},
+            target="item",
+            n_target_classes=3,
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=r"The tracked column 'other_item' is not found in data_types.",
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                "date": bolt.types.date(),
+                "user": bolt.types.categorical(),
+                "item": bolt.types.categorical(),
+            },
+            temporal_tracking_relationships={"user": ["other_item"]},
+            target="item",
+            n_target_classes=3,
+        )
+
+
+@pytest.mark.release
 def test_save_load():
     save_file = "savefile.bolt"
     model = make_simple_trained_model(integer_label=False)
     model.save(save_file)
-    saved_model = bolt.UniversalDeepTransformer.load(save_file)
+    saved_model = bolt.UniversalDeepTransformer.load(filename=save_file)
 
     eval_res = model.evaluate(TEST_FILE)
     saved_eval_res = saved_model.evaluate(TEST_FILE)
@@ -139,6 +193,7 @@ def test_save_load():
     compare_explanations(explain_res, saved_explain_res, assert_mode="equal")
 
 
+@pytest.mark.release
 def test_multiple_predict_returns_same_results():
     model = make_simple_trained_model(integer_label=False)
     first = model.predict(single_sample())
@@ -150,6 +205,7 @@ def test_multiple_predict_returns_same_results():
     assert (first_batch == second_batch).all()
 
 
+@pytest.mark.release
 def test_index_changes_predict_result():
     model = make_simple_trained_model(integer_label=False)
     first = model.predict(single_sample())
@@ -162,6 +218,7 @@ def test_index_changes_predict_result():
     assert (second != third).any()
 
 
+@pytest.mark.release
 def test_embedding_representation_returns_correct_dimension():
     for embedding_dim in [128, 256]:
         model = make_simple_trained_model(embedding_dim=embedding_dim)
@@ -170,6 +227,7 @@ def test_embedding_representation_returns_correct_dimension():
         assert (embedding != 0).any()
 
 
+@pytest.mark.release
 def test_explanations_total_percentage():
     model = make_simple_trained_model(integer_label=False)
     explanations = model.explain(single_sample())
@@ -180,6 +238,7 @@ def test_explanations_total_percentage():
     assert total_percentage > 99.99 and total_percentage < 100.01
 
 
+@pytest.mark.release
 def test_different_explanation_target_returns_different_results():
     model = make_simple_trained_model(integer_label=False)
 
@@ -188,24 +247,21 @@ def test_different_explanation_target_returns_different_results():
     compare_explanations(explain_target_1, explain_target_2, assert_mode="not_equal")
 
 
-@pytest.mark.skipif(
-    platform.system() == "Windows",
-    reason="Throwing an exception leads to an access violation on windows.",
-)
 def test_explanations_target_label_format():
     model = make_simple_trained_model(integer_label=False)
     # Call this method to make sure it does not throw an error
     model.explain(single_sample(), target_class="1")
-    with pytest.raises(ValueError, match=r"Received an integer label*"):
+    with pytest.raises(ValueError, match=r"Received an integer but*"):
         model.explain(single_sample(), target_class=1)
 
     model = make_simple_trained_model(integer_label=True)
     # Call this method to make sure it does not throw an error
     model.explain(single_sample(), target_class=1)
-    with pytest.raises(ValueError, match=r"Received a string label*"):
+    with pytest.raises(ValueError, match=r"Received a string but*"):
         model.explain(single_sample(), target_class="1")
 
 
+@pytest.mark.release
 def test_neuron_id_to_target_class_map():
     model = make_simple_trained_model(integer_label=False)
     prediction = model.predict(single_sample())
@@ -222,6 +278,7 @@ def test_neuron_id_to_target_class_map():
     assert all([seen for seen in labels_seen.values()])
 
 
+@pytest.mark.release
 def test_reset_clears_history():
     model = make_simple_trained_model(integer_label=False)
     model.reset_temporal_trackers()
@@ -236,36 +293,75 @@ def test_reset_clears_history():
     assert (first == after_reset).all()
 
 
+@pytest.mark.release
 def test_works_without_temporal_relationships():
     write_lines_to_file(
         TRAIN_FILE,
         [
-            "userId,movieId,hoursWatched",
-            "0,0,2",
-            "1,0,3",
+            "userId,movieId,hoursWatched,genres",
+            "0,0,2,fiction-drama",
+            "1,0,3,fiction-comedy",
         ],
     )
 
     write_lines_to_file(
         TEST_FILE,
         [
-            "userId,movieId,hoursWatched",
-            "0,1,5",
-            "2,0,0.5",
+            "userId,movieId,hoursWatched,genres",
+            "0,1,5,fiction-drama",
+            "2,0,0.5,fiction-comedy",
         ],
     )
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "userId": bolt.types.categorical(n_unique_classes=3),
-            "movieId": bolt.types.categorical(n_unique_classes=3),
+            "userId": bolt.types.categorical(),
+            "movieId": bolt.types.categorical(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
+            "genres": bolt.types.categorical(delimiter="-"),
         },
         target="movieId",
+        n_target_classes=3,
     )
 
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
     model.evaluate(TEST_FILE)
 
     # No assertion as we just want to know that there is no error.
+
+
+def test_model_config_override():
+    # This test creates a model config with the property that the hidden layer
+    # dimension is the same as the regular dimension and checks that UDT correctly
+    # loads and uses the model config in place of its default model architecture.
+
+    model_config = deployment.ModelConfig(
+        input_names=["input"],
+        nodes=[
+            deployment.FullyConnectedNodeConfig(
+                name="hidden",
+                dim=deployment.DatasetLabelDimensionParameter(),
+                activation=deployment.ConstantParameter("relu"),
+                predecessor="input",
+            ),
+            deployment.FullyConnectedNodeConfig(
+                name="output",
+                dim=deployment.DatasetLabelDimensionParameter(),
+                sparsity=deployment.ConstantParameter(1.0),
+                activation=deployment.ConstantParameter("softmax"),
+                predecessor="hidden",
+            ),
+        ],
+        loss=bolt.nn.losses.CategoricalCrossEntropy(),
+    )
+
+    MODEL_CONFIG_PATH = "./model_config_override"
+    model_config.save(MODEL_CONFIG_PATH)
+
+    model = make_simple_trained_model(model_config=MODEL_CONFIG_PATH)
+
+    # We made the dimension of the hidden layer dimension the same as the number
+    # of output classes in the model. Since the number of target classes is 3, the
+    # embedding dimension should be 3 as well. This will not happen with the default
+    # udt model architecture.
+    assert model.embedding_representation(single_sample()).shape == (3,)

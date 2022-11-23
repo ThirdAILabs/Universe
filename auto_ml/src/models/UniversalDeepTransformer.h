@@ -2,23 +2,24 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
+#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/models/ModelPipeline.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::models {
 
 using OptionsMap = std::unordered_map<std::string, std::string>;
 
@@ -50,31 +51,41 @@ class UniversalDeepTransformer : public ModelPipeline {
    *    pairgrams or not. Defaults to false and only does tabular unigrams.
    */
   static UniversalDeepTransformer buildUDT(
-      ColumnDataTypes data_types,
-      UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target_col, std::string time_granularity = "d",
+      data::ColumnDataTypes data_types,
+      data::UserProvidedTemporalRelationships temporal_tracking_relationships,
+      std::string target_col,
+      std::optional<uint32_t> n_target_classes = std::nullopt,
+      bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
+      const std::optional<std::string>& model_config = std::nullopt,
       const std::unordered_map<std::string, std::string>& options = {}) {
-    auto dataset_config = std::make_shared<UDTConfig>(
+    auto dataset_config = std::make_shared<data::UDTConfig>(
         std::move(data_types), std::move(temporal_tracking_relationships),
-        std::move(target_col), std::move(time_granularity), lookahead,
-        delimiter);
+        std::move(target_col), n_target_classes, integer_target,
+        std::move(time_granularity), lookahead, delimiter);
 
     auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
           embedding_dimension] = processUDTOptions(options);
 
-    auto dataset_factory = UDTDatasetFactory::make(
+    auto dataset_factory = data::UDTDatasetFactory::make(
         /* config= */ std::move(dataset_config),
-        /* parallel= */ parallel_data_processing,
+        /* force_parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
         /* contextual_columns= */ contextual_columns);
 
-    auto model = buildUDTBoltGraph(
-        /* input_nodes= */ dataset_factory->getInputNodes(),
-        /* output_dim= */ dataset_factory->getLabelDim(),
-        /* hidden_layer_size= */ embedding_dimension);
-
-    TrainEvalParameters train_eval_parameters(
+    bolt::BoltGraphPtr model;
+    if (model_config) {
+      model =
+          loadUDTBoltGraph(/* input_nodes= */ dataset_factory->getInputNodes(),
+                           /* output_dim= */ dataset_factory->getLabelDim(),
+                           /* saved_model_config= */ model_config.value());
+    } else {
+      model = buildUDTBoltGraph(
+          /* input_nodes= */ dataset_factory->getInputNodes(),
+          /* output_dim= */ dataset_factory->getLabelDim(),
+          /* hidden_layer_size= */ embedding_dimension);
+    }
+    deployment::TrainEvalParameters train_eval_parameters(
         /* rebuild_hash_tables_interval= */ std::nullopt,
         /* reconstruct_hash_functions_interval= */ std::nullopt,
         /* default_batch_size= */ DEFAULT_INFERENCE_BATCH_SIZE,
@@ -107,19 +118,15 @@ class UniversalDeepTransformer : public ModelPipeline {
     return udtDatasetFactory().className(neuron_id);
   }
 
-  void save(const std::string& filename) {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
+  void save_stream(std::ostream& output_stream) const {
+    cereal::BinaryOutputArchive oarchive(output_stream);
     oarchive(*this);
   }
 
-  static std::unique_ptr<UniversalDeepTransformer> load(
-      const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<UniversalDeepTransformer> deserialize_into(
+  static std::shared_ptr<UniversalDeepTransformer> load_stream(
+      std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    std::shared_ptr<UniversalDeepTransformer> deserialize_into(
         new UniversalDeepTransformer());
     iarchive(*deserialize_into);
 
@@ -130,6 +137,20 @@ class UniversalDeepTransformer : public ModelPipeline {
   explicit UniversalDeepTransformer(ModelPipeline&& model)
       : ModelPipeline(model) {}
 
+  static bolt::BoltGraphPtr loadUDTBoltGraph(
+      const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
+      const std::string& saved_model_config) {
+    auto model_config = deployment::ModelConfig::load(saved_model_config);
+
+    // This will pass the output (label) dimension of the model into the model
+    // config so that it can be used to determine the model architecture.
+    deployment::UserInputMap parameters = {
+        {deployment::DatasetLabelDimensionParameter::PARAM_NAME,
+         deployment::UserParameterInput(output_dim)}};
+
+    return model_config->createModel(input_nodes, parameters);
+  }
+
   static bolt::BoltGraphPtr buildUDTBoltGraph(
       std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
       uint32_t hidden_layer_size) {
@@ -137,7 +158,8 @@ class UniversalDeepTransformer : public ModelPipeline {
                                                       /* activation= */ "relu");
     hidden->addPredecessor(input_nodes[0]);
 
-    auto sparsity = AutotunedSparsityParameter::autotuneSparsity(output_dim);
+    auto sparsity =
+        deployment::AutotunedSparsityParameter::autotuneSparsity(output_dim);
     const auto* activation = "softmax";
     auto output = bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity,
                                                           activation);
@@ -152,13 +174,14 @@ class UniversalDeepTransformer : public ModelPipeline {
     return graph;
   }
 
-  UDTDatasetFactory& udtDatasetFactory() const {
+  data::UDTDatasetFactory& udtDatasetFactory() const {
     /*
       It is safe to return an l-reference because the parent class stores a
       smart pointer. This ensures that the object is always in scope for as
       long as the model.
     */
-    return *std::dynamic_pointer_cast<UDTDatasetFactory>(_dataset_factory);
+    return *std::dynamic_pointer_cast<data::UDTDatasetFactory>(
+        _dataset_factory);
   }
 
   struct UDTOptions {
@@ -233,4 +256,4 @@ class UniversalDeepTransformer : public ModelPipeline {
   }
 };
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl::models

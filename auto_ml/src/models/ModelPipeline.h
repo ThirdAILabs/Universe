@@ -17,9 +17,42 @@
 #include <unordered_map>
 #include <utility>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::models {
 
 const uint32_t DEFAULT_EVALUATE_BATCH_SIZE = 2048;
+
+class ValidationOptions {
+ public:
+  ValidationOptions(std::string filename, std::vector<std::string> metrics,
+                    std::optional<uint32_t> interval, bool use_sparse_inference)
+      : _filename(std::move(filename)),
+        _metrics(std::move(metrics)),
+        _interval(interval),
+        _use_sparse_inference(use_sparse_inference) {}
+
+  const std::string& filename() const { return _filename; }
+
+  // TODO(Nicholas): Refactor ValidationContext to use an optional to indicate
+  // validation batch frequency instead of having 0 be a special value.
+  uint32_t interval() const { return _interval.value_or(0); }
+
+  bolt::EvalConfig validationConfig() const {
+    bolt::EvalConfig val_config =
+        bolt::EvalConfig::makeConfig().withMetrics(_metrics);
+
+    if (_use_sparse_inference) {
+      val_config.enableSparseInference();
+    }
+
+    return val_config;
+  }
+
+ private:
+  std::string _filename;
+  std::vector<std::string> _metrics;
+  std::optional<uint32_t> _interval;
+  bool _use_sparse_inference;
+};
 
 /**
  * This class represents an end-to-end data processing + model pipeline. It
@@ -30,16 +63,17 @@ const uint32_t DEFAULT_EVALUATE_BATCH_SIZE = 2048;
  */
 class ModelPipeline {
  public:
-  ModelPipeline(DatasetLoaderFactoryPtr dataset_factory,
+  ModelPipeline(data::DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model,
-                TrainEvalParameters train_eval_parameters)
+                deployment::TrainEvalParameters train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
         _train_eval_config(train_eval_parameters) {}
 
-  static auto make(const DeploymentConfigPtr& config,
-                   const std::unordered_map<std::string, UserParameterInput>&
-                       user_specified_parameters) {
+  static auto make(
+      const deployment::DeploymentConfigPtr& config,
+      const std::unordered_map<std::string, deployment::UserParameterInput>&
+          user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
     return ModelPipeline(std::move(dataset_factory), std::move(model),
@@ -48,16 +82,18 @@ class ModelPipeline {
 
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
                    std::optional<uint32_t> batch_size_opt,
+                   const std::optional<ValidationOptions>& validation,
                    std::optional<uint32_t> max_in_memory_batches) {
     uint32_t batch_size =
         batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
     trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
-                      train_config, max_in_memory_batches);
+                      train_config, validation, max_in_memory_batches);
   }
 
   void trainOnDataLoader(
       const std::shared_ptr<dataset::DataLoader>& data_source,
       bolt::TrainConfig& train_config,
+      const std::optional<ValidationOptions>& validation,
       std::optional<uint32_t> max_in_memory_batches) {
     _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
     data_source->restart();
@@ -70,7 +106,7 @@ class ModelPipeline {
     if (max_in_memory_batches) {
       trainOnStream(dataset, train_config, max_in_memory_batches.value());
     } else {
-      trainInMemory(dataset, train_config);
+      trainInMemory(dataset, train_config, validation);
     }
   }
 
@@ -110,7 +146,7 @@ class ModelPipeline {
       }
     }
 
-    return output;
+    return _dataset_factory->processEvaluateOutput(output);
   }
 
   template <typename InputType>
@@ -127,7 +163,7 @@ class ModelPipeline {
       }
     }
 
-    return output;
+    return _dataset_factory->processOutputVector(output);
   }
 
   template <typename InputBatchType>
@@ -146,6 +182,10 @@ class ModelPipeline {
           output.activations[prediction_index] = threshold.value() + 0.0001;
         }
       }
+    }
+
+    for (auto& vector : outputs) {
+      vector = _dataset_factory->processOutputVector(vector);
     }
 
     return outputs;
@@ -169,6 +209,10 @@ class ModelPipeline {
                                      sample);
   }
 
+  uint32_t defaultBatchSize() const {
+    return _train_eval_config.defaultBatchSize();
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
@@ -176,29 +220,19 @@ class ModelPipeline {
     oarchive(*this);
   }
 
-  static std::unique_ptr<ModelPipeline> load(const std::string& filename) {
+  static std::shared_ptr<ModelPipeline> load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<ModelPipeline> deserialize_into(new ModelPipeline());
+    std::shared_ptr<ModelPipeline> deserialize_into(new ModelPipeline());
     iarchive(*deserialize_into);
 
     return deserialize_into;
   }
 
-  std::pair<InputDatasets, LabelDataset> loadValidationDataFromFile(
-      const std::string& filename) {
-    auto file_loader = dataset::SimpleFileDataLoader::make(
-        filename, DEFAULT_EVALUATE_BATCH_SIZE);
-
-    auto dataset_loader =
-        _dataset_factory->getLabeledDatasetLoader(std::move(file_loader),
-                                                  /* training= */ false);
-    return dataset_loader->loadInMemory(std::numeric_limits<uint32_t>::max())
-        .value();
+  data::DatasetLoaderFactoryPtr getDataProcessor() const {
+    return _dataset_factory;
   }
-
-  DatasetLoaderFactoryPtr getDataProcessor() const { return _dataset_factory; }
 
  protected:
   // Protected constructor for cereal.
@@ -208,10 +242,25 @@ class ModelPipeline {
  private:
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
-  void trainInMemory(DatasetLoaderPtr& dataset,
-                     bolt::TrainConfig train_config) {
+  void trainInMemory(data::DatasetLoaderPtr& dataset,
+                     bolt::TrainConfig train_config,
+                     const std::optional<ValidationOptions>& validation) {
     auto [train_data, train_labels] =
         dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
+
+    if (validation) {
+      auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
+          dataset::SimpleFileDataLoader::make(validation->filename(),
+                                              DEFAULT_EVALUATE_BATCH_SIZE),
+          /* training= */ false);
+
+      auto [val_data, val_labels] =
+          validation_dataset->loadInMemory(std::numeric_limits<uint32_t>::max())
+              .value();
+
+      train_config.withValidation(val_data, val_labels,
+                                  validation->validationConfig());
+    }
 
     uint32_t epochs = train_config.epochs();
 
@@ -230,7 +279,8 @@ class ModelPipeline {
 
   // We take in the TrainConfig by value to copy it so we can modify the number
   // epochs.
-  void trainOnStream(DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+  void trainOnStream(data::DatasetLoaderPtr& dataset,
+                     bolt::TrainConfig train_config,
                      uint32_t max_in_memory_batches) {
     uint32_t epochs = train_config.epochs();
     // We want a single epoch in the train config in order to train for a single
@@ -249,7 +299,7 @@ class ModelPipeline {
     }
   }
 
-  void trainSingleEpochOnStream(DatasetLoaderPtr& dataset,
+  void trainSingleEpochOnStream(data::DatasetLoaderPtr& dataset,
                                 const bolt::TrainConfig& train_config,
                                 uint32_t max_in_memory_batches) {
     while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
@@ -294,9 +344,9 @@ class ModelPipeline {
   }
 
  protected:
-  DatasetLoaderFactoryPtr _dataset_factory;
+  data::DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
-  TrainEvalParameters _train_eval_config;
+  deployment::TrainEvalParameters _train_eval_config;
 };
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl::models

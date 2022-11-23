@@ -9,22 +9,28 @@ import pandas as pd
 import pytest
 from thirdai import bolt
 
-pytestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
-QUERIES_FILE = "./queries.csv"
-TRANSFORMED_QUERIES = "./transformed_queries.csv"
-CONFIG_FILE = "./flash_index_config"
+TRAIN_FILE_PATH = "./query_reformulation.csv"
+MODEL_PATH = "udt_generator_model.bolt"
+
+RECALL_THRESHOLD = 0.95
 
 
 def read_csv_file(file_name: str) -> List[List[str]]:
     with open(file_name, newline="") as file:
         data = list(csv.reader(file))
 
+    # Remove the file header
+    data = data[1:]
     return data
 
 
 def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
-    dataframe.to_csv(file_path, index=False, header=False)
+    # Add file header since the "train" and "evaluate" methods assume the
+    # input CSV file has a header.
+    dataframe.columns = ["target_column", "source_column"]
+    dataframe.to_csv(file_path, index=False)
 
 
 @pytest.fixture(scope="module")
@@ -100,27 +106,19 @@ def transform_queries(dataframe: pd.DataFrame) -> pd.DataFrame:
 @pytest.fixture
 def prepared_datasets(grammar_correction_dataset) -> None:
     transformed_queries = transform_queries(dataframe=grammar_correction_dataset)
-    write_input_dataset_to_csv(transformed_queries, TRANSFORMED_QUERIES)
+    write_input_dataset_to_csv(transformed_queries, TRAIN_FILE_PATH)
 
 
 def delete_created_files() -> None:
-    if os.path.exists(QUERIES_FILE):
-        os.remove(QUERIES_FILE)
+    if os.path.exists(MODEL_PATH):
+        os.remove(MODEL_PATH)
 
-    if os.path.exists(CONFIG_FILE):
-        os.remove(CONFIG_FILE)
-
-    if os.path.exists(TRANSFORMED_QUERIES):
-        os.remove(TRANSFORMED_QUERIES)
+    if os.path.exists(TRAIN_FILE_PATH):
+        os.remove(TRAIN_FILE_PATH)
 
 
 def run_generator_test(
-    hash_function: str,
-    num_tables: int,
-    hashes_per_table: int,
-    hash_table_range: int,
-    n_grams: List[int],
-    use_reservoir_sampling: bool,
+    model: bolt.models.UDTGenerator, source_col_index: int, target_col_index: int
 ) -> None:
     """
     Tests that the generated candidate queries are reasonable given
@@ -129,46 +127,54 @@ def run_generator_test(
     flash.
     """
 
-    generator_config = bolt.models.GeneratorConfig(
-        hash_function=hash_function,
-        num_tables=num_tables,
-        hashes_per_table=hashes_per_table,
-        range=hash_table_range,
-        n_grams=n_grams,
-        reservoir_size=200 if use_reservoir_sampling else None,
-        has_incorrect_queries=True,
-    )
-    generator_config.save(CONFIG_FILE)
+    query_pairs = read_csv_file(file_name=TRAIN_FILE_PATH)
 
-    generator = bolt.models.Generator(config_file_name=CONFIG_FILE)
-    generator.train(file_name=TRANSFORMED_QUERIES)
-
-    query_pairs = read_csv_file(file_name=TRANSFORMED_QUERIES)
-
-    generated_candidates = generator.generate(
-        queries=[query_pair[1] for query_pair in query_pairs], top_k=5
-    )
+    queries = [query_pair[source_col_index] for query_pair in query_pairs]
+    generated_candidates = model.predict_batch(queries=queries, top_k=5)
 
     correct_results = 0
     for query_index in range(len(query_pairs)):
         correct_results += (
-            1 if query_pairs[query_index][0] in generated_candidates[query_index] else 0
+            1
+            if query_pairs[query_index][target_col_index]
+            in generated_candidates[query_index]
+            else 0
         )
 
     recall = correct_results / len(query_pairs)
-    assert recall > 0.95
+    assert recall > RECALL_THRESHOLD
+
+
+def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
+    model = bolt.UniversalDeepTransformer(
+        source_column="source_column",
+        target_column="target_column",
+        dataset_size="small",
+    )
+    model.train(filename=TRAIN_FILE_PATH)
+    return model
 
 
 @pytest.mark.filterwarnings("ignore")
-@pytest.mark.parametrize("use_reservoir_sampling", [False, True])
-def test_flash_generator(prepared_datasets, use_reservoir_sampling):
-    run_generator_test(
-        hash_function="MinHash",
-        num_tables=20,
-        hashes_per_table=10,
-        hash_table_range=100,
-        n_grams=[3, 4],
-        use_reservoir_sampling=use_reservoir_sampling,
+def test_udt_generator(prepared_datasets):
+    model = train_udt_query_reformulation_model()
+    run_generator_test(model=model, source_col_index=1, target_col_index=0)
+
+
+@pytest.mark.filterwarnings("ignore")
+def test_udt_generator_load_and_save(prepared_datasets):
+    trained_model = train_udt_query_reformulation_model()
+    run_generator_test(model=trained_model, source_col_index=1, target_col_index=0)
+
+    trained_model.save(filename=MODEL_PATH)
+
+    deserialized_model = bolt.UniversalDeepTransformer.load(filename=MODEL_PATH)
+    model_eval_outputs = trained_model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
+    deserialized_model_outputs = deserialized_model.evaluate(
+        filename=TRAIN_FILE_PATH, top_k=5
     )
+
+    for index in range(len(model_eval_outputs)):
+        assert model_eval_outputs[index] == deserialized_model_outputs[index]
 
     delete_created_files()

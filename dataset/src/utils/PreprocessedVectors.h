@@ -5,24 +5,25 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::dataset {
 
 struct PreprocessedVectors {
-  PreprocessedVectors(std::vector<BoltVector>&& vectors, uint32_t dim)
+  PreprocessedVectors(std::unordered_map<std::string, BoltVector>&& vectors,
+                      uint32_t dim)
       : vectors(std::move(vectors)), dim(dim) {}
 
-  std::vector<BoltVector> vectors;
+  std::unordered_map<std::string, BoltVector> vectors;
   uint32_t dim;
 
-  void appendPreprocessedFeaturesToVector(uint32_t id,
+  void appendPreprocessedFeaturesToVector(const std::string& key,
                                           SegmentedFeatureVector& vec) {
-    if (id >= vectors.size()) {
-      throw std::invalid_argument("Invalid preprocessed vector ID " +
-                                  std::to_string(id) + ". There are only " +
-                                  std::to_string(vectors.size()) + " vectors.");
+    if (!vectors.count(key)) {
+      return;
     }
-    auto vector = vectors.at(id);
+
+    const auto& vector = vectors.at(key);
     if (vector.isDense()) {
       for (uint32_t i = 0; i < vector.len; i++) {
         vec.addDenseFeatureToSegment(vector.activations[i]);

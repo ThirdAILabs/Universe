@@ -52,9 +52,9 @@ class DeploymentConfig {
         _model_config(std::move(model_config)),
         _train_test_parameters(train_test_parameters) {}
 
-  std::pair<DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
+  std::pair<data::DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
   createDataLoaderAndModel(UserInputMap user_specified_parameters) const {
-    DatasetLoaderFactoryPtr dataset_factory =
+    data::DatasetLoaderFactoryPtr dataset_factory =
         _dataset_config->createDatasetState(user_specified_parameters);
 
     if (user_specified_parameters.count(

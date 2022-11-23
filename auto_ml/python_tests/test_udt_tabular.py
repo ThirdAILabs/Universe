@@ -5,6 +5,7 @@ from model_test_utils import (
     compute_evaluate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
+    get_udt_census_income_model,
 )
 from thirdai import bolt
 
@@ -15,31 +16,10 @@ ACCURACY_THRESHOLD = 0.8
 
 @pytest.fixture(scope="module")
 def train_udt_tabular(download_census_income):
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "age": bolt.types.numerical(range=(17, 90)),
-            "workclass": bolt.types.categorical(n_unique_classes=9),
-            "fnlwgt": bolt.types.numerical(range=(12285, 1484705)),
-            "education": bolt.types.categorical(n_unique_classes=16),
-            "education-num": bolt.types.categorical(n_unique_classes=16),
-            "marital-status": bolt.types.categorical(n_unique_classes=7),
-            "occupation": bolt.types.categorical(n_unique_classes=15),
-            "relationship": bolt.types.categorical(n_unique_classes=6),
-            "race": bolt.types.categorical(n_unique_classes=5),
-            "sex": bolt.types.categorical(n_unique_classes=2),
-            "capital-gain": bolt.types.numerical(range=(0, 99999)),
-            "capital-loss": bolt.types.numerical(range=(0, 4356)),
-            "hours-per-week": bolt.types.numerical(range=(1, 99)),
-            "native-country": bolt.types.categorical(n_unique_classes=42),
-            "label": bolt.types.categorical(n_unique_classes=2),
-        },
-        target="label",
-    )
-
     train_filename, _, _ = download_census_income
+    model = get_udt_census_income_model()
 
-    train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
-    model.train(train_filename, train_config)
+    model.train(train_filename, epochs=5, learning_rate=0.01)
 
     return model
 

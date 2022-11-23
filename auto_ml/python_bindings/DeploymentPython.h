@@ -1,9 +1,10 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <auto_ml/src/ModelPipeline.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <auto_ml/src/models/ModelPipeline.h>
+#include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
@@ -14,9 +15,16 @@ namespace py = pybind11;
 
 namespace thirdai::automl::deployment::python {
 
+using ModelPipeline = models::ModelPipeline;
+using UniversalDeepTransformer = models::UniversalDeepTransformer;
+
 void createDeploymentSubmodule(py::module_& thirdai_module);
 
-void defineModelPipelineAndUDT(py::module_& bolt_submodule);
+void createUDTFactory(py::module_& bolt_submodule);
+
+void createUDTClassifierAndGenerator(py::module_& models_submodule);
+
+void createModelPipeline(py::module_& models_submodule);
 
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs);
