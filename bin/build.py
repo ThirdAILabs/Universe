@@ -75,6 +75,12 @@ def main():
         type=parse_feature_flag,
         help="Whitespace seperated preprocessor flags to pass to the compiler to turn on and off features.",
     )
+    parser.add_argument(
+        "-fb",
+        "--fast_build",
+        action='store_true',
+        help="Whether to enable build time speedups that remove features. For now, this removes cereal support for polymorphism and gets a 4x build time speedup.",
+    )
     args = parser.parse_args()
 
     # See https://stackoverflow.com/questions/414714/compiling-with-g-using-multiple-cores
@@ -88,6 +94,9 @@ def main():
     # Add THIRDAI_EXPOSE_ALL to the feature flag list, since this is an internal build
     if "THIRDAI_EXPOSE_ALL" not in args.feature_flags:
         args.feature_flags.append("THIRDAI_EXPOSE_ALL")
+
+    if args.fast_build:
+        args.feature_flags.append("THIRDAI_NO_CEREAL_POLYMORPHISM")
 
     # Create feature flag list for cmake
     # https://stackoverflow.com/questions/33242956/cmake-passing-lists-on-command-line
