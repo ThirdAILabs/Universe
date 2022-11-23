@@ -59,7 +59,10 @@ def modify_udt_classifier():
         if logging_interval:
             train_config.with_log_loss_frequency(logging_interval)
 
-        if filename.endswith("parquet") or filename.endswith("pqt"):
+        # This also handles parquet on s3, so it comes before the general s3
+        # handling and file handling below which assume the target files are
+        # csvs
+        if filename.endswith(".parquet") or filename.endswith(".pqt"):
             return original_train_with_loader_method(
                 self,
                 create_parquet_loader(filename, batch_size),
@@ -101,7 +104,10 @@ def modify_udt_classifier():
         if use_sparse_inference:
             eval_config.enable_sparse_inference()
 
-        if filename.endswith("parquet") or filename.endswith("pqt"):
+        # This also handles parquet on s3, so it comes before the general s3
+        # handling and file handling below which assume the target files are
+        # csvs
+        if filename.endswith(".parquet") or filename.endswith(".pqt"):
             return original_eval_with_loader_method(
                 self,
                 create_parquet_loader(
