@@ -1110,4 +1110,233 @@ Notes:
 
 )pbdoc";
 
+const char* const UDT_CATEGORICAL_METADATA_CONFIG = R"pbdoc(
+A configuration object for processing a metadata file to enrich categorical
+features from the main dataset. To illustrate when this is useful, suppose
+we are building a movie recommendation system. The contents of the training
+dataset may look something like the following:
+
+user_id,movie_id,timestamp
+A526,B894,2022-01-01
+A339,B801,2022-01-01
+A293,B801,2022-01-01
+...
+
+If you have additional information about users or movies, such as users' 
+age groups or movie genres, you can use that information to enrich your 
+model. Adding these features into the main dataset as new columns is wasteful
+because the same users and movies ids will be repeated many times throughout
+the dataset. Instead, we can put them all in a metadata file and UDT will
+inject these features where appropriate.
+
+Args:
+    filename (str): Path to metadata file. The file should be in CSV format.
+    key_column_name (str): The name of the column whose values are used as
+        keys to map metadata features back to values in the main dataset. 
+        This column does not need to be passed into the `data_types` argument. 
+    data_types (Dict[str, bolt.types.ColumnType]): A mapping from column name 
+        to column type. Column type is one of:
+        - `bolt.types.categorical`
+        - `bolt.types.numerical`
+        - `bolt.types.text`
+        - `bolt.types.date`
+    delimiter (str): Optional. Defaults to ','. A single character 
+        (length-1 string) that separates the columns of the metadata file.
+
+Example:
+    >>> for line in open("user_meta.csv"):
+    >>>     print(line)
+    user_id,age
+    A526,52
+    A531,22
+    A339,29
+    ...
+    >>> deployment.UniversalDeepTransformer(
+            data_types: {
+                "user_id": bolt.types.categorical(
+                    delimiter=' ',
+                    metadata=bolt.types.metadata(
+                        filename="user_meta.csv", 
+                        data_types={"age": bolt.types.numerical()}, 
+                        key_column_name="user_id"
+                    )
+                )
+            }
+            ...
+        )
+)pbdoc";
+
+const char* const UDT_CATEGORICAL_TEMPORAL = R"pbdoc(
+Temporal categorical config. Use this object to configure how a 
+categorical column is tracked over time. 
+
+Args:
+    column_name (str): The name of the tracked column.
+    track_last_n (int): Number of last categorical values to track
+        per tracking id.
+    column_known_during_inference (bool): Optional. Whether the 
+        value of the tracked column is known during inference. Defaults 
+        to False.
+    use_metadata (bool): Optional. Whether to use the metadata of the N 
+        tracked items, if metadata is provided in the corresponding 
+        categorical column type object. Ignored if no metadata is provided. 
+        Defaults to False.
+
+Example:
+    >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend_level", "sales_performance"
+    >>> # We want to predict the current week's sales performance for each product using temporal context.
+    >>> # For each product ID, we would like to track both their ad spend level and sales performance over time.
+    >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
+    >>> model = deployment.UniversalDeepTransformer(
+            data_types={
+                "product_id": bolt.types.categorical(),
+                "timestamp": bolt.types.date(),
+                "ad_spend_level": bolt.types.categorical(),
+                "sales_performance": bolt.types.categorical(),
+            },
+            temporal_tracking_relationships={
+                "product_id": [
+                    bolt.temporal.categorical(column_name="ad_spend_level", track_last_n=5, column_known_during_inference=True),
+                    bolt.temporal.categorical(column_name="ad_spend_level", track_last_n=25, column_known_during_inference=True),
+                    bolt.temporal.categorical(column_name="sales_performance", track_last_n=5), # column_known_during_inference defaults to False
+                ]
+            },
+            ...
+        )
+
+Notes:
+    - Temporal categorical features are tracked as a set; if we track the last 5 ad spend levels,
+        we capture what the last 5 ad spend levels are, but we do not capture their order.
+    - The same column can be tracked more than once, allowing us to capture both short and
+        long term trends.
+)pbdoc";
+
+const char* const UDT_NUMERICAL_TEMPORAL = R"pbdoc(
+Temporal numerical config. Use this object to configure how a 
+numerical column is tracked over time. 
+
+Args:
+    column_name (str): The name of the tracked column.
+    history_length (int): Amount of time to look back. Time is in terms 
+        of the time granularity passed to the UDT constructor.
+    column_known_during_inference (bool): Optional. Whether the 
+        value of the tracked column is known during inference. Defaults 
+        to False.
+
+Example:
+    >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_performance"
+    >>> # We want to predict the current week's sales performance for each product using temporal context.
+    >>> # For each product ID, we would like to track both their ad spend and sales performance over time.
+    >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
+    >>> model = deployment.UniversalDeepTransformer(
+            data_types={
+                "product_id": bolt.types.categorical(),
+                "timestamp": bolt.types.date(),
+                "ad_spend": bolt.types.numerical(range=(0, 10000)),
+                "sales_performance": bolt.types.categorical(),
+            },
+            target="sales_performance"
+            time_granularity="weekly",
+            temporal_tracking_relationships={
+                "product_id": [
+                    # Track last 5 weeks of ad spend
+                    bolt.temporal.numerical(column_name="ad_spend", history_length=5, column_known_during_inference=True),
+                    # Track last 10 weeks of ad spend
+                    bolt.temporal.numerical(column_name="ad_spend", history_length=10, column_known_during_inference=True),
+                    # Track last 5 weeks of sales quantity
+                    bolt.temporal.numerical(column_name="sales_quantity", history_length=5), # column_known_during_inference defaults to False
+                ]
+            },
+
+        )
+
+Notes:
+    - The same column can be tracked more than once, allowing us to capture both short and
+        long term trends.
+)pbdoc";
+
+const char* const UDT_CATEGORICAL_TYPE = R"pbdoc(
+Categorical column type. Use this object if a column contains categorical 
+data (each unique value is treated as a class). Examples include user IDs, 
+movie titles, or age groups.
+
+Args:
+    delimiter (str): Optional. Defaults to None. A single character 
+        (length-1 string) that separates multiple values in the same 
+        column. This can only be used for the target column. If not 
+        provided, UDT assumes that there is only one value in the column.
+    metadata (metadata): Optional. A metadata object to be used when there 
+        is a separate metadata file corresponding to this categorical 
+        column.
+
+Example:
+    >>> deployment.UniversalDeepTransformer(
+            data_types: {
+                "user_id": bolt.types.categorical(
+                    delimiter=' ',
+                    metadata=bolt.types.metadata(filename="user_meta.csv", data_types={"age": bolt.types.numerical()}, key_column_name="user_id")
+                )
+            }
+            ...
+        )
+)pbdoc";
+
+const char* const UDT_NUMERICAL_TYPE = R"pbdoc(
+Numerical column type. Use this object if a column contains numerical 
+data (the value is treated as a quantity). Examples include hours of 
+a movie watched, sale quantity, or population size.
+
+Args:
+    range (tuple(float, float)): The expected range (min to max) of the
+        numeric quantity. The more accurate this range to the test data, the 
+        better the model performance.
+    granularity (str): Optional. One of "extrasmall"/"xs", "small"/"s", "medium"/"m",
+        "large"/"l" or "extralarge"/"xl" . Defaults to "m".
+
+
+Example:
+    >>> deployment.UniversalDeepTransformer(
+            data_types: {
+                "hours_watched": bolt.types.numerical(range=(0, 25), granularity="xs")
+            }
+            ...
+        )
+)pbdoc";
+
+const char* const UDT_TEXT_TYPE = R"pbdoc(
+Text column type. Use this object if a column contains text data 
+(the meaning of the text matters). Examples include descriptions, 
+search queries, and user bios.
+
+Args:
+    average_n_words (float): Optional. Average number of words in the 
+        text column in each row. If provided, UDT may make 
+        optimizations as appropriate.
+    use_attention (bool): Optional. If true, udt is guaranteed to
+        use attention when processing this text column. Otherwise, 
+        udt will only use attention when appropriate.
+
+Example:
+    >>> deployment.UniversalDeepTransformer(
+            data_types: {
+                "user_motto": bolt.types.text(average_n_words=10),
+                "user_bio": bolt.types.text()
+            }
+            ...
+        )
+)pbdoc";
+
+const char* const UDT_DATE_TYPE = R"pbdoc(
+Date column type. Use this object if a column contains date strings. 
+Date strings must be in YYYY-MM-DD format.
+
+Example:
+    >>> deployment.UniversalDeepTransformer(
+            data_types: {
+                "timestamp": bolt.types.date()
+            }
+            ...
+        )
+)pbdoc";
+
 }  // namespace thirdai::automl::python::docs

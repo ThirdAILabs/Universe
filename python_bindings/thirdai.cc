@@ -139,6 +139,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Automl in Bolt
   thirdai::automl::python::defineAutomlInBoltSubmodule(bolt_submodule);
   thirdai::automl::python::createModelsSubmodule(bolt_submodule);
+  thirdai::automl::python::createUDTTypesSubmodule(bolt_submodule);
+  thirdai::automl::python::createUDTTemporalSubmodule(bolt_submodule);
 
   // Search Submodule
   thirdai::search::python::createSearchSubmodule(m);

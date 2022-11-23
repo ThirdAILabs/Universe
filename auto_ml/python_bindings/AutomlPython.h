@@ -17,6 +17,10 @@ void defineAutomlInBoltSubmodule(py::module_& bolt_submodule);
 
 void createModelsSubmodule(py::module_& bolt_submodule);
 
+void createUDTTypesSubmodule(py::module_& bolt_submodule);
+
+void createUDTTemporalSubmodule(py::module_& bolt_submodule);
+
 // Python wrappers for ModelPipline methods
 
 ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,

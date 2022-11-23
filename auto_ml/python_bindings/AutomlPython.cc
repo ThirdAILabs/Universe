@@ -189,6 +189,69 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
            docs::UDT_GENERATOR_SAVE);
 }
 
+void createUDTTypesSubmodule(py::module_& bolt_submodule) {
+  auto udt_types_submodule = bolt_submodule.def_submodule("types");
+
+  py::class_<automl::data::DataType,
+             automl::data::DataTypePtr>(  // NOLINT
+      udt_types_submodule, "ColumnType", "Base class for bolt types.")
+      .def("__str__", &automl::data::DataType::toString)
+      .def("__repr__", &automl::data::DataType::toString);
+
+  py::class_<automl::data::CategoricalMetadataConfig,
+             automl::data::CategoricalMetadataConfigPtr>(udt_types_submodule,
+                                                         "metadata")
+      .def(py::init<std::string, std::string, automl::data::ColumnDataTypes,
+                    char>(),
+           py::arg("filename"), py::arg("key_column_name"),
+           py::arg("data_types"), py::arg("delimiter") = ',',
+           docs::UDT_CATEGORICAL_METADATA_CONFIG);
+
+  py::class_<automl::data::CategoricalDataType, automl::data::DataType,
+             automl::data::CategoricalDataTypePtr>(udt_types_submodule,
+                                                   "categorical")
+      .def(py::init<std::optional<char>,
+                    automl::data::CategoricalMetadataConfigPtr>(),
+           py::arg("delimiter") = std::nullopt, py::arg("metadata") = nullptr,
+           docs::UDT_CATEGORICAL_TEMPORAL);
+
+  py::class_<automl::data::NumericalDataType, automl::data::DataType,
+             automl::data::NumericalDataTypePtr>(udt_types_submodule,
+                                                 "numerical")
+      .def(py::init<std::pair<double, double>, std::string>(), py::arg("range"),
+           py::arg("granularity") = "m", docs::UDT_NUMERICAL_TYPE);
+
+  py::class_<automl::data::TextDataType, automl::data::DataType,
+             automl::data::TextDataTypePtr>(udt_types_submodule, "text")
+      .def(py::init<std::optional<double>, bool>(),
+           py::arg("average_n_words") = std::nullopt,
+           py::arg("use_attention") = false, docs::UDT_TEXT_TYPE);
+
+  py::class_<automl::data::DateDataType, automl::data::DataType,
+             automl::data::DateDataTypePtr>(udt_types_submodule, "date")
+      .def(py::init<>(), docs::UDT_DATE_TYPE);
+}
+
+void createUDTTemporalSubmodule(py::module_& bolt_submodule) {
+  auto udt_temporal_submodule = bolt_submodule.def_submodule("temporal");
+
+  py::class_<automl::data::TemporalConfig>(  // NOLINT
+      udt_temporal_submodule, "TemporalConfig",
+      "Base class for temporal feature configs.");
+
+  udt_temporal_submodule.def(
+      "categorical", automl::data::TemporalConfig::categorical,
+      py::arg("column_name"), py::arg("track_last_n"),
+      py::arg("column_known_during_inference") = false,
+      py::arg("use_metadata") = false, docs::UDT_CATEGORICAL_TEMPORAL);
+
+  udt_temporal_submodule.def("numerical",
+                             automl::data::TemporalConfig::numerical,
+                             py::arg("column_name"), py::arg("history_length"),
+                             py::arg("column_known_during_inference") = false,
+                             docs::UDT_NUMERICAL_TEMPORAL);
+}
+
 ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
                              const py::dict& parameters) {
   deployment::UserInputMap cpp_parameters;

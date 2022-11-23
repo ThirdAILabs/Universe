@@ -219,6 +219,7 @@ include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
 
 # Our source directories
+add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
