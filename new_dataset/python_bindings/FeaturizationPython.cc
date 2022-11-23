@@ -62,7 +62,8 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       dataset_submodule.def_submodule("augmentations");
 
   py::class_<Augmentation, std::shared_ptr<Augmentation>>(  // NOLINT
-      augmentations_submodule, "Augmentation");
+      augmentations_submodule, "Augmentation")
+      .def(("apply"), &Augmentation::apply);
 
   py::class_<ColdStartTextAugmentation, Augmentation,
              std::shared_ptr<ColdStartTextAugmentation>>(augmentations_submodule,
@@ -78,12 +79,11 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
            py::arg("weak_min_len") = std::nullopt,
            py::arg("weak_max_len") = std::nullopt,
            py::arg("weak_chunk_len") = std::nullopt,
-           py::arg("weak_downsample_num") = std::nullopt,
-           py::arg("weak_downsample_reps") = 1,
+           py::arg("weak_sample_num_words") = std::nullopt,
+           py::arg("weak_sample_reps") = 1,
            py::arg("strong_max_len") = std::nullopt,
-           py::arg("strong_downsample_num") = std::nullopt,
-           py::arg("seed") = 42803)
-      .def(("apply"), &ColdStartTextAugmentation::apply);
+           py::arg("strong_sample_num_words") = std::nullopt,
+           py::arg("seed") = 42803);
 
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
