@@ -9,15 +9,25 @@ classifier_train_doc = """
             function will use boto3 internally to load the file (normal boto3
             credential options apply). If multiple files match the bucket and
             prefix, then this will train on all of them.
-        train_config (bolt.TrainConfig): The training config specifies the number
-            of epochs and learning_rate, and optionally allows for specification of a
-            validation dataset, metrics, callbacks, and how frequently to log metrics 
-            during training. 
+        learning_rate (float): Optional, uses default if not provided.
+        epochs (int): Optional, uses default if not provided.
+        validation (Optional[bolt.Validation]): This is an optional parameter that 
+            specifies a validation dataset, metrics, and interval to use during 
+            training.
         batch_size (Option[int]): This is an optional parameter indicating which batch
             size to use for training. If not specified, the batch size will be autotuned.
         max_in_memory_batches (Option[int]): The maximum number of batches to load in
             memory at a given time. If this is specified then the dataset will be processed
             in a streaming fashion.
+        verbose (bool): Optional, defaults to True. Controls if additional information 
+            is printed during training.
+        callbacks (List[bolt.callbacks.Callback]): List of callbacks to use during 
+            training. 
+        metrics (List[str]): List of metrics to compute during training. These are
+            logged if logging is enabled, and are accessible by any callbacks. 
+        logging_interval (Optional[int]): How frequently to log training metrics,
+            represents the number of batches between logging metrics. If not specified 
+            logging is done at the end of each epoch. 
 
     Returns:
         None
@@ -48,9 +58,11 @@ classifier_eval_doc = """
     Args:
         filename (str): Path to the dataset file. Like train, this can be a path
             to a local file or a path to an S3 file.
-        eval_config (Option[bolt.EvalConfig]): The predict config is optional.
-            It specifies metrics to compute and whether to use sparse
-            inference.
+        metrics (List[str]): List of metrics to compute during evaluation. 
+        use_sparse_inference (bool): Optional, defaults to False, determines if 
+            sparse inference is used during evaluation. 
+        verbose (bool): Optional, defaults to True. Controls if additional information 
+            is printed during training.
 
     Returns:
         (np.ndarray or Tuple[np.ndarray, np.ndarray]): 

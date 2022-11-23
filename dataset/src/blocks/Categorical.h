@@ -279,8 +279,22 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
         col, min, max, num_bins, correct_label_radius, labels_sum_to_one);
   }
 
-  float getDecimalValueForCategory(uint32_t category) const {
-    return _min + category * _binsize + (_binsize / 2);
+  float getPredictedNumericalValue(const uint32_t* active_neurons,
+                                   const float* activations, uint32_t len) {
+    uint32_t predicted_bin_index = 0;
+    float max_activation = activations[0];
+
+    for (uint32_t i = 1; i < len; i++) {
+      if (activations[i] > max_activation) {
+        predicted_bin_index = i;
+        max_activation = activations[i];
+      }
+    }
+
+    if (active_neurons != nullptr) {
+      return getDecimalValueForCategory(active_neurons[predicted_bin_index]);
+    }
+    return getDecimalValueForCategory(predicted_bin_index);
   }
 
   std::string getResponsibleCategory(
@@ -320,6 +334,10 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
   }
 
  private:
+  float getDecimalValueForCategory(uint32_t category) const {
+    return _min + category * _binsize + (_binsize / 2);
+  }
+
   float _min, _max, _binsize, _label_value;
   uint32_t _correct_label_radius;
 
@@ -329,9 +347,13 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_min, _max, _binsize, _label_value, _correct_label_radius);
+    archive(cereal::base_class<CategoricalBlock>(this), _min, _max, _binsize,
+            _label_value, _correct_label_radius);
   }
 };
+
+using RegressionCategoricalBlockPtr =
+    std::shared_ptr<RegressionCategoricalBlock>;
 
 }  // namespace thirdai::dataset
 

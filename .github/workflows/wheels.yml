@@ -26,7 +26,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, ubuntu-20.04]
+        # TODO(Josh): Decide if we want to add windows back at all
+        # os: [windows-2019, ubuntu-20.04]
+        os: [ubuntu-20.04]
         include:
           - name: macos-x86_64
             os: macos-12

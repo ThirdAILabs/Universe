@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::data {
 
 using PreprocessedVectorsMap =
     std::unordered_map<std::string, dataset::PreprocessedVectorsPtr>;
@@ -385,4 +385,4 @@ class FeatureComposer {
   }
 };
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl::data
