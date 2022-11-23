@@ -285,6 +285,7 @@ pybind11_add_module(
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
+  auto_ml/python_bindings/AutomlPython.cc
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)

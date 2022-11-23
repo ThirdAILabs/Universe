@@ -14,7 +14,6 @@
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <search/src/Generator.h>
 #include <limits>
 #include <optional>
 #include <sstream>
@@ -362,84 +361,6 @@ Args:
         - The same column can be tracked more than once, allowing us to capture both short and
           long term trends.
       )pbdoc");
-}
-
-void createModelsSubmodule(py::module_& bolt_submodule) {
-  auto models_submodule = bolt_submodule.def_submodule("models");
-
-#if THIRDAI_EXPOSE_ALL
-  py::class_<bolt::QueryCandidateGeneratorConfig,
-             bolt::QueryCandidateGeneratorConfigPtr>(models_submodule,
-                                                     "GeneratorConfig")
-      .def(py::init<std::string, uint32_t, uint32_t, uint32_t,
-                    std::vector<uint32_t>, std::optional<uint32_t>, std::string,
-                    std::string, uint32_t>(),
-           py::arg("hash_function"), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("range"), py::arg("n_grams"),
-           py::arg("reservoir_size") = std::nullopt, py::arg("source_column"),
-           py::arg("target_column"), py::arg("batch_size") = 10000,
-           R"pbdoc(
-    Initializes a QueryCandidateGeneratorConfig object.
-
-     Args:
-        hash_function (str): A specific hash function 
-            to use. Supported hash functions include MinHash
-            and DensifiedMinHash
-        num_tables (int): Number of hash tables to construct.
-        hashes_per_table (int): Number of hashes per table.
-        range (int) : The range for the hash function used. 
-        n_grams (List[int]): List of N-gram blocks to use. 
-        reservoir_size (int): Reservoir size to use when the flash index is 
-            constructed with reservoir sampling. 
-        source_column (str): Name of the column in the input CSV
-            that contains incorrect queries.
-        target_column (str): Name of the column in the input CSV
-            that contains the target queries for reformulation. 
-        batch_size (int): batch size. It is defaulted to 10000. 
-    Returns: 
-        QueryCandidateGeneratorConfig
-
-    Example:
-        >>> generator_config = bolt.models.GeneratorConfig(
-                hash_function="DensifiedMinHash",
-                num_tables=100,
-                hashes_per_table=15,
-                input_dim=100,
-                top_k=5,
-                n_grams=[3,4],
-                has_incorrect_queries=True,
-                batch_size=10000,
-            )
-            )pbdoc")
-      .def("save", &bolt::QueryCandidateGeneratorConfig::save,
-           py::arg("file_name"),
-           R"pbdoc(
-    Saves a query candidate generator config object at the specified file path. 
-    This can be used to provide a query candidate generator architecture to customers.
-
-    Args:
-        file_name (str): File path specification for where to save the 
-                generator configuration object. 
-
-    Returns:
-        None
-
-            )pbdoc")
-
-      .def_static("load", &bolt::QueryCandidateGeneratorConfig::load,
-                  py::arg("config_file_name"),
-                  R"pbdoc(
-    Loads a query candidate generator config object from a specific file location. 
-
-    Args:
-        config_file_name (str): Path to the file containing a saved config.
-
-        Returns:
-            QueryCandidateGeneratorConfig:
-
-            )pbdoc");
-
-#endif
 }
 
 }  // namespace thirdai::bolt::python
