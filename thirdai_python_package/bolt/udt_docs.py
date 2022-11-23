@@ -1,7 +1,9 @@
 classifier_train_doc = """
     Trains a UniversalDeepTransformer (UDT) on a given dataset using a file on disk
     or on S3. If the file is on S3, it should be in the normal s3 form, i.e.
-    s3://bucket/path/to/key.
+    s3://bucket/path/to/key. We currently support csv and parquet format files.
+    If the file is parquet, it should end in .parquet or .pqt. Otherwise, we 
+    will assume it is a csv file.
 
     Args:
         filename (str): Path to the dataset file. Can be a path to a file on
@@ -50,7 +52,9 @@ classifier_train_doc = """
 
 classifier_eval_doc = """
     Evaluates the UniversalDeepTransformer (UDT) on the given dataset and returns a 
-    numpy array of the activations.
+    numpy array of the activations. We currently support csv and parquet format 
+    files. If the file is parquet, it should end in .parquet or .pqt. Otherwise, 
+    we will assume it is a csv file.
 
     Args:
         filename (str): Path to the dataset file. Like train, this can be a path
