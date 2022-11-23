@@ -22,8 +22,7 @@ def _get_label_postprocessing_fn(model, use_class_name):
 def compute_evaluate_accuracy(model, test_filename, inference_samples, use_class_name):
     label_fn = _get_label_postprocessing_fn(model, use_class_name)
 
-    eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
-    activations = model.evaluate(test_filename, eval_config)
+    activations = model.evaluate(test_filename, metrics=["categorical_accuracy"])
 
     predictions = [label_fn(id) for id in np.argmax(activations, axis=1)]
 
@@ -81,8 +80,7 @@ def check_saved_and_retrained_accuarcy(
     )
     assert acc >= accuracy
 
-    train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001)
-    loaded_model.train(train_filename, train_config)
+    loaded_model.train(train_filename, epochs=1, learning_rate=0.001)
 
     acc = compute_evaluate_accuracy(
         loaded_model, test_filename, inference_samples, use_class_name
