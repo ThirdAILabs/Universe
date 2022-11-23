@@ -18,7 +18,11 @@ class ProcessorUtils {
     while (end != std::string::npos) {
       end = row.find(delimiter, start);
       size_t len = end == std::string::npos ? row.size() - start : end - start;
-      parsed.push_back(std::string_view(row.data() + start, len));
+      if (len > 1 && row.at(start) == '"' && row.at(start + len - 1) == '"') {
+        parsed.push_back(std::string_view(row.data() + start + 1, len - 2));
+      } else {
+        parsed.push_back(std::string_view(row.data() + start, len));
+      }
       start = end + 1;
     }
     return parsed;
