@@ -2,10 +2,10 @@
 
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <iostream>
 
 namespace thirdai::dataset {
 
@@ -19,19 +19,20 @@ class ProcessorUtils {
     while (end != std::string::npos) {
       end = row.find(delimiter, start);
       size_t len = end == std::string::npos ? row.size() - start : end - start;
-       
+
       while (len > 0 && std::isspace(row.at(start))) {
-        start += 1;
-        len -= 1;
+        start++;
+        len--;
       }
       while (len > 0 && std::isspace(row.at(start + len - 1))) {
-        len -= 1;
+        len--;
       }
-      while (len > 1 && row.at(start) == '"' && row.at(start + len - 1) == '"') {
-        start += 1;
+      while (len > 1 && row.at(start) == '"' &&
+             row.at(start + len - 1) == '"') {
+        start++;
         len -= 2;
-      } 
-        
+      }
+
       parsed.push_back(std::string_view(row.data() + start, len));
 
       start = end + 1;

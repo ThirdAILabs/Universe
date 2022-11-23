@@ -7,6 +7,10 @@ class ParquetLoader(DataLoader):
     def __init__(self, parquet_path, batch_size):
         DataLoader.__init__(self, batch_size)
 
+        # By importing here, we make it so that pyarrow isn't a dependency.
+        # If pyarrow isn't installed and you try to read a parquet, this will
+        # throw an import error. This is standard practice, see e.g.
+        # https://pandas.pydata.org/docs/getting_started/install.html
         import pyarrow.parquet as pq
 
         self._parquet_path = parquet_path
