@@ -44,7 +44,6 @@ class ParquetLoader(DataLoader):
 
     def next_line(self):
         next_line = next(self._line_iterator, None)
-        print(next_line)
         return next_line
 
     def resource_name(self):

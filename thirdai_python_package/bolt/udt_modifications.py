@@ -108,7 +108,7 @@ def modify_udt_classifier():
                     filename,
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
                 ),
-                eval_config=bolt.EvalConfig(),
+                eval_config=eval_config,
             )
 
         if filename.startswith("s3://"):
@@ -118,7 +118,7 @@ def modify_udt_classifier():
                     filename,
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
                 ),
-                eval_config=bolt.EvalConfig(),
+                eval_config=eval_config,
             )
 
         return original_eval_method(self, filename, eval_config)

@@ -33,14 +33,11 @@ classifier_train_doc = """
         None
 
     Examples:
-        >>> train_config = bolt.TrainConfig(
-                epochs=5, learning_rate=0.01
-            ).with_metrics(["mean_squared_error"])
         >>> model.train(
-                filename="./train_file", train_config=train_config , max_in_memory_batches=12
+                filename="./train_file", epochs=5, learning_rate=0.01, max_in_memory_batches=12
             )
         >>> model.train(
-                filename="s3://bucket/path/to/key", train_config=train_config
+                filename="s3://bucket/path/to/key"
             )
 
     Notes:
@@ -75,8 +72,7 @@ classifier_eval_doc = """
         target class names by calling the `class_names()` method.
 
     Examples:
-        >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
-        >>> activations = model.evaluate(filename="./test_file", eval_config=eval_config)
+        >>> activations = model.evaluate(filename="./test_file")
 
     Notes: 
         - If temporal tracking relationships are provided, UDT can make better predictions 
