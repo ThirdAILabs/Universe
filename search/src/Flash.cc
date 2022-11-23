@@ -46,28 +46,26 @@ std::optional<ProgressBar> createProgressBar(bool make, Args... args) {
 template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
     const dataset::InMemoryDataset<BoltBatch>& dataset,
-    const std::vector<std::vector<LABEL_T>>& labels, bool progress_bar) {
+    const std::vector<std::vector<LABEL_T>>& labels, bool verbose) {
   if (dataset.numBatches() != labels.size()) {
     throw std::invalid_argument(
         "Number of data and label batches must be same.");
   }
-  for (uint64_t batch_index = 0; batch_index < dataset.numBatches();
-       batch_index++) {
+  auto num_batches = dataset.numBatches();
+  std::optional<ProgressBar> bar = createProgressBar(
+      /* make = */ verbose,
+      /* description = */ fmt::format("Processing {} batches", num_batches),
+      /* max_steps = */ dataset.numBatches());
+  for (uint64_t batch_index = 0; batch_index < num_batches; batch_index++) {
     const auto& batch = dataset[batch_index];
-    std::optional<ProgressBar> bar = createProgressBar(
-        /* make = */ progress_bar,
-        /* description = */ fmt::format("Processing batch {}", batch_index + 1),
-        /* max_steps = */ dataset.numBatches());
 
     addBatch(batch, labels[batch_index]);
     if (bar) {
       bar->increment();
     }
-    if (bar && batch_index == dataset.numBatches() - 1) {
-      bar->close(/* comment = */ fmt::format(
-          "Finished processing {} datapoints", batch.getBatchSize()));
-    }
   }
+  bar->close(
+      /* comment = */ fmt::format("Finished Training the Model"));
 }
 
 template <typename LABEL_T>

@@ -253,7 +253,7 @@ class QueryCandidateGenerator {
     }
 
     _flash_index->addDataset(/* dataset = */ *data, /* labels = */ labels,
-                             /* progress_bar = */ true);
+                             /* verbose = */ true);
   }
 
   /**
