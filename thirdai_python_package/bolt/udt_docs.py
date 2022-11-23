@@ -1,7 +1,9 @@
 classifier_train_doc = """
     Trains a UniversalDeepTransformer (UDT) on a given dataset using a file on disk
     or on S3. If the file is on S3, it should be in the normal s3 form, i.e.
-    s3://bucket/path/to/key.
+    s3://bucket/path/to/key. We currently support csv and parquet format files.
+    If the file is parquet, it should end in .parquet or .pqt. Otherwise, we 
+    will assume it is a csv file.
 
     Args:
         filename (str): Path to the dataset file. Can be a path to a file on
@@ -33,14 +35,11 @@ classifier_train_doc = """
         None
 
     Examples:
-        >>> train_config = bolt.TrainConfig(
-                epochs=5, learning_rate=0.01
-            ).with_metrics(["mean_squared_error"])
         >>> model.train(
-                filename="./train_file", train_config=train_config , max_in_memory_batches=12
+                filename="./train_file", epochs=5, learning_rate=0.01, max_in_memory_batches=12
             )
         >>> model.train(
-                filename="s3://bucket/path/to/key", train_config=train_config
+                filename="s3://bucket/path/to/key"
             )
 
     Notes:
@@ -53,7 +52,9 @@ classifier_train_doc = """
 
 classifier_eval_doc = """
     Evaluates the UniversalDeepTransformer (UDT) on the given dataset and returns a 
-    numpy array of the activations.
+    numpy array of the activations. We currently support csv and parquet format 
+    files. If the file is parquet, it should end in .parquet or .pqt. Otherwise, 
+    we will assume it is a csv file.
 
     Args:
         filename (str): Path to the dataset file. Like train, this can be a path
@@ -75,8 +76,7 @@ classifier_eval_doc = """
         target class names by calling the `class_names()` method.
 
     Examples:
-        >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
-        >>> activations = model.evaluate(filename="./test_file", eval_config=eval_config)
+        >>> activations = model.evaluate(filename="./test_file")
 
     Notes: 
         - If temporal tracking relationships are provided, UDT can make better predictions 
