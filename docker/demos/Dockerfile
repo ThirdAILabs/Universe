@@ -26,5 +26,4 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
 COPY $LICENSE $HOME/license.serialized
 COPY $KAGGLE_CREDS $HOME/.kaggle/kaggle.json
 ADD bin/run_demo_notebooks.py run_demo_notebooks.py  
-RUN pip3 install thirdai
-RUN pip3 install jupyter nbconvert nbformat
+RUN pip3 install jupyter==1.0.0 nbconvert==7.2.1 nbformat==5.7.0

@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::data {
 
 using PreprocessedVectorsMap =
     std::unordered_map<std::string, dataset::PreprocessedVectorsPtr>;
@@ -47,6 +47,12 @@ class FeatureComposer {
 
     for (const auto& [tracking_key_col_name, temporal_configs] :
          temporal_relationships) {
+      if (!config.data_types.count(tracking_key_col_name)) {
+        throw std::invalid_argument("The tracking key '" +
+                                    tracking_key_col_name +
+                                    "' is not found in data_types.");
+      }
+
       if (!asCategorical(config.data_types.at(tracking_key_col_name))) {
         throw std::invalid_argument("Tracking keys must be categorical.");
       }
@@ -56,6 +62,14 @@ class FeatureComposer {
         throw std::invalid_argument(
             "Tracking keys cannot have a delimiter; columns containing "
             "tracking keys must only have one value per row.");
+      }
+
+      for (const auto& temporal_config : temporal_configs) {
+        if (!config.data_types.count(temporal_config.columnName())) {
+          throw std::invalid_argument("The tracked column '" +
+                                      temporal_config.columnName() +
+                                      "' is not found in data_types.");
+        }
       }
     }
   }
@@ -371,4 +385,4 @@ class FeatureComposer {
   }
 };
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl::data
