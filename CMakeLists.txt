@@ -22,10 +22,8 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 # Project versioning
-if(THIRDAI_BAKE_VERSION)
-  find_package(Git REQUIRED)
-  include(GetVersionFromFile)
-endif(THIRDAI_BAKE_VERSION)
+find_package(Git REQUIRED)
+include(GetVersionFromFile)
 message(STATUS "Project name: ${PROJECT_NAME}")
 message(STATUS "Project version: ${PROJECT_VERSION_STRING_FULL}")
 
@@ -42,16 +40,10 @@ message("====================================")
 option(THIRDAI_REPORT_BUILD_STEP_TIMES
        "Report time using builtin for make/ninja compile-build steps" OFF)
 
-option(THIRDAI_BAKE_VERSION "Bake version (including commit-sha) into executable" OFF)
-
 if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CMAKE_COMMAND} -E time")
 endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
-
-if(THIRDAI_BAKE_VERSION)
-  set(THIRDAI_DEFINITIONS "${THIRDAI_DEFINITIONS} THIRDAI_BAKE_VERSION")
-endif(THIRDAI_BAKE_VERSION)
 
 # Check if there is a license flag, and only if so add the cryptopp lib We have
 # two different License flags, one for if to build the license files
@@ -275,8 +267,7 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    utils/Logging.cc
-)
+    utils/Logging.cc)
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
@@ -313,8 +304,8 @@ if(NOT MSVC)
 endif()
 
 # Add feature flags passed in from python
-target_compile_definitions(thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS} ${THIRDAI_DEFINITIONS})
-target_compile_definitions(_thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS} ${THIRDAI_DEFINITIONS})
+target_compile_definitions(thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
+target_compile_definitions(_thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
 
 # In debug mode we are using ASan (address sanitizer) to provide better
 # information on errors. We only run with this in debug mode because it carries

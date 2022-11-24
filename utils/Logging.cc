@@ -1,9 +1,5 @@
 #include <utils/Logging.h>
-#ifdef THIRDAI_BAKE_VERSION
 #include <utils/Version.h>
-#else
-#include <utils/Version-fallback.h>
-#endif
 #include <chrono>
 #include <iostream>
 #include <string>
