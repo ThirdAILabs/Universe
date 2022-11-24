@@ -101,10 +101,7 @@ class TrainStateManager:
         # is, and the input to process_ring has a strange interaction between
         # reduce and should_avg_gradients. Maybe we can make this an enum,
         # something like [DONT_REDUCE, REDUCE, REDUCE_AND_AVERAGE_GRADIENTS].
-        for update_id, reduce in [
-            (num_workers, True),
-            (num_workers + 1, False),
-        ]:
+        for update_id, reduce in [(num_workers, True), (num_workers + 1, False)]:
             for node in range(num_workers - 1):
                 should_avg_gradients = node == num_workers - 2
                 ray.get(

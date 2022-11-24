@@ -21,9 +21,7 @@ def create_random_sentence_pairgram_dataset():
     featurizer = data.FeaturizationPipeline(
         transformations=[
             data.transformations.SentenceUnigram(
-                input_column="sentence",
-                output_column="unigrams",
-                deduplicate=False,
+                input_column="sentence", output_column="unigrams", deduplicate=False
             ),
             data.transformations.TokenPairgram(
                 input_column="unigrams",

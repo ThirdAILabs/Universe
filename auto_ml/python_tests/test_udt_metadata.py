@@ -31,7 +31,7 @@ def curate_from_census_income_dataset(orig_train_df, orig_test_df, curate_metada
 
     train_id_series = pd.Series(np.arange(len(orig_train_df)))
     test_id_series = pd.Series(
-        np.arange(len(orig_train_df), len(orig_train_df) + len(orig_test_df)),
+        np.arange(len(orig_train_df), len(orig_train_df) + len(orig_test_df))
     )
 
     if curate_metadata_for == "user":

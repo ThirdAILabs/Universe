@@ -97,7 +97,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
                 input_column="text",
                 output_column="text_hashed",
                 output_range=MODEL_INPUT_DIM,
-            ),
+            )
         ]
     )
 
@@ -132,8 +132,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
 def test_distributed_classifer_accuracy(distributed_trained_clinc):
     model, x_featurizer, y_featurizer = distributed_trained_clinc
     test_data = data.pandas_to_columnmap(
-        pd.read_csv(TEST_FILE),
-        int_col_dims={"intent": 151},
+        pd.read_csv(TEST_FILE), int_col_dims={"intent": 151}
     )
     test_x = x_featurizer.featurize(test_data).convert_to_dataset(
         columns=["text_hashed"], batch_size=BATCH_SIZE

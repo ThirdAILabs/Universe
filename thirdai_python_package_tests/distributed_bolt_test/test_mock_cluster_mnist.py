@@ -73,10 +73,7 @@ def train_distributed_bolt_check(ray_two_node_cluster_config):
     # directory, but the current working directory where we downloaded mnist
     # may be anywhere, we give explicit paths for the mnist filenames
     train_sources = [
-        db.SvmDatasetLoader(
-            filename,
-            batch_size=256,
-        )
+        db.SvmDatasetLoader(filename, batch_size=256)
         for filename in [
             f"{os.getcwd()}/mnist_data/part1",
             f"{os.getcwd()}/mnist_data/part2",

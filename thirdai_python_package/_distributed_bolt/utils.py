@@ -108,9 +108,7 @@ class PandasColumnMapGenerator(data.ColumnMapGenerator):
             load[col_name] = load[col_name].astype(col_type)
 
         return data.pandas_to_columnmap(
-            load,
-            dense_int_cols=self.dense_int_cols,
-            int_col_dims=self.int_col_dims,
+            load, dense_int_cols=self.dense_int_cols, int_col_dims=self.int_col_dims
         )
 
     def restart(self):

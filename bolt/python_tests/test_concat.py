@@ -39,17 +39,13 @@ def run_simple_test(
     ).silence()
 
     metrics = model.train(
-        train_data=train_data,
-        train_labels=train_labels,
-        train_config=train_config,
+        train_data=train_data, train_labels=train_labels, train_config=train_config
     )
 
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
 
     metrics = model.evaluate(
-        test_data=train_data,
-        test_labels=train_labels,
-        eval_config=eval_config,
+        test_data=train_data, test_labels=train_labels, eval_config=eval_config
     )
 
     assert metrics[0]["categorical_accuracy"] >= accuracy_threshold

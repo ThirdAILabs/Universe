@@ -23,7 +23,7 @@ machine_info = {
     "architecture": platform.machine(),
     "processor": platform.processor(),
     "hostname": socket.gethostname(),
-    "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
+    "ram_gb": round(psutil.virtual_memory().total / (1024.0 ** 3)),
     "num_cores": psutil.cpu_count(logical=True),
 }
 
@@ -73,11 +73,7 @@ class ExperimentLogger:
 
     def __enter__(self):
         mlflow.set_experiment(self.experiment_name)
-        mlflow.start_run(
-            tags={
-                "dataset": self.dataset,
-            },
-        )
+        mlflow.start_run(tags={"dataset": self.dataset})
 
         mlflow.log_param("algorithm", self.algorithm)
         mlflow.log_param("framework", self.framework)

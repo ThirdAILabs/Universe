@@ -1,7 +1,7 @@
-import tempfile
-import pandas as pd
 import os
+import tempfile
 
+import pandas as pd
 import pytest
 from thirdai.data import _CATEGORICAL_DELIMITERS, get_udt_col_types
 
@@ -10,7 +10,7 @@ pytestmark = [pytest.mark.unit]
 
 @pytest.mark.parametrize("delimiter", _CATEGORICAL_DELIMITERS)
 def test_get_udt_columns_with_csv(delimiter):
-    with tempfile.NamedTemporaryFile(suffix='.csv', mode="w") as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".csv", mode="w") as tmp:
         tmp.write(
             f"""col1,col2,col3,col4,col5,col6
                 lorem,2,3.0,label1{delimiter}label2{delimiter}label3,How vexingly quick daft zebras jump!,2021-02-01
@@ -49,8 +49,8 @@ def test_get_udt_columns_with_parquet(delimiter):
         tmp.flush()
 
         df = pd.read_csv(tmp.name)
-        df.to_parquet(tmp.name+'.pqt')
-        udt_types = get_udt_col_types(tmp.name+'.pqt')
+        df.to_parquet(tmp.name + ".pqt")
+        udt_types = get_udt_col_types(tmp.name + ".pqt")
 
         assert str(udt_types["col1"]) == '{"type": "categorical"}'
         assert str(udt_types["col2"]) == '{"type": "categorical"}'

@@ -22,10 +22,10 @@ def get_udt_col_types(
     """
     column_types = semantic_type_inference(filename)
 
-    if filename.endswith('.pqt') or filename.endswith('.parquet'):
+    if filename.endswith(".pqt") or filename.endswith(".parquet"):
         df = pd.read_parquet(filename)
-    elif filename.endswith('.csv'):
-        df = pd.read_csv(filename, nrows=n_rows, dtype=object)
+    elif filename.endswith(".csv"):
+        df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
     else:
         raise ValueError(
             "UDT currently supports files with only these extensions [.csv, .pqt, .parquet]. Please convert your files to one of the supported formats."

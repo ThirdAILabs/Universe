@@ -237,9 +237,7 @@ class Mach:
         input_layer = bolt.nn.Input(dim=input_dim)
 
         hidden_layer = bolt.nn.FullyConnected(
-            dim=hidden_layer_dim,
-            sparsity=hidden_layer_sparsity,
-            activation="relu",
+            dim=hidden_layer_dim, sparsity=hidden_layer_sparsity, activation="relu"
         )(input_layer)
 
         output_layer = bolt.nn.FullyConnected(

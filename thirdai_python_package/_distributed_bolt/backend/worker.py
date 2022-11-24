@@ -55,8 +55,7 @@ class Worker:
 
         start = time()
         self.model = bolt.DistributedTrainingWrapper(
-            model=model_to_wrap,
-            train_config=train_config,
+            model=model_to_wrap, train_config=train_config
         )
         end = time()
 
@@ -107,10 +106,7 @@ class Worker:
 
     @timed
     def process_ring(
-        self,
-        update_id: int,
-        reduce: bool = True,
-        avg_gradients: bool = False,
+        self, update_id: int, reduce: bool = True, avg_gradients: bool = False
     ):
         """
         This function handles the circular all reduce

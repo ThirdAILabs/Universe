@@ -13,12 +13,7 @@ def ray_two_node_cluster_config(communication_type="linear"):
     import thirdai.distributed_bolt as db
     from ray.cluster_utils import Cluster
 
-    mini_cluster = Cluster(
-        initialize_head=True,
-        head_node_args={
-            "num_cpus": 1,
-        },
-    )
+    mini_cluster = Cluster(initialize_head=True, head_node_args={"num_cpus": 1})
     mini_cluster.add_node(num_cpus=1)
 
     # We set the working_dir for the cluster equal to this directory

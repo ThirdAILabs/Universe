@@ -25,8 +25,7 @@ def create_and_tabular_hash_random_dataset(use_pairgrams):
     featurizer = data.FeaturizationPipeline(
         transformations=[
             data.transformations.StringHash(
-                input_column=column_name,
-                output_column=f"{column_name}_hashes",
+                input_column=column_name, output_column=f"{column_name}_hashes"
             )
             for column_name in column_name_list
         ]

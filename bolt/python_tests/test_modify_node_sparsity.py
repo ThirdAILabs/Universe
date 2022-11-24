@@ -38,18 +38,14 @@ def test_switch_dense_to_sparse():
     )
 
     dense_metrics = model.evaluate(
-        test_data=train_data,
-        test_labels=train_labels,
-        eval_config=dense_eval_config,
+        test_data=train_data, test_labels=train_labels, eval_config=dense_eval_config
     )
 
     model.get_layer("fc_3").set_sparsity(sparsity=0.25)
     sparse_eval_config = dense_eval_config.enable_sparse_inference()
 
     sparse_metrics = model.evaluate(
-        test_data=train_data,
-        test_labels=train_labels,
-        eval_config=sparse_eval_config,
+        test_data=train_data, test_labels=train_labels, eval_config=sparse_eval_config
     )
 
     assert len(dense_metrics) == 2

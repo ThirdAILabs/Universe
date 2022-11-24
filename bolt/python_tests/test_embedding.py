@@ -72,8 +72,6 @@ def test_token_sum():
     )
     eval_config = bolt.EvalConfig().silence().with_metrics(["categorical_accuracy"])
     metrics = model.evaluate(
-        test_data=[test_1, test_2],
-        test_labels=test_labels,
-        eval_config=eval_config,
+        test_data=[test_1, test_2], test_labels=test_labels, eval_config=eval_config
     )
     assert metrics[0]["categorical_accuracy"] > 0.8

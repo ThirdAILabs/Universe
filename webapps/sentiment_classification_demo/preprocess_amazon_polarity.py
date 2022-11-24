@@ -44,31 +44,16 @@ def preprocess_amazon_polarity(input_file, output_dim, output_file, has_header=T
 def main():
     parser = argparse.ArgumentParser(description="Preprocess amazon polarity")
     parser.add_argument(
-        "-i",
-        "--input_file",
-        type=str,
-        required=True,
-        help="Path to the dataset.",
+        "-i", "--input_file", type=str, required=True, help="Path to the dataset."
     )
     parser.add_argument(
-        "-d",
-        "--output_dim",
-        type=int,
-        required=True,
-        help="Dimension of output.",
+        "-d", "--output_dim", type=int, required=True, help="Dimension of output."
     )
     parser.add_argument(
-        "-o",
-        "--output_file",
-        type=str,
-        required=True,
-        help="Output filename.",
+        "-o", "--output_file", type=str, required=True, help="Output filename."
     )
     parser.add_argument(
-        "-a",
-        "--has_header",
-        action="store_true",
-        help="Dimension of output.",
+        "-a", "--has_header", action="store_true", help="Dimension of output."
     )
 
     args = parser.parse_args()

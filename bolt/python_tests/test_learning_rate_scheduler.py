@@ -49,10 +49,7 @@ def test_multiplicative_lr_scheduler():
 
     lr_schedule = bolt.callbacks.MultiplicativeLR(gamma=0.5)
     learning_rate_scheduler = train_model_with_scheduler(
-        base_learning_rate=0.01,
-        epochs=2,
-        lr_schedule=lr_schedule,
-        lambda_schedule=None,
+        base_learning_rate=0.01, epochs=2, lr_schedule=lr_schedule, lambda_schedule=None
     )
 
     assert math.isclose(learning_rate_scheduler.get_final_lr(), 0.0025, rel_tol=1e-06)

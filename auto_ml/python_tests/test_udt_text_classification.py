@@ -16,10 +16,7 @@ ACCURACY_THRESHOLD = 0.8
 @pytest.fixture(scope="module")
 def train_udt_text_classification(download_clinc_dataset):
     model = bolt.UniversalDeepTransformer(
-        data_types={
-            "category": bolt.types.categorical(),
-            "text": bolt.types.text(),
-        },
+        data_types={"category": bolt.types.categorical(), "text": bolt.types.text()},
         target="category",
         n_target_classes=150,
         integer_target=True,

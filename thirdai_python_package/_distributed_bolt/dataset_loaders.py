@@ -8,8 +8,7 @@ class DatasetLoader(ABC):
     @abstractmethod
     def next() -> Optional[
         Tuple[
-            Union[dataset.BoltDataset, List[dataset.BoltDataset]],
-            dataset.BoltDataset,
+            Union[dataset.BoltDataset, List[dataset.BoltDataset]], dataset.BoltDataset
         ]
     ]:
         pass
@@ -67,12 +66,7 @@ class SvmDatasetLoader(GenericInMemoryDatasetLoader):
     """
 
     def __init__(self, filename: str, batch_size: int):
-        super().__init__(
-            lambda: dataset.load_bolt_svm_dataset(
-                filename,
-                batch_size,
-            )
-        )
+        super().__init__(lambda: dataset.load_bolt_svm_dataset(filename, batch_size))
 
 
 class TabularDatasetLoader(DatasetLoader):

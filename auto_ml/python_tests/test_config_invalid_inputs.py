@@ -5,9 +5,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def get_config(
-    add_extra_input=False,
-    missing_predecessor=False,
-    duplicate_node_name=False,
+    add_extra_input=False, missing_predecessor=False, duplicate_node_name=False
 ):
     if add_extra_input:
         inputs = ["input", "input_2"]
@@ -28,16 +26,14 @@ def get_config(
             ),
             activation=deployment.ConstantParameter("softmax"),
             predecessor=predecessor,
-        ),
+        )
     ]
 
     if duplicate_node_name:
         nodes.append(nodes[0])
 
     model_config = deployment.ModelConfig(
-        input_names=inputs,
-        nodes=nodes,
-        loss=bolt.nn.losses.CategoricalCrossEntropy(),
+        input_names=inputs, nodes=nodes, loss=bolt.nn.losses.CategoricalCrossEntropy()
     )
 
     dataset_config = deployment.SingleBlockDatasetFactory(

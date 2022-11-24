@@ -222,10 +222,7 @@ class DistributedDataParallel:
         """
         train_start = time.time()
         train_state_manager = TrainStateManager(
-            self.workers,
-            self.primary_worker,
-            self.logging,
-            self.communication_type,
+            self.workers, self.primary_worker, self.logging, self.communication_type
         )
 
         total_batches_trained = 0

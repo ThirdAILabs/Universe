@@ -20,13 +20,16 @@ def generate_random_easy_sparse(output_dim, num_true_labels_per_example, num_exa
     data_values = np.ones(shape=data_indices.shape)
     data_offsets = label_offsets
     return (
-        data_indices.astype("uint32"),
-        data_values.astype("float32"),
-        data_offsets.astype("uint32"),
-    ), (
-        label_indices.astype("uint32"),
-        label_values.astype("float32"),
-        label_offsets.astype("uint32"),
+        (
+            data_indices.astype("uint32"),
+            data_values.astype("float32"),
+            data_offsets.astype("uint32"),
+        ),
+        (
+            label_indices.astype("uint32"),
+            label_values.astype("float32"),
+            label_offsets.astype("uint32"),
+        ),
     )
 
 

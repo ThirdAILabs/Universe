@@ -68,9 +68,7 @@ def make_simple_trained_model(
     model = bolt.UniversalDeepTransformer(
         data_types={
             "userId": bolt.types.categorical(metadata=metadata),
-            "movieId": bolt.types.categorical(
-                metadata=metadata,
-            ),
+            "movieId": bolt.types.categorical(metadata=metadata),
             "timestamp": bolt.types.date(),
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
             "genres": bolt.types.categorical(delimiter="-"),
@@ -140,8 +138,7 @@ def compare_explanations(explanations_1, explanations_2, assert_mode):
 @pytest.mark.release
 def test_temporal_not_in_data_type_throws():
     with pytest.raises(
-        ValueError,
-        match=r"The tracking key 'user' is not found in data_types.",
+        ValueError, match=r"The tracking key 'user' is not found in data_types."
     ):
         bolt.UniversalDeepTransformer(
             data_types={"date": bolt.types.date(), "item": bolt.types.categorical()},
@@ -151,8 +148,7 @@ def test_temporal_not_in_data_type_throws():
         )
 
     with pytest.raises(
-        ValueError,
-        match=r"The tracked column 'other_item' is not found in data_types.",
+        ValueError, match=r"The tracked column 'other_item' is not found in data_types."
     ):
         bolt.UniversalDeepTransformer(
             data_types={

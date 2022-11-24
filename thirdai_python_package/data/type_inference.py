@@ -90,10 +90,7 @@ def _infer_col_type(column: pd.Series) -> Dict[str, str]:
     is_multi_categorical, delimiter = _is_multi_categorical(column)
     if is_multi_categorical:
         assert delimiter is not None
-        return {
-            "type": "multi-categorical",
-            "delimiter": delimiter,
-        }
+        return {"type": "multi-categorical", "delimiter": delimiter}
 
     return {"type": "categorical"}
 
@@ -128,9 +125,9 @@ def semantic_type_inference(
     # even with missing values (we will later drop the missing values, which
     # get converted to NAs during read_csv, and then convert to the correct
     # more specific type).
-    if filename.endswith('.pqt') or filename.endswith('.parquet'):
+    if filename.endswith(".pqt") or filename.endswith(".parquet"):
         df = pd.read_parquet(filename)
-    elif filename.endswith('.csv'):
+    elif filename.endswith(".csv"):
         df = pd.read_csv(filename, nrows=nrows, dtype=object)
     else:
         raise ValueError(

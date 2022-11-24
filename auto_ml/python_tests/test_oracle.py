@@ -75,12 +75,7 @@ def make_simple_udt_model():
     )
 
     write_lines_to_file(
-        TEST_FILE,
-        [
-            "userId,movieId,timestamp",
-            "0,1,2022-08-31",
-            "2,0,2022-08-30",
-        ],
+        TEST_FILE, ["userId,movieId,timestamp", "0,1,2022-08-31", "2,0,2022-08-30"]
     )
 
     model = bolt.models.Pipeline(

@@ -36,9 +36,7 @@ def test_dag_get_set_weights():
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
 
     metrics = model.evaluate(
-        test_data=train_data,
-        test_labels=train_labels,
-        eval_config=eval_config,
+        test_data=train_data, test_labels=train_labels, eval_config=eval_config
     )
 
     untrained_model = get_simple_dag_model(
