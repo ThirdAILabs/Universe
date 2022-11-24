@@ -570,10 +570,12 @@ Args:
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
-    batch_size (Option[int]): This is an optional parameter indicating which batch
+    batch_size (Optional[int]): This is an optional parameter indicating which batch
         size to use for training. If not specified the default batch size from the 
         TrainEvalParameters is used.
-    max_in_memory_batches (Option[int]): The maximum number of batches to load in
+    validation (Optional[bolt.Validation]): This is an optional parameter that specifies 
+        a validation dataset, metrics, and interval to use during training.
+    max_in_memory_batches (Optional[int]): The maximum number of batches to load in
         memory at a given time. If this is specified then the dataset will be processed
         in a streaming fashion.
 
@@ -599,7 +601,9 @@ Args:
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
         during training. 
-    max_in_memory_batches (Option[int]): The maximum number of batches to load in
+    validation (Optional[bolt.Validation]): This is an optional parameter that specifies 
+        a validation dataset, metrics, and interval to use during training.
+    max_in_memory_batches (Optional[int]): The maximum number of batches to load in
         memory at a given time. If this is specified then the dataset will be processed
         in a streaming fashion.
 
@@ -836,7 +840,7 @@ Args:
         Column type is one of:
         - `bolt.types.categorical()`
         - `bolt.types.numerical(range: tuple(float, float))`
-        - `bolt.types.text(average_n_words: int=None)`
+        - `bolt.types.text(average_n_words: float=None)`
         - `bolt.types.date()`
         See bolt.types for details.
 
@@ -955,6 +959,27 @@ Thus, UDT is at its best when its internal temporal context gets updated with
 new true samples. Just like `.update_temporal_trackers()`, 
 `.batch_update_temporal_trackers()` does exactly this, except with a batch input.
 
+)pbdoc";
+
+const char* const VALIDATION = R"pbdoc(
+Creates a validation object that stores the necessary information for the model 
+to perform validation during training.
+
+Args:
+    filename (str): The name of the validation file.
+    metrics (List[str]): The metrics to compute for validation.
+    interval (Optional[int]): The interval, in number of batches, between computing 
+        validation. For instance, `interval=10` means that validation metrics will 
+        be computed every 10 batches. If it is not specified then validation will 
+        be done after each epoch.
+    use_sparse_inference (bool): Optional, defaults to False. When True, sparse 
+        inference will be used during validation.
+
+Examples:
+    >>> validation = bolt.Validation(
+            filename="validation.csv", metrics=["categorical_accuracy"], interval=10
+        )
+    >>> model.train("train.csv", epochs=5, validation=validation)
 )pbdoc";
 
 }  // namespace thirdai::automl::deployment::python::docs

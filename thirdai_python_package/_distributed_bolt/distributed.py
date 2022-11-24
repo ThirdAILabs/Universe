@@ -116,13 +116,12 @@ class RayTrainingClusterConfig:
             f"Using {num_cpus_to_use} cpus / node (user requested {requested_cpus_per_node})"
         )
 
-        # TODO(Josh/Pratik): investigate the correct setting for max concurrency
         self.primary_worker_config = PrimaryWorker.options(
-            num_cpus=num_cpus_to_use, max_concurrency=100
+            num_cpus=num_cpus_to_use, max_concurrency=2
         )
 
         self.replica_worker_configs = [
-            ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=100)
+            ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=2)
             for _ in range(self.num_workers - 1)
         ]
 

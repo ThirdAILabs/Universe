@@ -105,8 +105,7 @@ def make_simple_udt_model():
 def test_udt_save_load():
     model = make_simple_udt_model()
 
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
     model.save("saveLoc")
     before_load_output = model.evaluate(TEST_FILE)
     model = bolt.models.Pipeline.load("saveLoc")
@@ -117,8 +116,7 @@ def test_udt_save_load():
 
 def test_multiple_predict_returns_same():
     model = make_simple_udt_model()
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     sample = "0,,2022-08-31"
     prev_result = model.predict(sample)
@@ -130,8 +128,7 @@ def test_multiple_predict_returns_same():
 
 def test_explanations_total_percentage():
     model = make_simple_udt_model()
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     sample = "0,,2022-08-31"
     explanations = model.explain(sample)
@@ -145,8 +142,7 @@ def test_explanations_total_percentage():
 def test_index_changes_predict():
     model = make_simple_udt_model()
     context = model.get_data_processor()
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     sample = "0,,2022-08-31"
 
@@ -162,8 +158,7 @@ def test_index_changes_predict():
 def test_context_serialization():
     model = make_simple_udt_model()
     context = model.get_data_processor()
-    train_config = bolt.TrainConfig(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     model.save("saveLoc")
     saved_model = bolt.models.Pipeline.load("saveLoc")

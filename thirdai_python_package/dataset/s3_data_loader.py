@@ -1,10 +1,4 @@
-import time
-
-import thirdai._thirdai.dataset
-from thirdai._thirdai.dataset import *
-
-__all__ = []
-__all__.extend(dir(thirdai._thirdai.dataset))
+from thirdai._thirdai.dataset import DataLoader
 
 
 class S3DataLoader(DataLoader):
@@ -70,6 +64,3 @@ class S3DataLoader(DataLoader):
 
     def resource_name(self):
         return f"s3://{self._bucket_name}/{self._prefix_filter}"
-
-
-__all__.append("S3DataLoader")
