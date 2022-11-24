@@ -124,5 +124,5 @@ class PandasColumnMapGenerator(data.ColumnMapGenerator):
             # Passing in 0 as node index and 1 as num_nodes, make sure that
             # we iterate over all the data source
             self.current_iterator = _pandas_iterator(
-                self.path, self.lines_per_load, 0, 1
+                self.path, self.lines_per_load, node_index=0, num_nodes=1
             )
