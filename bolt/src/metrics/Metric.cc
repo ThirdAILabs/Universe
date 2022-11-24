@@ -18,6 +18,10 @@ void CategoricalCrossEntropy::record(const BoltVector& outputs,
       }
     } else {
       // (Dense Output, Sparse Labels)
+      // In this case, outputs are dense. There could potentially be 0 values,
+      // but log(0+EPS) takes care of those. We only need to add terms if
+      // there's labels active. For the non-active labels, 0*log(x) = 0, if x
+      // \to infinity.
       for (uint32_t i = 0; i < outputs.len; i++) {
         const uint32_t* label_start = labels.active_neurons;
         const uint32_t* label_end = labels.active_neurons + labels.len;
@@ -61,12 +65,17 @@ void CategoricalCrossEntropy::record(const BoltVector& outputs,
           sample_loss += labels.activations[i] *
                          std::log(outputs.activations[output_index] + EPS);
         } else {
+          // Output activation is set to 0.0F. log(0) is -infinity, but for
+          // reporting it suffices to show this value is really huge, so we use
+          // EPS to get something like -7 from 1e-7.
           float output_activation = 0.0F;
           sample_loss +=
               labels.activations[i] * std::log(output_activation + EPS);
         }
       }
     } else {
+      // We iterate over labels with non-zero activations. 0*log(x) = 0 (even if
+      // x \to inf), so we can ignore these terms.
       for (uint32_t i = 0; i < labels.len; i++) {
         const uint32_t* output_start = outputs.active_neurons;
         const uint32_t* output_end = outputs.active_neurons + outputs.len;
@@ -83,6 +92,9 @@ void CategoricalCrossEntropy::record(const BoltVector& outputs,
           sample_loss += labels.activations[i] *
                          std::log(outputs.activations[output_index] + EPS);
         } else {
+          // Output activation is set to 0.0F. log(0) is -infinity, but for
+          // reporting it suffices to show this value is really huge, so we use
+          // EPS to get something like -7 from 1e-7.
           float output_activation = 0.0F;
           sample_loss +=
               labels.activations[i] * std::log(output_activation + EPS);
