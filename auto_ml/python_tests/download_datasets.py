@@ -2,6 +2,7 @@ import json
 import os
 import zipfile
 
+import datasets
 import pandas as pd
 import pytest
 
@@ -41,7 +42,8 @@ def download_census_income():
             # Write header
             file.write(",".join(COLUMN_NAMES) + "\n")
             # Convert ", " delimiters to ",".
-            file.writelines([line.replace(", ", ",") for line in data[1:]])
+            lines = [line.replace(", ", ",") for line in data[1:]]
+            file.writelines([line for line in lines if line.strip() != ""])
 
     if not os.path.exists(TEST_FILE):
         os.system(
@@ -56,9 +58,8 @@ def download_census_income():
             # Convert ", " delimiters to ",".
             # Additionally, for some reason each of the labels end with a "." in the test set
             # loop through data[1:] since the first line is bogus
-            file.writelines(
-                [line.replace(".", "").replace(", ", ",") for line in data[1:]]
-            )
+            lines = [line.replace(".", "").replace(", ", ",") for line in data[1:]]
+            file.writelines([line for line in lines if line.strip() != ""])
 
     inference_samples = []
     with open(TEST_FILE, "r") as test_file:
@@ -115,5 +116,37 @@ def download_clinc_dataset():
     inference_samples = []
     for _, row in test_df.iterrows():
         inference_samples.append(({"text": row["text"]}, row["category"]))
+
+    return TRAIN_FILE, TEST_FILE, inference_samples
+
+
+@pytest.fixture(scope="session")
+def download_brazilian_houses_dataset():
+    TRAIN_FILE = "./brazilian_houses_train.csv"
+    TEST_FILE = "./brazilian_houses_test.csv"
+
+    dataset = datasets.load_dataset(
+        "inria-soda/tabular-benchmark", data_files="reg_num/Brazilian_houses.csv"
+    )
+
+    df = pd.DataFrame(dataset["train"].shuffle())
+
+    # Split in to train/test, there are about 10,000 rows in entire dataset.
+    train_df = df.iloc[:8000, :]
+    test_df = df.iloc[8000:, :]
+
+    train_df = train_df.drop("Unnamed: 0", axis=1)
+    test_df = test_df.drop("Unnamed: 0", axis=1)
+
+    train_df.to_csv(TRAIN_FILE, index=False)
+    test_df.to_csv(TEST_FILE, index=False)
+
+    inference_samples = []
+    for _, row in test_df.iterrows():
+        sample = dict(row)
+        label = sample["totalBRL"]
+        del sample["totalBRL"]
+        sample = {x: str(y) for x, y in sample.items()}
+        inference_samples.append((sample, label))
 
     return TRAIN_FILE, TEST_FILE, inference_samples

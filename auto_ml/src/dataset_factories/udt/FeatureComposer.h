@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::data {
 
 using PreprocessedVectorsMap =
     std::unordered_map<std::string, dataset::PreprocessedVectorsPtr>;
@@ -47,16 +47,29 @@ class FeatureComposer {
 
     for (const auto& [tracking_key_col_name, temporal_configs] :
          temporal_relationships) {
-      if (!config.data_types.at(tracking_key_col_name).isCategorical()) {
+      if (!config.data_types.count(tracking_key_col_name)) {
+        throw std::invalid_argument("The tracking key '" +
+                                    tracking_key_col_name +
+                                    "' is not found in data_types.");
+      }
+
+      if (!asCategorical(config.data_types.at(tracking_key_col_name))) {
         throw std::invalid_argument("Tracking keys must be categorical.");
       }
 
-      if (config.data_types.at(tracking_key_col_name)
-              .asCategorical()
-              .delimiter) {
+      if (asCategorical(config.data_types.at(tracking_key_col_name))
+              ->delimiter) {
         throw std::invalid_argument(
             "Tracking keys cannot have a delimiter; columns containing "
             "tracking keys must only have one value per row.");
+      }
+
+      for (const auto& temporal_config : temporal_configs) {
+        if (!config.data_types.count(temporal_config.columnName())) {
+          throw std::invalid_argument("The tracked column '" +
+                                      temporal_config.columnName() +
+                                      "' is not found in data_types.");
+        }
       }
     }
   }
@@ -90,38 +103,35 @@ class FeatureComposer {
 
       uint32_t col_num = column_numbers.at(col_name);
 
-      if (data_type.isCategorical()) {
-        auto categorical = data_type.asCategorical();
+      if (auto categorical = asCategorical(data_type)) {
         // if part of metadata
-        if (vectors_map.count(col_name) && categorical.metadata_config) {
+        if (vectors_map.count(col_name) && categorical->metadata_config) {
           blocks.push_back(dataset::MetadataCategoricalBlock::make(
-              col_num, vectors_map.at(col_name), categorical.delimiter));
+              col_num, vectors_map.at(col_name), categorical->delimiter));
         }
-        if (categorical.delimiter) {
+        if (categorical->delimiter) {
           // 1. we treat multicategorical as a text block since all we really
           // want is unigrams of the "words" separated by some delimiter
           // 2. text hash range of MAXINT is fine since features are later
           // hashed into a range. In fact it may reduce hash collisions.
           blocks.push_back(dataset::UniGramTextBlock::make(
               col_num, /* dim= */ std::numeric_limits<uint32_t>::max(),
-              *categorical.delimiter));
+              *categorical->delimiter));
         } else {
           tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
         }
       }
 
-      if (data_type.isNumerical()) {
-        tabular_col_ranges[col_num] = data_type.asNumerical().range;
-        tabular_col_bins[col_num] =
-            getNumberOfBins(data_type.asNumerical().granularity);
+      if (auto numerical = asNumerical(data_type)) {
+        tabular_col_ranges[col_num] = numerical->range;
+        tabular_col_bins[col_num] = getNumberOfBins(numerical->granularity);
         tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
       }
 
-      if (data_type.isText()) {
-        auto text_meta = data_type.asText();
-        if (text_meta.force_pairgram ||
-            (text_meta.average_n_words &&
-             text_meta.average_n_words <= text_pairgrams_word_limit)) {
+      if (auto text_meta = asText(data_type)) {
+        if (text_meta->force_pairgram ||
+            (text_meta->average_n_words &&
+             text_meta->average_n_words <= text_pairgrams_word_limit)) {
           // text hash range of MAXINT is fine since features are later
           // hashed into a range. In fact it may reduce hash collisions.
           blocks.push_back(dataset::PairGramTextBlock::make(
@@ -132,7 +142,7 @@ class FeatureComposer {
         }
       }
 
-      if (data_type.isDate()) {
+      if (asDate(data_type)) {
         blocks.push_back(dataset::DateBlock::make(col_num));
       }
     }
@@ -265,7 +275,7 @@ class FeatureComposer {
   static std::string getTimestampColumnName(const UDTConfig& config) {
     std::optional<std::string> timestamp;
     for (const auto& [col_name, data_type] : config.data_types) {
-      if (data_type.isDate()) {
+      if (asDate(data_type)) {
         if (timestamp) {
           throw std::invalid_argument(
               "There can only be one timestamp column.");
@@ -289,13 +299,13 @@ class FeatureComposer {
       dataset::PreprocessedVectorsPtr vectors) {
     const auto& tracked_column = temporal_config.columnName();
 
-    if (!config.data_types.at(tracked_column).isCategorical()) {
+    if (!asCategorical(config.data_types.at(tracked_column))) {
       throw std::invalid_argument(
           "temporal.categorical can only be used with categorical "
           "columns.");
     }
 
-    auto tracked_meta = config.data_types.at(tracked_column).asCategorical();
+    auto tracked_meta = asCategorical(config.data_types.at(tracked_column));
     auto temporal_meta = temporal_config.asCategorical();
 
     int64_t time_lag = config.lookahead;
@@ -314,7 +324,7 @@ class FeatureComposer {
         /* item_hash_range= */ std::numeric_limits<uint32_t>::max(),
         /* should_update_history= */ should_update_history,
         /* include_current_row= */ temporal_meta.include_current_row,
-        /* item_col_delimiter= */ tracked_meta.delimiter,
+        /* item_col_delimiter= */ tracked_meta->delimiter,
         /* time_lag= */ time_lag, /* item_vectors= */ std::move(vectors));
   }
 
@@ -325,7 +335,7 @@ class FeatureComposer {
       const std::string& timestamp_column, bool should_update_history) {
     const auto& tracked_column = temporal_config.columnName();
 
-    if (!config.data_types.at(tracked_column).isNumerical()) {
+    if (!asNumerical(config.data_types.at(tracked_column))) {
       throw std::invalid_argument(
           "temporal.numerical can only be used with numerical columns.");
     }
@@ -375,4 +385,4 @@ class FeatureComposer {
   }
 };
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl::data

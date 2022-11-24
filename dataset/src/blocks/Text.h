@@ -229,7 +229,7 @@ class CharKGramTextBlock final : public TextBlock {
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<TextBlock>(this));
+    archive(cereal::base_class<TextBlock>(this), _k);
   }
 };
 

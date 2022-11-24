@@ -27,7 +27,8 @@ jobs:
 
       - name: Open Permissions
         run: sudo chmod -R 777 ${{ github.workspace }}
-        
+
+      - uses: AutoModality/action-clean@v1
       - uses: actions/checkout@v2
         with:           
           submodules: 'recursive'
