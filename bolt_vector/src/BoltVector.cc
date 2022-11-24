@@ -248,9 +248,8 @@ template <bool DENSE>
 uint32_t BoltVector::activeNeuronAtIndex(uint32_t index) const {
   if (DENSE) {
     return index;
-  } else {
-    return active_neurons[index];
   }
+  return active_neurons[index];
 }
 
 void BoltVector::zeroOutGradients() {  // NOLINT clang-tidy thinks this should
