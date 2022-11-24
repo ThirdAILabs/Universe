@@ -8,12 +8,13 @@
 #include <dataset/src/NumpyDataset.h>
 #include <dataset/src/ShuffleBatchBuffer.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/Vocabulary.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
-#include <dataset/src/blocks/TabularPairGram.h>
+#include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/tests/MockBlock.h>
@@ -34,6 +35,9 @@
 
 namespace thirdai::dataset::python {
 
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
 void createDatasetSubmodule(py::module_& module) {
   // Separate submodule for bindings that we don't want to expose to users.
   auto internal_dataset_submodule = module.def_submodule("dataset_internal");
@@ -45,17 +49,32 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
-      .def("__repr__", &BoltVector::toString);
+      .def("__repr__", &BoltVector::toString)
+      .def("to_numpy", [](const BoltVector& vector) -> py::object {
+        NumpyArray<float> activations_array(vector.len);
+        std::copy(vector.activations, vector.activations + vector.len,
+                  activations_array.mutable_data());
+
+        if (vector.isDense()) {
+          return py::object(std::move(activations_array));
+        }
+
+        NumpyArray<uint32_t> active_neurons_array(vector.len);
+        std::copy(vector.active_neurons, vector.active_neurons + vector.len,
+                  active_neurons_array.mutable_data());
+
+        return py::make_tuple(active_neurons_array, activations_array);
+      });
 
   py::class_<Explanation>(dataset_submodule, "Explanation",
                           R"pbdoc(
      Represents an input column that is responsible for a predicted
      outcome.
       )pbdoc")
-      .def_readonly("column_number", &Explanation::column_number,
-                    R"pbdoc(
-     Identifies the responsible input column.
-      )pbdoc")
+      .def("__str__", &Explanation::toString)
+      .def("__repr__", &Explanation::toString)
+      // We don't expose column_number because it doesn't always make sense to
+      // provide one column number; e.g. in tabular pairgram case.
       .def_readonly("percentage_significance",
                     &Explanation::percentage_significance,
                     R"pbdoc(
@@ -227,65 +246,20 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("column_names") = std::vector<std::string>(),
            py::arg("col_to_num_bins") = std::nullopt);
 
-  py::class_<TabularPairGram, Block, std::shared_ptr<TabularPairGram>>(
-      block_submodule, "TabularPairGram",
+  py::class_<TabularHashFeatures, Block, std::shared_ptr<TabularHashFeatures>>(
+      block_submodule, "TabularHashFeatures",
       "Given some metadata about a tabular dataset, assign unique "
-      "categories "
-      "to columns and compute pairgrams of the categories.")
-      .def(py::init<std::shared_ptr<TabularMetadata>, uint32_t>(),
-           py::arg("metadata"), py::arg("output_range"))
-      .def("feature_dim", &TabularPairGram::featureDim,
+      "categories to columns and compute either pairgramsor unigrams of the "
+      "categories depending on the 'use_pairgrams' flag.")
+      .def(py::init<std::shared_ptr<TabularMetadata>, uint32_t, bool>(),
+           py::arg("metadata"), py::arg("output_range"),
+           py::arg("use_pairgrams"))
+      .def("feature_dim", &TabularHashFeatures::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &TabularPairGram::isDense,
+      .def("is_dense", &TabularHashFeatures::isDense,
            "Returns false since text blocks always produce sparse "
            "features.");
 #endif
-
-  py::class_<PyBlockBatchProcessor>(
-      internal_dataset_submodule, "BatchProcessor",
-      "Encodes input samples – each represented by a sequence of strings – "
-      "as input and target BoltVectors according to the given blocks. "
-      "It processes these sequences in batches.\n\n"
-      "This is not consumer-facing.")
-      .def(
-          py::init<std::vector<std::shared_ptr<Block>>,
-                   std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
-          py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::arg("est_num_elems") = 0,
-          "Constructor\n\n"
-          "Arguments:\n"
-          " * input_blocks: List of Blocks - Blocks that encode input samples "
-          "as input vectors.\n"
-          " * target_blocks: List of Blocks - Blocks that encode input samples "
-          "as target vectors.\n"
-          " * output_batch_size: Int (positive) - Size of batches in the "
-          "produced dataset.\n"
-          " * est_num_elems: Int (positive) - Estimated number of samples. "
-          "This "
-          "speeds up the loading process by allowing the data loader to "
-          "preallocate memory. If the actual number of samples turns out to be "
-          "greater than the estimate, then the loader will automatically "
-          "allocate more memory as needed.")
-      .def("process_batch", &PyBlockBatchProcessor::processBatchPython,
-           py::arg("row_batch"),
-           "Consumes a batch of input samples and encodes them as vectors.\n\n"
-           "Arguments:\n"
-           " * row_batch: List of lists of strings - We expect to read tabular "
-           "data "
-           "where each row is a sample, and each sample has many columns. "
-           "row_batch represents a batch of such samples.")
-      .def("export_in_memory_dataset",
-           &PyBlockBatchProcessor::exportInMemoryDataset,
-           py::arg("shuffle") = false, py::arg("shuffle_seed") = std::rand(),
-           "Produces a tuple of BoltDatasets for input and target "
-           "vectors processed so far. This method can optionally produce a "
-           "shuffled dataset.\n\n"
-           "Arguments:\n"
-           " * shuffle: Boolean (Optional) - The dataset will be shuffled if "
-           "True.\n"
-           " * shuffle_seed: Int (Optional) - The seed for the RNG for "
-           "shuffling the "
-           "dataset.");
 
   py::class_<DataLoader, PyDataLoader, std::shared_ptr<DataLoader>>(
       dataset_submodule, "DataLoader")
@@ -359,7 +333,25 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("i"), py::return_value_policy::reference)
       .def("__len__", &BoltDataset::numBatches)
       .def("save", &BoltDataset::save, py::arg("filename"))
-      .def_static("load", &BoltDataset::load, py::arg("filename"));
+      .def_static("load", &BoltDataset::load, py::arg("filename"))
+      .def(py::init([](const py::iterable& iterable) {
+             using Batches = std::vector<BoltBatch>;
+             auto batches = iterable.cast<Batches>();
+             std::shared_ptr<BoltDataset> dataset =
+                 std::make_shared<InMemoryDataset<BoltBatch>>(
+                     std::move(batches));
+             return dataset;
+           }),
+           py::arg("batches"), R"pbdoc(
+            Construct a BoltDataset from an iterable of BoltBatches. Makes
+            copies in the process which can potentially be costly, use judiciously.
+            
+            Args: 
+                batches (Iterable[BoltBatch]): Batches
+
+            Returns:
+                BoltDataset: The constructed dataset.
+           )pbdoc");
 
   py::class_<numpy::WrappedNumpyVectors,  // NOLINT
              std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
@@ -379,7 +371,23 @@ void createDatasetSubmodule(py::module_& module) {
            static_cast<BoltVector& (BoltBatch::*)(size_t i)>(
                &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
-      .def("__len__", &BoltBatch::getBatchSize);
+      .def("__len__", &BoltBatch::getBatchSize)
+      .def(py::init([](const py::iterable& iterable) {
+             using Vectors = std::vector<BoltVector>;
+             auto vectors = iterable.cast<Vectors>();
+             BoltBatch batch(std::move(vectors));
+             return batch;
+           }),
+           py::arg("vectors"), R"pbdoc(
+            Construct a BoltBatch from an iterable of BoltVectors. Makes copies
+            in the process which can be costly, use judiciously.
+
+            Args: 
+                vectors (Iterable[BoltVector]): BoltVectors constituting the Batch.
+
+            Returns:
+                BoltBatch: The constructed Batch.
+           )pbdoc");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", SvmDatasetLoader::loadDatasetFromFile,
@@ -416,20 +424,11 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
                         py::arg("data"), py::arg("batch_size") = std::nullopt);
 
-  dataset_submodule.def(
-      "bolt_tokenizer", &parseSentenceToUnigramsPython, py::arg("sentence"),
-      py::arg("dimension") = 100000,
-      "Utility that turns a sentence into a sequence of token embeddings. To "
-      "be used for text classification tasks.\n"
-      "Arguments:\n"
-      " * sentence: String - Sentence to be tokenized.\n"
-      " * dimensions: Int (positive) - (Optional) The dimension of each token "
-      "embedding. "
-      "Defaults to 100,000.");
-
   py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
-      .def(py::init<uint32_t>(), py::arg("pairgram_range"))
-      .def(py::init<uint32_t, float>(), py::arg("pairgram_range"),
+      .def(py::init<std::shared_ptr<Vocabulary>, uint32_t>(),
+           py::arg("vocabulary"), py::arg("pairgram_range"))
+      .def(py::init<std::shared_ptr<Vocabulary>, uint32_t, float>(),
+           py::arg("vocabulary"), py::arg("pairgram_range"),
            py::arg("masked_tokens_percentage"))
       .def("load", &MLMDatasetLoader::load, py::arg("filename"),
            py::arg("batch_size"));
@@ -455,36 +454,19 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
-}
 
-std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToUnigramsPython(const std::string& sentence, uint32_t dimension) {
-  std::vector<uint32_t> unigrams =
-      TextEncodingUtils::computeRawUnigramsWithRange(sentence, dimension);
+  py::class_<Vocabulary, std::shared_ptr<Vocabulary>>(dataset_submodule,
+                                                      "Vocabulary")
+      .def("size", &Vocabulary::size)
+      .def("unk_id", &Vocabulary::unkId)
+      .def("mask_id", &Vocabulary::maskId)
+      .def("encode", &Vocabulary::encode, py::arg("sequence"))
+      .def("decode", &Vocabulary::decode, py::arg("piece_ids"))
+      .def("id", &Vocabulary::id, py::arg("token"));
 
-  std::vector<uint32_t> indices;
-  std::vector<uint32_t> values;
-  TextEncodingUtils::sumRepeatedIndices(unigrams, /* base_value= */ 1.0,
-                                        [&](uint32_t index, float value) {
-                                          indices.push_back(index);
-                                          values.push_back(value);
-                                        });
-
-  auto result = py::array_t<uint32_t>(indices.size());
-  py::buffer_info indx_buf = result.request();
-  uint32_t* indx_ptr = static_cast<uint32_t*>(indx_buf.ptr);
-
-  auto result_2 = py::array_t<uint32_t>(values.size());
-  py::buffer_info val_buf = result_2.request();
-  uint32_t* val_ptr = static_cast<uint32_t*>(val_buf.ptr);
-
-  assert(indices.size() == values.size());
-  for (uint32_t i = 0; i < indices.size(); i++) {
-    indx_ptr[i] = indices[i];
-    val_ptr[i] = values[i];
-  }
-
-  return std::make_tuple(result, result_2);
+  py::class_<FixedVocabulary, Vocabulary, std::shared_ptr<FixedVocabulary>>(
+      dataset_submodule, "FixedVocabulary")
+      .def_static("make", &FixedVocabulary::make, py::arg("vocab_file_path"));
 }
 
 bool denseBoltDatasetMatchesDenseMatrix(

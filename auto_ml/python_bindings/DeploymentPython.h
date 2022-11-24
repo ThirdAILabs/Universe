@@ -1,24 +1,36 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
+#include <auto_ml/src/models/ModelPipeline.h>
+#include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/DataLoader.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
+#include <optional>
 #include <unordered_map>
 
 namespace py = pybind11;
 
 namespace thirdai::automl::deployment::python {
 
+using ModelPipeline = models::ModelPipeline;
+using UniversalDeepTransformer = models::UniversalDeepTransformer;
+
 void createDeploymentSubmodule(py::module_& thirdai_module);
 
-template <typename T>
-void defConstantParameter(py::module_& submodule);
+void createUDTFactory(py::module_& bolt_submodule);
+
+void createUDTClassifierAndGenerator(py::module_& models_submodule);
+
+void createModelPipeline(py::module_& models_submodule);
 
 template <typename T>
-void defOptionMappedParameter(py::module_& submodule);
+void defConstantParameter(py::module_& submodule, bool add_docs);
+
+template <typename T>
+void defOptionMappedParameter(py::module_& submodule, bool add_docs);
 
 py::object makeUserSpecifiedParameter(const std::string& name,
                                       const py::object& type);
@@ -31,18 +43,24 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
 
 py::object evaluateOnDataLoaderWrapper(
     ModelPipeline& model,
-    const std::shared_ptr<dataset::DataLoader>& data_source);
+    const std::shared_ptr<dataset::DataLoader>& data_source,
+    std::optional<bolt::EvalConfig>& eval_config);
 
-py::object evaluateOnFileWrapper(ModelPipeline& model,
-                                 const std::string& filename);
+template <typename Model>
+py::object evaluateOnFileWrapper(Model& model, const std::string& filename,
+                                 std::optional<bolt::EvalConfig>& eval_config);
 
-py::object predictWrapper(ModelPipeline& model, const std::string& sample);
+template <typename Model, typename InputType>
+py::object predictWrapper(Model& model, const InputType& sample,
+                          bool use_sparse_inference);
 
 py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens);
+                                const std::vector<uint32_t>& tokens,
+                                bool use_sparse_inference);
 
-py::object predictBatchWrapper(ModelPipeline& model,
-                               const std::vector<std::string>& samples);
+template <typename Model, typename InputBatchType>
+py::object predictBatchWrapper(Model& model, const InputBatchType& samples,
+                               bool use_sparse_inference);
 
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 

@@ -213,19 +213,14 @@ class FullyConnectedNode final
     return _layer->getBiasGradientsPtr();
   }
 
-  void enableSparseSparseOptimization() {
-    // Exactly one of _config and _layer is guarenteed to have a value.
-    // Implementing an enableSparseSparseOptimization method in both places
-    // allows us to set it at any time (even before compilation).
-    if (_config.has_value()) {
-      _config->enableSparseSparseOptimization();
-    } else {
-      _layer->enableSparseSparseOptimization();
+  void disableSparseParameterUpdates() final {
+    if (getState() != NodeState::Compiled &&
+        getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call disable_sparse_parameter_updates until the model "
+          "containing the node is compiled.");
     }
-  }
-
-  void enableDistributedTraining() final {
-    _layer->enableDistributedTraining();
+    _layer->disableSparseParameterUpdates();
   }
 
  private:

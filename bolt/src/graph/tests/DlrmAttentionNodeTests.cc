@@ -8,6 +8,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
+#include <cstdio>
 
 namespace thirdai::bolt::tests {
 
@@ -59,13 +60,28 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
           n_ids, n_tokens, n_batches, batch_size, /* seed= */ 24090);
 
   auto train_cfg = TrainConfig::makeConfig(0.001, 10);
-  auto predict_cfg =
-      PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
+  auto eval_cfg =
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
   model.train({data, tokens}, labels, train_cfg);
-  auto [metrics, _] = model.predict({data, tokens}, labels, predict_cfg);
+  auto [metrics, _] = model.evaluate({data, tokens}, labels, eval_cfg);
 
   ASSERT_GE(metrics["categorical_accuracy"], 0.9);
+
+  // We do a save and load test here, it should ideally be a seperate test
+  // but if we do it here we have access to the trained model and data and
+  // don't need a helper method that returns a tuple.
+  auto original_accuracy = metrics["categorical_accuracy"];
+
+  std::string save_filename = "./tmp_dlrm_attention_model";
+  model.save(save_filename);
+  auto loaded_model = BoltGraph::load(save_filename);
+
+  auto loaded_accuracy = model.evaluate({data, tokens}, labels, eval_cfg)
+                             .first["categorical_accuracy"];
+  ASSERT_EQ(original_accuracy, loaded_accuracy);
+
+  std::remove(save_filename.c_str());
 }
 
 }  // namespace thirdai::bolt::tests

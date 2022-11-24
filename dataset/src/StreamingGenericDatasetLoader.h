@@ -139,6 +139,14 @@ class StreamingGenericDatasetLoader
 
   void restart() final {
     _data_loader->restart();
+    // When we restart we need to make sure we don't reread the header. s
+    if (_processor->expectsHeader()) {
+      auto header = _data_loader->nextLine();
+      if (!header) {
+        throw std::invalid_argument("Cannot read empty file.");
+      }
+    }
+
     _buffer = ShuffleBatchBuffer(
         /* shuffle_seed= */ time(NULL),
         /* batch_size= */ _data_loader->getMaxBatchSize());

@@ -7,9 +7,6 @@
 [submodule "deps/googletest"]
 	path = deps/googletest
 	url = https://github.com/ThirdAILabs/GoogleTestFork
-[submodule "deps/tomlplusplus"]
-	path = deps/tomlplusplus
-	url = https://github.com/ThirdAILabs/TomlPlusPlusFork
 [submodule "deps/pybind11"]
 	path = deps/pybind11
 	url = https://github.com/ThirdAILabs/PybindFork
@@ -22,3 +19,6 @@
 [submodule "deps/spdlog"]
 	path = deps/spdlog
 	url = https://github.com/ThirdAILabs/SpdlogFork.git
+[submodule "deps/cryptopp-cmake"]
+	path = deps/cryptopp-cmake
+	url = https://github.com/abdes/cryptopp-cmake.git

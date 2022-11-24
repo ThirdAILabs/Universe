@@ -39,7 +39,8 @@ class BoltGraph {
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
         _epoch(0),
-        _updates(0) {
+        _updates(0),
+        _tracked_metric(nullptr) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
@@ -58,9 +59,10 @@ class BoltGraph {
                    const dataset::BoltDatasetPtr& train_labels,
                    const TrainConfig& train_config);
 
-  InferenceResult predict(const std::vector<dataset::BoltDatasetPtr>& test_data,
-                          const dataset::BoltDatasetPtr& test_labels,
-                          const PredictConfig& predict_config);
+  InferenceResult evaluate(
+      const std::vector<dataset::BoltDatasetPtr>& test_data,
+      const dataset::BoltDatasetPtr& test_labels,
+      const EvalConfig& eval_config);
 
   std::pair<std::optional<std::vector<uint32_t>>, std::vector<float>>
   getInputGradientSingle(
@@ -68,8 +70,9 @@ class BoltGraph {
       bool explain_prediction_using_highest_activation = true,
       std::optional<uint32_t> neuron_to_explain = std::nullopt);
 
-  BoltVector predictSingle(std::vector<BoltVector>&& test_data,
-                           bool use_sparse_inference);
+  BoltVector predictSingle(
+      std::vector<BoltVector>&& test_data, bool use_sparse_inference,
+      std::optional<std::string> output_node_name = std::nullopt);
 
   BoltBatch predictSingleBatch(std::vector<BoltBatch>&& test_data,
                                bool use_sparse_inference);
@@ -113,6 +116,9 @@ class BoltGraph {
 
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
+
+  void logValidateAndSave(uint32_t batch_size, const TrainConfig& train_config,
+                          MetricAggregator& train_metrics);
 
   void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
@@ -162,13 +168,11 @@ class BoltGraph {
   void updateSampling(uint32_t rebuild_hash_tables_batch,
                       uint32_t reconstruct_hash_functions_batch);
 
-  // This function makes sure all layers in the graph are prepard for
-  // distributed training. This chiefly is relevant during paramemeter updates,
-  // when a layer needs to know that it cannot rely on its own tracking of which
-  // neurons were activated (since the gradient will also be aggregated from
-  // other machines), and so it should do a dense parameter update no matter
-  // what.
-  void enableDistributedTraining();
+  // This function prevents nodes from using sparse optimizations during
+  // parameter updates. This is to make updateParameters work during distributed
+  // training or disable the optimization in the few cases where they are not
+  // beneficial.
+  void disableSparseParameterUpdates();
 
   constexpr bool checkBatchInterval(uint32_t num_batches) const {
     return (_updates % num_batches) == (num_batches - 1);
@@ -206,6 +210,10 @@ class BoltGraph {
   // them in TrainState
   uint32_t _epoch;
   uint32_t _updates;
+
+  // We need this value saved across training. Reset should be done by force.
+  double _best_validation_metric;
+  std::shared_ptr<Metric> _tracked_metric;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

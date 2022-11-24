@@ -2,8 +2,8 @@ name: Run C++ Tests
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
-concurrency: 
-  group: cpptest-${{ github.head_ref }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 # Controls when the workflow will run
@@ -63,18 +63,3 @@ jobs:
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m Debug
           bin/cpp-test.sh -V
-
-  cpp-release-tests-mac:
-    runs-on: macos-latest
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
-      # the rest of the steps
-      - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
-          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-          
-      - name: Run all c++ tests
-        run: |
-          bin/build.py -t all -f THIRDAI_BUILD_LICENSE
-          bin/cpp-test.sh --output-on-failure
