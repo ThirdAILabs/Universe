@@ -381,7 +381,7 @@ void createUDTFactory(py::module_& bolt_submodule) {
            bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
-           py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
+           py::arg("dataset_size") = "medium", docs::UDT_GENERATOR_INIT)
 
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);

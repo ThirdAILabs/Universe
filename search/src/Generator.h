@@ -38,7 +38,7 @@ using thirdai::automl::data::ColumnNumberMapPtr;
 using thirdai::search::Flash;
 
 class QueryCandidateGeneratorConfig {
-  static inline const uint32_t DEFAULT_BATCH_SIZE = 1000;
+  static inline const uint32_t DEFAULT_BATCH_SIZE = 10000;
   static inline const char* DEFAULT_HASH_FUNCTION = "DensifiedMinHash";
   static inline const uint32_t DEFAULT_NUM_TABLES = 128;
   static inline const uint32_t DEFAULT_HASHES_PER_TABLE = 3;
@@ -118,11 +118,20 @@ class QueryCandidateGeneratorConfig {
 
   static std::shared_ptr<QueryCandidateGeneratorConfig> fromDefault(
       const std::string& source_column_name,
-      const std::string& target_column_name) {
+      const std::string& target_column_name, const std::string& dataset_size) {
+    uint32_t num_tables = DEFAULT_NUM_TABLES;
+    uint32_t hashes_per_table = DEFAULT_HASHES_PER_TABLE;
+    
+    if (dataset_size == "small") {
+      hashes_per_table = 2;
+    } else if (dataset_size == "large") {
+      num_tables = 256;
+      hashes_per_table = 4;
+    }
     auto generator_config = QueryCandidateGeneratorConfig(
         /* hash_function = */ DEFAULT_HASH_FUNCTION,
-        /* num_tables = */ DEFAULT_NUM_TABLES,
-        /* hashes_per_table = */ DEFAULT_HASHES_PER_TABLE,
+        /* num_tables = */ num_tables,
+        /* hashes_per_table = */ hashes_per_table,
         /* range = */ DEFAULT_HASH_TABLE_RANGE,
         /* n_grams = */ {3, 4},
         /* reservoir_size */ DEFAULT_RESERVOIR_SIZE,
@@ -188,10 +197,10 @@ class QueryCandidateGenerator {
   static QueryCandidateGenerator buildGeneratorFromDefaultConfig(
       const std::string& source_column_name,
       const std::string& target_column_name, const std::string& dataset_size) {
-    (void)dataset_size;
     auto config = QueryCandidateGeneratorConfig::fromDefault(
         /* source_column_name = */ source_column_name,
-        /* target_column_name = */ target_column_name);
+        /* target_column_name = */ target_column_name,
+        /* dataset_size = */ dataset_size);
 
     auto generator = QueryCandidateGenerator::make(config);
     return generator;
