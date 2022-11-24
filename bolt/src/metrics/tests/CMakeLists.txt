@@ -2,7 +2,8 @@ enable_testing()
 
 include(GoogleTest)
 
-set(METRIC_TESTS MetricTest MeanSquaredErrorMetricTest CategoricalCrossEntropyTest)
+set(METRIC_TESTS MetricTest MeanSquaredErrorMetricTest
+                 CategoricalCrossEntropyTest)
 
 foreach(METRIC_TEST IN LISTS METRIC_TESTS)
   add_executable(${METRIC_TEST} ${METRIC_TEST}.cc)
