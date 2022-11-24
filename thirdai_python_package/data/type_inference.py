@@ -131,7 +131,7 @@ def semantic_type_inference(
         df = pd.read_csv(filename, nrows=nrows, dtype=object)
     else:
         raise ValueError(
-            f"UDT currently supports files with only these extensions [.csv, .pqt, .parquet]. Please convert your files to one of the supported formats."
+            f"UDT currently supports files with only these extensions [csv, pqt, parquet]. Please convert your files to one of the supported formats."
         )
 
     if len(df) < min_rows_allowed:

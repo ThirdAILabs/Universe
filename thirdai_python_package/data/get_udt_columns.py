@@ -28,7 +28,7 @@ def get_udt_col_types(
         df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
     else:
         raise ValueError(
-            "UDT currently supports files with only these extensions [.csv, .pqt, .parquet]. Please convert your files to one of the supported formats."
+            "UDT currently supports files with only these extensions [csv, pqt, parquet]. Please convert your files to one of the supported formats."
         )
 
     udt_column_types = {}
