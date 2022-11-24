@@ -127,12 +127,13 @@ def semantic_type_inference(
     # more specific type).
     if filename.endswith(".pqt") or filename.endswith(".parquet"):
         df = pd.read_parquet(filename)
-    elif filename.endswith(".csv"):
-        df = pd.read_csv(filename, nrows=nrows, dtype=object)
     else:
-        raise ValueError(
-            f"UDT currently supports files with only these extensions [csv, pqt, parquet]. Please convert your files to one of the supported formats."
-        )
+        try:
+            df = pd.read_csv(filename, nrows=nrows, dtype=object)
+        except:
+            raise ValueError(
+                "UDT currently supports all files that can be read using pandas.read_csv() or read_parquet(). Please convert your files to one of the supported formats."
+            )
 
     if len(df) < min_rows_allowed:
         raise ValueError(

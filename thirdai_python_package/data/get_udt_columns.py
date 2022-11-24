@@ -24,12 +24,13 @@ def get_udt_col_types(
 
     if filename.endswith(".pqt") or filename.endswith(".parquet"):
         df = pd.read_parquet(filename)
-    elif filename.endswith(".csv"):
-        df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
     else:
-        raise ValueError(
-            "UDT currently supports files with only these extensions [csv, pqt, parquet]. Please convert your files to one of the supported formats."
-        )
+        try:
+            df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
+        except:
+            raise ValueError(
+            "UDT currently supports all files that can be read using pandas.read_csv() or read_parquet(). Please convert your files to one of the supported formats."
+            )
 
     udt_column_types = {}
 
