@@ -57,7 +57,7 @@
 Checks: >
          -*, 
          abseil-*,
-         bugprone-*, -bugprone-narrowing-conversions,
+         bugprone-*, -bugprone-narrowing-conversions, -bugprone-easily-swappable-parameters
          cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp, -cert-msc51-cpp, 
          cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c,
          clang-analyzer-*, 
@@ -88,10 +88,10 @@ WarningsAsErrors: "*"
 CheckOptions:
   - { key: readability-identifier-naming.ClassCase,     value: CamelCase  }
   - { key: readability-identifier-naming.ClassMethodCase, value: camelBack  }
-  - { key: readability-identifier-naming.VariableCase,  value: snake_case }
+  - { key: readability-identifier-naming.VariableCase,  value: lower_case }
   - { key: readability-identifier-naming.FunctionCase,  value: camelBack  }
   - { key: readability-identifier-naming.PrivateMemberPrefix,  value: _   }
-  - { key: readability-identifier-naming.ParameterCase, value: snake_case }
+  - { key: readability-identifier-naming.ParameterCase, value: lower_case }
   - { key: readability-identifier-naming.TemplateParameterCase, value: UPPER_CASE }
   - { key: readability-identifier-naming.ClassConstantCase, value: UPPER_CASE }
   - { key: readability-identifier-naming.ConstantCase, value: UPPER_CASE }
