@@ -13,8 +13,8 @@ def get_udt_col_types(
             input file.
 
     Args:
-        filename (str): Path to a csv stored locally or on aws/gcp/etc (anything
-            that can be read by pandas.read_csv).
+        filename (str): Path to a csv or a parquet stored locally or on aws/gcp/etc (anything
+            that can be read by pandas.read_csv or pandas.read_parquet).
 
     Returns:
         (Dict[str, bolt.types.ColumnType]):
@@ -28,7 +28,7 @@ def get_udt_col_types(
         df = pd.read_csv(filename, nrows=n_rows, dtype=object)
     else:
         raise ValueError(
-            f"UDT currently supports only CSV and Parquet files. Please convert your files to either of the supported formats."
+            "UDT currently supports files with only these extensions [.csv, .pqt, .parquet]. Please convert your files to one of the supported formats."
         )
 
     udt_column_types = {}
