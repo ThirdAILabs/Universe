@@ -10,7 +10,7 @@ pytestmark = [pytest.mark.unit]
 
 @pytest.mark.parametrize("delimiter", _CATEGORICAL_DELIMITERS)
 def test_get_udt_columns_with_csv(delimiter):
-    with tempfile.NamedTemporaryFile(suffix='.csv', mode="w") as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".csv", mode="w") as tmp:
         tmp.write(
             f"""col1,col2,col3,col4,col5,col6
                 lorem,2,3.0,label1{delimiter}label2{delimiter}label3,How vexingly quick daft zebras jump!,2021-02-01

@@ -29,7 +29,7 @@ def get_udt_col_types(
             df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
         except:
             raise ValueError(
-            "UDT currently supports all files that can be read using pandas.read_csv() or read_parquet(). Please convert your files to one of the supported formats."
+                "UDT currently supports all files that can be read using pandas.read_csv() or read_parquet(). Please convert your files to one of the supported formats."
             )
 
     udt_column_types = {}
