@@ -134,10 +134,10 @@ class CategoricalAccuracy final : public Metric {
  * CategoricalCrossEntropy (LossFunction) to track the metric that is closer to
  * the training objective.
  *
- * If there are `inf` causing samples, they are discarded from the computation.
- * Assuming eventually we get good labels, the tracked metric is a reasonable
- * enough continuous proxy to categorical-cross entropy, better than the
- * granularity of categorical-accuracy.
+ * This is a proxy and not true cross-entropy because computations involve
+ * summing terms containing label * log (output). EPS value of 1e-7 is used to
+ * generate a sufficiently high indicator for loss where log(0 + EPS) could
+ * occur.
  */
 class CategoricalCrossEntropy final : public Metric {
  public:
