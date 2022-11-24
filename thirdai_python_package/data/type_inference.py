@@ -72,7 +72,7 @@ def _infer_col_type(column: pd.Series) -> Dict[str, str]:
 
     if len(column) < 2:
         raise ValueError(
-            f"Column {column} has less than less than 2 non-missing values so we cannot do type inference"
+            f"Column {column} has less than 2 non-missing values so we cannot do type inference"
         )
 
     if _is_float_col(column):
@@ -128,7 +128,15 @@ def semantic_type_inference(
     # even with missing values (we will later drop the missing values, which
     # get converted to NAs during read_csv, and then convert to the correct
     # more specific type).
-    df = pd.read_csv(filename, nrows=nrows, dtype=object)
+    if filename.endswith('.pqt') or filename.endswith('.parquet'):
+        df = pd.read_parquet(filename)
+    elif filename.endswith('.csv'):
+        df = pd.read_csv(filename, nrows=nrows, dtype=object)
+    else:
+        raise ValueError(
+            f"UDT currently supports only CSV and Parquet files. Please convert your files to either of the supported formats."
+        )
+
     if len(df) < min_rows_allowed:
         raise ValueError(
             f"Parsed csv {filename} must have at least {min_rows_allowed} rows, but we found only {len(df)} rows."
