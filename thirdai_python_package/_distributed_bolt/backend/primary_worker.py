@@ -40,37 +40,6 @@ class PrimaryWorker(Worker):
             log_dir=log_dir,
         )
 
-    def run_circular_cluster_communication(self, workers):
-        """
-        This function first call the workers to compute the gradients on their network
-        and then implements Baidu's All Ring All Reduce algorithm for communication.
-        Read more about that here:
-        https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
-
-        :param workers: List of all the actor including primary worker
-        :type workers: List[ray.actor]
-        """
-
-        # TODO(Pratik): Clean up this function. It is unclear what update_id
-        # is, and the input to process_ring has a strange interaction between
-        # reduce and should_avg_gradients. Maybe we can make this an enum,
-        # something like [DONT_REDUCE, REDUCE, REDUCE_AND_AVERAGE_GRADIENTS].
-        for update_id, reduce in [
-            (self.num_workers, True),
-            (self.num_workers + 1, False),
-        ]:
-            for node in range(self.num_workers - 1):
-                should_avg_gradients = node == self.num_workers - 2
-                ray.get(
-                    [
-                        worker.process_ring.remote(
-                            update_id, avg_gradients=should_avg_gradients, reduce=reduce
-                        )
-                        for worker in workers
-                    ]
-                )
-                update_id -= 1
-
     def gradients_avg(self):
         """
         This function is called by the workers to get the gradients back from PrimaryWorker.
@@ -78,18 +47,6 @@ class PrimaryWorker(Worker):
         by the PrimaryWorker.
         """
         return self.gradient_averages
-
-    def update_parameters_across_cluster(self, workers):
-        """
-        This function calls every worker to update their parameters(weight and biases) with the
-        updated gradients(which they receive from the PrimaryWorker)
-
-        :param workers: List of workers including primary worker
-        :type workers: List[ray.worker]
-        :return: Returns True on Completion
-        :rtype: bool
-        """
-        ray.get([worker.update_parameters.remote() for worker in workers])
 
     def get_weights_biases(self):
         """

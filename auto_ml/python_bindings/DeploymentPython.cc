@@ -9,19 +9,19 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/python_bindings/UniversalDeepTransformerDocs.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/ModelPipeline.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
+#include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/deployment_config/BlockConfig.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/ModelConfig.h>
 #include <auto_ml/src/deployment_config/NodeConfig.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
-#include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactory.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/DataTypes.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/TemporalContext.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
-#include <auto_ml/src/prebuilt_pipelines/UniversalDeepTransformer.h>
+#include <auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.h>
+#include <auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.h>
+#include <auto_ml/src/models/ModelPipeline.h>
+#include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
@@ -66,9 +66,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
              HyperParameterPtr<bolt::SamplingConfigPtr>>(
       submodule, "SamplingConfigHyperParameter", docs::STR_HYPERPARAMETER);
 
-  py::class_<HyperParameter<UDTConfigPtr>,  // NOLINT
-             HyperParameterPtr<UDTConfigPtr>>(submodule,
-                                              "UDTConfigHyperParameter");
+  py::class_<HyperParameter<data::UDTConfigPtr>,  // NOLINT
+             HyperParameterPtr<data::UDTConfigPtr>>(submodule,
+                                                    "UDTConfigHyperParameter");
 
   /**
    * Do not change the order of these overloads. Because bool is a sublclass of
@@ -83,8 +83,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defConstantParameter<std::string>(submodule, /* add_docs= */ false);
   defConstantParameter<bolt::SamplingConfigPtr>(submodule,
                                                 /* add_docs= */ false);
-  defConstantParameter<UDTConfigPtr>(submodule,
-                                     /* add_docs= */ false);
+  defConstantParameter<data::UDTConfigPtr>(submodule,
+                                           /* add_docs= */ false);
 
   defOptionMappedParameter<bool>(submodule, /* add_docs= */ true);
   defOptionMappedParameter<uint32_t>(submodule, /* add_docs= */ false);
@@ -92,8 +92,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   defOptionMappedParameter<std::string>(submodule, /* add_docs= */ false);
   defOptionMappedParameter<bolt::SamplingConfigPtr>(submodule,
                                                     /* add_docs= */ false);
-  defOptionMappedParameter<UDTConfigPtr>(submodule,
-                                         /* add_docs= */ false);
+  defOptionMappedParameter<data::UDTConfigPtr>(submodule,
+                                               /* add_docs= */ false);
 
   submodule.def("UserSpecifiedParameter", &makeUserSpecifiedParameter,
                 py::arg("name"), py::arg("type"),
@@ -142,7 +142,8 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def(py::init<std::vector<std::string>, std::vector<NodeConfigPtr>,
                     std::shared_ptr<bolt::LossFunction>>(),
            py::arg("input_names"), py::arg("nodes"), py::arg("loss"),
-           docs::MODEL_CONFIG_INIT);
+           docs::MODEL_CONFIG_INIT)
+      .def("save", &ModelConfig::save, py::arg("filename"));
 
   py::class_<BlockConfig, BlockConfigPtr>(submodule, "BlockConfig",  // NOLINT
                                           docs::BLOCK_CONFIG);
@@ -185,8 +186,9 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
   py::class_<UDTDatasetFactoryConfig, DatasetLoaderFactoryConfig,
              std::shared_ptr<UDTDatasetFactoryConfig>>(submodule,
                                                        "UDTDatasetFactory")
-      .def(py::init<HyperParameterPtr<UDTConfigPtr>, HyperParameterPtr<bool>,
-                    HyperParameterPtr<uint32_t>, HyperParameterPtr<bool>>(),
+      .def(py::init<HyperParameterPtr<data::UDTConfigPtr>,
+                    HyperParameterPtr<bool>, HyperParameterPtr<uint32_t>,
+                    HyperParameterPtr<bool>>(),
            py::arg("config"), py::arg("force_parallel"),
            py::arg("text_pairgram_word_limit"), py::arg("contextual_columns"));
 
@@ -210,22 +212,23 @@ void createDeploymentSubmodule(py::module_& thirdai_module) {
       .def_static("load", &DeploymentConfig::load, py::arg("filename"),
                   docs::DEPLOYMENT_CONFIG_LOAD);
 
-  py::class_<UDTDatasetFactory, UDTDatasetFactoryPtr>(submodule,
-                                                      "TemporalContext")
-      .def("reset", &UDTDatasetFactory::resetTemporalTrackers,
+  py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
+      submodule, "TemporalContext")
+      .def("reset", &data::UDTDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
            py::overload_cast<const LineInput&>(
-               &UDTDatasetFactory::updateTemporalTrackers),
+               &data::UDTDatasetFactory::updateTemporalTrackers),
            py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
       .def("batch_update_temporal_trackers",
            py::overload_cast<const LineInputBatch&>(
-               &UDTDatasetFactory::batchUpdateTemporalTrackers),
+               &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
 }
 
 void createModelPipeline(py::module_& models_submodule) {
-  py::class_<ModelPipeline>(models_submodule, "Pipeline")
+  py::class_<ModelPipeline, std::shared_ptr<ModelPipeline>>(models_submodule,
+                                                            "Pipeline")
       .def(py::init(&createPipeline), py::arg("deployment_config"),
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_CONFIG,
@@ -234,20 +237,22 @@ void createModelPipeline(py::module_& models_submodule) {
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
            bolt::python::OutputRedirect())
-      .def("train", &ModelPipeline::trainOnFile, py::arg("filename"),
+      .def("train_with_file", &ModelPipeline::trainOnFile, py::arg("filename"),
            py::arg("train_config"), py::arg("batch_size") = std::nullopt,
+           py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_FILE, bolt::python::OutputRedirect())
-      .def("train", &ModelPipeline::trainOnDataLoader, py::arg("data_source"),
-           py::arg("train_config"),
+      .def("train_with_loader", &ModelPipeline::trainOnDataLoader,
+           py::arg("data_source"), py::arg("train_config"),
+           py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
            bolt::python::OutputRedirect())
-      .def("evaluate", &evaluateOnFileWrapper<ModelPipeline>,
+      .def("evaluate_with_file", &evaluateOnFileWrapper<ModelPipeline>,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
            docs::MODEL_PIPELINE_EVALUATE_FILE, bolt::python::OutputRedirect())
-      .def("evaluate", &evaluateOnDataLoaderWrapper, py::arg("data_source"),
-           py::arg("eval_config") = std::nullopt,
+      .def("evaluate_with_loader", &evaluateOnDataLoaderWrapper,
+           py::arg("data_source"), py::arg("eval_config") = std::nullopt,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
            bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<ModelPipeline, LineInput>,
@@ -262,14 +267,18 @@ void createModelPipeline(py::module_& models_submodule) {
       .def("predict_batch", &predictBatchWrapper<ModelPipeline, LineInputBatch>,
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
-      .def("load_validation_data", &ModelPipeline::loadValidationDataFromFile,
-           py::arg("filename"), bolt::python::OutputRedirect())
       .def("save", &ModelPipeline::save, py::arg("filename"),
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
                   docs::MODEL_PIPELINE_LOAD)
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
-           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR);
+           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR)
+      .def_property_readonly("default_train_batch_size",
+                             &ModelPipeline::defaultBatchSize)
+      .def_property_readonly_static(
+          "default_evaluate_batch_size", [](const py::object& /* self */) {
+            return models::DEFAULT_EVALUATE_BATCH_SIZE;
+          });
 }
 
 // These need to be here instead of inside UDTFactory because otherwise I was
@@ -280,22 +289,22 @@ static uint8_t const UDT_CLASSIFIER_IDENTIFIER = 1;
 class UDTFactory {
  public:
   static bolt::QueryCandidateGenerator buildUDTGeneratorWrapper(
-      py::object& obj, const uint32_t& source_column_index,
-      const uint32_t& target_column_index, const std::string& dataset_size) {
+      py::object& obj, const std::string& source_column,
+      const std::string& target_column, const std::string& dataset_size) {
     (void)obj;
     return bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
-        /* source_column_index = */ source_column_index,
-        /* target_column_index = */ target_column_index,
+        /* source_column_name = */ source_column,
+        /* target_column_name = */ target_column,
         /* dataset_size = */ dataset_size);
   }
 
   static UniversalDeepTransformer buildUDTClassifierWrapper(
-      py::object& obj, ColumnDataTypes data_types,
-      UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target_col, uint32_t n_target_classes,
-      bool integer_target = false, std::string time_granularity = "d",
-      uint32_t lookahead = 0, char delimiter = ',',
-      const std::unordered_map<std::string, std::string>& options = {}) {
+      py::object& obj, data::ColumnDataTypes data_types,
+      data::UserProvidedTemporalRelationships temporal_tracking_relationships,
+      std::string target_col, std::optional<uint32_t> n_target_classes,
+      bool integer_target, std::string time_granularity, uint32_t lookahead,
+      char delimiter, const std::optional<std::string>& model_config,
+      const std::unordered_map<std::string, std::string>& options) {
     (void)obj;
     return UniversalDeepTransformer::buildUDT(
         /* data_types = */ std::move(data_types),
@@ -306,6 +315,7 @@ class UDTFactory {
         /* integer_target = */ integer_target,
         /* time_granularity = */ std::move(time_granularity),
         /* lookahead = */ lookahead, /* delimiter = */ delimiter,
+        /* model_config= */ model_config,
         /* options = */ options);
   }
 
@@ -362,24 +372,33 @@ void createUDTFactory(py::module_& bolt_submodule) {
       .def("__new__", &UDTFactory::buildUDTClassifierWrapper,
            py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
-               UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes"),
+               data::UserProvidedTemporalRelationships(),
+           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
-           docs::UDT_INIT, bolt::python::OutputRedirect())
+           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("options") = models::OptionsMap(), docs::UDT_INIT,
+           bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
-           py::arg("source_column_index"), py::arg("target_column_index"),
+           py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
 
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
+
+  py::class_<models::ValidationOptions>(bolt_submodule, "Validation")
+      .def(py::init<std::string, std::vector<std::string>,
+                    std::optional<uint32_t>, bool>(),
+           py::arg("filename"), py::arg("metrics"),
+           py::arg("interval") = std::nullopt,
+           py::arg("use_sparse_inference") = false, docs::VALIDATION);
 }
 
 void createUDTClassifierAndGenerator(py::module_& models_submodule) {
-  py::class_<UDTConfig, UDTConfigPtr>(models_submodule, "UDTConfig")
-      .def(py::init<ColumnDataTypes, UserProvidedTemporalRelationships,
-                    std::string, uint32_t, bool, std::string, uint32_t, char>(),
+  py::class_<data::UDTConfig, data::UDTConfigPtr>(models_submodule, "UDTConfig")
+      .def(py::init<data::ColumnDataTypes,
+                    data::UserProvidedTemporalRelationships, std::string,
+                    uint32_t, bool, std::string, uint32_t, char>(),
            py::arg("data_types"), py::arg("temporal_tracking_relationships"),
            py::arg("target"), py::arg("n_target_classes"),
            py::arg("integer_target") = false,
@@ -387,28 +406,20 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
            py::arg("delimiter") = ',', docs::ORACLE_CONFIG_INIT,
            bolt::python::OutputRedirect());
 
-  py::class_<UniversalDeepTransformer,
+  py::class_<UniversalDeepTransformer, ModelPipeline,
              std::shared_ptr<UniversalDeepTransformer>>(models_submodule,
                                                         "UDTClassifier")
       .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
-               UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes"),
+               data::UserProvidedTemporalRelationships(),
+           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("options") = OptionsMap(),
-           docs::UDT_INIT, bolt::python::OutputRedirect())
-      .def("train", &UniversalDeepTransformer::trainOnFile, py::arg("filename"),
-           py::arg("train_config") = bolt::TrainConfig::makeConfig(
-               /* learning_rate= */ 0.001, /* epochs= */ 3),
-           py::arg("batch_size") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt, docs::UDT_TRAIN,
+           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("options") = models::OptionsMap(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("evaluate", &evaluateOnFileWrapper<UniversalDeepTransformer>,
-           py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           docs::UDT_EVALUATE, bolt::python::OutputRedirect())
       .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            docs::UDT_PREDICT)
@@ -443,7 +454,7 @@ void createUDTClassifierAndGenerator(py::module_& models_submodule) {
                                                              "UDTGenerator")
       .def(py::init(
                &bolt::QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
-           py::arg("source_column_index"), py::arg("target_column_index"),
+           py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
       .def("train", &bolt::QueryCandidateGenerator::buildFlashIndex,
            py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
@@ -508,7 +519,7 @@ py::object makeUserSpecifiedParameter(const std::string& name,
 
   if (py::str(type).cast<std::string>() ==
       "<class 'thirdai._thirdai.bolt.models.UDTConfig'>") {
-    return py::cast(UserSpecifiedParameter<UDTConfigPtr>::make(name));
+    return py::cast(UserSpecifiedParameter<data::UDTConfigPtr>::make(name));
   }
 
   throw std::invalid_argument("Invalid type '" +
@@ -538,8 +549,8 @@ ModelPipeline createPipeline(const DeploymentConfigPtr& config,
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
       cpp_parameters.emplace(name, UserParameterInput(value));
-    } else if (py::isinstance<UDTConfig>(v)) {
-      UDTConfigPtr value = v.cast<UDTConfigPtr>();
+    } else if (py::isinstance<data::UDTConfig>(v)) {
+      data::UDTConfigPtr value = v.cast<data::UDTConfigPtr>();
       cpp_parameters.emplace(name, UserParameterInput(value));
     } else {
       throw std::invalid_argument("Invalid type '" +
@@ -571,10 +582,11 @@ py::object evaluateOnDataLoaderWrapper(
 template <typename Model>
 py::object evaluateOnFileWrapper(Model& model, const std::string& filename,
                                  std::optional<bolt::EvalConfig>& eval_config) {
-  return evaluateOnDataLoaderWrapper(model,
-                                     dataset::SimpleFileDataLoader::make(
-                                         filename, DEFAULT_EVALUATE_BATCH_SIZE),
-                                     eval_config);
+  return evaluateOnDataLoaderWrapper(
+      model,
+      dataset::SimpleFileDataLoader::make(filename,
+                                          models::DEFAULT_EVALUATE_BATCH_SIZE),
+      eval_config);
 }
 
 template <typename Model, typename InputType>
