@@ -158,7 +158,7 @@ class CategoricalCrossEntropy final : public Metric {
     _num_samples = 0;
   }
 
-  static constexpr const char* NAME = "xent";
+  static constexpr const char* NAME = "categorical_cross_entropy";
 
   std::string name() final { return NAME; }
 
