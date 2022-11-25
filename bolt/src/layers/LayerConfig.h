@@ -261,5 +261,3 @@ class NormalizationLayerConfig {
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayerConfig)
