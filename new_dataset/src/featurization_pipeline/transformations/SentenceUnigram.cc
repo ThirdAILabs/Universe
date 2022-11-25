@@ -1,5 +1,6 @@
 #include "SentenceUnigram.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
@@ -94,5 +95,11 @@ template void SentenceUnigram::serialize<cereal::BinaryInputArchive>(
 
 template void SentenceUnigram::serialize<cereal::BinaryOutputArchive>(
     cereal::BinaryOutputArchive&);
+
+template void SentenceUnigram::serialize<cereal::PortableBinaryInputArchive>(
+    cereal::PortableBinaryInputArchive&);
+
+template void SentenceUnigram::serialize<cereal::PortableBinaryOutputArchive>(
+    cereal::PortableBinaryOutputArchive&);
 
 }  // namespace thirdai::data
