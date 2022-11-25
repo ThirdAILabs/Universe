@@ -89,9 +89,14 @@ class EmbeddingNode final : public Node,
         "EmbeddingNode is in an invalid internal state");
   }
 
-  void enableDistributedTraining() final {
-    // NOOP since the Embedding node always updates all of its parameters, so
-    // enabling distributed training doesn't change anything.
+  void disableSparseParameterUpdates() final {
+    if (getState() != NodeState::Compiled &&
+        getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call disable_sparse_parameter_updates until the model "
+          "containing the node is compiled.");
+    }
+    _embedding_layer->disableSparseParameterUpdates();
   }
 
   bool trainable(bool flag) final {

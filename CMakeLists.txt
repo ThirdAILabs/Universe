@@ -30,19 +30,27 @@ message(STATUS "Project version: ${PROJECT_VERSION_STRING_FULL}")
 message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
-message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
-separate_arguments(FEATURE_FLAGS)
-message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
+message("\tBuilding with feature flags: ${THIRDAI_FEATURE_FLAGS}")
+separate_arguments(THIRDAI_FEATURE_FLAGS)
+message("\tFeature flags seperated into CMake List: ${THIRDAI_FEATURE_FLAGS}")
 message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
+
+option(THIRDAI_REPORT_BUILD_STEP_TIMES
+       "Report time using builtin for make/ninja compile-build steps" OFF)
+
+if(THIRDAI_REPORT_BUILD_STEP_TIMES)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CMAKE_COMMAND} -E time")
+endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
 
 # Check if there is a license flag, and only if so add the cryptopp lib We have
 # two different License flags, one for if to build the license files
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license
 # (THIRDAI_CHECK_LICENSE). If just the THIRDAI_CHECK_LICENSE flag is set there
 # will be a linker error.
-list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
@@ -115,7 +123,10 @@ else()
   endif(NOT OpenMP_FOUND)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  add_compile_options(
+
+endif()
+
+set(THIRDAI_COMPILE_OPTIONS
     -Wall
     -Wextra
     -Werror
@@ -145,27 +156,16 @@ else()
     $<$<CONFIG:RelWithAsan>:-funroll-loops>
     $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
     $<$<CONFIG:RelWithAsan>:-g>
-    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
+    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
+    $<$<CONFIG:CompileAnalysis>:-DNDEBUG>
+    $<$<CONFIG:CompileAnalysis>:-Ofast>
+    $<$<CONFIG:CompileAnalysis>:-fno-finite-math-only>
+    $<$<CONFIG:CompileAnalysis>:-funroll-loops>
+    $<$<CONFIG:CompileAnalysis>:-ftree-vectorize>
+    $<$<CONFIG:CompileAnalysis>:-ftime-trace>)
 
-endif()
-
-# Add feature flags passed in from python
-add_compile_definitions(${FEATURE_FLAGS})
-
-# In debug mode we are using ASan (address sanitizer) to provide better
-# information on errors. We only run with this in debug mode because it carries
-# a performace penalty. See
-# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
-# information.
-
-# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang.
-if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
-  add_compile_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                      $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-
-  add_link_options($<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                   $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
-endif()
+set(THIRDAI_ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
+                                 $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
 # Custom command line options
 
@@ -183,7 +183,6 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
-include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 
 # Source dependencies
@@ -236,42 +235,40 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
-set(BOLT_SOURCES
-    bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
-    bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
-    bolt/src/layers/ConvLayer.cc)
+set(THIRDAI_SOURCES
+    bolt/src/graph/Graph.cc
+    bolt/src/layers/EmbeddingLayer.cc
+    bolt/src/layers/FullyConnectedLayer.cc
+    bolt/src/layers/ConvLayer.cc
+    bolt/src/metrics/Metric.cc
+    search/src/MaxFlash.cc
+    search/src/MaxFlashArray.cc
+    search/src/Flash.cc
+    hashing/src/DensifiedMinHash.cc
+    hashing/src/DWTA.cc
+    hashing/src/FastSRP.cc
+    hashing/src/MurmurHash.cc
+    hashing/src/MinHash.cc
+    hashing/src/SRP.cc
+    hashing/src/UniversalHash.cc
+    hashtable/src/SampledHashTable.cc
+    hashtable/src/VectorHashTable.cc
+    wrappers/src/LicenseWrapper.cc
+    dataset/src/Vocabulary.cc
+    new_dataset/src/featurization_pipeline/transformations/Binning.cc
+    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+    new_dataset/src/featurization_pipeline/ColumnMap.cc
+    compression/src/CountSketch.cc
+    compression/src/DragonVector.cc
+    utils/Logging.cc)
 
-set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
-
-set(HASHING_SOURCES
-    hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
-    hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
-
-set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
-                      hashtable/src/VectorHashTable.cc)
-
-set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
-
-set(DATASET_SOURCES dataset/src/Vocabulary.cc)
-
-set(COMPRESSION_SOURCES compression/src/CountSketch.cc
-                        compression/src/DragonVector.cc)
-
-set(UTILS_SOURCES utils/Logging.cc)
-
-add_library(
-  thirdai STATIC
-  ${BOLT_SOURCES}
-  ${SEARCH_SOURCES}
-  ${HASHING_SOURCES}
-  ${HASHTABLE_SOURCES}
-  ${LICENSE_SOURCES}
-  ${DATASET_SOURCES}
-  ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES})
+add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
+if(${LICENSE_BUILD_FLAG_FOUND})
+  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
@@ -282,15 +279,36 @@ pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
   bolt/python_bindings/BoltPython.cc
-  bolt/python_bindings/BoltGraphPython.cc
+  bolt/python_bindings/BoltNNPython.cc
+  bolt/python_bindings/CallbacksPython.cc
   dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
-  auto_classifiers/python_bindings/AutoClassifiersPython.cc
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 
-if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(_thirdai PRIVATE cryptopp::cryptopp)
+if(NOT MSVC)
+  target_compile_options(thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
+  target_compile_options(_thirdai PRIVATE ${THIRDAI_COMPILE_OPTIONS})
 endif()
+
+# Add feature flags passed in from python
+target_compile_definitions(thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
+target_compile_definitions(_thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
+
+# In debug mode we are using ASan (address sanitizer) to provide better
+# information on errors. We only run with this in debug mode because it carries
+# a performace penalty. See
+# https://github.com/google/sanitizers/wiki/AddressSanitizer for more
+# information.
+
+target_compile_options(thirdai PUBLIC ${THIRDAI_ASAN_COMPILE_OPTIONS})
+
+target_link_options(thirdai PUBLIC ${THIRDAI_ASAN_COMPILE_OPTIONS})
+
+target_compile_options(_thirdai PRIVATE ${THIRDAI_ASAN_COMPILE_OPTIONS})
+
+target_link_options(_thirdai PRIVATE ${THIRDAI_ASAN_COMPILE_OPTIONS})

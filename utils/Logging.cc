@@ -34,7 +34,7 @@ void setup(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
     }
 
     if (!path.empty()) {
-      auto file_sink = std::make_shared<FileSink>(path, true);
+      auto file_sink = std::make_shared<FileSink>(path, /*truncate=*/false);
       sinks.push_back(file_sink);
     }
 

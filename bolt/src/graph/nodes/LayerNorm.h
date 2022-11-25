@@ -78,10 +78,6 @@ class LayerNormNode final : public Node,
 
   void initOptimizer() final {}
 
-  void enableDistributedTraining() final {
-    // NOOP since the LayerNorm node doesn't have any paramters
-  }
-
   bool trainable(bool flag) override {
     (void)flag;
     return false;
@@ -134,7 +130,7 @@ class LayerNormNode final : public Node,
     const BoltVector& input_vector =
         _node_to_normalize->getOutputVector(vec_index);
 
-    auto output = getOutputVectorImpl(vec_index);
+    auto& output = getOutputVectorImpl(vec_index);
 
     auto [mean, variance] = computeNormalizationMoments(input_vector);
 
@@ -153,7 +149,7 @@ class LayerNormNode final : public Node,
       // regularizers.
       z_score += _config->beta();
       z_score *= _config->gamma();
-      (*_batch)[vec_index].activations[neuron_index] = z_score;
+      output.activations[neuron_index] = z_score;
     }
   }
 

@@ -5,8 +5,14 @@ add_library(lsh_test_helper_lib LSHTestHelper.cc)
 
 target_link_libraries(lsh_test_helper_lib PUBLIC thirdai gtest_main)
 
-set(HASHING_TESTS MurmurHashTest UniversalHashTest SRPTest FastSRPTest
-                  DensifiedMinHashTest)
+set(HASHING_TESTS
+    MurmurHashTest
+    UniversalHashTest
+    SRPTest
+    FastSRPTest
+    DensifiedMinHashTest
+    MinHashTest
+    DWTATest)
 
 foreach(HASHING_TEST IN LISTS HASHING_TESTS)
   add_executable(${HASHING_TEST} ${HASHING_TEST}.cc)

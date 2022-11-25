@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -32,9 +34,24 @@ using BlockPtr = std::shared_ptr<Block>;
  * keyword is responsible for this.
  * 4. column_name : if the classifer has map we can return column_name also.
  */
+// TODO(Geordie / Yash): it might make more sense to make
+// percentage_significance unsigned and add a "correlation" field that is
+// either positive or negative
 struct Explanation {
   Explanation(uint32_t column_number, std::string keyword)
       : column_number(column_number), keyword(std::move(keyword)) {}
+
+  Explanation(std::string column_name, std::string keyword)
+      : column_number(0),
+        keyword(std::move(keyword)),
+        column_name(std::move(column_name)) {}
+
+  std::string toString() const {
+    std::stringstream s;
+    s << "column_name: \"" << column_name << "\" | keyword: \"" << keyword
+      << "\" | percentage_significance: " << percentage_significance;
+    return s.str();
+  }
 
   uint32_t column_number;
   float percentage_significance = 0.0;
@@ -42,6 +59,15 @@ struct Explanation {
   std::string keyword;
   std::string column_name;
 };
+
+struct SegmentFeature {
+  SegmentFeature(uint32_t segment_idx, uint32_t feature_idx)
+      : segment_idx(segment_idx), feature_idx(feature_idx) {}
+  uint32_t segment_idx;
+  uint32_t feature_idx;
+};
+
+using IndexToSegmentFeatureMap = std::unordered_map<uint32_t, SegmentFeature>;
 
 /**
  * Segmented feature vector abstract class.
@@ -88,7 +114,16 @@ class SegmentedFeatureVector {
    */
   virtual std::unordered_map<uint32_t, float> entries() = 0;
 
+  virtual IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() = 0;
+
+  const bool _store_index_to_segment_feature_map;
+
+  IndexToSegmentFeatureMap _index_to_segment_feature;
+
  public:
+  explicit SegmentedFeatureVector(bool store_segment_feature_map)
+      : _store_index_to_segment_feature_map(store_segment_feature_map) {}
+
   /**
    * Increments the feature at the given index of the current vector segment
    * by a value.
@@ -105,6 +140,15 @@ class SegmentedFeatureVector {
    * Converts this vector to a BoltVector.
    */
   virtual BoltVector toBoltVector() = 0;
+
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap() {
+    if (!_store_index_to_segment_feature_map) {
+      throw std::invalid_argument(
+          "[SegmentedFeatureVector::getSegmentFeatureMap] Attempted to get "
+          "segment feature map when store_segment_feature_map is false.");
+    }
+    return getIndexToSegmentFeatureMapImpl();
+  }
 
   virtual ~SegmentedFeatureVector() = default;
 };

@@ -7,6 +7,8 @@
 #include <string_view>
 #include <type_traits>
 
+// TODO(Geordie): This file is due for major refactoring
+
 namespace thirdai::dataset {
 
 /**
@@ -40,13 +42,16 @@ class TextEncodingUtils {
    * Unigrams in a vector with possible repeated indices (modded to a range)
    */
   static std::vector<uint32_t> computeRawUnigramsWithRange(
-      const std::string_view sentence, uint32_t output_range) {
+      const std::string_view sentence, uint32_t output_range,
+      char delimiter = ' ') {
     std::vector<uint32_t> unigrams;
-    forEachWordHash(sentence,
-                    [&](uint32_t word_hash, const std::string_view& word) {
-                      (void)word;
-                      unigrams.push_back(word_hash % output_range);
-                    });
+    forEachWordHash(
+        sentence,
+        [&](uint32_t word_hash, const std::string_view& word) {
+          (void)word;
+          unigrams.push_back(word_hash % output_range);
+        },
+        delimiter);
     return unigrams;
   }
 
@@ -55,13 +60,16 @@ class TextEncodingUtils {
    * write seperate function than to overload the already existing function.
    */
   static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-      const std::string_view sentence, uint32_t output_range) {
+      const std::string_view sentence, uint32_t output_range,
+      char delimiter = ' ') {
     std::unordered_map<uint32_t, std::string> index_to_word;
-    forEachWordHash(sentence,
-                    [&](uint32_t word_hash, const std::string_view& word) {
-                      (void)word_hash;
-                      index_to_word[word_hash % output_range] = word;
-                    });
+    forEachWordHash(
+        sentence,
+        [&](uint32_t word_hash, const std::string_view& word) {
+          (void)word_hash;
+          index_to_word[word_hash % output_range] = word;
+        },
+        delimiter);
     return index_to_word;
   }
 
@@ -85,22 +93,42 @@ class TextEncodingUtils {
     return BoltVector::makeSparseVector(indices, values);
   }
 
-  /**
-   * Pairgrams in a vector with possible repeated indices
-   */
-  static std::vector<uint32_t> computeRawPairgramsFromUnigrams(
-      std::vector<uint32_t> unigram_hashes, uint32_t output_range) {
-    std::vector<uint32_t> pairgram_hashes;
+  struct PairGram {
+    uint32_t pairgram;
+    uint32_t first_token;
+    uint32_t second_token;
+  };
 
-    // Merge all ordered pairs of unigram hashes.
+  template <typename PAIRGRAM_PROCESSOR_T>
+  static void forEachPairgramFromUnigram(
+      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range,
+      PAIRGRAM_PROCESSOR_T pairgram_processor) {
+    static_assert(std::is_convertible<PAIRGRAM_PROCESSOR_T,
+                                      std::function<void(PairGram)>>::value);
+
     for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
       for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
         uint32_t combined_hash = hashing::HashUtils::combineHashes(
             unigram_hashes[prev_token], unigram_hashes[token]);
         combined_hash = combined_hash % output_range;
-        pairgram_hashes.push_back(combined_hash);
+        pairgram_processor({/* pairgram= */ combined_hash,
+                            /* first_token= */ unigram_hashes[prev_token],
+                            /* second_token= */ unigram_hashes[token]});
       }
     }
+  }
+
+  /**
+   * Pairgrams in a vector with possible repeated indices
+   */
+  static std::vector<uint32_t> computeRawPairgramsFromUnigrams(
+      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range) {
+    std::vector<uint32_t> pairgram_hashes;
+
+    forEachPairgramFromUnigram(unigram_hashes, output_range,
+                               [&](PairGram pairgram) {
+                                 pairgram_hashes.push_back(pairgram.pairgram);
+                               });
     return pairgram_hashes;
   }
 
@@ -160,21 +188,22 @@ class TextEncodingUtils {
    */
   template <typename WORD_PROCESSOR_T>
   inline static void forEachWordHash(const std::string_view sentence,
-                                     WORD_PROCESSOR_T word_processor) {
+                                     WORD_PROCESSOR_T word_processor,
+                                     char delimiter = ' ') {
     static_assert(std::is_convertible<
                   WORD_PROCESSOR_T,
                   std::function<void(uint32_t, std::string_view)>>::value);
 
-    bool prev_is_space = true;
+    bool prev_is_delim = true;
     uint32_t start_of_word_offset;
     for (uint32_t i = 0; i < sentence.size(); i++) {
-      if (prev_is_space && !std::isspace(sentence[i])) {
+      if (prev_is_delim && sentence[i] != delimiter) {
         // If we go from a space to a non-space character then we are at the
         // start of a word.
         start_of_word_offset = i;
-        prev_is_space = false;
+        prev_is_delim = false;
       }
-      if (!prev_is_space && std::isspace(sentence[i])) {
+      if (!prev_is_delim && sentence[i] == delimiter) {
         // If we go from a non-space character to a space then we are at the end
         // of a word.
         uint32_t len = i - start_of_word_offset;
@@ -185,10 +214,10 @@ class TextEncodingUtils {
         uint32_t word_hash =
             computeUnigram(sentence.data() + start_of_word_offset, len);
         word_processor(word_hash, word_view);
-        prev_is_space = true;
+        prev_is_delim = true;
       }
     }
-    if (!prev_is_space) {
+    if (!prev_is_delim) {
       // If we don't find a space at the end of the sentence, then there's a
       // last word we need to hash.
       uint32_t len = sentence.size() - start_of_word_offset;
