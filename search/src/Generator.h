@@ -121,7 +121,7 @@ class QueryCandidateGeneratorConfig {
       const std::string& target_column_name, const std::string& dataset_size) {
     uint32_t num_tables = DEFAULT_NUM_TABLES;
     uint32_t hashes_per_table = DEFAULT_HASHES_PER_TABLE;
-    
+
     if (dataset_size == "small") {
       hashes_per_table = 2;
     } else if (dataset_size == "large") {
