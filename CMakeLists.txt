@@ -264,6 +264,7 @@ set(THIRDAI_SOURCES
     dataset/src/InMemoryDataset.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+    new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
