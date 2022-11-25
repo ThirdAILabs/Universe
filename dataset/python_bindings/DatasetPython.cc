@@ -333,7 +333,25 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("i"), py::return_value_policy::reference)
       .def("__len__", &BoltDataset::numBatches)
       .def("save", &BoltDataset::save, py::arg("filename"))
-      .def_static("load", &BoltDataset::load, py::arg("filename"));
+      .def_static("load", &BoltDataset::load, py::arg("filename"))
+      .def(py::init([](const py::iterable& iterable) {
+             using Batches = std::vector<BoltBatch>;
+             auto batches = iterable.cast<Batches>();
+             std::shared_ptr<BoltDataset> dataset =
+                 std::make_shared<InMemoryDataset<BoltBatch>>(
+                     std::move(batches));
+             return dataset;
+           }),
+           py::arg("batches"), R"pbdoc(
+            Construct a BoltDataset from an iterable of BoltBatches. Makes
+            copies in the process which can potentially be costly, use judiciously.
+            
+            Args: 
+                batches (Iterable[BoltBatch]): Batches
+
+            Returns:
+                BoltDataset: The constructed dataset.
+           )pbdoc");
 
   py::class_<numpy::WrappedNumpyVectors,  // NOLINT
              std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
@@ -353,7 +371,23 @@ void createDatasetSubmodule(py::module_& module) {
            static_cast<BoltVector& (BoltBatch::*)(size_t i)>(
                &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
-      .def("__len__", &BoltBatch::getBatchSize);
+      .def("__len__", &BoltBatch::getBatchSize)
+      .def(py::init([](const py::iterable& iterable) {
+             using Vectors = std::vector<BoltVector>;
+             auto vectors = iterable.cast<Vectors>();
+             BoltBatch batch(std::move(vectors));
+             return batch;
+           }),
+           py::arg("vectors"), R"pbdoc(
+            Construct a BoltBatch from an iterable of BoltVectors. Makes copies
+            in the process which can be costly, use judiciously.
+
+            Args: 
+                vectors (Iterable[BoltVector]): BoltVectors constituting the Batch.
+
+            Returns:
+                BoltBatch: The constructed Batch.
+           )pbdoc");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", SvmDatasetLoader::loadDatasetFromFile,

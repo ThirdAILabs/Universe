@@ -15,7 +15,7 @@
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/deployment_config/DatasetConfig.h>
+#include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -37,7 +37,7 @@
 #include <variant>
 #include <vector>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::data {
 
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
@@ -203,6 +203,40 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   uint32_t getLabelDim() final { return _label_dim; }
+
+  bolt::InferenceOutputTracker processEvaluateOutput(
+      bolt::InferenceOutputTracker& output) final {
+    if (!_regression_categorical_block) {
+      return std::move(output);
+    }
+    std::vector<float> predicted_values(output.numSamples());
+
+    for (uint32_t i = 0; i < output.numSamples(); i++) {
+      predicted_values[i] =
+          _regression_categorical_block->getPredictedNumericalValue(
+              output.activeNeuronsForSample(i), output.activationsForSample(i),
+              output.numNonzerosInOutput());
+    }
+
+    return bolt::InferenceOutputTracker(
+        /* active_neurons= */ std::nullopt,
+        /* activations= */ std::move(predicted_values),
+        /* num_nonzeros_per_sample= */ 1);
+  }
+
+  BoltVector processOutputVector(BoltVector& output) final {
+    if (!_regression_categorical_block) {
+      return std::move(output);
+    }
+
+    BoltVector value(/* l= */ 1, /* is_dense= */ true,
+                     /* has_gradient= */ false);
+    value.activations[0] =
+        _regression_categorical_block->getPredictedNumericalValue(
+            output.active_neurons, output.activations, output.len);
+
+    return value;
+  }
 
  private:
   PreprocessedVectorsMap processAllMetadata() {
@@ -405,12 +439,15 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       auto target_config = asNumerical(target_type);
       uint32_t num_bins = _config->n_target_classes.value_or(
           UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
-      return dataset::RegressionCategoricalBlock::make(
+
+      _regression_categorical_block = dataset::RegressionCategoricalBlock::make(
           /* col= */ target_col_num, /* min= */ target_config->range.first,
           /* max= */ target_config->range.second, /* num_bins= */ num_bins,
           /* correct_label_radius= */
           UDTConfig::REGRESSION_CORRECT_LABEL_RADIUS,
           /* labels_sum_to_one= */ true);
+
+      return _regression_categorical_block;
     }
     throw std::invalid_argument(
         "Target column must have type numerical or categorical.");
@@ -542,6 +579,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   uint32_t _text_pairgram_word_limit;
   bool _contextual_columns;
 
+  dataset::RegressionCategoricalBlockPtr _regression_categorical_block;
+
   // Private constructor for cereal.
   UDTDatasetFactory() {}
 
@@ -553,53 +592,13 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _column_number_map, _column_number_to_name,
             _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _input_dim, _label_dim,
-            _parallel, _text_pairgram_word_limit, _contextual_columns);
+            _parallel, _text_pairgram_word_limit, _contextual_columns,
+            _regression_categorical_block);
   }
 };
 
 using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
-class UDTDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
- public:
-  explicit UDTDatasetFactoryConfig(
-      HyperParameterPtr<UDTConfigPtr> config,
-      HyperParameterPtr<bool> force_parallel,
-      HyperParameterPtr<uint32_t> text_pairgram_word_limit,
-      HyperParameterPtr<bool> contextual_columns)
-      : _config(std::move(config)),
-        _force_parallel(std::move(force_parallel)),
-        _text_pairgram_word_limit(std::move(text_pairgram_word_limit)),
-        _contextual_columns(std::move(contextual_columns)) {}
+}  // namespace thirdai::automl::data
 
-  DatasetLoaderFactoryPtr createDatasetState(
-      const UserInputMap& user_specified_parameters) const final {
-    auto config = _config->resolve(user_specified_parameters);
-    auto parallel = _force_parallel->resolve(user_specified_parameters);
-    auto text_pairgram_word_limit =
-        _text_pairgram_word_limit->resolve(user_specified_parameters);
-
-    return UDTDatasetFactory::make(config, parallel, text_pairgram_word_limit);
-  }
-
- private:
-  HyperParameterPtr<UDTConfigPtr> _config;
-  HyperParameterPtr<bool> _force_parallel;
-  HyperParameterPtr<uint32_t> _text_pairgram_word_limit;
-  HyperParameterPtr<bool> _contextual_columns;
-
-  // Private constructor for cereal.
-  UDTDatasetFactoryConfig() {}
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetLoaderFactoryConfig>(this), _config,
-            _force_parallel, _text_pairgram_word_limit, _contextual_columns);
-  }
-};
-
-}  // namespace thirdai::automl::deployment
-
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UDTDatasetFactoryConfig)
-
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UDTDatasetFactory)
+CEREAL_REGISTER_TYPE(thirdai::automl::data::UDTDatasetFactory)

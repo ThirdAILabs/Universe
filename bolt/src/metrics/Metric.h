@@ -2,6 +2,7 @@
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <sys/types.h>
+#include <utils/Logging.h>
 #include <algorithm>
 #include <atomic>
 #include <cstdlib>
@@ -125,6 +126,48 @@ class CategoricalAccuracy final : public Metric {
 
  private:
   std::atomic<uint32_t> _correct;
+  std::atomic<uint32_t> _num_samples;
+};
+
+/**
+ * The CategoricalCrossEntropy (metric) is a proxy to the
+ * CategoricalCrossEntropy (LossFunction) to track the metric that is closer to
+ * the training objective.
+ *
+ * This is a proxy and not true cross-entropy because computations involve
+ * summing terms containing label * log (output). EPS value of 1e-7 is used to
+ * generate a sufficiently high indicator for loss where log(0 + EPS) could
+ * occur.
+ */
+class CategoricalCrossEntropy final : public Metric {
+ public:
+  CategoricalCrossEntropy() : _sum(0), _num_samples(0) {}
+
+  void record(const BoltVector& output, const BoltVector& labels) final;
+
+  double value() final {
+    double acc = static_cast<double>(_sum) / _num_samples;
+    return acc;
+  }
+
+  double worst() const final { return std::numeric_limits<float>::max(); }
+  bool betterThan(double x, double y) const final { return x <= y; }
+
+  void reset() final {
+    _sum = 0;
+    _num_samples = 0;
+  }
+
+  static constexpr const char* NAME = "categorical_cross_entropy";
+
+  std::string name() final { return NAME; }
+
+  std::string summary() final {
+    return fmt::format("{}: {:.3f}", NAME, value());
+  }
+
+ private:
+  std::atomic<float> _sum;
   std::atomic<uint32_t> _num_samples;
 };
 
@@ -328,7 +371,7 @@ class RecallAtK : public Metric {
     return stream.str();
   }
 
-  double worst() const final { return 0.0f; }
+  double worst() const final { return 0.0F; }
 
   bool betterThan(double x, double y) const final { return x >= y; }
 
@@ -459,7 +502,7 @@ class FMeasure final : public Metric {
     return stream.str();
   }
 
-  double worst() const final { return 0.0f; }
+  double worst() const final { return 0.0F; }
 
   bool betterThan(double x, double y) const final { return x >= y; }
 
@@ -513,6 +556,9 @@ static std::shared_ptr<Metric> makeMetric(const std::string& name) {
   }
   if (RecallAtK::isRecallAtK(name)) {
     return RecallAtK::make(name);
+  }
+  if (name == CategoricalCrossEntropy::NAME) {
+    return std::make_shared<CategoricalCrossEntropy>();
   }
   throw std::invalid_argument("'" + name + "' is not a valid metric.");
 }
