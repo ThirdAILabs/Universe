@@ -1,9 +1,26 @@
+import os
 import tempfile
 
+import pandas as pd
 import pytest
 from thirdai.data import _CATEGORICAL_DELIMITERS, get_udt_col_types
 
 pytestmark = [pytest.mark.unit]
+
+
+def verify_col_types(col_types, delimiter):
+    assert str(col_types["col1"]) == '{"type": "categorical"}'
+    assert str(col_types["col2"]) == '{"type": "categorical"}'
+    assert (
+        str(col_types["col3"])
+        == '{"type": "numerical", "range": [3, 9], "granularity": "m"}'
+    )
+    assert (
+        str(col_types["col4"])
+        == '{"type": "categorical", "delimiter": "' + delimiter + '"}'
+    )
+    assert str(col_types["col5"]) == '{"type": "text"}'
+    assert str(col_types["col6"]) == '{"type": "date"}'
 
 
 @pytest.mark.parametrize("delimiter", _CATEGORICAL_DELIMITERS)
@@ -19,16 +36,11 @@ def test_get_udt_columns(delimiter):
         tmp.flush()
 
         udt_types = get_udt_col_types(tmp.name)
+        verify_col_types(udt_types, delimiter)
 
-        assert str(udt_types["col1"]) == '{"type": "categorical"}'
-        assert str(udt_types["col2"]) == '{"type": "categorical"}'
-        assert (
-            str(udt_types["col3"])
-            == '{"type": "numerical", "range": [3, 9], "granularity": "m"}'
-        )
-        assert (
-            str(udt_types["col4"])
-            == '{"type": "categorical", "delimiter": "' + delimiter + '"}'
-        )
-        assert str(udt_types["col5"]) == '{"type": "text"}'
-        assert str(udt_types["col6"]) == '{"type": "date"}'
+        df = pd.read_csv(tmp.name)
+        df.to_parquet(tmp.name + ".pqt")
+        udt_types_pqt = get_udt_col_types(tmp.name + ".pqt")
+        os.remove(tmp.name + ".pqt")
+
+        verify_col_types(udt_types_pqt, delimiter)

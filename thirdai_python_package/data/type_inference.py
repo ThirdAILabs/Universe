@@ -128,7 +128,19 @@ def semantic_type_inference(
     # even with missing values (we will later drop the missing values, which
     # get converted to NAs during read_csv, and then convert to the correct
     # more specific type).
-    df = pd.read_csv(filename, nrows=nrows, dtype=object)
+    if filename.endswith(".pqt") or filename.endswith(".parquet"):
+        df = pd.read_parquet(filename)
+    else:
+        try:
+            df = pd.read_csv(filename, nrows=nrows, dtype=object)
+        except:
+            raise ValueError(
+                "UDT currently supports all files that can be read using "
+                "pandas.read_parquet (for .pqt or .parquet files) or "
+                "pandas.read_csv (for all other files). Please convert your files "
+                "to one of the supported formats."
+            )
+
     if len(df) < min_rows_allowed:
         raise ValueError(
             f"Parsed csv {filename} must have at least {min_rows_allowed} rows, but we found only {len(df)} rows."
