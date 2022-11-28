@@ -300,15 +300,6 @@ const char* const MODEL_PIPELINE_GET_DATA_PROCESSOR = R"pbdoc(
 Returns the data processor of the model pipeline.
 )pbdoc";
 
-const char* const MODEL_PIPELINE_LIST_ARTIFACTS = R"pbdoc(
-Lists the names of all artifacts associated with the current model pipeline.
-The availability of artifacts depends on the configuration of the model pipeline.
-
-Returns:
-    List[str]: A list of the model's artifact names.
-
-)pbdoc";
-
 const char* const TEMPORAL_CONTEXT_RESET = R"pbdoc(
 Resets UDT's temporal trackers. When temporal relationships are supplied, 
 UDT assumes that we feed it data in chronological order. Thus, if we break 
@@ -1004,7 +995,7 @@ Example:
     >>> model = bolt.UniversalDeepTransformer.load("udt_savefile.bolt")
 )pbdoc";
 
-const char* const ORACLE_CONFIG_INIT = R"pbdoc(
+const char* const UDT_CONFIG_INIT = R"pbdoc(
 A configuration object for UDT.
 
 UDT is an all-purpose classifier for tabular datasets. In addition to learning from

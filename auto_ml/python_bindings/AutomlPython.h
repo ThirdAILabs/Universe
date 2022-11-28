@@ -13,13 +13,13 @@ using models::ModelPipeline;
 using models::QueryCandidateGenerator;
 using models::UniversalDeepTransformer;
 
-void defineAutomlInBoltSubmodule(py::module_& bolt_submodule);
+void defineAutomlInModule(py::module_& module);
 
-void createModelsSubmodule(py::module_& bolt_submodule);
+void createModelsSubmodule(py::module_& module);
 
-void createUDTTypesSubmodule(py::module_& bolt_submodule);
+void createUDTTypesSubmodule(py::module_& module);
 
-void createUDTTemporalSubmodule(py::module_& bolt_submodule);
+void createUDTTemporalSubmodule(py::module_& module);
 
 // Python wrappers for ModelPipline methods
 

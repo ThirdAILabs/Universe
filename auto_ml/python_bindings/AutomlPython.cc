@@ -5,8 +5,8 @@
 
 namespace thirdai::automl::python {
 
-void defineAutomlInBoltSubmodule(py::module_& bolt_submodule) {
-  py::class_<models::ValidationOptions>(bolt_submodule, "Validation")
+void defineAutomlInModule(py::module_& module) {
+  py::class_<models::ValidationOptions>(module, "Validation")
       .def(py::init<std::string, std::vector<std::string>,
                     std::optional<uint32_t>, bool>(),
            py::arg("filename"), py::arg("metrics"),
@@ -23,8 +23,7 @@ void defineAutomlInBoltSubmodule(py::module_& bolt_submodule) {
    * https://stackoverflow.com/questions/26793600/decorate-call-with-staticmethod
    *
    */
-  py::class_<UDTFactory>(bolt_submodule, "UniversalDeepTransformer",
-                         docs::UDT_CLASS)
+  py::class_<UDTFactory>(module, "UniversalDeepTransformer", docs::UDT_CLASS)
       .def("__new__", &UDTFactory::buildUDTClassifierWrapper,
            py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
@@ -43,8 +42,8 @@ void defineAutomlInBoltSubmodule(py::module_& bolt_submodule) {
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
 
-void createModelsSubmodule(py::module_& bolt_submodule) {
-  auto models_submodule = bolt_submodule.def_submodule("models");
+void createModelsSubmodule(py::module_& module) {
+  auto models_submodule = module.def_submodule("models");
 
   py::class_<ModelPipeline, std::shared_ptr<ModelPipeline>>(models_submodule,
                                                             "Pipeline")
@@ -120,7 +119,7 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
            py::arg("target"), py::arg("n_target_classes"),
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', docs::ORACLE_CONFIG_INIT,
+           py::arg("delimiter") = ',', docs::UDT_CONFIG_INIT,
            bolt::python::OutputRedirect());
 
   py::class_<UniversalDeepTransformer, ModelPipeline,
@@ -189,8 +188,8 @@ void createModelsSubmodule(py::module_& bolt_submodule) {
            docs::UDT_GENERATOR_SAVE);
 }
 
-void createUDTTypesSubmodule(py::module_& bolt_submodule) {
-  auto udt_types_submodule = bolt_submodule.def_submodule("types");
+void createUDTTypesSubmodule(py::module_& module) {
+  auto udt_types_submodule = module.def_submodule("types");
 
   py::class_<automl::data::DataType,
              automl::data::DataTypePtr>(  // NOLINT
@@ -232,8 +231,8 @@ void createUDTTypesSubmodule(py::module_& bolt_submodule) {
       .def(py::init<>(), docs::UDT_DATE_TYPE);
 }
 
-void createUDTTemporalSubmodule(py::module_& bolt_submodule) {
-  auto udt_temporal_submodule = bolt_submodule.def_submodule("temporal");
+void createUDTTemporalSubmodule(py::module_& module) {
+  auto udt_temporal_submodule = module.def_submodule("temporal");
 
   py::class_<automl::data::TemporalConfig>(  // NOLINT
       udt_temporal_submodule, "TemporalConfig",
