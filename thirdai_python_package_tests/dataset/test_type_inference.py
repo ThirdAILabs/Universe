@@ -50,7 +50,7 @@ def test_type_inference_missing_vals(delimiter):
             """,
     )
 
-    #TODO (david, josh) get this test to work with parquet too
+    # TODO (david, josh) get this test to work with parquet too
     inferred_types = semantic_type_inference(CSV_FILENAME)
 
     assert inferred_types["col1"]["type"] == "categorical"
