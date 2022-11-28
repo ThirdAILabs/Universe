@@ -8,7 +8,7 @@ from thirdai.data import _CATEGORICAL_DELIMITERS, get_udt_col_types
 
 pytestmark = [pytest.mark.unit]
 
-
+# this verifies the specific types for the test dataset
 def verify_col_types(col_types, delimiter):
     assert str(col_types["col1"]) == '{"type": "categorical"}'
     assert str(col_types["col2"]) == '{"type": "categorical"}'
