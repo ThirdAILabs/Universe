@@ -15,26 +15,6 @@ void Node::compile(LayerNameManager& name_manager) {
   compileImpl();
 }
 
-inline void Node::forward(uint32_t vec_index, const BoltVector* labels) {
-  assert(getState() == NodeState::PreparedForBatchProcessing);
-  forwardImpl(vec_index, labels);
-}
-
-inline void Node::backpropagate(uint32_t vec_index) {
-  assert(getState() == NodeState::PreparedForBatchProcessing);
-  backpropagateImpl(vec_index);
-}
-
-inline void Node::updateParameters(float learning_rate, uint32_t batch_cnt) {
-  assert(getState() == NodeState::PreparedForBatchProcessing);
-  updateParametersImpl(learning_rate, batch_cnt);
-}
-
-inline BoltVector& Node::getOutputVector(uint32_t vec_index) {
-  assert(getState() == NodeState::PreparedForBatchProcessing);
-  return getOutputVectorImpl(vec_index);
-}
-
 uint32_t Node::numNonzerosInOutput() const {
   if (getState() != NodeState::PreparedForBatchProcessing) {
     throw exceptions::NodeStateMachineError(

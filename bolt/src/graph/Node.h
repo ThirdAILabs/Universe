@@ -77,16 +77,28 @@ class Node {
    * getOutputVector(vec_index), including setting the gradients equal to 0
    * (so they can be += to correctly in backpropogate in succesor nodes).
    */
-  void forward(uint32_t vec_index, const BoltVector* labels);
+  inline void forward(uint32_t vec_index, const BoltVector* labels) {
+    assert(getState() == NodeState::PreparedForBatchProcessing);
+    forwardImpl(vec_index, labels);
+  }
 
   // Computes the backwards pass through the node.
-  void backpropagate(uint32_t vec_index);
+  inline void backpropagate(uint32_t vec_index) {
+    assert(getState() == NodeState::PreparedForBatchProcessing);
+    backpropagateImpl(vec_index);
+  }
 
   // Updates any trainable parameters
-  void updateParameters(float learning_rate, uint32_t batch_cnt);
+  inline void updateParameters(float learning_rate, uint32_t batch_cnt) {
+    assert(getState() == NodeState::PreparedForBatchProcessing);
+    updateParametersImpl(learning_rate, batch_cnt);
+  }
 
   // Returns the ith output of the node.
-  BoltVector& getOutputVector(uint32_t vec_index);
+  inline BoltVector& getOutputVector(uint32_t vec_index) {
+    assert(getState() == NodeState::PreparedForBatchProcessing);
+    return getOutputVectorImpl(vec_index);
+  }
 
   // Returns the output dimension of the node. This is used for subsequent nodes
   // during compilation.
