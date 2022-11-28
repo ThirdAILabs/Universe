@@ -114,6 +114,7 @@ def main():
         if args.extras == "none":
             checked_system_call(f"pip3 install . --verbose --force --no-dependencies")
         else:
+            args.extras = "[" + args.extras + "]"
             checked_system_call(f"pip3 install .{args.extras} --verbose --force")
 
     else:
