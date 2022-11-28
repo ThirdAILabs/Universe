@@ -182,5 +182,3 @@ class ConcatenateNode final
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::ConcatenateNode)

@@ -116,4 +116,3 @@ using EmbeddingNodePtr = std::shared_ptr<EmbeddingNode>;
 
 }  // namespace thirdai::bolt
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::EmbeddingNode)

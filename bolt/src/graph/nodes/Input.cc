@@ -82,3 +82,5 @@ void Input::checkDimForInput(const BoltVector& vec) const {
 }
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::Input)

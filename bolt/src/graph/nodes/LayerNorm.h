@@ -127,5 +127,3 @@ class LayerNormNode final : public Node,
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::LayerNormNode)

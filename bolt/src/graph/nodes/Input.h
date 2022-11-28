@@ -118,5 +118,3 @@ class Input final : public Node {
 using InputPtr = std::shared_ptr<Input>;
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::Input)

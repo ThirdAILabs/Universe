@@ -233,3 +233,5 @@ Node::NodeState FullyConnectedNode::getState() const {
 }
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedNode)
