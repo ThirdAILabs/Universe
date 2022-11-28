@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include <cereal/types/string.hpp>
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
@@ -78,9 +79,22 @@ class SaveContext {
   const std::string& prefix() const { return _prefix; }
   uint32_t frequency() const { return _frequency; }
 
+  // SaveContext is declared an optional in TrainConfig
+  // and it appears that friend class for an optional
+  // cannot access a private constructor. Hence making 
+  // this constructor here public.  
+  // constructor for cereal
+  SaveContext(): SaveContext("", 0) {};
  private:
   std::string _prefix;
   uint32_t _frequency;
+
+friend class cereal::access;
+template <class Archive>
+void serialize(Archive& archive) {
+  archive(_prefix, _frequency);
+}
+
 };
 
 class ValidationContext {
@@ -292,7 +306,7 @@ class TrainConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_epochs, _learning_rate, _metric_names, _verbose,
-            _rebuild_hash_tables, _reconstruct_hash_functions);
+            _rebuild_hash_tables, _reconstruct_hash_functions, _save_context);
   }
 
   uint32_t _epochs;
