@@ -239,6 +239,7 @@ set(THIRDAI_SOURCES
     bolt/src/graph/Graph.cc 
     bolt/src/graph/DatasetContext.cc
     bolt/src/graph/Node.cc
+    bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc
