@@ -9,7 +9,7 @@ pytestmark = [pytest.mark.unit]
 
 
 @pytest.mark.parametrize("delimiter", _CATEGORICAL_DELIMITERS)
-def test_get_udt_columns_with_csv(delimiter):
+def test_get_udt_columns(delimiter):
     with tempfile.NamedTemporaryFile(mode="w") as tmp:
         tmp.write(
             f"""col1,col2,col3,col4,col5,col6
@@ -51,4 +51,3 @@ def test_get_udt_columns_with_csv(delimiter):
         )
         assert str(udt_types_pqt["col5"]) == '{"type": "text"}'
         assert str(udt_types_pqt["col6"]) == '{"type": "date"}'
-
