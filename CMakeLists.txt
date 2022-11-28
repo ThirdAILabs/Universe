@@ -219,6 +219,7 @@ include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
 
 # Our source directories
+add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
@@ -300,6 +301,7 @@ pybind11_add_module(
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
+  auto_ml/python_bindings/AutomlPython.cc
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
