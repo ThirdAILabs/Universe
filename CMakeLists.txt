@@ -241,6 +241,7 @@ set(THIRDAI_SOURCES
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc
+    bolt/src/metrics/Metric.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
