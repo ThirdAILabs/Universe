@@ -2,8 +2,8 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
-#include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
@@ -81,20 +81,20 @@ class SaveContext {
 
   // SaveContext is declared an optional in TrainConfig
   // and it appears that friend class for an optional
-  // cannot access a private constructor. Hence making 
-  // this constructor here public.  
+  // cannot access a private constructor. Hence making
+  // this constructor here public.
   // constructor for cereal
-  SaveContext(): SaveContext("", 0) {};
+  SaveContext() : SaveContext("", 0){};
+
  private:
   std::string _prefix;
   uint32_t _frequency;
 
-friend class cereal::access;
-template <class Archive>
-void serialize(Archive& archive) {
-  archive(_prefix, _frequency);
-}
-
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_prefix, _frequency);
+  }
 };
 
 class ValidationContext {
