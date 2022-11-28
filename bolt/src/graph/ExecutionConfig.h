@@ -84,7 +84,7 @@ class SaveContext {
   // cannot access a private constructor. Hence making
   // this constructor here public.
   // constructor for cereal
-  SaveContext() : SaveContext("", 0){};
+  SaveContext() {};
 
  private:
   std::string _prefix;
