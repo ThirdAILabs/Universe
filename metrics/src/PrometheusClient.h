@@ -13,24 +13,33 @@
 
 namespace thirdai::metrics {
 
-class BoltMetricsServer {
+// I set this up as the actual ThirdAI default port on the wiki, so don't
+// change it unless you update it there too
+// See https://github.com/prometheus/prometheus/wiki/Default-port-allocations
+const inline uint32_t THIRDAI_DEFAULT_METRICS_PORT = 9929;
+
+class PrometheusMetricsClient {
  public:
-  static BoltMetricsServer startMetricsFromEnvVars() {
+  static PrometheusMetricsClient startFromEnvVars() {
     // TODO(Josh): Add metrics info to public docs
 
     // I think it is safe to use std::getenv in static functions, see
     // https://stackoverflow.com/questions/437279/is-it-safe-to-use-getenv-in-static-initializers-that-is-before-main
     const char* env_dont_use_metrics = std::getenv("THIRDAI_DONT_USE_METRICS");
     if (env_dont_use_metrics != NULL) {
-      return BoltMetricsServer();
+      return startNoop();
     }
 
-    uint32_t port = DEFAULT_METRICS_PORT;
+    uint32_t port = THIRDAI_DEFAULT_METRICS_PORT;
     const char* env_license_port = std::getenv("THIRDAI_METRICS_PORT");
     if (env_license_port != NULL) {
       port = std::stoi(env_license_port);
     }
 
+    return start(port);
+  }
+
+  static PrometheusMetricsClient start(uint32_t port) {
     std::shared_ptr<prometheus::Exposer> exposer;
     try {
       exposer = std::make_shared<prometheus::Exposer>(
@@ -41,11 +50,15 @@ class BoltMetricsServer {
           ", possibly there is already a metrics instance on this port. Please "
           "choose a different port if you want to use metrics. Continuing "
           "without metrics");
-      return BoltMetricsServer();
+      return PrometheusMetricsClient();
     }
     auto registry = std::make_shared<prometheus::Registry>();
     exposer->RegisterCollectable(registry);
-    return BoltMetricsServer(exposer, registry);
+    return PrometheusMetricsClient(exposer, registry);
+  }
+
+  static PrometheusMetricsClient startNoop() {
+    return PrometheusMetricsClient();
   }
 
   void track_predictions(double inference_time_seconds,
@@ -82,24 +95,17 @@ class BoltMetricsServer {
     _train_histogram->Observe(evaluate_time_seconds);
   }
 
-  // Delete copy and move constructors and assignment operators so that
-  // we cannot set bolt::metrics::client to be anything else after it is
-  // constructed
-  BoltMetricsServer& operator=(const BoltMetricsServer&) = delete;
-  BoltMetricsServer(const BoltMetricsServer&) = delete;
-  BoltMetricsServer(BoltMetricsServer&&) = delete;
-  BoltMetricsServer& operator=(BoltMetricsServer&&) = delete;
-
  private:
-  BoltMetricsServer()
+  PrometheusMetricsClient()
       : _registry(nullptr),
         _prediction_histogram(nullptr),
         _explanation_histogram(nullptr),
         _evaluation_histogram(nullptr),
         _train_histogram(nullptr) {}
 
-  explicit BoltMetricsServer(std::shared_ptr<prometheus::Exposer> exposer,
-                             std::shared_ptr<prometheus::Registry> registry) {
+  explicit PrometheusMetricsClient(
+      std::shared_ptr<prometheus::Exposer> exposer,
+      std::shared_ptr<prometheus::Registry> registry) {
     _registry = std::move(registry);
     _exposer = std::move(exposer);
 
@@ -152,11 +158,6 @@ class BoltMetricsServer {
                   /* buckets = */ slow_running_boundaries_seconds);
   }
 
-  // I set this up as the actual ThirdAI default port on the wiki, so don't
-  // change it unless you update it there too
-  // See https://github.com/prometheus/prometheus/wiki/Default-port-allocations
-  const static inline uint32_t DEFAULT_METRICS_PORT = 9929;
-
   // These variables are stored in this class to ensure the web server and
   // registry exist as long as this object exists.
   std::shared_ptr<prometheus::Exposer> _exposer;
@@ -181,6 +182,19 @@ class BoltMetricsServer {
   prometheus::Histogram* _train_histogram;
 };
 
-inline BoltMetricsServer client = BoltMetricsServer::startMetricsFromEnvVars();
+// If we want to start the metrics server automatically from environment vars
+// in the future, we can uncomment this line of code. We can also then delete
+// the move and copy operators and constructors in BoltMetricsServer to make
+// sure the metrics object cannot be changed. For now, we will start metrics
+// manually.
+// inline BoltMetricsServer client =
+// BoltMetricsServer::startMetricsFromEnvVars();
+
+inline PrometheusMetricsClient client = PrometheusMetricsClient::startNoop();
+
+inline void createGlobalMetricsClient(
+    uint32_t port = THIRDAI_DEFAULT_METRICS_PORT) {
+  client = PrometheusMetricsClient::start(port);
+}
 
 }  // namespace thirdai::metrics
