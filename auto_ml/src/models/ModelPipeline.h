@@ -11,6 +11,7 @@
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <exceptions/src/Exceptions.h>
+#include <metrics/src/PrometheusClient.h>
 #include <limits>
 #include <memory>
 #include <string>
@@ -95,6 +96,8 @@ class ModelPipeline {
       bolt::TrainConfig& train_config,
       const std::optional<ValidationOptions>& validation,
       std::optional<uint32_t> max_in_memory_batches) {
+    auto start_time = std::chrono::system_clock::now();
+
     _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
     data_source->restart();
 
@@ -108,6 +111,11 @@ class ModelPipeline {
     } else {
       trainInMemory(dataset, train_config, validation);
     }
+
+    std::chrono::duration<double> elapsed_time =
+        std::chrono::system_clock::now() - start_time;
+    metrics::client.trackTraining(
+        /* training_time_seconds = */ elapsed_time.count());
   }
 
   bolt::InferenceOutputTracker evaulate(
@@ -121,6 +129,8 @@ class ModelPipeline {
   bolt::InferenceOutputTracker evaluate(
       const std::shared_ptr<dataset::DataLoader>& data_source,
       std::optional<bolt::EvalConfig>& eval_config_opt) {
+    auto start_time = std::chrono::system_clock::now();
+
     auto dataset = _dataset_factory->getLabeledDatasetLoader(
         data_source, /* training= */ false);
 
@@ -146,11 +156,20 @@ class ModelPipeline {
       }
     }
 
-    return _dataset_factory->processEvaluateOutput(output);
+    auto evaluate_output = _dataset_factory->processEvaluateOutput(output);
+
+    std::chrono::duration<double> elapsed_time =
+        std::chrono::system_clock::now() - start_time;
+    metrics::client.trackEvaluate(
+        /* evaluate_time_seconds = */ elapsed_time.count());
+
+    return evaluate_output;
   }
 
   template <typename InputType>
   BoltVector predict(const InputType& sample, bool use_sparse_inference) {
+    auto start_time = std::chrono::system_clock::now();
+
     std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
     BoltVector output =
@@ -163,12 +182,22 @@ class ModelPipeline {
       }
     }
 
-    return _dataset_factory->processOutputVector(output);
+    auto prediction = _dataset_factory->processOutputVector(output);
+
+    std::chrono::duration<double> elapsed_time =
+        std::chrono::system_clock::now() - start_time;
+    metrics::client.trackPredictions(
+        /* inference_time_seconds = */ elapsed_time.count(),
+        /* num_inferences = */ 1);
+
+    return prediction;
   }
 
   template <typename InputBatchType>
   BoltBatch predictBatch(const InputBatchType& samples,
                          bool use_sparse_inference) {
+    auto start_time = std::chrono::system_clock::now();
+
     std::vector<BoltBatch> input_batches =
         _dataset_factory->featurizeInputBatch(samples);
 
@@ -188,6 +217,12 @@ class ModelPipeline {
       vector = _dataset_factory->processOutputVector(vector);
     }
 
+    std::chrono::duration<double> elapsed_time =
+        std::chrono::system_clock::now() - start_time;
+    metrics::client.trackPredictions(
+        /* inference_time_seconds = */ elapsed_time.count(),
+        /* num_inferences = */ outputs.getBatchSize());
+
     return outputs;
   }
 
@@ -196,6 +231,8 @@ class ModelPipeline {
       const InputType& sample,
       std::optional<std::variant<uint32_t, std::string>> target_class =
           std::nullopt) {
+    auto start_time = std::chrono::system_clock::now();
+
     std::optional<uint32_t> target_neuron;
     if (target_class) {
       target_neuron = _dataset_factory->labelToNeuronId(*target_class);
@@ -205,8 +242,15 @@ class ModelPipeline {
         /* input_data= */ {_dataset_factory->featurizeInput(sample)},
         /* explain_prediction_using_highest_activation= */ true,
         /* neuron_to_explain= */ target_neuron);
-    return _dataset_factory->explain(gradients_indices, gradients_ratio,
-                                     sample);
+    auto explanation =
+        _dataset_factory->explain(gradients_indices, gradients_ratio, sample);
+
+    std::chrono::duration<double> elapsed_time =
+        std::chrono::system_clock::now() - start_time;
+    metrics::client.trackExplanation(
+        /* explain_time_seconds = */ elapsed_time.count());
+
+    return explanation;
   }
 
   uint32_t defaultBatchSize() const {

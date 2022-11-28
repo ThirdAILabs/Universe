@@ -60,19 +60,14 @@ PrometheusMetricsClient::PrometheusMetricsClient(
            .Name("thirdai_udt_prediction_duration_seconds")
            .Help(
                "Inference end to end latency. All inferences in a batch will "
-               "have "
-               "latency equal to the call to predict_batch.")
+               "have latency equal to the call to predict_batch.")
            .Register(*_registry)
            .Add(/* labels = */ {},
                 /* buckets = */ fast_running_boundaries_seconds);
   _explanation_histogram =
       &prometheus::BuildHistogram()
            .Name("thirdai_udt_explanation_duration_seconds")
-           .Help(
-               "Explanation end to end latency. All explanations in a "
-               "batch "
-               "will have "
-               "latency equal to the call to explain_batch.")
+           .Help("Explanation end to end latency.")
            .Register(*_registry)
            .Add(/* labels = */ {},
                 /* buckets = */ fast_running_boundaries_seconds);
@@ -96,8 +91,8 @@ PrometheusMetricsClient::PrometheusMetricsClient(
                                /* buckets = */ slow_running_boundaries_seconds);
 }
 
-void PrometheusMetricsClient::track_predictions(double inference_time_seconds,
-                                                uint32_t num_inferences) {
+void PrometheusMetricsClient::trackPredictions(double inference_time_seconds,
+                                               uint32_t num_inferences) {
   if (_registry == nullptr) {
     return;
   }
@@ -106,24 +101,21 @@ void PrometheusMetricsClient::track_predictions(double inference_time_seconds,
   }
 }
 
-void PrometheusMetricsClient::track_explanations(double explain_time_seconds,
-                                                 uint32_t num_explanations) {
+void PrometheusMetricsClient::trackExplanation(double explain_time_seconds) {
   if (_registry == nullptr) {
     return;
   }
-  for (uint32_t i = 0; i < num_explanations; i++) {
-    _explanation_histogram->Observe(explain_time_seconds);
-  }
+  _explanation_histogram->Observe(explain_time_seconds);
 }
 
-void PrometheusMetricsClient::track_training(double training_time_seconds) {
+void PrometheusMetricsClient::trackTraining(double training_time_seconds) {
   if (_registry == nullptr) {
     return;
   }
   _train_histogram->Observe(training_time_seconds);
 }
 
-void PrometheusMetricsClient::track_evaluate(double evaluate_time_seconds) {
+void PrometheusMetricsClient::trackEvaluate(double evaluate_time_seconds) {
   if (_registry == nullptr) {
     return;
   }

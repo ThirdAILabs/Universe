@@ -13,6 +13,10 @@ namespace thirdai::metrics {
 // See https://github.com/prometheus/prometheus/wiki/Default-port-allocations
 const inline uint32_t THIRDAI_DEFAULT_METRICS_PORT = 9929;
 
+/*
+ * We need to use a C++ prometheus client to make sure that a user can't
+ * bypass metrics if we need them for licensing.
+ */
 class PrometheusMetricsClient {
  public:
   static PrometheusMetricsClient startFromEnvVars();
@@ -23,19 +27,15 @@ class PrometheusMetricsClient {
     return PrometheusMetricsClient();
   }
 
-  bool isNoop() {
-    return _exposer == nullptr;
-  }
+  bool isNoop() { return _exposer == nullptr; }
 
-  void track_predictions(double inference_time_seconds,
-                         uint32_t num_inferences);
+  void trackPredictions(double inference_time_seconds, uint32_t num_inferences);
 
-  void track_explanations(double explain_time_seconds,
-                          uint32_t num_explanations);
+  void trackExplanation(double explain_time_seconds);
 
-  void track_training(double training_time_seconds);
+  void trackTraining(double training_time_seconds);
 
-  void track_evaluate(double evaluate_time_seconds);
+  void trackEvaluate(double evaluate_time_seconds);
 
  private:
   PrometheusMetricsClient()
@@ -86,7 +86,9 @@ inline PrometheusMetricsClient client = PrometheusMetricsClient::startNoop();
 inline void createGlobalMetricsClient(
     uint32_t port = THIRDAI_DEFAULT_METRICS_PORT) {
   if (!client.isNoop()) {
-    throw std::runtime_error("Trying to start metrics client when one is already running. You should stop the current client before starting a new one.");
+    throw std::runtime_error(
+        "Trying to start metrics client when one is already running. You "
+        "should stop the current client before starting a new one.");
   }
   client = PrometheusMetricsClient::start(port);
 }

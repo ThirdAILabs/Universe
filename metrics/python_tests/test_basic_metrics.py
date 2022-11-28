@@ -5,7 +5,7 @@ from prometheus_client.parser import text_string_to_metric_families
 # This line uses a hack where we can import functions from different test files
 # as long as this file is run from bin/python-format.sh. To run just this file,
 # run bin/python-test.sh -k "test_basic_metrics"
-from test_udt_simple import make_simple_trained_model
+from test_udt_simple import TEST_FILE, make_simple_trained_model, single_sample
 from thirdai import metrics
 
 THIRDAI_TEST_METRICS_PORT = 20730
@@ -26,16 +26,97 @@ def scrape_metrics(url):
         for name, labels, value, _, _ in family.samples:
             if name not in metrics:
                 metrics[name] = []
-            metrics[name].append((name, labels, value))
+            metrics[name].append((labels, value))
     return metrics
 
 
-def test_train_metrics():
-    make_simple_trained_model()
-
-    for name, data in scrape_metrics(THIRDAI_METRICS_URL).items():
-        print(name, data)
+def get_count(metrics_dict, key):
+    assert len(metrics_dict[key]) == 1
+    return metrics_dict[key][0][1]
 
 
-def test_predict_metrics():
-    pass
+def check_metrics(
+    metrics,
+    train_count,
+    train_duration,
+    eval_count,
+    eval_duration,
+    explain_count,
+    explain_duration,
+    predict_count,
+    predict_duration,
+):
+    assert (
+        get_count(metrics, "thirdai_udt_training_duration_seconds_count") == train_count
+    )
+    assert (
+        get_count(metrics, "thirdai_udt_training_duration_seconds_sum")
+        <= train_duration
+    )
+
+    assert (
+        get_count(metrics, "thirdai_udt_explanation_duration_seconds_count")
+        == explain_count
+    )
+    assert (
+        get_count(metrics, "thirdai_udt_explanation_duration_seconds_sum")
+        <= explain_duration
+    )
+
+    assert (
+        get_count(metrics, "thirdai_udt_evaluation_duration_seconds_count")
+        == eval_count
+    )
+    assert (
+        get_count(metrics, "thirdai_udt_evaluation_duration_seconds_sum")
+        <= eval_duration
+    )
+
+    assert (
+        get_count(metrics, "thirdai_udt_prediction_duration_seconds_count")
+        == predict_count
+    )
+    assert (
+        get_count(metrics, "thirdai_udt_prediction_duration_seconds_sum")
+        <= predict_duration
+    )
+
+
+def test_udt_metrics():
+    import time
+
+    eval_count = 2
+    explain_count = 10
+    predict_count = 20
+
+    train_start = time.time()
+    udt_model = make_simple_trained_model()
+    train_duration = time.time() - train_start
+
+    eval_start = time.time()
+    for _ in range(eval_count):
+        udt_model.evaluate(TEST_FILE)
+    eval_duration = time.time() - eval_start
+
+    explain_start = time.time()
+    for _ in range(explain_count):
+        udt_model.explain(single_sample(), target_class="1")
+    explain_duration = time.time() - explain_start
+
+    predict_start = time.time()
+    for _ in range(predict_count):
+        udt_model.predict(single_sample())
+    predict_duration = time.time() - predict_start
+
+    metrics = scrape_metrics(THIRDAI_METRICS_URL)
+    check_metrics(
+        metrics,
+        train_count=1,
+        train_duration=train_duration,
+        eval_count=eval_count,
+        eval_duration=eval_duration,
+        explain_count=explain_count,
+        explain_duration=explain_duration,
+        predict_count=predict_count,
+        predict_duration=predict_duration,
+    )
