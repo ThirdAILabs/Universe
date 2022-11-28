@@ -260,6 +260,7 @@ set(THIRDAI_SOURCES
     hashtable/src/VectorHashTable.cc
     wrappers/src/LicenseWrapper.cc
     dataset/src/Vocabulary.cc
+    metrics/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
