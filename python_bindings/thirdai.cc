@@ -5,6 +5,7 @@
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/DeploymentPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
+#include <metrics/python_bindings/MetricsPython.h>
 #include <new_dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
@@ -120,6 +121,9 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // TODO(Josh/Nick): Deprecate this call and change NewDataset/new_dataset to
   // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
+
+  // Metrics submodule
+  thirdai::metrics::python::createMetricsSubmodule(m);
 
   // Data Submodule
   auto data_submodule = m.def_submodule("data");

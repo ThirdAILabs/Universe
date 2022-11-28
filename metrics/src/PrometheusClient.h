@@ -4,6 +4,7 @@
 #include <prometheus/exposer.h>
 #include <prometheus/histogram.h>
 #include <prometheus/registry.h>
+#include <stdexcept>
 
 namespace thirdai::metrics {
 
@@ -22,6 +23,10 @@ class PrometheusMetricsClient {
     return PrometheusMetricsClient();
   }
 
+  bool isNoop() {
+    return _exposer == nullptr;
+  }
+
   void track_predictions(double inference_time_seconds,
                          uint32_t num_inferences);
 
@@ -34,11 +39,11 @@ class PrometheusMetricsClient {
 
  private:
   PrometheusMetricsClient()
-    : _registry(nullptr),
-      _prediction_histogram(nullptr),
-      _explanation_histogram(nullptr),
-      _evaluation_histogram(nullptr),
-      _train_histogram(nullptr) {}
+      : _registry(nullptr),
+        _prediction_histogram(nullptr),
+        _explanation_histogram(nullptr),
+        _evaluation_histogram(nullptr),
+        _train_histogram(nullptr) {}
 
   explicit PrometheusMetricsClient(
       std::shared_ptr<prometheus::Exposer> exposer,
@@ -80,7 +85,16 @@ inline PrometheusMetricsClient client = PrometheusMetricsClient::startNoop();
 
 inline void createGlobalMetricsClient(
     uint32_t port = THIRDAI_DEFAULT_METRICS_PORT) {
+  if (!client.isNoop()) {
+    throw std::runtime_error("Trying to start metrics client when one is already running. You should stop the current client before starting a new one.");
+  }
   client = PrometheusMetricsClient::start(port);
+}
+
+inline void stopGlobalMetricsClient() {
+  // This kills the current client because the destructor of the current client
+  // will be called in the move assignment operator
+  client = PrometheusMetricsClient::startNoop();
 }
 
 }  // namespace thirdai::metrics
