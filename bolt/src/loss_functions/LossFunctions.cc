@@ -1,9 +1,9 @@
 #include "LossFunctions.h"
 
 namespace thirdai::bolt {
-inline void LossFunction::lossGradients(BoltVector& output,
-                                        const BoltVector& labels,
-                                        uint32_t batch_size) const {
+
+void LossFunction::lossGradients(BoltVector& output, const BoltVector& labels,
+                                 uint32_t batch_size) const {
   if (output.isDense()) {
     if (labels.isDense()) {
       computeLossGradientsImpl<true, true>(output, labels, batch_size);
@@ -20,9 +20,9 @@ inline void LossFunction::lossGradients(BoltVector& output,
 }
 
 template <bool OUTPUT_DENSE, bool LABEL_DENSE>
-inline void LossFunction::computeLossGradientsImpl(BoltVector& output,
-                                                   const BoltVector& labels,
-                                                   uint32_t batch_size) const {
+void LossFunction::computeLossGradientsImpl(BoltVector& output,
+                                            const BoltVector& labels,
+                                            uint32_t batch_size) const {
   assert(!(OUTPUT_DENSE && output.active_neurons != nullptr));
   assert(!LABEL_DENSE || labels.active_neurons == nullptr);
   if (OUTPUT_DENSE && LABEL_DENSE) {

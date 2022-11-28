@@ -129,21 +129,13 @@ struct DateDataType : DataType {
 
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
 
-static CategoricalDataTypePtr asCategorical(const DataTypePtr& data_type) {
-  return std::dynamic_pointer_cast<CategoricalDataType>(data_type);
-}
+CategoricalDataTypePtr asCategorical(const DataTypePtr& data_type);
 
-static NumericalDataTypePtr asNumerical(const DataTypePtr& data_type) {
-  return std::dynamic_pointer_cast<NumericalDataType>(data_type);
-}
+NumericalDataTypePtr asNumerical(const DataTypePtr& data_type);
 
-static TextDataTypePtr asText(const DataTypePtr& data_type) {
-  return std::dynamic_pointer_cast<TextDataType>(data_type);
-}
+TextDataTypePtr asText(const DataTypePtr& data_type);
 
-static DateDataTypePtr asDate(const DataTypePtr& data_type) {
-  return std::dynamic_pointer_cast<DateDataType>(data_type);
-}
+DateDataTypePtr asDate(const DataTypePtr& data_type);
 
 using ColumnDataTypes = std::map<std::string, DataTypePtr>;
 
@@ -261,8 +253,3 @@ using TemporalRelationships =
     std::map<std::string, std::vector<TemporalConfig>>;
 
 }  // namespace thirdai::automl::data
-
-CEREAL_REGISTER_TYPE(thirdai::automl::data::CategoricalDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::NumericalDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::DateDataType)
-CEREAL_REGISTER_TYPE(thirdai::automl::data::TextDataType)

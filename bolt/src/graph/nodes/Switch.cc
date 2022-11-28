@@ -159,5 +159,3 @@ uint32_t SwitchNode::getActiveLayer(uint32_t vec_index) {
 }
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::SwitchNode)

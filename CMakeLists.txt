@@ -275,6 +275,17 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/ColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
+    auto_ml/src/dataset_factories/SingleBlockDatasetFactory.cc
+    auto_ml/src/dataset_factories/udt/DataTypes.cc
+    auto_ml/src/dataset_factories/udt/FeatureComposer.cc
+    auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
+    auto_ml/src/deployment_config/BlockConfig.cc
+    auto_ml/src/deployment_config/DeploymentConfig.cc
+    auto_ml/src/deployment_config/HyperParameter.cc
+    auto_ml/src/deployment_config/ModelConfig.cc
+    auto_ml/src/deployment_config/NodeConfig.cc
+    auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.cc
+    auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
     utils/Logging.cc)
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
