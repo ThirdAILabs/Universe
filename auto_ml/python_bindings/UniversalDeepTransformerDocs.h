@@ -66,6 +66,8 @@ Args:
         (predict the current value of the target).
     delimiter (str): Optional. Defaults to ','. A single character 
         (length-1 string) that separates the columns of the CSV training / validation dataset.
+    model_config (Optional[str]): This overwrites the autotuned model with a custom model 
+        defined by the given config file.
 
 Examples:
     >>> # Suppose each row of our data has the following columns: "product_id", "timestamp", "ad_spend", "sales_quantity", "sales_performance"
@@ -125,9 +127,9 @@ const char* const UDT_GENERATOR_INIT = R"pbdoc(
 UniversalDeepTransformer (UDT) Constructor. 
 
 Args:
-    target_column_index (int): Index specifying the target queries in the input dataset. 
+    target_column (str): Column name specifying the target queries in the input dataset. 
         Queries in this column are the target that the UDT model learns to predict. 
-    source_column_index (int): Index specifying the source queries in the input dataset. 
+    source_column (str): Column name specifying the source queries in the input dataset. 
         The UDT model uses is trained based on these queries. 
     dataset_size (str): The size of the input dataset. This size factor informs what
         UDT model to create. 
@@ -135,7 +137,7 @@ Args:
         The dataset size can be one of the following:
         - small
         - medium
-        -large
+        - large
 
 Example:
     >>> # Suppose we have an input CSV dataset consisting of grammatically or syntactically
@@ -143,8 +145,8 @@ Example:
     >>> # has a target correct query for each incorrect query. We can initialize a UDT model
     >>> # for query reformulation as follows:
     >>> model = bolt.UniversalDeepTransformer(
-            target_column_index=0, 
-            source_column_index=1,
+            target_column="queries_for_prediction", 
+            source_column="incorrect_queries",
             dataset_size="medium"
         )
 )pbdoc";

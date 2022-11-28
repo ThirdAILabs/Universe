@@ -36,8 +36,10 @@ const std::vector<std::string> INPUT_ROWS = {
     "I need a cab to go to work"};
 
 void writeInputRowsToFile(const std::string& file_name,
+                          const std::string& header,
                           const std::vector<std::string>& input_rows) {
   std::ofstream file(file_name);
+  file << header << std::endl;
 
   for (const auto& input_row : input_rows) {
     file << input_row << std::endl;
@@ -52,8 +54,8 @@ QueryCandidateGeneratorConfig getQueryCandidateGeneratorConfig() {
       /* range= */ 100,
       /* n_grams = */ {3, 4},
       /* reservoir_size = */ std::nullopt,
-      /* source_column_index = */ 0,
-      /* target_column_index = */ 0);
+      /* source_column_name = */ "queries",
+      /* target_column_name = */ "queries");
 }
 
 void assertQueryingWithoutTrainingThrowsException(
@@ -85,7 +87,8 @@ TEST(QueryCandidateGeneratorTest, GeneratorAssignsUniqueLabels) {
   auto query_candidate_generator = QueryCandidateGenerator::make(
       std::make_shared<QueryCandidateGeneratorConfig>(config));
 
-  writeInputRowsToFile(QUERIES_FILE, INPUT_ROWS);
+  writeInputRowsToFile(/* file_name = */ QUERIES_FILE, /* header = */ "queries",
+                       /* input_rows */ INPUT_ROWS);
 
   assertQueryingWithoutTrainingThrowsException(query_candidate_generator);
 
