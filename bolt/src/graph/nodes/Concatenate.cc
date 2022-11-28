@@ -195,7 +195,7 @@ void ConcatenateNode::fillSparseBatchWithConsecutiveIndices(
   }
 }
 
-Node::NodeState ConcatenateNode::getState() const  {
+Node::NodeState ConcatenateNode::getState() const {
   if (!_graph_state && !_compiled && !_batch_processing_state) {
     return NodeState::Constructed;
   }

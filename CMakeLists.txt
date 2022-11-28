@@ -236,7 +236,7 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 endif()
 
 set(THIRDAI_SOURCES
-    bolt/src/graph/Graph.cc 
+    bolt/src/graph/Graph.cc
     bolt/src/graph/DatasetContext.cc
     bolt/src/graph/Node.cc
     bolt/src/graph/nodes/Switch.cc
