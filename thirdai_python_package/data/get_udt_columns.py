@@ -22,18 +22,18 @@ def get_udt_col_types(
     """
     column_types = semantic_type_inference(filename)
 
-    if filename.endswith(".pqt") or filename.endswith(".parquet"):
-        df = pd.read_parquet(filename)
-    else:
-        try:
+    try:
+        if filename.endswith(".pqt") or filename.endswith(".parquet"):
+            df = pd.read_parquet(filename)
+        else:
             df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
-        except:
-            raise ValueError(
-                "UDT currently supports all files that can be read using "
-                "pandas.read_parquet (for .pqt or .parquet files) or "
-                "pandas.read_csv (for all other files). Please convert your files "
-                "to one of the supported formats."
-            )
+    except:
+        raise ValueError(
+            "UDT currently supports all files that can be read using "
+            "pandas.read_parquet (for .pqt or .parquet files) or "
+            "pandas.read_csv (for all other files). Please convert your files "
+            "to one of the supported formats."
+        )
 
     udt_column_types = {}
 
