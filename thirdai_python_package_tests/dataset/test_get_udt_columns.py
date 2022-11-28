@@ -3,6 +3,7 @@ import tempfile
 
 import pandas as pd
 import pytest
+from py_dataset_utils import create_csv_and_pqt_files
 from thirdai.data import _CATEGORICAL_DELIMITERS, get_udt_col_types
 
 pytestmark = [pytest.mark.unit]
@@ -25,22 +26,24 @@ def verify_col_types(col_types, delimiter):
 
 @pytest.mark.parametrize("delimiter", _CATEGORICAL_DELIMITERS)
 def test_get_udt_columns(delimiter):
-    with tempfile.NamedTemporaryFile(mode="w") as tmp:
-        tmp.write(
-            f"""col1,col2,col3,col4,col5,col6
-                lorem,2,3.0,label1{delimiter}label2{delimiter}label3,How vexingly quick daft zebras jump!,2021-02-01
-                ipsum,5,6,label4,"Sphinx of black quartz, judge my vow.",2022-02-01
-                dolor,8,9,label5{delimiter}label6,The quick brown fox jumps over the lazy dog,2023-02-01
-            """
-        )
-        tmp.flush()
+    csv_filename = "data.csv"
+    pqt_filename = "data.pqt"
 
-        udt_types = get_udt_col_types(tmp.name)
-        verify_col_types(udt_types, delimiter)
+    create_csv_and_pqt_files(
+        csv_filename,
+        pqt_filename,
+        f"""col1,col2,col3,col4,col5,col6\n
+            lorem,2,3.0,label1{delimiter}label2{delimiter}label3,How vexingly quick daft zebras jump!,2021-02-01\n
+            ipsum,5,6,label4,"Sphinx of black quartz, judge my vow.",2022-02-01\n
+            dolor,8,9,label5{delimiter}label6,The quick brown fox jumps over the lazy dog,2023-02-01\n
+        """,
+    )
 
-        df = pd.read_csv(tmp.name)
-        df.to_parquet(tmp.name + ".pqt")
-        udt_types_pqt = get_udt_col_types(tmp.name + ".pqt")
-        os.remove(tmp.name + ".pqt")
+    udt_types_csv = get_udt_col_types(csv_filename)
+    verify_col_types(udt_types_csv, delimiter)
 
-        verify_col_types(udt_types_pqt, delimiter)
+    udt_types_pqt = get_udt_col_types(pqt_filename)
+    verify_col_types(udt_types_pqt, delimiter)
+
+    os.remove(csv_filename)
+    os.remove(pqt_filename)
