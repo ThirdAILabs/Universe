@@ -220,6 +220,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
     wrapper = bolt.DistributedTrainingWrapper(
         model=model,
         train_config=train_config,
+        worker_id=0,
     )
     wrapper.set_datasets([train_data], train_labels)
     return wrapper
