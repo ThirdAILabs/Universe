@@ -57,7 +57,7 @@ PrometheusMetricsClient::PrometheusMetricsClient(
       0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1};
   _prediction_histogram =
       &prometheus::BuildHistogram()
-           .Name("thirdai_prediction_duration_seconds")
+           .Name("thirdai_udt_prediction_duration_seconds")
            .Help(
                "Inference end to end latency. All inferences in a batch will "
                "have "
@@ -67,7 +67,7 @@ PrometheusMetricsClient::PrometheusMetricsClient(
                 /* buckets = */ fast_running_boundaries_seconds);
   _explanation_histogram =
       &prometheus::BuildHistogram()
-           .Name("thirdai_explanation_duration_seconds")
+           .Name("thirdai_udt_explanation_duration_seconds")
            .Help(
                "Explanation end to end latency. All explanations in a "
                "batch "
@@ -83,13 +83,13 @@ PrometheusMetricsClient::PrometheusMetricsClient(
       10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000};
   _evaluation_histogram =
       &prometheus::BuildHistogram()
-           .Name("thirdai_evaluation_duration_seconds")
+           .Name("thirdai_udt_evaluation_duration_seconds")
            .Help("Evaluation end to end latency.")
            .Register(*_registry)
            .Add(/* labels = */ {},
                 /* buckets = */ slow_running_boundaries_seconds);
   _train_histogram = &prometheus::BuildHistogram()
-                          .Name("thirdai_explanation_duration_seconds")
+                          .Name("thirdai_udt_training_duration_seconds")
                           .Help("Training end to end latency.")
                           .Register(*_registry)
                           .Add(/* labels = */ {},
@@ -112,7 +112,7 @@ void PrometheusMetricsClient::track_explanations(double explain_time_seconds,
     return;
   }
   for (uint32_t i = 0; i < num_explanations; i++) {
-    _prediction_histogram->Observe(explain_time_seconds);
+    _explanation_histogram->Observe(explain_time_seconds);
   }
 }
 
@@ -127,7 +127,7 @@ void PrometheusMetricsClient::track_evaluate(double evaluate_time_seconds) {
   if (_registry == nullptr) {
     return;
   }
-  _train_histogram->Observe(evaluate_time_seconds);
+  _evaluation_histogram->Observe(evaluate_time_seconds);
 }
 
 }  // namespace thirdai::metrics
