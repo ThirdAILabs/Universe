@@ -9,7 +9,7 @@ from test_udt_simple import TEST_FILE, make_simple_trained_model, single_sample
 from thirdai import metrics
 
 THIRDAI_TEST_METRICS_PORT = 20730
-THIRDAI_METRICS_URL = f"http://localhost:{20730}/metrics"
+THIRDAI_TEST_METRICS_URL = f"http://localhost:{20730}/metrics"
 
 
 @pytest.fixture(autouse=True)
@@ -108,7 +108,7 @@ def test_udt_metrics():
         udt_model.predict(single_sample())
     predict_duration = time.time() - predict_start
 
-    metrics = scrape_metrics(THIRDAI_METRICS_URL)
+    metrics = scrape_metrics(THIRDAI_TEST_METRICS_URL)
     check_metrics(
         metrics,
         train_count=1,
@@ -120,3 +120,16 @@ def test_udt_metrics():
         predict_count=predict_count,
         predict_duration=predict_duration,
     )
+
+
+def test_error_starting_two_metric_clients():
+    with pytest.raises(
+        RuntimeError,
+        match="Trying to start metrics client when one is already running.*",
+    ):
+        metrics.start_metrics()
+
+
+def test_stop_and_start_metrics():
+    metrics.stop_metrics()
+    metrics.start_metrics(THIRDAI_TEST_METRICS_PORT)
