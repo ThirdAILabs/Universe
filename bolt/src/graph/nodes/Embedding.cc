@@ -1,4 +1,5 @@
 #include "Embedding.h"
+#include <cereal/archives/binary.hpp>
 
 namespace thirdai::bolt {
 

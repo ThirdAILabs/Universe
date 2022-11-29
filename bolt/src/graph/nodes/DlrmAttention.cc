@@ -1,4 +1,5 @@
 #include "DlrmAttention.h"
+#include <cereal/archives/binary.hpp>
 
 namespace thirdai::bolt {
 

@@ -1,4 +1,5 @@
 #include "SingleBlockDatasetFactoryConfig.h"
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::automl::deployment {

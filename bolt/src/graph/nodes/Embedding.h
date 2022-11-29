@@ -115,4 +115,3 @@ class EmbeddingNode final : public Node,
 using EmbeddingNodePtr = std::shared_ptr<EmbeddingNode>;
 
 }  // namespace thirdai::bolt
-

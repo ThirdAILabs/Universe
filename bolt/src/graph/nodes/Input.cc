@@ -1,4 +1,6 @@
 #include "Input.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::bolt {
 

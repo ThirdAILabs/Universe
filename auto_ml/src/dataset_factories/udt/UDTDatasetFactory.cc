@@ -1,4 +1,5 @@
 #include "UDTDatasetFactory.h"
+#include <cereal/archives/binary.hpp>
 
 namespace thirdai::automl::data {
 

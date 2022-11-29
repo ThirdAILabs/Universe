@@ -1,4 +1,5 @@
 #include "LayerNorm.h"
+#include <cereal/archives/binary.hpp>
 
 namespace thirdai::bolt {
 

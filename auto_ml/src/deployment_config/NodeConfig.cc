@@ -1,4 +1,5 @@
 #include "NodeConfig.h"
+#include <cereal/archives/portable_binary.hpp>
 
 namespace thirdai::automl::deployment {
 

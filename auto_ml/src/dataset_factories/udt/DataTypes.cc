@@ -1,4 +1,5 @@
 #include "DataTypes.h"
+#include <cereal/archives/binary.hpp>
 
 namespace thirdai::automl::data {
 
