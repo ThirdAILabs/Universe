@@ -7,6 +7,10 @@ import thirdai._thirdai.bolt as bolt
 from .udt_docs import *
 
 
+def create_parquet_loader(path, batch_size):
+    return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
+
+
 def create_s3_loader(path, batch_size):
     parsed_url = urlparse(path, allow_fragments=False)
     bucket = parsed_url.netloc
@@ -55,6 +59,17 @@ def modify_udt_classifier():
         if logging_interval:
             train_config.with_log_loss_frequency(logging_interval)
 
+        # This also handles parquet on s3, so it comes before the general s3
+        # handling and file handling below which assume the target files are
+        # csvs
+        if filename.endswith(".parquet") or filename.endswith(".pqt"):
+            return original_train_with_loader_method(
+                self,
+                create_parquet_loader(filename, batch_size),
+                train_config,
+                max_in_memory_batches,
+            )
+
         if filename.startswith("s3://"):
             return original_train_with_loader_method(
                 self,
@@ -89,6 +104,19 @@ def modify_udt_classifier():
         if use_sparse_inference:
             eval_config.enable_sparse_inference()
 
+        # This also handles parquet on s3, so it comes before the general s3
+        # handling and file handling below which assume the target files are
+        # csvs
+        if filename.endswith(".parquet") or filename.endswith(".pqt"):
+            return original_eval_with_loader_method(
+                self,
+                create_parquet_loader(
+                    filename,
+                    batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
+                ),
+                eval_config=eval_config,
+            )
+
         if filename.startswith("s3://"):
             return original_eval_with_loader_method(
                 self,
@@ -96,7 +124,7 @@ def modify_udt_classifier():
                     filename,
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
                 ),
-                eval_config=bolt.EvalConfig(),
+                eval_config=eval_config,
             )
 
         return original_eval_method(self, filename, eval_config)

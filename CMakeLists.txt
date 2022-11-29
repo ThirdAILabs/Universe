@@ -219,6 +219,7 @@ include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
 
 # Our source directories
+add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
@@ -240,6 +241,7 @@ set(THIRDAI_SOURCES
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc
+    bolt/src/metrics/Metric.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
@@ -286,6 +288,7 @@ pybind11_add_module(
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
+  auto_ml/python_bindings/AutomlPython.cc
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
