@@ -100,7 +100,7 @@ float LayerNormNode::normDerivative(float activation, float mean,
   assert(getState() == NodeState::PreparedForBatchProcessing);
 
   float centered_activation = (activation - mean) * (activation - mean);
-  float std_deviation = sqrt(variance);
+  float std_deviation = std::sqrt(variance);
   auto denominator = (vec_length * vec_length) * std_deviation *
                      (std_deviation + _config->epsilon()) *
                      (std_deviation + _config->epsilon());
