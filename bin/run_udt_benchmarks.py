@@ -13,10 +13,12 @@ def get_udt_configs(universe_dir):
     from the .py file that defines these configs as python classes
     """
     udt_config_file = os.path.join(universe_dir, "benchmarks", "udt_configs.py")
-    udt_config_spec = importlib.util.spec_from_file_location("udt_configs", udt_config_file)
+    udt_config_spec = importlib.util.spec_from_file_location(
+        "udt_configs", udt_config_file
+    )
     udt_config_module = importlib.util.module_from_spec(udt_config_spec)
     udt_config_spec.loader.exec_module(udt_config_module)
-    
+
     clsmembers = inspect.getmembers(udt_config_module, inspect.isclass)
     return udt_config_module.UDTBenchmarkConfig.__subclasses__()
 

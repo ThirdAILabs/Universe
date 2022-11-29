@@ -11,7 +11,9 @@ from utils import log_machine_info, start_mlflow_helper
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark a dataset with UDT")
-    parser.add_argument("--run_name", default="")
+    parser.add_argument(
+        "--run_name", default="", help="The job name to track in mlflow"
+    )
     parser.add_argument(
         "--config_name",
         help="The python class name of the UDT benchmark config",
