@@ -1,9 +1,8 @@
 import numpy as np
-
 from thirdai import bolt
 
 
-class UDTBenchmarkConfig():
+class UDTBenchmarkConfig:
     learning_rate = 0.01
     num_epochs = 5
     target = "label"
@@ -11,7 +10,7 @@ class UDTBenchmarkConfig():
     delimiter = ","
 
 
-class ClincConfig(UDTBenchmarkConfig):
+class ClincUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/udt_datasets/clinc/clinc_train.csv"
     test_file = "/share/data/udt_datasets/clinc/clinc_test.csv"
 
@@ -24,7 +23,7 @@ class ClincConfig(UDTBenchmarkConfig):
     n_target_classes = 151
 
 
-class AmazonPolarityConfig(UDTBenchmarkConfig):
+class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     train_file = (
         "/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv"
     )
@@ -40,7 +39,7 @@ class AmazonPolarityConfig(UDTBenchmarkConfig):
     delimiter = "\t"
 
 
-class CriteoConfig(UDTBenchmarkConfig):
+class CriteoUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/udt_datasets/criteo/train_udt.csv"
     test_file = "/share/data/udt_datasets/criteo/test_udt.csv"
 
@@ -65,4 +64,3 @@ class CriteoConfig(UDTBenchmarkConfig):
 
     # Add label column
     data_types["label"] = bolt.types.categorical()
-
