@@ -3,6 +3,7 @@
 #include <bolt/python_bindings/BoltPython.h>
 #include <bolt/python_bindings/CallbacksPython.h>
 #include <hashing/python_bindings/HashingPython.h>
+#include <auto_ml/python_bindings/AutomlPython.h>
 #include <auto_ml/python_bindings/DeploymentPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/DatasetPython.h>
@@ -134,16 +135,15 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
   thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
   thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
-  thirdai::automl::deployment::python::createUDTFactory(bolt_submodule);
 
+  // Automl in Bolt
+  thirdai::automl::python::defineAutomlInModule(bolt_submodule);
+  thirdai::automl::python::createModelsSubmodule(bolt_submodule);
+  thirdai::automl::python::createUDTTypesSubmodule(bolt_submodule);
+  thirdai::automl::python::createUDTTemporalSubmodule(bolt_submodule);
+
+  // Search Submodule
   thirdai::search::python::createSearchSubmodule(m);
-
-  // Models Submodule
-  auto models_submodule = bolt_submodule.def_submodule("models");
-  thirdai::bolt::python::createModelsSubmodule(bolt_submodule);
-  thirdai::automl::deployment::python::createModelPipeline(models_submodule);
-  thirdai::automl::deployment::python::createUDTClassifierAndGenerator(
-      models_submodule);
 
   // Deployment submodule
   thirdai::automl::deployment::python::createDeploymentSubmodule(m);

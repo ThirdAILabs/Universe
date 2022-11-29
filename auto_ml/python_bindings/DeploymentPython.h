@@ -15,16 +15,7 @@ namespace py = pybind11;
 
 namespace thirdai::automl::deployment::python {
 
-using ModelPipeline = models::ModelPipeline;
-using UniversalDeepTransformer = models::UniversalDeepTransformer;
-
 void createDeploymentSubmodule(py::module_& thirdai_module);
-
-void createUDTFactory(py::module_& bolt_submodule);
-
-void createUDTClassifierAndGenerator(py::module_& models_submodule);
-
-void createModelPipeline(py::module_& models_submodule);
 
 template <typename T>
 void defConstantParameter(py::module_& submodule, bool add_docs);
@@ -34,38 +25,5 @@ void defOptionMappedParameter(py::module_& submodule, bool add_docs);
 
 py::object makeUserSpecifiedParameter(const std::string& name,
                                       const py::object& type);
-
-ModelPipeline createPipeline(const DeploymentConfigPtr& config,
-                             const py::dict& parameters);
-
-ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
-                                            const py::dict& parameters);
-
-py::object evaluateOnDataLoaderWrapper(
-    ModelPipeline& model,
-    const std::shared_ptr<dataset::DataLoader>& data_source,
-    std::optional<bolt::EvalConfig>& eval_config);
-
-template <typename Model>
-py::object evaluateOnFileWrapper(Model& model, const std::string& filename,
-                                 std::optional<bolt::EvalConfig>& eval_config);
-
-template <typename Model, typename InputType>
-py::object predictWrapper(Model& model, const InputType& sample,
-                          bool use_sparse_inference);
-
-py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens,
-                                bool use_sparse_inference);
-
-template <typename Model, typename InputBatchType>
-py::object predictBatchWrapper(Model& model, const InputBatchType& samples,
-                               bool use_sparse_inference);
-
-py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
-
-py::object convertBoltVectorToNumpy(const BoltVector& vector);
-
-py::object convertBoltBatchToNumpy(const BoltBatch& batch);
 
 }  // namespace thirdai::automl::deployment::python
