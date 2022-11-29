@@ -102,9 +102,8 @@ class DistributedTrainingWrapper {
   TrainConfig _train_config;
   MetricAggregator _metric_aggregator;
   // worker_id here refers to id of this particular bolt graph
-  // in distributed context. 
+  // in distributed context.
   uint32_t _worker_id;
-
 };
 
 }  // namespace thirdai::bolt
