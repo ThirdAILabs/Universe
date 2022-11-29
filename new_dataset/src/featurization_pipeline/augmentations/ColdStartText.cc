@@ -87,10 +87,10 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
 
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     std::string weak_text = concatenateStringColumnEntries(
-        columns, row_id, _weak_column_names, ". ");
+        columns, row_id, _weak_column_names, /* delimiter= */ ". ");
 
     std::string strong_text = concatenateStringColumnEntries(
-        columns, row_id, _strong_column_names, " ");
+        columns, row_id, _strong_column_names, /* delimiter= */ " ");
     // Now that we have both the weak and strong text, pass them into the
     // phrase generation pipeline to self-supervised (label, phrase) pairs.
     Phrase strong_phrase = getStrongPhrase(strong_text);

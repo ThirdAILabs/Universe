@@ -70,7 +70,7 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
 
   py::class_<Augmentation, std::shared_ptr<Augmentation>>(  // NOLINT
       augmentations_submodule, "Augmentation")
-      .def(("apply"), &Augmentation::apply);
+      .def("apply", &Augmentation::apply);
 
   py::class_<ColdStartTextAugmentation, Augmentation,
              std::shared_ptr<ColdStartTextAugmentation>>(

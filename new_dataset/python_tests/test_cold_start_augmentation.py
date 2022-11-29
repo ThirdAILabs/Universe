@@ -50,8 +50,8 @@ def create_test_column_map(text_columns, labels):
     the name equal to their key, while the labels become a TokenArrayColumn
     named "labels." Note: text_columns should not contain "labels" as a key.
     Arguments:
-        strong: Dictionary from string name to list of strings for strong text.
-        weak: Dictionary from string name to list of strings for weak text.
+        text_columns: Dictionary from string name to lists of strings.
+        labels: Array-like of integer labels.
     """
     label_list = np.array(labels, dtype=np.uint32).reshape([-1, 1])
     label_column = data.columns.TokenArrayColumn(
@@ -429,13 +429,3 @@ def test_real_input():
     assert 6 <= num_data <= 300
     assert num_valid_data / num_data > 0.95
 
-
-test_duplicated_natural_separators()
-test_long_input()
-test_sample_strong_words()
-test_shuffle_correct()
-test_sample_weak_words()
-test_long_strong_phrase()
-test_multiple_weak_columns()
-test_multiple_strong_columns()
-test_real_input()
