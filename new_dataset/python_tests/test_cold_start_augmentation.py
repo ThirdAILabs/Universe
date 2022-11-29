@@ -428,4 +428,3 @@ def test_real_input():
     # problem as it results in a very big pre-training task (100x larger).
     assert 6 <= num_data <= 300
     assert num_valid_data / num_data > 0.95
-
