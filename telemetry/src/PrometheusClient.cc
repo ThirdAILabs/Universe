@@ -3,7 +3,7 @@
 #include <deps/prometheus-cpp/3rdparty/civetweb/include/CivetServer.h>
 #include <utils/Logging.h>
 
-namespace thirdai::metrics {
+namespace thirdai::telemetry {
 
 PrometheusMetricsClient PrometheusMetricsClient::startFromEnvVars() {
   // TODO(Josh): Add metrics info to public docs
@@ -122,4 +122,4 @@ void PrometheusMetricsClient::trackEvaluate(double evaluate_time_seconds) {
   _evaluation_histogram->Observe(evaluate_time_seconds);
 }
 
-}  // namespace thirdai::metrics
+}  // namespace thirdai::telemetry

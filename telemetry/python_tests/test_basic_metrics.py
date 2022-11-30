@@ -6,7 +6,7 @@ from prometheus_client.parser import text_string_to_metric_families
 # as long as this file is run from bin/python-format.sh. To run just this file,
 # run bin/python-test.sh -k "test_basic_metrics"
 from test_udt_simple import TEST_FILE, make_simple_trained_model, single_sample
-from thirdai import metrics
+from thirdai import telemetry
 
 THIRDAI_TEST_METRICS_PORT = 20730
 THIRDAI_TEST_METRICS_URL = f"http://localhost:{20730}/metrics"
@@ -14,9 +14,9 @@ THIRDAI_TEST_METRICS_URL = f"http://localhost:{20730}/metrics"
 
 @pytest.fixture(autouse=True)
 def with_metrics():
-    metrics.start_metrics(THIRDAI_TEST_METRICS_PORT)
+    telemetry.start(THIRDAI_TEST_METRICS_PORT)
     yield
-    metrics.stop_metrics()
+    telemetry.stop()
 
 
 def scrape_metrics(url):
@@ -127,9 +127,9 @@ def test_error_starting_two_metric_clients():
         RuntimeError,
         match="Trying to start metrics client when one is already running.*",
     ):
-        metrics.start_metrics()
+        telemetry.start()
 
 
 def test_stop_and_start_metrics():
-    metrics.stop_metrics()
-    metrics.start_metrics(THIRDAI_TEST_METRICS_PORT)
+    telemetry.stop()
+    telemetry.start(THIRDAI_TEST_METRICS_PORT)

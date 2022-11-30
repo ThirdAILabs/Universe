@@ -23,7 +23,7 @@ This is the *complete* API documentation for the ``thirdai`` python package.
    thirdaidistributed
    thirdailog
 
-   thirdaimetrics
+   thirdaitelemetry
 
    thirdaideployment
    

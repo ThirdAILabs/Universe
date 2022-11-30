@@ -6,7 +6,7 @@
 #include <prometheus/registry.h>
 #include <stdexcept>
 
-namespace thirdai::metrics {
+namespace thirdai::telemetry {
 
 // I set this up as the actual ThirdAI default port on the wiki, so don't
 // change it unless you update it there too
@@ -99,4 +99,4 @@ inline void stopGlobalMetricsClient() {
   client = PrometheusMetricsClient::startNoop();
 }
 
-}  // namespace thirdai::metrics
+}  // namespace thirdai::telemetry

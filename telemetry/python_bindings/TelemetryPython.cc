@@ -1,0 +1,21 @@
+#include "TelemetryDocs.h"
+#include <pybind11/stl.h>
+#include <telemetry/src/PrometheusClient.h>
+#include <optional>
+#include <string>
+
+namespace thirdai::telemetry::python {
+
+namespace py = pybind11;
+
+void createTelemetrySubmodule(py::module_& thirdai_module) {
+  py::module_ submodule = thirdai_module.def_submodule("telemetry");
+
+  submodule.def("start", &createGlobalMetricsClient,
+                py::arg("port") = THIRDAI_DEFAULT_METRICS_PORT,
+                docs::START_METRICS);
+
+  submodule.def("stop", &stopGlobalMetricsClient, docs::STOP_METRICS);
+}
+
+}  // namespace thirdai::telemetry::python

@@ -11,7 +11,7 @@
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <exceptions/src/Exceptions.h>
-#include <metrics/src/PrometheusClient.h>
+#include <telemetry/src/PrometheusClient.h>
 #include <limits>
 #include <memory>
 #include <string>
@@ -114,7 +114,7 @@ class ModelPipeline {
 
     std::chrono::duration<double> elapsed_time =
         std::chrono::system_clock::now() - start_time;
-    metrics::client.trackTraining(
+    telemetry::client.trackTraining(
         /* training_time_seconds = */ elapsed_time.count());
   }
 
@@ -160,7 +160,7 @@ class ModelPipeline {
 
     std::chrono::duration<double> elapsed_time =
         std::chrono::system_clock::now() - start_time;
-    metrics::client.trackEvaluate(
+    telemetry::client.trackEvaluate(
         /* evaluate_time_seconds = */ elapsed_time.count());
 
     return evaluate_output;
@@ -186,7 +186,7 @@ class ModelPipeline {
 
     std::chrono::duration<double> elapsed_time =
         std::chrono::system_clock::now() - start_time;
-    metrics::client.trackPredictions(
+    telemetry::client.trackPredictions(
         /* inference_time_seconds = */ elapsed_time.count(),
         /* num_inferences = */ 1);
 
@@ -219,7 +219,7 @@ class ModelPipeline {
 
     std::chrono::duration<double> elapsed_time =
         std::chrono::system_clock::now() - start_time;
-    metrics::client.trackPredictions(
+    telemetry::client.trackPredictions(
         /* inference_time_seconds = */ elapsed_time.count(),
         /* num_inferences = */ outputs.getBatchSize());
 
@@ -247,7 +247,7 @@ class ModelPipeline {
 
     std::chrono::duration<double> elapsed_time =
         std::chrono::system_clock::now() - start_time;
-    metrics::client.trackExplanation(
+    telemetry::client.trackExplanation(
         /* explain_time_seconds = */ elapsed_time.count());
 
     return explanation;

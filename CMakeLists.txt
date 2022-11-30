@@ -233,7 +233,7 @@ add_subdirectory(hashtable)
 add_subdirectory(utils)
 add_subdirectory(wrappers)
 add_subdirectory(compression)
-add_subdirectory(metrics)
+add_subdirectory(telemetry)
 
 # Only add the licensing subdirectory if the corresponding flag is set
 if(${LICENSE_BUILD_FLAG_FOUND})
@@ -260,7 +260,7 @@ set(THIRDAI_SOURCES
     hashtable/src/VectorHashTable.cc
     wrappers/src/LicenseWrapper.cc
     dataset/src/Vocabulary.cc
-    metrics/src/PrometheusClient.cc
+    telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
@@ -293,7 +293,7 @@ pybind11_add_module(
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/DeploymentPython.cc
-  metrics/python_bindings/MetricsPython.cc)
+  telemetry/python_bindings/TelemetryPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 

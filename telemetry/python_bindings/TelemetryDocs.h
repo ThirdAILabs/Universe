@@ -1,6 +1,6 @@
 #pragma once
 
-namespace thirdai::metrics::python::docs {
+namespace thirdai::telemetry::python::docs {
 
 const char* const START_METRICS = R"pbdoc(
 Start a Prometheus metrics client on the passed in port. If a port is not 
@@ -15,4 +15,4 @@ is not thread safe with other ThirdAI code, so you should make sure that no
 other code is running when this method is called.
 )pbdoc";
 
-}  // namespace thirdai::metrics::python::docs
+}  // namespace thirdai::telemetry::python::docs

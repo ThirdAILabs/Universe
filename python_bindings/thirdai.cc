@@ -5,10 +5,10 @@
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/DeploymentPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
-#include <metrics/python_bindings/MetricsPython.h>
 #include <new_dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
+#include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
 #include <utils/Version.h>
 
@@ -123,7 +123,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::dataset::python::createDatasetSubmodule(m);
 
   // Metrics submodule
-  thirdai::metrics::python::createMetricsSubmodule(m);
+  thirdai::telemetry::python::createTelemetrySubmodule(m);
 
   // Data Submodule
   auto data_submodule = m.def_submodule("data");
