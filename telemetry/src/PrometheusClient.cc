@@ -84,9 +84,18 @@ PrometheusTelemetryClient::PrometheusTelemetryClient(
   _prediction_histogram =
       &prometheus::BuildHistogram()
            .Name("thirdai_udt_prediction_duration_seconds")
+           .Help("Inference end to end latency.")
+           .Register(*_registry)
+           .Add(/* labels = */ {},
+                /* buckets = */ fast_running_boundaries_seconds);
+  _batch_prediction_histogram =
+      &prometheus::BuildHistogram()
+           .Name("thirdai_udt_batch_prediction_duration_seconds")
            .Help(
-               "Inference end to end latency. All inferences in a batch will "
-               "have latency equal to the call to predict_batch.")
+               "Batch inference end to end latency. All predictions in a batch "
+               "will be added to this histogram independently and are "
+               "considered to have the same end to end latency as the entire "
+               "batch.")
            .Register(*_registry)
            .Add(/* labels = */ {},
                 /* buckets = */ fast_running_boundaries_seconds);
@@ -116,21 +125,30 @@ PrometheusTelemetryClient::PrometheusTelemetryClient(
                           .Add(/* labels = */ {},
                                /* buckets = */ slow_running_boundaries_seconds);
 
-  if (_prediction_histogram == nullptr || _explanation_histogram == nullptr ||
-      _evaluation_histogram == nullptr || _train_histogram == nullptr) {
+  if (_prediction_histogram == nullptr ||
+      _batch_prediction_histogram == nullptr ||
+      _explanation_histogram == nullptr || _evaluation_histogram == nullptr ||
+      _train_histogram == nullptr) {
     throw std::runtime_error(
         "Some of the histograms in the prometheus client were found to be "
         "nullptrs after construction.");
   }
 }
 
-void PrometheusTelemetryClient::trackPredictions(double inference_time_seconds,
-                                                 uint32_t num_inferences) {
+void PrometheusTelemetryClient::trackPrediction(double inference_time_seconds) {
+  if (_registry == nullptr) {
+    return;
+  }
+  _prediction_histogram->Observe(inference_time_seconds);
+}
+
+void PrometheusTelemetryClient::trackBatchPredictions(
+    double inference_time_seconds, uint32_t num_inferences) {
   if (_registry == nullptr) {
     return;
   }
   for (uint32_t i = 0; i < num_inferences; i++) {
-    _prediction_histogram->Observe(inference_time_seconds);
+    _batch_prediction_histogram->Observe(inference_time_seconds);
   }
 }
 

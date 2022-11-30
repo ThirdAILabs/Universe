@@ -42,7 +42,10 @@ class PrometheusTelemetryClient {
 
   bool isNoop() { return _exposer == nullptr; }
 
-  void trackPredictions(double inference_time_seconds, uint32_t num_inferences);
+  void trackPrediction(double inference_time_seconds);
+
+  void trackBatchPredictions(double inference_time_seconds,
+                             uint32_t num_inferences);
 
   void trackExplanation(double explain_time_seconds);
 
@@ -67,22 +70,27 @@ class PrometheusTelemetryClient {
   std::shared_ptr<prometheus::Exposer> _exposer;
   std::shared_ptr<prometheus::Registry> _registry;
 
-  // This will track # inferences, total inference time, and bin counts from
-  // _inference_bins. This is a nonowning raw pointer because it points to a
+  // This will track # inferences, total inference time, and a histogram of
+  // inference time. This is a nonowning raw pointer because it points to a
   // reference owned by _registry (this is safe because the lifetime of
   // _registry is the lifetime of this class, since it is stored as a field.
   prometheus::Histogram* _prediction_histogram;
 
-  // This will track # explanations, total explanation time, and bin counts from
-  // _inference_bins. Same safety argument as for _prediction_histogram.
+  // This histogram is similar to _prediction_histogram, except it is used to
+  // track inferences that were done in a batch. The time that will be used
+  // in the histogram is the end to end latency of the entire batch.
+  prometheus::Histogram* _batch_prediction_histogram;
+
+  // This will track # explanations, total explanation time, and a histogram of
+  // explanation time. Same safety argument as for _prediction_histogram.
   prometheus::Histogram* _explanation_histogram;
 
-  // This will track # explanations, total explanation time, and bin counts from
-  // _inference_bins. Same safety argument as for _prediction_histogram.
+  // This will track # evaluations, total evaluation time, and a histogram of
+  // evaluation time. Same safety argument as for _prediction_histogram.
   prometheus::Histogram* _evaluation_histogram;
 
-  // This will track # train calls, total train time, and bin counts from
-  // _train_bins. Same safety argument as for _prediction_histogram.
+  // This will track # train calls, total train time, and a histogram of
+  // train time. Same safety argument as for _prediction_histogram.
   prometheus::Histogram* _train_histogram;
 };
 

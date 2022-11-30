@@ -186,9 +186,8 @@ class ModelPipeline {
 
     std::chrono::duration<double> elapsed_time =
         std::chrono::system_clock::now() - start_time;
-    telemetry::client.trackPredictions(
-        /* inference_time_seconds = */ elapsed_time.count(),
-        /* num_inferences = */ 1);
+    telemetry::client.trackPrediction(
+        /* inference_time_seconds = */ elapsed_time.count());
 
     return prediction;
   }
@@ -219,7 +218,7 @@ class ModelPipeline {
 
     std::chrono::duration<double> elapsed_time =
         std::chrono::system_clock::now() - start_time;
-    telemetry::client.trackPredictions(
+    telemetry::client.trackBatchPredictions(
         /* inference_time_seconds = */ elapsed_time.count(),
         /* num_inferences = */ outputs.getBatchSize());
 

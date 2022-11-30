@@ -5,7 +5,12 @@ from prometheus_client.parser import text_string_to_metric_families
 # This line uses a hack where we can import functions from different test files
 # as long as this file is run from bin/python-format.sh. To run just this file,
 # run bin/python-test.sh -k "test_basic_metrics"
-from test_udt_simple import TEST_FILE, make_simple_trained_model, single_sample
+from test_udt_simple import (
+    TEST_FILE,
+    batch_sample,
+    make_simple_trained_model,
+    single_sample,
+)
 from thirdai import telemetry
 
 THIRDAI_TEST_METRICS_PORT = 20730
@@ -45,6 +50,8 @@ def check_metrics(
     explain_duration,
     predict_count,
     predict_duration,
+    batch_predict_count,
+    batch_predict_duration,
 ):
     assert (
         get_count(metrics, "thirdai_udt_training_duration_seconds_count") == train_count
@@ -81,6 +88,15 @@ def check_metrics(
         <= predict_duration
     )
 
+    assert (
+        get_count(metrics, "thirdai_udt_batch_prediction_duration_seconds_count")
+        == batch_predict_count
+    )
+    assert (
+        get_count(metrics, "thirdai_udt_batch_prediction_duration_seconds_sum")
+        <= batch_predict_duration
+    )
+
 
 def test_udt_metrics():
     import time
@@ -88,6 +104,7 @@ def test_udt_metrics():
     eval_count = 2
     explain_count = 10
     predict_count = 20
+    batch_predict_count = 15
 
     train_start = time.time()
     udt_model = make_simple_trained_model()
@@ -108,6 +125,12 @@ def test_udt_metrics():
         udt_model.predict(single_sample())
     predict_duration = time.time() - predict_start
 
+    batch_predict_start = time.time()
+    batch_sample_size = len(batch_sample())
+    for _ in range(batch_predict_count):
+        udt_model.predict_batch(batch_sample())
+    batch_predict_duration = time.time() - batch_predict_start
+
     metrics = scrape_metrics(THIRDAI_TEST_METRICS_URL)
     check_metrics(
         metrics,
@@ -119,6 +142,10 @@ def test_udt_metrics():
         explain_duration=explain_duration,
         predict_count=predict_count,
         predict_duration=predict_duration,
+        # We need to multiply by batch_sample_size because we add one entry
+        # to the Prometheus histogram for every item in the batch
+        batch_predict_count=batch_predict_count * batch_sample_size,
+        batch_predict_duration=batch_predict_duration * batch_sample_size,
     )
 
 
