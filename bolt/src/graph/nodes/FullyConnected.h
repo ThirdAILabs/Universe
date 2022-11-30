@@ -23,24 +23,14 @@ class FullyConnectedNode final
   friend class SwitchNode;
 
  private:
-  FullyConnectedNode(uint64_t dim, const std::string& activation)
-      : _layer(nullptr),
-        _config(FullyConnectedLayerConfig(dim, activation)),
-        _predecessor(nullptr) {}
+  FullyConnectedNode(uint64_t dim, const std::string& activation);
 
   FullyConnectedNode(uint64_t dim, float sparsity,
-                     const std::string& activation)
-      : _layer(nullptr),
-        _config(FullyConnectedLayerConfig(dim, sparsity, activation)),
-        _predecessor(nullptr) {}
+                     const std::string& activation);
 
   FullyConnectedNode(uint64_t dim, float sparsity,
                      const std::string& activation,
-                     SamplingConfigPtr sampling_config)
-      : _layer(nullptr),
-        _config(FullyConnectedLayerConfig(dim, sparsity, activation,
-                                          std::move(sampling_config))),
-        _predecessor(nullptr) {}
+                     SamplingConfigPtr sampling_config);
 
  public:
   static std::shared_ptr<FullyConnectedNode> makeDense(
@@ -82,7 +72,6 @@ class FullyConnectedNode final
   float* getWeightGradientsPtr();
 
   float* getBiasGradientsPtr();
-
   void disableSparseParameterUpdates() final;
 
  private:

@@ -42,18 +42,7 @@ class NumericalCategoricalBlockConfig final : public BlockConfig {
 
   dataset::BlockPtr getBlock(
       uint32_t column,
-      const UserInputMap& user_specified_parameters) const final {
-    uint32_t n_classes = _n_classes->resolve(user_specified_parameters);
-    std::string delimiter = _delimiter->resolve(user_specified_parameters);
-    if (delimiter.size() != 1) {
-      throw std::invalid_argument(
-          "Expected delimiter to be a single character but recieved: '" +
-          delimiter + "'.");
-    }
-
-    return dataset::NumericalCategoricalBlock::make(column, n_classes,
-                                                    delimiter.at(0));
-  }
+      const UserInputMap& user_specified_parameters) const final;
 
  private:
   HyperParameterPtr<uint32_t> _n_classes;
@@ -76,11 +65,7 @@ class DenseArrayBlockConfig final : public BlockConfig {
 
   dataset::BlockPtr getBlock(
       uint32_t column,
-      const UserInputMap& user_specified_parameters) const final {
-    uint32_t dim = _dim->resolve(user_specified_parameters);
-
-    return dataset::DenseArrayBlock::make(column, dim);
-  }
+      const UserInputMap& user_specified_parameters) const final;
 
  private:
   HyperParameterPtr<uint32_t> _dim;
@@ -107,14 +92,7 @@ class TextBlockConfig final : public BlockConfig {
 
   dataset::BlockPtr getBlock(
       uint32_t column,
-      const UserInputMap& user_specified_parameters) const final {
-    uint32_t range = _range->resolve(user_specified_parameters);
-
-    if (_use_pairgrams) {
-      return dataset::PairGramTextBlock::make(column, range);
-    }
-    return dataset::UniGramTextBlock::make(column, range);
-  }
+      const UserInputMap& user_specified_parameters) const final;
 
  private:
   bool _use_pairgrams;
@@ -131,8 +109,3 @@ class TextBlockConfig final : public BlockConfig {
 };
 
 }  // namespace thirdai::automl::deployment
-
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment::NumericalCategoricalBlockConfig)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::DenseArrayBlockConfig)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::TextBlockConfig)

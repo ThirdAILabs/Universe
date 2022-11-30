@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 
 namespace thirdai::bolt {
@@ -36,6 +37,26 @@ FullyConnectedNode::makeExplicitSamplingConfig(uint32_t dim, float sparsity,
       num_tables, hashes_per_table, reservoir_size);
   return make(dim, sparsity, activation, sampling_config);
 }
+
+FullyConnectedNode::FullyConnectedNode(uint64_t dim,
+                                       const std::string& activation)
+    : _layer(nullptr),
+      _config(FullyConnectedLayerConfig(dim, activation)),
+      _predecessor(nullptr) {}
+
+FullyConnectedNode::FullyConnectedNode(uint64_t dim, float sparsity,
+                                       const std::string& activation)
+    : _layer(nullptr),
+      _config(FullyConnectedLayerConfig(dim, sparsity, activation)),
+      _predecessor(nullptr) {}
+
+FullyConnectedNode::FullyConnectedNode(uint64_t dim, float sparsity,
+                                       const std::string& activation,
+                                       SamplingConfigPtr sampling_config)
+    : _layer(nullptr),
+      _config(FullyConnectedLayerConfig(dim, sparsity, activation,
+                                        std::move(sampling_config))),
+      _predecessor(nullptr) {}
 
 std::shared_ptr<FullyConnectedNode> FullyConnectedNode::addPredecessor(
     NodePtr node) {
@@ -132,7 +153,8 @@ std::shared_ptr<FullyConnectedNode> FullyConnectedNode::setSparsity(
     float sparsity) {
   if (getState() != NodeState::Compiled) {
     throw exceptions::NodeStateMachineError(
-        "FullyConnectedNode must be in a compiled state to call setSparsity");
+        "FullyConnectedNode must be in a compiled state to call "
+        "setSparsity");
   }
   _layer->setSparsity(sparsity);
   return shared_from_this();
@@ -218,9 +240,9 @@ void FullyConnectedNode::forwardImpl(uint32_t vec_index,
 }
 
 void FullyConnectedNode::backpropagateImpl(uint32_t vec_index) {
-  // We are checking whether predecessor has gradients or not rather than its
-  // an input ot not because,this way will be helpful to calculate gradients
-  // for input in getInputGradientsSingle.
+  // We are checking whether predecessor has gradients or not rather than
+  // its an input ot not because,this way will be helpful to calculate
+  // gradients for input in getInputGradientsSingle.
   if (!_predecessor->getOutputVector(vec_index).gradients) {
     _layer->backpropagateInputLayer(_predecessor->getOutputVector(vec_index),
                                     this->getOutputVectorImpl(vec_index));

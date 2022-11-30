@@ -75,9 +75,22 @@ class SaveContext {
   const std::string& prefix() const { return _prefix; }
   uint32_t frequency() const { return _frequency; }
 
+  // SaveContext is declared an optional in TrainConfig
+  // and it appears that friend class for an optional
+  // cannot access a private constructor. Hence making
+  // this constructor here public.
+  // constructor for cereal
+  SaveContext(){};
+
  private:
   std::string _prefix;
   uint32_t _frequency;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_prefix, _frequency);
+  }
 };
 
 class ValidationContext {

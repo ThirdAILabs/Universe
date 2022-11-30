@@ -219,6 +219,7 @@ include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
 
 # Our source directories
+add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
@@ -240,6 +241,17 @@ set(THIRDAI_SOURCES
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc
+    bolt/src/graph/DatasetContext.cc
+    bolt/src/graph/Node.cc
+    bolt/src/graph/nodes/Switch.cc
+    bolt/src/graph/nodes/Concatenate.cc
+    bolt/src/graph/nodes/DlrmAttention.cc
+    bolt/src/graph/nodes/DotProduct.cc
+    bolt/src/graph/nodes/Embedding.cc
+    bolt/src/graph/nodes/FullyConnected.cc
+    bolt/src/graph/nodes/LayerNorm.cc
+    bolt/src/graph/nodes/Input.cc
+    bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc
@@ -269,6 +281,17 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
+    auto_ml/src/dataset_factories/SingleBlockDatasetFactory.cc
+    auto_ml/src/dataset_factories/udt/DataTypes.cc
+    auto_ml/src/dataset_factories/udt/FeatureComposer.cc
+    auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
+    auto_ml/src/deployment_config/BlockConfig.cc
+    auto_ml/src/deployment_config/DeploymentConfig.cc
+    auto_ml/src/deployment_config/HyperParameter.cc
+    auto_ml/src/deployment_config/ModelConfig.cc
+    auto_ml/src/deployment_config/NodeConfig.cc
+    auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.cc
+    auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
     utils/Logging.cc)
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
@@ -296,6 +319,7 @@ pybind11_add_module(
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
+  auto_ml/python_bindings/AutomlPython.cc
   auto_ml/python_bindings/DeploymentPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)

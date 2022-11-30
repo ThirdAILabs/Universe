@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -24,15 +23,7 @@ class UDTDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
         _contextual_columns(std::move(contextual_columns)) {}
 
   data::DatasetLoaderFactoryPtr createDatasetState(
-      const UserInputMap& user_specified_parameters) const final {
-    auto config = _config->resolve(user_specified_parameters);
-    auto parallel = _force_parallel->resolve(user_specified_parameters);
-    auto text_pairgram_word_limit =
-        _text_pairgram_word_limit->resolve(user_specified_parameters);
-
-    return data::UDTDatasetFactory::make(config, parallel,
-                                         text_pairgram_word_limit);
-  }
+      const UserInputMap& user_specified_parameters) const final;
 
  private:
   HyperParameterPtr<data::UDTConfigPtr> _config;
@@ -52,5 +43,3 @@ class UDTDatasetFactoryConfig final : public DatasetLoaderFactoryConfig {
 };
 
 }  // namespace thirdai::automl::deployment
-
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UDTDatasetFactoryConfig)

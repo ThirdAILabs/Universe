@@ -10,27 +10,7 @@
 
 namespace thirdai::bolt {
 
-struct SequentialLayerConfig {
-  virtual uint64_t getDim() const = 0;
-
-  virtual float getSparsity() const = 0;
-
-  virtual ActivationFunction getActFunc() const = 0;
-
-  static void checkSparsity(float sparsity);
-
-  virtual ~SequentialLayerConfig() = default;
-
- private:
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive);
-};
-
-using SequentialConfigList =
-    std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>;
-
-class FullyConnectedLayerConfig final : public SequentialLayerConfig {
+class FullyConnectedLayerConfig {
  private:
   uint64_t _dim;
   float _sparsity;
@@ -52,27 +32,13 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
 
   FullyConnectedLayerConfig(uint64_t dim, float sparsity,
                             const std::string& activation,
-                            SamplingConfigPtr sampling_config)
-      : _dim(dim),
-        _sparsity(sparsity),
-        _activation_fn(getActivationFunction(activation)),
-        _sampling_config(std::move(sampling_config)) {
-    if (_sparsity <= 0.0 || _sparsity > 1.0) {
-      throw std::invalid_argument(
-          "Layer sparsity must be in the range (0.0, 1.0].");
-    }
+                            SamplingConfigPtr sampling_config);
 
-    if (_sparsity < 1.0 && !_sampling_config) {
-      throw std::invalid_argument(
-          "SamplingConfig cannot be provided as null if sparsity < 1.0.");
-    }
-  }
+  uint64_t getDim() const { return _dim; }
 
-  uint64_t getDim() const final { return _dim; }
+  float getSparsity() const { return _sparsity; }
 
-  float getSparsity() const final { return _sparsity; }
-
-  ActivationFunction getActFunc() const final { return _activation_fn; }
+  ActivationFunction getActFunc() const { return _activation_fn; }
 
   const SamplingConfigPtr& getSamplingConfig() const {
     return _sampling_config;
@@ -86,7 +52,7 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   void serialize(Archive& archive);
 };
 
-struct ConvLayerConfig final : public SequentialLayerConfig {
+struct ConvLayerConfig {
   uint64_t num_filters;
   float sparsity;
   ActivationFunction act_func;
@@ -97,44 +63,18 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
   ConvLayerConfig(uint64_t _num_filters, float _sparsity,
                   ActivationFunction _act_func, SamplingConfigPtr _config,
                   std::pair<uint32_t, uint32_t> _kernel_size,
-                  uint32_t _num_patches)
-      : num_filters(_num_filters),
-        sparsity(_sparsity),
-        act_func(_act_func),
-        sampling_config(std::move(_config)),
-        kernel_size(std::move(_kernel_size)),
-        num_patches(_num_patches) {
-    checkSparsity(sparsity);
-  }
+                  uint32_t _num_patches);
 
   ConvLayerConfig(uint64_t _num_filters, float _sparsity,
                   ActivationFunction _act_func,
                   std::pair<uint32_t, uint32_t> _kernel_size,
-                  uint32_t _num_patches)
-      : num_filters(_num_filters),
-        sparsity(_sparsity),
-        act_func(_act_func),
-        kernel_size(std::move(_kernel_size)),
-        num_patches(_num_patches) {
-    checkSparsity(sparsity);
-    if (sparsity < 1.0) {
-      uint32_t rp = (static_cast<uint32_t>(log2(num_filters)) / 3) * 3;
-      uint32_t k = rp / 3;
-      uint32_t rs = (num_filters * 4) / (1 << rp);
-      uint32_t l = sparsity < 0.1 ? 256 : 64;
-      sampling_config = std::make_unique<DWTASamplingConfig>(
-          /*num_tables= */ l,
-          /* hashes_per_table= */ k, rs);
-    } else {
-      sampling_config = nullptr;
-    }
-  }
+                  uint32_t _num_patches);
 
-  uint64_t getDim() const final { return num_filters * num_patches; }
+  uint64_t getDim() const { return num_filters * num_patches; }
 
-  float getSparsity() const final { return sparsity; }
+  float getSparsity() const { return sparsity; }
 
-  ActivationFunction getActFunc() const final { return act_func; }
+  ActivationFunction getActFunc() const { return act_func; }
 };
 
 enum class EmbeddingReductionType {
@@ -151,19 +91,7 @@ class EmbeddingLayerConfig {
   EmbeddingLayerConfig(
       uint32_t num_embedding_lookups, uint32_t lookup_size,
       uint32_t log_embedding_block_size, const std::string& reduction,
-      std::optional<uint32_t> num_tokens_per_input = std::nullopt)
-      : _num_embedding_lookups(num_embedding_lookups),
-        _lookup_size(lookup_size),
-        _log_embedding_block_size(log_embedding_block_size),
-        _reduction(getReductionType(reduction)),
-        _num_tokens_per_input(num_tokens_per_input) {
-    if (_reduction == EmbeddingReductionType::CONCATENATION &&
-        !_num_tokens_per_input) {
-      throw std::invalid_argument(
-          "Cannot construct embedding layer with concatenation reduction "
-          "without specifying num_tokens_per_input.");
-    }
-  }
+      std::optional<uint32_t> num_tokens_per_input = std::nullopt);
 
   uint32_t numEmbeddingLookups() const { return _num_embedding_lookups; }
 
