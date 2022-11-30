@@ -12,6 +12,8 @@ class LicenseWrapper {
 
   static void activate(const std::string& api_key);
 
+  static void deactivate();
+
  private:
   // This is nullopt unless the user sets a path, in which case it will be the
   // path the user sets.

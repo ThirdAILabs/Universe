@@ -1,14 +1,16 @@
 
 #include "LicenseWrapper.h"
+#include <optional>
 #if THIRDAI_CHECK_LICENSE
 #include <licensing/src/CheckLicense.h>
 #endif
 
 namespace thirdai::licensing {
 
-// Initialize this here to prevent linker errors, see
+// Initialize these here to prevent linker errors, see
 // https://stackoverflow.com/questions/185844/how-to-initialize-private-static-members-in-c
 std::optional<std::string> LicenseWrapper::_license_path = {};
+std::optional<std::string> LicenseWrapper::_api_key = {};
 
 void LicenseWrapper::checkLicenseWrapper() {
 #if THIRDAI_CHECK_LICENSE
@@ -25,5 +27,7 @@ void LicenseWrapper::activate(const std::string& api_key) {
 void LicenseWrapper::setLicensePath(const std::string& license_path) {
   _license_path = license_path;
 }
+
+void LicenseWrapper::deactivate() { _license_path = std::nullopt; }
 
 }  // namespace thirdai::licensing

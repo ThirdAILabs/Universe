@@ -107,11 +107,18 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   m.def("set_thirdai_license_path",
         &thirdai::licensing::LicenseWrapper::setLicensePath,
         py::arg("license_path"),
-        "Set a license filepath for any future calls to the thirdai library.");
+        "Set a license filepath for any future calls to ThirdAI functions. "
+        "License file verification will be treated as a fallback if activate "
+        "has not been called.");
 
-  m.def("activate", &thirdai::licensing::LicenseWrapper::setLicensePath,
-        py::arg("license_path"),
-        "Set a license filepath for any future calls to the thirdai library.");
+  m.def("activate", &thirdai::licensing::LicenseWrapper::activate,
+        py::arg("api_key"),
+        "Set a ThirdAI API access key to authenticate future calls to ThirdAI "
+        "functions.");
+
+  m.def("deactivate", &thirdai::licensing::LicenseWrapper::deactivate,
+        "Remove the currently stored ThirdAI access key. Future calls to "
+        "ThirdAI functions may fail.");
 #endif
 
   m.attr("__version__") = thirdai::version();
