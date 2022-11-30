@@ -103,7 +103,7 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
     }
     for (const auto& phrase : phrases) {
       // Add (label, phrase) to the output data.
-      std::string output_text = "";
+      std::string output_text;
       for (const auto& word : phrase) {
         output_text.append(word);
         output_text.append(" ");
@@ -167,7 +167,7 @@ ColdStartTextAugmentation::Phrase ColdStartTextAugmentation::getStrongPhrase(
   stripWhitespace(s);
   Phrase strong_phrase = splitByWhitespace(s);
   if (_strong_max_len) {
-    if (strong_phrase.empty() > _strong_max_len.value()) {
+    if (strong_phrase.size() > _strong_max_len.value()) {
       strong_phrase.resize(_strong_max_len.value());
     }
   }
@@ -211,7 +211,9 @@ ColdStartTextAugmentation::getWeakPhrases(std::string& s) {
     if (phrase_end != s.end()) {
       ++phrase_end;  // Necessary to not re-find the same punctuation again.
     }
-    if (natural_phrase_text.empty()) continue;
+    if (natural_phrase_text.empty()) {
+      continue;
+    }
     // Next, iterate through all words in the phrase.
     std::string word;
     std::istringstream phrase_stream(natural_phrase_text);
@@ -249,7 +251,7 @@ ColdStartTextAugmentation::getWeakPhrases(std::string& s) {
   if (!current_natural_phrase.empty()) {
     phrases.push_back(current_natural_phrase);
   }
-  if (!current_chunk_phrase.size()) {
+  if (!current_chunk_phrase.empty()) {
     phrases.push_back(current_chunk_phrase);
   }
   if (_weak_sample_num_words) {
