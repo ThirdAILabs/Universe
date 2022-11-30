@@ -101,3 +101,5 @@ template void Input::serialize<cereal::PortableBinaryOutputArchive>(
     cereal::PortableBinaryOutputArchive&);
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::Input)
