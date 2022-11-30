@@ -1,5 +1,6 @@
 #include "Input.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::bolt {
@@ -82,5 +83,20 @@ void Input::checkDimForInput(const BoltVector& vec) const {
     }
   }
 }
+
+template <class Archive>
+void Input::serialize(Archive& archive) {
+  archive(cereal::base_class<Node>(this), _compiled, _expected_input_dim);
+}
+
+template void Input::serialize<cereal::BinaryInputArchive>(
+    cereal::BinaryInputArchive&);
+template void Input::serialize<cereal::BinaryOutputArchive>(
+    cereal::BinaryOutputArchive&);
+
+template void Input::serialize<cereal::PortableBinaryInputArchive>(
+    cereal::PortableBinaryInputArchive&);
+template void Input::serialize<cereal::PortableBinaryOutputArchive>(
+    cereal::PortableBinaryOutputArchive&);
 
 }  // namespace thirdai::bolt

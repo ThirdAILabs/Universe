@@ -105,9 +105,7 @@ class Input final : public Node {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<Node>(this), _compiled, _expected_input_dim);
-  }
+  void serialize(Archive& archive);
 
   bool _compiled;
   BoltBatch* _input_batch;
