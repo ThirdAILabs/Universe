@@ -17,9 +17,15 @@ THIRDAI_TEST_METRICS_PORT = 20730
 THIRDAI_TEST_METRICS_URL = f"http://localhost:{20730}/metrics"
 
 
+# autouse=True means that every test in this file will require this fixture
+# and start and stop metrics, ensuring that the test can check metrics
+# independent of other tests.
 @pytest.fixture(autouse=True)
 def with_metrics():
     telemetry.start(THIRDAI_TEST_METRICS_PORT)
+    # Yielding here means that telemetry.stop() will get called after the
+    # test finishes, see
+    # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
     yield
     telemetry.stop()
 
