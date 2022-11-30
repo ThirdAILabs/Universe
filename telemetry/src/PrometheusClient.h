@@ -8,23 +8,36 @@
 
 namespace thirdai::telemetry {
 
+// Forward declare PrometheusTelemetryClient so we can define the global methods
+// that use it at the top of the file (better organization that way)
+class PrometheusTelemetryClient;
+
 // I set this up as the actual ThirdAI default port on the wiki, so don't
 // change it unless you update it there too
 // See https://github.com/prometheus/prometheus/wiki/Default-port-allocations
-const inline uint32_t THIRDAI_DEFAULT_METRICS_PORT = 9929;
+const inline uint32_t THIRDAI_DEFAULT_TELEMETRY_PORT = 9929;
+
+// Global PrometheusTelemetryClient that should be used by all C++ code that
+// wants to track telemetry.
+extern PrometheusTelemetryClient client;
+
+void createGlobalTelemetryClient(
+    uint32_t port = THIRDAI_DEFAULT_TELEMETRY_PORT);
+
+void stopGlobalTelemetryClient();
 
 /*
  * We need to use a C++ prometheus client to make sure that a user can't
- * bypass metrics if we need them for licensing.
+ * bypass telemetry if we need them for licensing.
  */
-class PrometheusMetricsClient {
+class PrometheusTelemetryClient {
  public:
-  static PrometheusMetricsClient startFromEnvVars();
+  static PrometheusTelemetryClient startFromEnvVars();
 
-  static PrometheusMetricsClient start(uint32_t port);
+  static PrometheusTelemetryClient start(uint32_t port);
 
-  static PrometheusMetricsClient startNoop() {
-    return PrometheusMetricsClient();
+  static PrometheusTelemetryClient startNoop() {
+    return PrometheusTelemetryClient();
   }
 
   bool isNoop() { return _exposer == nullptr; }
@@ -38,14 +51,14 @@ class PrometheusMetricsClient {
   void trackEvaluate(double evaluate_time_seconds);
 
  private:
-  PrometheusMetricsClient()
+  PrometheusTelemetryClient()
       : _registry(nullptr),
         _prediction_histogram(nullptr),
         _explanation_histogram(nullptr),
         _evaluation_histogram(nullptr),
         _train_histogram(nullptr) {}
 
-  explicit PrometheusMetricsClient(
+  explicit PrometheusTelemetryClient(
       std::shared_ptr<prometheus::Exposer> exposer,
       std::shared_ptr<prometheus::Registry> registry);
 
@@ -72,31 +85,5 @@ class PrometheusMetricsClient {
   // _train_bins. Same safety argument as for _prediction_histogram.
   prometheus::Histogram* _train_histogram;
 };
-
-// If we want to start the metrics server automatically from environment vars
-// in the future, we can uncomment this line of code. We can also then delete
-// the move and copy operators and constructors in BoltMetricsServer to make
-// sure the metrics object cannot be changed. For now, we will start metrics
-// manually.
-// inline BoltMetricsServer client =
-// BoltMetricsServer::startMetricsFromEnvVars();
-
-inline PrometheusMetricsClient client = PrometheusMetricsClient::startNoop();
-
-inline void createGlobalMetricsClient(
-    uint32_t port = THIRDAI_DEFAULT_METRICS_PORT) {
-  if (!client.isNoop()) {
-    throw std::runtime_error(
-        "Trying to start metrics client when one is already running. You "
-        "should stop the current client before starting a new one.");
-  }
-  client = PrometheusMetricsClient::start(port);
-}
-
-inline void stopGlobalMetricsClient() {
-  // This kills the current client because the destructor of the current client
-  // will be called in the move assignment operator
-  client = PrometheusMetricsClient::startNoop();
-}
 
 }  // namespace thirdai::telemetry

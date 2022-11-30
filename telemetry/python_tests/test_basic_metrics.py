@@ -125,7 +125,7 @@ def test_udt_metrics():
 def test_error_starting_two_metric_clients():
     with pytest.raises(
         RuntimeError,
-        match="Trying to start metrics client when one is already running.*",
+        match="Trying to start telemetry client when one is already running.*",
     ):
         telemetry.start()
 
