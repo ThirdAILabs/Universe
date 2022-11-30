@@ -556,8 +556,8 @@ That's all for now, folks! More docs coming soon :)
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,
                                          "DistributedTrainingWrapper")
-      .def(py::init<BoltGraphPtr, TrainConfig>(), py::arg("model"),
-           py::arg("train_config"))
+      .def(py::init<BoltGraphPtr, TrainConfig, uint32_t>(), py::arg("model"),
+           py::arg("train_config"), py::arg("worker_id"))
       .def("compute_and_store_batch_gradients",
            &DistributedTrainingWrapper::computeAndStoreBatchGradients,
            py::arg("batch_idx"),

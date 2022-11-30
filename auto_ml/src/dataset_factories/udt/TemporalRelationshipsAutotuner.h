@@ -11,7 +11,7 @@
 #include <optional>
 #include <string>
 
-namespace thirdai::automl::deployment {
+namespace thirdai::automl::data {
 
 class TemporalRelationshipsAutotuner {
  public:
@@ -38,7 +38,8 @@ class TemporalRelationshipsAutotuner {
     for (const auto& [key, tracked_items] : provided_relationships) {
       for (const auto& tracked_item : tracked_items) {
         if (std::holds_alternative<std::string>(tracked_item)) {
-          auto tracked_col_name = std::get<std::string>(tracked_item);
+          const std::string& tracked_col_name =
+              std::get<std::string>(tracked_item);
 
           if (!data_types.count(tracked_col_name)) {
             throw std::invalid_argument("The tracked column '" +
@@ -94,4 +95,4 @@ class TemporalRelationshipsAutotuner {
   }
 };
 
-}  // namespace thirdai::automl::deployment
+}  // namespace thirdai::automl::data

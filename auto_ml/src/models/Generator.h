@@ -8,8 +8,8 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/MinHash.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/ColumnNumberMap.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
+#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
@@ -31,11 +31,11 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::bolt {
+namespace thirdai::automl::models {
 
-using thirdai::automl::deployment::ColumnNumberMap;
-using thirdai::automl::deployment::ColumnNumberMapPtr;
-using thirdai::search::Flash;
+using data::ColumnNumberMap;
+using data::ColumnNumberMapPtr;
+using search::Flash;
 
 class QueryCandidateGeneratorConfig {
   static inline const uint32_t DEFAULT_BATCH_SIZE = 1000;
@@ -568,4 +568,4 @@ class QueryCandidateGenerator {
 
 using QueryCandidateGeneratorPtr = std::shared_ptr<QueryCandidateGenerator>;
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::automl::models

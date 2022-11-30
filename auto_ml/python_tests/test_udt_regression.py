@@ -34,8 +34,7 @@ def train_udt_regression(download_brazilian_houses_dataset):
         options={"embedding_dimension": "100"},
     )
 
-    train_config = bolt.TrainConfig(epochs=20, learning_rate=0.01)
-    model.train(train_filename, train_config)
+    model.train(train_filename, epochs=20, learning_rate=0.01)
 
     return model
 
@@ -70,8 +69,7 @@ def test_udt_regression_save_load(
     acc = _compute_regression_evaluate_accuracy(model, test_filename, inference_samples)
     assert acc <= MAE_THRESHOLD
 
-    train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001)
-    loaded_model.train(train_filename, train_config)
+    loaded_model.train(train_filename, epochs=1, learning_rate=0.001)
 
     acc = _compute_regression_evaluate_accuracy(
         loaded_model, test_filename, inference_samples
