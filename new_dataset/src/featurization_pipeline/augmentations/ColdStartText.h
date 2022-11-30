@@ -76,7 +76,7 @@ class ColdStartTextAugmentation final : public Augmentation {
          we do not suggest values larger than 10 due to large output size.
      strong_max_len: If provided, then the concatenated strong phrase is
          cut off after the specified number of words.
-     strong_sample_num_words: If provided, then the strong phrase (after 
+     strong_sample_num_words: If provided, then the strong phrase (after
          restricting to length strong_max_len) is independently sub-sampled to
          the specified number of words before being concatenated with each
          phrase (if possible - short phrases may not contain enough words). For

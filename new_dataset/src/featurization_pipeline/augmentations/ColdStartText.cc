@@ -297,7 +297,8 @@ ColdStartTextAugmentation::sampleFromPhrases(
 
 std::string ColdStartTextAugmentation::concatenateStringColumnEntries(
     const ColumnMap& columns, uint64_t row_num,
-    const std::vector<std::string>& column_names, const std::string& delimiter) {
+    const std::vector<std::string>& column_names,
+    const std::string& delimiter) {
   std::string output_text;
   for (const auto& column_name : column_names) {
     auto column = columns.getStringColumn(column_name);
