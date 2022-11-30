@@ -231,6 +231,7 @@ add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
 add_subdirectory(compression)
+add_subdirectory(utils)
 
 # Only add the licensing subdirectory if the corresponding flag is set
 if(${LICENSE_BUILD_FLAG_FOUND})
