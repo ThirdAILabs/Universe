@@ -57,6 +57,11 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
+
+  # For now only build the requests library if it is a release build
+  # set(CPR_USE_SYSTEM_CURL ON)
+  add_subdirectory(deps/cpr EXCLUDE_FROM_ALL)
+  include_directories(deps/cpr/include)
 endif()
 
 if(MSVC)
@@ -260,14 +265,15 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/ColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    utils/Logging.cc)
+    utils/Logging.cc
+    licensing/src/keygen/KeygenCommunication.cc)
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp cpr::cpr)
 endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
