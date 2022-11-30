@@ -37,6 +37,4 @@ namespace thirdai::bolt::python {
 
 void createBoltSubmodule(py::module_& bolt_submodule);
 
-void createModelsSubmodule(py::module_& bolt_submodule);
-
 }  // namespace thirdai::bolt::python

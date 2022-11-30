@@ -57,6 +57,7 @@ class Worker:
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
             train_config=train_config,
+            worker_id=id,
         )
         end = time()
 

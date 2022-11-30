@@ -1,8 +1,8 @@
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
+#include <auto_ml/src/models/Generator.h>
 #include <exceptions/src/Exceptions.h>
-#include <search/src/Generator.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
@@ -10,10 +10,10 @@
 #include <memory>
 #include <vector>
 
-using thirdai::bolt::QueryCandidateGenerator;
-using thirdai::bolt::QueryCandidateGeneratorConfig;
+namespace thirdai::automl::tests {
 
-namespace thirdai::tests {
+using models::QueryCandidateGenerator;
+using models::QueryCandidateGeneratorConfig;
 
 const uint32_t HASHES_PER_TABLE = 3;
 const uint32_t NUM_TABLES = 32;
@@ -101,4 +101,4 @@ TEST(QueryCandidateGeneratorTest, GeneratorAssignsUniqueLabels) {
   EXPECT_EQ(std::remove(QUERIES_FILE), 0);
 }
 
-}  // namespace thirdai::tests
+}  // namespace thirdai::automl::tests
