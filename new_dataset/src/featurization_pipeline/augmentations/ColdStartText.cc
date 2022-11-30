@@ -71,7 +71,7 @@ ColdStartTextAugmentation::ColdStartTextAugmentation(
 }
 
 void ColdStartTextAugmentation::validateGreaterThanZero(
-    std::optional<uint32_t> parameter, const std::string parameter_name) {
+    std::optional<uint32_t> parameter, const std::string& parameter_name) {
   if (parameter && parameter.value() <= 0) {
     std::string error_message = "Invalid length parameter: ";
     error_message = error_message + parameter_name;
@@ -98,13 +98,13 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
     mergeStrongWithWeak(phrases, strong_phrase);
 
     std::vector<uint32_t> labels;
-    for (auto& label : (*label_column)[row_id]) {
+    for (const auto& label : (*label_column)[row_id]) {
       labels.push_back(label);
     }
-    for (auto& phrase : phrases) {
+    for (const auto& phrase : phrases) {
       // Add (label, phrase) to the output data.
       std::string output_text = "";
-      for (auto& word : phrase) {
+      for (const auto& word : phrase) {
         output_text.append(word);
         output_text.append(" ");
       }
@@ -167,7 +167,7 @@ ColdStartTextAugmentation::Phrase ColdStartTextAugmentation::getStrongPhrase(
   stripWhitespace(s);
   Phrase strong_phrase = splitByWhitespace(s);
   if (_strong_max_len) {
-    if (strong_phrase.size() > _strong_max_len.value()) {
+    if (strong_phrase.empty() > _strong_max_len.value()) {
       strong_phrase.resize(_strong_max_len.value());
     }
   }
@@ -211,7 +211,7 @@ ColdStartTextAugmentation::getWeakPhrases(std::string& s) {
     if (phrase_end != s.end()) {
       ++phrase_end;  // Necessary to not re-find the same punctuation again.
     }
-    if (natural_phrase_text.size() == 0) continue;
+    if (natural_phrase_text.empty()) continue;
     // Next, iterate through all words in the phrase.
     std::string word;
     std::istringstream phrase_stream(natural_phrase_text);
@@ -246,10 +246,10 @@ ColdStartTextAugmentation::getWeakPhrases(std::string& s) {
   }
   // Add any in-progress phrases. This also acts as a final fallback in case we
   // did not add any phrases at all yet.
-  if (current_natural_phrase.size() > 0) {
+  if (!current_natural_phrase.empty()) {
     phrases.push_back(current_natural_phrase);
   }
-  if (current_chunk_phrase.size() > 0) {
+  if (!current_chunk_phrase.size()) {
     phrases.push_back(current_chunk_phrase);
   }
   if (_weak_sample_num_words) {
@@ -264,7 +264,7 @@ ColdStartTextAugmentation::getWeakPhrases(std::string& s) {
 ColdStartTextAugmentation::PhraseCollection
 ColdStartTextAugmentation::sampleFromPhrases(
     ColdStartTextAugmentation::PhraseCollection& phrases,
-    uint32_t num_to_sample, uint32_t num_reps) {
+    uint32_t num_to_sample, uint32_t num_reps) const {
   // Only iterate over the original phrases, as we append new ones to the end.
   if (num_reps == 0) {
     throw std::invalid_argument(
@@ -296,10 +296,10 @@ ColdStartTextAugmentation::sampleFromPhrases(
 }
 
 std::string ColdStartTextAugmentation::concatenateStringColumnEntries(
-    const ColumnMap& columns, const uint64_t row_num,
-    const std::vector<std::string>& column_names, const std::string delimiter) {
-  std::string output_text = "";
-  for (auto& column_name : column_names) {
+    const ColumnMap& columns, uint64_t row_num,
+    const std::vector<std::string>& column_names, const std::string& delimiter) {
+  std::string output_text;
+  for (const auto& column_name : column_names) {
     auto column = columns.getStringColumn(column_name);
     output_text.append((*column)[row_num]);
     output_text.append(delimiter);
@@ -309,7 +309,7 @@ std::string ColdStartTextAugmentation::concatenateStringColumnEntries(
 
 void ColdStartTextAugmentation::mergeStrongWithWeak(
     ColdStartTextAugmentation::PhraseCollection& weak_phrases,
-    Phrase& strong_phrase) {
+    Phrase& strong_phrase) const {
   ColdStartTextAugmentation::PhraseCollection downsampled_strong_phrases;
   if (_strong_sample_num_words) {
     // If we have to sample from the strong phrase, we create N independently

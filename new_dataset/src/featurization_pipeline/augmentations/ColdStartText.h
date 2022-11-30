@@ -33,18 +33,6 @@ namespace thirdai::data {
  */
 class ColdStartTextAugmentation final : public Augmentation {
  public:
-  ColdStartTextAugmentation(
-      std::vector<std::string> strong_column_names,
-      std::vector<std::string> weak_column_names, std::string label_column_name,
-      std::string output_column_name,
-      std::optional<uint32_t> weak_min_len = std::nullopt,
-      std::optional<uint32_t> weak_max_len = std::nullopt,
-      std::optional<uint32_t> weak_chunk_len = std::nullopt,
-      std::optional<uint32_t> weak_sample_num_words = std::nullopt,
-      uint32_t weak_sample_reps = 1,
-      std::optional<uint32_t> strong_max_len = std::nullopt,
-      std::optional<uint32_t> strong_sample_num_words = std::nullopt,
-      uint32_t seed = 42803);
   /*
   Constructs a data augmentation process for strong and weak text columns.
 
@@ -88,12 +76,26 @@ class ColdStartTextAugmentation final : public Augmentation {
          we do not suggest values larger than 10 due to large output size.
      strong_max_len: If provided, then the concatenated strong phrase is
          cut off after the specified number of words.
-     strong_sample_num_words: If provided, then the strong phrase is
-         independently sub-sampled to the specified number of words before
-         being concatenated with each phrase (if possible - there may not
-         be enough words for short phrases).
+     strong_sample_num_words: If provided, then the strong phrase (after 
+         restricting to length strong_max_len) is independently sub-sampled to
+         the specified number of words before being concatenated with each
+         phrase (if possible - short phrases may not contain enough words). For
+         phrases shorter than strong_sample_num_words, we include all words and
+         do not sub-sample.
      seed: Seed for the random number generator.
   */
+  ColdStartTextAugmentation(
+      std::vector<std::string> strong_column_names,
+      std::vector<std::string> weak_column_names, std::string label_column_name,
+      std::string output_column_name,
+      std::optional<uint32_t> weak_min_len = std::nullopt,
+      std::optional<uint32_t> weak_max_len = std::nullopt,
+      std::optional<uint32_t> weak_chunk_len = std::nullopt,
+      std::optional<uint32_t> weak_sample_num_words = std::nullopt,
+      uint32_t weak_sample_reps = 1,
+      std::optional<uint32_t> strong_max_len = std::nullopt,
+      std::optional<uint32_t> strong_sample_num_words = std::nullopt,
+      uint32_t seed = 42803);
 
   ColumnMap apply(const ColumnMap& columns) final;
 
@@ -114,64 +116,68 @@ class ColdStartTextAugmentation final : public Augmentation {
   std::optional<uint32_t> _strong_sample_num_words;
   uint32_t _seed;
 
-  static Phrase splitByWhitespace(std::string& s);
   /*
   Creates a phrase by splitting an input string s into whitespace-separated
   words. Leading and tailing whitespaces are stripped off and ignored.
   */
+  static Phrase splitByWhitespace(std::string& s);
 
-  static void replacePunctuationWithSpaces(std::string& s);
   /*
   Replaces punctuation characters in s with whitespace.
   */
+  static void replacePunctuationWithSpaces(std::string& s);
 
-  static void stripWhitespace(std::string& s);
   /*
   Strips leading and tailing whitespace.
   */
+  static void stripWhitespace(std::string& s);
 
-  std::string concatenateStringColumnEntries(
-      const ColumnMap& columns, const uint64_t row_num,
-      const std::vector<std::string>& column_names,
-      const std::string delimiter);
   /*
   For each column name, gets the string at the specified row in the column.
   Appends the delimiter to the string. Returns a concatenation of all strings.
   */
+  static std::string concatenateStringColumnEntries(
+      const ColumnMap& columns, uint64_t row_num,
+      const std::vector<std::string>& column_names,
+      const std::string& delimiter);
 
+  /*
+  Returns a single phrase that takes in the concatenated string of strong
+  columns and returns a strong phrase (this will just be a cleaned version of
+  the input string, possibly length restricted).
+  */
   Phrase getStrongPhrase(std::string& s);
-  /*
-  Returns a single phrase containing all the words from s.
-  */
 
+  /*
+  Returns a set of natural and chunked phrases from s, according to the weak
+  phrase options selected by the user.
+  */
   PhraseCollection getWeakPhrases(std::string& s);
-  /*
-  Returns a set of natural and chunked phrases from s.
-  */
 
-  PhraseCollection sampleFromPhrases(PhraseCollection& phrases,
-                                     uint32_t num_to_sample, uint32_t num_reps);
   /*
   Randomly deletes elements from each phrase, resulting in new phrases.
   Repeats the process num_reps times for each phrase. If a phrase is not
   long enough to choose num_to_sample words, then it is kept but only
   represented once in the output (not num_reps times).
   */
+  PhraseCollection sampleFromPhrases(PhraseCollection& phrases,
+                                     uint32_t num_to_sample,
+                                     uint32_t num_reps) const;
 
-  void mergeStrongWithWeak(PhraseCollection& weak_phrases,
-                           Phrase& strong_phrase);
   /*
   Concatenates each element from the weak phrases with the strong phrase.
   If _strong_sample_num_words was provided in the constructor, this also
   independently samples from the strong phrase for every weak phrase.
   */
+  void mergeStrongWithWeak(PhraseCollection& weak_phrases,
+                           Phrase& strong_phrase) const;
 
-  void validateGreaterThanZero(std::optional<uint32_t> parameter,
-                               const std::string parameter_name);
   /*
   Throws an error message if the parameter has a value <= 0. The error message
   displays parameter_name.
   */
+  static void validateGreaterThanZero(std::optional<uint32_t> parameter,
+                                      const std::string& parameter_name);
 
   // Private constructor for cereal.
   ColdStartTextAugmentation()
