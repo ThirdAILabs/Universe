@@ -123,7 +123,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
 
-  // Metrics submodule
+  // Telemetry submodule
   thirdai::telemetry::python::createTelemetrySubmodule(m);
 
   // Data Submodule

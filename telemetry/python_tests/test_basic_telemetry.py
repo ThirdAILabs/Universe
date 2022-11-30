@@ -4,7 +4,7 @@ from prometheus_client.parser import text_string_to_metric_families
 
 # This line uses a hack where we can import functions from different test files
 # as long as this file is run from bin/python-format.sh. To run just this file,
-# run bin/python-test.sh -k "test_basic_metrics"
+# run bin/python-test.sh -k "test_basic_telemetry"
 from test_udt_simple import (
     TEST_FILE,
     batch_sample,
@@ -13,16 +13,16 @@ from test_udt_simple import (
 )
 from thirdai import telemetry
 
-THIRDAI_TEST_METRICS_PORT = 20730
-THIRDAI_TEST_METRICS_URL = f"http://localhost:{20730}/metrics"
+THIRDAI_TEST_TELEMETRY_PORT = 20730
+THIRDAI_TEST_TELEMETRY_URL = f"http://localhost:{20730}/metrics"
 
 
 # autouse=True means that every test in this file will require this fixture
-# and start and stop metrics, ensuring that the test can check metrics
+# and start and stop telemetry, ensuring that the test can check telemetry
 # independent of other tests.
 @pytest.fixture(autouse=True)
-def with_metrics():
-    telemetry.start(THIRDAI_TEST_METRICS_PORT)
+def with_telemetry():
+    telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
     # Yielding here means that telemetry.stop() will get called after the
     # test finishes, see
     # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
@@ -30,24 +30,24 @@ def with_metrics():
     telemetry.stop()
 
 
-def scrape_metrics(url):
-    metrics = {}
-    raw_metrics = requests.get(url).content.decode("utf-8")
-    for family in text_string_to_metric_families(raw_metrics):
+def scrape_telemetry(url):
+    telemetry = {}
+    raw_telemetry = requests.get(url).content.decode("utf-8")
+    for family in text_string_to_metric_families(raw_telemetry):
         for name, labels, value, _, _ in family.samples:
-            if name not in metrics:
-                metrics[name] = []
-            metrics[name].append((labels, value))
-    return metrics
+            if name not in telemetry:
+                telemetry[name] = []
+            telemetry[name].append((labels, value))
+    return telemetry
 
 
-def get_count(metrics_dict, key):
-    assert len(metrics_dict[key]) == 1
-    return metrics_dict[key][0][1]
+def get_count(telemetry_dict, key):
+    assert len(telemetry_dict[key]) == 1
+    return telemetry_dict[key][0][1]
 
 
-def check_metrics(
-    metrics,
+def check_telemetry(
+    telemetry,
     train_count,
     train_duration,
     eval_count,
@@ -60,51 +60,52 @@ def check_metrics(
     batch_predict_duration,
 ):
     assert (
-        get_count(metrics, "thirdai_udt_training_duration_seconds_count") == train_count
+        get_count(telemetry, "thirdai_udt_training_duration_seconds_count")
+        == train_count
     )
     assert (
-        get_count(metrics, "thirdai_udt_training_duration_seconds_sum")
+        get_count(telemetry, "thirdai_udt_training_duration_seconds_sum")
         <= train_duration
     )
 
     assert (
-        get_count(metrics, "thirdai_udt_explanation_duration_seconds_count")
+        get_count(telemetry, "thirdai_udt_explanation_duration_seconds_count")
         == explain_count
     )
     assert (
-        get_count(metrics, "thirdai_udt_explanation_duration_seconds_sum")
+        get_count(telemetry, "thirdai_udt_explanation_duration_seconds_sum")
         <= explain_duration
     )
 
     assert (
-        get_count(metrics, "thirdai_udt_evaluation_duration_seconds_count")
+        get_count(telemetry, "thirdai_udt_evaluation_duration_seconds_count")
         == eval_count
     )
     assert (
-        get_count(metrics, "thirdai_udt_evaluation_duration_seconds_sum")
+        get_count(telemetry, "thirdai_udt_evaluation_duration_seconds_sum")
         <= eval_duration
     )
 
     assert (
-        get_count(metrics, "thirdai_udt_prediction_duration_seconds_count")
+        get_count(telemetry, "thirdai_udt_prediction_duration_seconds_count")
         == predict_count
     )
     assert (
-        get_count(metrics, "thirdai_udt_prediction_duration_seconds_sum")
+        get_count(telemetry, "thirdai_udt_prediction_duration_seconds_sum")
         <= predict_duration
     )
 
     assert (
-        get_count(metrics, "thirdai_udt_batch_prediction_duration_seconds_count")
+        get_count(telemetry, "thirdai_udt_batch_prediction_duration_seconds_count")
         == batch_predict_count
     )
     assert (
-        get_count(metrics, "thirdai_udt_batch_prediction_duration_seconds_sum")
+        get_count(telemetry, "thirdai_udt_batch_prediction_duration_seconds_sum")
         <= batch_predict_duration
     )
 
 
-def test_udt_metrics():
+def test_udt_telemetry():
     import time
 
     eval_count = 2
@@ -137,9 +138,9 @@ def test_udt_metrics():
         udt_model.predict_batch(batch_sample())
     batch_predict_duration = time.time() - batch_predict_start
 
-    metrics = scrape_metrics(THIRDAI_TEST_METRICS_URL)
-    check_metrics(
-        metrics,
+    telemetry = scrape_telemetry(THIRDAI_TEST_TELEMETRY_URL)
+    check_telemetry(
+        telemetry,
         train_count=1,
         train_duration=train_duration,
         eval_count=eval_count,
@@ -155,7 +156,7 @@ def test_udt_metrics():
     )
 
 
-def test_error_starting_two_metric_clients():
+def test_error_starting_two_telemetry_clients():
     with pytest.raises(
         RuntimeError,
         match="Trying to start telemetry client when one is already running.*",
@@ -163,6 +164,6 @@ def test_error_starting_two_metric_clients():
         telemetry.start()
 
 
-def test_stop_and_start_metrics():
+def test_stop_and_start_telemetry():
     telemetry.stop()
-    telemetry.start(THIRDAI_TEST_METRICS_PORT)
+    telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)

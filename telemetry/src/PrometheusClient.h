@@ -57,6 +57,7 @@ class PrometheusTelemetryClient {
   PrometheusTelemetryClient()
       : _registry(nullptr),
         _prediction_histogram(nullptr),
+        _batch_prediction_histogram(nullptr),
         _explanation_histogram(nullptr),
         _evaluation_histogram(nullptr),
         _train_histogram(nullptr) {}
