@@ -14,8 +14,12 @@ void LicenseWrapper::checkLicense() {
 #if THIRDAI_CHECK_LICENSE
 #pragma message( \
     "THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
-  LicenseWithSignature::findVerifyAndCheckLicense(_license_path);
+  LicenseWithSignature::verifyLicense(_api_key, _license_path);
 #endif
+}
+
+void LicenseWrapper::activate(const std::string& api_key) {
+  _api_key = api_key;
 }
 
 void LicenseWrapper::setLicensePath(const std::string& license_path) {

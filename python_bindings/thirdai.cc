@@ -108,6 +108,11 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         &thirdai::licensing::LicenseWrapper::setLicensePath,
         py::arg("license_path"),
         "Set a license filepath for any future calls to the thirdai library.");
+
+  m.def("activate",
+        &thirdai::licensing::LicenseWrapper::setLicensePath,
+        py::arg("license_path"),
+        "Set a license filepath for any future calls to the thirdai library.");
 #endif
 
   m.attr("__version__") = thirdai::version();
