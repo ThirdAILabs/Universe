@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -116,3 +117,5 @@ class Input final : public Node {
 using InputPtr = std::shared_ptr<Input>;
 
 }  // namespace thirdai::bolt
+   //
+CEREAL_REGISTER_TYPE(thirdai::bolt::Input)

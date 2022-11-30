@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
@@ -215,11 +217,11 @@ class Node {
  private:
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_name);
-  }
+  void serialize(Archive& archive);
 
   std::optional<std::string> _name;
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::Node);

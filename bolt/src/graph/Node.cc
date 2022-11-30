@@ -1,4 +1,8 @@
 #include "Node.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/string.hpp>
 
 namespace thirdai::bolt {
 
@@ -88,5 +92,20 @@ const std::string& Node::name() const {
   }
   return *_name;
 }
+
+template <class Archive>
+void Node::serialize(Archive& archive) {
+  archive(_name);
+}
+
+template void Node::serialize<cereal::BinaryInputArchive>(
+    cereal::BinaryInputArchive&);
+template void Node::serialize<cereal::BinaryOutputArchive>(
+    cereal::BinaryOutputArchive&);
+
+template void Node::serialize<cereal::PortableBinaryInputArchive>(
+    cereal::PortableBinaryInputArchive&);
+template void Node::serialize<cereal::PortableBinaryOutputArchive>(
+    cereal::PortableBinaryOutputArchive&);
 
 }  // namespace thirdai::bolt
