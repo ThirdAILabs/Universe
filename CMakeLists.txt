@@ -188,8 +188,12 @@ include_directories(deps/eigen)
 # Source dependencies
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
-
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
+# Turn off prometheus-cpp's testing build so that we don't try to build two
+# copies of gmock
+option(ENABLE_TESTING "" OFF)
+option(ENABLE_PUSH "" OFF)
+add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
 # requires the boost and we dont want to add the boost dependencies, hence
@@ -223,13 +227,11 @@ add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
-add_subdirectory(exceptions)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
-add_subdirectory(utils)
-add_subdirectory(wrappers)
 add_subdirectory(compression)
+add_subdirectory(utils)
 
 # Only add the licensing subdirectory if the corresponding flag is set
 if(${LICENSE_BUILD_FLAG_FOUND})
@@ -270,6 +272,7 @@ set(THIRDAI_SOURCES
     hashtable/src/VectorHashTable.cc
     wrappers/src/LicenseWrapper.cc
     dataset/src/Vocabulary.cc
+    telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
@@ -291,7 +294,7 @@ set(THIRDAI_SOURCES
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-                                     cereal::cereal)
+                                     cereal::cereal prometheus-cpp::pull)
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
 endif()
@@ -313,7 +316,8 @@ pybind11_add_module(
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
-  auto_ml/python_bindings/DeploymentPython.cc)
+  auto_ml/python_bindings/DeploymentPython.cc
+  telemetry/python_bindings/TelemetryPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 
