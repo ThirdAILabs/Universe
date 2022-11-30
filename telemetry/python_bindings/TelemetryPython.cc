@@ -13,9 +13,9 @@ void createTelemetrySubmodule(py::module_& thirdai_module) {
 
   submodule.def("start", &createGlobalTelemetryClient,
                 py::arg("port") = THIRDAI_DEFAULT_TELEMETRY_PORT,
-                docs::START_METRICS);
+                docs::START_TELEMETRY);
 
-  submodule.def("stop", &stopGlobalTelemetryClient, docs::STOP_METRICS);
+  submodule.def("stop", &stopGlobalTelemetryClient, docs::STOP_TELEMETRY);
 }
 
 }  // namespace thirdai::telemetry::python
