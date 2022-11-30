@@ -1,7 +1,7 @@
 
 #include "LicenseWrapper.h"
 #if THIRDAI_CHECK_LICENSE
-#include <licensing/src/LicenseWithSignature.h>
+#include <licensing/src/CheckLicense.h>
 #endif
 
 namespace thirdai::licensing {
@@ -10,11 +10,11 @@ namespace thirdai::licensing {
 // https://stackoverflow.com/questions/185844/how-to-initialize-private-static-members-in-c
 std::optional<std::string> LicenseWrapper::_license_path = {};
 
-void LicenseWrapper::checkLicense() {
+void LicenseWrapper::checkLicenseWrapper() {
 #if THIRDAI_CHECK_LICENSE
 #pragma message( \
     "THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
-  LicenseWithSignature::verifyLicense(_api_key, _license_path);
+  checkLicense(_api_key, _license_path);
 #endif
 }
 

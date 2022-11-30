@@ -23,14 +23,36 @@
 
 namespace thirdai::licensing {
 
-class LicenseWithSignature {
+class SignedLicense {
  public:
+  /**
+   * Checks for a license file in the following order
+   * 0. The passed in license path
+   * 1. env(THIRDAI_LICENSE_PATH)
+   * 2. ~/license.serialized
+   * 3. {cwd}/license.serialized
+   * Uses the first file found.
+   * If no license is found, we throw an error.
+   * If a license is found we verify it with the passed in public key,
+   * then check whether it has expired. If either check fails we throw an error.
+   * Otherwise we just return.
+   */
+  static void findVerifyAndCheckLicense(
+      const std::optional<std::string>& license_path) {
+    std::vector<std::string> license_file_name_options =
+        get_license_name_options(license_path);
+
+    std::pair<SignedLicense, std::string> license_with_file =
+        get_license_from_options(license_file_name_options);
+
+    verify_and_check_license(license_with_file);
+  }
+
   // This is public because it is a top level serialization target, only
   // call this if you are creating an object to serialize into
-  LicenseWithSignature() : _license(std::map<std::string, std::string>(), 0){};
+  SignedLicense() : _license(std::map<std::string, std::string>(), 0){};
 
-  LicenseWithSignature(License license,
-                       const CryptoPP::RSA::PrivateKey& private_key)
+  SignedLicense(License license, const CryptoPP::RSA::PrivateKey& private_key)
       : _license(std::move(license)) {
     // See https://cryptopp.com/wiki/RSA_Cryptography for more details
 
@@ -101,37 +123,14 @@ class LicenseWithSignature {
     oarchive(*this);
   }
 
-  static LicenseWithSignature deserializeFromFile(const std::string& path) {
+  static SignedLicense deserializeFromFile(const std::string& path) {
     std::ifstream filestream(path, std::ios::binary);
-    LicenseWithSignature serialize_into;
+    SignedLicense serialize_into;
     {
       cereal::BinaryInputArchive iarchive(filestream);
       iarchive(serialize_into);
     }
     return serialize_into;
-  }
-
-  /**
-   * Checks for a license file in the following order
-   * 0. The passed in license path
-   * 1. env(THIRDAI_LICENSE_PATH)
-   * 2. ~/license.serialized
-   * 3. {cwd}/license.serialized
-   * Uses the first file found.
-   * If no license is found, we throw an error.
-   * If a license is found we verify it with the passed in public key,
-   * then check whether it has expired. If either check fails we throw an error.
-   * Otherwise we just return.
-   */
-  static void findVerifyAndCheckLicense(
-      const std::optional<std::string>& license_path) {
-    std::vector<std::string> license_file_name_options =
-        get_license_name_options(license_path);
-
-    std::pair<LicenseWithSignature, std::string> license_with_file =
-        get_license_from_options(license_file_name_options);
-
-    verify_and_check_license(license_with_file);
   }
 
   const License& get_license() const { return _license; }
@@ -203,10 +202,9 @@ class LicenseWithSignature {
   // deserializes it, and returns it along with the file name. If no license
   // file can be opened, we throw an error. If the deserialization fails, Cereal
   // will throw an error.
-  static std::pair<LicenseWithSignature, std::string> get_license_from_options(
+  static std::pair<SignedLicense, std::string> get_license_from_options(
       const std::vector<std::string>& license_file_name_options) {
-    std::optional<std::pair<LicenseWithSignature, std::string>>
-        license_with_file;
+    std::optional<std::pair<SignedLicense, std::string>> license_with_file;
     for (const std::string& license_file_name : license_file_name_options) {
       if (can_access_file(license_file_name)) {
         license_with_file = {deserializeFromFile(license_file_name),
@@ -233,7 +231,7 @@ class LicenseWithSignature {
   // throws an error. If the verication is succesfull but the license has
   // expired, throws an error.
   static void verify_and_check_license(
-      const std::pair<LicenseWithSignature, std::string>& license_with_file) {
+      const std::pair<SignedLicense, std::string>& license_with_file) {
     CryptoPP::RSA::PublicKey public_key;
     CryptoPP::StringSource ss(PUBLIC_KEY_BASE_64, true,
                               new CryptoPP::Base64Decoder);

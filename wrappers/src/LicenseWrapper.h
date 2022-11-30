@@ -6,7 +6,7 @@ namespace thirdai::licensing {
 
 class LicenseWrapper {
  public:
-  static void checkLicense();
+  static void checkLicenseWrapper();
 
   static void setLicensePath(const std::string& license_path);
 
