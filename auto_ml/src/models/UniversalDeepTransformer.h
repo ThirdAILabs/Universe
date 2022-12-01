@@ -3,12 +3,14 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include "OutputProcessor.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -67,11 +69,28 @@ class UniversalDeepTransformer : public ModelPipeline {
     auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
           embedding_dimension] = processUDTOptions(options);
 
+    OutputProcessorPtr output_processor;
+    std::optional<dataset::RegressionBinningStrategy> regression_binning =
+        std::nullopt;
+    if (auto num_config = data::asNumerical(
+            dataset_config->data_types.at(dataset_config->target))) {
+      uint32_t num_bins = n_target_classes.value_or(
+          data::UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
+
+      regression_binning = dataset::RegressionBinningStrategy(
+          num_config->range.first, num_config->range.second, num_bins);
+
+      output_processor =
+          RegressionOutputProcessor::make(regression_binning.value());
+    } else {
+      output_processor = CategoricalOutputProcessor::make();
+    }
+
     auto dataset_factory = data::UDTDatasetFactory::make(
         /* config= */ std::move(dataset_config),
         /* force_parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
-        /* contextual_columns= */ contextual_columns);
+        /* contextual_columns= */ contextual_columns, regression_binning);
 
     bolt::BoltGraphPtr model;
     if (model_config) {
@@ -92,8 +111,9 @@ class UniversalDeepTransformer : public ModelPipeline {
         /* freeze_hash_tables= */ freeze_hash_tables,
         /* prediction_threshold= */ std::nullopt);
 
-    return UniversalDeepTransformer(
-        {std::move(dataset_factory), std::move(model), train_eval_parameters});
+    return UniversalDeepTransformer({std::move(dataset_factory),
+                                     std::move(model), output_processor,
+                                     train_eval_parameters});
   }
 
   BoltVector embeddingRepresentation(const MapInput& input) {

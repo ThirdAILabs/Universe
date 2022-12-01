@@ -143,15 +143,6 @@ class DatasetLoaderFactory {
         "labels; the ids and labels are equivalent.");
   }
 
-  virtual bolt::InferenceOutputTracker processEvaluateOutput(
-      bolt::InferenceOutputTracker& output) {
-    return std::move(output);
-  }
-
-  virtual BoltVector processOutputVector(BoltVector& output) {
-    return std::move(output);
-  }
-
   virtual ~DatasetLoaderFactory() = default;
 
  private:

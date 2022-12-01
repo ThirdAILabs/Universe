@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
+#include "OutputProcessor.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
@@ -67,10 +68,11 @@ class ValidationOptions {
 class ModelPipeline {
  public:
   ModelPipeline(data::DatasetLoaderFactoryPtr dataset_factory,
-                bolt::BoltGraphPtr model,
+                bolt::BoltGraphPtr model, OutputProcessorPtr output_processor,
                 deployment::TrainEvalParameters train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
+        _output_processor(std::move(output_processor)),
         _train_eval_config(train_eval_parameters) {}
 
   static auto make(
@@ -80,6 +82,7 @@ class ModelPipeline {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
     return ModelPipeline(std::move(dataset_factory), std::move(model),
+                         CategoricalOutputProcessor::make(),
                          config->train_eval_parameters());
   }
 
@@ -163,36 +166,17 @@ class ModelPipeline {
 
   void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
-  static uint32_t argmax(const float* const array, uint32_t len) {
-    assert(len > 0);
-
-    uint32_t max_index = 0;
-    float max_value = array[0];
-    for (uint32_t i = 1; i < len; i++) {
-      if (array[i] > max_value) {
-        max_index = i;
-        max_value = array[i];
-      }
-    }
-    return max_index;
-  }
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_dataset_factory, _model, _train_eval_config);
+    archive(_dataset_factory, _model, _output_processor, _train_eval_config);
   }
 
  protected:
   data::DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
+  OutputProcessorPtr _output_processor;
   deployment::TrainEvalParameters _train_eval_config;
 };
-
-py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
-
-py::object convertBoltVectorToNumpy(const BoltVector& vector);
-
-py::object convertBoltBatchToNumpy(const BoltBatch& batch);
 
 }  // namespace thirdai::automl::models

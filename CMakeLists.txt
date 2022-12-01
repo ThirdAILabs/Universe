@@ -314,7 +314,8 @@ pybind11_add_module(
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
   auto_ml/python_bindings/DeploymentPython.cc
-  auto_ml/src/models/ModelPipeline.cc)
+  auto_ml/src/models/ModelPipeline.cc
+  auto_ml/src/models/OutputProcessor.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 
